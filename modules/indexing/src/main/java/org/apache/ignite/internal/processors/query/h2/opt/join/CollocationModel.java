@@ -47,18 +47,6 @@ import org.h2.table.TableView;
  */
 public final class CollocationModel {
     /** */
-    public static final int MULTIPLIER_COLLOCATED = 1;
-
-    /** */
-    private static final int MULTIPLIER_UNICAST = 50;
-
-    /** */
-    private static final int MULTIPLIER_BROADCAST = 200;
-
-    /** */
-    private static final int MULTIPLIER_REPLICATED_NOT_LAST = 10_000;
-
-    /** */
     private final CollocationModel upper;
 
     /** */
@@ -68,7 +56,7 @@ public final class CollocationModel {
     private final boolean view;
 
     /** */
-    private int multiplier;
+    private CollocationModelMultiplier multiplier;
 
     /** */
     private Type type;
@@ -234,7 +222,7 @@ public final class CollocationModel {
 
         // Reset results.
         type = null;
-        multiplier = 0;
+        multiplier = null;
 
         return true;
     }
@@ -252,14 +240,14 @@ public final class CollocationModel {
 
             boolean collocated = true;
             boolean partitioned = false;
-            int maxMultiplier = MULTIPLIER_COLLOCATED;
+            CollocationModelMultiplier maxMultiplier = CollocationModelMultiplier.MULTIPLIER_COLLOCATED;
 
             for (int i = 0; i < childFilters.length; i++) {
                 CollocationModel child = child(i, true);
 
                 Type t = child.type(true);
 
-                if (child.multiplier == MULTIPLIER_REPLICATED_NOT_LAST)
+                if (child.multiplier == CollocationModelMultiplier.MULTIPLIER_REPLICATED_NOT_LAST)
                     maxMultiplier = child.multiplier;
 
                 if (t.isPartitioned()) {
@@ -268,12 +256,12 @@ public final class CollocationModel {
                     if (!t.isCollocated()) {
                         collocated = false;
 
-                        int m = child.multiplier(true);
+                        CollocationModelMultiplier m = child.multiplier(true);
 
-                        if (m > maxMultiplier) {
+                        if (m.multiplier() > maxMultiplier.multiplier()) {
                             maxMultiplier = m;
 
-                            if (maxMultiplier == MULTIPLIER_REPLICATED_NOT_LAST)
+                            if (maxMultiplier == CollocationModelMultiplier.MULTIPLIER_REPLICATED_NOT_LAST)
                                 break;
                         }
                     }
@@ -293,7 +281,7 @@ public final class CollocationModel {
             // Only partitioned tables will do distributed joins.
             if (!(tbl instanceof GridH2Table) || !((GridH2Table)tbl).isPartitioned()) {
                 type = Type.REPLICATED;
-                multiplier = MULTIPLIER_COLLOCATED;
+                multiplier = CollocationModelMultiplier.MULTIPLIER_COLLOCATED;
 
                 return;
             }
@@ -303,7 +291,7 @@ public final class CollocationModel {
             // to all the affinity nodes the "base" does not need to get remote results.
             if (!upper.findPartitionedTableBefore(filter)) {
                 type = Type.PARTITIONED_COLLOCATED;
-                multiplier = MULTIPLIER_COLLOCATED;
+                multiplier = CollocationModelMultiplier.MULTIPLIER_COLLOCATED;
             }
             else {
                 // It is enough to make sure that our previous join by affinity key is collocated, then we are
@@ -311,19 +299,19 @@ public final class CollocationModel {
                 switch (upper.joinedWithCollocated(filter)) {
                     case COLLOCATED_JOIN:
                         type = Type.PARTITIONED_COLLOCATED;
-                        multiplier = MULTIPLIER_COLLOCATED;
+                        multiplier = CollocationModelMultiplier.MULTIPLIER_COLLOCATED;
 
                         break;
 
                     case HAS_AFFINITY_CONDITION:
                         type = Type.PARTITIONED_NOT_COLLOCATED;
-                        multiplier = MULTIPLIER_UNICAST;
+                        multiplier = CollocationModelMultiplier.MULTIPLIER_UNICAST;
 
                         break;
 
                     case NONE:
                         type = Type.PARTITIONED_NOT_COLLOCATED;
-                        multiplier = MULTIPLIER_BROADCAST;
+                        multiplier = CollocationModelMultiplier.MULTIPLIER_BROADCAST;
 
                         break;
 
@@ -333,7 +321,7 @@ public final class CollocationModel {
             }
 
             if (upper.previousReplicated(filter))
-                multiplier = MULTIPLIER_REPLICATED_NOT_LAST;
+                multiplier = CollocationModelMultiplier.MULTIPLIER_REPLICATED_NOT_LAST;
         }
     }
 
@@ -517,7 +505,7 @@ public final class CollocationModel {
      */
     public int calculateMultiplier() {
         // We don't need multiplier for union here because it will be summarized in H2.
-        return multiplier(false);
+        return multiplier(false).multiplier();
     }
 
     /**
@@ -525,20 +513,22 @@ public final class CollocationModel {
      * @return Multiplier.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private int multiplier(boolean withUnion) {
+    private CollocationModelMultiplier multiplier(boolean withUnion) {
         calculate();
 
-        assert multiplier != 0;
+        assert multiplier != null;
 
         if (withUnion && unions != null) {
-            int maxMultiplier = 0;
+            CollocationModelMultiplier maxMultiplier = null;
 
             for (int i = 0; i < unions.size(); i++) {
-                int m = unions.get(i).multiplier(false);
+                CollocationModelMultiplier m = unions.get(i).multiplier(false);
 
-                if (m > maxMultiplier)
+                if (maxMultiplier == null || m.multiplier() > maxMultiplier.multiplier())
                     maxMultiplier = m;
             }
+
+            assert maxMultiplier != null;
 
             return maxMultiplier;
         }
@@ -698,7 +688,7 @@ public final class CollocationModel {
 
         Type type = mdl.type(true);
 
-        if (!type.isCollocated() && mdl.multiplier == MULTIPLIER_REPLICATED_NOT_LAST)
+        if (!type.isCollocated() && mdl.multiplier == CollocationModelMultiplier.MULTIPLIER_REPLICATED_NOT_LAST)
             throw new CacheException("Failed to execute query: for distributed join " +
                 "all REPLICATED caches must be at the end of the joined tables list.");
 

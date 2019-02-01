@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModelMultiplier;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedLookupBatch;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
@@ -229,7 +230,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         // Query expressions can not be distributed as well.
         if (qctx == null || qctx.type() != PREPARE || qctx.distributedJoinMode() == OFF ||
             !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
-            return CollocationModel.MULTIPLIER_COLLOCATED;
+            return CollocationModelMultiplier.MULTIPLIER_COLLOCATED.multiplier();
 
         // We have to clear this cache because normally sub-query plan cost does not depend on anything
         // other than index condition masks and sort order, but in our case it can depend on order
