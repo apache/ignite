@@ -46,6 +46,9 @@ import org.h2.table.TableView;
  * Collocation model for a query.
  */
 public final class CollocationModel {
+    /** Empty filter array. */
+    private static final TableFilter[] EMPTY_FILTERS = new TableFilter[0];
+
     /** */
     private final CollocationModel upper;
 
@@ -59,7 +62,7 @@ public final class CollocationModel {
     private CollocationModelMultiplier multiplier;
 
     /** */
-    private Type type;
+    private CollocationModelType type;
 
     /** */
     private CollocationModel[] children;
@@ -245,7 +248,7 @@ public final class CollocationModel {
             for (int i = 0; i < childFilters.length; i++) {
                 CollocationModel child = child(i, true);
 
-                Type t = child.type(true);
+                CollocationModelType t = child.type(true);
 
                 if (child.multiplier == CollocationModelMultiplier.REPLICATED_NOT_LAST)
                     maxMultiplier = child.multiplier;
@@ -268,7 +271,7 @@ public final class CollocationModel {
                 }
             }
 
-            type = Type.of(partitioned, collocated);
+            type = CollocationModelType.of(partitioned, collocated);
             multiplier = maxMultiplier;
         }
         else {
@@ -280,7 +283,7 @@ public final class CollocationModel {
 
             // Only partitioned tables will do distributed joins.
             if (!(tbl instanceof GridH2Table) || !((GridH2Table)tbl).isPartitioned()) {
-                type = Type.REPLICATED;
+                type = CollocationModelType.REPLICATED;
                 multiplier = CollocationModelMultiplier.COLLOCATED;
 
                 return;
@@ -289,8 +292,8 @@ public final class CollocationModel {
             // If we are the first partitioned table in a join, then we are "base" for all the rest partitioned tables
             // which will need to get remote result (if there is no affinity condition). Since this query is broadcasted
             // to all the affinity nodes the "base" does not need to get remote results.
-            if (!upper.findPartitionedTableBefore(filter)) {
-                type = Type.PARTITIONED_COLLOCATED;
+            if (!upper.isPartitionedTableBeforeExists(filter)) {
+                type = CollocationModelType.PARTITIONED_COLLOCATED;
                 multiplier = CollocationModelMultiplier.COLLOCATED;
             }
             else {
@@ -298,19 +301,19 @@ public final class CollocationModel {
                 // collocated. If we at least have affinity key condition, then we do unicast which is cheaper.
                 switch (upper.joinedWithCollocated(filter)) {
                     case COLLOCATED_JOIN:
-                        type = Type.PARTITIONED_COLLOCATED;
+                        type = CollocationModelType.PARTITIONED_COLLOCATED;
                         multiplier = CollocationModelMultiplier.COLLOCATED;
 
                         break;
 
                     case HAS_AFFINITY_CONDITION:
-                        type = Type.PARTITIONED_NOT_COLLOCATED;
+                        type = CollocationModelType.PARTITIONED_NOT_COLLOCATED;
                         multiplier = CollocationModelMultiplier.UNICAST;
 
                         break;
 
                     case NONE:
-                        type = Type.PARTITIONED_NOT_COLLOCATED;
+                        type = CollocationModelType.PARTITIONED_NOT_COLLOCATED;
                         multiplier = CollocationModelMultiplier.BROADCAST;
 
                         break;
@@ -320,18 +323,20 @@ public final class CollocationModel {
                 }
             }
 
-            if (upper.previousReplicated(filter))
+            if (upper.isPreviousTableReplicated(filter))
                 multiplier = CollocationModelMultiplier.REPLICATED_NOT_LAST;
         }
     }
 
     /**
-     * @param f Current filter.
-     * @return {@code true} If partitioned table was found.
+     * Check whether at least one PARTITIONED table is located before current table.
+     *
+     * @param filterIdx Current filter index.
+     * @return {@code true} If PARTITIONED table exists.
      */
-    private boolean findPartitionedTableBefore(int f) {
-        for (int i = 0; i < f; i++) {
-            CollocationModel child = child(i, true);
+    private boolean isPartitionedTableBeforeExists(int filterIdx) {
+        for (int idx = 0; idx < filterIdx; idx++) {
+            CollocationModel child = child(idx, true);
 
             // The c can be null if it is not a GridH2Table and not a sub-query,
             // it is a some kind of function table or anything else that considered replicated.
@@ -340,19 +345,26 @@ public final class CollocationModel {
         }
 
         // We have to search globally in upper queries as well.
-        return upper != null && upper.findPartitionedTableBefore(filter);
+        return upper != null && upper.isPartitionedTableBeforeExists(filter);
     }
 
     /**
-     * @param f Current filter.
+     * Check if previous table in the sequence is REPLICATED.
+     *
+     * @param filterIdx Current filter index.
      * @return {@code true} If previous table is REPLICATED.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
-    private boolean previousReplicated(int f) {
-        if (f > 0 && child(f - 1, true).type(true) == Type.REPLICATED)
+    private boolean isPreviousTableReplicated(int filterIdx) {
+        // We are at the first table, nothing exists before it
+        if (filterIdx == 0)
+            return false;
+
+        CollocationModel child = child(filterIdx - 1, true);
+
+        if (child != null && child.type(true) == CollocationModelType.REPLICATED)
             return true;
 
-        return upper != null && upper.previousReplicated(filter);
+        return upper != null && upper.isPreviousTableReplicated(filter);
     }
 
     /**
@@ -360,7 +372,7 @@ public final class CollocationModel {
      * @return Affinity join type.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private Affinity joinedWithCollocated(int f) {
+    private CollocationModelAffinity joinedWithCollocated(int f) {
         TableFilter tf = childFilters[f];
 
         GridH2Table tbl = (GridH2Table)tf.getTable();
@@ -410,10 +422,10 @@ public final class CollocationModel {
                             // the found affinity column is the needed one, since we can select multiple
                             // different affinity columns from different tables.
                             if (cm != null && !cm.view) {
-                                Type t = cm.type(true);
+                                CollocationModelType t = cm.type(true);
 
                                 if (t.isPartitioned() && t.isCollocated() && isAffinityColumn(prevJoin, expCol, validate))
-                                    return Affinity.COLLOCATED_JOIN;
+                                    return CollocationModelAffinity.COLLOCATED_JOIN;
                             }
                         }
                     }
@@ -421,7 +433,7 @@ public final class CollocationModel {
             }
         }
 
-        return affKeyCondFound ? Affinity.HAS_AFFINITY_CONDITION : Affinity.NONE;
+        return affKeyCondFound ? CollocationModelAffinity.HAS_AFFINITY_CONDITION : CollocationModelAffinity.NONE;
     }
 
     /**
@@ -443,6 +455,7 @@ public final class CollocationModel {
      * @param validate Query validation flag.
      * @return {@code true} It it is an affinity column.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private static boolean isAffinityColumn(TableFilter f, ExpressionColumn expCol, boolean validate) {
         Column col = expCol.getColumn();
 
@@ -540,26 +553,26 @@ public final class CollocationModel {
      * @param withUnion With respect to union.
      * @return Type.
      */
-    private Type type(boolean withUnion) {
+    private CollocationModelType type(boolean withUnion) {
         calculate();
 
         assert type != null;
 
         if (withUnion && unions != null) {
-            Type left = unions.get(0).type(false);
+            CollocationModelType left = unions.get(0).type(false);
 
             for (int i = 1; i < unions.size(); i++) {
-                Type right = unions.get(i).type(false);
+                CollocationModelType right = unions.get(i).type(false);
 
                 if (!left.isCollocated() || !right.isCollocated()) {
-                    left = Type.PARTITIONED_NOT_COLLOCATED;
+                    left = CollocationModelType.PARTITIONED_NOT_COLLOCATED;
 
                     break;
                 }
                 else if (!left.isPartitioned() && !right.isPartitioned())
-                    left = Type.REPLICATED;
+                    left = CollocationModelType.REPLICATED;
                 else
-                    left = Type.PARTITIONED_COLLOCATED;
+                    left = CollocationModelType.PARTITIONED_COLLOCATED;
             }
 
             return left;
@@ -573,6 +586,7 @@ public final class CollocationModel {
      * @param create Create child if needed.
      * @return Child collocation.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private CollocationModel child(int i, boolean create) {
         CollocationModel child = children[i];
 
@@ -686,7 +700,7 @@ public final class CollocationModel {
     public static boolean isCollocated(Query qry) {
         CollocationModel mdl = buildCollocationModel(null, -1, qry, null, true);
 
-        Type type = mdl.type(true);
+        CollocationModelType type = mdl.type(true);
 
         if (!type.isCollocated() && mdl.multiplier == CollocationModelMultiplier.REPLICATED_NOT_LAST)
             throw new CacheException("Failed to execute query: for distributed join " +
@@ -730,7 +744,7 @@ public final class CollocationModel {
         for (TableFilter f = select.getTopTableFilter(); f != null; f = f.getJoin())
             list.add(f);
 
-        TableFilter[] filters = list.toArray(new TableFilter[list.size()]);
+        TableFilter[] filters = list.toArray(EMPTY_FILTERS);
 
         CollocationModel cm = createChildModel(upper, filter, unions, true, validate);
 
@@ -756,76 +770,5 @@ public final class CollocationModel {
         return new CacheException("Failed to prepare distributed join query: can not use distributed joins for cache " +
             "with custom AffinityKeyMapper configured. " +
             "Please use AffinityKeyMapped annotation instead [cache=" + cacheName + ']');
-    }
-
-    /**
-     * Collocation type.
-     */
-    private enum Type {
-        /** */
-        PARTITIONED_COLLOCATED(true, true),
-
-        /** */
-        PARTITIONED_NOT_COLLOCATED(true, false),
-
-        /** */
-        REPLICATED(false, true);
-
-        /** */
-        private final boolean partitioned;
-
-        /** */
-        private final boolean collocated;
-
-        /**
-         * @param partitioned Partitioned.
-         * @param collocated Collocated.
-         */
-        Type(boolean partitioned, boolean collocated) {
-            this.partitioned = partitioned;
-            this.collocated = collocated;
-        }
-
-        /**
-         * @return {@code true} If partitioned.
-         */
-        public boolean isPartitioned() {
-            return partitioned;
-        }
-
-        /**
-         * @return {@code true} If collocated.
-         */
-        public boolean isCollocated() {
-            return collocated;
-        }
-
-        /**
-         * @param partitioned Partitioned.
-         * @param collocated Collocated.
-         * @return Type.
-         */
-        static Type of(boolean partitioned, boolean collocated) {
-            if (collocated)
-                return partitioned ? Type.PARTITIONED_COLLOCATED : Type.REPLICATED;
-
-            assert partitioned;
-
-            return Type.PARTITIONED_NOT_COLLOCATED;
-        }
-    }
-
-    /**
-     * Affinity of a table relative to previous joined tables.
-     */
-    private enum Affinity {
-        /** */
-        NONE,
-
-        /** */
-        HAS_AFFINITY_CONDITION,
-
-        /** */
-        COLLOCATED_JOIN
     }
 }
