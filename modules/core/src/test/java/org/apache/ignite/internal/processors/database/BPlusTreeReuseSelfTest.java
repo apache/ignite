@@ -77,11 +77,12 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
      */
     private void doTestInvokeAll(boolean canGetRow) throws Exception {
         CNT = 1000;
+        MAX_PER_PAGE = 5;
 
         TestTree tree = createTestTree(canGetRow);
         TreeSet<Long> set = new TreeSet<>();
 
-        for (int i = 0; i < 20_000; i++) {
+        for (int i = 0; i < 15_000; i++) {
             long batchSize = 2 + randomInt(100);
 
             TreeSet<Long> puts = new TreeSet<>();
