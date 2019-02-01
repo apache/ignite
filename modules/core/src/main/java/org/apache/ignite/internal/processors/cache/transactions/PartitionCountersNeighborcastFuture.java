@@ -88,9 +88,10 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
             MiniFuture miniFut = new MiniFuture(peer);
 
             try {
-                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
-
+                // we must add mini future before sending a message, otherwise mini future must miss completion
                 add(miniFut);
+
+                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 if (!(e instanceof ClusterTopologyCheckedException))
@@ -140,9 +141,10 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
      * @param nodeId Remote peer node id.
      */
     public void onResult(UUID nodeId) {
-        if (log.isInfoEnabled())
+        if (log.isInfoEnabled()) {
             log.info("Remote peer acked partition counters delivery [futId=" + futId +
                 ", node=" + nodeId + ']');
+        }
 
         completeMini(nodeId);
     }
@@ -167,8 +169,14 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
             if (mini.nodeId.equals(nodeId)) {
                 cctx.kernalContext().closure().runLocalSafe(mini::onDone);
 
-                break;
+                return;
             }
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("Failed to find mini future corresponding to node, can prevent parent future completion [" +
+                "futId=" + futId +
+                ", nodeId=" + nodeId + ']');
         }
     }
 
@@ -194,6 +202,12 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         trackable = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        // t0d0 convert to string with debug info
+        return "PartitionCountersNeighborcastFuture";
     }
 
     /**
