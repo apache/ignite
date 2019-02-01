@@ -3384,7 +3384,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                                 continue;
                             }
-                        }
+                        } else if (rcvCnt < 0)
+                            throw new IgniteCheckedException("Unsupported negative receivedCount " + rcvCnt + ": " + node.id());
 
                         meta.put(CONN_IDX_META, connKey);
 
