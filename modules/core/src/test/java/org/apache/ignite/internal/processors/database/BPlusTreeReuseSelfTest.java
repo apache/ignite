@@ -18,15 +18,25 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
+import org.apache.ignite.internal.util.IgniteTree;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
+import static org.apache.ignite.internal.processors.cache.persistence.DataStructure.randomInt;
+import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
+import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
+import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
 
 /**
  * Test with reuse list.
@@ -43,6 +53,94 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
         super.assertNoLocks();
 
         assertTrue(TestReuseList.checkNoLocks());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInvokeAll_true() throws Exception {
+        doTestInvokeAll(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInvokeAll_false() throws Exception {
+        doTestInvokeAll(false);
+    }
+
+    /**
+     * @param canGetRow Can get row.
+     * @throws Exception If failed.
+     */
+    private void doTestInvokeAll(boolean canGetRow) throws Exception {
+        CNT = 1000;
+
+        TestTree tree = createTestTree(canGetRow);
+        TreeSet<Long> set = new TreeSet<>();
+
+        for (int i = 0; i < 20_000; i++) {
+            long batchSize = 2 + randomInt(100);
+
+            TreeSet<Long> puts = new TreeSet<>();
+            TreeSet<Long> all = new TreeSet<>();
+
+            for (int j = 0; j < batchSize; j++) {
+                long x = randomInt(CNT);
+
+                if (randomInt(2) == 0)
+                    puts.add(x);
+
+                all.add(x);
+            }
+
+            TreeSet<Long> rmvs = new TreeSet<>(all);
+            rmvs.removeAll(puts);
+
+            set.addAll(puts);
+            set.removeAll(rmvs);
+
+            class UpdateAllClosure
+                implements IgniteTree.InvokeClosure<Long>, Function<Long, IgniteTree.InvokeClosure<Long>> {
+                /** */
+                Long newRow;
+
+                /** */
+                IgniteTree.OperationType opType;
+
+                /** {@inheritDoc} */
+                @Override public IgniteTree.InvokeClosure<Long> apply(Long searchRow) {
+                    opType = puts.contains(searchRow) ? PUT : REMOVE;
+                    newRow = opType == PUT ? searchRow : null;
+
+                    return this;
+                }
+
+                /** {@inheritDoc} */
+                @Override public void call(@Nullable Long foundRow) throws IgniteCheckedException {
+                    if ((foundRow == null && opType == REMOVE) || (foundRow != null && opType == PUT)) {
+                        opType = NOOP;
+                        newRow = null;
+                    }
+                }
+
+                /** {@inheritDoc} */
+                @Override public Long newRow() {
+                    return Objects.requireNonNull(newRow);
+                }
+
+                /** {@inheritDoc} */
+                @Override public IgniteTree.OperationType operationType() {
+                    return Objects.requireNonNull(opType);
+                }
+            }
+
+            tree.invokeAll(all.iterator(), null, new UpdateAllClosure());
+
+            assertEqualContents(tree, set);
+        }
     }
 
     /**

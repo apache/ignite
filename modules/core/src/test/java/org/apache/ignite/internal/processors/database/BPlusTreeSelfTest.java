@@ -1189,7 +1189,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @param map Map.
      * @throws IgniteCheckedException If failed.
      */
-    private void assertEqualContents(IgniteTree<Long, Long> tree, Map<Long,Long> map) throws IgniteCheckedException {
+    protected void assertEqualContents(IgniteTree<Long, Long> tree, Map<Long,Long> map) throws IgniteCheckedException {
+        assertEqualContents(tree, map.keySet());
+    }
+
+    /**
+     * @param tree Tree.
+     * @param set Set.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void assertEqualContents(IgniteTree<Long, Long> tree, Set<Long> set) throws IgniteCheckedException {
         GridCursor<Long> cursor = tree.find(null, null);
 
         while (cursor.next()) {
@@ -1197,12 +1206,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assert x != null;
 
-            assertEquals(map.get(x), x);
+            assertTrue(set.contains(x));
 
             assertNoLocks();
         }
 
-        assertEquals(map.size(), tree.size());
+        assertEquals(set.size(), tree.size());
 
         assertNoLocks();
     }
