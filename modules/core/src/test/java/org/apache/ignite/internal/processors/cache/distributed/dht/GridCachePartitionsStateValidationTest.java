@@ -51,20 +51,15 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -143,7 +138,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
      */
     @Test
     public void testPartitionCountersConsistencyOnExchange() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10766", MvccFeatureChecker.forcedMvcc());
+        // Reopen https://issues.apache.org/jira/browse/IGNITE-10766 if starts failing with forced MVCC
 
         IgniteEx ignite = (IgniteEx) startGrids(4);
         ignite.cluster().active(true);

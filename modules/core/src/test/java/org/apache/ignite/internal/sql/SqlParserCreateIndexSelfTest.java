@@ -27,8 +27,6 @@ import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.INLINE_SIZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
@@ -37,7 +35,6 @@ import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
  * Tests for SQL parser: CREATE INDEX.
  */
 @SuppressWarnings({"UnusedReturnValue"})
-@RunWith(JUnit4.class)
 public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
     /** Default properties */
     private static final Map<String, Object> DEFAULT_PROPS = getProps(null, null);

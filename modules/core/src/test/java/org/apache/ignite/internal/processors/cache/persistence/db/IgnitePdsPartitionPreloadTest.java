@@ -40,8 +40,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -51,7 +49,6 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  * Test partition preload for varios cache modes.
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     /** Test entry count. */
     public static final int ENTRY_CNT = 500;

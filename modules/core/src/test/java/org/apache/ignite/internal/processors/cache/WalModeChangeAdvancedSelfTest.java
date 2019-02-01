@@ -43,7 +43,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Concurrent and advanced tests for WAL state change.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSelfTest {
     /**
      * Constructor.

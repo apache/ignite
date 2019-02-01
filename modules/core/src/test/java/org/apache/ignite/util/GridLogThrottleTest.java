@@ -22,8 +22,6 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Grid log throttle test. To verify correctness, you need to run this test
@@ -31,7 +29,6 @@ import org.junit.runners.JUnit4;
  * all messages that should be omitted are indeed omitted.
  */
 @GridCommonTest(group = "Utils")
-@RunWith(JUnit4.class)
 public class GridLogThrottleTest extends GridCommonAbstractTest {
     /** */
     private final GridStringLogger log0 = new GridStringLogger(false, this.log);

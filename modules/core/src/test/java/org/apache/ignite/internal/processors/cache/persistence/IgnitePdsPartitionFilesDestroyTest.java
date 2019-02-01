@@ -47,15 +47,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash recovery.
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     /** Partitions count. */
     private static final int PARTS_CNT = 32;
