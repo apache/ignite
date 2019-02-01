@@ -421,6 +421,9 @@ public class Tracer {
         int xIndex, Function<LabeledVector<Double>, Double> yGetter,
         Function<LabeledVector<Double>, Color> colorGetter) throws IOException {
 
+        if(!isBrowseSupported())
+            return;
+
         String tmpl = fileToString("d3-dataset-template.html");
 
         String data = values.stream().map(v -> {
