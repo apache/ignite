@@ -25,6 +25,7 @@ import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
+import org.apache.ignite.internal.ConsistentIdImplicitlyExplicitlyTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
@@ -83,6 +85,7 @@ import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
+import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
@@ -158,12 +161,6 @@ import org.junit.runners.Suite;
 
     DynamicProxySerializationMultiJvmSelfTest.class,
 
-    // Tests against configuration variations framework.
-    ParametersTest.class,
-    VariationsIteratorTest.class,
-    ConfigVariationsTestSuiteBuilderTest.class,
-    NotStringSystemPropertyTest.class,
-
     MarshallerContextLockingSelfTest.class,
     MarshallerContextSelfTest.class,
 
@@ -208,6 +205,19 @@ import org.junit.runners.Suite;
     ListeningTestLoggerTest.class,
 
     CacheLocalGetSerializationTest.class,
+
+    PluginNodeValidationTest.class,
+
+    // In-memory Distributed MetaStorage.
+    DistributedMetaStorageTest.class,
+
+    ConsistentIdImplicitlyExplicitlyTest.class,
+
+        // Tests against configuration variations framework.
+        ParametersTest.class,
+        VariationsIteratorTest.class,
+        NotStringSystemPropertyTest.class,
+        ConfigVariationsTestSuiteBuilderTest.class,
 })
 public class IgniteBasicTestSuite {
 }

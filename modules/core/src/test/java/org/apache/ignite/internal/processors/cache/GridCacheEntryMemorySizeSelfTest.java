@@ -38,8 +38,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -49,7 +47,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** Null reference size (optimized marshaller writes one byte for null reference). */
     private static final int NULL_REF_SIZE = 1;

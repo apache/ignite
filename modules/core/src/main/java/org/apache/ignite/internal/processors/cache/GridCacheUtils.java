@@ -1283,7 +1283,7 @@ public class GridCacheUtils {
      * @param e Ignite checked exception.
      * @return CacheException runtime exception, never null.
      */
-    @NotNull public static RuntimeException convertToCacheException(IgniteCheckedException e) {
+    public static @NotNull RuntimeException convertToCacheException(IgniteCheckedException e) {
         IgniteClientDisconnectedCheckedException disconnectedErr =
             e.getCause(IgniteClientDisconnectedCheckedException.class);
 

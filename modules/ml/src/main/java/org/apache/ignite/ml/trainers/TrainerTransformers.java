@@ -17,11 +17,6 @@
 
 package org.apache.ignite.ml.trainers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
@@ -38,6 +33,12 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Class containing various trainer transformers.
@@ -152,7 +153,7 @@ public class TrainerTransformers {
         // If we need to do projection, do it.
         if (mappings != null) {
             for (int i = 0; i < models.size(); i++)
-                models.get(i).setMapping(getProjector(mappings.get(i)));
+                models.get(i).setMapping(VectorUtils.getProjector(mappings.get(i)));
         }
 
         double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
@@ -172,22 +173,6 @@ public class TrainerTransformers {
      */
     public static int[] getMapping(int featuresVectorSize, int maximumFeaturesCntPerMdl, long seed) {
         return Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random(seed));
-    }
-
-    /**
-     * Get projector from index mapping.
-     *
-     * @param mapping Index mapping.
-     * @return Projector.
-     */
-    public static IgniteFunction<Vector, Vector> getProjector(int[] mapping) {
-        return v -> {
-            Vector res = VectorUtils.zeroes(mapping.length);
-            for (int i = 0; i < mapping.length; i++)
-                res.set(i, v.get(mapping[i]));
-
-            return res;
-        };
     }
 
     /**

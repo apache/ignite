@@ -36,14 +36,11 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.ORG;
 import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.ORG_COUNT;
 
 /** */
-@RunWith(JUnit4.class)
 public class InOperationExtractPartitionSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 8;

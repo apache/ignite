@@ -39,8 +39,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
@@ -48,7 +46,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 /**
  * Test cases for multi-threaded tests.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE2 = "cache2";
