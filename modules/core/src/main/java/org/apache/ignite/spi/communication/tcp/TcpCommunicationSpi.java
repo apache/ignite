@@ -164,6 +164,7 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationC
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NODE_STOPPING;
+import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.UNKNOWN_NODE;
 
 /**
  * <tt>TcpCommunicationSpi</tt> is default communication SPI which uses
@@ -537,9 +538,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         unknownNode = !((IgniteDiscoverySpi)discoverySpi).knownNode(sndId);
 
                     if (unknownNode) {
-                        U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId + ", ses=" + ses + ']');
-
-                        ses.close();
+                        U.warn(log, "Respond UNKNOWN_NODE and close incoming connection, unknown node [nodeId=" + sndId + ", ses=" + ses + ']');
+                        ses.send(new RecoveryLastReceivedMessage(UNKNOWN_NODE)).listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> fut) {
+                                ses.close();
+                            }
+                        });
                     }
                     else {
                         ses.send(new RecoveryLastReceivedMessage(NEED_WAIT)).listen(new CI1<IgniteInternalFuture<?>>() {
@@ -3354,6 +3358,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             return null;
                         else if (rcvCnt == NODE_STOPPING)
                             throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
+                        else if (rcvCnt == UNKNOWN_NODE)
+                            throw new ClusterTopologyCheckedException("Remote node doesn't observe current node in topology : " + node.id());
                         else if (rcvCnt == NEED_WAIT) {
                             long outOfTopDelay = timeoutHelper.getAndBackOffOutOfTopDelay();
 
@@ -3458,7 +3464,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         reconnectDelay = timeoutHelper.getAndBackoffReconnectDelay();
 
                     // check if timeout occured in case of unrecoverable exception
-                    // or will occur after sleep(reconnect) delay in future.
+                    // or will occur after sleep(reconnectDelay) in future.
                     if (timeoutHelper.checkTimeout(reconnectDelay)) {
                         U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
                                 "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
