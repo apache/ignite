@@ -193,6 +193,9 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTe
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
+import org.apache.ignite.internal.processors.query.KillQueryFromClientTest;
+import org.apache.ignite.internal.processors.query.KillQueryFromNeighbourTest;
+import org.apache.ignite.internal.processors.query.KillQueryTest;
 import org.apache.ignite.internal.processors.query.LazyQuerySelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
@@ -545,9 +548,15 @@ import org.junit.runners.Suite;
     GridCacheDynamicLoadOnClientTest.class,
     GridCacheDynamicLoadOnClientPersistentTest.class,
 
-        //Query history.
+    //Query history.
     SqlQueryHistorySelfTest.class,
     SqlQueryHistoryFromClientSelfTest.class,
+
+    //Cancellation of queries.
+    KillQueryTest.class,
+    KillQueryFromNeighbourTest.class,
+    KillQueryFromClientTest.class,
+
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }
