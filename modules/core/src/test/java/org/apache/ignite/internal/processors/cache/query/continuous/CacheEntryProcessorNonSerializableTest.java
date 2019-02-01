@@ -40,8 +40,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -56,7 +54,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTest {
     /** */
     private static final int EXPECTED_VALUE = 42;
@@ -437,7 +434,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     private void doTestInvokeTest(CacheConfiguration ccfg, TransactionConcurrency txConcurrency,
         TransactionIsolation txIsolation) {
         if (ccfg.getNearConfiguration() != null)
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         IgniteEx cln = grid(getServerNodeCount());
 

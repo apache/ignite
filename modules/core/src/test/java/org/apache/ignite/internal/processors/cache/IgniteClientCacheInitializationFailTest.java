@@ -66,14 +66,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test checks whether cache initialization error on client side
  * doesn't causes hangs and doesn't impact other caches.
  */
-@RunWith(JUnit4.class)
 public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractTest {
     /** Failed cache name. */
     private static final String CACHE_NAME = "cache";

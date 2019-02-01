@@ -58,7 +58,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     private static final String CACHE_NAME = "Person";
 
     /** */
-    private Ignite node;
+    private static Ignite node;
 
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -81,6 +81,8 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
         stopAllGrids();
 
         super.afterTestsStopped();
+
+        node = null;
     }
 
     /** {@inheritDoc} */

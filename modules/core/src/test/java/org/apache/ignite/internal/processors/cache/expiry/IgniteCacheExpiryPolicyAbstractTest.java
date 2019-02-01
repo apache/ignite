@@ -60,8 +60,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -74,7 +72,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private static final long TTL_FOR_EXPIRE = 500L;

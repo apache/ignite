@@ -17,16 +17,44 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
-import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.h2.result.Row;
+import org.h2.result.RowFactory;
+import org.h2.value.Value;
 
 /**
- *
+ * Plain row factory.
  */
-public interface GridH2SearchRow extends Row, MvccVersionAware {
+public class H2PlainRowFactory extends RowFactory {
     /**
-     * @return {@code True} for rows used for index search (as opposed to rows stored in {@link H2Tree}.
+     * @param v Value.
+     * @return Row.
      */
-    public boolean indexSearchRow();
+    public static Row create(Value v) {
+        return new H2PlainRowSingle(v);
+    }
+
+    /**
+     * @param data Values.
+     * @return Row.
+     */
+    public static Row create(Value... data) {
+        switch (data.length) {
+            case 0:
+                throw new IllegalStateException("Zero columns row.");
+
+            case 1:
+                return new H2PlainRowSingle(data[0]);
+
+            case 2:
+                return new H2PlainRowPair(data[0], data[1]);
+
+            default:
+                return new H2PlainRow(data);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Row createRow(Value[] data, int memory) {
+        return create(data);
+    }
 }

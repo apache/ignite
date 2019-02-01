@@ -23,14 +23,11 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_GETALL_AS_ARRAY;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /** */
-@RunWith(JUnit4.class)
 public class JettyRestProcessorGetAllAsArrayTest extends JettyRestProcessorCommonSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

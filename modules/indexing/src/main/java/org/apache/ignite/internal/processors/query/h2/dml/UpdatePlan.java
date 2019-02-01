@@ -48,7 +48,6 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.dml.UpdateMode.BULK_LOAD;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Update plan - where to take data to update cache from and how to construct new keys and values, if needed.
@@ -260,7 +259,7 @@ public final class UpdatePlan {
         Column[] tblCols = tbl.getColumns();
 
         // First 2 columns are _key and _val Skip 'em.
-        for (int i = DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
+        for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
             if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
                 continue;
 
@@ -332,8 +331,8 @@ public final class UpdatePlan {
             throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
         // Skip key and value - that's why we start off with 3rd column
-        for (int i = 0; i < tbl.getColumns().length - DEFAULT_COLUMNS_COUNT; i++) {
-            Column c = tbl.getColumn(i + DEFAULT_COLUMNS_COUNT);
+        for (int i = 0; i < tbl.getColumns().length - QueryUtils.DEFAULT_COLUMNS_COUNT; i++) {
+            Column c = tbl.getColumn(i + QueryUtils.DEFAULT_COLUMNS_COUNT);
 
             if (rowDesc.isKeyValueOrVersionColumn(c.getColumnId()))
                 continue;

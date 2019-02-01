@@ -40,8 +40,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
@@ -49,7 +47,6 @@ import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.recon
 /**
  * Tests for schema exchange between nodes.
  */
-@RunWith(JUnit4.class)
 public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
     /** Node on which filter should be applied (if any). */
     private static String filterNodeName;

@@ -61,6 +61,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
@@ -165,6 +166,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setFailureHandler(new StopNodeFailureHandler());
+
         if (disableScheduledVacuum)
             cfg.setMvccVacuumFrequency(Integer.MAX_VALUE);
 
@@ -217,6 +220,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        ccfg = null;
+        ccfgs = null;
 
         MvccProcessorImpl.coordinatorAssignClosure(null);
 
