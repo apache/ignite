@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode;
-import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SourceKey;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
@@ -84,9 +83,6 @@ public class GridH2QueryContext {
 
     /** */
     private int pageSize;
-
-    /** */
-    private CollocationModel qryCollocationMdl;
 
     /** */
     private MvccSnapshot mvccSnapshot;
@@ -159,20 +155,6 @@ public class GridH2QueryContext {
      */
     public long queryId() {
         return key.queryId();
-    }
-
-    /**
-     * @return Query collocation model.
-     */
-    public CollocationModel queryCollocationModel() {
-        return qryCollocationMdl;
-    }
-
-    /**
-     * @param qryCollocationMdl Query collocation model.
-     */
-    public void queryCollocationModel(CollocationModel qryCollocationMdl) {
-        this.qryCollocationMdl = qryCollocationMdl;
     }
 
     /**

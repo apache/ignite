@@ -22,9 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 import javax.cache.CacheException;
 
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
+import org.apache.ignite.internal.processors.query.h2.sql.SplitterContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.command.dml.Query;
@@ -629,29 +629,29 @@ public final class CollocationModel {
     }
 
     /**
-     * @param qctx Query context.
+     * @param ctx Splitter context.
      * @param info Sub-query info.
      * @param filters Filters.
      * @param filter Filter.
      * @param validate Query validation flag.
      * @return Collocation.
      */
-    public static CollocationModel buildCollocationModel(GridH2QueryContext qctx, SubQueryInfo info,
+    public static CollocationModel buildCollocationModel(SplitterContext ctx, SubQueryInfo info,
         TableFilter[] filters, int filter, boolean validate) {
         CollocationModel cm;
 
         if (info != null) {
             // Go up until we reach the root query.
-            cm = buildCollocationModel(qctx, info.getUpper(), info.getFilters(), info.getFilter(), validate);
+            cm = buildCollocationModel(ctx, info.getUpper(), info.getFilters(), info.getFilter(), validate);
         }
         else {
             // We are at the root query.
-            cm = qctx.queryCollocationModel();
+            cm = ctx.collocationModel();
 
             if (cm == null) {
                 cm = createChildModel(null, -1, null, true, validate);
 
-                qctx.queryCollocationModel(cm);
+                ctx.collocationModel(cm);
             }
         }
 

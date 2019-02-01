@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeStream;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SegmentKey;
+import org.apache.ignite.internal.processors.query.h2.sql.SplitterContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -76,7 +77,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.join.Distribute
 import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.buildCollocationModel;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_OK;
@@ -229,14 +229,13 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Multiplier.
      */
     public final int getDistributedMultiplier(Session ses, TableFilter[] filters, int filter) {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
         // We do optimizations with respect to distributed joins only on PREPARE stage only.
         // Notice that we check for isJoinBatchEnabled, because we can do multiple different
         // optimization passes on PREPARE stage.
         // Query expressions can not be distributed as well.
-        if (qctx == null || qctx.type() != PREPARE || qctx.distributedJoinMode() == OFF ||
-            !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
+        SplitterContext ctx = SplitterContext.get();
+
+        if (!ctx.distributedJoins() || !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
             return CollocationModel.MULTIPLIER_COLLOCATED;
 
         // We have to clear this cache because normally sub-query plan cost does not depend on anything
@@ -246,7 +245,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         assert filters != null;
 
-        CollocationModel c = buildCollocationModel(qctx, ses.getSubQueryInfo(), filters, filter, false);
+        CollocationModel c = buildCollocationModel(ctx, ses.getSubQueryInfo(), filters, filter, false);
 
         return c.calculateMultiplier();
     }
