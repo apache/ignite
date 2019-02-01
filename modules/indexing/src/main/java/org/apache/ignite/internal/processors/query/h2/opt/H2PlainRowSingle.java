@@ -17,20 +17,49 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.ArrayList;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.h2.index.Index;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.value.Value;
 
 /**
- * Factory for system table indexes.
+ * Single value row.
  */
-public interface GridH2SystemIndexFactory {
+public class H2PlainRowSingle extends H2Row {
+    /** */
+    private Value v;
+
     /**
-     * Create list of indexes. First must be primary key, after that all unique indexes and only then non-unique
-     * indexes. All indexes must be subtypes of {@link H2TreeIndexBase}.
-     *
-     * @param tbl Table to create indexes for.
-     * @return List of indexes.
+     * @param v Value.
      */
-    ArrayList<Index> createSystemIndexes(GridH2Table tbl);
+    public H2PlainRowSingle(Value v) {
+        this.v = v;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getColumnCount() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Value getValue(int idx) {
+        assert idx == 0 : idx;
+
+        return v;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setValue(int idx, Value v) {
+        assert idx == 0 : idx;
+
+        this.v = v;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean indexSearchRow() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(H2PlainRowSingle.class, this);
+    }
 }

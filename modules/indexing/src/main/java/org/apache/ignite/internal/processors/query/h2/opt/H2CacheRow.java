@@ -19,8 +19,12 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.value.Value;
@@ -29,18 +33,12 @@ import org.h2.value.ValueNull;
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
  */
-public class GridH2KeyValueRowOnheap extends GridH2Row {
-    /** */
-    public static final int DEFAULT_COLUMNS_COUNT = 2;
+public class H2CacheRow extends H2Row implements CacheDataRow {
+    /** H2 row descriptor. */
+    private final GridH2RowDescriptor desc;
 
-    /** Key column. */
-    public static final int KEY_COL = 0;
-
-    /** Value column. */
-    public static final int VAL_COL = 1;
-
-    /** */
-    protected final GridH2RowDescriptor desc;
+    /** Cache row. */
+    private final CacheDataRow row;
 
     /** */
     private Value[] valCache;
@@ -51,29 +49,32 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
      * @param desc Row descriptor.
      * @param row Row.
      */
-    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, CacheDataRow row) {
-        super(row);
-
+    public H2CacheRow(GridH2RowDescriptor desc, CacheDataRow row) {
         this.desc = desc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean indexSearchRow() {
-        return false;
+        this.row = row;
     }
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() {
-        return DEFAULT_COLUMNS_COUNT + desc.fieldsCount();
+        if (removedRow())
+            return 1;
+
+        return QueryUtils.DEFAULT_COLUMNS_COUNT + desc.fieldsCount();
     }
 
     /** {@inheritDoc} */
     @Override public Value getValue(int col) {
+        if (removedRow()) {
+            assert col == 0 : col;
+
+            return keyWrapped();
+        }
+
         switch (col) {
-            case KEY_COL:
+            case QueryUtils.KEY_COL:
                 return keyWrapped();
 
-            case VAL_COL:
+            case QueryUtils.VAL_COL:
                 return valueWrapped();
 
             default:
@@ -82,7 +83,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
                 else if (desc.isValueAliasColumn(col))
                     return valueWrapped();
 
-                return getValue0(col - DEFAULT_COLUMNS_COUNT);
+                return getValue0(col - QueryUtils.DEFAULT_COLUMNS_COUNT);
         }
     }
 
@@ -100,10 +101,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
         Object res = desc.columnValue(row.key(), row.value(), col);
 
-        if (res == null)
-            v = ValueNull.INSTANCE;
-        else
-            v = wrap(res, desc.fieldType(col));
+        v = res == null ? ValueNull.INSTANCE : wrap(res, desc.fieldType(col));
 
         setCached(col, v);
 
@@ -114,14 +112,14 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
      * Prepare values cache.
      */
     public void prepareValuesCache() {
-        this.valCache = new Value[desc.fieldsCount()];
+        valCache = new Value[desc.fieldsCount()];
     }
 
     /**
      * Clear values cache.
      */
     public void clearValuesCache() {
-        this.valCache = null;
+        valCache = null;
     }
 
     /**
@@ -175,6 +173,133 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         }
     }
 
+    /**
+     * @return {@code True} if this is removed row (doesn't have value).
+     */
+    private boolean removedRow() {
+        return row.value() == null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject key() {
+        return row.key();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void key(KeyCacheObject key) {
+        row.key(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject value() {
+        return row.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion version() {
+        return row.version();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return row.partition();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long expireTime() {
+        return row.expireTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long link() {
+        return row.link();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void link(long link) {
+        row.link(link);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hash() {
+        return row.hash();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return row.cacheId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCoordinatorVersion() {
+        return row.mvccCoordinatorVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCounter() {
+        return row.mvccCounter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int mvccOperationCounter() {
+        return row.mvccOperationCounter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte mvccTxState() {
+        return row.mvccTxState();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long newMvccCoordinatorVersion() {
+        return row.newMvccCoordinatorVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long newMvccCounter() {
+        return row.newMvccCounter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int newMvccOperationCounter() {
+        return row.newMvccOperationCounter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte newMvccTxState() {
+        return row.newMvccTxState();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean indexSearchRow() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setKey(long key) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setValue(int idx, Value v) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
+        throw new UnsupportedOperationException();
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         SB sb = new SB("Row@");
@@ -190,10 +315,10 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         sb.a(" ][ ");
 
         if (v != null) {
-            for (int i = DEFAULT_COLUMNS_COUNT, cnt = getColumnCount(); i < cnt; i++) {
+            for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT, cnt = getColumnCount(); i < cnt; i++) {
                 v = getValue(i);
 
-                if (i != DEFAULT_COLUMNS_COUNT)
+                if (i != QueryUtils.DEFAULT_COLUMNS_COUNT)
                     sb.a(", ");
 
                 if (!desc.isKeyValueOrVersionColumn(i))
@@ -204,30 +329,5 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         sb.a(" ]");
 
         return sb.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setKey(long key) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setValue(int idx, Value v) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public final int hashCode() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int size() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int headerSize() {
-        throw new UnsupportedOperationException();
     }
 }
