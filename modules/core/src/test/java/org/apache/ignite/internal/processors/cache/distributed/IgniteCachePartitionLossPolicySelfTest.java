@@ -60,8 +60,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -71,26 +69,25 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
+    private static boolean client;
 
     /** */
-    private PartitionLossPolicy partLossPlc;
+    private static PartitionLossPolicy partLossPlc;
 
     /** */
-    private int backups;
+    private static int backups;
 
     /** */
-    private final AtomicBoolean delayPartExchange = new AtomicBoolean(false);
+    private static final AtomicBoolean delayPartExchange = new AtomicBoolean(false);
 
     /** */
     private final TopologyChanger killSingleNode = new TopologyChanger(
         false, singletonList(3), asList(0, 1, 2, 4), 0);
 
     /** */
-    private boolean isPersistenceEnabled;
+    private static boolean isPersistenceEnabled;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

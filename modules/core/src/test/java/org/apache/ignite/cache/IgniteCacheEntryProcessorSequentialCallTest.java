@@ -32,12 +32,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "cache";

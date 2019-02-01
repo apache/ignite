@@ -41,13 +41,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for streaming via thin driver.
  */
-@RunWith(JUnit4.class)
 public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSelfTest {
     /** */
     protected int batchSize = 17;

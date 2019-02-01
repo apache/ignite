@@ -31,13 +31,10 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests affinity assignment for different affinity types.
  */
-@RunWith(JUnit4.class)
 public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int PARTS = 256;
