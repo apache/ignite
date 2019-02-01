@@ -24,12 +24,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
@@ -64,16 +62,14 @@ public class LinearRegressionLSQRTrainerExample {
 
             System.out.println(">>> Perform the training to get the model.");
 
-            /**
-             * This object is used to extract features and vectors from upstream entities which are
-             * essentialy tuples of the form (key, value) (in our case (Integer, Vector)).
-             * Key part of tuple in our example is ignored.
-             * Label is extracted from 0th entry of the value (which is Vector)
-             * and features are all remaining vector part. Alternatively we could use
-             * {@link DatasetTrainer#fit(Ignite, IgniteCache, IgniteBiFunction, IgniteBiFunction)} method call
-             * where there is a separate lambda for extracting label from (key, value) and a separate labmda for
-             * extracting features.
-             */
+             // This object is used to extract features and vectors from upstream entities which are
+             // essentialy tuples of the form (key, value) (in our case (Integer, Vector)).
+             // Key part of tuple in our example is ignored.
+             // Label is extracted from 0th entry of the value (which is ector)
+             // and features are all remaining vector part. Alternatively we could use
+             // DatasetTrainer#fit(Ignite, IgniteCache, IgniteBiFunction, IgniteBiFunction) method call
+             // where there is a separate lambda for extracting label from (key, value) and a separate labmda for
+             // extracting features.
             FeatureLabelExtractor<Integer, Vector, Double> extractor =
                 (k, v) -> new LabeledVector<>(v.copyOfRange(1, v.size()), v.get(0));
 
