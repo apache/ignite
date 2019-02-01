@@ -27,14 +27,14 @@ import org.h2.value.Value;
 /**
  * Row with locking support needed for unique key conflicts resolution.
  */
-public abstract class H2UpdateRowAdapter extends H2Row implements CacheDataRow {
+public abstract class H2CacheRowAdapter extends H2Row implements CacheDataRow {
     /** Row. */
     protected final CacheDataRow row;
 
     /**
      * @param row Row.
      */
-    H2UpdateRowAdapter(CacheDataRow row) {
+    H2CacheRowAdapter(CacheDataRow row) {
         this.row = row;
     }
 

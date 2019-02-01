@@ -35,7 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
-import org.apache.ignite.internal.processors.query.h2.opt.H2QueryRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
@@ -363,12 +363,12 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
         grid().cache(cacheName)
             .query(new SqlQuery(Value.class, "_key = " + key)).getAll().size();
 
-        ConcurrentLinkedHashMap<Long, H2QueryRow> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
+        ConcurrentLinkedHashMap<Long, H2CacheRowAdapter> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
 
-        for (Map.Entry<Long, H2QueryRow> e : rowsMap.entrySet()) {
-            H2QueryRow val = e.getValue();
+        for (Map.Entry<Long, H2CacheRowAdapter> e : rowsMap.entrySet()) {
+            H2CacheRowAdapter val = e.getValue();
 
-            KeyCacheObject rowKey = (KeyCacheObject)val.key();
+            KeyCacheObject rowKey = val.key();
 
             if ((Integer)rowKey.value(null, false) == key)
                 return e.getKey();

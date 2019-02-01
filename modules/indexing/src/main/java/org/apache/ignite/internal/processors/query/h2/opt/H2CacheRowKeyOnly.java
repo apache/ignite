@@ -23,7 +23,7 @@ import org.h2.value.Value;
 /**
  * Heap-based key-only row for remove operations.
  */
-public class H2UpdateRowKeyOnly extends H2UpdateRowAdapter {
+public class H2CacheRowKeyOnly extends H2CacheRowAdapter {
     /** */
     private Value key;
 
@@ -31,7 +31,7 @@ public class H2UpdateRowKeyOnly extends H2UpdateRowAdapter {
      * @param row Row.
      * @param key Key.
      */
-    public H2UpdateRowKeyOnly(CacheDataRow row, Value key) {
+    public H2CacheRowKeyOnly(CacheDataRow row, Value key) {
         super(row);
 
         this.key = key;

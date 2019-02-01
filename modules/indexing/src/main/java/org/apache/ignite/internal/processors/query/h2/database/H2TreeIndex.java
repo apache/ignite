@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRowAdapter;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsType;
@@ -302,10 +302,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public H2UpdateRowAdapter put(H2UpdateRowAdapter row) {
+    @Override public H2CacheRowAdapter put(H2CacheRowAdapter row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-            H2Tree.updateMode(true);
 
             int seg = segmentForRow(row);
 
@@ -313,22 +312,20 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-            return (H2UpdateRowAdapter)tree.put(row);
+            return (H2CacheRowAdapter)tree.put(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
-            H2Tree.updateMode(false);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(H2UpdateRowAdapter row) {
+    @Override public boolean putx(H2CacheRowAdapter row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-            H2Tree.updateMode(true);
 
             int seg = segmentForRow(row);
 
@@ -343,7 +340,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
-            H2Tree.updateMode(false);
         }
     }
 
@@ -353,7 +349,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-            H2Tree.updateMode(true);
 
             int seg = segmentForRow(row);
 
@@ -368,7 +363,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
-            H2Tree.updateMode(false);
         }
     }
 

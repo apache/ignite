@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRowAdapter;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 
@@ -47,7 +47,7 @@ public class IndexBuildClosure implements SchemaIndexCacheVisitorClosure {
 
     /** {@inheritDoc} */
     @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-        H2UpdateRowAdapter row0 = rowDesc.createRowForUpdate(row);
+        H2CacheRowAdapter row0 = rowDesc.createRow(row);
 
         idx.putx(row0);
     }

@@ -76,7 +76,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     private final MVRTreeMap<Long>[] segments;
 
     /** */
-    private final Map<Long, H2UpdateRowAdapter> idToRow = new HashMap<>();
+    private final Map<Long, H2CacheRowAdapter> idToRow = new HashMap<>();
 
     /** */
     private final Map<Value, Long> keyToId = new HashMap<>();
@@ -159,8 +159,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public H2UpdateRowAdapter put(H2UpdateRowAdapter row) {
-        assert row instanceof H2UpdateRow : "requires key to be at 0";
+    @Override public H2CacheRowAdapter put(H2CacheRowAdapter row) {
+        assert row instanceof H2CacheRow : "requires key to be at 0";
 
         Lock l = lock.writeLock();
 
@@ -188,7 +188,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
                 keyToId.put(key, rowId);
             }
 
-            H2UpdateRowAdapter old = idToRow.put(rowId, row);
+            H2CacheRowAdapter old = idToRow.put(rowId, row);
 
             segments[seg].put(getEnvelope(row, rowId), rowId);
 
@@ -203,8 +203,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(H2UpdateRowAdapter row) {
-        H2UpdateRowAdapter old = put(row);
+    @Override public boolean putx(H2CacheRowAdapter row) {
+        H2CacheRowAdapter old = put(row);
 
         return old != null;
     }
@@ -229,7 +229,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @param row Row.
      * @return Old row.
      */
-    private H2UpdateRowAdapter remove(SearchRow row) {
+    private H2CacheRowAdapter remove(SearchRow row) {
         Lock l = lock.writeLock();
 
         l.lock();
@@ -245,7 +245,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             assert rowId != null;
 
-            H2UpdateRowAdapter oldRow = idToRow.remove(rowId);
+            H2CacheRowAdapter oldRow = idToRow.remove(rowId);
 
             assert oldRow != null;
 
@@ -352,10 +352,10 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
         IndexingQueryCacheFilter qryCacheFilter = qryFilter != null ? qryFilter.forCache(getTable().cacheName()) : null;
 
-        List<H2UpdateRowAdapter> rows = new ArrayList<>();
+        List<H2CacheRowAdapter> rows = new ArrayList<>();
 
         do {
-            H2UpdateRowAdapter row = idToRow.get(i.next().getId());
+            H2CacheRowAdapter row = idToRow.get(i.next().getId());
 
             assert row != null;
 

@@ -162,41 +162,24 @@ public class GridH2RowDescriptor {
     }
 
     /**
-     * Create new row.
-     *
-     * @param dataRow Data row.
-     * @return Row.
-     */
-    public H2QueryRow createRow(CacheDataRow dataRow) {
-        return new H2QueryRow(
-            this,
-            dataRow.key(),
-            dataRow.value(),
-            dataRow.link(),
-            dataRow.cacheId(),
-            dataRow.expireTime()
-        );
-    }
-
-    /**
      * Create new row for update operation.
      *
      * @param dataRow Data row.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public H2UpdateRowAdapter createRowForUpdate(CacheDataRow dataRow) throws IgniteCheckedException {
-        H2UpdateRowAdapter row;
+    public H2CacheRowAdapter createRow(CacheDataRow dataRow) throws IgniteCheckedException {
+        H2CacheRowAdapter row;
 
         try {
             if (dataRow.value() == null) {
                 Value key = H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType);
 
                 // Only can happen for remove operation, can create simple search row.
-                row = new H2UpdateRowKeyOnly(dataRow, key);
+                row = new H2CacheRowKeyOnly(dataRow, key);
             }
             else
-                row = new H2UpdateRow(this, dataRow);
+                row = new H2CacheRow(this, dataRow);
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +

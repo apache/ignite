@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.List;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRowAdapter;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -78,12 +78,12 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public H2UpdateRowAdapter put(H2UpdateRowAdapter row) {
+    @Override public H2CacheRowAdapter put(H2CacheRowAdapter row) {
         throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(H2UpdateRowAdapter row) {
+    @Override public boolean putx(H2CacheRowAdapter row) {
         throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 

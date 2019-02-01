@@ -38,11 +38,10 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.H2QueryRow;
-import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.table.IndexColumn;
@@ -213,17 +212,6 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
         created = initNew;
     }
 
-    private static final ThreadLocal<GridTuple<Boolean>> UPDATE_MODE =
-        ThreadLocal.withInitial(() -> new GridTuple<>(false));
-
-    private static boolean updateMode() {
-        return UPDATE_MODE.get().get();
-    }
-
-    public static void updateMode(boolean val) {
-        UPDATE_MODE.get().set(val);
-    }
-
     /**
      * Create row from link.
      *
@@ -232,11 +220,8 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @throws IgniteCheckedException if failed.
      */
     public H2Row createRowFromLink(long link) throws IgniteCheckedException {
-        if (updateMode())
-            return rowStore.getRowForUpdate(link);
-
         if (rowCache != null) {
-            H2QueryRow row = rowCache.get(link);
+            H2CacheRowAdapter row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getRow(link);
@@ -259,11 +244,8 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @throws IgniteCheckedException if failed.
      */
     public H2Row createRowFromLink(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
-        if (updateMode())
-            return rowStore.getMvccRowForUpdate(link, mvccCrdVer, mvccCntr, mvccOpCntr);
-
         if (rowCache != null) {
-            H2QueryRow row = rowCache.get(link);
+            H2CacheRowAdapter row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
@@ -465,7 +447,7 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
     @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
     private void inlineSizeRecomendation(org.h2.result.SearchRow row) {
         //Do the check only for put operations.
-        if(!(row instanceof H2UpdateRow))
+        if(!(row instanceof H2CacheRow))
             return;
 
         Long invokeCnt = inlineSizeCalculationCntr.get();
