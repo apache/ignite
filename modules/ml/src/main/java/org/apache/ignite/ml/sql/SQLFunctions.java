@@ -38,16 +38,19 @@ public class SQLFunctions {
 
     /** Default LRU model cache. */
     // TODO: IGNITE-11163: Add hart beat tracker to DistributedInfModel.
-    private static final Map<String, Model<Vector, Double>> cache = Collections.synchronizedMap(
-        new LRUCache<>(LRU_CACHE_SIZE, Model::close)
-    );
+    private static final Map<String, Model<Vector, Double>> cache = new LRUCache<>(LRU_CACHE_SIZE, Model::close);
 
     static {
         Thread invalidationThread = new Thread(() -> {
             while (Thread.currentThread().isInterrupted())
                 LockSupport.parkNanos(60_000_000_000L);
 
-            cache.clear();
+            synchronized (cache) {
+                for (Model<Vector, Double> mdl : cache.values())
+                    mdl.close();
+
+                cache.clear();
+            }
         });
 
         invalidationThread.setDaemon(true);
@@ -64,10 +67,14 @@ public class SQLFunctions {
      */
     @QuerySqlFunction
     public static double predict(String mdl, Double... x) {
-        Model<Vector, Double> infMdl = cache.computeIfAbsent(
-            mdl,
-            key -> IgniteModelStorageUtil.getModel(Ignition.ignite(), mdl)
-        );
+        Model<Vector, Double> infMdl;
+
+        synchronized (cache) {
+            infMdl = cache.computeIfAbsent(
+                mdl,
+                key -> IgniteModelStorageUtil.getModel(Ignition.ignite(), mdl)
+            );
+        }
 
         return infMdl.predict(VectorUtils.of(x));
     }
