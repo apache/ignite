@@ -190,58 +190,58 @@ public class WorkersRegistry implements GridWorkerListener {
 
             int workersChecked = 0;
 
-//            while (workersChecked < workersToCheck) {
-//                if (!checkIter.hasNext())
-//                    checkIter = registeredWorkers.entrySet().iterator();
-//
-//                GridWorker worker;
-//
-//                try {
-//                    worker = checkIter.next().getValue();
-//                }
-//                catch (NoSuchElementException e) {
-//                    return;
-//                }
-//
-//                Thread runner = worker.runner();
-//
-//                if (runner != null && runner != Thread.currentThread() && !worker.isCancelled()) {
-//                    if (!runner.isAlive()) {
-//                        // In normal operation GridWorker implementation guarantees:
-//                        // worker termination happens before its removal from registeredWorkers.
-//                        // That is, if worker is dead, but still resides in registeredWorkers
-//                        // then something went wrong, the only extra thing is to test
-//                        // whether the iterator refers to actual state of registeredWorkers.
-//                        GridWorker worker0 = registeredWorkers.get(runner.getName());
-//
-//                        if (worker0 != null && worker0 == worker)
-//                            workerFailedHnd.apply(worker, SYSTEM_WORKER_TERMINATION);
-//                    }
-//
-//                    long heartbeatDelay = U.currentTimeMillis() - worker.heartbeatTs();
-//
-//                    if (heartbeatDelay > sysWorkerBlockedTimeout) {
-//                        GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
-//
-//                        if (worker0 != null && worker0 == worker) {
-//                            log.error("Blocked system-critical thread has been detected. " +
-//                                "This can lead to cluster-wide undefined behaviour " +
-//                                "[threadName=" + worker.name() + ", blockedFor=" + heartbeatDelay / 1000 + "s]");
-//
-//                            U.dumpThread(worker.runner(), log);
-//
-//                            workerFailedHnd.apply(worker, SYSTEM_WORKER_BLOCKED);
-//                        }
-//
-//                        // Iterator should not be reset:
-//                        // otherwise we'll never iterate beyond the blocked worker,
-//                        // that may stay in the map for indefinite time.
-//                    }
-//                }
-//
-//                if (runner != Thread.currentThread())
-//                    workersChecked++;
-//            }
+            while (workersChecked < workersToCheck) {
+                if (!checkIter.hasNext())
+                    checkIter = registeredWorkers.entrySet().iterator();
+
+                GridWorker worker;
+
+                try {
+                    worker = checkIter.next().getValue();
+                }
+                catch (NoSuchElementException e) {
+                    return;
+                }
+
+                Thread runner = worker.runner();
+
+                if (runner != null && runner != Thread.currentThread() && !worker.isCancelled()) {
+                    if (!runner.isAlive()) {
+                        // In normal operation GridWorker implementation guarantees:
+                        // worker termination happens before its removal from registeredWorkers.
+                        // That is, if worker is dead, but still resides in registeredWorkers
+                        // then something went wrong, the only extra thing is to test
+                        // whether the iterator refers to actual state of registeredWorkers.
+                        GridWorker worker0 = registeredWorkers.get(runner.getName());
+
+                        if (worker0 != null && worker0 == worker)
+                            workerFailedHnd.apply(worker, SYSTEM_WORKER_TERMINATION);
+                    }
+
+                    long heartbeatDelay = U.currentTimeMillis() - worker.heartbeatTs();
+
+                    if (heartbeatDelay > sysWorkerBlockedTimeout) {
+                        GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
+
+                        if (worker0 != null && worker0 == worker) {
+                            log.error("Blocked system-critical thread has been detected. " +
+                                "This can lead to cluster-wide undefined behaviour " +
+                                "[threadName=" + worker.name() + ", blockedFor=" + heartbeatDelay / 1000 + "s]");
+
+                            U.dumpThread(worker.runner(), log);
+
+                            workerFailedHnd.apply(worker, SYSTEM_WORKER_BLOCKED);
+                        }
+
+                        // Iterator should not be reset:
+                        // otherwise we'll never iterate beyond the blocked worker,
+                        // that may stay in the map for indefinite time.
+                    }
+                }
+
+                if (runner != Thread.currentThread())
+                    workersChecked++;
+            }
         }
         finally {
             boolean set = lastChecker.compareAndSet(null, Thread.currentThread());
