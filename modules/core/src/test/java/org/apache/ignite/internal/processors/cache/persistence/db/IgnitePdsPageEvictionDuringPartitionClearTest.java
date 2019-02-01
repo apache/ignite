@@ -34,9 +34,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -90,8 +88,6 @@ public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbs
      */
     @Test
     public void testPageEvictionOnNodeStart() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
-
         for (int r = 0; r < 3; r++) {
             cleanPersistenceDir();
 
