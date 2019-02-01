@@ -64,18 +64,6 @@ public class GridH2QueryContext {
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
      * @param qryId The query ID.
-     * @param type Query type.
-     */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
-        assert type != MAP;
-
-        key = new QueryContextKey(locNodeId, nodeId, qryId, 0, type);
-    }
-
-    /**
-     * @param locNodeId Local node ID.
-     * @param nodeId The node who initiated the query.
-     * @param qryId The query ID.
      * @param segmentId Index segment ID.
      * @param type Query type.
      */

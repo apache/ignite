@@ -542,7 +542,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-            final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter);
+            final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, 0, LOCAL).filter(filter);
 
             boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(p);
 

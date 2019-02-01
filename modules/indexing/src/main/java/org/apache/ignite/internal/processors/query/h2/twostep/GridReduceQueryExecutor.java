@@ -759,7 +759,7 @@ public class GridReduceQueryExecutor {
 
                         H2Utils.setupConnection(r.connection(), false, enforceJoinOrder);
 
-                        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE));
+                        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, 0, REDUCE));
 
                         try {
                             if (qry.explain())
