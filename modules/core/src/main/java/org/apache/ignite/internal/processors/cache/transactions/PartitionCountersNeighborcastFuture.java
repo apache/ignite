@@ -31,8 +31,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +47,7 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
     /** */
     private final IgniteUuid futId = IgniteUuid.randomUuid();
     /** */
+    @GridToStringExclude
     private boolean trackable = true;
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
@@ -206,8 +209,7 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        // t0d0 convert to string with debug info
-        return "PartitionCountersNeighborcastFuture";
+        return S.toString(PartitionCountersNeighborcastFuture.class, this, "innerFuts", futures());
     }
 
     /**
@@ -220,6 +222,11 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
         /** */
         private MiniFuture(UUID nodeId) {
             this.nodeId = nodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MiniFuture.class, this, "done", isDone());
         }
     }
 }
