@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -52,15 +51,6 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
 
     /** */
     protected boolean clientMode;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            assert atomicityMode() != ATOMIC;
-
-            fail("https://issues.apache.org/jira/browse/IGNITE-10359");
-        }
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

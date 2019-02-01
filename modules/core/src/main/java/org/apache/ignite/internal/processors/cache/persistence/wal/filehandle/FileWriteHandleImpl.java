@@ -149,6 +149,9 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     /** WAL writer worker. */
     private final FileHandleManagerImpl.WALWriter walWriter;
 
+    /** Switch segment record offset. */
+    private int switchSegmentRecordOffset;
+
     /**
      * @param cctx Context.
      * @param fileIO I/O file interface to use
@@ -490,8 +493,13 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
                         WALPointer segRecPtr = addRecord(segmentRecord);
 
-                        if (segRecPtr != null)
-                            fsync((FileWALPointer)segRecPtr);
+                        if (segRecPtr != null) {
+                            FileWALPointer filePtr = (FileWALPointer)segRecPtr;
+
+                            fsync(filePtr);
+
+                            switchSegmentRecordOffset = filePtr.fileOffset() + switchSegmentRecSize;
+                        }
                     }
 
                     if (mmap) {
@@ -597,5 +605,10 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         catch (IOException e) {
             return "{Failed to read channel position: " + e.getMessage() + '}';
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getSwitchSegmentRecordOffset() {
+        return switchSegmentRecordOffset;
     }
 }
