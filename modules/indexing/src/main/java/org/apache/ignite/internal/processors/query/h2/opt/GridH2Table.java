@@ -104,7 +104,7 @@ public class GridH2Table extends TableBase {
      * Session -> EXCLUSIVE_LOCK (-1L) - for exclusive locks.
      * Session -> (table version) - for shared locks.
      */
-    private final ConcurrentMap<Session, Long> sessions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Session, SessionLock> sessions = new ConcurrentHashMap<>();
 
     /** */
     private final IndexColumn affKeyCol;
@@ -362,13 +362,13 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
         // In accordance with base method semantics, we'll return true if we were already exclusively locked.
-        Long lockVer = sessions.get(ses);
+        SessionLock sesLock = sessions.get(ses);
 
-        if (lockVer != null) {
-            if (EXCLUSIVE_LOCK == lockVer)
+        if (sesLock != null) {
+            if (sesLock.isExclusive())
                 return true;
 
-            if (ver.get() != lockVer)
+            if (ver.get() != sesLock.version())
                 throw new QueryRetryException(getName());
 
             return false;
@@ -384,7 +384,7 @@ public class GridH2Table extends TableBase {
         }
 
         // Mutate state.
-        sessions.put(ses, exclusive ? EXCLUSIVE_LOCK : ver.longValue());
+        sessions.put(ses, exclusive ? SessionLock.exclusiveLock() : SessionLock.sharedLock(ver.longValue()));
 
         ses.addLock(this);
 
@@ -395,12 +395,12 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
-        Long lockVer = sessions.remove(ses);
+        SessionLock sesLock = sessions.remove(ses);
 
 //        System.out.println(Thread.currentThread().getName() + "+++ UNLOCK " + getName() + " " + ses);
 
-        if (lockVer != null)
-            unlock(EXCLUSIVE_LOCK == lockVer);
+        if (sesLock != null)
+            unlock(sesLock.isExclusive());
     }
 
     /**
@@ -410,18 +410,42 @@ public class GridH2Table extends TableBase {
         if (destroyed)
             return;
 
-        Long lockVer = sessions.get(ses);
+        SessionLock sesLock = sessions.get(ses);
 
         // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
         // at the destroy() method.
-        assert destroyed || lockVer != null && EXCLUSIVE_LOCK != lockVer
-            : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + lockVer + ']';
+        assert destroyed || sesLock != null && !sesLock.isExclusive()
+            : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + sesLock.ver + ']';
 
-        if (lockVer != null)
+        if (sesLock != null && !sesLock.locked) {
             lock(false);
+
+            sesLock.locked = true;
+        }
 
 //        System.out.println(Thread.currentThread().getName() + "+++ READ LOCK " + getName() + " " + ses);
     }
+
+    /**
+     * Release table lock.
+     *
+     * @param ses H2 session.
+     */
+    private void unlockReadInternal(Session ses) {
+        SessionLock sesLock = sessions.get(ses);
+
+        // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
+        // at the destroy() method.
+        assert destroyed || sesLock != null && !sesLock.isExclusive()
+            : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + sesLock.ver + ']';
+
+        if (sesLock != null && sesLock.locked) {
+            sesLock.locked = false;
+
+            unlock(false);
+        }
+    }
+
 
     /**
      * @param ses H2 session.
@@ -430,14 +454,14 @@ public class GridH2Table extends TableBase {
         if (destroyed)
             throw new QueryRetryException(getName());
 
-        Long lockVer = sessions.get(ses);
+        SessionLock sesLock = sessions.get(ses);
 
         // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
         // at the destroy() method.
-        assert destroyed || lockVer != null && EXCLUSIVE_LOCK != lockVer
-            : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + lockVer + ']';
+        assert destroyed || sesLock != null && !sesLock.isExclusive()
+            : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + sesLock.version() + ']';
 
-        if (ver.longValue() != lockVer)
+        if (ver.longValue() != sesLock.version())
             throw new QueryRetryException(getName());
     }
 
@@ -1290,7 +1314,7 @@ public class GridH2Table extends TableBase {
             if (t instanceof GridH2Table) {
                 try {
 //                    System.out.println(Thread.currentThread().getName() + "+++ UNLOCK " + t.getName() + " "+ s);
-                    ((GridH2Table)t).unlock(false);
+                    ((GridH2Table)t).unlockReadInternal(s);
                 }
                 catch (IllegalMonitorStateException e) {
                     // Swallow illegal unlock all to guarantee unlock all tables on thread interrupt etc.
@@ -1316,6 +1340,55 @@ public class GridH2Table extends TableBase {
         for (Table t : s.getLocks()) {
             if (t instanceof GridH2Table)
                 ((GridH2Table)t).checkVersion(s);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SessionLock {
+        /** Version. */
+        final long ver;
+
+        /** Locked by current thread flag. */
+        boolean locked;
+
+        /**
+         * Constructor for shared lock.
+         *
+         * @param ver Table version.
+         */
+        private SessionLock(long ver) {
+            this.ver = ver;
+            locked = true;
+        }
+
+        /**
+         * @return Shared lock instance.
+         */
+        static SessionLock sharedLock(long ver) {
+            return new SessionLock(ver);
+        }
+
+        /**
+         * @return Exclusive lock instance.
+         */
+        static SessionLock exclusiveLock() {
+            return new SessionLock(EXCLUSIVE_LOCK);
+        }
+
+        /**
+         * @return {@code true} if exclusive lock;
+         */
+        boolean isExclusive() {
+            return ver == EXCLUSIVE_LOCK;
+        }
+
+        /**
+         * @return Table version of the firts lock.
+         */
+        long version() {
+            return ver;
         }
     }
 }
