@@ -67,25 +67,25 @@ public final class X {
 
     /** Time span dividers. */
     private static final long[] SPAN_DIVS = new long[] {
-        MILLIS_IN_SECOND, SECONDS_IN_MINUTE, MINUTES_IN_HOUR, HOURS_IN_DAY};
+            MILLIS_IN_SECOND, SECONDS_IN_MINUTE, MINUTES_IN_HOUR, HOURS_IN_DAY};
 
     /** Millis in day. */
     private static final long MILLIS_IN_DAY = MILLIS_IN_SECOND * SECONDS_IN_MINUTE * MINUTES_IN_HOUR * HOURS_IN_DAY;
 
     /** The names of methods commonly used to access a wrapped exception. */
     private static final String[] CAUSE_MTD_NAMES = new String[] {
-        "getCause",
-        "getNextException",
-        "getTargetException",
-        "getException",
-        "getSourceException",
-        "getRootCause",
-        "getCausedByException",
-        "getNested",
-        "getLinkedException",
-        "getNestedException",
-        "getLinkedCause",
-        "getThrowable"
+            "getCause",
+            "getNextException",
+            "getTargetException",
+            "getException",
+            "getSourceException",
+            "getRootCause",
+            "getCausedByException",
+            "getNested",
+            "getLinkedException",
+            "getNestedException",
+            "getLinkedCause",
+            "getThrowable"
     };
 
     /** The Method object for Java 1.4 getCause. */
@@ -224,9 +224,9 @@ public final class X {
             t[i] = sp % SPAN_DIVS[i];
 
         return (t[3] < 10 ? "0" + t[3] : Long.toString(t[3])) + ':' +
-            (t[2] < 10 ? "0" + t[2] : Long.toString(t[2])) + ':' +
-            (t[1] < 10 ? "0" + t[1] : Long.toString(t[1])) + '.' +
-            (t[0] < 10 ? "00" + t[0] : ( t[0] < 100 ? "0" + t[0] : Long.toString(t[0])));
+                (t[2] < 10 ? "0" + t[2] : Long.toString(t[2])) + ':' +
+                (t[1] < 10 ? "0" + t[1] : Long.toString(t[1])) + '.' +
+                (t[0] < 10 ? "00" + t[0] : ( t[0] < 100 ? "0" + t[0] : Long.toString(t[0])));
     }
 
     /**
@@ -244,8 +244,8 @@ public final class X {
             t[i] = sp % SPAN_DIVS[i];
 
         return (t[3] < 10 ? "0" + t[3] : Long.toString(t[3])) + ':' +
-            (t[2] < 10 ? "0" + t[2] : Long.toString(t[2])) + ':' +
-            (t[1] < 10 ? "0" + t[1] : Long.toString(t[1]));
+                (t[2] < 10 ? "0" + t[2] : Long.toString(t[2])) + ':' +
+                (t[1] < 10 ? "0" + t[1] : Long.toString(t[1]));
     }
 
     /**
@@ -291,14 +291,13 @@ public final class X {
      * @param <T> Type of cloning object.
      * @return Copy of a passed in object.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <T> T cloneObject(@Nullable T obj, boolean deep, boolean honorCloneable) {
         if (obj == null)
             return null;
 
         try {
             return !deep ? shallowClone(obj) : (T)deepClone(new GridLeanMap<Integer, Integer>(),
-                new ArrayList<>(), obj, honorCloneable);
+                    new ArrayList<>(), obj, honorCloneable);
         }
         catch (Exception e) {
             throw new IgniteException("Unable to clone instance of class: " + obj.getClass(), e);
@@ -310,7 +309,6 @@ public final class X {
      * @param <T> Type of cloning object.
      * @return Copy of a passed in object.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable private static <T> T shallowClone(@Nullable T obj) {
         if (obj == null)
             return null;
@@ -320,14 +318,14 @@ public final class X {
 
         if (obj.getClass().isArray())
             return obj instanceof byte[] ? (T)(((byte[])obj).clone()) :
-                obj instanceof short[] ? (T)(((short[])obj).clone()) :
-                    obj instanceof char[] ? (T)(((char[])obj).clone()) :
-                        obj instanceof int[] ? (T)(((int[])obj).clone()) :
-                            obj instanceof long[] ? (T)(((long[])obj).clone()) :
-                                obj instanceof float[] ? (T)(((float[])obj).clone()) :
-                                    obj instanceof double[] ? (T)(((double[])obj).clone()) :
-                                        obj instanceof boolean[] ? (T)(((boolean[])obj).clone()) :
-                                            (T)(((Object[])obj).clone());
+                    obj instanceof short[] ? (T)(((short[])obj).clone()) :
+                            obj instanceof char[] ? (T)(((char[])obj).clone()) :
+                                    obj instanceof int[] ? (T)(((int[])obj).clone()) :
+                                            obj instanceof long[] ? (T)(((long[])obj).clone()) :
+                                                    obj instanceof float[] ? (T)(((float[])obj).clone()) :
+                                                            obj instanceof double[] ? (T)(((double[])obj).clone()) :
+                                                                    obj instanceof boolean[] ? (T)(((boolean[])obj).clone()) :
+                                                                            (T)(((Object[])obj).clone());
 
         try {
             // 'getDeclaredMethods' searches for ALL methods, 'getMethods' - only public methods.
@@ -361,7 +359,7 @@ public final class X {
      * @throws Exception If deep-cloning fails.
      */
     @Nullable private static Object deepClone(Map<Integer, Integer> identityIdxs, List<Object> clones, @Nullable Object obj,
-        boolean honorCloneable) throws Exception {
+                                              boolean honorCloneable) throws Exception {
         if (obj == null)
             return null;
 
@@ -427,7 +425,7 @@ public final class X {
      * @throws Exception If failed.
      */
     private static void cloneField(Map<Integer, Integer> identityIdxs, List<Object> clones, Object obj, Object clone,
-        Field f, boolean honorCloneable) throws Exception {
+                                   Field f, boolean honorCloneable) throws Exception {
         int modifiers = f.getModifiers();
 
         // Skip over static fields.
@@ -462,12 +460,13 @@ public final class X {
      * into check.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param msg Message text that should be in cause.
      * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
      * @return {@code True} if one of the causing exception is an instance of passed in classes,
      *      {@code false} otherwise.
      */
     @SafeVarargs
-    public static boolean hasCause(@Nullable Throwable t, @Nullable Class<?>... cls) {
+    public static boolean hasCause(@Nullable Throwable t,  @Nullable String msg, @Nullable Class<?>... cls) {
         if (t == null || F.isEmpty(cls))
             return false;
 
@@ -475,12 +474,20 @@ public final class X {
 
         for (Throwable th = t; th != null; th = th.getCause()) {
             for (Class<?> c : cls) {
-                if (c.isAssignableFrom(th.getClass()))
+                if (c.isAssignableFrom(th.getClass())) {
+                    if (msg != null) {
+                        if (th.getMessage() != null && th.getMessage().contains(msg))
+                            return true;
+                        else
+                            continue;
+                    }
+
                     return true;
+                }
             }
 
             for (Throwable n : th.getSuppressed()) {
-                if (hasCause(n, cls))
+                if (hasCause(n, msg, cls))
                     return true;
             }
 
@@ -489,6 +496,19 @@ public final class X {
         }
 
         return false;
+    }
+
+    /**
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy <b>including</b> that
+     * throwable itself. <p> Note that this method follows includes {@link Throwable#getSuppressed()} into check.
+     *
+     * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
+     * @return {@code True} if one of the causing exception is an instance of passed in classes, {@code false}
+     * otherwise.
+     */
+    public static boolean hasCause(@Nullable Throwable t, @Nullable Class<?>... cls) {
+        return hasCause(t, null, cls);
     }
 
     /**
@@ -524,7 +544,6 @@ public final class X {
      * @param cls Cause class to get cause (if {@code null}, {@code null} is returned).
      * @return First causing exception of passed in class, {@code null} otherwise.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <T extends Throwable> T cause(@Nullable Throwable t, @Nullable Class<T> cls) {
         if (t == null || cls == null)
             return null;
@@ -884,7 +903,7 @@ public final class X {
 
         if (maxMem < .85 * min) {
             printerrln("Heap limit is too low (" + (maxMem / (1024 * 1024)) +
-                "MB), please increase heap size at least up to " + (min / (1024 * 1024)) + "MB.");
+                    "MB), please increase heap size at least up to " + (min / (1024 * 1024)) + "MB.");
 
             System.exit(-1);
         }
@@ -926,7 +945,7 @@ public final class X {
             return var;
         else
             throw new IgniteCheckedException("Failed to resolve Ignite home folder " +
-                "(please set 'IGNITE_HOME' environment or system variable)");
+                    "(please set 'IGNITE_HOME' environment or system variable)");
     }
 
     /**
