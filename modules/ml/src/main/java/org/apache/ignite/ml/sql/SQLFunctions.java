@@ -19,6 +19,8 @@ package org.apache.ignite.ml.sql;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.locks.LockSupport;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
 import org.apache.ignite.ml.inference.Model;
@@ -40,6 +42,18 @@ public class SQLFunctions {
         new LRUCache<>(LRU_CACHE_SIZE, Model::close)
     );
 
+    static {
+        Thread invalidationThread = new Thread(() -> {
+            while (Thread.currentThread().isInterrupted())
+                LockSupport.parkNanos(60_000_000_000L);
+
+            cache.clear();
+        });
+
+        invalidationThread.setDaemon(true);
+        invalidationThread.start();
+    }
+
     /**
      * Makes prediction using specified model name to extract model from model storage and specified input values
      * as input object for prediction.
@@ -50,7 +64,10 @@ public class SQLFunctions {
      */
     @QuerySqlFunction
     public static double predict(String mdl, Double... x) {
-        Model<Vector, Double> infMdl = cache.computeIfAbsent(mdl, key -> IgniteModelStorageUtil.getModel(mdl));
+        Model<Vector, Double> infMdl = cache.computeIfAbsent(
+            mdl,
+            key -> IgniteModelStorageUtil.getModel(Ignition.ignite(), mdl)
+        );
 
         return infMdl.predict(VectorUtils.of(x));
     }

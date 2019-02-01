@@ -18,10 +18,10 @@
 package org.apache.ignite.ml.inference;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.util.plugin.MLPluginConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -29,40 +29,53 @@ import org.junit.Test;
  * Tests for {@link IgniteModelStorageUtil}.
  */
 public class IgniteModelStorageUtilTest extends GridCommonAbstractTest {
-    /** Number of nodes in grid. */
-    private static final int NODE_COUNT = 2;
+    /** Ignite configuration. */
+    private final IgniteConfiguration cfg;
 
-    /** Ignite instance. */
-    private Ignite ignite;
+    /**
+     * Constructs a new instance of Ignite model storage util test.
+     */
+    public IgniteModelStorageUtilTest() {
+        cfg = new IgniteConfiguration();
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-//        for (int i = 1; i <= NODE_COUNT; i++)
-//            startGrid(i);
-        startGrid();
-    }
+        MLPluginConfiguration mlCfg = new MLPluginConfiguration();
+        mlCfg.setWithMdlDescStorage(true);
+        mlCfg.setWithMdlStorage(true);
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        /* Grid instance. */
-//        ignite = grid(NODE_COUNT);
-//        ignite.configuration().setPeerClassLoadingEnabled(true);
-//        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        cfg.setPluginConfigurations(mlCfg);
     }
 
     /** */
     @Test
-    public void testSaveAndGet() {
-        IgniteModel<Vector, Double> mdl = i -> 0.42;
+    public void testSaveAndGet() throws Exception {
+        try (Ignite ignite = startGrid(cfg)) {
+            IgniteModelStorageUtil.saveModel(ignite, i -> 0.42, "mdl");
+            Model<Vector, Double> infMdl = IgniteModelStorageUtil.getModel(ignite, "mdl");
 
-        IgniteModelStorageUtil.saveModel(mdl, "mdl");
-        Model<Vector, Double> infMdl = IgniteModelStorageUtil.getModel("mdl");
+            assertEquals(0.42, infMdl.predict(VectorUtils.of()));
+        }
+    }
 
-        assertEquals(0.42, infMdl.predict(VectorUtils.of()));
+    /** */
+    @Test(expected = IllegalArgumentException.class)
+    public void testSaveModelWithTheSameName() throws Exception {
+        try (Ignite ignite = startGrid(cfg)) {
+            IgniteModelStorageUtil.saveModel(ignite, i -> 0.42, "mdl");
+            IgniteModelStorageUtil.saveModel(ignite, i -> 0.42, "mdl");
+        }
+    }
+
+    /** */
+    @Test
+    public void testSaveRemoveSaveModel() throws Exception {
+        try (Ignite ignite = startGrid(cfg)) {
+            IgniteModelStorageUtil.saveModel(ignite, i -> 0.42, "mdl");
+            IgniteModelStorageUtil.removeModel(ignite, "mdl");
+            IgniteModelStorageUtil.saveModel(ignite, i -> 0.43, "mdl");
+
+            Model<Vector, Double> infMdl = IgniteModelStorageUtil.getModel(ignite, "mdl");
+
+            assertEquals(0.43, infMdl.predict(VectorUtils.of()));
+        }
     }
 }
