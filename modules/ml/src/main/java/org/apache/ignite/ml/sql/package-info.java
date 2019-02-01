@@ -15,38 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.sparkmodelparser;
-
 /**
- * List of supported Spark models.
- *
- * NOTE: Valid for Spark 2.4.
+ * <!-- Package description. -->
+ * Contains util classes that help to work with machine learning models in SQL and train models on data from SQL tables.
  */
-public enum SupportedSparkModels {
-    /** Logistic regression. */
-    LOG_REGRESSION,
-
-    /** Linear regression. */
-    LINEAR_REGRESSION,
-
-    /** Decision tree. */
-    DECISION_TREE,
-
-    /** Support Vector Machine . */
-    LINEAR_SVM,
-
-    /** Random forest. */
-    RANDOM_FOREST,
-
-    /** K-Means. */
-    KMEANS,
-
-    /** Decision tree regression. */
-    DECISION_TREE_REGRESSION,
-
-    /**
-     * Gradient boosted trees.
-     * NOTE: support binary classification only with raw labels 0 and 1
-     */
-    GRADIENT_BOOSTED_TREES
-}
+package org.apache.ignite.ml.sql;

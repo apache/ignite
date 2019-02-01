@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -43,11 +44,8 @@ import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -55,34 +53,22 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /** */
 public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     /** */
-    @BeforeClass
-    public static void setUpClass() {
-        System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY, "0");
-    }
-
-    /** */
-    @AfterClass
-    public static void tearDownClass() {
-        System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY);
-    }
-
-    /** */
     private IgniteEx client;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi())
+            .setTransactionConfiguration(new TransactionConfiguration().setDeadlockTimeout(1));
     }
 
     /** */
     private void setUpGrids(int n, boolean indexed) throws Exception {
         Ignite ign = startGridsMultiThreaded(n);
+
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+
         if (indexed)
             ccfg.setIndexedTypes(Integer.class, Integer.class);
 
