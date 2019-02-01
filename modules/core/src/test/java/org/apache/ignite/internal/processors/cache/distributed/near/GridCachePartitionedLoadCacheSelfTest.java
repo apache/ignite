@@ -49,7 +49,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

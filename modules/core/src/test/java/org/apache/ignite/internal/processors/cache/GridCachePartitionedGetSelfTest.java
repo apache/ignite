@@ -120,7 +120,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10274");
 
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<String, Integer> c = grid(i).cache(DEFAULT_CACHE_NAME);

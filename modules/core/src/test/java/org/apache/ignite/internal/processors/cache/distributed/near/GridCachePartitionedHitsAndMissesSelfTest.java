@@ -94,7 +94,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      */
     @Test
     public void testHitsAndMisses() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
 
         startGrids(GRID_CNT);
 
