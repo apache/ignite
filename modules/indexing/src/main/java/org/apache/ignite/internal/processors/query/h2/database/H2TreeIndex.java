@@ -35,8 +35,8 @@ import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsType;
@@ -299,7 +299,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public H2CacheRowAdapter put(H2CacheRowAdapter row) {
+    @Override public H2CacheRow put(H2CacheRow row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
@@ -309,7 +309,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-            return (H2CacheRowAdapter)tree.put(row);
+            return (H2CacheRow)tree.put(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -320,7 +320,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(H2CacheRowAdapter row) {
+    @Override public boolean putx(H2CacheRow row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 

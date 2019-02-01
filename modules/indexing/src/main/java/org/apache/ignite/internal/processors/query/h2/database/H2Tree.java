@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerI
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
@@ -230,7 +229,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      */
     public H2Row createRow(long link) throws IgniteCheckedException {
         if (rowCache != null) {
-            H2CacheRowAdapter row = rowCache.get(link);
+            H2CacheRow row = rowCache.get(link);
 
             if (row == null) {
                 row = createRow0(link);
@@ -253,7 +252,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    private H2CacheRowAdapter createRow0(long link) throws IgniteCheckedException {
+    private H2CacheRow createRow0(long link) throws IgniteCheckedException {
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
         row.initFromLink(
@@ -275,7 +274,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      */
     public H2Row createMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
         if (rowCache != null) {
-            H2CacheRowAdapter row = rowCache.get(link);
+            H2CacheRow row = rowCache.get(link);
 
             if (row == null) {
                 row = createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr);
@@ -296,7 +295,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param mvccOpCntr Mvcc operation counter.
      * @return Row.
      */
-    private H2CacheRowAdapter createMvccRow0(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr)
+    private H2CacheRow createMvccRow0(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr)
         throws IgniteCheckedException {
         int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
 

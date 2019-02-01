@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -148,7 +148,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public H2CacheRowAdapter put(H2CacheRowAdapter row) {
+    @Override public H2CacheRow put(H2CacheRow row) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.
         assert false;
 
@@ -156,7 +156,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(H2CacheRowAdapter row) {
+    @Override public boolean putx(H2CacheRow row) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.
         assert false;
 

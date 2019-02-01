@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -30,9 +33,12 @@ import org.h2.value.ValueNull;
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
  */
-public class H2CacheRow extends H2CacheRowAdapter {
-    /** */
+public class H2CacheRow extends H2Row implements CacheDataRow {
+    /** H2 row descriptor. */
     private final GridH2RowDescriptor desc;
+
+    /** Cache row. */
+    private final CacheDataRow row;
 
     /** */
     private Value[] valCache;
@@ -44,18 +50,26 @@ public class H2CacheRow extends H2CacheRowAdapter {
      * @param row Row.
      */
     public H2CacheRow(GridH2RowDescriptor desc, CacheDataRow row) {
-        super(row);
-
         this.desc = desc;
+        this.row = row;
     }
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() {
+        if (removedRow())
+            return 1;
+
         return QueryUtils.DEFAULT_COLUMNS_COUNT + desc.fieldsCount();
     }
 
     /** {@inheritDoc} */
     @Override public Value getValue(int col) {
+        if (removedRow()) {
+            assert col == 0 : col;
+
+            return keyWrapped();
+        }
+
         switch (col) {
             case QueryUtils.KEY_COL:
                 return keyWrapped();
@@ -157,6 +171,133 @@ public class H2CacheRow extends H2CacheRowAdapter {
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to wrap object into H2 Value.", e);
         }
+    }
+
+    /**
+     * @return {@code True} if this is removed row (doesn't have value).
+     */
+    private boolean removedRow() {
+        return row.value() == null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject key() {
+        return row.key();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void key(KeyCacheObject key) {
+        row.key(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject value() {
+        return row.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion version() {
+        return row.version();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return row.partition();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long expireTime() {
+        return row.expireTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long link() {
+        return row.link();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void link(long link) {
+        row.link(link);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hash() {
+        return row.hash();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return row.cacheId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCoordinatorVersion() {
+        return row.mvccCoordinatorVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCounter() {
+        return row.mvccCounter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int mvccOperationCounter() {
+        return row.mvccOperationCounter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte mvccTxState() {
+        return row.mvccTxState();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long newMvccCoordinatorVersion() {
+        return row.newMvccCoordinatorVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long newMvccCounter() {
+        return row.newMvccCounter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int newMvccOperationCounter() {
+        return row.newMvccOperationCounter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte newMvccTxState() {
+        return row.newMvccTxState();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean indexSearchRow() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setKey(long key) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setValue(int idx, Value v) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

@@ -23,8 +23,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
 
 /**
  * Leaf page for H2 row references.
@@ -41,7 +41,7 @@ public abstract class AbstractH2LeafIO extends BPlusLeafIO<H2Row> implements H2R
 
     /** {@inheritDoc} */
     @Override public final void storeByOffset(long pageAddr, int off, H2Row row) {
-        H2CacheRowAdapter row0 = (H2CacheRowAdapter)row;
+        H2CacheRow row0 = (H2CacheRow)row;
 
         H2IOUtils.storeRow(row0, pageAddr, off, storeMvccInfo());
     }

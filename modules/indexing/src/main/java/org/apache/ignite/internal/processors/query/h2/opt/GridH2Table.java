@@ -608,7 +608,7 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     public boolean remove(CacheDataRow row) throws IgniteCheckedException {
-        H2CacheRowAdapter row0 = desc.createRow(row);
+        H2CacheRow row0 = desc.createRow(row);
 
         lock(false);
 
@@ -646,7 +646,7 @@ public class GridH2Table extends TableBase {
      * @param row Row to add to index.
      * @param prevRow Previous row state, if any.
      */
-    private void addToIndex(GridH2IndexBase idx, H2CacheRowAdapter row, H2CacheRowAdapter prevRow) {
+    private void addToIndex(GridH2IndexBase idx, H2CacheRow row, H2CacheRow prevRow) {
         boolean replaced = idx.putx(row);
 
         // Row was not replaced, need to remove manually.

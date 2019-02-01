@@ -186,7 +186,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param row Row.
      * @return Existing row or {@code null}.
      */
-    public abstract H2CacheRowAdapter put(H2CacheRowAdapter row);
+    public abstract H2CacheRow put(H2CacheRow row);
 
     /**
      * Puts row.
@@ -194,7 +194,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param row Row.
      * @return {@code True} if existing row row has been replaced.
      */
-    public abstract boolean putx(H2CacheRowAdapter row);
+    public abstract boolean putx(H2CacheRow row);
 
     /**
      * Removes row from index.

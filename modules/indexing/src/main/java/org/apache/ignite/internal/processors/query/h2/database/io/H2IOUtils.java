@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.database.io;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
 
 /**
  *
@@ -38,7 +38,7 @@ class H2IOUtils {
      * @param off Offset.
      * @param storeMvcc {@code True} to store mvcc data.
      */
-    static void storeRow(H2CacheRowAdapter row, long pageAddr, int off, boolean storeMvcc) {
+    static void storeRow(H2CacheRow row, long pageAddr, int off, boolean storeMvcc) {
         assert row.link() != 0;
 
         PageUtils.putLong(pageAddr, off, row.link());

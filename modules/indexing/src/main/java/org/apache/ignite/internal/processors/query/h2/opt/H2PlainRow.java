@@ -32,6 +32,7 @@ public class H2PlainRow extends H2Row {
     /**
      * @param vals Values.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public H2PlainRow(Value[] vals) {
         this.vals = vals;
     }
@@ -40,7 +41,7 @@ public class H2PlainRow extends H2Row {
      * @param len Length.
      */
     public H2PlainRow(int len) {
-        this.vals = new Value[len];
+        vals = new Value[len];
     }
 
     /** {@inheritDoc} */

@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
 import org.h2.value.DataType;
@@ -168,18 +167,11 @@ public class GridH2RowDescriptor {
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public H2CacheRowAdapter createRow(CacheDataRow dataRow) throws IgniteCheckedException {
-        H2CacheRowAdapter row;
+    public H2CacheRow createRow(CacheDataRow dataRow) throws IgniteCheckedException {
+        H2CacheRow row;
 
         try {
-            if (dataRow.value() == null) {
-                Value key = H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType);
-
-                // Only can happen for remove operation, can create simple search row.
-                row = new H2CacheRowKeyOnly(dataRow, key);
-            }
-            else
-                row = new H2CacheRow(this, dataRow);
+            row = new H2CacheRow(this, dataRow);
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +
