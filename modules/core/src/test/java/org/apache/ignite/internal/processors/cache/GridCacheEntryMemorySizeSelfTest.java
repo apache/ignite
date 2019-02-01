@@ -185,7 +185,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         IgniteCache<Integer, Value> cache = createCache(false, LOCAL);
 
@@ -235,7 +235,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testPartitionedNearEnabled() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         IgniteCache<Integer, Value> cache = createCache(true, PARTITIONED);
 

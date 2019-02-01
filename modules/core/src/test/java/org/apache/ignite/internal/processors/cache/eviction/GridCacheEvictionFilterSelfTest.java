@@ -99,7 +99,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = LOCAL;
 
@@ -117,7 +117,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testPartitioned() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         mode = PARTITIONED;
         nearEnabled = true;

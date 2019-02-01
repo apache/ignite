@@ -66,7 +66,7 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
             fail("https://issues.apache.org/jira/browse/IGNITE-7388");
 
         if (nearEnabled())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         super.setUp();
     }

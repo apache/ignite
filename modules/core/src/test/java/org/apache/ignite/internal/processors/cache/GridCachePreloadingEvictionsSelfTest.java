@@ -96,7 +96,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     @Test
     public void testEvictions() throws Exception {
         try {
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
             final Ignite ignite1 = startGrid(1);
 
