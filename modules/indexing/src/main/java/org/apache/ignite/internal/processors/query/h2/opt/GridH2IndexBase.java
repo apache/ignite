@@ -230,7 +230,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         // Query expressions can not be distributed as well.
         if (qctx == null || qctx.type() != PREPARE || qctx.distributedJoinMode() == OFF ||
             !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
-            return CollocationModelMultiplier.MULTIPLIER_COLLOCATED.multiplier();
+            return CollocationModelMultiplier.COLLOCATED.multiplier();
 
         // We have to clear this cache because normally sub-query plan cost does not depend on anything
         // other than index condition masks and sort order, but in our case it can depend on order

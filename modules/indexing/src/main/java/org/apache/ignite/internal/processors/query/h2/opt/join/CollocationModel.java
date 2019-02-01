@@ -240,14 +240,14 @@ public final class CollocationModel {
 
             boolean collocated = true;
             boolean partitioned = false;
-            CollocationModelMultiplier maxMultiplier = CollocationModelMultiplier.MULTIPLIER_COLLOCATED;
+            CollocationModelMultiplier maxMultiplier = CollocationModelMultiplier.COLLOCATED;
 
             for (int i = 0; i < childFilters.length; i++) {
                 CollocationModel child = child(i, true);
 
                 Type t = child.type(true);
 
-                if (child.multiplier == CollocationModelMultiplier.MULTIPLIER_REPLICATED_NOT_LAST)
+                if (child.multiplier == CollocationModelMultiplier.REPLICATED_NOT_LAST)
                     maxMultiplier = child.multiplier;
 
                 if (t.isPartitioned()) {
@@ -261,7 +261,7 @@ public final class CollocationModel {
                         if (m.multiplier() > maxMultiplier.multiplier()) {
                             maxMultiplier = m;
 
-                            if (maxMultiplier == CollocationModelMultiplier.MULTIPLIER_REPLICATED_NOT_LAST)
+                            if (maxMultiplier == CollocationModelMultiplier.REPLICATED_NOT_LAST)
                                 break;
                         }
                     }
@@ -281,7 +281,7 @@ public final class CollocationModel {
             // Only partitioned tables will do distributed joins.
             if (!(tbl instanceof GridH2Table) || !((GridH2Table)tbl).isPartitioned()) {
                 type = Type.REPLICATED;
-                multiplier = CollocationModelMultiplier.MULTIPLIER_COLLOCATED;
+                multiplier = CollocationModelMultiplier.COLLOCATED;
 
                 return;
             }
@@ -291,7 +291,7 @@ public final class CollocationModel {
             // to all the affinity nodes the "base" does not need to get remote results.
             if (!upper.findPartitionedTableBefore(filter)) {
                 type = Type.PARTITIONED_COLLOCATED;
-                multiplier = CollocationModelMultiplier.MULTIPLIER_COLLOCATED;
+                multiplier = CollocationModelMultiplier.COLLOCATED;
             }
             else {
                 // It is enough to make sure that our previous join by affinity key is collocated, then we are
@@ -299,19 +299,19 @@ public final class CollocationModel {
                 switch (upper.joinedWithCollocated(filter)) {
                     case COLLOCATED_JOIN:
                         type = Type.PARTITIONED_COLLOCATED;
-                        multiplier = CollocationModelMultiplier.MULTIPLIER_COLLOCATED;
+                        multiplier = CollocationModelMultiplier.COLLOCATED;
 
                         break;
 
                     case HAS_AFFINITY_CONDITION:
                         type = Type.PARTITIONED_NOT_COLLOCATED;
-                        multiplier = CollocationModelMultiplier.MULTIPLIER_UNICAST;
+                        multiplier = CollocationModelMultiplier.UNICAST;
 
                         break;
 
                     case NONE:
                         type = Type.PARTITIONED_NOT_COLLOCATED;
-                        multiplier = CollocationModelMultiplier.MULTIPLIER_BROADCAST;
+                        multiplier = CollocationModelMultiplier.BROADCAST;
 
                         break;
 
@@ -321,7 +321,7 @@ public final class CollocationModel {
             }
 
             if (upper.previousReplicated(filter))
-                multiplier = CollocationModelMultiplier.MULTIPLIER_REPLICATED_NOT_LAST;
+                multiplier = CollocationModelMultiplier.REPLICATED_NOT_LAST;
         }
     }
 
@@ -688,7 +688,7 @@ public final class CollocationModel {
 
         Type type = mdl.type(true);
 
-        if (!type.isCollocated() && mdl.multiplier == CollocationModelMultiplier.MULTIPLIER_REPLICATED_NOT_LAST)
+        if (!type.isCollocated() && mdl.multiplier == CollocationModelMultiplier.REPLICATED_NOT_LAST)
             throw new CacheException("Failed to execute query: for distributed join " +
                 "all REPLICATED caches must be at the end of the joined tables list.");
 

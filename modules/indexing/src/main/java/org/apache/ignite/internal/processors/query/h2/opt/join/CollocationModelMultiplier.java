@@ -22,16 +22,16 @@ package org.apache.ignite.internal.processors.query.h2.opt.join;
  */
 public enum CollocationModelMultiplier {
     /** Tables are collocated, cheap. */
-    MULTIPLIER_COLLOCATED(1),
+    COLLOCATED(1),
 
     /** */
-    MULTIPLIER_UNICAST(50),
+    UNICAST(50),
 
     /** */
-    MULTIPLIER_BROADCAST(200),
+    BROADCAST(200),
 
     /** Force REPLICATED tables to be at the end of join sequence. */
-    MULTIPLIER_REPLICATED_NOT_LAST(10_000);
+    REPLICATED_NOT_LAST(10_000);
 
     /** Multiplier value. */
     private final int multiplier;
