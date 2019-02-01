@@ -611,7 +611,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             int connIdx
         ) throws IgniteCheckedException {
             if (failure && !matrix.hasConnection(getLocalNode(), node)) {
-                processClientCreationError(node, null, new IgniteCheckedException("Test", new SocketTimeoutException()));
+                processSessionCreationError(node, null, new IgniteCheckedException("Test", new SocketTimeoutException()));
 
                 return null;
             }
