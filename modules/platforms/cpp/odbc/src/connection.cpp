@@ -58,7 +58,7 @@ namespace ignite
             env(env),
             socket(),
             timeout(0),
-            loginTimeout(DEFALT_CONNECT_TIMEOUT),
+            loginTimeout(DEFAULT_CONNECT_TIMEOUT),
             autoCommit(true),
             parser(),
             config(),

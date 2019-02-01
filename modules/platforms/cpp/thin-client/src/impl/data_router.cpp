@@ -40,7 +40,7 @@ namespace ignite
         {
             DataRouter::DataRouter(const ignite::thin::IgniteClientConfiguration& cfg) :
                 ioTimeout(DEFALT_IO_TIMEOUT),
-                connectionTimeout(DEFALT_CONNECT_TIMEOUT),
+                connectionTimeout(DEFAULT_CONNECT_TIMEOUT),
                 config(cfg),
                 ranges(),
                 localAddresses(),

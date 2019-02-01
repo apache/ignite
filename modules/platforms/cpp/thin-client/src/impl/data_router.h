@@ -55,7 +55,7 @@ namespace ignite
             {
             public:
                 /** Connection establishment timeout in seconds. */
-                enum { DEFALT_CONNECT_TIMEOUT = 5 };
+                enum { DEFAULT_CONNECT_TIMEOUT = 5 };
 
                 /** Network IO operation timeout in seconds. */
                 enum { DEFALT_IO_TIMEOUT = 5 };
