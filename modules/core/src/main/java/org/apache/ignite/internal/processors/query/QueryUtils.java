@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
@@ -176,6 +177,7 @@ public class QueryUtils {
     public static String indexName(QueryEntity entity, QueryIndex idx) {
         return indexName(tableName(entity), idx);
     }
+
 
     /**
      * Get index name.
@@ -614,6 +616,7 @@ public class QueryUtils {
             d.addProperty(prop, false);
         }
 
+        // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
         String keyFieldName = qryEntity.getKeyFieldName();
 
         if (keyFieldName == null)
@@ -803,8 +806,8 @@ public class QueryUtils {
      *      nested fields.
      * @param resType Result type.
      * @param aliases Aliases.
-     * @param isKeyField Key ownership flag, as defined in {@link QueryEntity#keyFields}: {@code true} if field belongs
-     *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
+     * @param isKeyField Key ownership flag, {@code true} if this property is a field of the key object. Note that key
+     * not a field of itself.
      * @param notNull {@code true} if {@code null} value is not allowed.
      * @param dlftVal Default value.
      * @param precision Precision.
@@ -1466,6 +1469,25 @@ public class QueryUtils {
      */
     public static String globalQueryId(UUID nodeId, long qryId) {
         return nodeId + "_" + qryId;
+    }
+
+    /**
+     * Checks whether string matches SQL pattern.
+     *
+     * @param str String.
+     * @param sqlPtrn Pattern.
+     * @return Whether string matches pattern.
+     */
+    public static boolean matches(String str, String sqlPtrn) {
+        if (str == null)
+            return false;
+
+        if (sqlPtrn == null)
+            return true;
+
+        String regex = SqlListenerUtils.translateSqlWildcardsToRegex(sqlPtrn);
+
+        return str.matches(regex);
     }
 
     /**
