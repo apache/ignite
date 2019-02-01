@@ -32,7 +32,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterType;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionUtils;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.value.Value;
@@ -43,8 +42,8 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
 
     private static final Map<PartitionParameterType, Integer> IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE;
 
-    @IgniteInstanceResource
-    private IgniteEx ignite;
+    /** Default node. */
+    private static IgniteEx ignite;
 
     static {
         Map<PartitionParameterType, Class<?>> paramTypeToJavaClass = new HashMap<>();
@@ -85,6 +84,64 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
 
     @Override protected void beforeTestsStarted() throws Exception {
         ignite = startGrid(0);
+    }
+
+    @Test
+    public void convertNull() throws Exception {
+        checkConvertation(null);
+    }
+
+    @Test
+    public void convertBoolean() throws Exception {
+        checkConvertation(Boolean.TRUE);
+        checkConvertation(Boolean.FALSE);
+    }
+
+    @Test
+    public void convertByte() throws Exception {
+        checkConvertation((byte)42);
+        checkConvertation((byte)0);
+        checkConvertation(Byte.MIN_VALUE);
+        checkConvertation(Byte.MAX_VALUE);
+    }
+
+    @Test
+    public void convertShort() throws Exception {
+        checkConvertation((short)42);
+        checkConvertation((short)0);
+        checkConvertation(Short.MIN_VALUE);
+        checkConvertation(Short.MAX_VALUE);
+    }
+
+    @Test
+    public void convertInteger() throws Exception {
+        checkConvertation(42);
+        checkConvertation(0);
+        checkConvertation(Integer.MIN_VALUE);
+        checkConvertation(Integer.MAX_VALUE);
+    }
+
+    @Test
+    public void convertLong() throws Exception {
+        checkConvertation(42L);
+        checkConvertation(0L);
+        checkConvertation(Long.MIN_VALUE);
+        checkConvertation(Long.MAX_VALUE);
+    }
+
+    @Test
+    public void convertFloat() throws Exception {
+        checkConvertation(42.1f);
+        checkConvertation(0.1f);
+        checkConvertation(0f);
+        checkConvertation(1.2345678E7f);
+
+        checkConvertation(Float.POSITIVE_INFINITY);
+        checkConvertation(Float.NEGATIVE_INFINITY);
+        checkConvertation(Float.NaN);
+
+        checkConvertation(Float.MIN_VALUE);
+        checkConvertation(Float.MAX_VALUE);
     }
 
     @Test
