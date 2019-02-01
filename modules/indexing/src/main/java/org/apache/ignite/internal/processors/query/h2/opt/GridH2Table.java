@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.database.H2CacheRowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
@@ -107,7 +107,7 @@ public class GridH2Table extends TableBase {
     private final LongAdder size = new LongAdder();
 
     /** */
-    private final H2RowFactory rowFactory;
+    private final H2CacheRowFactory rowFactory;
 
     /** */
     private volatile boolean rebuildFromHashInProgress;
@@ -134,7 +134,7 @@ public class GridH2Table extends TableBase {
      * @param cacheInfo Cache context info.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2RowFactory rowFactory,
+    public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2CacheRowFactory rowFactory,
         GridH2SystemIndexFactory idxsFactory, GridCacheContextInfo cacheInfo) {
         super(createTblData);
 
@@ -976,7 +976,7 @@ public class GridH2Table extends TableBase {
     /**
      * @return Data store.
      */
-    public H2RowFactory rowFactory() {
+    public H2CacheRowFactory rowFactory() {
         return rowFactory;
     }
 

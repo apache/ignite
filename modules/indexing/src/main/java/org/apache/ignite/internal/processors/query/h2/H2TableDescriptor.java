@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.database.H2CacheRowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SystemIndexFactory;
@@ -200,9 +200,9 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @param rowDesc Row descriptor.
      * @return H2 row factory.
      */
-    H2RowFactory rowFactory(GridH2RowDescriptor rowDesc) {
+    H2CacheRowFactory rowFactory(GridH2RowDescriptor rowDesc) {
         if (cacheInfo.affinityNode())
-            return new H2RowFactory(rowDesc, cacheInfo.cacheContext());
+            return new H2CacheRowFactory(rowDesc, cacheInfo.cacheContext());
 
         return null;
     }

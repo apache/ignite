@@ -54,7 +54,7 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
  */
 public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
     /** */
-    private final H2RowFactory rowStore;
+    private final H2CacheRowFactory rowStore;
 
     /** */
     private final int inlineSize;
@@ -146,7 +146,7 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
-        H2RowFactory rowStore,
+        H2CacheRowFactory rowStore,
         long metaPageId,
         boolean initNew,
         H2TreeIndex.IndexColumnsInfo unwrappedColsInfo,

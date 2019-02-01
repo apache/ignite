@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 /**
  * Data store for H2 rows.
  */
-public class H2RowFactory {
+public class H2CacheRowFactory {
     /** */
     private final GridCacheContext<?,?> cctx;
 
@@ -39,7 +39,7 @@ public class H2RowFactory {
      * @param rowDesc Row descriptor.
      * @param cctx Cache context.
      */
-    public H2RowFactory(GridH2RowDescriptor rowDesc, GridCacheContext<?,?> cctx) {
+    public H2CacheRowFactory(GridH2RowDescriptor rowDesc, GridCacheContext<?,?> cctx) {
         this.rowDesc = rowDesc;
         this.cctx = cctx;
     }
