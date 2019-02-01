@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 public class GridCacheMultinodeUpdateNearEnabledSelfTest extends GridCacheMultinodeUpdateAbstractSelfTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         super.setUp();
     }

@@ -213,7 +213,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         if (spiTest.triggerDiscovery() && !getTestData().isDiscoveryTest()) {
             getTestData().getAttributes().putAll(
-                initSpiClassAndVersionAttributes(discoSpi));
+                    initSpiClassAndVersionAttributes(discoSpi));
 
             // Set all local node attributes into discovery SPI.
             discoSpi.setNodeAttributes(getTestData().getAttributes(), VERSION);
@@ -385,10 +385,10 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
             if (cfg != null) {
                 if (getTestData().isDiscoveryTest() ||
-                    (cfg.type() != ConfigType.DISCOVERY && !(spi instanceof DiscoverySpi)) ||
-                    (cfg.type() != ConfigType.SELF && spi instanceof DiscoverySpi)) {
+                        (cfg.type() != ConfigType.DISCOVERY && !(spi instanceof DiscoverySpi)) ||
+                        (cfg.type() != ConfigType.SELF && spi instanceof DiscoverySpi)) {
                     assert m.getName().startsWith("get") : "Test configuration must be a getter [method=" +
-                        m.getName() + ']';
+                            m.getName() + ']';
 
                     // Determine getter name.
                     String name = cfg.setterName();
@@ -399,7 +399,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                     Method setter = getMethod(spi.getClass(), name);
 
                     assert setter != null : "Spi does not have setter for configuration property [spi=" +
-                        spi.getClass().getName() + ", config-prop=" + name + ']';
+                            spi.getClass().getName() + ", config-prop=" + name + ']';
 
                     // Inject configuration parameter into spi.
                     setter.invoke(spi, m.invoke(this));
@@ -421,7 +421,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                 if (mcastAddr != null && !mcastAddr.isEmpty()) {
                     ((TcpDiscoveryMulticastIpFinder)ipFinder).setMulticastGroup(mcastAddr);
                     ((TcpDiscoveryMulticastIpFinder)ipFinder).setMulticastPort(
-                        GridTestUtils.getNextMulticastPort(getClass()));
+                            GridTestUtils.getNextMulticastPort(getClass()));
                 }
             }
         }
@@ -695,9 +695,9 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         /** {@inheritDoc} */
         @Override public String toString() {
             return getClass().getSimpleName() +
-                " [spi=" + spi +
-                ", discoSpi=" + discoSpi +
-                ", allAttrs=" + allAttrs + ']';
+                    " [spi=" + spi +
+                    ", discoSpi=" + discoSpi +
+                    ", allAttrs=" + allAttrs + ']';
         }
     }
 

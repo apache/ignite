@@ -117,7 +117,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         if (testsCfg.withClients()) {
             for (int i = 0; i < gridCount(); i++)
                 assertEquals("i: " + i, expectedClient(getTestIgniteInstanceName(i)),
-                    (boolean)grid(i).configuration().isClientMode());
+                        (boolean)grid(i).configuration().isClientMode());
         }
     }
 
@@ -419,7 +419,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             PlaneObject val = (PlaneObject)o;
 
             return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal
-                && strVal.equals(val.strVal);
+                    && strVal.equals(val.strVal);
         }
 
         /** {@inheritDoc} */
@@ -430,10 +430,10 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         /** {@inheritDoc} */
         @Override public String toString() {
             return getClass().getSimpleName() + "[" +
-                "val=" + val +
-                ", strVal='" + strVal + '\'' +
-                ", enumVal=" + enumVal +
-                ']';
+                    "val=" + val +
+                    ", strVal='" + strVal + '\'' +
+                    ", enumVal=" + enumVal +
+                    ']';
         }
     }
 
@@ -487,7 +487,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             SerializableObject val = (SerializableObject)o;
 
             return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal
-                && strVal.equals(val.strVal);
+                    && strVal.equals(val.strVal);
         }
 
         /** {@inheritDoc} */
@@ -498,10 +498,10 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         /** {@inheritDoc} */
         @Override public String toString() {
             return getClass().getSimpleName() + "[" +
-                "val=" + val +
-                ", strVal='" + strVal + '\'' +
-                ", enumVal=" + enumVal +
-                ']';
+                    "val=" + val +
+                    ", strVal='" + strVal + '\'' +
+                    ", enumVal=" + enumVal +
+                    ']';
         }
     }
 

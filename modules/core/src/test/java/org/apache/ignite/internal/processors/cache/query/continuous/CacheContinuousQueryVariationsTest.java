@@ -203,10 +203,10 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
      * @throws Exception If failed.
      */
     private void testRandomOperation(final boolean jcacheApi, final boolean syncNtf, final boolean withFilter,
-        final boolean asyncCallback, final boolean keepBinary)
-        throws Exception {
+                                     final boolean asyncCallback, final boolean keepBinary)
+            throws Exception {
         if (keepBinary && !(getConfiguration().getMarshaller() == null
-            || getConfiguration().getMarshaller().getClass() == BinaryMarshaller.class))
+                || getConfiguration().getMarshaller().getClass() == BinaryMarshaller.class))
             return;
 
         runInAllDataModes(new TestRunnable() {
@@ -235,26 +235,26 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                     };
 
                     final CacheEntryUpdatedListener<Object, Object> lsnr = asyncCallback ?
-                        new AsyncLocalNonSerializableListener(clsr): new LocalNonSerializableListener(clsr);
+                            new AsyncLocalNonSerializableListener(clsr): new LocalNonSerializableListener(clsr);
 
                     IgniteCache<Object, Object> jcache = keepBinary ? jcache(idx).withKeepBinary() : jcache(idx);
 
                     if (jcacheApi) {
                         MutableCacheEntryListenerConfiguration<Object, Object> lsnrCfg =
-                            new MutableCacheEntryListenerConfiguration<>(
-                                new Factory<CacheEntryListener<? super Object, ? super Object>>() {
-                                    @Override public CacheEntryListener<? super Object, ? super Object> create() {
-                                        return lsnr;
-                                    }
-                                },
-                                withFilter ?
-                                    FactoryBuilder.factoryOf(
-                                        asyncCallback ? new AsyncSerializableFilter(keepBinary, dataMode)
-                                            : new SerializableFilter(keepBinary, dataMode))
-                                    : null,
-                                true,
-                                syncNtf
-                            );
+                                new MutableCacheEntryListenerConfiguration<>(
+                                        new Factory<CacheEntryListener<? super Object, ? super Object>>() {
+                                            @Override public CacheEntryListener<? super Object, ? super Object> create() {
+                                                return lsnr;
+                                            }
+                                        },
+                                        withFilter ?
+                                                FactoryBuilder.factoryOf(
+                                                        asyncCallback ? new AsyncSerializableFilter(keepBinary, dataMode)
+                                                                : new SerializableFilter(keepBinary, dataMode))
+                                                : null,
+                                        true,
+                                        syncNtf
+                                );
 
                         jcache.registerCacheEntryListener(lsnrCfg);
 
@@ -268,10 +268,10 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                         qry.setLocalListener(lsnr);
 
                         qry.setRemoteFilterFactory(withFilter ?
-                            FactoryBuilder.factoryOf(
-                                asyncCallback ? new AsyncSerializableFilter(keepBinary, dataMode)
-                                    : new SerializableFilter(keepBinary, dataMode))
-                            : null);
+                                FactoryBuilder.factoryOf(
+                                        asyncCallback ? new AsyncSerializableFilter(keepBinary, dataMode)
+                                                : new SerializableFilter(keepBinary, dataMode))
+                                : null);
 
                         curs.add(jcache.query(qry));
 
@@ -288,11 +288,11 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
 
                         for (int idx = 0; idx < G.allGrids().size(); idx++)
                             randomUpdate(rnd,
-                                evtsQueues,
-                                expData,
-                                keepBinary ? jcache(idx).withKeepBinary() : jcache(idx),
-                                keepBinary,
-                                withFilter);
+                                    evtsQueues,
+                                    expData,
+                                    keepBinary ? jcache(idx).withKeepBinary() : jcache(idx),
+                                    keepBinary,
+                                    withFilter);
                     }
                 }
                 catch (Exception e) {
@@ -321,12 +321,12 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
      * @throws Exception If failed.
      */
     private void randomUpdate(
-        Random rnd,
-        List<BlockingQueue<CacheEntryEvent<?, ?>>> evtsQueues,
-        ConcurrentMap<Object, Object> expData,
-        IgniteCache<Object, Object> cache,
-        boolean keepBinary,
-        boolean withFilter
+            Random rnd,
+            List<BlockingQueue<CacheEntryEvent<?, ?>>> evtsQueues,
+            ConcurrentMap<Object, Object> expData,
+            IgniteCache<Object, Object> cache,
+            boolean keepBinary,
+            boolean withFilter
     ) throws Exception {
         Object key = key(rnd.nextInt(KEYS));
         Object newVal = value(rnd.nextInt());
@@ -576,11 +576,11 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
      * @throws Exception If failed.
      */
     private void waitAndCheckEvent(List<BlockingQueue<CacheEntryEvent<?, ?>>> evtsQueues,
-        Object key,
-        Object val,
-        Object oldVal,
-        boolean keepBinary, boolean withFilter)
-        throws Exception {
+                                   Object key,
+                                   Object val,
+                                   Object oldVal,
+                                   boolean keepBinary, boolean withFilter)
+            throws Exception {
         if (val == null && oldVal == null || (withFilter && val != null && !isAccepted(val, false, dataMode))) {
             checkNoEvent(evtsQueues);
 
@@ -650,7 +650,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
 
                 qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
                     @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> events)
-                        throws CacheEntryListenerException {
+                            throws CacheEntryListenerException {
                         for (CacheEntryEvent<?, ?> e : events)
                             evts.add(e);
                     }
@@ -852,7 +852,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
 
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<?, ?> event)
-            throws CacheEntryListenerException {
+                throws CacheEntryListenerException {
             return isAccepted(event.getValue(), keepBinary, dataMode);
         }
 
@@ -910,11 +910,11 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
      *
      */
     public static class LocalNonSerializableListener implements
-        CacheEntryUpdatedListener<Object, Object>,
-        CacheEntryCreatedListener<Object, Object>,
-        CacheEntryExpiredListener<Object, Object>,
-        CacheEntryRemovedListener<Object, Object>,
-        Externalizable {
+            CacheEntryUpdatedListener<Object, Object>,
+            CacheEntryCreatedListener<Object, Object>,
+            CacheEntryExpiredListener<Object, Object>,
+            CacheEntryRemovedListener<Object, Object>,
+            Externalizable {
         /** */
         IgniteInClosure<Iterable<CacheEntryEvent<?, ?>>> clsr;
 

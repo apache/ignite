@@ -47,7 +47,10 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /** */
-    private boolean isFailoverCalled;
+    private static boolean isFailoverCalled1;
+
+    /** */
+    private boolean isFailoverCalled2;
 
     /** */
     public GridAlwaysFailoverSpiFailSelfTest() {
@@ -63,12 +66,10 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testFailoverTask() throws Exception {
-        isFailoverCalled = false;
+    public void testFailoverTask() {
+        isFailoverCalled1 = false;
 
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -84,15 +85,13 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
             //No-op
         }
 
-        assert isFailoverCalled;
+        assert isFailoverCalled1;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testNoneFailoverTask() throws Exception {
-        isFailoverCalled = false;
+    public void testNoneFailoverTask() {
+        isFailoverCalled2 = false;
 
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -108,14 +107,15 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
             //No-op
         }
 
-        assert !isFailoverCalled;
+        assert !isFailoverCalled2;
     }
 
     /** */
     private class GridTestFailoverSpi extends AlwaysFailoverSpi {
         /** {@inheritDoc} */
         @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> grid) {
-            isFailoverCalled = true;
+            isFailoverCalled1 = true;
+            isFailoverCalled2 = true;
 
             return super.failover(ctx, grid);
         }

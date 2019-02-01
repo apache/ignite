@@ -24,6 +24,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
 
 /**
  * Tests the recovery after a dynamic cache start failure, with enabled persistence.
