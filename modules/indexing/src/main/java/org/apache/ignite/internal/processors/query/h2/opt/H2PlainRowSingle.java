@@ -25,13 +25,13 @@ import org.h2.value.Value;
  */
 public class H2PlainRowSingle extends H2Row {
     /** */
-    private Value key;
+    private Value v;
 
     /**
-     * @param key Key.
+     * @param v Value.
      */
-    public H2PlainRowSingle(Value key) {
-        this.key = key;
+    public H2PlainRowSingle(Value v) {
+        this.v = v;
     }
 
     /** {@inheritDoc} */
@@ -43,14 +43,14 @@ public class H2PlainRowSingle extends H2Row {
     @Override public Value getValue(int idx) {
         assert idx == 0 : idx;
 
-        return key;
+        return v;
     }
 
     /** {@inheritDoc} */
     @Override public void setValue(int idx, Value v) {
         assert idx == 0 : idx;
 
-        key = v;
+        this.v = v;
     }
 
     /** {@inheritDoc} */
