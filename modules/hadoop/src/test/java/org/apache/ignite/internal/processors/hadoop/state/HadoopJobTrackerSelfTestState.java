@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.state;
 
-import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
 
 /**
  * Shared state for HadoopJobTrackerSelfTest.
