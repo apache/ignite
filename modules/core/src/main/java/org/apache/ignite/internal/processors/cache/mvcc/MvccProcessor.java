@@ -228,4 +228,16 @@ public interface MvccProcessor extends GridProcessor {
      * @param e Exception reflecting failure reason.
      */
     void failWaiter(MvccVersion mvccVer, Exception e);
+
+    /**
+     * Cache stop callback.
+     * @param cctx Cache context.
+     *
+     */
+    void onCacheStop(GridCacheContext cctx);
+
+    /**
+     * Force txLog stop.
+     */
+    void stopTxLog();
 }
