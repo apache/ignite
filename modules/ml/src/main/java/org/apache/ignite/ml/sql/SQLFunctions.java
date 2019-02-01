@@ -36,6 +36,9 @@ public class SQLFunctions {
     /** Default LRU model cache size. */
     private static final int LRU_CACHE_SIZE = 10;
 
+    /** Cache clear interval in seconds. */
+    private static final long CACHE_CLEAR_INTERVAL_SEC = 60;
+
     /** Default LRU model cache. */
     // TODO: IGNITE-11163: Add hart beat tracker to DistributedInfModel.
     private static final Map<String, Model<Vector, Double>> cache = new LRUCache<>(LRU_CACHE_SIZE, Model::close);
@@ -43,7 +46,7 @@ public class SQLFunctions {
     static {
         Thread invalidationThread = new Thread(() -> {
             while (Thread.currentThread().isInterrupted())
-                LockSupport.parkNanos(60_000_000_000L);
+                LockSupport.parkNanos(CACHE_CLEAR_INTERVAL_SEC * 1_000_000_000L);
 
             synchronized (cache) {
                 for (Model<Vector, Double> mdl : cache.values())
