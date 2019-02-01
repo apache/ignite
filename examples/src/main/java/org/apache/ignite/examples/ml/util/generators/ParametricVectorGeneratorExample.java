@@ -23,15 +23,29 @@ import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.vector.ParametricVectorGenerator;
 
+/**
+ * Examples of using {@link ParametricVectorGenerator} for generating two dimensional data.
+ * {@link ParametricVectorGenerator} allows to create surfaces in N-dinensional spaces where each
+ * dimension depends on one parameter 't'. In such generator just one random producer is used, it
+ * defines a set of values for parameter 't'.
+ */
 public class ParametricVectorGeneratorExample {
+    /**
+     * Run example.
+     *
+     * @param args Args.
+     */
     public static void main(String... args) throws IOException {
-        DataStreamGenerator spiral = new ParametricVectorGenerator(new UniformRandomProducer(-50, 50),
+        // Example of Archimedean spiral.
+        DataStreamGenerator spiral = new ParametricVectorGenerator(
+            new UniformRandomProducer(-50, 50), //'t' will be in [-50, 50] range
             t -> Math.cos(Math.abs(t)) * Math.abs(t),
             t -> Math.sin(Math.abs(t)) * Math.abs(t)
         ).asDataStream();
 
         Tracer.showClassificationDatasetHtml("Spiral", spiral, 20000, 0, 1, false);
 
+        // Example of heart shape.
         DataStreamGenerator heart = new ParametricVectorGenerator(new UniformRandomProducer(-50, 50),
             t -> 16 * Math.pow(Math.sin(t), 3),
             t -> 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)
@@ -39,7 +53,9 @@ public class ParametricVectorGeneratorExample {
 
         Tracer.showClassificationDatasetHtml("Heart", heart, 2000, 0, 1, false);
 
-        DataStreamGenerator butterfly = new ParametricVectorGenerator(new UniformRandomProducer(-100, 100),
+        // Example of butterfly-like shape.
+        DataStreamGenerator butterfly = new ParametricVectorGenerator(
+            new UniformRandomProducer(-100, 100), //'t' will be in [-100, 100] range
             t -> 10 * Math.sin(t) * (Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) - Math.pow(Math.sin(t / 12), 5)),
             t -> 10 * Math.cos(t) * (Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) - Math.pow(Math.sin(t / 12), 5))
         ).asDataStream();

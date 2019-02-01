@@ -332,29 +332,69 @@ public class Tracer {
         showHtml(vec, mkVectorColorMapper(vec), useAsciiFallback);
     }
 
+    /**
+     * Open browser and shows given dataset generator's data on two dimensional plane. Label of vectors
+     * is used for ordinate representation.
+     *
+     * @param name Name of dataset for showing.
+     * @param generator Datastream generator.
+     * @param limit Count of points that should be taken from dataset.
+     * @param xIdx Index of dimension for abscissa representation.
+     * @throws IOException
+     */
     public static void showRegressionDatasetInHtml(String name, DataStreamGenerator generator, int limit,
         int xIdx) throws IOException {
 
-        List<LabeledVector<Vector, Double>> values = generator.labeled().limit(limit).collect(Collectors.toList());
+        List<LabeledVector<Double>> values = generator.labeled().limit(limit).collect(Collectors.toList());
         showVectorsHtml(name, values, xIdx, LabeledVector::label, v -> Color.BLUE);
     }
 
+    /**
+     * Open browser and shows given dataset generator's data on two dimensional plane. Label of vectors
+     * is used for ordinate representation.
+     *
+     * @param generator Datastream generator.
+     * @param limit Count of points that should be taken from dataset.
+     * @param xIdx Index of dimension for abscissa representation.
+     * @throws IOException
+     */
     public static void showRegressionDatasetInHtml(DataStreamGenerator generator, int limit,
         int xIdx) throws IOException {
 
         showRegressionDatasetInHtml("Regression dataset", generator, limit, xIdx);
     }
 
+    /**
+     * Open browser and shows given dataset generator's data on two dimensional plane.
+     *
+     * @param generator Datastream generator.
+     * @param limit Count of points that should be taken from dataset.
+     * @param xIdx Index of dimension for abscissa representation.
+     * @param yIdx Index of dimension for ordinate representation.
+     * @param isLabeled if isLabeled == true then colors will be used for separate different classes on plane.
+     * @throws IOException
+     */
     public static void showClassificationDatasetHtml(DataStreamGenerator generator, int limit,
         int xIdx, int yIdx, boolean isLabeled) throws IOException {
 
         showClassificationDatasetHtml("Classification dataset", generator, limit, xIdx, yIdx, isLabeled);
     }
 
+    /**
+     * Open browser and shows given dataset generator's data on two dimensional plane.
+     *
+     * @param name Name of dataset for showing.
+     * @param generator Datastream generator.
+     * @param limit Count of points that should be taken from dataset.
+     * @param xIdx Index of dimension for abscissa representation.
+     * @param yIdx Index of dimension for ordinate representation.
+     * @param isLabeled if isLabeled == true then colors will be used for separate different classes on plane.
+     * @throws IOException
+     */
     public static void showClassificationDatasetHtml(String name, DataStreamGenerator generator, int limit,
         int xIdx, int yIdx, boolean isLabeled) throws IOException {
 
-        List<LabeledVector<Vector, Double>> values = generator.labeled().limit(limit).collect(Collectors.toList());
+        List<LabeledVector<Double>> values = generator.labeled().limit(limit).collect(Collectors.toList());
         Map<Integer, Color> labelsMapping = new HashMap<>();
         if (isLabeled) {
             Set<Double> lbls = values.stream().map(LabeledVector::label).collect(Collectors.toSet());
@@ -369,9 +409,17 @@ public class Tracer {
         );
     }
 
-    private static void showVectorsHtml(String name, List<LabeledVector<Vector, Double>> values,
-        int xIndex, Function<LabeledVector<Vector, Double>, Double> yGetter,
-        Function<LabeledVector<Vector, Double>, Color> colorGetter) throws IOException {
+    /**
+     * @param name Dataset name for showing.
+     * @param values List of vectors are taken from dataset generator.
+     * @param xIndex Index of abscissa in vector.
+     * @param yGetter Getter of ordinate value from vector.
+     * @param colorGetter Getter of collor for showing.
+     * @throws IOException
+     */
+    private static void showVectorsHtml(String name, List<LabeledVector<Double>> values,
+        int xIndex, Function<LabeledVector<Double>, Double> yGetter,
+        Function<LabeledVector<Double>, Color> colorGetter) throws IOException {
 
         String tmpl = fileToString("d3-dataset-template.html");
 
@@ -389,6 +437,13 @@ public class Tracer {
         );
     }
 
+    /**
+     * Serialize xy-pair with vector to JSON representation.
+     *
+     * @param x X-value.
+     * @param y Y-value.
+     * @param clr Color.
+     */
     private static String dataColorJson(double x, double y, Color clr) {
         return "{" +
             "x: " + String.format(LOCALE, "%4f", x) +
@@ -397,22 +452,6 @@ public class Tracer {
             ", g: " + clr.getGreen() +
             ", b: " + clr.getBlue() +
             "}";
-    }
-
-    private static class DatasetGraphRow {
-        private final double x;
-        private final double y;
-        private final int r;
-        private final int g;
-        private final int b;
-
-        public DatasetGraphRow(double x, double y, int r, int g, int b) {
-            this.x = x;
-            this.y = y;
-            this.r = r;
-            this.g = g;
-            this.b = b;
-        }
     }
 
     /**
