@@ -77,7 +77,7 @@ import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode;
+import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
@@ -113,8 +113,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
@@ -563,9 +561,8 @@ public class GridMapQueryExecutor {
 
         final int[] parts = qryParts == null ? partsMap == null ? null : partsMap.get(ctx.localNodeId()) : qryParts;
 
-        final DistributedJoinMode joinMode = distributedJoinMode(
-            req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
-            req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
+        boolean distributedJoins = req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS);
+        boolean local = req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL);
 
         final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
@@ -660,7 +657,8 @@ public class GridMapQueryExecutor {
                     partsMap,
                     parts,
                     req.pageSize(),
-                    joinMode,
+                    distributedJoins,
+                    local,
                     enforceJoinOrder,
                     false, // Replicated is always false here (see condition above).
                     req.timeout(),
@@ -687,7 +685,8 @@ public class GridMapQueryExecutor {
                                 partsMap,
                                 parts,
                                 req.pageSize(),
-                                joinMode,
+                                distributedJoins,
+                                local,
                                 enforceJoinOrder,
                                 false,
                                 req.timeout(),
@@ -717,7 +716,8 @@ public class GridMapQueryExecutor {
             partsMap,
             parts,
             req.pageSize(),
-            joinMode,
+            distributedJoins,
+            local,
             enforceJoinOrder,
             replicated,
             req.timeout(),
@@ -742,7 +742,8 @@ public class GridMapQueryExecutor {
      * @param partsMap Partitions map for unstable topology.
      * @param parts Explicit partitions for current node.
      * @param pageSize Page size.
-     * @param distributedJoinMode Query distributed join mode.
+     * @param distributeJoins Query distributed join mode.
+     * @param local Lcoal flag.
      * @param lazy Streaming flag.
      * @param mvccSnapshot MVCC snapshot.
      * @param tx Transaction.
@@ -762,7 +763,8 @@ public class GridMapQueryExecutor {
         final Map<UUID, int[]> partsMap,
         final int[] parts,
         final int pageSize,
-        final DistributedJoinMode distributedJoinMode,
+        final boolean distributeJoins,
+        final boolean local,
         final boolean enforceJoinOrder,
         final boolean replicated,
         final int timeout,
@@ -800,7 +802,8 @@ public class GridMapQueryExecutor {
                         partsMap,
                         parts,
                         pageSize,
-                        distributedJoinMode,
+                        distributeJoins,
+                        local,
                         enforceJoinOrder,
                         replicated,
                         timeout,
@@ -872,6 +875,8 @@ public class GridMapQueryExecutor {
                 throw new IllegalStateException();
 
             // Prepare query context.
+            DistributedJoinContext distirbutedJoinCtx = distributeJoins ? new DistributedJoinContext(local) : null;
+
             GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
                 node.id(),
                 reqId,
@@ -879,7 +884,7 @@ public class GridMapQueryExecutor {
                 replicated ? REPLICATED : MAP)
                 .filter(h2.backupFilter(topVer, parts))
                 .partitionsMap(partsMap)
-                .distributedJoinMode(distributedJoinMode)
+                .distributedJoinContext(distirbutedJoinCtx)
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
                 .reservations(reserved)
@@ -888,7 +893,7 @@ public class GridMapQueryExecutor {
 
             Connection conn = h2.connections().connectionForThread().connection(schemaName);
 
-            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
+            H2Utils.setupConnection(conn, distributeJoins, enforceJoinOrder);
 
             GridH2QueryContext.set(qctx);
 
@@ -1091,7 +1096,7 @@ public class GridMapQueryExecutor {
         if (qctx != null) { // No-op if already released.
             GridH2QueryContext.clearThreadLocal();
 
-            if (qctx.distributedJoinMode() == OFF)
+            if (qctx.distributedJoinContext() == null)
                 qctx.clearContext(false);
         }
     }

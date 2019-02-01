@@ -17,35 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
- * Defines set of distributed join modes.
+ * Context for distributed joins.
  */
-public enum DistributedJoinMode {
-    /**
-     * Distributed joins is disabled. Local joins will be performed instead.
-     */
-    OFF,
+public class DistributedJoinContext {
+    /** Local flag. */
+    private final boolean loc;
+
+    // TODO
+    public DistributedJoinContext(boolean loc) {
+        this.loc = loc;
+    }
 
     /**
-     * Distributed joins is enabled within local node only.
-     *
-     * NOTE: This mode is used with segmented indices for local sql queries.
-     * As in this case we need to make distributed join across local index segments
-     * and prevent range-queries to other nodes.
+     * @return Local flag.
      */
-    LOCAL_ONLY,
+    public boolean local() {
+        return loc;
+    }
 
-    /**
-     * Distributed joins is enabled.
-     */
-    ON;
-
-    /**
-     * @param isLocal Query local flag.
-     * @param distributedJoins Query distributed joins flag.
-     * @return DistributedJoinMode for the query.
-     */
-    public static DistributedJoinMode distributedJoinMode(boolean isLocal, boolean distributedJoins) {
-        return distributedJoins ? (isLocal ? LOCAL_ONLY : ON) : OFF;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DistributedJoinContext.class, this);
     }
 }
