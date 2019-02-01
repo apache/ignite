@@ -57,14 +57,14 @@ public class IgniteModelStorageUtil {
         byte[] serializedMdl = Utils.serialize(mdlWrapper);
         UUID mdlId = UUID.randomUUID();
 
-        saveModelDescriptorStorage(ignite, name, mdlId);
+        saveModelDescriptor(ignite, name, mdlId);
 
         try {
-            saveModelStorage(ignite, serializedMdl, mdlId);
+            saveModelEntity(ignite, serializedMdl, mdlId);
         }
         catch (Exception e) {
             // Here we need to do a rollback and remove descriptor from correspondent storage.
-            removeModelStorage(ignite, mdlId);
+            removeModelEntity(ignite, mdlId);
             throw e;
         }
     }
@@ -82,7 +82,7 @@ public class IgniteModelStorageUtil {
 
         UUID mdlId = UUID.fromString(desc.getName());
         removeModel(ignite, IGNITE_MDL_FOLDER + "/" + mdlId);
-        removeModelDescriptorStorage(ignite, name);
+        removeModelDescriptor(ignite, name);
     }
 
     /**
@@ -137,7 +137,7 @@ public class IgniteModelStorageUtil {
      * @param serializedMdl Serialized model represented as a byte array.
      * @param mdlId Model identifier.
      */
-    private static void saveModelStorage(Ignite ignite, byte[] serializedMdl, UUID mdlId) {
+    private static void saveModelEntity(Ignite ignite, byte[] serializedMdl, UUID mdlId) {
         ModelStorage storage = new ModelStorageFactory().getModelStorage(ignite);
         storage.mkdirs(IGNITE_MDL_FOLDER);
         storage.putFile(IGNITE_MDL_FOLDER + "/" + mdlId, serializedMdl, true);
@@ -149,7 +149,7 @@ public class IgniteModelStorageUtil {
      * @param ignite Ignite instance.
      * @param mdlId Model identifier.
      */
-    private static void removeModelStorage(Ignite ignite, UUID mdlId) {
+    private static void removeModelEntity(Ignite ignite, UUID mdlId) {
         ModelStorage storage = new ModelStorageFactory().getModelStorage(ignite);
         storage.remove(IGNITE_MDL_FOLDER + "/" + mdlId);
     }
@@ -163,7 +163,7 @@ public class IgniteModelStorageUtil {
      * @param mdlId Model identifier used to find model in model storage (only with {@link ModelStorageModelReader}).
      * @throws IllegalArgumentException If model with given name was already saved.
      */
-    private static void saveModelDescriptorStorage(Ignite ignite, String name, UUID mdlId) {
+    private static void saveModelDescriptor(Ignite ignite, String name, UUID mdlId) {
         ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
 
         boolean saved = descStorage.putIfAbsent(name, new ModelDescriptor(
@@ -184,7 +184,7 @@ public class IgniteModelStorageUtil {
      * @param ignite Ignite instance.
      * @param name Model name.
      */
-    private static void removeModelDescriptorStorage(Ignite ignite, String name) {
+    private static void removeModelDescriptor(Ignite ignite, String name) {
         ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
 
         descStorage.remove(name);
