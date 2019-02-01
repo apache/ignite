@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
+import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedLookupBatch;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
@@ -393,6 +394,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
         if (qctx == null)
             res.status(STATUS_NOT_FOUND);
         else {
+            DistributedJoinContext joinCtx = qctx.distributedJoinContext();
+
+            assert joinCtx != null;
+
             try {
                 RangeSource src;
 
@@ -404,14 +409,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 }
                 else {
                     // This is request to fetch next portion of data.
-                    src = qctx.getSource(node.id(), msg.segment(), msg.batchLookupId());
+                    src = joinCtx.getSource(node.id(), msg.segment(), msg.batchLookupId());
 
                     assert src != null;
                 }
 
                 List<GridH2RowRange> ranges = new ArrayList<>();
 
-                int maxRows = qctx.pageSize();
+                int maxRows = joinCtx.pageSize();
 
                 assert maxRows > 0 : maxRows;
 
@@ -432,11 +437,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 if (src.hasMoreRows()) {
                     // Save source for future fetches.
                     if (msg.bounds() != null)
-                        qctx.putSource(node.id(), msg.segment(), msg.batchLookupId(), src);
+                        joinCtx.putSource(node.id(), msg.segment(), msg.batchLookupId(), src);
                 }
                 else if (msg.bounds() == null) {
                     // Drop saved source.
-                    qctx.putSource(node.id(), msg.segment(), msg.batchLookupId(), null);
+                    joinCtx.putSource(node.id(), msg.segment(), msg.batchLookupId(), null);
                 }
 
                 res.ranges(ranges);
@@ -472,7 +477,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
         if (qctx == null)
             return;
 
-        Map<SegmentKey, RangeStream> streams = qctx.getStreams(msg.batchLookupId());
+        DistributedJoinContext joinCtx = qctx.distributedJoinContext();
+
+        assert joinCtx != null;
+
+        Map<SegmentKey, RangeStream> streams = joinCtx.getStreams(msg.batchLookupId());
 
         if (streams == null)
             return;

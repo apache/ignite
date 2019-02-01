@@ -63,8 +63,8 @@ public class DistributedLookupBatch implements IndexLookupBatch {
     /** */
     private final int affColId;
 
-    /** */
-    private GridH2QueryContext qctx;
+    /** Join context. */
+    private DistributedJoinContext joinCtx;
 
     /** */
     private int batchLookupId;
@@ -142,27 +142,29 @@ public class DistributedLookupBatch implements IndexLookupBatch {
     /** {@inheritDoc} */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
     @Override public boolean addSearchRows(SearchRow firstRow, SearchRow lastRow) {
-        if (qctx == null || findCalled) {
-            if (qctx == null) {
+        if (joinCtx == null || findCalled) {
+            if (joinCtx == null) {
                 // It is the first call after query begin (may be after reuse),
                 // reinitialize query context and result.
-                qctx = GridH2QueryContext.get();
+                GridH2QueryContext qctx = GridH2QueryContext.get();
                 res = new ArrayList<>();
 
                 assert qctx != null;
                 assert !findCalled;
+
+                joinCtx = qctx.distributedJoinContext();
             }
             else {
                 // Cleanup after the previous lookup phase.
                 assert batchLookupId != 0;
 
                 findCalled = false;
-                qctx.putStreams(batchLookupId, null);
+                joinCtx.putStreams(batchLookupId, null);
                 res.clear();
             }
 
             // Reinitialize for the next lookup phase.
-            batchLookupId = qctx.nextBatchLookupId();
+            batchLookupId = joinCtx.nextBatchLookupId();
             rangeStreams = new HashMap<>();
         }
 
@@ -211,9 +213,9 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             List<GridH2RowRangeBounds> bounds;
 
             if (stream == null) {
-                stream = new RangeStream(cctx.kernalContext(), idx, qctx, segmentKey.node());
+                stream = new RangeStream(cctx.kernalContext(), idx, joinCtx, segmentKey.node());
 
-                stream.request(createRequest(qctx, batchLookupId, segmentKey.segmentId()));
+                stream.request(createRequest(joinCtx, batchLookupId, segmentKey.segmentId()));
                 stream.request().bounds(bounds = new ArrayList<>());
 
                 rangeStreams.put(segmentKey, stream);
@@ -224,7 +226,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             bounds.add(rangeBounds);
 
             // If at least one node will have a full batch then we are ok.
-            if (bounds.size() >= qctx.pageSize())
+            if (bounds.size() >= joinCtx.pageSize())
                 batchFull = true;
         }
 
@@ -259,11 +261,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      * @return {@code True} if local query execution is enforced.
      */
     private boolean localQuery() {
-        assert qctx != null : "Missing query context: " + this;
-
-        DistributedJoinContext ctx =  qctx.distributedJoinContext();
-
-        return ctx != null && ctx.local();
+        return joinCtx != null && joinCtx.local();
     }
 
     /**
@@ -276,7 +274,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             return;
         }
 
-        qctx.putStreams(batchLookupId, rangeStreams);
+        joinCtx.putStreams(batchLookupId, rangeStreams);
 
         // Start streaming.
         for (RangeStream stream : rangeStreams.values()) {
@@ -297,14 +295,16 @@ public class DistributedLookupBatch implements IndexLookupBatch {
 
     /** {@inheritDoc} */
     @Override public void reset(boolean beforeQry) {
-        if (beforeQry || qctx == null) // Query context can be null if addSearchRows was never called.
+        if (beforeQry || joinCtx == null) // Query context can be null if addSearchRows was never called.
             return;
 
         assert batchLookupId != 0;
 
         // Do cleanup after the query run.
-        qctx.putStreams(batchLookupId, null);
-        qctx = null; // The same query can be reused multiple times for different query contexts.
+        joinCtx.putStreams(batchLookupId, null);
+
+        joinCtx = null; // The same query can be reused multiple times for different query contexts.
+
         batchLookupId = 0;
 
         rangeStreams = Collections.emptyMap();
@@ -332,28 +332,28 @@ public class DistributedLookupBatch implements IndexLookupBatch {
         int partition = cctx.affinity().partition(affKeyObj);
 
         if (isLocalQry) {
-            if (qctx.partitionsMap() != null) {
+            if (joinCtx.partitionsMap() != null) {
                 // If we have explicit partitions map, we have to use it to calculate affinity node.
-                UUID nodeId = qctx.nodeForPartition(partition, cctx);
+                UUID nodeId = joinCtx.nodeForPartition(partition, cctx);
 
                 if(!cctx.localNodeId().equals(nodeId))
                     return null; // Prevent remote index call for local queries.
             }
 
-            if (!cctx.affinity().primaryByKey(cctx.localNode(), partition, qctx.topologyVersion()))
+            if (!cctx.affinity().primaryByKey(cctx.localNode(), partition, joinCtx.topologyVersion()))
                 return null;
 
             node = cctx.localNode();
         }
         else{
-            if (qctx.partitionsMap() != null) {
+            if (joinCtx.partitionsMap() != null) {
                 // If we have explicit partitions map, we have to use it to calculate affinity node.
-                UUID nodeId = qctx.nodeForPartition(partition, cctx);
+                UUID nodeId = joinCtx.nodeForPartition(partition, cctx);
 
                 node = cctx.discovery().node(nodeId);
             }
             else // Get primary node for current topology version.
-                node = cctx.affinity().primaryByKey(affKeyObj, qctx.topologyVersion());
+                node = cctx.affinity().primaryByKey(affKeyObj, joinCtx.topologyVersion());
 
             if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
                 throw H2Utils.retryException("Failed to get primary node by key for range segment.");
@@ -367,7 +367,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      * @return Collection of nodes for broadcasting.
      */
     public List<SegmentKey> broadcastSegments(boolean isLocalQry) {
-        Map<UUID, int[]> partMap = qctx.partitionsMap();
+        Map<UUID, int[]> partMap = joinCtx.partitionsMap();
 
         List<ClusterNode> nodes;
 
@@ -379,7 +379,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
         }
         else {
             if (partMap == null)
-                nodes = new ArrayList<>(CU.affinityNodes(cctx, qctx.topologyVersion()));
+                nodes = new ArrayList<>(CU.affinityNodes(cctx, joinCtx.topologyVersion()));
             else {
                 nodes = new ArrayList<>(partMap.size());
 
@@ -412,17 +412,18 @@ public class DistributedLookupBatch implements IndexLookupBatch {
     }
 
     /**
-     * @param qctx Query context.
+     * @param joinCtx Join context.
      * @param batchLookupId Batch lookup ID.
      * @param segmentId Segment ID.
      * @return Index range request.
      */
-    public static GridH2IndexRangeRequest createRequest(GridH2QueryContext qctx, int batchLookupId, int segmentId) {
+    public static GridH2IndexRangeRequest createRequest(DistributedJoinContext joinCtx, int batchLookupId,
+        int segmentId) {
         GridH2IndexRangeRequest req = new GridH2IndexRangeRequest();
 
-        req.originNodeId(qctx.originNodeId());
-        req.queryId(qctx.queryId());
-        req.originSegmentId(qctx.segment());
+        req.originNodeId(joinCtx.originNodeId());
+        req.queryId(joinCtx.queryId());
+        req.originSegmentId(joinCtx.segment());
         req.segment(segmentId);
         req.batchLookupId(batchLookupId);
 

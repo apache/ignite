@@ -875,18 +875,28 @@ public class GridMapQueryExecutor {
                 throw new IllegalStateException();
 
             // Prepare query context.
-            DistributedJoinContext distirbutedJoinCtx = distributeJoins ? new DistributedJoinContext(local) : null;
+            DistributedJoinContext distirbutedJoinCtx = null;
+
+            if (distributeJoins) {
+                distirbutedJoinCtx = new DistributedJoinContext(
+                    local,
+                    topVer,
+                    partsMap,
+                    node.id(),
+                    reqId,
+                    segmentId,
+                    pageSize
+                );
+            }
 
             GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
                 node.id(),
                 reqId,
                 segmentId,
-                replicated ? REPLICATED : MAP)
+                replicated ? REPLICATED : MAP
+            )
                 .filter(h2.backupFilter(topVer, parts))
-                .partitionsMap(partsMap)
                 .distributedJoinContext(distirbutedJoinCtx)
-                .pageSize(pageSize)
-                .topologyVersion(topVer)
                 .reservations(reserved)
                 .mvccSnapshot(mvccSnapshot)
                 .lazyWorker(worker);
