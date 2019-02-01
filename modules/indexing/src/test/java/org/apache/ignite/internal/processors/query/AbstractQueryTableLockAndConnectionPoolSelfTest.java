@@ -470,6 +470,36 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             assertBaseQueryResults(rows);
         }
 
+        // Check QueryRetryException is thrown
+        {
+            List<List<?>> rows = new ArrayList<>();
+
+            FieldsQueryCursor<List<?>> cursor = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL));
+
+            Iterator<List<?>> it = cursor.iterator();
+
+            for (int i = 0; i < 10; ++i)
+                rows.add(it.next());
+
+            execute(node, new SqlFieldsQuery("CREATE INDEX \"pers\".PERSON_NAME ON \"pers\".Person (name asc)")).getAll();
+            execute(node, new SqlFieldsQuery("DROP INDEX \"pers\".PERSON_NAME")).getAll();
+
+            try {
+                while (it.hasNext())
+                    rows.add(it.next());
+
+                if (lazy())
+                    fail("Retry exception must be thrown");
+            }
+            catch (Exception e) {
+                if (!lazy() || X.cause(e, QueryRetryException.class) == null) {
+                    log.error("Invalid exception: ", e);
+
+                    fail("QueryRetryException is expected");
+                }
+            }
+        }
+
         // Get data in several pages.
         {
             List<List<?>> rows = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL)).getAll();

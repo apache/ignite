@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.sql.ResultSet;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Session;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -114,16 +110,11 @@ class MapQueryResults {
 
     /**
      * Add result.
-     * @param qry Query result index.
-     * @param q Query object.
-     * @param qrySrcNodeId Query source node.
-     * @param rs Result set.
-     * @param params Query arguments.
+     * @param qryIdx Query result index.
+     * @param res Result.
      */
-    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, log);
-
-        if (!results.compareAndSet(qry, null, res))
+    void addResult(int qryIdx, MapQueryResult res) {
+        if (!results.compareAndSet(qryIdx, null, res))
             throw new IllegalStateException();
     }
 
@@ -174,14 +165,14 @@ class MapQueryResults {
     void closeResult(int idx) {
         MapQueryResult res = results.get(idx);
 
-        if (res != null && !res.closed()) {
-            IgniteH2Session ses = res.session();
+//        log.info("+++ CLOSE " + idx);
 
+        if (res != null && !res.closed()) {
             try {
                 // Session isn't set for lazy=false queries.
                 // Also session == null when result already closed.
-                if (ses != null)
-                    ses.lockTables();
+                res.lock();
+                res.lockTables();
 
                 synchronized (this) {
                     res.close();
@@ -192,8 +183,7 @@ class MapQueryResults {
                 }
             }
             finally {
-                if (ses != null)
-                    ses.unlockTables();
+                res.unlock();
             }
         }
     }

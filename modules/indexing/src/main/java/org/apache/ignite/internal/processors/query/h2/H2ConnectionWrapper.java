@@ -41,9 +41,6 @@ public class H2ConnectionWrapper implements AutoCloseable {
     /** */
     private volatile H2StatementCache statementCache;
 
-    /** */
-    private volatile IgniteH2Session sesWrp;
-
     /**
      * @param conn Connection to use.
      */
@@ -51,8 +48,6 @@ public class H2ConnectionWrapper implements AutoCloseable {
         this.conn = conn;
 
         initStatementCache();
-
-        sesWrp = new IgniteH2Session(H2Utils.session(conn));
     }
 
     /**
@@ -133,20 +128,6 @@ public class H2ConnectionWrapper implements AutoCloseable {
 
     /** Closes wrapped connection. */
     @Override public void close() {
-        try {
-            sesWrp.lockTables();
-
-            U.closeQuiet(conn);
-        }
-        finally {
-            sesWrp.unlockTables();
-        }
-    }
-
-    /**
-     * @return Session wrapper.
-     */
-    public IgniteH2Session sessionWrapper() {
-        return sesWrp;
+        U.closeQuiet(conn);
     }
 }

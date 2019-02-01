@@ -390,12 +390,16 @@ public class GridH2Table extends TableBase {
 
         ses.addLock(this);
 
+//        System.out.println(Thread.currentThread().getName() + "+++ LOCK " + getName() + " " + ses);
+
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
         Long lockVer = sessions.remove(ses);
+
+//        System.out.println(Thread.currentThread().getName() + "+++ UNLOCK " + getName() + " " + ses);
 
         if (lockVer != null)
             unlock(EXCLUSIVE_LOCK == lockVer);
@@ -417,6 +421,8 @@ public class GridH2Table extends TableBase {
 
         if (lockVer != null)
             lock(false);
+
+//        System.out.println(Thread.currentThread().getName() + "+++ READ LOCK " + getName() + " " + ses);
     }
 
     /**
@@ -1292,6 +1298,7 @@ public class GridH2Table extends TableBase {
         for (Table t : s.getLocks()) {
             if (t instanceof GridH2Table) {
                 try {
+//                    System.out.println(Thread.currentThread().getName() + "+++ UNLOCK " + t.getName() + " "+ s);
                     ((GridH2Table)t).unlock(false);
                 }
                 catch (IllegalMonitorStateException e) {

@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Session;
 import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -116,8 +115,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
 import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
 /**
@@ -245,6 +242,7 @@ public class GridMapQueryExecutor {
      */
     private void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
         long qryReqId = msg.queryRequestId();
+//        log.info("+++ CANCEL " + qryReqId);
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
@@ -803,10 +801,13 @@ public class GridMapQueryExecutor {
                     connWrp.connection(schemaName),
                     distributedJoinMode != OFF, enforceJoinOrder, lazy);
 
-                IgniteH2Session sesWrp = connWrp.sessionWrapper();
+                MapQueryResult res = new MapQueryResult(h2, mainCctx, node.id(), qry, params, connWrp, log);
 
-               try {
-                    sesWrp.lockTables();
+//                log.info("+++ EXEC " + reqId + " " + H2Utils.session(connWrp.connection()));
+                qryResults.addResult(qryIdx, res);
+
+                try {
+                    res.lock();
 
                     boolean removeMapping = false;
                     ResultSet rs = null;
@@ -889,7 +890,7 @@ public class GridMapQueryExecutor {
                         assert rs instanceof JdbcResultSet : rs.getClass();
                     }
 
-                    qryResults.addResult(qryIdx, qry, node.id(), rs, params);
+                    res.openResult(rs);
 
                     if (qryResults.cancelled())
                         throw new QueryCancelledException();
@@ -928,7 +929,8 @@ public class GridMapQueryExecutor {
                     qryIdx++;
                 }
                 finally {
-                    sesWrp.unlockTables();
+                    res.unlockTables();
+                    res.unlock();
                 }
             } // for map queries
 
@@ -1212,16 +1214,13 @@ public class GridMapQueryExecutor {
                 MapQueryResult res = qryResults.result(req.query());
                 assert res != null;
 
-                IgniteH2Session ses = res.session();
-
                 try {
                     // Session isn't set for lazy=false queries.
                     // Also session == null when result already closed.
-                    if (ses != null) {
-                        ses.lockTables();
+                    res.lock();
+                    res.lockTables();
+                    res.checkTablesVersions();
 
-                        ses.checkTablesVersions();
-                    }
                     Boolean dataPageScanEnabled = isDataPageScanEnabled(req.getFlags());
 
                     GridQueryNextPageResponse msg = prepareNextPage(
@@ -1242,15 +1241,17 @@ public class GridMapQueryExecutor {
                     if (qctxReduce != null)
                         GridH2QueryContext.set(qctxReduce);
 
-                    if (ses != null)
-                        ses.unlockTables();
+                    res.unlockTables();
+                    res.unlock();
                 }
             }
             catch (Exception e) {
                 QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
 
-                if (retryEx != null)
+                if (retryEx != null) {
+//                    log.info("+++ RETRY NEXT");
                     sendError(node, reqId, retryEx);
+                }
                 else {
                     JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
