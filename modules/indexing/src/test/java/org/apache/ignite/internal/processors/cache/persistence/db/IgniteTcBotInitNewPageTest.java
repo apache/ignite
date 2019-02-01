@@ -40,12 +40,20 @@ public class IgniteTcBotInitNewPageTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE = "cache";
 
-    /** */
-    @Test
-    public void testInitNewPagePageIdConsistency() throws Exception {
-        IgniteEx ex = startGrid(0);
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-        IgniteCache<Object, Object> cache = ex.cache(CACHE);
+        cleanPersistenceDir();
+    }
+
+    /** */
+    public void testInitNewPagePageIdConsistency() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE);
 
         for (int i = 0; i < 1_000_000; i++)
             cache.put(i, i);
