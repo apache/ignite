@@ -54,10 +54,6 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig.ConfigType;
 import org.jetbrains.annotations.Nullable;
-import org.junit.ClassRule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runners.model.Statement;
 
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
@@ -74,30 +70,10 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     private static final Map<Class<?>, TestData<?>> tests = new ConcurrentHashMap<>();
 
     /** */
-    private static final TestRule firstLastTestRuleSpi = (base, description) -> new Statement() {
-        @Override public void evaluate() throws Throwable {
-            GridSpiAbstractTest testClsInstance = (GridSpiAbstractTest)description.getTestClass().newInstance();
-            try {
-                testClsInstance.beforeFirstTest();
-
-                base.evaluate();
-            }
-            finally {
-                testClsInstance.afterLastTest();
-            }
-        }
-    };
-
-    /** Manages first and last test execution. */
-    @SuppressWarnings({"TransientFieldInNonSerializableClass"})
-    @ClassRule public static transient RuleChain firstLastTestRule
-        = RuleChain.outerRule(firstLastTestRuleSpi).around(GridAbstractTest.firstLastTestRule);
-
-    /** */
     private final boolean autoStart;
 
     /** Original context classloader. */
-    private static ClassLoader cl;
+    private ClassLoader cl;
 
     /** */
     protected GridSpiAbstractTest() {
@@ -123,6 +99,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @return Test data.
      */
+    @SuppressWarnings({"unchecked"})
     protected TestData<T> getTestData() throws IgniteCheckedException {
         TestData<T> data = (TestData<T>)tests.get(getClass());
 
@@ -156,12 +133,14 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
 
-        super.setUp();
-    }
+        TestCounters cntrs = getTestCounters();
 
-    /** */
-    private void beforeFirstTest() throws Exception {
-        if (autoStart) {
+        if (cntrs.isReset())
+            cntrs.reset();
+
+        cntrs.incrementStarted();
+
+        if (autoStart && isFirstTest()) {
             GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
             assert spiTest != null;
@@ -173,6 +152,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
             info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
         }
+
+        super.setUp();
     }
 
     /**
@@ -190,6 +171,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"unchecked", "CastToIncompatibleInterface", "InstanceofIncompatibleInterface"})
     protected final void spiStart() throws Exception {
         GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
@@ -231,7 +213,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         if (spiTest.triggerDiscovery() && !getTestData().isDiscoveryTest()) {
             getTestData().getAttributes().putAll(
-                initSpiClassAndVersionAttributes(discoSpi));
+                    initSpiClassAndVersionAttributes(discoSpi));
 
             // Set all local node attributes into discovery SPI.
             discoSpi.setNodeAttributes(getTestData().getAttributes(), VERSION);
@@ -403,10 +385,10 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
             if (cfg != null) {
                 if (getTestData().isDiscoveryTest() ||
-                    (cfg.type() != ConfigType.DISCOVERY && !(spi instanceof DiscoverySpi)) ||
-                    (cfg.type() != ConfigType.SELF && spi instanceof DiscoverySpi)) {
+                        (cfg.type() != ConfigType.DISCOVERY && !(spi instanceof DiscoverySpi)) ||
+                        (cfg.type() != ConfigType.SELF && spi instanceof DiscoverySpi)) {
                     assert m.getName().startsWith("get") : "Test configuration must be a getter [method=" +
-                        m.getName() + ']';
+                            m.getName() + ']';
 
                     // Determine getter name.
                     String name = cfg.setterName();
@@ -417,7 +399,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                     Method setter = getMethod(spi.getClass(), name);
 
                     assert setter != null : "Spi does not have setter for configuration property [spi=" +
-                        spi.getClass().getName() + ", config-prop=" + name + ']';
+                            spi.getClass().getName() + ", config-prop=" + name + ']';
 
                     // Inject configuration parameter into spi.
                     setter.invoke(spi, m.invoke(this));
@@ -439,7 +421,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                 if (mcastAddr != null && !mcastAddr.isEmpty()) {
                     ((TcpDiscoveryMulticastIpFinder)ipFinder).setMulticastGroup(mcastAddr);
                     ((TcpDiscoveryMulticastIpFinder)ipFinder).setMulticastPort(
-                        GridTestUtils.getNextMulticastPort(getClass()));
+                            GridTestUtils.getNextMulticastPort(getClass()));
                 }
             }
         }
@@ -468,6 +450,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      *
      * @return Class of the SPI implementation.
      */
+    @SuppressWarnings({"unchecked"})
     protected final Class<? extends T> getSpiClass() {
         GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
@@ -508,14 +491,13 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @throws Exception If failed.
      */
     @Override public final void tearDown() throws Exception {
+        getTestCounters().incrementStopped();
+
+        boolean wasLast = isLastTest();
+
         super.tearDown();
 
-        Thread.currentThread().setContextClassLoader(cl);
-    }
-
-    /** */
-    private void afterLastTest() throws Exception {
-        if (autoStart) {
+        if (autoStart && wasLast) {
             GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
             assert spiTest != null;
@@ -528,6 +510,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
             info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
         }
+
+        Thread.currentThread().setContextClassLoader(cl);
     }
 
     /**
@@ -711,9 +695,9 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         /** {@inheritDoc} */
         @Override public String toString() {
             return getClass().getSimpleName() +
-                " [spi=" + spi +
-                ", discoSpi=" + discoSpi +
-                ", allAttrs=" + allAttrs + ']';
+                    " [spi=" + spi +
+                    ", discoSpi=" + discoSpi +
+                    ", allAttrs=" + allAttrs + ']';
         }
     }
 
