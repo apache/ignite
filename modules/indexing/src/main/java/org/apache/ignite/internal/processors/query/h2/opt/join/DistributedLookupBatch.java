@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -44,7 +45,6 @@ import java.util.UUID;
 import java.util.concurrent.Future;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.LOCAL_ONLY;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds.rangeBounds;
 
@@ -119,8 +119,8 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             return null;
 
         // Try to extract affinity key from primary key.
-        Value pkFirst = firstRow.getValue(KEY_COL);
-        Value pkLast = lastRow.getValue(KEY_COL);
+        Value pkFirst = firstRow.getValue(QueryUtils.KEY_COL);
+        Value pkLast = lastRow.getValue(QueryUtils.KEY_COL);
 
         if (pkFirst == ValueNull.INSTANCE || pkLast == ValueNull.INSTANCE)
             return GridH2IndexBase.EXPLICIT_NULL;

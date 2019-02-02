@@ -35,8 +35,6 @@ import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
@@ -49,7 +47,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class WalRolloverTypesTest extends GridCommonAbstractTest {
     /** */
     private WALMode walMode;

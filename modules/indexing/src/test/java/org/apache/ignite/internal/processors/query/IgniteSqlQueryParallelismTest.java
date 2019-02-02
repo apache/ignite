@@ -27,18 +27,15 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * A test against setting different values of query parallelism in cache configurations of the same cache.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
-public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
+public class IgniteSqlQueryParallelismTest extends AbstractIndexingCommonTest {
     /** */
     private boolean isClient = false;
 

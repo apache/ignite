@@ -77,6 +77,11 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        node = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>(CACHE_NAME);
 

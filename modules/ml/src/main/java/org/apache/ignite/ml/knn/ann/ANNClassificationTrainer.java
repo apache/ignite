@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -40,6 +41,7 @@ import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -60,27 +62,25 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
 
-    /** KMeans initializer. */
-    private long seed;
-
     /**
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param extractor Mapping from upstream entry to {@link LabeledVector}.
      * @return Model.
      */
     @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+        DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
+
+        IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
+        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
 
         List<Vector> centers;
         CentroidStat centroidStat;
@@ -102,7 +102,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(ANNClassificationModel mdl) {
+    @Override public boolean isUpdateable(ANNClassificationModel mdl) {
         return mdl.getDistanceMeasure().equals(distance) && mdl.getCandidates().rowSize() == k;
     }
 
@@ -116,7 +116,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     @NotNull private LabeledVectorSet<ProbableLabel, LabeledVector> buildLabelsForCandidates(List<Vector> centers,
         CentroidStat centroidStat) {
         // init
-        final LabeledVector<Vector, ProbableLabel>[] arr = new LabeledVector[centers.size()];
+        final LabeledVector<ProbableLabel>[] arr = new LabeledVector[centers.size()];
 
         // fill label for each centroid
         for (int i = 0; i < centers.size(); i++)
@@ -140,7 +140,6 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         KMeansTrainer trainer = new KMeansTrainer()
             .withAmountOfClusters(k)
             .withMaxIterations(maxIterations)
-            .withSeed(seed)
             .withDistance(distance)
             .withEpsilon(epsilon);
 
@@ -331,26 +330,6 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      */
     public ANNClassificationTrainer withDistance(DistanceMeasure distance) {
         this.distance = distance;
-        return this;
-    }
-
-    /**
-     * Gets the seed number.
-     *
-     * @return The parameter value.
-     */
-    public long getSeed() {
-        return seed;
-    }
-
-    /**
-     * Set up the seed.
-     *
-     * @param seed The parameter value.
-     * @return Model with new seed parameter value.
-     */
-    public ANNClassificationTrainer withSeed(long seed) {
-        this.seed = seed;
         return this;
     }
 

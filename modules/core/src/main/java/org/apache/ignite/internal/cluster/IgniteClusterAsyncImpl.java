@@ -361,6 +361,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public DistributedBaselineConfiguration baselineConfiguration() {
+        return cluster.baselineConfiguration();
+    }
+
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cluster = (IgniteClusterImpl)in.readObject();
     }

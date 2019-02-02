@@ -65,7 +65,6 @@ public class ANNClassificationExample {
                 .withDistance(new ManhattanDistance())
                 .withK(50)
                 .withMaxIterations(1000)
-                .withSeed(1234L)
                 .withEpsilon(1e-2);
 
             long startTrainingTime = System.currentTimeMillis();

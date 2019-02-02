@@ -787,7 +787,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoWrk.discoCache = discoCache;
 
                     if (!isLocDaemon && !ctx.clientDisconnected()) {
-                        ctx.cache().context().coordinators().onLocalJoin(discoEvt);
+                        ctx.cache().context().coordinators().onLocalJoin(discoEvt, discoCache);
 
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
@@ -848,6 +848,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     gridStartTime = getSpi().getGridStartTime();
 
                     ((IgniteKernal)ctx.grid()).onReconnected(clusterRestarted);
+
+                    ctx.cache().context().coordinators().onLocalJoin(localJoinEvent(), discoCache);
 
                     ctx.cache().context().exchange().onLocalJoin(localJoinEvent(), discoCache);
 
@@ -2486,7 +2488,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheMap Map to add to.
      * @param cacheName Cache name.
-     * @param rich Node to add
+     * @param node Node to add
      */
     private void addToMap(Map<Integer, List<ClusterNode>> cacheMap, String cacheName, ClusterNode node) {
         List<ClusterNode> cacheNodes = cacheMap.get(CU.cacheId(cacheName));

@@ -35,8 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -47,7 +45,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Base class for eviction tests.
  */
-@RunWith(JUnit4.class)
 public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /** Replicated cache. */
     private CacheMode mode = REPLICATED;
@@ -99,7 +96,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = LOCAL;
 
@@ -117,7 +114,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testPartitioned() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         mode = PARTITIONED;
         nearEnabled = true;

@@ -53,6 +53,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
@@ -1063,7 +1065,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert req != null : exchActions;
 
-        DiscoveryDataClusterState state = cctx.kernalContext().state().clusterState();
+        GridKernalContext kctx = cctx.kernalContext();
+
+        DiscoveryDataClusterState state = kctx.state().clusterState();
 
         if (state.transitionError() != null)
             exchangeLocE = state.transitionError();
@@ -1072,7 +1076,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (req.activate()) {
                 if (log.isInfoEnabled()) {
                     log.info("Start activation process [nodeId=" + cctx.localNodeId() +
-                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", client=" + kctx.clientNode() +
                         ", topVer=" + initialVersion() + "]");
                 }
 
@@ -1093,7 +1097,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     try {
                         registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
-                        if (!cctx.kernalContext().clientNode())
+                        if (!kctx.clientNode())
                             cctx.cache().shutdownNotFinishedRecoveryCaches();
                     }
                     finally {
@@ -1102,13 +1106,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully activated caches [nodeId=" + cctx.localNodeId() +
-                            ", client=" + cctx.kernalContext().clientNode() +
+                            ", client=" + kctx.clientNode() +
                             ", topVer=" + initialVersion() + "]");
                     }
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to activate node components [nodeId=" + cctx.localNodeId() +
-                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", client=" + kctx.clientNode() +
                         ", topVer=" + initialVersion() + "]", e);
 
                     exchangeLocE = e;
@@ -1130,34 +1134,36 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else {
                 if (log.isInfoEnabled()) {
                     log.info("Start deactivation process [nodeId=" + cctx.localNodeId() +
-                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", client=" + kctx.clientNode() +
                         ", topVer=" + initialVersion() + "]");
                 }
 
                 cctx.exchange().exchangerBlockingSectionBegin();
 
                 try {
-                    cctx.kernalContext().dataStructures().onDeActivate(cctx.kernalContext());
+                    ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onDeActivate(kctx);
+
+                    kctx.dataStructures().onDeActivate(kctx);
 
                     if (cctx.kernalContext().service() instanceof GridServiceProcessor)
-                        ((GridServiceProcessor)cctx.kernalContext().service()).onDeActivate(cctx.kernalContext());
+                        ((GridServiceProcessor)kctx.service()).onDeActivate(cctx.kernalContext());
 
                     assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
 
                     registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
-                    cctx.kernalContext().encryption().onDeActivate(cctx.kernalContext());
+                    kctx.encryption().onDeActivate(kctx);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully deactivated data structures, services and caches [" +
                             "nodeId=" + cctx.localNodeId() +
-                            ", client=" + cctx.kernalContext().clientNode() +
+                            ", client=" + kctx.clientNode() +
                             ", topVer=" + initialVersion() + "]");
                     }
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to deactivate node components [nodeId=" + cctx.localNodeId() +
-                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", client=" + kctx.clientNode() +
                         ", topVer=" + initialVersion() + "]", e);
 
                     exchangeLocE = e;
@@ -1181,13 +1187,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.affinity().onBaselineTopologyChanged(this, crd);
                 }
 
-                if (CU.isPersistenceEnabled(cctx.kernalContext().config()) && !cctx.kernalContext().clientNode())
-                    cctx.kernalContext().state().onBaselineTopologyChanged(req.baselineTopology(),
+                if (CU.isPersistenceEnabled(kctx.config()) && !kctx.clientNode())
+                    kctx.state().onBaselineTopologyChanged(req.baselineTopology(),
                         req.prevBaselineTopologyHistoryItem());
             }
             catch (Exception e) {
                 U.error(log, "Failed to change baseline topology [nodeId=" + cctx.localNodeId() +
-                    ", client=" + cctx.kernalContext().clientNode() +
+                    ", client=" + kctx.clientNode() +
                     ", topVer=" + initialVersion() + "]", e);
 
                 exchangeLocE = e;
@@ -1197,7 +1203,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+        return kctx.clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
     }
 
     /**
@@ -1596,9 +1602,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // Assign to class variable so it will be included into toString() method.
             this.partReleaseFut = partReleaseFut;
-
-            if (exchId.isLeft())
-                cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
@@ -1772,8 +1775,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.exchange().exchangerUpdateHeartbeat();
         }
-
-        cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
     }
 
     /**
@@ -2118,8 +2119,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 }
 
-                if (!grpToRefresh.isEmpty())
+                if (!grpToRefresh.isEmpty()){
+                    if (log.isDebugEnabled())
+                        log.debug("Refresh partitions due to partitions initialized when affinity ready [" +
+                            grpToRefresh.stream().map(CacheGroupContext::name).collect(Collectors.toList()) + ']');
+
                     cctx.exchange().refreshPartitions(grpToRefresh);
+                }
             }
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -2150,7 +2156,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             tryToPerformLocalSnapshotOperation();
 
         if (err == null)
-            cctx.coordinators().onExchangeDone(exchCtx.events().discoveryCache());
+            cctx.coordinators().onExchangeDone(events().discoveryCache());
 
         // Create and destory caches and cache proxies.
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
@@ -4340,8 +4346,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     public void onNodeLeft(final ClusterNode node) {
         if (isDone() || !enterBusy())
             return;
-
-        cctx.mvcc().removeExplicitNodeLocks(node.id(), initialVersion());
 
         try {
             onDiscoveryEvent(new IgniteRunnable() {

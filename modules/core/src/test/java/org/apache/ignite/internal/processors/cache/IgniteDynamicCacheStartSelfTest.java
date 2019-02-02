@@ -57,14 +57,11 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for dynamic cache start.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String DYNAMIC_CACHE_NAME = "TestDynamicCache";

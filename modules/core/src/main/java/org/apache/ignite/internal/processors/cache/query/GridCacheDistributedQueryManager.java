@@ -281,7 +281,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.keepBinary(),
                 req.subjectId(),
                 req.taskHash(),
-                req.mvccSnapshot()
+                req.mvccSnapshot(),
+                req.isDataPageScanEnabled()
             );
 
         return new GridCacheQueryInfo(
@@ -534,7 +535,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             qry.query().validate();
 
             String clsName = qry.query().queryClassName();
-
+            Boolean dataPageScanEnabled = qry.query().isDataPageScanEnabled();
             MvccSnapshot mvccSnapshot = qry.query().mvccSnapshot();
 
             final GridCacheQueryRequest req = new GridCacheQueryRequest(
@@ -559,7 +560,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 queryTopologyVersion(),
                 mvccSnapshot,
                 // Force deployment anyway if scan query is used.
-                cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()));
+                cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()),
+                dataPageScanEnabled);
 
             addQueryFuture(req.id(), fut);
 
@@ -690,7 +692,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.taskHash(),
                 queryTopologyVersion(),
                 // Force deployment anyway if scan query is used.
-                cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()));
+                cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
+                qry.isDataPageScanEnabled());
 
             sendRequest(fut, req, nodes);
         }
@@ -757,7 +760,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().taskHash(),
                 queryTopologyVersion(),
                 null,
-                cctx.deploymentEnabled());
+                cctx.deploymentEnabled(),
+                qry.query().isDataPageScanEnabled());
 
             addQueryFuture(req.id(), fut);
 

@@ -21,20 +21,17 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.odbc.SqlStateCode.CONSTRAINT_VIOLATION;
 import static org.apache.ignite.internal.processors.odbc.SqlStateCode.INTERNAL_ERROR;
 
 /**
  */
-@RunWith(JUnit4.class)
-public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
+public class IgniteSQLColumnConstraintsTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);

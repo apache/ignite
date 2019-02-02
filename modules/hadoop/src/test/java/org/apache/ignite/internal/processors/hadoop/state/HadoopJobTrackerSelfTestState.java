@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HadoopJobTrackerSelfTestState {
     /** */
-    private static HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTestState.class);
+    private static final HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTestState.class);
 
     /** Map task execution count. */
     public static final AtomicInteger mapExecCnt = m.put("mapExecCnt", new AtomicInteger());

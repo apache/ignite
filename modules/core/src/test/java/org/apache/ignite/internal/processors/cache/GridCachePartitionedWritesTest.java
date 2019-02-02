@@ -31,8 +31,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -42,14 +40,13 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  * wrapped only in near cache (see {@link GridCacheProcessor} init logic).
  */
 @SuppressWarnings({"unchecked"})
-@RunWith(JUnit4.class)
 public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
     /** Cache store. */
     private CacheStore store;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

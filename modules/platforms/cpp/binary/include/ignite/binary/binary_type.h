@@ -91,7 +91,7 @@ static int32_t GetFieldId(const char* name) \
  * Implementation of IsNull() function which always returns false.
  */
 #define IGNITE_BINARY_IS_NULL_FALSE(T) \
-static bool IsNull(const T& obj) \
+static bool IsNull(const T&) \
 { \
     return false; \
 }

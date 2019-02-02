@@ -26,9 +26,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,7 +41,6 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 /**
  * Test node restart.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommonAbstractTest {
     /** Flag for debug output. */
     private static final boolean DEBUG = false;
@@ -129,7 +127,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         if (nearEnabled())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         backups = DFLT_BACKUPS;
         partitions = DFLT_PARTITIONS;
@@ -197,8 +195,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      */
     @Test
     public void testDisabledPreloadRestart() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10261", MvccFeatureChecker.forcedMvcc());
 
         preloadMode = NONE;
 
