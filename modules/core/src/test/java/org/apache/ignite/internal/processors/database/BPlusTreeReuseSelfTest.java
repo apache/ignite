@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
+import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -77,13 +78,13 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
      */
     private void doTestInvokeAll(boolean canGetRow) throws Exception {
         CNT = 1000;
-        MAX_PER_PAGE = 5;
+        MAX_PER_PAGE = 3;
 
         TestTree tree = createTestTree(canGetRow);
         TreeSet<Long> set = new TreeSet<>();
 
-        for (int i = 0; i < 15_000; i++) {
-            long batchSize = 2 + randomInt(100);
+        for (int i = 0; i < 10_000; i++) {
+            long batchSize = 1 + randomInt(100);
 
             TreeSet<Long> puts = new TreeSet<>();
             TreeSet<Long> all = new TreeSet<>();
@@ -149,6 +150,15 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
 
             assertEqualContents(tree, set);
         }
+    }
+
+    public void doTestInvokeAllMultithreaded(boolean canGetRow) {
+        CNT = 256;
+        MAX_PER_PAGE = 2;
+
+        final GridStripedLock lock = new GridStripedLock(CNT);
+
+
     }
 
     /**
