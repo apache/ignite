@@ -270,12 +270,15 @@ class MapQueryResult {
      * Close the result.
      */
     void close() {
+        assert lock.isHeldByCurrentThread();
+
         if (closed)
             return;
 
         closed = true;
 
-        res.close();
+        if (res != null)
+            res.close();
 
         if (detachedConn != null)
             detachedConn.recycle();
@@ -329,7 +332,11 @@ class MapQueryResult {
         /** */
         private final int rowCnt;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param rs H2 result set.
+         */
         Result(ResultSet rs) {
             if (rs != null) {
                 this.rs = rs;
