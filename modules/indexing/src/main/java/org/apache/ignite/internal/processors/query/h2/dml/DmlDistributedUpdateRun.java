@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep;
+package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Context for DML operation on reducer node.
  */
-class DistributedUpdateRun {
+public class DmlDistributedUpdateRun {
     /** Expected number of responses. */
     private final int nodeCount;
 
@@ -52,7 +52,7 @@ class DistributedUpdateRun {
      *
      * @param nodeCount Number of nodes to await results from.
      */
-    DistributedUpdateRun(int nodeCount) {
+    public DmlDistributedUpdateRun(int nodeCount) {
         this.nodeCount = nodeCount;
 
         rspNodes = new HashSet<>(nodeCount);
@@ -61,7 +61,7 @@ class DistributedUpdateRun {
     /**
      * @return Result future.
      */
-    GridFutureAdapter<UpdateResult> future() {
+    public GridFutureAdapter<UpdateResult> future() {
         return fut;
     }
 
@@ -69,7 +69,7 @@ class DistributedUpdateRun {
      * Handle disconnection.
      * @param e Pre-formatted error.
      */
-    void handleDisconnect(CacheException e) {
+    public void handleDisconnect(CacheException e) {
         fut.onDone(new IgniteCheckedException("Update failed because client node have disconnected.", e));
     }
 
@@ -78,7 +78,7 @@ class DistributedUpdateRun {
      *
      * @param nodeId Node id.
      */
-    void handleNodeLeft(UUID nodeId) {
+    public void handleNodeLeft(UUID nodeId) {
         fut.onDone(new IgniteCheckedException("Update failed because map node left topology [nodeId=" + nodeId + "]"));
     }
 
@@ -88,7 +88,7 @@ class DistributedUpdateRun {
      * @param id Node id.
      * @param msg Response message.
      */
-    void handleResponse(UUID id, GridH2DmlResponse msg) {
+    public void handleResponse(UUID id, GridH2DmlResponse msg) {
         synchronized (this) {
             if (!rspNodes.add(id))
                 return; // ignore duplicated messages

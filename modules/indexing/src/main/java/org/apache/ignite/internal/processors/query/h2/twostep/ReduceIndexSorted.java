@@ -54,7 +54,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase
 /**
  * Sorted index.
  */
-public final class GridMergeIndexSorted extends GridMergeIndex {
+public final class ReduceIndexSorted extends ReduceMergeIndex {
     /** */
     private static final IndexType TYPE = IndexType.createNonUnique(false);
 
@@ -95,9 +95,9 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
      * @param name Index name,
      * @param cols Columns.
      */
-    public GridMergeIndexSorted(
+    public ReduceIndexSorted(
         GridKernalContext ctx,
-        GridMergeTable tbl,
+        ReduceTable tbl,
         String name,
         IndexColumn[] cols
     ) {

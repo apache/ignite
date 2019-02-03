@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ScanIndex;
 import org.apache.ignite.internal.util.typedef.F;
@@ -28,24 +27,24 @@ import org.h2.index.Index;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
-import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
-import org.h2.table.TableFilter;
 import org.h2.table.TableType;
 
 /**
- * Merge table for distributed queries.
+ * Table for reduce phase. Created for every splitted map query. Tables are created in H2 through SQL statement.
+ * In order to avoid overhead on SQL execution for every query, we create {@link ReduceTableWrapper} instead
+ * and set real {@code ReduceTable} through thread-local during query execution. This allow us to have only
+ * very limited number of physical tables in H2 for all user requests.
  */
-public class GridMergeTable extends TableBase {
+public class ReduceTable extends TableBase {
     /** */
     private ArrayList<Index> idxs;
 
     /**
      * @param data Data.
      */
-    public GridMergeTable(CreateTableData data) {
+    public ReduceTable(CreateTableData data) {
         super(data);
     }
 
@@ -61,16 +60,16 @@ public class GridMergeTable extends TableBase {
     /**
      * @return Merge index.
      */
-    public GridMergeIndex getMergeIndex() {
-        return (GridMergeIndex)idxs.get(idxs.size() - 1); // Sorted index must be the last.
+    public ReduceMergeIndex getMergeIndex() {
+        return (ReduceMergeIndex)idxs.get(idxs.size() - 1); // Sorted index must be the last.
     }
 
     /**
      * @param idx Index.
      * @return Scan index.
      */
-    public static GridH2ScanIndex<GridMergeIndex> createScanIndex(GridMergeIndex idx) {
-        return new ScanIndex(idx);
+    public static GridH2ScanIndex<ReduceMergeIndex> createScanIndex(ReduceMergeIndex idx) {
+        return new ReduceTableScanIndex(idx);
     }
 
     /** {@inheritDoc} */
@@ -177,25 +176,5 @@ public class GridMergeTable extends TableBase {
     /** {@inheritDoc} */
     @Override public void checkRename() {
         throw DbException.getUnsupportedException("rename");
-    }
-
-    /**
-     * Scan index wrapper.
-     */
-    private static class ScanIndex extends GridH2ScanIndex<GridMergeIndex> {
-        /**
-         * @param delegate Delegate.
-         */
-        public ScanIndex(GridMergeIndex delegate) {
-            super(delegate);
-        }
-
-        /** {@inheritDoc} */
-        @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
-            SortOrder sortOrder, HashSet<Column> allColumnsSet) {
-            long rows = getRowCountApproximation();
-
-            return getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
-        }
     }
 }

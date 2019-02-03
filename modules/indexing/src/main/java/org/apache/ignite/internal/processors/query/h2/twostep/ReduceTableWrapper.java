@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import javax.cache.CacheException;
-import org.h2.api.TableEngine;
-import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
 import org.h2.index.Index;
@@ -43,9 +41,9 @@ import org.h2.value.Value;
 /**
  * Thread local table wrapper for another table instance.
  */
-public class GridThreadLocalTable extends Table {
+public class ReduceTableWrapper extends Table {
     /** Delegate table */
-    private final ThreadLocal<Table> tbl = new ThreadLocal<>();
+    private final ThreadLocal<ReduceTable> tbl = new ThreadLocal<>();
 
     /**
      * @param schema Schema.
@@ -54,14 +52,14 @@ public class GridThreadLocalTable extends Table {
      * @param persistIndexes Persist indexes.
      * @param persistData Persist data.
      */
-    public GridThreadLocalTable(Schema schema, int id, String name, boolean persistIndexes, boolean persistData) {
+    public ReduceTableWrapper(Schema schema, int id, String name, boolean persistIndexes, boolean persistData) {
         super(schema, id, name, persistIndexes, persistData);
     }
 
     /**
      * @param t Table or {@code null} to reset existing.
      */
-    public void innerTable(Table t) {
+    public void innerTable(ReduceTable t) {
         if (t == null)
             tbl.remove();
         else
@@ -258,38 +256,5 @@ public class GridThreadLocalTable extends Table {
     /** {@inheritDoc} */
     @Override public void checkRename() {
         throw DbException.getUnsupportedException("rename");
-    }
-
-    /**
-     * Engine.
-     */
-    public static class Engine implements TableEngine {
-        /** */
-        private static ThreadLocal<GridThreadLocalTable> createdTbl = new ThreadLocal<>();
-
-        /**
-         * @return Created table.
-         */
-        public static GridThreadLocalTable getCreated() {
-            GridThreadLocalTable tbl = createdTbl.get();
-
-            assert tbl != null;
-
-            createdTbl.remove();
-
-            return tbl;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Table createTable(CreateTableData d) {
-            assert createdTbl.get() == null;
-
-            GridThreadLocalTable tbl = new GridThreadLocalTable(d.schema, d.id, d.tableName, d.persistIndexes,
-                d.persistData);
-
-            createdTbl.set(tbl);
-
-            return tbl;
-        }
     }
 }
