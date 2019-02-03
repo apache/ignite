@@ -4219,6 +4219,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw ex;
         }
 
+        /** */
+        private List<DiscoveryDataPacket> joiningNodesPacketsList = new ArrayList<>();
+
+        /** */
+        private DiscoveryDataPacket gridDiscoveryData;
+
         /**
          * Processes node added message.
          *
@@ -4411,11 +4417,19 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     dataPacket.joiningNodeClient(msg.client());
 
-                    if (dataPacket.hasJoiningNodeData())
-                        spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                    if (dataPacket.hasJoiningNodeData()) {
+                        if (spiState == CONNECTED) {
+                            // Node already connected to the cluster can apply joining nodes' disco data immediately
+                            spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                    if (!node.isDaemon())
-                        spi.collectExchangeData(dataPacket);
+                            if (!node.isDaemon())
+                                spi.collectExchangeData(dataPacket);
+                        }
+                        else
+                            // Node joining to the cluster should postpone applying disco data of other joiners till
+                            // receiving gridDiscoData (when NodeAddFinished message arrives)
+                            joiningNodesPacketsList.add(dataPacket);
+                    }
 
                     processMessageFailedNodes(msg);
                 }
@@ -4426,8 +4440,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && locNodeId.equals(node.id())) {
-                DiscoveryDataPacket dataPacket;
-
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
                         // Initialize topology.
@@ -4511,7 +4523,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (log.isDebugEnabled())
                                 log.debug("Restored topology from node added message: " + ring);
 
-                            dataPacket = msg.gridDiscoveryData();
+                            gridDiscoveryData = msg.gridDiscoveryData();
 
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
@@ -4542,10 +4554,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return;
                     }
                 }
-
-                // Notify outside of synchronized block.
-                if (dataPacket != null)
-                    spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
                 processMessageFailedNodes(msg);
             }
@@ -4682,6 +4690,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     mux.notifyAll();
                 }
+
+                if (gridDiscoveryData != null)
+                    spi.onExchange(gridDiscoveryData, U.resolveClassLoader(spi.ignite().configuration()));
+
+                for (DiscoveryDataPacket dataPacket : joiningNodesPacketsList)
+                    spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+
+                gridDiscoveryData = null;
+
+                joiningNodesPacketsList = null;
 
                 // Discovery manager must create local joined event before spiStart completes.
                 notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);
