@@ -137,6 +137,22 @@ public class GridStripedLock {
         getLock(o).unlock();
     }
 
+    /**
+     * Acquire all locks.
+     */
+    public void lockAll() {
+        for (Lock lock : locks)
+            lock.lock();
+    }
+
+    /**
+     * Release all locks.
+     */
+    public void unlockAll() {
+        for (Lock lock : locks)
+            lock.unlock();
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridStripedLock.class, this, "concurrency", locks.length);

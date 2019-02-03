@@ -17,12 +17,19 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -33,6 +40,8 @@ import org.apache.ignite.internal.util.IgniteTree;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.lang.System.nanoTime;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStructure.randomInt;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
@@ -60,7 +69,178 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testInvokeAll_true() throws Exception {
+    public void testInvokeAllConcurrent_1_false() throws Exception {
+        CNT = 26;
+        MAX_PER_PAGE = 1;
+
+        doTestInvokeAllConcurrent(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInvokeAllConcurrent_1_true() throws Exception {
+        CNT = 26;
+        MAX_PER_PAGE = 1;
+
+        doTestInvokeAllConcurrent(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInvokeAllConcurrent_2_false() throws Exception {
+        CNT = 300;
+        MAX_PER_PAGE = 2;
+
+        doTestInvokeAllConcurrent(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInvokeAllConcurrent_2_true() throws Exception {
+        CNT = 300;
+        MAX_PER_PAGE = 2;
+
+        doTestInvokeAllConcurrent(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void doTestInvokeAllConcurrent(boolean canGetRow) throws Exception {
+        GridStripedLock lock = new GridStripedLock(CNT);
+
+        TestTree tree = createTestTree(canGetRow);
+        Set<Long> set = Collections.newSetFromMap(new ConcurrentSkipListMap<>());
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync((Callable<?>)() -> {
+            Random rnd = ThreadLocalRandom.current();
+
+            while (!stop.get()) {
+                int batchSize = 1 + rnd.nextInt(20);
+
+                Set<Long> puts = new HashSet<>(batchSize);
+                TreeSet<Long> all = new TreeSet<>();
+
+                for (int j = 0; j < batchSize; j++) {
+                    long x = rnd.nextInt(CNT);
+
+                    if (rnd.nextBoolean())
+                        puts.add(x);
+
+                    all.add(x);
+                }
+
+                class UpdateAllClosure
+                    implements IgniteTree.InvokeClosure<Long>, Function<Long,IgniteTree.InvokeClosure<Long>> {
+
+                    Long lockedRow;
+                    Long newRow;
+                    IgniteTree.OperationType opType;
+
+                    @Override public IgniteTree.InvokeClosure<Long> apply(Long searchRow) {
+                        unlockRow();
+
+                        opType = puts.contains(searchRow) ? PUT : REMOVE;
+                        newRow = searchRow;
+
+                        lockRow(searchRow);
+
+                        if (opType == PUT)
+                            set.add(searchRow);
+                        else
+                            set.remove(searchRow);
+
+                        return this;
+                    }
+
+                    @Override public void call(@Nullable Long foundRow) throws IgniteCheckedException {
+                        if (foundRow != null)
+                            assertEquals(newRow, foundRow);
+
+                        if ((foundRow == null && opType == REMOVE) || (foundRow != null && opType == PUT)) {
+                            opType = NOOP;
+                            newRow = null;
+                        }
+                    }
+
+                    @Override public Long newRow() {
+                        Long r = newRow;
+                        newRow = null;
+                        return Objects.requireNonNull(r);
+                    }
+
+                    @Override public IgniteTree.OperationType operationType() {
+                        IgniteTree.OperationType t = opType;
+                        opType = null;
+                        return Objects.requireNonNull(t);
+                    }
+
+                    void lockRow(Long row) {
+                        assertNull(lockedRow);
+                        lock.lock(row.longValue());
+                        lockedRow = row;
+                    }
+
+                    void unlockRow() {
+                        if (lockedRow != null) {
+                            lock.unlock(lockedRow.longValue());
+                            lockedRow = null;
+                        }
+                    }
+                }
+
+                UpdateAllClosure c = new UpdateAllClosure();
+
+                tree.invokeAll(all.iterator(), null, c);
+
+                c.unlockRow(); // The last row must be manually unlocked here.
+            }
+
+            return null;
+        }, 16);
+
+        fut.listen((f) -> stop.set(true));
+
+        long start = nanoTime();
+        long timeout = SECONDS.toNanos(15);
+
+        try {
+            while (nanoTime() - start < timeout) {
+                doSleep(100);
+
+                lock.lockAll();
+
+                try {
+                    assertEqualContents(tree, set);
+                }
+                finally {
+                    lock.unlockAll();
+                }
+            }
+        }
+        finally {
+            stop.set(true);
+        }
+
+        fut.get(3000);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInvokeAll_1_true() throws Exception {
+        MAX_PER_PAGE = 1;
+        CNT = 26;
+
         doTestInvokeAll(true);
     }
 
@@ -68,7 +248,32 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testInvokeAll_false() throws Exception {
+    public void testInvokeAll_1_false() throws Exception {
+        MAX_PER_PAGE = 1;
+        CNT = 26;
+
+        doTestInvokeAll(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInvokeAll_2_true() throws Exception {
+        MAX_PER_PAGE = 2;
+        CNT = 300;
+
+        doTestInvokeAll(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInvokeAll_2_false() throws Exception {
+        MAX_PER_PAGE = 2;
+        CNT = 300;
+
         doTestInvokeAll(false);
     }
 
@@ -77,14 +282,11 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
      * @throws Exception If failed.
      */
     private void doTestInvokeAll(boolean canGetRow) throws Exception {
-        CNT = 1000;
-        MAX_PER_PAGE = 3;
-
         TestTree tree = createTestTree(canGetRow);
         TreeSet<Long> set = new TreeSet<>();
 
         for (int i = 0; i < 10_000; i++) {
-            long batchSize = 1 + randomInt(100);
+            long batchSize = 1 + randomInt(CNT);
 
             TreeSet<Long> puts = new TreeSet<>();
             TreeSet<Long> all = new TreeSet<>();
@@ -150,15 +352,6 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
 
             assertEqualContents(tree, set);
         }
-    }
-
-    public void doTestInvokeAllMultithreaded(boolean canGetRow) {
-        CNT = 256;
-        MAX_PER_PAGE = 2;
-
-        final GridStripedLock lock = new GridStripedLock(CNT);
-
-
     }
 
     /**

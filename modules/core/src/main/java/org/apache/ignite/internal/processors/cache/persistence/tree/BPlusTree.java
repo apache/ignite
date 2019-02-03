@@ -498,7 +498,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert idx >= 0 && idx < cnt: idx;
 
-            // Need to do inner replace when we remove the rightmost element and the leaf have no forward page,
+            // Need to do inner replace when we remove the rightmost element and the leaf have a forward page,
             // i.e. it is not the rightmost leaf of the tree.
             boolean needReplaceInner = canGetRowFromInner && idx == cnt - 1 && io.getForward(leafAddr) != 0;
 
