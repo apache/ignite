@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.WritableByteChannel;
-import java.nio.file.NoSuchFileException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,32 +64,49 @@ public class FileIOUploader {
      * @throws IgniteCheckedException If fails.
      */
     public void upload(File partFile, int partId) throws IgniteCheckedException {
-        assert target.isBlocking();
-
         FileIO fileIO = null;
 
         try {
+
             fileIO = factory.create(partFile, READ);
 
             long written = 0;
 
             long size = fileIO.size();
 
+            U.log(log, "Sending file metadata [partFile=" + partFile.getPath() +
+                ", partId=" + partId + ", size=" + size + ", thread=" + Thread.currentThread().getName() + ']');
+
             //Send input file length to server.
             buff.clear();
-
             buff.putInt(partId);
             buff.putLong(size);
             buff.flip();
 
-            U.log(log, "Sending file metadata [partFile=" + partFile + ", partId=" + partId + ", size=" + size + ']');
-
-            target.write(buff);
+            U.writeFully(target, buff);
 
             // Send the whole file to channel.
             // Todo limit thransfer speed
             while (written < size)
                 written += fileIO.transferTo(written, CHUNK_SIZE, target);
+
+            //Waiting for the writing response.
+            buff.clear();
+
+            U.log(log, "Reading response with metadata.");
+
+            int writeResponse = target.read(buff);
+
+            if (writeResponse <= 0)
+                throw new IgniteCheckedException("Response is incorrect.");
+
+            buff.flip();
+
+            int responsePartId = buff.getInt();
+            long responseSize = buff.getLong();
+
+            if (size != responseSize)
+                throw new IgniteCheckedException("Incorrect response file size.");
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);

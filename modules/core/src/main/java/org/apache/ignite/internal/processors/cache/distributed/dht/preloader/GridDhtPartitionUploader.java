@@ -171,14 +171,13 @@ public class GridDhtPartitionUploader {
             // Channel -
             // Future -
             // Checkpointed file - ?
-            //
+            // CRC-32 calculation?
             FileIOUploader uploader = new FileIOUploader(ch.channel(), ioFactory, log);
 
             U.log(log, "Start uploading cache group partition procedure [grp=" + grp.cacheOrGroupName() +
                 ", channel=" + ch + ", upCtx=" + upCtx + ']');
 
             for (Integer partId : upCtx.parts) {
-
                 File partFile = getPartitionFile(grpDir, partId);
 
                 uploader.upload(partFile, partId);

@@ -157,6 +157,14 @@ public class RandomAccessFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
-        return ch.transferFrom(src, position, count);
+        if (count < 0 || position < 0)
+            throw new IllegalArgumentException("Position out of range: " + position);
+
+        long written = ch.transferFrom(src, position, count);
+
+        if (written > 0)
+            position(position + written);
+
+        return written;
     }
 }

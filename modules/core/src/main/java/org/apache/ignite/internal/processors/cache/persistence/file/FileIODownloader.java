@@ -24,6 +24,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -32,9 +33,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 
 /** */
 public class FileIODownloader {
-    /** */
-    private static final int CHUNK_SIZE = 1024 * 1024;
-
     /** */
     private final SocketChannel source;
 
@@ -64,14 +62,48 @@ public class FileIODownloader {
         buff.order(ByteOrder.nativeOrder());
     }
 
+    /**
+     * @return Recevied metadata info.
+     * @throws IOException If fails.
+     */
+    public T2<Integer, Long> readMeta() throws IOException {
+        buff.clear();
+
+        U.log(log, "Reading file metadata from remote: " + source.getRemoteAddress());
+
+        //Read input file properties
+        long readResult = source.read(buff);
+
+        if (readResult <= 0)
+            throw new IOException("Unable to get file metadata from remote: " + source.getRemoteAddress());
+
+        buff.flip();
+
+        final int partId = buff.getInt();
+        final long size = buff.getLong();
+
+        return new T2<>(partId, size);
+    }
+
+    /** */
+    public void writeMeta(int partId, long size) throws IOException {
+        //Write response to the remote node.
+        buff.clear();
+        buff.putInt(partId);
+        buff.putLong(size);
+        buff.flip();
+
+        U.log(log, "Sending file metadata to remote: " + source.getRemoteAddress());
+
+        U.writeFully(source, buff);
+    }
+
     /** */
     public File download() throws IgniteCheckedException {
-        assert source.isBlocking();
-
         try {
             buff.clear();
 
-            U.log(log, "Read file metadata [outDir=" + outDir.getPath() + ']');
+            U.log(log, "Reading file metadata [outDir=" + outDir.getPath() + ']');
 
             //Read input file properties
             long readResult = source.read(buff);
@@ -81,8 +113,8 @@ public class FileIODownloader {
 
             buff.flip();
 
-            int partId = buff.getInt();
-            long size = buff.getLong();
+            final int partId = buff.getInt();
+            final long size = buff.getLong();
 
             U.log(log, "Start downloading file [outDir=" + outDir.getPath() + ", partId=" + partId +
                 ", size=" + size + ']');
@@ -90,12 +122,27 @@ public class FileIODownloader {
             File partFile = new File(getPartitionFile(outDir, partId).getAbsolutePath() + ".tmp");
 
             try (FileIO fileIO = factory.create(partFile, CREATE, WRITE)) {
-                //Write partition file.
-                long written = 0;
+                long count = size;
 
-                while (written < size)
-                    written += fileIO.transferFrom(source, written, CHUNK_SIZE);
+                while (count > 0) {
+                    long written = fileIO.transferFrom(source, fileIO.position(), count);
+
+                    if (written < 0)
+                        break;
+
+                    count -= written;
+                }
             }
+
+            //Write response to the remote node.
+            buff.clear();
+            buff.putInt(partId);
+            buff.putLong(partFile.length());
+            buff.flip();
+
+            U.log(log, "Sending reply with metadata within thread: " + Thread.currentThread().getName());
+
+            U.writeFully(source, buff);
 
             return partFile;
         }
