@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOUploader;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIoUploader;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
@@ -172,7 +172,7 @@ public class GridDhtPartitionUploader {
             // Future -
             // Checkpointed file - ?
             // CRC-32 calculation?
-            FileIOUploader uploader = new FileIOUploader(ch.channel(), ioFactory, log);
+            FileIoUploader uploader = new FileIoUploader(ch.channel(), ioFactory, log);
 
             U.log(log, "Start uploading cache group partition procedure [grp=" + grp.cacheOrGroupName() +
                 ", channel=" + ch + ", upCtx=" + upCtx + ']');
@@ -180,10 +180,12 @@ public class GridDhtPartitionUploader {
             for (Integer partId : upCtx.parts) {
                 File partFile = getPartitionFile(grpDir, partId);
 
-                uploader.upload(partFile, partId);
+                uploader.upload(partFile);
 
                 U.log(log, "Partition file uploaded: " + partFile.getPath());
             }
+
+            uploader.close();
         }
         catch (Exception e) {
             if (upCtx != null)

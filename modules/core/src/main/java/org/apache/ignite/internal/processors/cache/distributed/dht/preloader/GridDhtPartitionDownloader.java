@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,8 +30,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODownloader;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIoDownloader;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
@@ -160,8 +159,8 @@ public class GridDhtPartitionDownloader {
 
             Files.createDirectory(out.toPath());
 
-            FileIODownloader downloader =
-                new FileIODownloader(channel.channel(), ioFactory, out, log);
+            FileIoDownloader downloader =
+                new FileIoDownloader(channel.channel(), ioFactory, log, out);
 
             for (Integer partId : parts) {
                 File partFile = downloader.download();
@@ -179,8 +178,10 @@ public class GridDhtPartitionDownloader {
                 if (log.isInfoEnabled())
                     log.info("Partition file downloaded: " + partFile.getName());
             }
+
+            downloader.close();
         }
-        catch (IOException | IgniteCheckedException e) {
+        catch (Exception e) {
             log.error("Download process terminated unexpectedly.", e);
         }
         finally {

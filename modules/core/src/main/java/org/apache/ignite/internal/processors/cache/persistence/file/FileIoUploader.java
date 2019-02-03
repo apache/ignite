@@ -19,93 +19,50 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.file.StandardOpenOption.READ;
 
 /** */
-public class FileIOUploader {
+public class FileIoUploader extends AbstractFileIoConnector {
     /** */
     private static final int CHUNK_SIZE = 1024 * 1024;
 
     /** */
-    private final SocketChannel target;
-
-    /** */
-    private final FileIOFactory factory;
-
-    /** */
-    private final IgniteLogger log;
-
-    /**
-     * 4 int - partition id.
-     * 8 long - file size.
-     */
-    private final ByteBuffer buff;
-
-    /** */
-    public FileIOUploader(SocketChannel target, FileIOFactory factory, IgniteLogger log) {
-        this.target = target;
-        this.factory = factory;
-        this.log = log;
-
-        buff = ByteBuffer.allocate(12);
-        buff.order(ByteOrder.nativeOrder());
+    public FileIoUploader(SocketChannel channel, FileIOFactory factory, IgniteLogger log) throws IOException {
+        super(channel, factory, log);
     }
 
     /**
-     * @param partFile Partition file.
-     * @param partId Partition identifier.
+     * @param file Partition file.
      * @throws IgniteCheckedException If fails.
      */
-    public void upload(File partFile, int partId) throws IgniteCheckedException {
+    public void upload(File file) throws IgniteCheckedException {
         FileIO fileIO = null;
 
         try {
-
-            fileIO = factory.create(partFile, READ);
-
-            long written = 0;
+            fileIO = factory.create(file, READ);
 
             long size = fileIO.size();
+            String name = file.getName();
 
-            U.log(log, "Sending file metadata [partFile=" + partFile.getPath() +
-                ", partId=" + partId + ", size=" + size + ", thread=" + Thread.currentThread().getName() + ']');
-
-            //Send input file length to server.
-            buff.clear();
-            buff.putInt(partId);
-            buff.putLong(size);
-            buff.flip();
-
-            U.writeFully(target, buff);
+            writeFileMeta(name, size);
 
             // Send the whole file to channel.
             // Todo limit thransfer speed
+            long written = 0;
+
             while (written < size)
-                written += fileIO.transferTo(written, CHUNK_SIZE, target);
+                written += fileIO.transferTo(written, CHUNK_SIZE, channel);
 
             //Waiting for the writing response.
-            buff.clear();
+            T2<String, Long> ioMeta = readFileMeta();
 
-            U.log(log, "Reading response with metadata.");
-
-            int writeResponse = target.read(buff);
-
-            if (writeResponse <= 0)
-                throw new IgniteCheckedException("Response is incorrect.");
-
-            buff.flip();
-
-            int responsePartId = buff.getInt();
-            long responseSize = buff.getLong();
-
-            if (size != responseSize)
+            if (size != ioMeta.get2())
                 throw new IgniteCheckedException("Incorrect response file size.");
         }
         catch (IOException e) {

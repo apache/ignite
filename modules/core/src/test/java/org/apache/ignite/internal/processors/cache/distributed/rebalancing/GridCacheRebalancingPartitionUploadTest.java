@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
+import java.io.File;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -28,6 +29,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -35,11 +39,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
+
 /** */
 @RunWith(JUnit4.class)
 public class GridCacheRebalancingPartitionUploadTest extends GridCommonAbstractTest {
     /** */
     private static final String DHT_PARTITIONED_CACHE = "cacheP";
+
+    private static final int CACHE_PARTITIONS = 8;
 
     /** */
     @Before
@@ -91,7 +99,7 @@ public class GridCacheRebalancingPartitionUploadTest extends GridCommonAbstractT
                 .setRebalanceOrder(2)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setAffinity(new RendezvousAffinityFunction(false)
-                    .setPartitions(8)));
+                    .setPartitions(CACHE_PARTITIONS)));
 
         for (int i = 0; i < 2048; i++)
             cache.put(i, i);
@@ -101,5 +109,17 @@ public class GridCacheRebalancingPartitionUploadTest extends GridCommonAbstractT
         ignite1.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
 
         awaitPartitionMapExchange();
+
+        // Checking downloaded partitions.
+        final CacheGroupContext grpCtx = ignite1.context().cache().cacheGroup(CU.cacheId(DHT_PARTITIONED_CACHE));
+
+        File grpDir = cacheWorkDir(((GridCacheDatabaseSharedManager)grpCtx.shared().database())
+                .getFileStoreManager()
+                .workDir(),
+            grpCtx.config());
+
+        int countParts = new File(grpDir, "downloads").list().length;
+
+        assertEquals(CACHE_PARTITIONS, countParts);
     }
 }
