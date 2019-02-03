@@ -39,9 +39,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -52,9 +49,6 @@ import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQu
  */
 @SuppressWarnings("unchecked")
 public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     protected final Marshaller marsh;
 
@@ -95,12 +89,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         cfg.setBinaryConfiguration(binCfg);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -242,11 +230,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         ignite(0).destroyCache("S2P");
         ignite(0).destroyCache("I2P");
@@ -327,7 +310,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /**
      *
      */
-    protected final static class Key implements Serializable {
+    protected static final class Key implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -361,7 +344,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /**
      *
      */
-    protected final static class Key2 implements Serializable {
+    protected static final class Key2 implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 

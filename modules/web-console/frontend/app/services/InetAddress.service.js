@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-export default ['IgniteInetAddress', function() {
+import _ from 'lodash';
+
+export default function() {
     return {
         /**
          * @param {String} ip IP address to check.
@@ -36,18 +38,18 @@ export default ['IgniteInetAddress', function() {
             return regexp.test(hostNameOrIp) || this.validIp(hostNameOrIp);
         },
         /**
-         * @param {int} port Port value to check.
+         * @param {number} port Port value to check.
          * @returns boolean 'true' if given port is valid tcp/udp port range.
          */
         validPort(port) {
             return _.isInteger(port) && port > 0 && port <= 65535;
         },
         /**
-         * @param {int} port Port value to check.
+         * @param {number} port Port value to check.
          * @returns {boolean} 'true' if given port in non system port range(user+dynamic).
          */
         validNonSystemPort(port) {
             return _.isInteger(port) && port >= 1024 && port <= 65535;
         }
     };
-}];
+}

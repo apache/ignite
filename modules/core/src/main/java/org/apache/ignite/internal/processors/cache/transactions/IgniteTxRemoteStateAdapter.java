@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,6 +32,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
  *
  */
 public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState {
+    /** Active cache IDs. */
+    private GridIntList activeCacheIds = new GridIntList();
+
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return false;
@@ -38,9 +42,12 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
 
     /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
-        assert false;
+        return activeCacheIds.isEmpty() ? null : activeCacheIds.get(0);
+    }
 
-        return null;
+    /** {@inheritDoc} */
+    @Nullable @Override public GridIntList cacheIds() {
+        return activeCacheIds;
     }
 
     /** {@inheritDoc} */
@@ -67,9 +74,15 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext cctx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
-        assert false;
+        assert !tx.local();
+
+        int cacheId = cctx.cacheId();
+
+        // Check if we can enlist new cache to transaction.
+        if (!activeCacheIds.contains(cacheId))
+            activeCacheIds.add(cacheId);
     }
 
     /** {@inheritDoc} */

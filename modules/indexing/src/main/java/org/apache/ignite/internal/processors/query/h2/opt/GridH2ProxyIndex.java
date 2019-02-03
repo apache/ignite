@@ -152,7 +152,9 @@ public class GridH2ProxyIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
-        return new ProxyIndexLookupBatch(idx.createLookupBatch(filters, filter));
+        IndexLookupBatch batch = idx.createLookupBatch(filters, filter);
+
+        return batch != null ? new ProxyIndexLookupBatch(batch) : null;
     }
 
     /** {@inheritDoc} */

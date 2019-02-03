@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 import controller from './controller';
 import templateUrl from './template.tpl.pug';
 import {CancellationError} from 'app/errors/CancellationError';
@@ -22,8 +24,20 @@ import {CancellationError} from 'app/errors/CancellationError';
 export default class UserNotificationsService {
     static $inject = ['$http', '$modal', '$q', 'IgniteMessages'];
 
+    /** @type {ng.IQService} */
+    $q;
+
+    /**
+     * @param {ng.IHttpService} $http    
+     * @param {mgcrea.ngStrap.modal.IModalService} $modal   
+     * @param {ng.IQService} $q       
+     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
+     */
     constructor($http, $modal, $q, Messages) {
-        Object.assign(this, {$http, $modal, $q, Messages});
+        this.$http = $http;
+        this.$modal = $modal;
+        this.$q = $q;
+        this.Messages = Messages;
 
         this.message = null;
         this.isShown = false;
@@ -56,7 +70,7 @@ export default class UserNotificationsService {
             .finally(modalHide)
             .then(({ message, isShown }) => {
                 this.$http.put('/api/v1/admin/notifications', { message, isShown })
-                    .catch((err) => this.Messages.showError(err));
+                    .catch(this.Messages.showError);
             });
     }
 }

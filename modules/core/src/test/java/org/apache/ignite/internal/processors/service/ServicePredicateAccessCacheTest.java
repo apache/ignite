@@ -19,23 +19,21 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-
-import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -46,16 +44,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static CountDownLatch latch;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -69,49 +62,47 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
         return 60_000;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPredicateAccessCache() throws Exception {
-        final Ignite ignite0 = startGrid(0);
+        final IgniteEx ignite0 = startGrid(0);
 
-        ignite0.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setName("testCache")
-            .setAtomicityMode(ATOMIC)
-            .setCacheMode(REPLICATED)
-            .setWriteSynchronizationMode(FULL_SYNC));
+        CacheConfiguration<String, String> cacheCfg = new CacheConfiguration<>();
+
+        cacheCfg.setName("testCache");
+        cacheCfg.setAtomicityMode(ATOMIC);
+        cacheCfg.setCacheMode(REPLICATED);
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<String, String> cache = ignite0.getOrCreateCache(cacheCfg);
+
+        if (ignite0.context().service() instanceof IgniteServiceProcessor)
+            cache.put(ignite0.cluster().localNode().id().toString(), "val");
 
         latch = new CountDownLatch(1);
 
-        final ClusterGroup grp = ignite0.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
-            @Override public boolean apply(ClusterNode node) {
-                System.out.println("Predicated started [thread=" + Thread.currentThread().getName() + ']');
+        final ClusterGroup grp = ignite0.cluster().forPredicate((IgnitePredicate<ClusterNode>)node -> {
+            System.out.println("Predicated started [thread=" + Thread.currentThread().getName() + ']');
 
-                latch.countDown();
+            latch.countDown();
 
-                try {
-                    Thread.sleep(3000);
-                }
-                catch (InterruptedException ignore) {
-                    // No-op.
-                }
-
-                System.out.println("Call contains key [thread=" + Thread.currentThread().getName() + ']');
-
-                boolean ret = Ignition.localIgnite().cache("testCache").containsKey(node.id().toString());
-
-                System.out.println("After contains key [ret=" + ret +
-                    ", thread=" + Thread.currentThread().getName() + ']');
-
-                return ret;
+            try {
+                Thread.sleep(3000);
             }
+            catch (InterruptedException ignore) {
+                // No-op.
+            }
+
+            System.out.println("Call contains key [thread=" + Thread.currentThread().getName() + ']');
+
+            boolean ret = Ignition.localIgnite().cache("testCache").containsKey(node.id().toString());
+
+            System.out.println("After contains key [ret=" + ret +
+                ", thread=" + Thread.currentThread().getName() + ']');
+
+            return ret;
         });
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
@@ -138,17 +129,17 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
      */
     public static class TestService implements Service {
         /** {@inheritDoc} */
-        public void execute(ServiceContext ctx) {
+        @Override public void execute(ServiceContext ctx) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        public void init(ServiceContext ctx) {
+        @Override public void init(ServiceContext ctx) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        public void cancel(ServiceContext ctx) {
+        @Override public void cancel(ServiceContext ctx) {
             // No-op.
         }
     }

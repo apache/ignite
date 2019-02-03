@@ -32,13 +32,15 @@
             "startNodes",
             "startNodesAsync",
             "stopNodes",
-            "restartNodes"
+            "restartNodes",
+            "baselineConfiguration"
         };
 
         /** Members that are missing on .NET side and should be added in future. */
         private static readonly string[] MissingMembers =
         {
-            "enableStatistics"  // IGNITE-7276
+            "enableStatistics",  // IGNITE-7276
+            "clearStatistics"  // IGNITE-9017
         };
 
         /// <summary>

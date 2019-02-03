@@ -28,9 +28,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -40,9 +38,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for complex queries (joins, etc.).
  */
 public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
@@ -54,12 +49,6 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -105,11 +94,6 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
@@ -135,6 +119,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin() throws Exception {
         ResultSet rs = stmt.executeQuery(
             "select p.id, p.name, o.name as orgName from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
@@ -170,6 +155,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWithoutAlias() throws Exception {
         ResultSet rs = stmt.executeQuery(
             "select p.id, p.name, o.name from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
@@ -208,6 +194,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIn() throws Exception {
         ResultSet rs = stmt.executeQuery("select name from \"pers\".Person where age in (25, 35)");
 
@@ -228,6 +215,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBetween() throws Exception {
         ResultSet rs = stmt.executeQuery("select name from \"pers\".Person where age between 24 and 36");
 
@@ -248,6 +236,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCalculatedValue() throws Exception {
         ResultSet rs = stmt.executeQuery("select age * 2 from \"pers\".Person");
 
@@ -269,7 +258,6 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField
@@ -308,7 +296,6 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
         @QuerySqlField

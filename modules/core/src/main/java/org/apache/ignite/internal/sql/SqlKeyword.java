@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.sql;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.F;
-
 import java.lang.reflect.Field;
 import java.util.HashSet;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * SQL keyword constants.
@@ -30,8 +29,17 @@ public class SqlKeyword {
     /** Keyword: ALTER. */
     public static final String ALTER = "ALTER";
 
+    /** Keyword: ALLOW_OVERWRITE */
+    public static final String ALLOW_OVERWRITE = "ALLOW_OVERWRITE";
+
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
+
+    /** Keyword: BATCH_SIZE */
+    public static final String BATCH_SIZE = "BATCH_SIZE";
+
+    /** Keyword: BEGIN. */
+    public static final String BEGIN = "BEGIN";
 
     /** Keyword: BIGINT */
     public static final String BIGINT = "BIGINT";
@@ -41,6 +49,9 @@ public class SqlKeyword {
 
     /** Keyword: BOOL. */
     public static final String BOOL = "BOOL";
+
+    /** Keyword: PACKET_SIZE. */
+    public static final String PACKET_SIZE = "PACKET_SIZE";
 
     /** Keyword: BOOLEAN. */
     public static final String BOOLEAN = "BOOLEAN";
@@ -53,6 +64,15 @@ public class SqlKeyword {
 
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
+
+    /** Keyword: CHARSET. */
+    public static final String CHARSET = "CHARSET";
+
+    /** Keyword: COMMIT. */
+    public static final String COMMIT = "COMMIT";
+
+    /** Keyword: COPY. */
+    public static final String COPY = "COPY";
 
     /** Keyword: CREATE. */
     public static final String CREATE = "CREATE";
@@ -90,6 +110,15 @@ public class SqlKeyword {
     /** Keyword: FLOAT8. */
     public static final String FLOAT8 = "FLOAT8";
 
+    /** Keyword: FLUSH_FREQUENCY. */
+    public static final String FLUSH_FREQUENCY = "FLUSH_FREQUENCY";
+
+    /** Keyword: FORMAT. */
+    public static final String FORMAT = "FORMAT";
+
+    /** Keyword: FROM. */
+    public static final String FROM = "FROM";
+
     /** Keyword: FULLTEXT. */
     public static final String FULLTEXT = "FULLTEXT";
 
@@ -119,6 +148,9 @@ public class SqlKeyword {
 
     /** Keyword: INTEGER. */
     public static final String INTEGER = "INTEGER";
+
+    /** Keyword: INTO. */
+    public static final String INTO = "INTO";
 
     /** Keyword: KEY. */
     public static final String KEY = "KEY";
@@ -153,8 +185,20 @@ public class SqlKeyword {
     /** Keyword: NVARCHAR2. */
     public static final String NVARCHAR2 = "NVARCHAR2";
 
+    /** Keyword: OFF. */
+    public static final String OFF = "OFF";
+
     /** Keyword: ON. */
     public static final String ON = "ON";
+
+    /** Keyword: ORDERED. */
+    public static final String ORDERED = "ORDERED";
+
+    /** Keyword: PER_NODE_PARALLEL_OPERATIONS. */
+    public static final String PER_NODE_PARALLEL_OPERATIONS = "PER_NODE_PARALLEL_OPERATIONS";
+
+    /** Keyword: PER_NODE_BUFFER_SIZE. */
+    public static final String PER_NODE_BUFFER_SIZE = "PER_NODE_BUFFER_SIZE";
 
     /** Keyword: PRECISION. */
     public static final String PRECISION = "PRECISION";
@@ -168,6 +212,12 @@ public class SqlKeyword {
     /** Keyword: RESTRICT. */
     public static final String RESTRICT = "RESTRICT";
 
+    /** Keyword: ROLLBACK. */
+    public static final String ROLLBACK = "ROLLBACK";
+
+    /** Keyword: SET. */
+    public static final String SET = "SET";
+
     /** Keyword: SIGNED. */
     public static final String SIGNED = "SIGNED";
 
@@ -180,6 +230,12 @@ public class SqlKeyword {
     /** Keyword: SPATIAL. */
     public static final String SPATIAL = "SPATIAL";
 
+    /** Keyword: START. */
+    public static final String START = "START";
+
+    /** Keyword: STREAMING. */
+    public static final String STREAMING = "STREAMING";
+
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";
 
@@ -191,6 +247,9 @@ public class SqlKeyword {
 
     /** Keyword: TINYINT. */
     public static final String TINYINT = "TINYINT";
+
+    /** Keyword: TRANSACTION. */
+    public static final String TRANSACTION = "TRANSACTION";
 
     /** Keyword: UNIQUE. */
     public static final String UNIQUE = "UNIQUE";
@@ -207,11 +266,23 @@ public class SqlKeyword {
     /** Keyword: VARCHAR_CASESENSITIVE. */
     public static final String VARCHAR_CASESENSITIVE = "VARCHAR_CASESENSITIVE";
 
+    /** Keyword: WORK. */
+    public static final String WORK = "WORK";
+
     /** Keyword: YEAR. */
     public static final String YEAR = "YEAR";
 
     /** Keyword: PARALLEL. */
     public static final String PARALLEL = "PARALLEL";
+
+    /** Keyword: USER. */
+    public static final String USER = "USER";
+
+    /** Keyword: WITH. */
+    public static final String WITH = "WITH";
+
+    /** Keyword: PASSWORD. */
+    public static final String PASSWORD = "PASSWORD";
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;

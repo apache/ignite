@@ -24,27 +24,20 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Non-persistent data region name. */
     private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
 
     /**
      *
      */
+    @Test
     public void testExchangeOnNodeLeft() throws Exception {
         for (int i = 0; i < 5; i++) {
             startGrids(3);
@@ -66,6 +59,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testExchangeOnNodeJoin() throws Exception {
         for (int i = 0; i < 5; i++) {
             startGrids(2);
@@ -92,13 +86,13 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(800 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(800L * 1024 * 1024).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointThreads(1)
             .setCheckpointFrequency(1);
 
         memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(200 * 1024 * 1024)
+            .setMaxSize(200L * 1024 * 1024)
             .setName(NO_PERSISTENCE_REGION)
             .setPersistenceEnabled(false));
 
@@ -108,16 +102,11 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
 
         CacheConfiguration ccfgNp = new CacheConfiguration("nonPersistentCache");
         ccfgNp.setDataRegionName(NO_PERSISTENCE_REGION);
+        ccfgNp.setDiskPageCompression(null);
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 4096));
 
         cfg.setCacheConfiguration(ccfg, ccfgNp);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -125,12 +114,12 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 }

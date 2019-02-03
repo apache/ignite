@@ -25,6 +25,9 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// </summary>
     public class TransactionsParityTest
     {
+        /** Members that are missing on .NET side and should be added in future. */
+        private static readonly string[] MissingMembers = {};
+
         /// <summary>
         /// Tests the API parity.
         /// </summary>
@@ -33,7 +36,9 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             ParityTest.CheckInterfaceParity(
                 @"modules\core\src\main\java\org\apache\ignite\IgniteTransactions.java",
-                typeof(ITransactions));
+                typeof(ITransactions),
+                null,
+                MissingMembers);
         }
     }
 }

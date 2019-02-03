@@ -73,20 +73,21 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
      *
      * @return Projection for binary objects.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> IgniteCache<K1, V1> keepBinary();
 
     /**
      * @param dataCenterId Data center ID.
      * @return Projection for data center id.
      */
-    @SuppressWarnings("unchecked")
     public IgniteCache<K, V> withDataCenterId(byte dataCenterId);
 
     /**
      * @return Cache with skip store enabled.
      */
     public IgniteCache<K, V> skipStore();
+
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx();
 
     /**
      * @return Internal proxy.

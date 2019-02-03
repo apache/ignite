@@ -551,6 +551,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.IsKeyField, y.IsKeyField);
             Assert.AreEqual(x.NotNull, y.NotNull);
             Assert.AreEqual(x.DefaultValue, y.DefaultValue);
+            Assert.AreEqual(x.Precision, y.Precision);
+            Assert.AreEqual(x.Scale, y.Scale);
         }
 
         /// <summary>

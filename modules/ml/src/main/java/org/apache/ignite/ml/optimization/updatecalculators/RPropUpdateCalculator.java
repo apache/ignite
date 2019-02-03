@@ -17,11 +17,11 @@
 
 package org.apache.ignite.ml.optimization.updatecalculators;
 
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.optimization.SmoothParametrized;
 
@@ -31,6 +31,9 @@ import org.apache.ignite.ml.optimization.SmoothParametrized;
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
 public class RPropUpdateCalculator implements ParameterUpdateCalculator<SmoothParametrized, RPropParameterUpdate> {
+    /** */
+    private static final long serialVersionUID = -5156816330041409864L;
+
     /**
      * Default initial update.
      */
@@ -64,12 +67,12 @@ public class RPropUpdateCalculator implements ParameterUpdateCalculator<SmoothPa
     /**
      * Maximal value for update.
      */
-    private final static double UPDATE_MAX = 50.0;
+    private static final double UPDATE_MAX = 50.0;
 
     /**
      * Minimal value for update.
      */
-    private final static double UPDATE_MIN = 1E-6;
+    private static final double UPDATE_MIN = 1E-6;
 
     /**
      * Loss function.

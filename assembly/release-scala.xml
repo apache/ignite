@@ -35,6 +35,7 @@
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>**/ignitevisorcmd.bat</include>
+                <include>**/include/visorcmd/node_startup_by_ssh.sample.ini</include>
             </includes>
         </fileSet>
 

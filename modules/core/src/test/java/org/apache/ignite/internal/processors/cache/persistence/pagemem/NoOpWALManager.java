@@ -20,12 +20,15 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -42,6 +45,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
+    @Override public int serializerVersion() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer ptr) throws IgniteCheckedException {
         // No-op.
     }
@@ -52,8 +60,18 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer log(WALRecord entry, RolloverType rollOverType) {
+        return null;
+    }
 
+    /** {@inheritDoc} */
+    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALRecord read(WALPointer ptr) throws IgniteCheckedException, StorageException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -62,7 +80,12 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean reserve(WALPointer start) throws IgniteCheckedException {
+    @Override public WALIterator replay(WALPointer start, @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter) throws IgniteCheckedException, StorageException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean reserve(WALPointer start) {
         return false;
     }
 
@@ -77,13 +100,18 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void allowCompressionUntil(WALPointer ptr) {
+    @Override public void notchLastCheckpointPtr(WALPointer ptr) {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public boolean reserved(WALPointer ptr) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int reserved(WALPointer low, WALPointer high) {
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -122,7 +150,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext kctx) {
         // No-op.
     }
 
@@ -134,5 +162,20 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     /** {@inheritDoc} */
     @Override public int walArchiveSegments() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long lastArchivedSegment() {
+        return -1L;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long lastCompactedSegment() {
+        return -1L;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long maxArchivedSegmentToDelete() {
+        return -1;
     }
 }

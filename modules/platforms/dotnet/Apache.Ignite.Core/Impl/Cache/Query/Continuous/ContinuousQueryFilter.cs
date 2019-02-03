@@ -83,6 +83,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** <inheritDoc /> */
         public bool Evaluate(IBinaryStream stream)
         {
+            // ReSharper disable once InconsistentlySynchronizedField
             ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _ignite.Marshaller, _keepBinary);
 
             return _filter.Evaluate(evt);
@@ -91,6 +92,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** <inheritDoc /> */
         public void Inject(Ignite grid)
         {
+            // ReSharper disable once InconsistentlySynchronizedField
             _ignite = grid;
 
             ResourceProcessor.Inject(_filter, grid);

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Timestamp.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Timestamp.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+'use strict';
+
+const ArgumentChecker = require('./internal/ArgumentChecker');
+
+/**
+ * Class representing an Ignite timestamp type.
+ *
+ * The timestamp extends the standard JavaScript {@link Date} Object and consists of:
+ *   - time  - the number of milliseconds since January 1, 1970, 00:00:00 UTC,
+ *     methods of the JavaScript {@link Date} Object can be used to operate with the time.
+ *   - nanoseconds - fraction of the last millisecond in the range from 0 to 999999 nanoseconds,
+ *     this class specifies additional methods to operate with the nanoseconds.
+ * @extends Date
+ */
+class Timestamp extends Date {
+
+    /**
+     * Public constructor.
+     *
+     * @param {number} time - integer value representing the number of milliseconds since January 1, 1970, 00:00:00 UTC.
+     * @param {number} nanos - integer value representing the nanoseconds of the last millisecond,
+     *                         should be in the range from 0 to 999999.
+     *
+     * @return {Timestamp} - new Timestamp instance
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    constructor(time, nanos) {
+        super(time);
+        this.setNanos(nanos);
+    }
+
+    /**
+     * Returns the nanoseconds of the last millisecond from the timestamp.
+     *
+     * @return {number} - nanoseconds of the last millisecond.
+     */
+    getNanos() {
+        return this._nanos;
+    }
+
+    /**
+     * Updates the nanoseconds of the last millisecond in the timestamp.
+     *
+     * @param {number} nanos - new value for the nanoseconds of the last millisecond,
+     *                         should be in the range from 0 to 999999.
+     *
+     * @return {Timestamp} - the same instance of Timestamp
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    setNanos(nanos) {
+        ArgumentChecker.isInteger(nanos, 'nanos');
+        this._nanos = nanos;
+        return this;
+    }
+}
+
+module.exports = Timestamp;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a></li><li><a href="CollectionObjectType.html">CollectionObjectType</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="EnumItem.html">EnumItem</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="QueryEntity.html">QueryEntity</a></li><li><a href="QueryField.html">QueryField</a></li><li><a href="QueryIndex.html">QueryIndex</a></li><li><a href="ScanQuery.html">ScanQuery</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li><li><a href="Timestamp.html">Timestamp</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue May 22 2018 12:08:48 GMT+0300 (Russia TZ 2 Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

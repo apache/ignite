@@ -89,10 +89,7 @@ namespace ignite
                  *
                  * @param updater Updater.
                  */
-                void SetUpdater(BinaryTypeUpdater* updater)
-                {
-                    this->updater = updater;
-                }
+                void SetUpdater(BinaryTypeUpdater* updater);
 
                 /**
                  * Get metadata snapshop for the type.

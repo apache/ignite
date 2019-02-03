@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
 import org.apache.ignite.spi.loadbalancing.adaptive.GridAdaptiveLoadBalancingSpiConfigSelfTest;
 import org.apache.ignite.spi.loadbalancing.adaptive.GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest;
 import org.apache.ignite.spi.loadbalancing.adaptive.GridAdaptiveLoadBalancingSpiSelfTest;
@@ -34,47 +32,35 @@ import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoad
 import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoadBalancingSpiSelfTest;
 import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoadBalancingSpiStartStopSelfTest;
 import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoadBalancingSpiWeightedSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Load balancing SPI self-test suite.
  */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridWeightedRandomLoadBalancingSpiSelfTest.class,
+    GridWeightedRandomLoadBalancingSpiWeightedSelfTest.class,
+    GridWeightedRandomLoadBalancingSpiStartStopSelfTest.class,
+    GridWeightedRandomLoadBalancingSpiConfigSelfTest.class,
+
+    // Round-robin.
+    GridRoundRobinLoadBalancingSpiLocalNodeSelfTest.class,
+    GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest.class,
+    GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest.class,
+    GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest.class,
+    GridRoundRobinLoadBalancingSpiStartStopSelfTest.class,
+    GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest.class,
+
+    // Adaptive.
+    GridAdaptiveLoadBalancingSpiSelfTest.class,
+    GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest.class,
+    GridAdaptiveLoadBalancingSpiStartStopSelfTest.class,
+    GridAdaptiveLoadBalancingSpiConfigSelfTest.class,
+
+    // Load balancing for internal tasks.
+    GridInternalTasksLoadBalancingSelfTest.class
+})
 public final class IgniteSpiLoadBalancingSelfTestSuite {
-    /**
-     * Enforces singleton.
-     */
-    private IgniteSpiLoadBalancingSelfTestSuite() {
-        // No-op.
-    }
-
-    /**
-     * @return Test suite.
-     */
-    public static Test suite() {
-        TestSuite suite = new TestSuite("Ignite Load Balancing Test Suite");
-
-        // Random.
-        suite.addTestSuite(GridWeightedRandomLoadBalancingSpiSelfTest.class);
-        suite.addTestSuite(GridWeightedRandomLoadBalancingSpiWeightedSelfTest.class);
-        suite.addTestSuite(GridWeightedRandomLoadBalancingSpiStartStopSelfTest.class);
-        suite.addTestSuite(GridWeightedRandomLoadBalancingSpiConfigSelfTest.class);
-
-        // Round-robin.
-        suite.addTestSuite(GridRoundRobinLoadBalancingSpiLocalNodeSelfTest.class);
-        suite.addTestSuite(GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest.class);
-        suite.addTestSuite(GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest.class);
-        suite.addTestSuite(GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest.class);
-        suite.addTestSuite(GridRoundRobinLoadBalancingSpiStartStopSelfTest.class);
-        suite.addTestSuite(GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest.class);
-
-        // Adaptive.
-        suite.addTestSuite(GridAdaptiveLoadBalancingSpiSelfTest.class);
-        suite.addTestSuite(GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest.class);
-        suite.addTestSuite(GridAdaptiveLoadBalancingSpiStartStopSelfTest.class);
-        suite.addTestSuite(GridAdaptiveLoadBalancingSpiConfigSelfTest.class);
-
-        // Load balancing for internal tasks.
-        suite.addTestSuite(GridInternalTasksLoadBalancingSelfTest.class);
-
-        return suite;
-    }
 }

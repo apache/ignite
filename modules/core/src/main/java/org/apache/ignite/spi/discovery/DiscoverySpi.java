@@ -99,13 +99,11 @@ public interface DiscoverySpi extends IgniteSpi {
      * {@link org.apache.ignite.events.DiscoveryEvent} for a set of all possible
      * discovery events.
      * <p>
-     * Note that as of Ignite 3.0.2 this method is called <b>before</b>
-     * method {@link #spiStart(String)} is called. This is done to
-     * avoid potential window when SPI is started but the listener is
-     * not registered yet.
+     * TODO: This method should be removed from public API in Apache Ignite 3.0
      *
      * @param lsnr Listener to discovery events or {@code null} to unset the listener.
      */
+    @Deprecated
     public void setListener(@Nullable DiscoverySpiListener lsnr);
 
     /**

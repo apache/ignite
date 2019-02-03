@@ -16,9 +16,14 @@
  */
 package org.apache.ignite.internal.processors.cache.binary;
 
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -41,10 +46,10 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -81,10 +86,13 @@ final class BinaryMetadataTransport {
     private final Queue<MetadataUpdateResultFuture> unlabeledFutures = new ConcurrentLinkedQueue<>();
 
     /** */
-    private final ConcurrentMap<SyncKey, MetadataUpdateResultFuture> syncMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<SyncKey, MetadataUpdateResultFuture> syncMap = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<Integer, ClientMetadataRequestFuture> clientReqSyncMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, ClientMetadataRequestFuture> clientReqSyncMap = new ConcurrentHashMap<>();
+
+    /** */
+    private final ConcurrentMap<SyncKey, GridFutureAdapter<?>> schemaWaitFuts = new ConcurrentHashMap<>();
 
     /** */
     private volatile boolean stopping;
@@ -155,20 +163,29 @@ final class BinaryMetadataTransport {
      * @param metadata Metadata proposed for update.
      * @return Future to wait for update result on.
      */
-    GridFutureAdapter<MetadataUpdateResult> requestMetadataUpdate(BinaryMetadata metadata) throws IgniteCheckedException {
+    GridFutureAdapter<MetadataUpdateResult> requestMetadataUpdate(BinaryMetadata metadata) {
         MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture();
 
         if (log.isDebugEnabled())
-            log.debug("Requesting metadata update for " + metadata.typeId());
+            log.debug("Requesting metadata update for " + metadata.typeId() + "; caller thread is blocked on future "
+                + resFut);
 
-        synchronized (this) {
-            unlabeledFutures.add(resFut);
+        try {
+            synchronized (this) {
+                unlabeledFutures.add(resFut);
 
-            if (!stopping)
-                discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, ctx.localNodeId()));
-            else
-                resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
+                if (!stopping)
+                    discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, ctx.localNodeId()));
+                else
+                    resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
+            }
         }
+        catch (Exception e) {
+            resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult(), e);
+        }
+
+        if (ctx.clientDisconnected())
+            onDisconnected();
 
         return resFut;
     }
@@ -195,6 +212,21 @@ final class BinaryMetadataTransport {
             resFut.onDone(MetadataUpdateResult.createSuccessfulResult());
 
         return resFut;
+    }
+
+    /**
+     * Await specific schema update.
+     * @param typeId Type id.
+     * @param schemaId Schema id.
+     * @return Future which will be completed when schema is received.
+     */
+    GridFutureAdapter<?> awaitSchemaUpdate(int typeId, int schemaId) {
+        GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
+
+        // Use version for schemaId.
+        GridFutureAdapter<?> oldFut = schemaWaitFuts.putIfAbsent(new SyncKey(typeId, schemaId), fut);
+
+        return oldFut == null ? fut : oldFut;
     }
 
     /**
@@ -236,6 +268,8 @@ final class BinaryMetadataTransport {
         for (MetadataUpdateResultFuture fut : unlabeledFutures)
             fut.onDone(res);
 
+        unlabeledFutures.clear();
+
         for (MetadataUpdateResultFuture fut : syncMap.values())
             fut.onDone(res);
 
@@ -248,6 +282,13 @@ final class BinaryMetadataTransport {
 
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MetadataUpdateProposedMessage msg) {
+            if (log.isDebugEnabled())
+                log.debug("Received MetadataUpdateProposedListener [typeId=" + msg.typeId() +
+                    ", typeName=" + msg.metadata().typeName() +
+                    ", pendingVer=" + msg.pendingVersion() +
+                    ", acceptedVer=" + msg.acceptedVersion() +
+                    ", schemasCnt=" + msg.metadata().schemas().size() + ']');
+
             int typeId = msg.typeId();
 
             BinaryMetadataHolder holder = metaLocCache.get(typeId);
@@ -266,20 +307,23 @@ final class BinaryMetadataTransport {
                     acceptedVer = 0;
                 }
 
-                if (log.isDebugEnabled())
-                    log.debug("Versions are stamped on coordinator" +
-                        " [typeId=" + typeId +
-                        ", pendingVer=" + pendingVer +
-                        ", acceptedVer=" + acceptedVer + "]"
-                    );
-
                 msg.pendingVersion(pendingVer);
                 msg.acceptedVersion(acceptedVer);
 
                 BinaryMetadata locMeta = holder != null ? holder.metadata() : null;
 
                 try {
-                    BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata());
+                    Set<Integer> changedSchemas = new LinkedHashSet<>();
+
+                    BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata(), changedSchemas);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Versions are stamped on coordinator" +
+                                " [typeId=" + typeId +
+                                ", changedSchemas=" + changedSchemas +
+                                ", pendingVer=" + pendingVer +
+                                ", acceptedVer=" + acceptedVer + "]"
+                        );
 
                     msg.metadata(mergedMeta);
                 }
@@ -347,8 +391,10 @@ final class BinaryMetadataTransport {
                 if (!msg.rejected()) {
                     BinaryMetadata locMeta = holder != null ? holder.metadata() : null;
 
+                    Set<Integer> changedSchemas = new LinkedHashSet<>();
+
                     try {
-                        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata());
+                        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata(), changedSchemas);
 
                         BinaryMetadataHolder newHolder = new BinaryMetadataHolder(mergedMeta, pendingVer, acceptedVer);
 
@@ -371,7 +417,8 @@ final class BinaryMetadataTransport {
                         }
                         else {
                             if (log.isDebugEnabled())
-                                log.debug("Updated metadata on server node: " + newHolder);
+                                log.debug("Updated metadata on server node [holder=" + newHolder +
+                                    ", changedSchemas=" + changedSchemas + ']');
 
                             metaLocCache.put(typeId, newHolder);
                         }
@@ -418,6 +465,9 @@ final class BinaryMetadataTransport {
 
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MetadataUpdateAcceptedMessage msg) {
+            if (log.isDebugEnabled())
+                log.debug("Received MetadataUpdateAcceptedMessage " + msg);
+
             if (msg.duplicated())
                 return;
 
@@ -449,7 +499,7 @@ final class BinaryMetadataTransport {
                 if (oldAcceptedVer >= newAcceptedVer) {
                     if (log.isDebugEnabled())
                         log.debug("Marking ack as duplicate [holder=" + holder +
-                            ", newAcceptedVer: " + newAcceptedVer + ']');
+                            ", newAcceptedVer=" + newAcceptedVer + ']');
 
                     //this is duplicate ack
                     msg.duplicated(true);
@@ -467,8 +517,26 @@ final class BinaryMetadataTransport {
 
             GridFutureAdapter<MetadataUpdateResult> fut = syncMap.get(new SyncKey(typeId, newAcceptedVer));
 
+            holder = metaLocCache.get(typeId);
+
             if (log.isDebugEnabled())
-                log.debug("Completing future for " + metaLocCache.get(typeId));
+                log.debug("Completing future " + fut + " for " + holder);
+
+            if (!schemaWaitFuts.isEmpty()) {
+                Iterator<Map.Entry<SyncKey, GridFutureAdapter<?>>> iter = schemaWaitFuts.entrySet().iterator();
+
+                while (iter.hasNext()) {
+                    Map.Entry<SyncKey, GridFutureAdapter<?>> entry = iter.next();
+
+                    SyncKey key = entry.getKey();
+
+                    if (key.typeId() == typeId && holder.metadata().hasSchema(key.version())) {
+                        entry.getValue().onDone();
+
+                        iter.remove();
+                    }
+                }
+            }
 
             if (fut != null)
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult());
@@ -512,6 +580,11 @@ final class BinaryMetadataTransport {
          */
         void key(SyncKey key) {
             this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MetadataUpdateResultFuture.class, this);
         }
     }
 
@@ -566,6 +639,11 @@ final class BinaryMetadataTransport {
 
             return (typeId == that.typeId) && (ver == that.ver);
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SyncKey.class, this);
+        }
     }
 
     /**
@@ -601,7 +679,7 @@ final class BinaryMetadataTransport {
                     binMetaBytes = U.marshal(ctx, metaHolder);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to marshal binary metadata for [typeId: " + typeId + "]", e);
+                    U.error(log, "Failed to marshal binary metadata for [typeId=" + typeId + ']', e);
 
                     resp.markErrorOnRequest();
                 }
@@ -656,7 +734,8 @@ final class BinaryMetadataTransport {
                     do {
                         oldHolder = metaLocCache.get(typeId);
 
-                        if (oldHolder != null && obsoleteUpdate(
+                        // typeId metadata cannot be removed after initialization.
+                        if (obsoleteUpdate(
                                 oldHolder.pendingVersion(),
                                 oldHolder.acceptedVersion(),
                                 newHolder.pendingVersion(),

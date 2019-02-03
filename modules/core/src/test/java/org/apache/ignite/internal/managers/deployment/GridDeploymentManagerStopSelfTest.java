@@ -30,6 +30,7 @@ import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Grid deployment manager stop test.
@@ -39,6 +40,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnKernalStop() throws Exception {
         DeploymentSpi spi = new GridTestDeploymentSpi();
 

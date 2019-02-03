@@ -23,8 +23,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * This test will test node local storage.
@@ -41,6 +43,7 @@ public class GridNodeLocalSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testNodeLocal() throws Exception {
         Ignite g = G.ignite(getTestIgniteInstanceName());
 
@@ -62,5 +65,28 @@ public class GridNodeLocalSelfTest extends GridCommonAbstractTest {
 
         assert "Hello world!".equals(nl.get(keyStr));
         assert (Integer)nl.get(key) == 12;
+    }
+
+    /**
+     * Test that node local map is cleared via {@link IgniteMXBean#clearNodeLocalMap()}.
+     *
+     * @throws Exception if test failed.
+     */
+    @Test
+    public void testClearNodeLocalMap() throws Exception {
+        final String key = "key";
+        final String value = "value";
+
+        Ignite grid = G.ignite(getTestIgniteInstanceName());
+
+        ConcurrentMap<Object, Object> nodeLocalMap = grid.cluster().nodeLocalMap();
+        nodeLocalMap.put(key, value);
+
+        assert !nodeLocalMap.isEmpty() : "Empty node local map";
+        assert nodeLocalMap.containsKey(key);
+
+        IgniteMXBean igniteMXBean = (IgniteMXBean)grid;
+        igniteMXBean.clearNodeLocalMap();
+        assert nodeLocalMap.isEmpty() : "Not empty node local map";
     }
 }

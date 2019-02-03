@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-export default ['IgniteUserbar', [function() {
+export default function() {
     const items = [];
 
     this.push = function(data) {
         items.push(data);
     };
 
-    this.$get = [function() {
+    this.$get = function() {
         return items;
-    }];
-}]];
+    };
+
+    return this;
+}

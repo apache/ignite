@@ -18,9 +18,11 @@
 package org.apache.ignite.internal;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -330,6 +332,25 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return node.metrics().getTotalNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalBaselineNodes() {
+        if (!node.isClient() && !node.isDaemon()) {
+            List<? extends BaselineNode> baselineNodes = discoMgr.baselineNodes(discoMgr.topologyVersionEx());
+
+            if (baselineNodes != null)
+                for (BaselineNode baselineNode : baselineNodes)
+                    if (baselineNode.consistentId().equals(node.consistentId()))
+                        return 1;
+        }
+
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getActiveBaselineNodes() {
+        return getTotalBaselineNodes();
     }
 
     /** {@inheritDoc} */

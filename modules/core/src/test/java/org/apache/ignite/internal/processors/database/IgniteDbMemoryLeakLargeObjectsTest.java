@@ -25,7 +25,7 @@ import org.apache.ignite.internal.IgniteEx;
  */
 public class IgniteDbMemoryLeakLargeObjectsTest extends IgniteDbMemoryLeakAbstractTest {
     /** */
-    private final static int[] ARRAY;
+    private static final int[] ARRAY;
 
     static {
         ARRAY = new int[1024];

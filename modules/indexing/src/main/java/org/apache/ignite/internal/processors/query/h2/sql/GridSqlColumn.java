@@ -92,6 +92,13 @@ public class GridSqlColumn extends GridSqlElement {
         this.tblAlias = tblAlias;
     }
 
+    /**
+     * @return Table alias.
+     */
+    public String tableAlias() {
+        return tblAlias;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
         String sql = Parser.quoteIdentifier(colName);
@@ -126,6 +133,20 @@ public class GridSqlColumn extends GridSqlElement {
         Expression dfltExpr = col.getDefaultExpression();
 
         return dfltExpr != null ? col.convert(dfltExpr.getValue(null)).getObject() : null;
+    }
+
+    /**
+     * @return Precision.
+     */
+    public int precision() {
+        return (int) col.getPrecision();
+    }
+
+    /**
+     * @return Scale.
+     */
+    public int scale() {
+        return col.getScale();
     }
 
     /**

@@ -58,10 +58,11 @@ namespace Apache.Ignite.Examples.Sql
                 Console.WriteLine(">>> Cache query example started.");
 
                 var employeeCache = ignite.GetOrCreateCache<int, Employee>(
-                    new CacheConfiguration(EmployeeCacheName, typeof(Employee)));
+                    new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
 
                 var employeeCacheColocated = ignite.GetOrCreateCache<AffinityKey, Employee>(
-                    new CacheConfiguration(EmployeeCacheNameColocated, typeof(Employee)));
+                    new CacheConfiguration(EmployeeCacheNameColocated,
+                        new QueryEntity(typeof(AffinityKey), typeof(Employee))));
 
                 var organizationCache = ignite.GetOrCreateCache<int, Organization>(
                     new CacheConfiguration(OrganizationCacheName, new QueryEntity(typeof(int), typeof(Organization))));
@@ -139,7 +140,8 @@ namespace Apache.Ignite.Examples.Sql
                 "from Employee, \"dotnet_cache_query_organization\".Organization " +
                 "where Employee.organizationId = Organization._key and Organization.name = ?", orgName)
             {
-                EnableDistributedJoins = true
+                EnableDistributedJoins = true,
+                Timeout = new TimeSpan(0, 1, 0)
             });
 
             Console.WriteLine();

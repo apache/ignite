@@ -27,18 +27,13 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String TEST_ATTRIBUTE = "test-attribute";
 
@@ -56,11 +51,8 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        discoverySpi.setIpFinder(ipFinder);
-
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -98,6 +90,7 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStop() throws Exception {
         startGrids(2);
 

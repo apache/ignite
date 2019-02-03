@@ -80,7 +80,7 @@ namespace ignite
             {
                 IgniteError err;
 
-                int64_t res = OutInOpLong(Command::SET_ACTIVE, active ? 1 : 0, err);
+                OutInOpLong(Command::SET_ACTIVE, active ? 1 : 0, err);
 
                 IgniteError::ThrowIfNeeded(err);
             }

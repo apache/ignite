@@ -369,7 +369,7 @@ public class DataStreamerRequest implements Message {
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -508,7 +508,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 13:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

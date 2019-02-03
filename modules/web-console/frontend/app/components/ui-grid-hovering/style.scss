@@ -20,3 +20,9 @@
         background: #ededed;
     }
 }
+
+.grid[ui-grid-hovering='ui-grid-hovering'] {
+    .ui-grid-row.ui-grid-row-hovered > [ui-grid-row] > .ui-grid-cell {
+        background: #ededed;
+    }
+}

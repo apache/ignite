@@ -36,7 +36,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Entry point for platform nodes.
  */
-@SuppressWarnings("UnusedDeclaration")
 public class PlatformIgnition {
     /** Map with active instances. */
     private static final HashMap<String, PlatformProcessor> instances = new HashMap<>();

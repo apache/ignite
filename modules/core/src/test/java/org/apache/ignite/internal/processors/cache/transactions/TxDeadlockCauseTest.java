@@ -40,6 +40,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.Test;
 
 /**
  *
@@ -49,7 +50,6 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     private CacheConfiguration ccfg;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -62,7 +62,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         }
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -81,16 +81,10 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCause() throws Exception {
         startGrids(1);
 
@@ -103,6 +97,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseSeveralNodes() throws Exception {
         startGrids(2);
 
@@ -115,6 +110,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseNear() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -131,6 +127,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseSeveralNodesNear() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -153,6 +150,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
      *              instead of {@link IgniteCache#get(java.lang.Object)} and {@link IgniteCache#put(java.lang.Object, java.lang.Object)} operations sequence.
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseObject(int nodes, final int keysCnt, final long timeout, final TransactionIsolation isolation, final boolean oneOp) throws Exception {
         final Ignite ignite = grid(new Random().nextInt(nodes));
 

@@ -27,13 +27,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,9 +46,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private boolean client;
 
     /** */
@@ -59,8 +54,6 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setClientMode(client);
 
@@ -82,13 +75,6 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
         client = false;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @return Number of server nodes. In addition 2 clients are started.
      */
@@ -99,6 +85,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCasReplace() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {
@@ -186,6 +173,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {
@@ -245,6 +233,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplace() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {
@@ -304,6 +293,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveWithOldValue() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {

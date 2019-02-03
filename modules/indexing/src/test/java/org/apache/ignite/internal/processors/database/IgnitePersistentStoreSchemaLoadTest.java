@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.database;
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -36,22 +35,15 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
  */
 public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String TMPL_NAME = "test_cache*";
 
@@ -68,15 +60,13 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         cfg.setCacheConfiguration(cacheCfg(TMPL_NAME));
 
         DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
         pCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setPersistenceEnabled(true)
-            .setMaxSize(100 * 1024 * 1024));
+            .setMaxSize(100L * 1024 * 1024));
 
         pCfg.setCheckpointFrequency(1000);
 
@@ -124,30 +114,32 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
 
         System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
     }
 
     /** */
+    @Test
     public void testDynamicSchemaChangesPersistence() throws Exception {
         checkSchemaStateAfterNodeRestart(false);
     }
 
     /** */
+    @Test
     public void testDynamicSchemaChangesPersistenceWithAliveCluster() throws Exception {
         checkSchemaStateAfterNodeRestart(true);
     }
 
     /** */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testDynamicSchemaChangesPersistenceWithStaticCache() throws Exception {
         IgniteEx node = startGrid(getConfigurationWithStaticCache(getTestIgniteInstanceName(0)));
 
@@ -250,13 +242,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-    }
-
-    /**
      * @param node Node whose checkpoint to wait for.
      * @return Latch released when checkpoint happens.
      */
@@ -266,8 +251,12 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)node.context().cache().context().database();
 
         db.addCheckpointListener(new DbCheckpointListener() {
-            @Override public void onCheckpointBegin(Context ctx) {
+            @Override public void onMarkCheckpointBegin(Context ctx) {
                 cnt.countDown();
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) {
+                /* No-op. */
             }
         });
 

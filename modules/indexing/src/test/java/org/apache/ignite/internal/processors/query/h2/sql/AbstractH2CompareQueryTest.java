@@ -40,21 +40,15 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract test framework to compare query results from h2 database instance and mixed ignite caches (replicated and
  * partitioned) which have the same data models and data content.
  */
-public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public abstract class AbstractH2CompareQueryTest extends AbstractIndexingCommonTest {
     /** */
     protected static Ignite ignite;
 
@@ -65,15 +59,8 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
     protected static Connection conn;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         c.setMarshaller(new BinaryMarshaller());
 
@@ -127,15 +114,11 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         Statement st = conn.createStatement();
 
         st.execute("DROP ALL OBJECTS");
 
         conn.close();
-
-        stopAllGrids();
 
         ignite = null;
     }
@@ -225,7 +208,6 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
      * @return Result set after SQL query execution.
      * @throws SQLException If exception.
      */
-    @SuppressWarnings("unchecked")
     protected static List<List<?>> compareQueryRes0(IgniteCache cache, String sql, @Nullable Object[] args,
         Ordering ordering) throws SQLException {
         return compareQueryRes0(cache, sql, false, args, ordering);

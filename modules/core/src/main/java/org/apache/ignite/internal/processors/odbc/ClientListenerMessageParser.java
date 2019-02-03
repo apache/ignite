@@ -27,7 +27,7 @@ public interface ClientListenerMessageParser {
      * @param msg Message.
      * @return Request.
      */
-    public ClientListenerRequest decode(byte[] msg);
+    ClientListenerRequest decode(byte[] msg);
 
     /**
      * Encode response to byte array.
@@ -35,5 +35,21 @@ public interface ClientListenerMessageParser {
      * @param resp Response.
      * @return Message.
      */
-    public byte[] encode(ClientListenerResponse resp);
+    byte[] encode(ClientListenerResponse resp);
+
+    /**
+     * Decode command type. Allows to recognize the command (message type) without decoding the entire message.
+     *
+     * @param msg Message.
+     * @return Command type.
+     */
+    int decodeCommandType(byte[] msg);
+
+    /**
+     * Decode request Id. Allows to recognize the request Id, if any, without decoding the entire message.
+     *
+     * @param msg Message.
+     * @return Request Id.
+     */
+    long decodeRequestId(byte[] msg);
 }

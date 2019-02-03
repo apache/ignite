@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -70,15 +71,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     private Collection<?> keys;
 
     /** Values. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<?> vals;
 
     /** Conflict put values. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<GridCacheDrInfo> conflictPutVals;
 
     /** Conflict remove values. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<GridCacheVersion> conflictRmvVals;
 
     /** Mappings if operations is mapped to more than one node. */
@@ -347,7 +345,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     @Override public void onPrimaryResponse(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
         GridNearAtomicAbstractUpdateRequest req;
 
@@ -485,7 +482,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
                 "Failed to update keys, topology changed while execute atomic update inside transaction.");
 
-            cause.retryReadyFuture(cctx.affinity().affinityReadyFuture(remapTopVer));
+            cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
 
             e.add(remapKeys, cause);
 
@@ -627,7 +624,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         AffinityTopologyVersion topVer;
 
         if (cache.topology().stopping()) {
-            completeFuture(null,new CacheStoppedException(cache.name()), null);
+            completeFuture(
+                null,
+                cctx.shared().cache().isCacheRestarting(cache.name())?
+                    new IgniteCacheRestartingException(cache.name()):
+                    new CacheStoppedException(cache.name()),
+                null);
 
             return;
         }
@@ -915,7 +917,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @return Mapping.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private Map<UUID, PrimaryRequestState> mapUpdate(Collection<ClusterNode> topNodes,
         AffinityTopologyVersion topVer,
         Long futId,
@@ -1105,8 +1106,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
 
-        if (op != TRANSFORM)
+        if (op != TRANSFORM) {
             val = cctx.toCacheObject(val);
+
+            if (op == CREATE || op == UPDATE)
+                cctx.validateKeyAndValue(cacheKey, (CacheObject)val);
+        }
         else
             val = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), (EntryProcessor)val);
 
@@ -1155,7 +1160,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    public synchronized String toString() {
+    @Override public synchronized String toString() {
         return S.toString(GridNearAtomicUpdateFuture.class, this, super.toString());
     }
 }

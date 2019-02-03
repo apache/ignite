@@ -27,7 +27,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -35,6 +38,12 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Load-All self test.
  */
 public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
+    /** */
+    @Before
+    public void beforeGridCacheLocalLoadAllSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+    }
+
     /**
      *
      */
@@ -46,6 +55,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testCacheGetAll() throws Exception {
         Ignite ignite = grid();
 
@@ -57,6 +67,8 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

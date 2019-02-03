@@ -143,14 +143,12 @@ public enum H2DatabaseType {
         if (DataType.isGeometryClass(cls))
             return GEOMETRY;
 
-        if (LocalDateTimeUtils.isJava8DateApiPresent()) {
-            if (LocalDateTimeUtils.isLocalDate(cls))
-                return DATE;
-            else if (LocalDateTimeUtils.isLocalTime(cls))
-                return TIME;
-            else if (LocalDateTimeUtils.isLocalDateTime(cls))
-                return TIMESTAMP;
-        }
+        if (LocalDateTimeUtils.LOCAL_DATE == cls)
+            return DATE;
+        else if (LocalDateTimeUtils.LOCAL_TIME == cls)
+            return TIME;
+        else if (LocalDateTimeUtils.LOCAL_DATE_TIME == cls)
+            return TIMESTAMP;
 
         return cls.isArray() && !cls.getComponentType().isPrimitive() ? ARRAY : OTHER;
     }

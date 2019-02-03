@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests filter chain event processing.
@@ -66,6 +67,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChainEvents() throws Exception {
         final AtomicReference<String> connectedEvt = new AtomicReference<>();
         final AtomicReference<String> disconnectedEvt = new AtomicReference<>();
@@ -247,7 +249,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return "AppendingFilter [param=" + param + ']';
         }
 

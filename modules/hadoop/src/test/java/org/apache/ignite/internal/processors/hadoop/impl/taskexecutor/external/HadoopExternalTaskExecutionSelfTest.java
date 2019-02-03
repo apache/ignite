@@ -41,12 +41,15 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopAbstractSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
 /**
  * Job tracker self test.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-404")
 public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean igfsEnabled() {
@@ -55,8 +58,6 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-404");
-
         super.beforeTest();
 
         startGrids(gridCount());
@@ -89,6 +90,7 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleTaskSubmit() throws Exception {
         String testInputFile = "/test";
 
@@ -125,6 +127,7 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapperException() throws Exception {
         String testInputFile = "/test";
 

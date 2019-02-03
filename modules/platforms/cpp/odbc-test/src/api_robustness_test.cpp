@@ -22,12 +22,10 @@
 #include <sql.h>
 #include <sqlext.h>
 
+#include <cstdio>
+
 #include <vector>
 #include <string>
-
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
 
 #include <boost/test/unit_test.hpp>
 
@@ -56,14 +54,13 @@ struct ApiRobustnessTestSuiteFixture : public odbc::OdbcTestSuite
 {
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-test.xml", name);
+        return StartPlatformNode("queries-test.xml", name);
     }
 
     /**
      * Constructor.
      */
     ApiRobustnessTestSuiteFixture() :
-        grid(),
         testCache(0)
     {
         grid = StartAdditionalNode("NodeMain");
@@ -80,8 +77,6 @@ struct ApiRobustnessTestSuiteFixture : public odbc::OdbcTestSuite
     {
         Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
-        SQLRETURN ret;
-
         const int64_t recordsNum = 100;
 
         for (int i = 0; i < recordsNum; ++i)
@@ -96,7 +91,7 @@ struct ApiRobustnessTestSuiteFixture : public odbc::OdbcTestSuite
         int32_t i32Field = -1;
 
         // Binding column.
-        ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &i32Field, 0, 0);
+        SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &i32Field, 0, 0);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -121,35 +116,10 @@ struct ApiRobustnessTestSuiteFixture : public odbc::OdbcTestSuite
         CheckSQLStatementDiagnosticError("HY106");
     }
 
-    void CheckSQLDiagnosticError(int16_t handleType, SQLHANDLE handle, const std::string& expectSqlState)
-    {
-        SQLCHAR state[ODBC_BUFFER_SIZE];
-        SQLINTEGER nativeError = 0;
-        SQLCHAR message[ODBC_BUFFER_SIZE];
-        SQLSMALLINT messageLen = 0;
-
-        SQLRETURN ret = SQLGetDiagRec(handleType, handle, 1, state, &nativeError, message, sizeof(message), &messageLen);
-
-        const std::string sqlState = reinterpret_cast<char*>(state);
-        BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
-        BOOST_REQUIRE_EQUAL(sqlState, expectSqlState);
-        BOOST_REQUIRE(messageLen > 0);
-    }
-
-    void CheckSQLStatementDiagnosticError(const std::string& expectSqlState)
-    {
-        CheckSQLDiagnosticError(SQL_HANDLE_STMT, stmt, expectSqlState);
-    }
-
-    void CheckSQLConnectionDiagnosticError(const std::string& expectSqlState)
-    {
-        CheckSQLDiagnosticError(SQL_HANDLE_DBC, dbc, expectSqlState);
-    }
-
     /**
      * Destructor.
      */
-    ~ApiRobustnessTestSuiteFixture()
+    virtual ~ApiRobustnessTestSuiteFixture()
     {
         // No-op.
     }
@@ -480,7 +450,7 @@ BOOST_AUTO_TEST_CASE(TestSQLBindCol)
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
     //Unsupported data types
-    for(int i = 0; i < sizeof(unsupportedC)/sizeof(unsupportedC[0]); ++i)
+    for (size_t i = 0; i < sizeof(unsupportedC)/sizeof(unsupportedC[0]); ++i)
     {
         ret = SQLBindCol(stmt, 1, unsupportedC[i], &ind1, sizeof(ind1), &len1);
         BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
@@ -529,15 +499,15 @@ BOOST_AUTO_TEST_CASE(TestSQLBindParameter)
     SQLBindParameter(stmt, 2, SQL_PARAM_INPUT_OUTPUT, SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, sizeof(ind1), &len1);
     CheckSQLStatementDiagnosticError("HY105");
 
-
     //Unsupported data types
-    for(int i = 0; i < sizeof(unsupportedSql)/sizeof(unsupportedSql[0]); ++i)
+    for (size_t i = 0; i < sizeof(unsupportedSql)/sizeof(unsupportedSql[0]); ++i)
     {
-        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, unsupportedSql[i], 100, 100, &ind1, sizeof(ind1), &len1);
+        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG,
+            unsupportedSql[i], 100, 100, &ind1, sizeof(ind1), &len1);
+
         BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
         CheckSQLStatementDiagnosticError("HYC00");
     }
-
 
     // Size is null.
     SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, 0, &len1);
@@ -1115,15 +1085,32 @@ BOOST_AUTO_TEST_CASE(TestSQLDiagnosticRecords)
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLHANDLE hnd;
-    SQLRETURN ret;
 
-    ret = SQLAllocHandle(SQL_HANDLE_DESC, dbc, &hnd);
+    SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_DESC, dbc, &hnd);
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
     CheckSQLConnectionDiagnosticError("IM001");
 
     ret = SQLFreeStmt(stmt, 4);
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
     CheckSQLStatementDiagnosticError("HY092");
+}
+
+BOOST_AUTO_TEST_CASE(TestManyFds)
+{
+    enum { FDS_NUM = 2000 };
+
+    std::FILE* fds[FDS_NUM];
+
+    for (int i = 0; i < FDS_NUM; ++i)
+        fds[i] = tmpfile();
+
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    for (int i = 0; i < FDS_NUM; ++i)
+    {
+        if (fds[i])
+            fclose(fds[i]);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

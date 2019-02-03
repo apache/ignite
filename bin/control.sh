@@ -54,7 +54,7 @@ fi
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
 . "${SCRIPTS_HOME}"/include/build-classpath.sh # Will be removed in the binary release.
-CP="${IGNITE_LIBS}"
+CP="${IGNITE_LIBS}:${IGNITE_HOME}/libs/optional/ignite-zookeeper/*"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
 
@@ -93,10 +93,14 @@ if [ -z "$JVM_OPTS" ] ; then
 fi
 
 #
+# Uncomment to enable experimental commands [--wal]
+#
+# JVM_OPTS="${JVM_OPTS} -DIGNITE_ENABLE_EXPERIMENTAL_COMMAND=true"
+
+#
 # Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 #
-# JVM_OPTS="$JVM_OPTS -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=128m"
-# JVM_OPTS="$JVM_OPTS -XX:MaxTenuringThreshold=0 -XX:SurvivorRatio=1024 -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=60"
+# JVM_OPTS="$JVM_OPTS -XX:+UseG1GC"
 
 #
 # Uncomment if you get StackOverflowError.

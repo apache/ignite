@@ -32,11 +32,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests that server nodes do not need class definitions to execute queries.
@@ -44,9 +42,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTest {
     /** */
     public static final String PERSON_KEY_CLS_NAME = "org.apache.ignite.tests.p2p.cache.PersonKey";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Grid count. */
     public static final int GRID_CNT = 4;
@@ -67,12 +62,6 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         cfg.setMarshaller(null);
 
@@ -115,14 +104,13 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         extClassLoader = null;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryPartitionedAtomic() throws Exception {
         checkQuery(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC);
     }
@@ -130,6 +118,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReplicatedAtomic() throws Exception {
         checkQuery(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
     }
@@ -137,6 +126,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryPartitionedTransactional() throws Exception {
         checkQuery(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -144,6 +134,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReplicatedTransactional() throws Exception {
         checkQuery(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -151,6 +142,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldsQueryPartitionedAtomic() throws Exception {
         checkFieldsQuery(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC);
     }
@@ -158,6 +150,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldsQueryReplicatedAtomic() throws Exception {
         checkFieldsQuery(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
     }
@@ -165,6 +158,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldsQueryPartitionedTransactional() throws Exception {
         checkFieldsQuery(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -172,6 +166,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldsQueryReplicatedTransactional() throws Exception {
         checkFieldsQuery(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }

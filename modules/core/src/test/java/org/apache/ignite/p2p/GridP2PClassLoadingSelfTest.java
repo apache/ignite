@@ -35,6 +35,7 @@ import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
@@ -60,7 +61,8 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"serial", "ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions"})
+    @Test
     public void testClassLoading() throws Exception {
         ComputeTask<?, ?> task = (ComputeTask<?, ?>)tstClsLdr.loadClass(GridP2PTestTask.class.getName()).newInstance();
 
@@ -110,7 +112,6 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Nullable @Override public <T> T attribute(String name) {
             return null;
         }

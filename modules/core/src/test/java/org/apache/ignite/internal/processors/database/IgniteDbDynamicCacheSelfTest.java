@@ -30,8 +30,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
  *
@@ -42,7 +41,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true));
+            new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024).setPersistenceEnabled(true));
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -63,7 +62,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -81,6 +80,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreate() throws Exception {
         int iterations = 200;
 
@@ -114,6 +114,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleDynamicCaches() throws Exception {
         int caches = 10;
 

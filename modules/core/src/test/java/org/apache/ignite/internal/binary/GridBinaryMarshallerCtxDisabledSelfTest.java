@@ -34,6 +34,7 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -42,6 +43,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectExchange() throws Exception {
         BinaryMarshaller marsh = new BinaryMarshaller();
         marsh.setContext(new MarshallerContextWithNoStorage());

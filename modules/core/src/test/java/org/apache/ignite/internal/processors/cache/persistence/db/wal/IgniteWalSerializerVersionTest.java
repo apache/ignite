@@ -43,33 +43,25 @@ import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
  *
  */
 public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setMaxSize(100 * 1024 * 1024)));
+                .setMaxSize(100L * 1024 * 1024)));
 
         return cfg;
     }
@@ -77,6 +69,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckDifferentSerializerVersions() throws Exception {
         System.setProperty(IGNITE_WAL_SERIALIZER_VERSION, "1");
 
@@ -128,6 +121,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckDifferentSerializerVersionsAndLogTimestamp() throws Exception {
         IgniteCallable<List<WALRecord>> recordsFactory = new IgniteCallable<List<WALRecord>>() {
             @Override public List<WALRecord> call() throws Exception {
@@ -265,7 +259,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
                 p = p0;
         }
 
-        wal.fsync(null);
+        wal.flush(null, false);
 
         Iterator<Long> itToCheck = checker.getTimeStamps().iterator();
 
@@ -288,7 +282,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
 
         System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
     }
@@ -299,7 +293,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
 
         System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
     }
@@ -307,13 +301,6 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -51,14 +52,10 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
         startGrids(GRID_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryUsage() throws Exception {
         assertEquals(10_000, GridDhtLocalPartition.MAX_DELETE_QUEUE_SIZE);
 
@@ -76,7 +73,7 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
             cache = grid(g).cache(DEFAULT_CACHE_NAME);
 
             for (GridDhtLocalPartition p : dht(cache).topology().localPartitions()) {
-                int size = p.dataStore().fullSize();
+                long size = p.dataStore().fullSize();
 
                 assertTrue("Unexpected size: " + size, size <= 32);
             }

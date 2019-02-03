@@ -22,12 +22,14 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.StandardMBean;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * MBean test.
@@ -38,6 +40,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testCorrectMBeanInfo() throws Exception {
         StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(), GridMBeanInterface.class);
 
@@ -84,6 +87,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testMissedNameMBeanInfo() throws Exception {
         try {
             StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(), GridMBeanInterfaceBad.class);
@@ -102,6 +106,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testMissedDescriptionMBeanInfo() throws Exception {
         try {
             StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(),
@@ -121,6 +126,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testEmptyDescriptionMBeanInfo() throws Exception {
         try {
             StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(),
@@ -140,6 +146,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testEmptyNameMBeanInfo() throws Exception {
         try {
             StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(),
@@ -159,12 +166,22 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testIgniteKernalReturnsValidMBeanInfo() throws Exception {
         try {
-            IgniteMXBean ignite = (IgniteMXBean)startGrid();
+            IgniteEx igniteCrd = startGrid(0);
 
-            assertNotNull(ignite.getUserAttributesFormatted());
-            assertNotNull(ignite.getLifecycleBeansFormatted());
+            IgniteMXBean igniteMXBean = (IgniteMXBean)startGrid(1);
+
+            assertNotNull(igniteMXBean.getUserAttributesFormatted());
+            assertNotNull(igniteMXBean.getLifecycleBeansFormatted());
+
+            String coordinatorFormatted = igniteMXBean.getCurrentCoordinatorFormatted();
+
+            assertTrue(coordinatorFormatted.contains(igniteCrd.localNode().addresses().toString()));
+            assertTrue(coordinatorFormatted.contains(igniteCrd.localNode().hostNames().toString()));
+            assertTrue(coordinatorFormatted.contains(Long.toString(igniteCrd.localNode().order())));
+            assertTrue(coordinatorFormatted.contains(igniteCrd.localNode().id().toString()));
         }
         finally {
             stopAllGrids();

@@ -34,17 +34,17 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteState.STOPPED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -68,11 +68,15 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     /** */
     private static final String VALUE = "test";
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Grid instances. */
     private static final List<Ignite> IGNITEs = new ArrayList<>();
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
+        super.setUp();
+    }
 
     /**
      * Start grid by default.
@@ -84,13 +88,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
-        c.setDiscoverySpi(disco);
 
         c.setDeploymentMode(DeploymentMode.SHARED);
 
@@ -109,8 +106,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         IGNITEs.clear();
     }
 
@@ -139,10 +134,11 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
     /**
      * @throws IgniteCheckedException If test failed.
-     * 
+     *
      * Note: test was disabled for REPPLICATED cache case because IGNITE-601.
      * This comment should be removed if test passed stably.
      */
+    @Test
     public void testPessimisticReadCommitted() throws Throwable {
         checkTransaction(PESSIMISTIC, READ_COMMITTED);
     }
@@ -150,6 +146,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Throwable {
         checkTransaction(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -157,6 +154,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticSerializable() throws Throwable {
         checkTransaction(PESSIMISTIC, SERIALIZABLE);
     }
@@ -188,7 +186,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             stopGrid(idx);
 
@@ -234,10 +232,11 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
     /**
      * @throws Exception If check failed.
-     * 
+     *
      * Note: test was disabled for REPPLICATED cache case because IGNITE-601.
      * This comment should be removed if test passed stably.
      */
+    @Test
     public void testLock() throws Exception {
         int idx = 0;
 
@@ -268,7 +267,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
                 return true;
             }
-        }, EVT_NODE_LEFT);
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         stopGrid(idx);
 

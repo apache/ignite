@@ -53,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -69,13 +68,13 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Test fo regular igfs operations.
  */
-@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ConstantConditions"})
+@SuppressWarnings({"ConstantConditions"})
 public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
 
     /** Default block size (32Mb). */
-    protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
+    protected static final long BLOCK_SIZE = 32L * 1024 * 1024;
 
     /** Default repeat count. */
     protected static final int REPEAT_CNT = 5; // Diagnostic: up to 500; Regression: 5
@@ -931,7 +930,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param igfs IGFS.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public static void clear(IgniteFileSystem igfs) throws Exception {
         Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
 
@@ -1037,7 +1035,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param uni IGFS.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public static void clear(IgfsSecondaryFileSystemTestAdapter uni) throws Exception {
         IgfsEx igfsEx = uni.igfs();
 

@@ -43,6 +43,7 @@ import org.hibernate.engine.spi.FilterDefinition;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.metadata.CollectionMetadata;
 import org.hibernate.stat.Statistics;
+import org.junit.Test;
 
 /**
  * Test for Cache jdbc blob store factory.
@@ -57,6 +58,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheConfiguration() throws Exception {
         try (Ignite ignite1 = startGrid(0)) {
             IgniteCache<Integer, String> cache1 = ignite1.getOrCreateCache(cacheConfiguration());
@@ -68,6 +70,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXmlConfiguration() throws Exception {
         try (Ignite ignite = Ignition.start(MODULE_PATH + "/src/test/config/factory-cache.xml")) {
             try(Ignite ignite1 = Ignition.start(MODULE_PATH + "/src/test/config/factory-cache1.xml")) {
@@ -82,10 +85,11 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncorrectBeanConfiguration() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                try(Ignite ignite =
+                try (Ignite ignite =
                     Ignition.start(MODULE_PATH + "/src/test/config/factory-incorrect-store-cache.xml")) {
                     ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class).
                             getCacheStoreFactory().create();

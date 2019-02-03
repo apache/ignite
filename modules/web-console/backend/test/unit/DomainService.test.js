@@ -150,6 +150,11 @@ suite('DomainsServiceTestsSuite', () => {
             .catch(done);
     });
 
+    test('List of domains in cluster', (done) => {
+        // TODO IGNITE-5737 Add test.
+        done();
+    });
+
     test('Update linked entities on update domain', (done) => {
         // TODO IGNITE-3262 Add test.
         done();

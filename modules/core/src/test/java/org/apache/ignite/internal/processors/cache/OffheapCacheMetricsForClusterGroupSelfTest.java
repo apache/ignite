@@ -18,15 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.util.concurrent.CountDownLatch;
-
-import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import org.junit.Test;
 
 /**
  * Test for cluster wide offheap cache metrics.
@@ -63,11 +59,7 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             startGrid("client-" + i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
+    @Test
     public void testGetOffHeapPrimaryEntriesCount() throws Exception {
         String cacheName = "testGetOffHeapPrimaryEntriesCount";
         IgniteCache<Integer, Integer> cache = grid("client-0").createCache(cacheConfiguration(cacheName));
@@ -75,14 +67,14 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);
 
-        awaitMetricsUpdate();
+        awaitMetricsUpdate(1);
 
         assertGetOffHeapPrimaryEntriesCount(cacheName, 1000);
 
         for (int j = 0; j < 1000; j++)
             cache.get(j);
 
-        awaitMetricsUpdate();
+        awaitMetricsUpdate(1);
 
         assertGetOffHeapPrimaryEntriesCount(cacheName, 1000);
 
@@ -91,29 +83,9 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         for (int j = 0; j < 1000; j++)
             cache.get(j);
 
-        awaitMetricsUpdate();
+        awaitMetricsUpdate(1);
 
         assertGetOffHeapPrimaryEntriesCount(cacheName, 1000);
-    }
-
-    /**
-     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
-     */
-    private void awaitMetricsUpdate() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch((GRID_CNT + 1) * 2);
-
-        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event ignore) {
-                latch.countDown();
-
-                return true;
-            }
-        };
-
-        for (int i = 0; i < GRID_CNT; i++)
-            grid("server-" + i).events().localListen(lsnr, EVT_NODE_METRICS_UPDATED);
-
-        latch.await();
     }
 
     private void assertGetOffHeapPrimaryEntriesCount(String cacheName, int count) throws Exception {
@@ -145,11 +117,16 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         }
     }
 
+    /**
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
     private static CacheConfiguration<Integer, Integer> cacheConfiguration(String cacheName) {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(cacheName);
 
         cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         return cfg;
     }
 }

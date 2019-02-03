@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import template from './template.pug';
 import './style.scss';
 
@@ -23,6 +24,10 @@ export default {
     controller: class {
         static $inject = ['IgniteVersion', '$scope'];
 
+        /**
+         * @param {import('app/services/Version.service').default} Version
+         * @param {ng.IRootScopeService} $scope
+         */
         constructor(Version, $scope) {
             this.currentSbj = Version.currentSbj;
             this.supportedVersions = Version.supportedVersions;

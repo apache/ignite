@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -71,6 +72,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransform() throws Exception {
         testTransform(keyForNode(0));
 
@@ -115,6 +117,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         testPut(keyForNode(0));
 
@@ -161,6 +164,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutxIfAbsent() throws Exception {
         testPutxIfAbsent(keyForNode(0));
 
@@ -205,6 +209,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGet() throws Exception {
         testPutGet(keyForNode(0));
 

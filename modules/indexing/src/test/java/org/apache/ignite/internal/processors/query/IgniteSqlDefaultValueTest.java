@@ -29,16 +29,13 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /** */
 @SuppressWarnings("ThrowableNotThrown")
 public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Name of client node. */
     private static final String NODE_CLIENT = "client";
 
@@ -49,12 +46,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-        disco.setForceServerMode(true);
-
-        c.setDiscoverySpi(disco);
+        ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
 
         if (gridName.equals(NODE_CLIENT))
             c.setClientMode(true);
@@ -69,13 +61,6 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
         startGrids(NODE_COUNT);
 
         startGrid(NODE_CLIENT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -95,6 +80,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testDefaultValueColumn() {
         sql("CREATE TABLE TEST (id int, val0 varchar DEFAULT 'default-val', primary key (id))");
         sql("INSERT INTO TEST (id) VALUES (?)", 1);
@@ -114,6 +100,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testDefaultValueColumnAfterUpdate() {
         sql("CREATE TABLE TEST (id int, val0 varchar DEFAULT 'default-val', val1 varchar, primary key (id))");
         sql("INSERT INTO TEST (id, val1) VALUES (?, ?)", 1, "val-10");
@@ -145,6 +132,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testEmptyValueNullDefaults() {
         sql("CREATE TABLE TEST (id int, val0 varchar, primary key (id))");
         sql("INSERT INTO TEST (id) VALUES (?)", 1);
@@ -162,6 +150,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testAddColumnWithDefaults() {
         sql("CREATE TABLE TEST (id int, val0 varchar, primary key (id))");
 
@@ -176,6 +165,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testDefaultTypes() {
         assertEquals("Check tinyint", (byte)28, getDefaultObject("TINYINT", "28"));
         assertEquals("Check smallint", (short)28, getDefaultObject("SMALLINT", "28"));

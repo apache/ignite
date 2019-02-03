@@ -55,10 +55,12 @@ namespace ignite
                  *
                  * @param hostname Host name or address.
                  * @param port TCP port.
+                 * @param timeout Timeout in seconds.
                  * @param diag Diagnostics collector to use for error-reporting.
                  * @return @c true on success and @c false on fail.
                  */
-                virtual bool Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag);
+                virtual bool Connect(const char* hostname, uint16_t port, int32_t timeout,
+                    diagnostic::Diagnosable& diag);
 
                 /**
                  * Close the connection.
@@ -69,7 +71,7 @@ namespace ignite
                  * Send data using connection.
                  * @param data Data to send.
                  * @param size Number of bytes to send.
-                 * @param timeout Timeout.
+                 * @param timeout Timeout in seconds.
                  * @return Number of bytes that have been sent on success, 
                  *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
@@ -80,7 +82,7 @@ namespace ignite
                  *
                  * @param buffer Pointer to data buffer.
                  * @param size Size of the buffer in bytes.
-                 * @param timeout Timeout.
+                 * @param timeout Timeout in seconds.
                  * @return Number of bytes that have been received on success,
                  *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
@@ -104,12 +106,13 @@ namespace ignite
                  * This function uses poll to achive timeout functionality
                  * for every separate socket operation.
                  *
-                 * @param timeout Timeout.
+                 * @param ssl SSL instance.
+                 * @param timeout Timeout in seconds.
                  * @param rd Wait for read if @c true, or for write if @c false.
                  * @return -errno on error, WaitResult::TIMEOUT on timeout and
                  *     WaitResult::SUCCESS on success.
                  */
-                int WaitOnSocket(int32_t timeout, bool rd);
+                static int WaitOnSocket(void* ssl, int32_t timeout, bool rd);
 
                 /**
                  * Make new context instance.
@@ -118,10 +121,50 @@ namespace ignite
                  * @param keyPath Private key file path.
                  * @param caPath Certificate authority file path.
                  * @param diag Diagnostics collector to use for error-reporting.
-                 * @return New context instance on success and null-opinter on fail.
+                 * @return New context instance on success and null-pointer on fail.
                  */
                 static void* MakeContext(const std::string& certPath, const std::string& keyPath,
                     const std::string& caPath, diagnostic::Diagnosable& diag);
+
+                /**
+                 * Make new SSL instance.
+                 *
+                 * @param context SSL context.
+                 * @param hostname Host name or address.
+                 * @param port TCP port.
+                 * @param blocking Indicates if the resulted SSL is blocking or not.
+                 * @param diag Diagnostics collector to use for error-reporting.
+                 * @return New SSL instance on success and null-pointer on fail.
+                 */
+                static void* MakeSsl(void* context, const char* hostname, uint16_t port,
+                    bool& blocking, diagnostic::Diagnosable& diag);
+
+                /**
+                 * Complete async connect.
+                 *
+                 * @param ssl SSL instance.
+                 * @param timeout Timeout in seconds.
+                 * @param diag Diagnostics collector to use for error-reporting.
+                 * @return @c true on success.
+                 */
+                static bool CompleteConnectInternal(void* ssl, int timeout, diagnostic::Diagnosable& diag);
+
+                /**
+                 * Get SSL error.
+                 *
+                 * @param ssl SSL instance.
+                 * @param ret Return value of the pervious operation.
+                 * @return Error string.
+                 */
+                static std::string GetSslError(void* ssl, int ret);
+                
+                /**
+                 * Check if a actual error occured.
+                 *
+                 * @param err SSL error code.
+                 * @return @true if a actual error occured
+                 */
+                static bool IsActualError(int err);
 
                 /** Certificate file path. */
                 std::string certPath;
@@ -135,8 +178,8 @@ namespace ignite
                 /** SSL context. */
                 void* context;
 
-                /** OpenSSL I/O stream abstraction */
-                void* sslBio;
+                /** OpenSSL instance */
+                void* ssl;
 
                 /** Blocking flag. */
                 bool blocking;

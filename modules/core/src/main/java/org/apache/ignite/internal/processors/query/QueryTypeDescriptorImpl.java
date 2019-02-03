@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,14 +26,26 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.KEY_SCALE_OUT_OF_RANGE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_VALUE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
 /**
  * Descriptor of type.
@@ -96,6 +109,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private String affKey;
 
     /** */
+    private boolean customAffKeyMapper;
+
+    /** */
     private String keyFieldName;
 
     /** */
@@ -110,13 +126,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private List<GridQueryProperty> propsWithDefaultValue;
 
+    /** */
+    private final CacheObjectContext coCtx;
+
     /**
      * Constructor.
      *
      * @param cacheName Cache name.
+     * @param coCtx Cache object context.
      */
-    public QueryTypeDescriptorImpl(String cacheName) {
+    public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
         this.cacheName = cacheName;
+        this.coCtx = coCtx;
     }
 
     /**
@@ -185,7 +206,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
         assert field != null;
 
@@ -198,7 +218,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void setValue(String field, Object key, Object val, Object propVal)
         throws IgniteCheckedException {
         assert field != null;
@@ -221,6 +240,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public int typeId() {
         return typeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean matchType(CacheObject val) {
+        if (val instanceof BinaryObject)
+            return ((BinaryObject)val).type().typeId() == typeId;
+
+        // Value type name can be manually set in QueryEntity to any random value,
+        // also for some reason our conversion from setIndexedTypes sets a full class name
+        // instead of a simple name there, thus we can have a typeId mismatch.
+        // Also, if the type is not in binary format, we always must have it's class available.
+        return val.value(coCtx, false).getClass() == valCls;
     }
 
     /**
@@ -368,6 +399,19 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @throws IgniteCheckedException In case of error.
      */
     public void addProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
+        addProperty(prop, failOnDuplicate, true);
+    }
+
+    /**
+     * Adds property to the type descriptor.
+     *
+     * @param prop Property.
+     * @param failOnDuplicate Fail on duplicate flag.
+     * @param isField {@code True} if {@code prop} if field, {@code False} if prop is "_KEY" or "_VAL".
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void addProperty(GridQueryProperty prop, boolean failOnDuplicate, boolean isField)
+        throws IgniteCheckedException {
         String name = prop.name();
 
         if (props.put(name, prop) != null && failOnDuplicate)
@@ -382,6 +426,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             validateProps.add(prop);
         }
+        else if (prop.precision() != -1) {
+            if (validateProps == null)
+                validateProps = new ArrayList<>();
+
+            validateProps.add(prop);
+        }
 
         if (prop.defaultValue() != null) {
             if (propsWithDefaultValue == null)
@@ -390,7 +440,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             propsWithDefaultValue.add(prop);
         }
 
-        fields.put(name, prop.type());
+        if (isField)
+            fields.put(name, prop.type());
     }
 
     /**
@@ -443,6 +494,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void affinityKey(String affKey) {
         this.affKey = affKey;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean customAffinityKeyMapper() {
+        return customAffKeyMapper;
+    }
+
+    /**
+     * @param customAffKeyMapper Whether custom affinity key mapper is set.
+     */
+    public void customAffinityKeyMapper(boolean customAffKeyMapper) {
+        this.customAffKeyMapper = customAffKeyMapper;
     }
 
     /**
@@ -525,26 +588,49 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             Object propVal;
 
-            int errCode;
+            boolean isKey = false;
 
-            if (F.eq(prop.name(), keyFieldName)) {
-                propVal = key;
+            if (F.eq(prop.name(), keyFieldName) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
+                propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
 
-                errCode = IgniteQueryErrorCode.NULL_KEY;
+                isKey = true;
             }
-            else if (F.eq(prop.name(), valFieldName)) {
-                propVal = val;
-
-                errCode = IgniteQueryErrorCode.NULL_VALUE;
+            else if (F.eq(prop.name(), valFieldName) || (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME))) {
+                propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
             }
             else {
                 propVal = prop.value(key, val);
-
-                errCode = IgniteQueryErrorCode.NULL_VALUE;
             }
 
-            if (propVal == null)
-                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'", errCode);
+            if (propVal == null && prop.notNull()) {
+                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'",
+                    isKey ? NULL_KEY : NULL_VALUE);
+            }
+
+            if (propVal == null || prop.precision() == -1)
+                continue;
+
+            if (String.class == propVal.getClass() &&
+                ((String)propVal).length() > prop.precision()) {
+                throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " + 
+                    "Maximum length: " + prop.precision() + ", actual length: " + ((CharSequence)propVal).length(),
+                    isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
+            }
+            else if (BigDecimal.class == propVal.getClass()) {
+                BigDecimal dec = (BigDecimal)propVal;
+
+                if (dec.precision() > prop.precision()) {
+                    throw new IgniteSQLException("Value for a column '" + prop.name() + "' is out of range. " +
+                        "Maximum precision: " + prop.precision() + ", actual precision: " + dec.precision(),
+                        isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
+                }
+                else if (prop.scale() != -1 &&
+                    dec.scale() > prop.scale()) {
+                    throw new IgniteSQLException("Value for a column '" + prop.name() + "' is out of range. " +
+                        "Maximum scale : " + prop.scale() + ", actual scale: " + dec.scale(),
+                        isKey ? KEY_SCALE_OUT_OF_RANGE : VALUE_SCALE_OUT_OF_RANGE);
+                }
+            }
         }
     }
 

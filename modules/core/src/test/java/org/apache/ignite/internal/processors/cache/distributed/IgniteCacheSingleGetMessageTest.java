@@ -29,14 +29,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -47,9 +47,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int SRVS = 4;
 
@@ -65,8 +62,6 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
         cfg.setCommunicationSpi(commSpi);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
     }
@@ -84,21 +79,29 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
         client = false;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSingleGetMessage() throws Exception {
+        checkSingleGetMessage(cacheConfigurations());
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testSingleGetMessage() throws Exception {
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7371")
+    @Test
+    public void testMvccSingleGetMessage() throws Exception {
+        checkSingleGetMessage(mvccCacheConfigurations());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void checkSingleGetMessage(List<CacheConfiguration<Integer, Integer>> ccfgs) throws Exception {
         assertFalse(ignite(0).configuration().isClientMode());
         assertTrue(ignite(SRVS).configuration().isClientMode());
-
-        List<CacheConfiguration<Integer, Integer>> ccfgs = cacheConfigurations();
 
         for (int i = 0; i < ccfgs.size(); i++) {
             CacheConfiguration<Integer, Integer> ccfg = ccfgs.get(i);
@@ -289,6 +292,19 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Mvcc cache configurations to test.
+     */
+    private List<CacheConfiguration<Integer, Integer>> mvccCacheConfigurations() {
+        List<CacheConfiguration<Integer, Integer>> ccfgs = new ArrayList<>();
+
+        ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, FULL_SYNC, 0));
+        ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, FULL_SYNC, 1));
+        ccfgs.add(cacheConfiguration(REPLICATED, TRANSACTIONAL_SNAPSHOT, FULL_SYNC, 0));
+
+        return ccfgs;
+    }
+
+    /**
      * @param cacheMode Cache mode.
      * @param atomicityMode Cache atomicity mode.
      * @param syncMode Write synchronization mode.
@@ -304,7 +320,6 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(syncMode);
 
         if (cacheMode == PARTITIONED)

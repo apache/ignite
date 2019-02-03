@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Address Resolver test.
@@ -76,6 +77,7 @@ public class GridAddressResolverSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void test() throws Exception {
         startGrid(0);
 

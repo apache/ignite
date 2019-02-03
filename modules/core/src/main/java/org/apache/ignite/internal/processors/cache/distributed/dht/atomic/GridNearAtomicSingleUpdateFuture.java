@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -222,7 +223,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     @Override public void onPrimaryResponse(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
         GridNearAtomicAbstractUpdateRequest req;
 
@@ -357,7 +357,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
                 "Failed to update keys, topology changed while execute atomic update inside transaction.");
 
-            cause.retryReadyFuture(cctx.affinity().affinityReadyFuture(remapTopVer));
+            cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
 
             e.add(Collections.singleton(cctx.toCacheKeyObject(key)), cause);
 
@@ -404,8 +404,11 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         AffinityTopologyVersion topVer;
 
         if (cache.topology().stopping()) {
-            completeFuture(null,new CacheStoppedException(
-                cache.name()),
+            completeFuture(
+                null,
+                cctx.shared().cache().isCacheRestarting(cache.name())?
+                    new IgniteCacheRestartingException(cache.name()):
+                    new CacheStoppedException(cache.name()),
                 null);
 
             return;
@@ -682,7 +685,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     }
 
     /** {@inheritDoc} */
-    public synchronized String toString() {
+    @Override public synchronized String toString() {
         return S.toString(GridNearAtomicSingleUpdateFuture.class, this, super.toString());
     }
 }

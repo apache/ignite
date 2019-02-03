@@ -20,10 +20,15 @@
 # Builds Java and .NET with .NET Core
 #
 
+# Fail on error.
+set -e
+
+# Build Java.
 pushd .
 cd ../../..
 mvn clean package -DskipTests -Dmaven.javadoc.skip=true -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
 popd
 
+# Build .NET
 cd Apache.Ignite.Core.Tests.DotNetCore
 dotnet build

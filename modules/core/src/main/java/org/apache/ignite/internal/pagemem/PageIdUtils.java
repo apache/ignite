@@ -184,7 +184,10 @@ public final class PageIdUtils {
      * @return New page ID.
      */
     public static long rotatePageId(long pageId) {
-        long updatedRotationId = (pageId >> PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE) + 1;
+        long updatedRotationId = (pageId >>> PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE) + 1;
+
+        if (updatedRotationId > MAX_ITEMID_NUM)
+            updatedRotationId = 1; // We always want non-zero updatedRotationId
 
         return (pageId & PAGE_ID_MASK) |
             (updatedRotationId << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));

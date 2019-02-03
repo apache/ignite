@@ -140,6 +140,32 @@ public class SqlLexer implements SqlLexerToken {
 
                     break;
 
+                case '\'':
+                    while (true) {
+                        if (eod()) {
+                            throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
+                                "Unclosed string constant.");
+                        }
+
+                        char c1 = inputChars[pos];
+
+                        pos++;
+
+                        if (c1 == '\'') {
+                            char c2 = inputChars[pos];
+
+                            if (c2 == '\'')
+                                pos++;
+                            else
+                                break;
+                        }
+                    }
+
+                    token0 = sql.substring(tokenStartPos0 + 1, pos - 1).replaceAll("''", "'");
+                    tokenTyp0 = SqlLexerTokenType.STRING;
+
+                    break;
+
                 case '.':
                 case ',':
                 case ';':
@@ -184,29 +210,29 @@ public class SqlLexer implements SqlLexerToken {
     }
 
     /** {@inheritDoc} */
-    public String sql() {
+    @Override public String sql() {
         return sql;
     }
 
     /** {@inheritDoc} */
-    public String token() {
+    @Override public String token() {
         return token;
     }
 
     /** {@inheritDoc} */
-    public char tokenFirstChar() {
+    @Override public char tokenFirstChar() {
         assert tokenTyp != SqlLexerTokenType.EOF;
 
         return token.charAt(0);
     }
 
     /** {@inheritDoc} */
-    public int tokenPosition() {
+    @Override public int tokenPosition() {
         return tokenPos;
     }
 
     /** {@inheritDoc} */
-    public SqlLexerTokenType tokenType() {
+    @Override public SqlLexerTokenType tokenType() {
         return tokenTyp;
     }
 

@@ -35,6 +35,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
@@ -93,8 +94,6 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         GridTestUtils.setFieldValue(null, TxDeadlockDetection.class, "DEADLOCK_TIMEOUT",
             getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000));
     }
@@ -107,9 +106,8 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoHangsPessimistic() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7324");
-
         assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
         doTest(PESSIMISTIC);
@@ -130,6 +128,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoHangsOptimistic() throws Exception {
         assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Dummy service.
@@ -32,19 +32,19 @@ public class DummyService implements Service {
     private static final long serialVersionUID = 0L;
 
     /** Inited counter per service. */
-    public static final ConcurrentMap<String, AtomicInteger> started = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, AtomicInteger> started = new ConcurrentHashMap<>();
 
     /** Started counter per service. */
-    public static final ConcurrentMap<String, AtomicInteger> inited = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, AtomicInteger> inited = new ConcurrentHashMap<>();
 
     /** Latches per service. */
-    private static final ConcurrentMap<String, CountDownLatch> exeLatches = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<String, CountDownLatch> exeLatches = new ConcurrentHashMap<>();
 
     /** Cancel latches per service. */
-    private static final ConcurrentMap<String, CountDownLatch> cancelLatches = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<String, CountDownLatch> cancelLatches = new ConcurrentHashMap<>();
 
     /** Cancelled flags per service. */
-    private static final ConcurrentMap<String, AtomicInteger> cancelled = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<String, AtomicInteger> cancelled = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void cancel(ServiceContext ctx) {

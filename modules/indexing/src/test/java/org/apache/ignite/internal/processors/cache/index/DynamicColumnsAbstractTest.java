@@ -38,11 +38,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.value.DataType;
 
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.connect;
@@ -50,19 +46,16 @@ import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSe
 /**
  * Common stuff for dynamic columns tests.
  */
-public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest {
+public abstract class DynamicColumnsAbstractTest extends AbstractIndexingCommonTest {
     /** SQL to create test table. */
-    final static String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
+    static final String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
 
     /** SQL to create test table with additional columns to drop. */
-    final static String CREATE_SQL_4_COLS = "CREATE TABLE IF NOT EXISTS Person (id int primary key, " +
+    static final String CREATE_SQL_4_COLS = "CREATE TABLE IF NOT EXISTS Person (id int primary key, " +
         "name varchar, age int, city varchar)";
 
     /** SQL to drop test table. */
-    final static String DROP_SQL = "DROP TABLE Person";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    static final String DROP_SQL = "DROP TABLE Person";
 
     /**
      * Check that given columns are seen by client.
@@ -181,10 +174,8 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
     protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(128 * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(128L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -231,7 +222,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param sql Statement.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrows(final Ignite node, final String sql, String msg) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -249,7 +239,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param cls Expected exception class.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrowsAnyCause(final Ignite node, final String sql, Class<? extends Throwable> cls,
         String msg) {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {

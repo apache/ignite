@@ -47,14 +47,13 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -68,9 +67,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  * Tests that removes are not lost when topology changes.
  */
 public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int GRID_CNT = 3;
 
@@ -96,7 +92,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER).setForceServerMode(true);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         if (testClientNode() && getTestIgniteInstanceName(0).equals(igniteInstanceName))
             cfg.setClientMode(true);
@@ -118,11 +114,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, sizePropVal != null ? sizePropVal : "");
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -155,6 +147,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAndRemove() throws Exception {
         putAndRemove(duration(), null, null);
     }
@@ -162,6 +155,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAndRemovePessimisticTx() throws Exception {
         if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
             return;
@@ -172,6 +166,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAndRemoveOptimisticSerializableTx() throws Exception {
         if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
             return;
@@ -218,7 +213,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         final AtomicLong errCntr = new AtomicLong();
 
         // Expected values in cache.
-        final Map<Integer, GridTuple<Integer>> expVals = new ConcurrentHashMap8<>();
+        final Map<Integer, GridTuple<Integer>> expVals = new ConcurrentHashMap<>();
 
         final AtomicReference<CyclicBarrier> cmp = new AtomicReference<>();
 
@@ -445,7 +440,6 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     /**
      * @param expVals Expected values in cache.
      */
-    @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
     private void assertCacheContent(Map<Integer, GridTuple<Integer>> expVals) {
         assert !expVals.isEmpty();
 

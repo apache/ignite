@@ -30,18 +30,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int SRV_CNT = 4;
 
@@ -52,21 +47,12 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         if (getTestIgniteInstanceName(SRV_CNT).equals(igniteInstanceName))
             cfg.setClientMode(true);
 
         cfg.setMarshaller(null);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -95,6 +81,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactional() throws Exception {
         checkInvokeBinaryObject(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -102,6 +89,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactional() throws Exception {
         checkInvokeBinaryObject(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -109,6 +97,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedAtomic() throws Exception {
         checkInvokeBinaryObject(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -116,6 +105,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedAtomic() throws Exception {
         checkInvokeBinaryObject(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }

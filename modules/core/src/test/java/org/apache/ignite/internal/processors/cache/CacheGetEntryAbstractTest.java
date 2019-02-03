@@ -40,8 +40,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -73,17 +73,17 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @return Transaction concurrency.
      */
-    abstract protected TransactionConcurrency concurrency();
+    protected abstract TransactionConcurrency concurrency();
 
     /**
      *
      * @return Transaction isolation.
      */
-    abstract protected TransactionIsolation isolation();
+    protected abstract TransactionIsolation isolation();
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60_000;
+        return 90_000;
     }
 
     /** {@inheritDoc} */
@@ -98,6 +98,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNear() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -113,6 +114,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTransactional() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -128,6 +130,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitioned() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -142,6 +145,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactional() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -156,6 +160,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocal() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -170,9 +175,8 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTransactional() throws Exception {
-        // TODO: fails since d13520e9a05bd9e9b987529472d6317951b72f96, need to review changes.
-
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -186,6 +190,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicated() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -200,6 +205,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactional() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -215,7 +221,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
      * @param cfg Cache configuration.
      * @throws Exception If failed.
      */
-    private void test(CacheConfiguration cfg) throws Exception {
+    protected void test(CacheConfiguration cfg) throws Exception {
         test(cfg, true);
 
         test(cfg, false);

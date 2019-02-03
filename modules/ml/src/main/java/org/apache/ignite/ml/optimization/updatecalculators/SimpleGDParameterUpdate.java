@@ -21,13 +21,16 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Parameters for {@link SimpleGDUpdateCalculator}.
  */
 public class SimpleGDParameterUpdate implements Serializable {
+    /** */
+    private static final long serialVersionUID = -8732955283436005621L;
+
     /** Gradient. */
     private Vector gradient;
 
@@ -37,7 +40,7 @@ public class SimpleGDParameterUpdate implements Serializable {
      * @param paramsCnt Count of parameters.
      */
     public SimpleGDParameterUpdate(int paramsCnt) {
-        gradient = new DenseLocalOnHeapVector(paramsCnt);
+        gradient = new DenseVector(paramsCnt);
     }
 
     /**

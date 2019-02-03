@@ -24,21 +24,28 @@ import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.EncryptionService;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Abstract TcpDiscoveryS3IpFinder to test with different ways of setting AWS credentials.
  */
-abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
+public abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
-
     /** Bucket endpoint */
-    protected @Nullable String bucketEndpoint;
+    @Nullable protected String bucketEndpoint;
 
     /** Server-side encryption algorithm for Amazon S3-managed encryption keys. */
-    protected @Nullable String SSEAlgorithm;
+    @Nullable protected String SSEAlgorithm;
+
+    /** Key prefix of the address. */
+    @Nullable protected String keyPrefix;
+
+    /** Encryption service. */
+    @Nullable protected EncryptionService encryptionSvc;
 
     /**
      * Constructor.
@@ -60,6 +67,8 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
         setBucketEndpoint(finder);
         setBucketName(finder);
         setSSEAlgorithm(finder);
+        setKeyPrefix(finder);
+        setEncryptionService(finder);
 
         for (int i = 0; i < 5; i++) {
             Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
@@ -79,19 +88,22 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Test
     @Override public void testIpFinder() throws Exception {
         super.testIpFinder();
     }
 
     /**
      * Set AWS credentials into the provided {@code finder}.
+     *
      * @param finder finder credentials to set into
      */
     protected abstract void setAwsCredentials(TcpDiscoveryS3IpFinder finder);
 
     /**
      * Set Bucket endpoint into the provided {@code finder}.
+     *
      * @param finder finder endpoint to set into.
      */
     private void setBucketEndpoint(TcpDiscoveryS3IpFinder finder) {
@@ -109,6 +121,7 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
 
     /**
      * Set Bucket endpoint into the provided {@code finder}.
+     *
      * @param finder finder endpoint to set into.
      */
     protected void setBucketName(TcpDiscoveryS3IpFinder finder) {
@@ -116,9 +129,26 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     }
 
     /**
-     * Gets Bucket name.
-     * Bucket name should be unique for the host to parallel test run on one bucket.
-     * Please note that the final bucket name should not exceed 63 chars.
+     * Set the ip address key prefix into the provided {@code finder}.
+     *
+     * @param finder finder encryption algorithm to set into.
+     */
+    protected void setKeyPrefix(TcpDiscoveryS3IpFinder finder) {
+        finder.setKeyPrefix(keyPrefix);
+    }
+
+    /**
+     * Set encryption service into the provided {@code finder}.
+     *
+     * @param finder finder encryption service to set into.
+     */
+    protected void setEncryptionService(TcpDiscoveryS3IpFinder finder) {
+        finder.setEncryptionService(encryptionSvc);
+    }
+
+    /**
+     * Gets Bucket name. Bucket name should be unique for the host to parallel test run on one bucket. Please note that
+     * the final bucket name should not exceed 63 chars.
      *
      * @return Bucket name.
      */

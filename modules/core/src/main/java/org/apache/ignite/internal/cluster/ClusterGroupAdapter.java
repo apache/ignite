@@ -1013,7 +1013,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
          * @return Reconstructed object.
          * @throws ObjectStreamException Thrown in case of unmarshalling error.
          */
-        protected Object readResolve() throws ObjectStreamException {
+        @Override protected Object readResolve() throws ObjectStreamException {
             ClusterGroupAdapter parent = (ClusterGroupAdapter)super.readResolve();
 
             return new AgeClusterGroup(parent, isOldest);

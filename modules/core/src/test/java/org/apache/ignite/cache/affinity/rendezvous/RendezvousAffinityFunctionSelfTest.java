@@ -36,7 +36,9 @@ public class RendezvousAffinityFunctionSelfTest extends AbstractAffinityFunction
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        super.afterTestsStopped();
+
+        ignite = null;
     }
 
     /** {@inheritDoc} */

@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
@@ -61,7 +61,9 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     /** */
     private final Comparator<RowStream> streamCmp = new Comparator<RowStream>() {
         @Override public int compare(RowStream o1, RowStream o2) {
-            // Nulls at the beginning.
+            if (o1 == o2) // both nulls
+                return 0;
+
             if (o1 == null)
                 return -1;
 
@@ -368,7 +370,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
             if (!iter.hasNext())
                 return false;
 
-            cur = GridH2PlainRowFactory.create(iter.next());
+            cur = H2PlainRowFactory.create(iter.next());
 
             return true;
         }

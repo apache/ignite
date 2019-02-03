@@ -29,6 +29,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -68,7 +69,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Hadoop external communication class.
@@ -204,7 +204,6 @@ public class HadoopExternalCommunication {
     private long maxConnTimeout = DFLT_MAX_CONN_TIMEOUT;
 
     /** Reconnect attempts count. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private int reconCnt = DFLT_RECONNECT_CNT;
 
     /** Socket send buffer. */
@@ -229,7 +228,7 @@ public class HadoopExternalCommunication {
     private ShmemAcceptWorker shmemAcceptWorker;
 
     /** Shared memory workers. */
-    private final Collection<ShmemWorker> shmemWorkers = new ConcurrentLinkedDeque8<>();
+    private final Collection<ShmemWorker> shmemWorkers = new ConcurrentLinkedDeque<>();
 
     /** Clients. */
     private final ConcurrentMap<UUID, HadoopCommunicationClient> clients = GridConcurrentFactory.newMap();

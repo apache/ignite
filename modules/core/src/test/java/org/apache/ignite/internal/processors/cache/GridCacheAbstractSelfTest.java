@@ -53,6 +53,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -92,7 +93,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         assert cnt >= 1 : "At least one grid must be started";
 
-        initStoreStrategy();
+        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            initStoreStrategy();
 
         startGrids(cnt);
 
@@ -101,8 +103,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         if (storeStgy != null)
             storeStgy.resetStore();
     }
@@ -115,6 +115,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected void initStoreStrategy() throws IgniteCheckedException {
         if (storeStgy == null)
             storeStgy = isMultiJvm() ? new H2CacheStoreStrategy() : new MapCacheStoreStrategy();
+        else if (isMultiJvm() && !(storeStgy instanceof H2CacheStoreStrategy))
+            storeStgy = new H2CacheStoreStrategy();
     }
 
     /** {@inheritDoc} */
@@ -201,8 +203,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
-
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
@@ -258,7 +258,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             cfg.setIndexedTypes(idxTypes);
 
         if (cacheMode() == PARTITIONED)
-            cfg.setBackups(1);
+            cfg.setBackups(backups());
 
         return cfg;
     }
@@ -364,12 +364,19 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Backups.
+     */
+    protected int backups() {
+        return 1;
+    }
+
+    /**
      * @param idx Index of grid.
      * @return Default cache.
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache(int idx) {
-        return ignite(idx).cache(DEFAULT_CACHE_NAME);
+        return ignite(idx).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
     }
 
     /**
@@ -482,7 +489,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * {@link org.apache.ignite.lang.IgniteInClosure} for calculating sum.
      */
-    @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static final class SumVisitor implements CI1<Cache.Entry<String, Integer>> {
         /** */
         private final AtomicInteger sum;
@@ -509,7 +515,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * {@link org.apache.ignite.lang.IgniteReducer} for calculating sum.
      */
-    @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static final class SumReducer implements R1<Cache.Entry<String, Integer>, Integer> {
         /** */
         private int sum;
@@ -635,7 +640,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected static abstract class ResourceInjectionEntryProcessorBase<K, V>
+    protected abstract static class ResourceInjectionEntryProcessorBase<K, V>
         implements EntryProcessor<K, V, Integer>, Serializable {
         /** */
         protected transient ResourceInfoSet infoSet;

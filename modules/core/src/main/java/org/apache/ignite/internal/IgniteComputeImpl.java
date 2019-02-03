@@ -52,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
@@ -452,7 +453,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T, R> R execute(String taskName, @Nullable T arg) {
         try {
             return (R)saveOrGet(executeAsync0(taskName, arg));
@@ -474,7 +474,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param arg Argument.
      * @return Internal future.
      */
-    @SuppressWarnings("unchecked")
     private <T, R> IgniteInternalFuture<R> executeAsync0(String taskName, @Nullable T arg) {
         A.notNull(taskName, "taskName");
 
@@ -514,7 +513,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param arg Argument.
      * @return Internal future.
      */
-    @SuppressWarnings("unchecked")
     private <T, R> IgniteInternalFuture<R> executeAsync0(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         A.notNull(taskCls, "taskCls");
 
@@ -1015,6 +1013,20 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
         try {
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
+        }
+        finally {
+            unguard();
+        }
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCompute withNoResultCache() {
+        guard();
+
+        try {
+            ctx.task().setThreadContext(TC_NO_RESULT_CACHE, true);
         }
         finally {
             unguard();

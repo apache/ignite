@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -37,7 +38,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.jsr166.ConcurrentHashMap8;
+import org.junit.Test;
 
 /**
  *
@@ -50,7 +51,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     private static AtomicInteger writerCallCnt = new AtomicInteger();
 
     /** */
-    private static ConcurrentHashMap8<Object, Object> storeMap = new ConcurrentHashMap8<>();
+    private static ConcurrentHashMap<Object, Object> storeMap = new ConcurrentHashMap<>();
 
     /** */
     private static Set<Object> unaccessableKeys = new HashSet<>();
@@ -81,6 +82,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoaderWriter() throws Exception {
         IgniteCache<Object, Object> cache = jcache(0);
 
@@ -162,6 +164,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      *
      */
+    @Test
     public void testLoaderException() {
         IgniteCache<Object, Object> cache = jcache(0);
 
@@ -180,6 +183,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      *
      */
+    @Test
     public void testWriterException() {
         IgniteCache<Object, Object> cache = jcache(0);
 
@@ -198,6 +202,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoaderWriterBulk() throws Exception {
         Map<Object, Object> vals = new HashMap<>();
 

@@ -30,7 +30,6 @@ import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.jdbc.JdbcConnection;
 import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
-import org.apache.ignite.logger.java.JavaLogger;
 
 /**
  * JDBC driver implementation for In-Memory Data Grid.
@@ -286,7 +285,6 @@ import org.apache.ignite.logger.java.JavaLogger;
  * }
  * </pre>
  */
-@SuppressWarnings("JavadocReference")
 public class IgniteJdbcDriver implements Driver {
     /** Prefix for property names. */
     private static final String PROP_PREFIX = "ignite.jdbc.";
@@ -406,7 +404,7 @@ public class IgniteJdbcDriver implements Driver {
     private static final int MINOR_VER = 0;
 
     /** Logger. */
-    private static final IgniteLogger LOG = new JavaLogger();
+    private static final Logger LOG = Logger.getLogger(IgniteJdbcDriver.class.getName());
 
     /*
      * Static initializer.

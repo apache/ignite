@@ -43,7 +43,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -78,7 +78,7 @@ public class GridIoManagerBenchmark {
     private static final LongAdder msgCntr = new LongAdder();
 
     /** */
-    private static final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
+    private static final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap<>();
 
     /** */
     private static final byte[][] arrs;
@@ -149,7 +149,6 @@ public class GridIoManagerBenchmark {
      * @param duration Test duration.
      * @param outputFilename Output file name.
      */
-    @SuppressWarnings("deprecation")
     private static void sendMessages(IgniteKernal g, int threads, int duration, @Nullable final String outputFilename) {
         X.println(">>> Sending messages.");
 
@@ -231,7 +230,6 @@ public class GridIoManagerBenchmark {
     /**
      * @param g Kernal.
      */
-    @SuppressWarnings("deprecation")
     private static void receiveMessages(final IgniteKernal g) {
         X.println(">>> Receiving messages.");
 

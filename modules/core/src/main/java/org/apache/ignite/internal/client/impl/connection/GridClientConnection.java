@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.net.ssl.SSLContext;
+
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientDataMetrics;
@@ -106,21 +107,6 @@ public abstract class GridClientConnection {
     }
 
     /**
-     * Encodes cache flags to bit map.
-     *
-     * @param flagSet Set of flags to be encoded.
-     * @return Bit map.
-     */
-    public static int encodeCacheFlags(Collection<GridClientCacheFlag> flagSet) {
-        int bits = 0;
-
-        if (flagSet.contains(GridClientCacheFlag.SKIP_STORE))
-            bits |= 1;
-
-        return bits;
-    }
-
-    /**
      * Puts key-value pair into cache.
      *
      * @param cacheName Cache name.
@@ -172,7 +158,7 @@ public abstract class GridClientConnection {
      * @param destNodeId Destination node ID.
      * @return Whether entry was actually removed.
      * @throws GridClientConnectionResetException In case of error.
-     * @throws org.apache.ignite.internal.client.GridClientClosedException If client was manually closed before request was sent over network.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
     public abstract <K> GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, K key,
         Set<GridClientCacheFlag> flags, UUID destNodeId)

@@ -30,11 +30,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -43,17 +42,9 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
     /** Grid count. */
     private static final int GRID_CNT = 4;
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -68,6 +59,7 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartNodes() throws Exception {
         try {
             Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(GRID_CNT);
@@ -94,8 +86,18 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
 
                                 IgniteCache<Integer, Integer> cache = getCache(ignite, cacheName);
 
-                                for (int i = 0; i < 100; i++)
-                                    cache.getAndPut(i, i);
+                                for (int i = 0; i < 100; i++) {
+                                    while (true) {
+                                        try {
+                                            cache.getAndPut(i, i);
+
+                                            break;
+                                        }
+                                        catch (Exception e) {
+                                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                                        }
+                                    }
+                                }
 
                                 barrier.await();
 
@@ -139,7 +141,7 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(cacheName);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setBackups(1);
         ccfg.setNearConfiguration(null);
 

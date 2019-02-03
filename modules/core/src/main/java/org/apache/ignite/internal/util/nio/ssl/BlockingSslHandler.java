@@ -373,9 +373,10 @@ public class BlockingSslHandler {
      * @throws GridNioException If failed to pass event to the next filter.
      */
     private Status unwrapHandshake() throws SSLException, IgniteCheckedException {
-        // Flip input buffer so we can read the collected data.
-        readFromNet();
+        if(!inNetBuf.hasRemaining())
+            readFromNet();
 
+        // Flip input buffer so we can read the collected data.
         inNetBuf.flip();
 
         SSLEngineResult res = unwrap0();
@@ -399,7 +400,10 @@ public class BlockingSslHandler {
         else if (res.getStatus() == BUFFER_UNDERFLOW) {
             inNetBuf.compact();
 
-            inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() * 2);
+            if(inNetBuf.capacity() == inNetBuf.limit())
+                inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() * 2);
+
+            readFromNet();
         }
         else
             // prepare to be written again

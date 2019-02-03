@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -55,14 +56,10 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimitiveValues() throws Exception {
         IgniteEx ignite = grid(0);
 
@@ -105,6 +102,7 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClassValues() throws Exception {
         IgniteEx ignite = grid(0);
 

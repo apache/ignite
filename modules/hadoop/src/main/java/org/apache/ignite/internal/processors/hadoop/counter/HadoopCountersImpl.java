@@ -23,12 +23,12 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Default in-memory counters store.
@@ -38,7 +38,7 @@ public class HadoopCountersImpl implements HadoopCounters, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final ConcurrentMap<CounterKey, HadoopCounter> cntrsMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<CounterKey, HadoopCounter> cntrsMap = new ConcurrentHashMap<>();
 
     /**
      * Default constructor. Creates new instance without counters.

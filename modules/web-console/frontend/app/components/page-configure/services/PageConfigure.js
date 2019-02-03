@@ -15,52 +15,50 @@
  * limitations under the License.
  */
 
+import cloneDeep from 'lodash/cloneDeep';
+
+import {merge, timer} from 'rxjs';
+import {take, tap, ignoreElements, filter, map, pluck} from 'rxjs/operators';
+
 import {
-    ADD_CLUSTER,
-    UPDATE_CLUSTER,
-    UPSERT_CLUSTERS,
-    LOAD_LIST,
-    UPSERT_CACHES
-} from '../reducer';
+    ofType
+} from '../store/effects';
+
+import {default as ConfigureState} from 'app/components/page-configure/services/ConfigureState';
+import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
 
 export default class PageConfigure {
-    static $inject = ['IgniteConfigurationResource', '$state', '$q', 'ConfigureState'];
+    static $inject = ['ConfigureState', 'ConfigSelectors'];
 
-    constructor(configuration, $state, $q, ConfigureState) {
-        Object.assign(this, {configuration, $state, $q, ConfigureState});
+    /**
+     * @param {ConfigureState} ConfigureState
+     * @param {ConfigSelectors} ConfigSelectors
+     */
+    constructor(ConfigureState, ConfigSelectors) {
+        this.ConfigureState = ConfigureState;
+        this.ConfigSelectors = ConfigSelectors;
     }
 
-    onStateEnterRedirect(toState) {
-        if (toState.name !== 'base.configuration.tabs')
-            return this.$q.resolve();
-
-        return this.configuration.read()
-            .then((data) => {
-                this.loadList(data);
-
-                return this.$q.resolve(data.clusters.length
-                    ? 'base.configuration.tabs.advanced'
-                    : 'base.configuration.tabs.basic');
-            });
-    }
-
-    loadList(list) {
-        this.ConfigureState.dispatchAction({type: LOAD_LIST, list});
-    }
-
-    addCluster(cluster) {
-        this.ConfigureState.dispatchAction({type: ADD_CLUSTER, cluster});
-    }
-
-    updateCluster(cluster) {
-        this.ConfigureState.dispatchAction({type: UPDATE_CLUSTER, cluster});
-    }
-
-    upsertCaches(caches) {
-        this.ConfigureState.dispatchAction({type: UPSERT_CACHES, caches});
-    }
-
-    upsertClusters(clusters) {
-        this.ConfigureState.dispatchAction({type: UPSERT_CLUSTERS, clusters});
+    getClusterConfiguration({clusterID, isDemo}) {
+        return merge(
+            timer(1).pipe(
+                take(1),
+                tap(() => this.ConfigureState.dispatchAction({type: 'LOAD_COMPLETE_CONFIGURATION', clusterID, isDemo})),
+                ignoreElements()
+            ),
+            this.ConfigureState.actions$.pipe(
+                ofType('LOAD_COMPLETE_CONFIGURATION_ERR'),
+                take(1),
+                pluck('error'),
+                map((e) => Promise.reject(e))
+            ),
+            this.ConfigureState.state$.pipe(
+                this.ConfigSelectors.selectCompleteClusterConfiguration({clusterID, isDemo}),
+                filter((c) => c.__isComplete),
+                take(1),
+                map((data) => ({...data, clusters: [cloneDeep(data.cluster)]}))
+            )
+        ).pipe(take(1))
+        .toPromise();
     }
 }

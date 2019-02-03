@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -37,6 +38,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 
 /**
  *
@@ -118,6 +121,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param addPrevVal If {@code true} adds previous value.
      * @param prevVal Previous value.
      * @param updateCntr Update counter.
+     * @param cacheOp Corresponding cache operation.
      */
     @Override public void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
@@ -127,8 +131,8 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
-        long updateCntr
-    ) {
+        long updateCntr,
+        GridCacheOperation cacheOp) {
         assert entryProcessor == null;
         assert ttl <= 0 : ttl;
         assert conflictExpireTime <= 0 : conflictExpireTime;
@@ -144,6 +148,9 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             this.prevVal = prevVal;
 
         this.updateCntr = updateCntr;
+
+        if (cacheOp == TRANSFORM)
+            setFlag(true, DHT_ATOMIC_TRANSFORM_OP_FLAG_MASK);
     }
 
     /**
@@ -366,25 +373,25 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         }
 
         switch (writer.state()) {
-            case 12:
+            case 13:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 14:
                 if (!writer.writeMessage("prevVal", prevVal))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 15:
                 if (!writer.writeLong("updateCntr", updateCntr))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 16:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -406,7 +413,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             return false;
 
         switch (reader.state()) {
-            case 12:
+            case 13:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -414,7 +421,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 13:
+            case 14:
                 prevVal = reader.readMessage("prevVal");
 
                 if (!reader.isLastRead())
@@ -422,7 +429,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 14:
+            case 15:
                 updateCntr = reader.readLong("updateCntr");
 
                 if (!reader.isLastRead())
@@ -430,7 +437,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 15:
+            case 16:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -480,7 +487,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 16;
+        return 17;
     }
 
     /** {@inheritDoc} */

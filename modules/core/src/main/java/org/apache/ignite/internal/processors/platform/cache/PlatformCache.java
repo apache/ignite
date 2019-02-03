@@ -39,6 +39,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -75,10 +76,12 @@ import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;
+
 /**
  * Native cache wrapper implementation.
  */
-@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources", "TypeMayBeWeakened", "WeakerAccess"})
+@SuppressWarnings({"unchecked", "WeakerAccess"})
 public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_CLEAR = 1;
@@ -325,6 +328,12 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_GET_LOST_PARTITIONS = 84;
+
+    /** */
+    public static final int OP_QUERY_METRICS = 85;
+
+    /** */
+    public static final int OP_RESET_QUERY_METRICS = 86;
 
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
@@ -973,7 +982,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
                         getConfiguration(CacheConfiguration.class);
 
-                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg);
+                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg, CURRENT_VER);
 
                 break;
 
@@ -987,6 +996,14 @@ public class PlatformCache extends PlatformAbstractTarget {
                 }
 
                 break;
+
+            case OP_QUERY_METRICS: {
+                QueryMetrics metrics = cache.queryMetrics();
+
+                writeQueryMetrics(writer, metrics);
+
+                break;
+            }
 
             default:
                 super.processOutStream(type, writer);
@@ -1092,6 +1109,11 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             case OP_REMOVE_ALL2:
                 cache.removeAll();
+
+                return TRUE;
+
+            case OP_RESET_QUERY_METRICS:
+                cache.resetQueryMetrics();
 
                 return TRUE;
         }
@@ -1482,6 +1504,38 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeLong(metrics.getHeapEntriesCount());
         writer.writeLong(metrics.getEstimatedRebalancingFinishTime());
         writer.writeLong(metrics.getRebalancingStartTime());
+        writer.writeLong(metrics.getRebalanceClearingPartitionsLeft());
+        writer.writeLong(metrics.getCacheSize());
+        writer.writeLong(metrics.getRebalancedKeys());
+        writer.writeLong(metrics.getEstimatedRebalancingKeys());
+        writer.writeLong(metrics.getEntryProcessorPuts());
+        writer.writeFloat(metrics.getEntryProcessorAverageInvocationTime());
+        writer.writeLong(metrics.getEntryProcessorInvocations());
+        writer.writeFloat(metrics.getEntryProcessorMaxInvocationTime());
+        writer.writeFloat(metrics.getEntryProcessorMinInvocationTime());
+        writer.writeLong(metrics.getEntryProcessorReadOnlyInvocations());
+        writer.writeFloat(metrics.getEntryProcessorHitPercentage());
+        writer.writeLong(metrics.getEntryProcessorHits());
+        writer.writeLong(metrics.getEntryProcessorMisses());
+        writer.writeFloat(metrics.getEntryProcessorMissPercentage());
+        writer.writeLong(metrics.getEntryProcessorRemovals());
+    }
+
+    /**
+     * Writes query metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    public static void writeQueryMetrics(BinaryRawWriter writer, QueryMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeLong(metrics.minimumTime());
+        writer.writeLong(metrics.maximumTime());
+        writer.writeDouble(metrics.averageTime());
+        writer.writeInt(metrics.executions());
+        writer.writeInt(metrics.fails());
     }
 
     /**

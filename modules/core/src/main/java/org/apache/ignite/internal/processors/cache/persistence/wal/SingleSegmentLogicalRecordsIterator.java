@@ -26,7 +26,11 @@ import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.RecordTypes;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -44,9 +48,6 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
 
     /** Segment initialized flag. */
     private boolean segmentInitialized;
-
-    /** Archived segment index. */
-    private long archivedSegIdx;
 
     /** Archive directory. */
     private File archiveDir;
@@ -72,9 +73,9 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         File archiveDir,
         CIX1<WALRecord> advanceC
     ) throws IgniteCheckedException {
-        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize);
+        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize, new SimpleSegmentFileInputFactory());
 
-        this.archivedSegIdx = archivedSegIdx;
+        curWalSegmIdx = archivedSegIdx;
         this.archiveDir = archiveDir;
         this.advanceC = advanceC;
 
@@ -87,14 +88,12 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     private static RecordSerializerFactory initLogicalRecordsSerializerFactory(GridCacheSharedContext sharedCtx)
         throws IgniteCheckedException {
 
-        return new RecordSerializerFactoryImpl(sharedCtx)
-            .recordDeserializeFilter(new LogicalRecordsFilter())
-            .marshalledMode(true);
+        return new RecordSerializerFactoryImpl(sharedCtx, new LogicalRecordsFilter()).marshalledMode(true);
     }
 
     /** {@inheritDoc} */
-    @Override protected FileWriteAheadLogManager.ReadFileHandle advanceSegment(
-        @Nullable FileWriteAheadLogManager.ReadFileHandle curWalSegment) throws IgniteCheckedException {
+    @Override protected AbstractReadFileHandle advanceSegment(
+        @Nullable AbstractReadFileHandle curWalSegment) throws IgniteCheckedException {
         if (segmentInitialized) {
             closeCurrentWalSegment();
             // No advance as we iterate over single segment.
@@ -103,8 +102,8 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         else {
             segmentInitialized = true;
 
-            FileWriteAheadLogManager.FileDescriptor fd = new FileWriteAheadLogManager.FileDescriptor(
-                new File(archiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(archivedSegIdx)));
+            FileDescriptor fd = new FileDescriptor(
+                new File(archiveDir, FileDescriptor.fileName(curWalSegmIdx)));
 
             try {
                 return initReadHandle(fd, null);
@@ -121,6 +120,13 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
 
         if (curRec != null && advanceC != null)
             advanceC.apply(curRec.get2());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected AbstractReadFileHandle createReadFileHandle(
+        SegmentIO fileIO,
+        RecordSerializer ser, FileInput in) {
+        return new FileWriteAheadLogManager.ReadFileHandle(fileIO, ser, in, null);
     }
 
     /**

@@ -76,7 +76,7 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
             pageIdToMark,
             nextSnapshotId,
             lastSuccessfulSnapshotId,
-            pageMem.pageSize());
+            pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */

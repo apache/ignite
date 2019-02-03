@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicClientOnlyMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicClientOnlyMultiJvmP2PDisabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicCopyOnReadDisabledMultiJvmFullApiSelfTest;
@@ -42,52 +41,50 @@ import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedM
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedMultiJvmP2PDisabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedOnheapMultiJvmFullApiSelfTest;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Multi-JVM test suite.
  */
-public class IgniteCacheFullApiMultiJvmSelfTestSuite extends TestSuite {
-    /**
-     * @return Multi-JVM tests suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Cache Full API Multi Jvm Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheReplicatedMultiJvmFullApiSelfTest.class,
+    GridCacheReplicatedMultiJvmP2PDisabledFullApiSelfTest.class,
+    GridCacheReplicatedAtomicMultiJvmFullApiSelfTest.class,
 
+    GridCachePartitionedMultiJvmFullApiSelfTest.class,
+    GridCachePartitionedCopyOnReadDisabledMultiJvmFullApiSelfTest.class,
+    GridCacheAtomicMultiJvmFullApiSelfTest.class,
+    GridCacheAtomicCopyOnReadDisabledMultiJvmFullApiSelfTest.class,
+    GridCachePartitionedMultiJvmP2PDisabledFullApiSelfTest.class,
+    GridCacheAtomicMultiJvmP2PDisabledFullApiSelfTest.class,
+    GridCacheAtomicNearEnabledMultiJvmFullApiSelfTest.class,
+
+    GridCachePartitionedNearDisabledMultiJvmFullApiSelfTest.class,
+    GridCachePartitionedNearDisabledMultiJvmP2PDisabledFullApiSelfTest.class,
+
+    GridCacheNearOnlyMultiJvmFullApiSelfTest.class,
+    GridCacheNearOnlyMultiJvmP2PDisabledFullApiSelfTest.class,
+    GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest.class,
+
+    GridCacheAtomicClientOnlyMultiJvmFullApiSelfTest.class,
+    GridCacheAtomicClientOnlyMultiJvmP2PDisabledFullApiSelfTest.class,
+
+    GridCacheAtomicNearOnlyMultiJvmFullApiSelfTest.class,
+    GridCacheAtomicNearOnlyMultiJvmP2PDisabledFullApiSelfTest.class,
+
+    GridCacheAtomicOnheapMultiJvmFullApiSelfTest.class,
+    GridCachePartitionedNearDisabledAtomicOnheapMultiJvmFullApiSelfTest.class,
+    GridCachePartitionedNearDisabledOnheapMultiJvmFullApiSelfTest.class,
+    GridCachePartitionedOnheapMultiJvmFullApiSelfTest.class,
+    GridCacheReplicatedOnheapMultiJvmFullApiSelfTest.class
+})
+public class IgniteCacheFullApiMultiJvmSelfTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
         System.setProperty("H2_JDBC_CONNECTIONS", "500");
-
-        // Multi-node.
-        suite.addTestSuite(GridCacheReplicatedMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMultiJvmP2PDisabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedAtomicMultiJvmFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCachePartitionedMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedCopyOnReadDisabledMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicCopyOnReadDisabledMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMultiJvmP2PDisabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicMultiJvmP2PDisabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicNearEnabledMultiJvmFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCachePartitionedNearDisabledMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledMultiJvmP2PDisabledFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCacheNearOnlyMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheNearOnlyMultiJvmP2PDisabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCacheAtomicClientOnlyMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicClientOnlyMultiJvmP2PDisabledFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCacheAtomicNearOnlyMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicNearOnlyMultiJvmP2PDisabledFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCacheAtomicOnheapMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledAtomicOnheapMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledOnheapMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedOnheapMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedOnheapMultiJvmFullApiSelfTest.class);
-
-        return suite;
     }
 }

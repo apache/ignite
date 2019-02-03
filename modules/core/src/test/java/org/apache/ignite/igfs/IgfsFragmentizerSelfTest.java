@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Tests fragmentizer work.
@@ -36,6 +37,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadFragmentizing() throws Exception {
         IgniteFileSystem igfs = grid(0).fileSystem("igfs");
 
@@ -70,6 +72,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendFragmentizing() throws Exception {
         checkAppendFragmentizing(IGFS_BLOCK_SIZE / 4, false);
     }
@@ -77,6 +80,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendFragmentizingAligned() throws Exception {
         checkAppendFragmentizing(IGFS_BLOCK_SIZE, false);
     }
@@ -84,6 +88,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendFragmentizingDifferentNodes() throws Exception {
         checkAppendFragmentizing(IGFS_BLOCK_SIZE / 4, true);
     }
@@ -91,6 +96,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendFragmentizingAlignedDifferentNodes() throws Exception {
         checkAppendFragmentizing(IGFS_BLOCK_SIZE, true);
     }
@@ -158,6 +164,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlushFragmentizing() throws Exception {
         checkFlushFragmentizing(IGFS_BLOCK_SIZE / 4);
     }
@@ -165,6 +172,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlushFragmentizingAligned() throws Exception {
         checkFlushFragmentizing(IGFS_BLOCK_SIZE);
     }
@@ -223,6 +231,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteFragmentizing() throws Exception {
         IgfsImpl igfs = (IgfsImpl)grid(0).fileSystem("igfs");
 

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.util;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Caches class loaders for classes.
@@ -29,7 +29,7 @@ import org.jsr166.ConcurrentHashMap8;
 public final class GridClassLoaderCache {
     /** Fields cache. */
     private static final ConcurrentMap<Class<?>, ClassLoader> cache =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /**
      * Gets cached ClassLoader for efficiency since class loader detection has proven to be slow.

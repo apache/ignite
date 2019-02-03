@@ -47,7 +47,7 @@ public class WalStateNodeLeaveExchangeTask implements CachePartitionExchangeWork
 
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

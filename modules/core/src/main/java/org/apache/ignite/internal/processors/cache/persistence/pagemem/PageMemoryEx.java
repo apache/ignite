@@ -23,20 +23,30 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
-import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Page memory with some persistence related additions.
  */
 public interface PageMemoryEx extends PageMemory {
+    /**
+     * @param absPtr Absolute pointer to read lock.
+     * @param pageId Page ID.
+     * @param force Force flag.
+     * @param touch Update page timestamp.
+     * @return Pointer to the page read buffer.
+     */
+    long readLock(long absPtr, long pageId, boolean force, boolean touch);
+
     /**
      *
      * @param grpId Group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
-     * @param restore Determines if the page is locked for restore.
+     * @param restore Determines if the page is locked for restore memory (crash recovery).
      * @return ByteBuffer for modifying the page.
      */
     long writeLock(int grpId, long pageId, long page, boolean restore);
@@ -75,15 +85,17 @@ public interface PageMemoryEx extends PageMemory {
 
     /**
      * @see #acquirePage(int, long)
-     * Will not read page from file if it is not present in memory
+     * Will read page from file if it is not present in memory
      *
      * @param grpId Cache group ID.
      * @param pageId Page id.
      * @param restore Get page for restore
      * @throws IgniteCheckedException If failed.
+     * @throws StorageException If page reading failed from storage.
      * @return Page.
      */
-    public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException;
+    public long acquirePage(int grpId, long pageId, IoStatisticsHolder statHldr,
+        boolean restore) throws IgniteCheckedException;
 
     /**
      * Heuristic method which allows a thread to check if it safe to start memory struture modifications
@@ -117,7 +129,7 @@ public interface PageMemoryEx extends PageMemory {
      *      the {@link #beginCheckpoint()} method call.
      * @param outBuf Temporary buffer to write changes into.
      * @param tracker Checkpoint metrics tracker.
-     * @return {@code Partition tag} if data was read, {@code null} otherwise (data already saved to storage).
+     * @return {@code Partition generation} if data was read, {@code null} otherwise (data already saved to storage).
      * @throws IgniteException If failed to obtain page data.
      */
     @Nullable public Integer getForCheckpoint(FullPageId pageId, ByteBuffer outBuf, CheckpointMetricsTracker tracker);
@@ -127,7 +139,7 @@ public interface PageMemoryEx extends PageMemory {
      *
      * @param grpId Group ID.
      * @param partId Partition ID.
-     * @return New partition tag (growing 1-based partition file version).
+     * @return New partition generation (growing 1-based partition file version).
      */
     public int invalidate(int grpId, int partId);
 
@@ -141,9 +153,9 @@ public interface PageMemoryEx extends PageMemory {
     /**
      * Asynchronously clears pages satisfying the given predicate.
      *
-     * @param pred Predicate for cache group id, pageId and partition tag.
+     * @param pred Predicate for cache group id, pageId.
      * @param cleanDirty Flag indicating that dirty pages collection should be cleaned.
      * @return Future that will be completed when all pages are cleared.
      */
-    public IgniteInternalFuture<Void> clearAsync(GridPredicate3<Integer, Long, Integer> pred, boolean cleanDirty);
+    public IgniteInternalFuture<Void> clearAsync(LoadedPagesMap.KeyPredicate pred, boolean cleanDirty);
 }

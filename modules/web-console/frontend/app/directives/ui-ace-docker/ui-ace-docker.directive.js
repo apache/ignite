@@ -18,7 +18,7 @@
 import template from './ui-ace-docker.pug';
 import controller from './ui-ace-docker.controller';
 
-export default ['igniteUiAceDocker', [() => {
+export default function() {
     const link = ($scope, $el, $attrs, [igniteUiAceTabs]) => {
         if (igniteUiAceTabs.onLoad)
             $scope.onLoad = igniteUiAceTabs.onLoad;
@@ -43,4 +43,4 @@ export default ['igniteUiAceDocker', [() => {
         controllerAs: 'ctrl',
         require: ['?^igniteUiAceTabs']
     };
-}]];
+}

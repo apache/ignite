@@ -38,6 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -55,7 +56,6 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
     private static boolean client;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -83,16 +83,10 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
         startGrid(1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlockCacheObjectContext() throws Exception {
         IgniteCache<Integer, Integer> cache0 = null;
         IgniteCache<Integer, Integer> cache1 = null;

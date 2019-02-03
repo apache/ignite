@@ -24,17 +24,16 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -47,10 +46,16 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final int SRVS = 4;
 
     /** */
-    private static final int SRVS = 4;
+    private static final String ATOMIC_CACHE = "atomicCache";
+
+    /** */
+    private static final String TX_CACHE = "txCache";
+
+    /** */
+    private static final String MVCC_CACHE = "mvccCache";
 
     /** */
     private boolean clientMode;
@@ -59,21 +64,22 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        CacheConfiguration<Object, Object> ccfg1 = new CacheConfiguration<>(ATOMIC_CACHE)
+            .setAtomicityMode(ATOMIC)
+            .setBackups(2)
+            .setWriteSynchronizationMode(PRIMARY_SYNC);
 
-        CacheConfiguration<Object, Object> ccfg1 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        ccfg1.setName("cache1");
-        ccfg1.setAtomicityMode(ATOMIC);
-        ccfg1.setBackups(2);
-        ccfg1.setWriteSynchronizationMode(PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> ccfg2 = new CacheConfiguration<>(TX_CACHE)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setBackups(2)
+            .setWriteSynchronizationMode(PRIMARY_SYNC);
 
-        CacheConfiguration<Object, Object> ccfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        ccfg2.setName("cache2");
-        ccfg2.setAtomicityMode(TRANSACTIONAL);
-        ccfg2.setBackups(2);
-        ccfg2.setWriteSynchronizationMode(PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> ccfg3 = new CacheConfiguration<>(MVCC_CACHE)
+            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setBackups(2)
+            .setWriteSynchronizationMode(PRIMARY_SYNC);
 
-        cfg.setCacheConfiguration(ccfg1, ccfg2);
+        cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
 
         cfg.setClientMode(clientMode);
 
@@ -93,28 +99,26 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
         assertTrue(client.configuration().isClientMode());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGet() throws Exception {
         Ignite ignite = ignite(SRVS);
 
-        checkPutGet(ignite.cache("cache1"), null, null, null);
+        checkPutGet(ignite.cache(ATOMIC_CACHE), null, null, null);
 
-        checkPutGet(ignite.cache("cache2"), null, null, null);
+        checkPutGet(ignite.cache(TX_CACHE), null, null, null);
 
-        checkPutGet(ignite.cache("cache2"), ignite.transactions(), OPTIMISTIC, REPEATABLE_READ);
+        checkPutGet(ignite.cache(MVCC_CACHE), null, null, null);
 
-        checkPutGet(ignite.cache("cache2"), ignite.transactions(), OPTIMISTIC, SERIALIZABLE);
+        checkPutGet(ignite.cache(TX_CACHE), ignite.transactions(), OPTIMISTIC, REPEATABLE_READ);
 
-        checkPutGet(ignite.cache("cache2"), ignite.transactions(), PESSIMISTIC, READ_COMMITTED);
+        checkPutGet(ignite.cache(TX_CACHE), ignite.transactions(), OPTIMISTIC, SERIALIZABLE);
+
+        checkPutGet(ignite.cache(TX_CACHE), ignite.transactions(), PESSIMISTIC, READ_COMMITTED);
+
+        checkPutGet(ignite.cache(MVCC_CACHE), ignite.transactions(), PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**

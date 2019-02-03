@@ -31,7 +31,7 @@ namespace ignite
             /** SSL Mode enum. */
             struct SslMode
             {
-                enum T
+                enum Type
                 {
                     DISABLE = 0,
 
@@ -42,11 +42,20 @@ namespace ignite
 
                 /**
                  * Convert mode from string. 
+                 *
                  * @param val String value.
                  * @param dflt Default value to return on error.
                  * @return Corresponding enum value.
                  */
-                static T FromString(const std::string& val, T dflt = UNKNOWN);
+                static Type FromString(const std::string& val, Type dflt = UNKNOWN);
+
+                /**
+                 * Convert mode to string. 
+                 *
+                 * @param val Value to convert.
+                 * @return String value.
+                 */
+                static std::string ToString(Type val);
             };
         }
     }

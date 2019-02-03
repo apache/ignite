@@ -17,6 +17,6 @@
 
 import COLORS from 'app/data/colors.json';
 
-export default ['IgniteChartColors', function() {
+export default function() {
     return COLORS;
-}];
+}

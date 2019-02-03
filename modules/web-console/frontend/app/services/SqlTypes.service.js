@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 // List of H2 reserved SQL keywords.
 import H2_SQL_KEYWORDS from 'app/data/sql-keywords.json';
 
@@ -36,7 +38,7 @@ const UNKNOWN_JDBC_TYPE = {
  */
 export default class SqlTypes {
     /**
-     * @param value {String} Value to check.
+     * @param {String} value Value to check.
      * @returns {boolean} 'true' if given text is valid Java class name.
      */
     validIdentifier(value) {
@@ -54,7 +56,7 @@ export default class SqlTypes {
     /**
      * Find JDBC type descriptor for specified JDBC type and options.
      *
-     * @param dbType {Number} Column db type.
+     * @param {Number} dbType  Column db type.
      * @return {String} Java type.
      */
     findJdbcType(dbType) {

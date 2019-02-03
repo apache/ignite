@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -40,7 +41,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -65,6 +69,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /** */
     private static volatile int gridCnt;
 
+    /** Event listener. */
+    protected static volatile EventListener evtLsnr;
+
     /**
      * @return {@code True} if partitioned.
      */
@@ -78,8 +85,23 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
         gridCnt = gridCount();
 
+        evtLsnr = createEventListener();
+
         for (int i = 0; i < gridCnt; i++)
-            grid(i).events().localListen(new TestEventListener(partitioned()), EVTS_CACHE);
+            grid(i).events().localListen(evtLsnr, EVTS_CACHE);
+    }
+
+    /** */
+    @Before
+    public void beforeGridCacheEventAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        return super.cacheConfiguration(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +111,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         if (TEST_INFO)
             info("Called beforeTest() callback.");
 
-        TestEventListener.reset();
+        evtLsnr.reset();
     }
 
     /** {@inheritDoc} */
@@ -97,14 +119,21 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         if (TEST_INFO)
             info("Called afterTest() callback.");
 
-        TestEventListener.stopListen();
+        evtLsnr.stopListen();
 
         try {
             super.afterTest();
         }
         finally {
-            TestEventListener.listen();
+            evtLsnr.listen();
         }
+    }
+
+    /**
+     * Create event listener.
+     */
+    protected EventListener createEventListener() {
+        return new TestEventListener(partitioned());
     }
 
     /**
@@ -117,7 +146,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     private void waitForEvents(int gridIdx, IgniteBiTuple<Integer, Integer>... evtCnts) throws Exception {
         if (!F.isEmpty(evtCnts))
             try {
-                TestEventListener.waitForEventCount(evtCnts);
+                evtLsnr.waitForEventCount(evtCnts);
             }
             catch (IgniteCheckedException e) {
                 printEventCounters(gridIdx, evtCnts);
@@ -136,7 +165,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         for (IgniteBiTuple<Integer, Integer> t : expCnts) {
             Integer evtType = t.get1();
 
-            int actCnt = TestEventListener.eventCount(evtType);
+            int actCnt = evtLsnr.eventCount(evtType);
 
             info("Event [evtType=" + evtType + ", expCnt=" + t.get2() + ", actCnt=" + actCnt + ']');
         }
@@ -178,13 +207,13 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             }
             finally {
                 // This call is mainly required to correctly clear event futures.
-                TestEventListener.reset();
+                evtLsnr.reset();
 
                 clearCaches();
 
                 // This call is required for the second time to reset counters for
                 // the previous call.
-                TestEventListener.reset();
+                evtLsnr.reset();
             }
         }
     }
@@ -210,6 +239,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * Note: test was disabled for REPPLICATED cache case because IGNITE-607.
      * This comment should be removed if test passed stably.
      */
+    @Test
     public void testGetPutRemove() throws Exception {
         runTest(
             new TestCacheRunnable() {
@@ -237,6 +267,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGetPutRemoveTx1() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -270,6 +301,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGetPutRemoveTx2() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -310,6 +342,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * Note: test was disabled for REPPLICATED cache case because IGNITE-607.
      * This comment should be removed if test passed stably.
      */
+    @Test
     public void testGetPutRemoveAsync() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -336,6 +369,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGetPutRemoveAsyncTx1() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -369,6 +403,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGetPutRemoveAsyncTx2() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -406,6 +441,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutRemovex() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -430,6 +466,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutRemovexTx1() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -460,6 +497,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutRemovexTx2() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -495,6 +533,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -526,6 +565,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutIfAbsentTx() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -564,6 +604,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutIfAbsentAsync() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -598,6 +639,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * @throws Exception If test failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testPutIfAbsentAsyncTx() throws Exception {
         IgniteBiTuple[] evts = new IgniteBiTuple[] {F.t(EVT_CACHE_OBJECT_PUT, 2 * gridCnt)};
 
@@ -649,20 +691,52 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     }
 
     /**
+     * Event listener interface.
+     */
+    protected static interface EventListener extends IgnitePredicate<Event> {
+        /**
+         * Start listen.
+         */
+        void listen();
+
+        /**
+         * Stop listen.
+         */
+        void stopListen();
+
+        /**
+         * Gets events count by type.
+         *
+         * @param type Type.
+         */
+        int eventCount(int type);
+
+        /**
+         * Reset event counters.
+         */
+        void reset();
+
+        /**
+         * @param evtCnts Event counters.
+         */
+        void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts) throws IgniteCheckedException;
+    }
+
+    /**
      * Local event listener.
      */
-    private static class TestEventListener implements IgnitePredicate<Event> {
+    private static class TestEventListener implements EventListener {
         /** Events count map. */
-        private static ConcurrentMap<Integer, AtomicInteger> cntrs = new ConcurrentHashMap<>();
+        private ConcurrentMap<Integer, AtomicInteger> cntrs = new ConcurrentHashMap<>();
 
         /** Event futures. */
-        private static Collection<EventTypeFuture> futs = new GridConcurrentHashSet<>();
+        private Collection<EventTypeFuture> futs = new GridConcurrentHashSet<>();
 
         /** */
-        private static volatile boolean listen = true;
+        private volatile boolean listen = true;
 
         /** */
-        private static boolean partitioned;
+        private boolean partitioned;
 
         /**
          * @param p Partitioned flag.
@@ -674,14 +748,14 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         /**
          *
          */
-        private static void listen() {
+        @Override public void listen() {
             listen = true;
         }
 
         /**
          *
          */
-        private static void stopListen() {
+        @Override public void stopListen() {
             listen = false;
         }
 
@@ -689,7 +763,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          * @param type Event type.
          * @return Count.
          */
-        static int eventCount(int type) {
+        @Override public int eventCount(int type) {
             assert type > 0;
 
             AtomicInteger cntr = cntrs.get(type);
@@ -700,7 +774,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         /**
          * Reset listener.
          */
-        static void reset() {
+        @Override public void reset() {
             cntrs.clear();
 
             futs.clear();
@@ -734,7 +808,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          * @param evtCnts Array of tuples with values: V1 - event type, V2 - expected event count.
          * @throws IgniteCheckedException If failed to wait.
          */
-        private static void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts)
+        @Override public void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts)
             throws IgniteCheckedException {
             if (F.isEmpty(evtCnts))
                 return;

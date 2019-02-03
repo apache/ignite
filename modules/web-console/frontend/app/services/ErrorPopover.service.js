@@ -19,19 +19,17 @@
  * Service to show/hide error popover.
  */
 export default class ErrorPopover {
-    static $inject = ['$popover', '$anchorScroll', '$location', '$timeout', 'IgniteFormUtils'];
+    static $inject = ['$popover', '$anchorScroll', '$timeout', 'IgniteFormUtils'];
 
     /**
-     * @param $popover
-     * @param $anchorScroll
-     * @param $location
-     * @param $timeout
-     * @param FormUtils
+     * @param {mgcrea.ngStrap.popover.IPopoverService} $popover
+     * @param {ng.IAnchorScrollService} $anchorScroll
+     * @param {ng.ITimeoutService} $timeout
+     * @param {ReturnType<typeof import('app/services/FormUtils.service').default>} FormUtils
      */
-    constructor($popover, $anchorScroll, $location, $timeout, FormUtils) {
+    constructor($popover, $anchorScroll, $timeout, FormUtils) {
         this.$popover = $popover;
         this.$anchorScroll = $anchorScroll;
-        this.$location = $location;
         this.$timeout = $timeout;
         this.FormUtils = FormUtils;
 
@@ -43,7 +41,7 @@ export default class ErrorPopover {
     /**
      * Check that element is document area.
      *
-     * @param el Element to check.
+     * @param {HTMLElement} el Element to check.
      * @returns {boolean} True when element in document area.
      */
     static _isElementInViewport(el) {
@@ -60,8 +58,8 @@ export default class ErrorPopover {
     /**
      * Internal show popover message with detected properties.
      *
-     * @param id Id element to show popover message.
-     * @param message Message to show.
+     * @param {string }id Id element to show popover message.
+     * @param {string} message Message to show.
      * @param showTime Time before popover will be hidden.
      */
     _show(id, message, showTime = 5000) {
@@ -73,11 +71,9 @@ export default class ErrorPopover {
             el = body.find('[name="' + id + '"]');
 
         if (el && el.length > 0) {
-            if (!ErrorPopover._isElementInViewport(el[0])) {
-                this.$location.hash(el[0].id);
+            if (!ErrorPopover._isElementInViewport(el[0]))
+                el[0].scrollIntoView();
 
-                this.$anchorScroll();
-            }
 
             const newPopover = this.$popover(el, {content: message});
 

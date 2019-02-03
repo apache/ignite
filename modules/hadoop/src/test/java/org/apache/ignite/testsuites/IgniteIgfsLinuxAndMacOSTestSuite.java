@@ -17,10 +17,12 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.internal.processors.hadoop.HadoopTestClassLoader;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfs20FileSystemShmemPrimarySelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgfsEventsTestSuite;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgfsNearOnlyMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemIpcCacheSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemShmemExternalDualSyncSelfTest;
@@ -31,6 +33,8 @@ import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSy
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemShmemExternalToClientPrimarySelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemShmemExternalToClientProxySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
 
 import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.downloadHadoop;
 
@@ -38,34 +42,37 @@ import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.downloadHadoop;
  * Test suite for Hadoop file system over Ignite cache.
  * Contains tests which works on Linux and Mac OS platform only.
  */
-public class IgniteIgfsLinuxAndMacOSTestSuite extends TestSuite {
+@RunWith(DynamicSuite.class)
+public class IgniteIgfsLinuxAndMacOSTestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static List<Class<?>> suite() throws Exception {
         downloadHadoop();
 
         final ClassLoader ldr = new HadoopTestClassLoader();
 
-        TestSuite suite = new TestSuite("Ignite IGFS Test Suite For Linux And Mac OS");
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTest(new TestSuite(ldr.loadClass(IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class.getName())));
+        suite.add(ldr.loadClass(IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class.getName()));
 
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemShmemExternalPrimarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemShmemExternalSecondarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemShmemExternalDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemShmemExternalToClientPrimarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemShmemExternalToClientDualAsyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemShmemExternalToClientDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemShmemExternalToClientProxySelfTest.class.getName())));
+        suite.add(ldr.loadClass(IgniteHadoopFileSystemShmemExternalPrimarySelfTest.class.getName()));
+        suite.add(ldr.loadClass(IgniteHadoopFileSystemShmemExternalSecondarySelfTest.class.getName()));
+        suite.add(ldr.loadClass(IgniteHadoopFileSystemShmemExternalDualSyncSelfTest.class.getName()));
+        suite.add(ldr.loadClass(IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest.class.getName()));
+        suite.add(ldr.loadClass(IgniteHadoopFileSystemShmemExternalToClientPrimarySelfTest.class.getName()));
+        suite.add(ldr.loadClass(IgniteHadoopFileSystemShmemExternalToClientDualAsyncSelfTest.class.getName()));
+        suite.add(ldr.loadClass(IgniteHadoopFileSystemShmemExternalToClientDualSyncSelfTest.class.getName()));
+        suite.add(ldr.loadClass(IgniteHadoopFileSystemShmemExternalToClientProxySelfTest.class.getName()));
 
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemIpcCacheSelfTest.class.getName())));
+        suite.add(ldr.loadClass(IgniteHadoopFileSystemIpcCacheSelfTest.class.getName()));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfs20FileSystemShmemPrimarySelfTest.class.getName())));
+        suite.add(ldr.loadClass(HadoopIgfs20FileSystemShmemPrimarySelfTest.class.getName()));
 
-        suite.addTest(IgfsEventsTestSuite.suite());
+        suite.add(ldr.loadClass(IgfsNearOnlyMultiNodeSelfTest.class.getName()));
+
+        suite.add(IgfsEventsTestSuite.class);
 
         return suite;
     }

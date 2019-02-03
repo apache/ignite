@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Test;
 
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
@@ -47,6 +48,7 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
     /**
      *
      */
+    @Test
     public void testInsertionOrder() {
         testOrder(false);
     }
@@ -54,6 +56,7 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
     /**
      *
      */
+    @Test
     public void testInsertionOrderWithUpdate() {
         testOrder(true);
     }
@@ -61,6 +64,7 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
     /**
      *
      */
+    @Test
     public void testEvictionInsert() {
         final int mapSize = 1000;
 
@@ -159,6 +163,7 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
      * Tests iterator when concurrent modifications remove and add the same keys to the map.
      *
      */
+    @Test
     public void testIteratorDuplicates() {
         Map<Integer, String> tst = new ConcurrentLinkedHashMap<>();
 
@@ -187,6 +192,7 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehash() throws Exception {
         Map<Integer, Date> map = new ConcurrentLinkedHashMap<>(10);
 
@@ -204,6 +210,7 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
     /**
      *
      */
+    @Test
     public void testDescendingMethods() {
         ConcurrentLinkedHashMap<Integer, Integer> tst = new ConcurrentLinkedHashMap<>();
 
@@ -273,6 +280,7 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
     /**
      *
      */
+    @Test
     public void testIterationInPerSegmentModes() {
         checkIteration(PER_SEGMENT_Q);
         checkIteration(PER_SEGMENT_Q_OPTIMIZED_RMV);

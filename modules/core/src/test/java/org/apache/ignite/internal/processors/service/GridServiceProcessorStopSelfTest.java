@@ -31,12 +31,16 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.Test;
 
 /**
  * Tests that {@link GridServiceProcessor} completes deploy/undeploy futures during node stop.
@@ -52,6 +56,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopDuringDeployment() throws Exception {
         final CountDownLatch depLatch = new CountDownLatch(1);
 
@@ -98,6 +103,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopDuringHangedDeployment() throws Exception {
         final CountDownLatch depLatch = new CountDownLatch(1);
 
@@ -165,6 +171,78 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void disconnectingDuringNodeStoppingIsNotHangTest() throws Exception {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
+
+        runServiceProcessorStoppingTest(
+            new IgniteInClosure<IgniteServiceProcessor>() {
+                @Override public void apply(IgniteServiceProcessor srvcProc) {
+                    srvcProc.onKernalStop(true);
+                }
+            },
+            new IgniteInClosure<IgniteServiceProcessor>() {
+                @Override public void apply(IgniteServiceProcessor srvcProc) {
+                    srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void stoppingDuringDisconnectingIsNotHangTest() throws Exception {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
+
+        runServiceProcessorStoppingTest(
+            new IgniteInClosure<IgniteServiceProcessor>() {
+                @Override public void apply(IgniteServiceProcessor srvcProc) {
+                    srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
+                }
+            },
+            new IgniteInClosure<IgniteServiceProcessor>() {
+                @Override public void apply(IgniteServiceProcessor srvcProc) {
+                    srvcProc.onKernalStop(true);
+                }
+            }
+        );
+    }
+
+    /**
+     * @param c1 Action to apply over service processor concurrently.
+     * @param c2 Action to apply over service processor concurrently.
+     * @throws Exception In case of an error.
+     */
+    private void runServiceProcessorStoppingTest(IgniteInClosure<IgniteServiceProcessor> c1,
+        IgniteInClosure<IgniteServiceProcessor> c2) throws Exception {
+
+        try {
+            final IgniteEx ignite = startGrid(0);
+
+            final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)(ignite.context().service());
+
+            final IgniteInternalFuture c1Fut = GridTestUtils.runAsync(() -> {
+                c1.apply(srvcProc);
+            });
+
+            final IgniteInternalFuture c2Fut = GridTestUtils.runAsync(() -> {
+                c2.apply(srvcProc);
+            });
+
+            c1Fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+            c2Fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stopAllGrids(true);
+        }
+    }
+
+    /**
      * Simple map service.
      */
     public interface TestService {
@@ -174,7 +252,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public class TestServiceImpl implements Service, TestService {
+    public static class TestServiceImpl implements Service, TestService {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 

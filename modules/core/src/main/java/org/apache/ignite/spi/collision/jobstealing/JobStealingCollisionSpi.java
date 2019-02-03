@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
@@ -55,8 +57,6 @@ import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -253,7 +253,6 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     private volatile int activeJobsThreshold = DFLT_ACTIVE_JOBS_THRESHOLD;
 
     /** Configuration parameter defining waiting job count threshold for stealing to start. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private volatile int waitJobsThreshold = DFLT_WAIT_JOBS_THRESHOLD;
 
     /** Message expire time configuration parameter. */
@@ -282,13 +281,13 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     private final AtomicInteger totalStolenJobsNum = new AtomicInteger();
 
     /** Map of sent messages. */
-    private final ConcurrentMap<UUID, MessageInfo> sndMsgMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, MessageInfo> sndMsgMap = new ConcurrentHashMap<>();
 
     /** Map of received messages. */
-    private final ConcurrentMap<UUID, MessageInfo> rcvMsgMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, MessageInfo> rcvMsgMap = new ConcurrentHashMap<>();
 
     /** */
-    private final Queue<ClusterNode> nodeQueue = new ConcurrentLinkedDeque8<>();
+    private final Queue<ClusterNode> nodeQueue = new ConcurrentLinkedDeque<>();
 
     /** */
     private CollisionExternalListener extLsnr;
@@ -571,7 +570,6 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
-                @SuppressWarnings("fallthrough")
                 @Override public void onEvent(Event evt) {
                     assert evt instanceof DiscoveryEvent;
 

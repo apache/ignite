@@ -149,6 +149,19 @@ public class GridArgumentCheck {
     }
 
     /**
+     * Checks that given array is not empty.
+     *
+     * @param arr Array.
+     * @param name Argument name.
+     */
+    public static void notEmpty(double[] arr, String name) {
+        notNull(arr, name);
+
+        if (arr.length == 0)
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
      * Checks that a String is not null or empty.
      *
      * @param value Value to check.
@@ -157,7 +170,7 @@ public class GridArgumentCheck {
     public static void notNullOrEmpty(String value, String name) {
         notNull(value, name);
 
-        if (value.trim().length() == 0)
+        if (value.trim().isEmpty())
             throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_NULL_OR_EMPTY_SUFFIX);
     }
 }

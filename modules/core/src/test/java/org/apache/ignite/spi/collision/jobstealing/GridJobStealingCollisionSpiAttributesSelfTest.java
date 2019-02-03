@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.WAIT_JOBS_THRESHOLD_NODE_ATTR;
@@ -129,6 +130,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSameAttribute() throws Exception {
         List<CollisionJobContext> waitCtxs = Collections.emptyList();
 
@@ -162,6 +164,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testEmptyRemoteAttribute() throws Exception {
         List<CollisionJobContext> waitCtxs = Collections.emptyList();
 
@@ -189,6 +192,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testEmptyLocalAttribute() throws Exception {
         // Collision SPI does not allow to send more than 1 message in a
         // certain period of time (see getMessageExpireTime() method).
@@ -221,6 +225,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
    /**
     * @throws Exception If test failed.
     */
+    @Test
     public void testDiffAttribute() throws Exception {
        List<CollisionJobContext> waitCtxs = Collections.emptyList();
 
@@ -254,6 +259,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testBothEmptyAttribute() throws Exception {
         // Collision SPI does not allow to send more than 1 message in a
         // certain period of time (see getMessageExpireTime() method).
@@ -281,6 +287,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testIsStealingOff() throws Exception {
         // Collision SPI does not allow to send more than 1 message in a
         // certain period of time (see getMessageExpireTime() method).
@@ -309,6 +316,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testIsStealingOn() throws Exception {
         // Collision SPI does not allow to send more than 1 message in a
         // certain period of time (see getMessageExpireTime() method).

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -68,7 +69,6 @@ import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY_ALL;
@@ -84,7 +84,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
  */
 public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi> {
     /** Local event listeners. */
-    private final ConcurrentMap<Integer, Listeners> lsnrs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, Listeners> lsnrs = new ConcurrentHashMap<>();
 
     /** Busy lock to control activity of threads. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
@@ -242,7 +242,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop0(boolean cancel) {
         busyLock.writeLock().lock();
 
@@ -315,6 +314,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      */
     private void record0(Event evt, Object... params) {
         assert evt != null;
+
+        if (ctx.recoveryMode())
+            return;
 
         if (!enterBusy())
             return;
@@ -411,7 +413,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to disable.
      */
-    @SuppressWarnings("deprecation")
     public synchronized void disableEvents(int[] types) {
         assert types != null;
 
@@ -885,7 +886,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param p Grid event predicate.
      * @return Collection of grid events.
      */
-    @SuppressWarnings("unchecked")
     public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) throws IgniteCheckedException {
         assert p != null;
 
@@ -947,7 +947,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Collection of events.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
     private <T extends Event> List<T> query(IgnitePredicate<T> p, Collection<? extends ClusterNode> nodes,
         long timeout) throws IgniteCheckedException {
         assert p != null;
@@ -986,7 +985,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         };
 
         GridMessageListener resLsnr = new GridMessageListener() {
-            @SuppressWarnings("deprecation")
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 assert nodeId != null;
                 assert msg != null;
@@ -1468,7 +1466,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
 
         /** {@inheritDoc} */
-        public IgnitePredicate<? extends Event> listener() {
+        @Override public IgnitePredicate<? extends Event> listener() {
             return lsnr;
         }
 

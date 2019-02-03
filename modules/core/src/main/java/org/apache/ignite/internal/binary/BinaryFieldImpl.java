@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
@@ -101,7 +102,6 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T value(BinaryObject obj) {
         BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
@@ -207,6 +207,14 @@ public class BinaryFieldImpl implements BinaryFieldEx {
                     ts.setNanos(ts.getNanos() + nanos);
 
                     val = ts;
+
+                    break;
+                }
+
+                case GridBinaryMarshaller.TIME: {
+                    long time = buf.getLong();
+
+                    val = new Time(time);
 
                     break;
                 }

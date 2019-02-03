@@ -30,12 +30,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -66,19 +64,9 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /** Salvage timeout system property value before alteration. */
     private static String salvageTimeoutOld;
 
-    /** Standard VM IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        // Discovery.
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -123,6 +111,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxSalvageBeforeTimeout() throws Exception {
         checkSalvageBeforeTimeout(OPTIMISTIC, true);
     }
@@ -130,6 +119,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticcTxSalvageBeforeTimeout() throws Exception {
         checkSalvageBeforeTimeout(PESSIMISTIC, false);
     }
@@ -137,6 +127,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxSalvageAfterTimeout() throws Exception {
         checkSalvageAfterTimeout(OPTIMISTIC, true);
     }
@@ -144,6 +135,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxSalvageAfterTimeout() throws Exception {
         checkSalvageAfterTimeout(PESSIMISTIC, false);
     }
@@ -181,8 +173,8 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         List<Integer> dhtSizes = new ArrayList<>(GRID_CNT - 1);
 
         for (int i = 1; i < GRID_CNT; i++) {
-            nearSizes.add(near(i).context().tm().txs().size());
-            dhtSizes.add(dht(i).context().tm().txs().size());
+            nearSizes.add(near(i).context().tm().activeTransactions().size());
+            dhtSizes.add(dht(i).context().tm().activeTransactions().size());
         }
 
         stopNodeAndSleep(SALVAGE_TIMEOUT - DELTA_BEFORE);
@@ -247,7 +239,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * @param ctx Cache context.
      */
     private void checkTxsEmpty(GridCacheContext ctx) {
-        Collection txs = ctx.tm().txs();
+        Collection txs = ctx.tm().activeTransactions();
 
         assert txs.isEmpty() : "Not all transactions were salvaged: " + txs;
     }
@@ -259,7 +251,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * @param exp Expected amount of transactions.
      */
     private void checkTxsNotEmpty(GridCacheContext ctx, int exp) {
-        int size = ctx.tm().txs().size();
+        int size = ctx.tm().activeTransactions().size();
 
         assertEquals("Some transactions were salvaged unexpectedly", exp, size);
     }

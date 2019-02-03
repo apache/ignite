@@ -28,10 +28,12 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -56,14 +58,15 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEventListenerReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        IgniteDiscoverySpi srvSpi = spi0(srv);
 
         EventListener lsnr = new EventListener();
 
@@ -113,6 +116,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageListenerReconnectAndStopFromServer() throws Exception {
         testMessageListenerReconnect(false);
     }
@@ -120,6 +124,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageListenerReconnectAndStopFromClient() throws Exception {
         testMessageListenerReconnect(true);
     }
@@ -133,9 +138,9 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        IgniteDiscoverySpi srvSpi = spi0(srv);
 
         final String topic = "testTopic";
 
@@ -211,6 +216,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheContinuousQueryReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -248,6 +254,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheContinuousQueryReconnectNewServer() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -309,9 +316,9 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
         CacheEventListener lsnr)
         throws Exception
     {
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        IgniteDiscoverySpi srvSpi = spi0(srv);
 
         final CountDownLatch reconnectLatch = new CountDownLatch(1);
 

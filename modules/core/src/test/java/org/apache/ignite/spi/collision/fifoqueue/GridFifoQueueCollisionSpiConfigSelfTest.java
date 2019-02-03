@@ -19,6 +19,7 @@ package org.apache.ignite.spi.collision.fifoqueue;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 /**
  * Unit tests for {@link FifoQueueCollisionSpi} config.
@@ -28,6 +29,7 @@ public class GridFifoQueueCollisionSpiConfigSelfTest extends GridSpiAbstractConf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new FifoQueueCollisionSpi(), "parallelJobsNumber", 0);
         checkNegativeSpiProperty(new FifoQueueCollisionSpi(), "waitingJobsNumber", -1);

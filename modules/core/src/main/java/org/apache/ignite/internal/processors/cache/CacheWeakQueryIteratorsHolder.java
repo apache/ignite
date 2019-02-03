@@ -22,13 +22,13 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * @param <V> Type for cache query future.
@@ -38,7 +38,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
     private final ReferenceQueue refQueue = new ReferenceQueue();
 
     /** Iterators futures. */
-    private final Map<WeakReference, AutoCloseable> refs = new ConcurrentHashMap8<>();
+    private final Map<WeakReference, AutoCloseable> refs = new ConcurrentHashMap<>();
 
     /** Logger. */
     private final IgniteLogger log;

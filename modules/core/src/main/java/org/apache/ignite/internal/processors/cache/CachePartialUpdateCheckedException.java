@@ -48,7 +48,6 @@ public class CachePartialUpdateCheckedException extends IgniteCheckedException {
      * Gets collection of failed keys.
      * @return Collection of failed keys.
      */
-    @SuppressWarnings("unchecked")
     public synchronized <K> Collection<K> failedKeys() {
         return new LinkedHashSet<>((Collection<K>)failedKeys);
     }

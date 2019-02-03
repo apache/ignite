@@ -38,7 +38,7 @@ public class FileSystemConfiguration {
     public static final String DFLT_USER_NAME = System.getProperty("user.name", "anonymous");
 
     /** Default fragmentizer throttling block length. */
-    public static final long DFLT_FRAGMENTIZER_THROTTLING_BLOCK_LENGTH = 16 * 1024 * 1024;
+    public static final long DFLT_FRAGMENTIZER_THROTTLING_BLOCK_LENGTH = 16L * 1024 * 1024;
 
     /** Default fragmentizer throttling delay. */
     public static final long DFLT_FRAGMENTIZER_THROTTLING_DELAY = 200;

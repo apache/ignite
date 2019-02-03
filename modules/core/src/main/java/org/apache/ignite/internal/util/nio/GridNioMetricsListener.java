@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import java.util.EventListener;
+
 /**
  * Metrics listener for NIO communication.
  */
-public interface GridNioMetricsListener {
+public interface GridNioMetricsListener extends EventListener {
     /**
      * @param bytesCnt Number of sent bytes.
      */

@@ -182,13 +182,13 @@ public class IgfsIgniteMock implements IgniteEx {
         return null;
     }
 
-    @Override
-    public boolean isRebalanceEnabled() {
+    /** {@inheritDoc} */
+    @Override public boolean isRebalanceEnabled() {
         return true;
     }
 
-    @Override
-    public void rebalanceEnabled(boolean rebalanceEnabled) {
+    /** {@inheritDoc} */
+    @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
         throwUnsupported();
     }
 

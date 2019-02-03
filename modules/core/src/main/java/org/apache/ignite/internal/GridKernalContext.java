@@ -28,20 +28,25 @@ import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
@@ -49,6 +54,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -60,15 +67,17 @@ import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
+import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -199,6 +208,20 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridClusterStateProcessor state();
 
     /**
+     * Gets global metastorage.
+     *
+     * @return Global metastorage.
+     */
+    public DistributedMetaStorage distributedMetastorage();
+
+    /**
+     * Gets distributed configuration processor.
+     *
+     * @return Distributed configuration processor.
+     */
+    public DistributedConfigurationProcessor distributedConfiguration();
+
+    /**
      * Gets task session processor.
      *
      * @return Session processor.
@@ -217,7 +240,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Service processor.
      */
-    public GridServiceProcessor service();
+    public ServiceProcessorAdapter service();
 
     /**
      * Gets port processor.
@@ -253,6 +276,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Data streamer processor.
      */
     public <K, V> DataStreamProcessor<K, V> dataStream();
+
+    /**
+     * Gets authentication processor.
+     *
+     * @return Authentication processor.
+     */
+    public IgniteAuthenticationProcessor authentication();
 
     /**
      * Gets file system processor.
@@ -414,6 +444,20 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridIndexingManager indexing();
 
     /**
+     * Gets encryption manager.
+     *
+     * @return Encryption manager.
+     */
+    public GridEncryptionManager encryption();
+
+    /**
+     * Gets workers registry.
+     *
+     * @return Workers registry.
+     */
+    public WorkersRegistry workersRegistry();
+
+    /**
      * Gets data structures processor.
      *
      * @return Data structures processor.
@@ -421,16 +465,23 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public DataStructuresProcessor dataStructures();
 
     /**
-     * Sets segmented flag to {@code true} when node is stopped due to segmentation issues.
+     * Checks whether this node is invalid due to a critical error or not.
+     *
+     * @return {@code True} if this node is invalid, {@code false} otherwise.
      */
-    public void markSegmented();
+    public boolean invalid();
 
     /**
-     * Gets segmented flag.
+     * Checks whether this node detected its segmentation from the rest of the grid.
      *
-     * @return {@code True} if network is currently segmented, {@code false} otherwise.
+     * @return {@code True} if this node has segmented, {@code false} otherwise.
      */
     public boolean segmented();
+
+    /**
+     * Gets failure processor.
+     */
+    public FailureProcessor failure();
 
     /**
      * Print grid kernal memory stats (sizes of internal structures, etc.).
@@ -647,6 +698,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public PlatformProcessor platform();
 
     /**
+     * @return Cache mvcc coordinator processor.
+     */
+    public MvccProcessor coordinators();
+
+    /**
      * @return PDS mode folder name resolver, also generates consistent ID in case new folder naming is used
      */
     public PdsFoldersResolver pdsFolderResolver();
@@ -657,16 +713,22 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
 
     /**
-     * TODO: Should be replaced with proper implementation in https://issues.apache.org/jira/browse/IGNITE-6891
-     *
-     * @return {@code true} if node was invalidated, false in other case.
+     * @return IO statistic manager.
      */
-    public boolean invalidated();
+    public IoStatisticsManager ioStats();
 
     /**
-     * Invalidates node.
-     *
-     * TODO: Should be replaced with proper implementation in https://issues.apache.org/jira/browse/IGNITE-6891
+     * @return Default uncaught exception handler used by thread pools.
      */
-    public void invalidate();
+    public Thread.UncaughtExceptionHandler uncaughtExceptionHandler();
+
+    /**
+     * @return Compression processor.
+     */
+    public CompressionProcessor compress();
+
+    /**
+     * @return {@code True} if node is in recovery mode (before join to topology).
+     */
+    public boolean recoveryMode();
 }

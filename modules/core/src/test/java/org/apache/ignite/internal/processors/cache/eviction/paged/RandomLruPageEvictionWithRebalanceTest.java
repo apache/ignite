@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  *
  */
-public class RandomLruPageEvictionWithRebalanceTest extends PageEvictionWithRebalanceTest {
+public class RandomLruPageEvictionWithRebalanceTest extends PageEvictionWithRebalanceAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return setEvictionMode(DataPageEvictionMode.RANDOM_LRU, super.getConfiguration(gridName));

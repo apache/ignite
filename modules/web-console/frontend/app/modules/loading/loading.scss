@@ -29,7 +29,7 @@
     opacity: 0;
     visibility: hidden;
     background-color: white;
-    transition: visibility 0s 0.5s, opacity 0.5s linear;
+    transition: opacity 0.5s linear;
 }
 
 .loading-active {

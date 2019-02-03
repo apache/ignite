@@ -60,6 +60,14 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public ICompute WithNoResultCache()
+        {
+            _compute.WithNoResultCache();
+
+            return this;
+        }
+
+        /** <inheritDoc /> */
         public ICompute WithTimeout(long timeout)
         {
             _compute.WithTimeout(timeout);

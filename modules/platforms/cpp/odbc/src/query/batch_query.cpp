@@ -50,11 +50,7 @@ namespace ignite
             SqlResult::Type BatchQuery::Execute()
             {
                 if (executed)
-                {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query cursor is in open state already.");
-
-                    return SqlResult::AI_ERROR;
-                }
+                    Close();
 
                 int32_t maxPageSize = connection.GetConfiguration().GetPageSize();
                 int32_t rowNum = params.GetParamSetSize();
@@ -148,7 +144,8 @@ namespace ignite
             {
                 const std::string& schema = connection.GetSchema();
 
-                QueryExecuteBatchtRequest req(schema, sql, params, begin, end, last, timeout);
+                QueryExecuteBatchRequest req(schema, sql, params, begin, end, last, timeout,
+                    connection.IsAutoCommit());
                 QueryExecuteBatchResponse rsp;
 
                 try

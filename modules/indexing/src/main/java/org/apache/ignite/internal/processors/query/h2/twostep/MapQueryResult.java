@@ -17,10 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.lang.reflect.Field;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
@@ -30,12 +37,6 @@ import org.h2.result.LazyResult;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Field;
-import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 
@@ -70,7 +71,7 @@ class MapQueryResult {
     private final ResultSet rs;
 
     /** */
-    private final String cacheName;
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
     private final GridCacheSqlQuery qry;
@@ -101,16 +102,16 @@ class MapQueryResult {
 
     /**
      * @param rs Result set.
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
      * @param lazyWorker Lazy worker.
      */
-    MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable String cacheName,
+    MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
         UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker) {
         this.h2 = h2;
-        this.cacheName = cacheName;
+        this.cctx = cctx;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
@@ -171,75 +172,83 @@ class MapQueryResult {
     /**
      * @param rows Collection to fetch into.
      * @param pageSize Page size.
+     * @param dataPageScanEnabled If data page scan is enabled.
      * @return {@code true} If there are no more rows available.
      */
-    synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
+    synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize, Boolean dataPageScanEnabled) {
         assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
 
         if (closed)
             return true;
 
-        boolean readEvt = cacheName != null && h2.kernalContext().event().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+        boolean readEvt = cctx != null && cctx.name() != null && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
         page++;
 
-        for (int i = 0 ; i < pageSize; i++) {
-            if (!res.next())
-                return true;
+        h2.enableDataPageScan(dataPageScanEnabled);
 
-            Value[] row = res.currentRow();
+        try {
+            for (int i = 0; i < pageSize; i++) {
+                if (!res.next())
+                    return true;
 
-            if (cpNeeded) {
-                boolean copied = false;
+                Value[] row = res.currentRow();
 
-                for (int j = 0; j < row.length; j++) {
-                    Value val = row[j];
+                if (cpNeeded) {
+                    boolean copied = false;
 
-                    if (val instanceof GridH2ValueCacheObject) {
-                        GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+                    for (int j = 0; j < row.length; j++) {
+                        Value val = row[j];
 
-                        row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
-                            @Override public Object getObject() {
-                                return getObject(true);
-                            }
-                        };
+                        if (val instanceof GridH2ValueCacheObject) {
+                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
 
-                        copied = true;
+                            row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
+                                @Override public Object getObject() {
+                                    return getObject(true);
+                                }
+                            };
+
+                            copied = true;
+                        }
                     }
+
+                    if (i == 0 && !copied)
+                        cpNeeded = false; // No copy on read caches, skip next checks.
                 }
 
-                if (i == 0 && !copied)
-                    cpNeeded = false; // No copy on read caches, skip next checks.
+                assert row != null;
+
+                if (readEvt) {
+                    GridKernalContext ctx = h2.kernalContext();
+
+                    ctx.event().record(new CacheQueryReadEvent<>(
+                        ctx.discovery().localNode(),
+                        "SQL fields query result set row read.",
+                        EVT_CACHE_QUERY_OBJECT_READ,
+                        CacheQueryType.SQL.name(),
+                        cctx.name(),
+                        null,
+                        qry.query(),
+                        null,
+                        null,
+                        params,
+                        qrySrcNodeId,
+                        null,
+                        null,
+                        null,
+                        null,
+                        row(row)));
+                }
+
+                rows.add(res.currentRow());
             }
 
-            assert row != null;
-
-            if (readEvt) {
-                GridKernalContext ctx = h2.kernalContext();
-
-                ctx.event().record(new CacheQueryReadEvent<>(
-                    ctx.discovery().localNode(),
-                    "SQL fields query result set row read.",
-                    EVT_CACHE_QUERY_OBJECT_READ,
-                    CacheQueryType.SQL.name(),
-                    cacheName,
-                    null,
-                    qry.query(),
-                    null,
-                    null,
-                    params,
-                    qrySrcNodeId,
-                    null,
-                    null,
-                    null,
-                    null,
-                    row(row)));
-            }
-
-            rows.add(res.currentRow());
+            return !res.hasNext();
         }
-
-        return false;
+        finally {
+            CacheDataTree.setDataPageScanEnabled(false);
+        }
     }
 
     /**
@@ -282,7 +291,7 @@ class MapQueryResult {
             U.closeQuiet(rs);
 
             if (lazyWorker != null)
-                lazyWorker.stop();
+                lazyWorker.stop(false);
         }
     }
 }

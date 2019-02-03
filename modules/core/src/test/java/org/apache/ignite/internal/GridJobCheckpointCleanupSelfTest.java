@@ -38,6 +38,7 @@ import org.apache.ignite.spi.checkpoint.CheckpointListener;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Test for checkpoint cleanup.
@@ -64,6 +65,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCheckpointCleanup() throws Exception {
         try {
             checkpointSpi = new TestCheckpointSpi("task-checkpoints", cntr);

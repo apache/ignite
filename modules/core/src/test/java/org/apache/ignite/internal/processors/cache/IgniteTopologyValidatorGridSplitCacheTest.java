@@ -42,6 +42,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
@@ -53,7 +56,6 @@ import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT;
  * activator node'll enter a topology, enabling grid operations.
  */
 public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopologySplitAbstractTest {
-
     /** */
     private static final String DC_NODE_ATTR = "dc";
 
@@ -198,6 +200,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
+
         super.beforeTest();
 
         startGridsMultiThreaded(GRID_CNT);
@@ -221,6 +225,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyValidator() throws Exception {
         testTopologyValidator0(false);
     }
@@ -230,6 +235,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyValidatorWithCacheGroup() throws Exception {
         testTopologyValidator0(true);
     }
@@ -454,8 +460,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 putCnt++;
             }
             catch (Throwable t) {
-                IgniteException e = new IgniteException("Failed to put entry [cache=" + cacheName + ", key=" +
-                    key + ']', t);
+                IgniteException e = new IgniteException("Failed to put entry [gridIdx=" + idx + ", cache=" +
+                    cacheName + ", key=" + key + ']', t);
 
                 log.error(e.getMessage(), e.getCause());
 
@@ -498,6 +504,11 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                         ex = new IgniteException("Failed to put entry");
 
                     ex.addSuppressed(e);
+
+                    if (putCnt != 0) {
+                        throw new AssertionError("Failure after successful tryPut [gridIdx=" + idx +
+                            ", successful puts = " + putCnt + ']', ex);
+                    }
                 }
             }
         }

@@ -36,6 +36,8 @@ import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.compute.ComputeJobMasterLeaveAware;
 import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.events.JobEvent;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.internal.GridInternalException;
 import org.apache.ignite.internal.GridJobContextImpl;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobSessionImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -603,8 +606,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         X.hasCause(e, ClusterTopologyCheckedException.class))
                         // Should be throttled, because GridServiceProxy continuously retry getting service.
                         LT.error(log, e, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']');
-                    else
+                    else {
                         U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
+
+                        if (X.hasCause(e, OutOfMemoryError.class))
+                            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                    }
 
                     ex = e;
                 }
@@ -678,7 +685,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         if (msg == null) {
             msg = "Failed to execute job due to unexpected runtime exception [jobId=" + ses.getJobId() +
-                ", ses=" + ses + ']';
+                ", ses=" + ses + ", err=" + e.getMessage() + ']';
 
             ex = new ComputeUserUndeclaredException(msg, e);
         }
@@ -839,7 +846,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                     else
                                         ex = U.convertException(e);
 
-                                    U.error(log, "Failed to serialize job response [nodeId=" + taskNode.id() +
+                                    logError("Failed to serialize job response [nodeId=" + taskNode.id() +
                                         ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
                                         ", resCls=" + (res == null ? null : res.getClass()) + ']', e);
                                 }
@@ -855,7 +862,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                     else
                                         ex = U.convertException(e);
 
-                                    U.error(log, "Failed to serialize job attributes [nodeId=" + taskNode.id() +
+                                    logError("Failed to serialize job attributes [nodeId=" + taskNode.id() +
                                         ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
                                         ", attrs=" + attrs + ']', e);
                                 }
@@ -870,7 +877,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                                     ex = new IgniteException(msg);
 
-                                    U.error(log, msg, e);
+                                    logError(msg, e);
 
                                     exBytes = U.marshal(marsh, ex);
                                 }
@@ -938,7 +945,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                     ", ses=" + ses + ", job=" + job + ']');
                             }
                             else
-                                U.error(log, "Error sending reply for job [nodeId=" + sndNode.id() + ", jobId=" +
+                                logError("Error sending reply for job [nodeId=" + sndNode.id() + ", jobId=" +
                                     ses.getJobId() + ", ses=" + ses + ", job=" + job + ']', e);
 
                             if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
@@ -950,7 +957,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         catch (Exception e) {
                             String msg = "Failed to send reply for job [nodeId=" + taskNode.id() + ", job=" + job + ']';
 
-                            U.error(log, msg, e);
+                            logError(msg, e);
 
                             if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
                                 evts = addEvent(evts, EVT_JOB_FAILED, msg);
@@ -985,6 +992,18 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             // Listener callback.
             evtLsnr.onJobFinished(this);
         }
+    }
+
+    /**
+     * This method wraps U.error invocations to check node stopping.
+     * Log message will be skipped if node is stopping and debug is disabled.
+     *
+     * @param msg Message to log using quiet logger.
+     * @param e Optional exception.
+     */
+    private void logError(String msg, @Nullable Throwable e) {
+        if (e != null && (log.isDebugEnabled() || !X.hasCause(e, NodeStoppingException.class)))
+            U.error(log, msg, e);
     }
 
     /**

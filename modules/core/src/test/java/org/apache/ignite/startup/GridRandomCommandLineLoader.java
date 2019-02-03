@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,7 +62,7 @@ public final class GridRandomCommandLineLoader {
     private static final String IGNITE_PROG_NAME = "IGNITE_PROG_NAME";
 
     /** Copyright text. Ant processed. */
-    private static final String COPYRIGHT = "2018 Copyright(C) Apache Software Foundation.";
+    private static final String COPYRIGHT = IgniteVersionUtils.COPYRIGHT;
 
     /** Version. Ant processed. */
     private static final String VER = "x.x.x";
@@ -299,7 +300,6 @@ public final class GridRandomCommandLineLoader {
      * @return List of configurations.
      * @throws IgniteCheckedException If an error occurs.
      */
-    @SuppressWarnings("unchecked")
     private static IgniteConfiguration getConfiguration(String springCfgPath, @Nullable String logCfgPath)
         throws IgniteCheckedException {
         assert springCfgPath != null;

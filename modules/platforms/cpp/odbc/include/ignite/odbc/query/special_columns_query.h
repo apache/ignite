@@ -108,7 +108,7 @@ namespace ignite
                 /**
                  * Move to the next result set.
                  *
-                 * @return Operatoin result.
+                 * @return Operation result.
                  */
                 virtual SqlResult::Type NextResultSet();
 

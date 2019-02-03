@@ -1,0 +1,55 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+mixin discovery-s3(modelAt = '$ctrl.clonedCluster')
+
+    -var discoveryKind = 'S3'
+    -var required = `${modelAt}.discovery.kind == '${discoveryKind}'`
+    -var model = `${modelAt}.discovery.S3`
+
+    .pc-form-grid-row&attributes(attributes=attributes)
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Bucket name:',
+                model: `${model}.bucketName`,
+                name: `'${discoveryKind}BucketName'`,
+                required: required,
+                placeholder: 'Input bucket name',
+                tip: 'Bucket name for IP finder'
+            })
+        .pc-form-grid-col-30
+            .pc-form-grid__text-only-item(style='font-style: italic;color: #424242;')
+                | AWS credentials will be generated as stub
+        .pc-form-grid-col-40(ng-if-start=`$ctrl.available("2.4.0")`)
+            +form-field__text({
+                label: 'Bucket endpoint:',
+                model: `${model}.bucketEndpoint`,
+                name: `'${discoveryKind}BucketEndpoint'`,
+                placeholder: 'Input bucket endpoint',
+                tip: 'Bucket endpoint for IP finder<br/> \
+                      For information about possible endpoint names visit <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>'
+            })
+        .pc-form-grid-col-20(ng-if-end)
+            +form-field__text({
+                label: 'SSE algorithm:',
+                model: `${model}.SSEAlgorithm`,
+                name: `'${discoveryKind}SSEAlgorithm'`,
+                placeholder: 'Input SSE algorithm',
+                tip: 'Server-side encryption algorithm for Amazon S3-managed encryption keys<br/> \
+                      For information about possible S3-managed encryption keys visit <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>'
+            })

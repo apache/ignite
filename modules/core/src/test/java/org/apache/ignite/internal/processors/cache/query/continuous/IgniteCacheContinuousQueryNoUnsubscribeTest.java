@@ -27,18 +27,13 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static AtomicInteger cntr = new AtomicInteger();
 
@@ -48,8 +43,6 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setClientMode(client);
@@ -78,6 +71,7 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoUnsubscribe() throws Exception {
        checkNoUnsubscribe(false);
     }
@@ -85,6 +79,7 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoUnsubscribeClient() throws Exception {
         checkNoUnsubscribe(true);
     }

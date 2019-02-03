@@ -14,18 +14,14 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin hard-link(ref, txt)
-    a(style='color:#ec1c24' href=ref target='_blank') #{txt}
-
 .panel-details-noborder
     .details-row
         p
-            +hard-link('https://docs.docker.com/engine/reference/builder/', 'Docker')
+            a(href='https://docs.docker.com/engine/reference/builder/' target='_blank') Docker
             | &nbsp;file is a text file with instructions to create Docker image.<br/>
             | To build image you have to store following Docker file with your Ignite XML configuration to the same directory.<br>
             | Also you could use predefined&nbsp;
-            +hard-link('https://ignite.apache.org/download.html#docker', 'Apache Ignite docker image')
+            a(href='https://ignite.apache.org/download.cgi#docker' target='_blank') Apache Ignite docker image
             | . For more information about using Ignite with Docker please read&nbsp;
-            +hard-link('http://apacheignite.readme.io/docs/docker-deployment', 'documentation')
-            |.
+            a(href='https://apacheignite.readme.io/docs/docker-deployment' target='_blank') documentation.
     .details-row(ng-if='ctrl.data' ignite-ace='{onLoad: onLoad, mode: "dockerfile"}' ng-model='ctrl.data')

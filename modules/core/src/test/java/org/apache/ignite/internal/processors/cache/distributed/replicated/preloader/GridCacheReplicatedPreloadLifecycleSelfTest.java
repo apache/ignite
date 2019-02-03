@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -38,7 +39,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Tests for replicated cache preloader.
  */
-@SuppressWarnings({"PublicInnerClass"})
 public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloadLifecycleAbstractTest {
     /** */
     private static boolean quiet = true;
@@ -160,6 +160,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleBean1() throws Exception {
         checkCache(keys(true, DFLT_KEYS.length, DFLT_KEYS));
     }
@@ -167,6 +168,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleBean2() throws Exception {
         checkCache(keys(false, DFLT_KEYS.length, DFLT_KEYS));
     }
@@ -174,6 +176,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleBean3() throws Exception {
         checkCache(keys(true, 500));
     }
@@ -181,6 +184,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleBean4() throws Exception {
         checkCache(keys(false, 500));
     }

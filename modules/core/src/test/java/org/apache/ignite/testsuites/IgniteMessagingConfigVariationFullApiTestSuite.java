@@ -17,7 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.messaging.IgniteMessagingConfigVariationFullApiTest;
@@ -26,11 +28,14 @@ import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
 
 /**
  * Test sute for Messaging process.
  */
-public class IgniteMessagingConfigVariationFullApiTestSuite extends TestSuite {
+@RunWith(DynamicSuite.class)
+public class IgniteMessagingConfigVariationFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] GRID_PARAMETER_VARIATION = new ConfigParameter[][] {
@@ -42,29 +47,19 @@ public class IgniteMessagingConfigVariationFullApiTestSuite extends TestSuite {
         Parameters.booleanParameters("setPeerClassLoadingEnabled")
     };
 
-    /**
-     * @return Messaging test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Compute New Full API Test Suite");
-
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "Single server",
-            IgniteMessagingConfigVariationFullApiTest.class)
-            .gridsCount(1)
-            .igniteParams(GRID_PARAMETER_VARIATION)
-            .build());
-
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "Multiple servers and client",
-            IgniteMessagingConfigVariationFullApiTest.class)
-            .testedNodesCount(2)
-            .gridsCount(6)
-            .withClients()
-            .igniteParams(GRID_PARAMETER_VARIATION)
-            .build());
-
-        return suite;
+    /** */
+    public static List<Class<?>> suite() {
+        return Stream.concat(
+            new ConfigVariationsTestSuiteBuilder(IgniteMessagingConfigVariationFullApiTest.class)
+                .gridsCount(1)
+                .igniteParams(GRID_PARAMETER_VARIATION)
+                .classes().stream(),
+            new ConfigVariationsTestSuiteBuilder(IgniteMessagingConfigVariationFullApiTest.class)
+                .testedNodesCount(2)
+                .gridsCount(6)
+                .withClients()
+                .igniteParams(GRID_PARAMETER_VARIATION)
+                .classes().stream())
+            .collect(Collectors.toList());
     }
 }

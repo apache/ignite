@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.GridCacheDaemonNodeAbstractSelfTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -26,6 +27,13 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Tests local cache with daemon node.
  */
 public class GridCacheDaemonNodeLocalSelfTest extends GridCacheDaemonNodeAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.beforeTest();
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return LOCAL;

@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-    #define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 #include <boost/chrono.hpp>
 #include <boost/thread.hpp>
@@ -339,7 +335,7 @@ BOOST_AUTO_TEST_CASE(IgniteCallSyncLocal)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Making Call");
+    BOOST_TEST_CHECKPOINT("Making Call");
     std::string res = compute.Call<std::string>(Func1(8, 5));
 
     BOOST_CHECK_EQUAL(res, "8.5");
@@ -349,12 +345,12 @@ BOOST_AUTO_TEST_CASE(IgniteCallAsyncLocal)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Making Call");
+    BOOST_TEST_CHECKPOINT("Making Call");
     Future<std::string> res = compute.CallAsync<std::string>(Func2(312, 245));
 
     BOOST_CHECK(!res.IsReady());
 
-    BOOST_CHECKPOINT("Waiting with timeout");
+    BOOST_TEST_CHECKPOINT("Waiting with timeout");
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());
@@ -366,7 +362,7 @@ BOOST_AUTO_TEST_CASE(IgniteCallSyncLocalError)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Making Call");
+    BOOST_TEST_CHECKPOINT("Making Call");
 
     BOOST_CHECK_EXCEPTION(compute.Call<std::string>(Func1(MakeTestError())), IgniteError, IsTestError);
 }
@@ -375,12 +371,12 @@ BOOST_AUTO_TEST_CASE(IgniteCallAsyncLocalError)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Making Call");
+    BOOST_TEST_CHECKPOINT("Making Call");
     Future<std::string> res = compute.CallAsync<std::string>(Func2(MakeTestError()));
 
     BOOST_CHECK(!res.IsReady());
 
-    BOOST_CHECKPOINT("Waiting with timeout");
+    BOOST_TEST_CHECKPOINT("Waiting with timeout");
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());
@@ -393,7 +389,7 @@ BOOST_AUTO_TEST_CASE(IgniteCallTestRemote)
     Ignite node2 = MakeNode("ComputeNode2");
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Making Call");
+    BOOST_TEST_CHECKPOINT("Making Call");
     compute.CallAsync<std::string>(Func2(8, 5));
 
     std::string res = compute.Call<std::string>(Func1(42, 24));
@@ -406,14 +402,14 @@ BOOST_AUTO_TEST_CASE(IgniteCallTestRemoteError)
     Ignite node2 = MakeNode("ComputeNode2");
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Making Call");
+    BOOST_TEST_CHECKPOINT("Making Call");
     compute.CallAsync<std::string>(Func2(8, 5));
 
     Future<std::string> res = compute.CallAsync<std::string>(Func2(MakeTestError()));
 
     BOOST_CHECK(!res.IsReady());
 
-    BOOST_CHECKPOINT("Waiting with timeout");
+    BOOST_TEST_CHECKPOINT("Waiting with timeout");
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());
@@ -425,7 +421,7 @@ BOOST_AUTO_TEST_CASE(IgniteRunSyncLocal)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Running");
+    BOOST_TEST_CHECKPOINT("Running");
     compute.Run(Func3(8, 5));
 
     BOOST_CHECK_EQUAL(Func3::res, "8.5");
@@ -435,12 +431,12 @@ BOOST_AUTO_TEST_CASE(IgniteRunAsyncLocal)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Running");
+    BOOST_TEST_CHECKPOINT("Running");
     Future<void> res = compute.RunAsync(Func3(312, 245));
 
     BOOST_CHECK(!res.IsReady());
 
-    BOOST_CHECKPOINT("Waiting with timeout");
+    BOOST_TEST_CHECKPOINT("Waiting with timeout");
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());
@@ -454,7 +450,7 @@ BOOST_AUTO_TEST_CASE(IgniteRunSyncLocalError)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Running");
+    BOOST_TEST_CHECKPOINT("Running");
 
     BOOST_CHECK_EXCEPTION(compute.Run(Func3(MakeTestError())), IgniteError, IsTestError);
 }
@@ -463,12 +459,12 @@ BOOST_AUTO_TEST_CASE(IgniteRunAsyncLocalError)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Running");
+    BOOST_TEST_CHECKPOINT("Running");
     Future<void> res = compute.RunAsync(Func3(MakeTestError()));
 
     BOOST_CHECK(!res.IsReady());
 
-    BOOST_CHECKPOINT("Waiting with timeout");
+    BOOST_TEST_CHECKPOINT("Waiting with timeout");
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());
@@ -481,7 +477,7 @@ BOOST_AUTO_TEST_CASE(IgniteRunRemote)
     Ignite node2 = MakeNode("ComputeNode2");
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Running");
+    BOOST_TEST_CHECKPOINT("Running");
     compute.CallAsync<std::string>(Func2(8, 5));
 
     compute.Run(Func3(42, 24));
@@ -494,14 +490,14 @@ BOOST_AUTO_TEST_CASE(IgniteRunRemoteError)
     Ignite node2 = MakeNode("ComputeNode2");
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Running");
+    BOOST_TEST_CHECKPOINT("Running");
     compute.CallAsync<std::string>(Func2(8, 5));
 
     Future<void> res = compute.RunAsync(Func3(MakeTestError()));
 
     BOOST_CHECK(!res.IsReady());
 
-    BOOST_CHECKPOINT("Waiting with timeout");
+    BOOST_TEST_CHECKPOINT("Waiting with timeout");
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());
@@ -513,7 +509,7 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastLocalSync)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Broadcasting");;
+    BOOST_TEST_CHECKPOINT("Broadcasting");
     std::vector<std::string> res = compute.Broadcast<std::string>(Func2(8, 5));
 
     BOOST_CHECK_EQUAL(res.size(), 1);
@@ -524,12 +520,12 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastLocalAsync)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Broadcasting");;
+    BOOST_TEST_CHECKPOINT("Broadcasting");
     Future< std::vector<std::string> > res = compute.BroadcastAsync<std::string>(Func2(312, 245));
 
     BOOST_CHECK(!res.IsReady());
 
-    BOOST_CHECKPOINT("Waiting with timeout");
+    BOOST_TEST_CHECKPOINT("Waiting with timeout");
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());
@@ -544,7 +540,7 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastSyncLocalError)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Broadcasting");
+    BOOST_TEST_CHECKPOINT("Broadcasting");
 
     BOOST_CHECK_EXCEPTION(compute.Broadcast(Func2(MakeTestError())), IgniteError, IsTestError);
 }
@@ -553,12 +549,12 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastAsyncLocalError)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Broadcasting");
+    BOOST_TEST_CHECKPOINT("Broadcasting");
     Future<void> res = compute.BroadcastAsync(Func2(MakeTestError()));
 
     BOOST_CHECK(!res.IsReady());
 
-    BOOST_CHECKPOINT("Waiting with timeout");
+    BOOST_TEST_CHECKPOINT("Waiting with timeout");
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());
@@ -571,7 +567,7 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastRemote)
     Ignite node2 = MakeNode("ComputeNode2");
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Broadcasting");
+    BOOST_TEST_CHECKPOINT("Broadcasting");
     std::vector<std::string> res = compute.Broadcast<std::string>(Func2(8, 5));
 
     BOOST_CHECK_EQUAL(res.size(), 2);
@@ -584,12 +580,12 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastRemoteError)
     Ignite node2 = MakeNode("ComputeNode2");
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Broadcasting");
+    BOOST_TEST_CHECKPOINT("Broadcasting");
     Future< std::vector<std::string> > res = compute.BroadcastAsync<std::string>(Func2(MakeTestError()));
 
     BOOST_CHECK(!res.IsReady());
 
-    BOOST_CHECKPOINT("Waiting with timeout");
+    BOOST_TEST_CHECKPOINT("Waiting with timeout");
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());

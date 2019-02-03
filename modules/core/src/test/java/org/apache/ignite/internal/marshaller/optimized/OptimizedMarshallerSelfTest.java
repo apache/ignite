@@ -29,6 +29,7 @@ import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Optimized marshaller self test.
@@ -43,6 +44,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTestMarshalling() throws Exception {
         final String msg = "PASSED";
 
@@ -70,6 +72,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testMarshallingSelfLink() throws IgniteCheckedException {
         SelfLink sl = new SelfLink("a string 1");
 
@@ -83,6 +86,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalid() throws Exception {
         GridTestUtils.assertThrows(
             log,
@@ -105,6 +109,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNested() throws Exception {
         NestedTestObject obj = new NestedTestObject("String", 100);
 
@@ -149,7 +154,6 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("UnusedParameters")
         private void readObject(ObjectInputStream in) throws IOException {
             try {
                 byte[] arr = new byte[in.readInt()];

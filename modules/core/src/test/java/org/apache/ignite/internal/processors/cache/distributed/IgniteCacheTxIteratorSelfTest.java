@@ -28,12 +28,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.MvccFeatureChecker.Feature;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import javax.cache.Cache;
+import org.junit.Test;
 
 /**
  *
@@ -84,6 +87,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testModesSingleNode() throws Exception {
         checkModes(1);
     }
@@ -91,6 +95,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testModesMultiNode() throws Exception {
         checkModes(3);
     }
@@ -109,9 +114,9 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
                         checkTxCache(CacheMode.PARTITIONED, atomMode, true, false);
                     }
 
-                    checkTxCache(CacheMode.PARTITIONED, atomMode, false, true);
+                    checkTxCache(mode, atomMode, false, true);
 
-                    checkTxCache(CacheMode.PARTITIONED, atomMode, false, false);
+                    checkTxCache(mode, atomMode, false, false);
                 }
             }
         }
@@ -129,6 +134,13 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
         boolean nearEnabled,
         boolean useEvicPlc
     ) throws Exception {
+        if (atomMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
+            if (!MvccFeatureChecker.isSupported(mode) ||
+                (nearEnabled && !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) ||
+                (useEvicPlc && !MvccFeatureChecker.isSupported(Feature.EVICTION)))
+                return; // Nothing to do. Mode is not supported.
+        }
+
         final Ignite ignite = grid(0);
 
         final CacheConfiguration<String, TestClass> ccfg = cacheConfiguration(
@@ -137,7 +149,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
             nearEnabled,
             useEvicPlc);
 
-        final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg);
+        final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg).withAllowAtomicOpsInTx();
 
         info("Checking cache [mode=" + mode + ", atomMode=" + atomMode + ", near=" + nearEnabled +
             ", evict=" + useEvicPlc + ']');
@@ -153,6 +165,10 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
                 for (TransactionIsolation iso : TransactionIsolation.values()) {
                     for (TransactionConcurrency con : TransactionConcurrency.values()) {
+                        if (atomMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT &&
+                            !MvccFeatureChecker.isSupported(con, iso))
+                            continue; // Mode not supported.
+
                         try (Transaction transaction = ignite.transactions().txStart(con, iso)) {
                             assertEquals(val, cache.get(key));
 

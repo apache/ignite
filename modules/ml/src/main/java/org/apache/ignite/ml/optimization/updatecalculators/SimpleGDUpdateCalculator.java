@@ -17,16 +17,19 @@
 
 package org.apache.ignite.ml.optimization.updatecalculators;
 
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.optimization.SmoothParametrized;
 
 /**
  * Simple gradient descent parameters updater.
  */
 public class SimpleGDUpdateCalculator implements ParameterUpdateCalculator<SmoothParametrized, SimpleGDParameterUpdate> {
+    /** */
+    private static final long serialVersionUID = -4237332083320879334L;
+
     /** Learning rate. */
     private double learningRate;
 

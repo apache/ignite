@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
+import org.junit.Test;
 
 /**
  * Tests for Ant task generating GAR file.
@@ -39,7 +40,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TypeMayBeWeakened"})
+    @Test
     public void testCorrectAntGarTask() throws Exception {
         String tmpDirName = GridTestProperties.getProperty("ant.gar.tmpdir");
         String srcDirName = GridTestProperties.getProperty("ant.gar.srcdir");
@@ -126,6 +127,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAntGarTaskWithExternalP2PDescriptor() throws Exception {
         String tmpDirName = GridTestProperties.getProperty("ant.gar.tmpdir");
         String srcDirName = GridTestProperties.getProperty("ant.gar.srcdir");
@@ -172,6 +174,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAntGarTaskWithDoubleP2PDescriptor() throws Exception {
         String tmpDirName = GridTestProperties.getProperty("ant.gar.tmpdir");
         String srcDirName = GridTestProperties.getProperty("ant.gar.srcdir");
@@ -222,6 +225,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAntGarTaskWithDirDescriptor() throws Exception {
         String tmpDirName = GridTestProperties.getProperty("ant.gar.tmpdir");
         String srcDirName = GridTestProperties.getProperty("ant.gar.srcdir");
@@ -266,7 +270,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TypeMayBeWeakened"})
+    @Test
     public void testAntGarTaskWithNullDescriptor() throws Exception {
         String tmpDirName = GridTestProperties.getProperty("ant.gar.tmpdir");
         String srcDirName = GridTestProperties.getProperty("ant.gar.srcdir");
@@ -310,6 +314,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAntGarTaskWithFileBaseDir() throws Exception {
         String tmpDirName = GridTestProperties.getProperty("ant.gar.tmpdir");
         String srcDirName = GridTestProperties.getProperty("ant.gar.srcdir");
@@ -354,6 +359,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAntGarTaskToString() throws Exception {
         String tmpDirName = GridTestProperties.getProperty("ant.gar.tmpdir");
         String srcDirName = GridTestProperties.getProperty("ant.gar.srcdir");

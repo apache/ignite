@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -64,6 +65,17 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void startGrids() throws Exception {
+        int cnt = gridCount();
+
+        assert cnt >= 1 : "At least one grid must be started";
+
+        startGridsMultiThreaded(1, cnt - 1);
+
+        startGrid(0);
     }
 
     /** {@inheritDoc} */
@@ -141,6 +153,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testResponseMessageOnUnmarshallingFailed() throws Exception {
         // GridNearAtomicFullUpdateRequest unmarshalling failed test.
         readCnt.set(1);

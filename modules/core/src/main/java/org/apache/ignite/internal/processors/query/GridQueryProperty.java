@@ -77,4 +77,18 @@ public interface GridQueryProperty {
      * @return {@code null} if a default value is not set for the property.
      */
     public Object defaultValue();
+
+    /**
+     * Gets precision for this property.
+     *
+     * @return Precision for a decimal property or -1.
+     */
+    public int precision();
+
+    /**
+     * Gets scale for this property.
+     *
+     * @return Scale for a decimal property or -1.
+     */
+    public int scale();
 }

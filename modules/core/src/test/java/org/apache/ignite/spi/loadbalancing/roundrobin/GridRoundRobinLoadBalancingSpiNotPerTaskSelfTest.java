@@ -33,6 +33,7 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
@@ -70,6 +71,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleNodes() throws Exception {
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
@@ -85,6 +87,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleTaskSessions() throws Exception {
         ComputeTaskSession ses1 = new GridTestTaskSession(IgniteUuid.randomUuid());
         ComputeTaskSession ses2 = new GridTestTaskSession(IgniteUuid.randomUuid());
@@ -106,6 +109,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testBalancingOneNode() throws Exception {
         ComputeTaskSession ses = new GridTestTaskSession();
 
@@ -120,6 +124,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     }
 
     /** */
+    @Test
     public void testNodeNotInTopology() throws Exception {
         ComputeTaskSession ses = new GridTestTaskSession();
 

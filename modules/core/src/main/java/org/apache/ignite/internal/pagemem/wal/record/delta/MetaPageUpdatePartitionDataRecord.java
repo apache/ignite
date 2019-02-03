@@ -32,7 +32,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** */
     private long globalRmvId;
 
-    /** */
+    /** TODO: Partition size may be long */
     private int partSize;
 
     /** */
@@ -55,7 +55,8 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         long updateCntr,
         long globalRmvId,
         int partSize,
-        long cntrsPageId, byte state,
+        long cntrsPageId,
+        byte state,
         int allocatedIdxCandidate
     ) {
         super(grpId, pageId);

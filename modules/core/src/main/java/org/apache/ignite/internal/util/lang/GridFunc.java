@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -58,7 +59,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallabl
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
-import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentDequeFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentHashSetFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentMapFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
@@ -94,6 +94,7 @@ import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
@@ -104,7 +105,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Contains factory and utility methods for {@code closures}, {@code predicates}, and {@code tuples}.
@@ -139,9 +139,6 @@ public class GridFunc {
     private static final IgnitePredicate<Object> ALWAYS_FALSE = new AlwaysFalsePredicate<>();
 
     /** */
-    private static final IgniteCallable<?> DEQUE_FACTORY = new ConcurrentDequeFactoryCallable();
-
-    /** */
     private static final IgnitePredicate<Object> IS_NOT_NULL = new IsNotNullPredicate();
 
     /** */
@@ -169,11 +166,12 @@ public class GridFunc {
     private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new ClusterNodeGetIdClosure();
 
     /** */
-    private static final IgniteClosure<ClusterNode, Object> NODE2CONSISTENTID = new IgniteClosure<ClusterNode, Object>() {
-        @Override public Object apply(ClusterNode node) {
-            return node.consistentId();
-        }
-    };
+    private static final IgniteClosure<BaselineNode, Object> NODE2CONSISTENTID =
+        new IgniteClosure<BaselineNode, Object>() {
+            @Override public Object apply(BaselineNode node) {
+                return node.consistentId();
+            }
+        };
 
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
@@ -301,13 +299,13 @@ public class GridFunc {
      * @param delim Delimiter (optional).
      * @return Concatenated string.
      */
-    public static String concat(Iterable<String> c, @Nullable String delim) {
+    public static String concat(Iterable<?> c, @Nullable String delim) {
         A.notNull(c, "c");
 
         IgniteReducer<? super String, String> f = new StringConcatReducer(delim);
 
-        for (String x : c)
-            if (!f.collect(x))
+        for (Object x : c)
+            if (!f.collect(x == null ? null : x.toString()))
                 break;
 
         return f.reduce();
@@ -340,7 +338,7 @@ public class GridFunc {
      * @param nodes Collection of grid nodes.
      * @return Collection of node consistent IDs for given collection of grid nodes.
      */
-    public static Collection<Object> nodeConsistentIds(@Nullable Collection<? extends ClusterNode> nodes) {
+    public static Collection<Object> nodeConsistentIds(@Nullable Collection<? extends BaselineNode> nodes) {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 
@@ -354,7 +352,6 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Random value from the input collection.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static <T> T rand(Collection<? extends T> c) {
         A.notNull(c, "c");
 
@@ -528,7 +525,6 @@ public class GridFunc {
      * @param iters Iterator over iterators.
      * @return Single iterator.
      */
-    @SuppressWarnings("unchecked")
     public static <T> Iterator<T> concat(final Iterator<Iterator<T>> iters) {
         if (!iters.hasNext())
             return Collections.<T>emptySet().iterator();
@@ -1011,7 +1007,6 @@ public class GridFunc {
      * @param <T1> Type of the collection.
      * @return Light-weight view on given collection with provided predicate.
      */
-    @SuppressWarnings("RedundantTypeArguments")
     @SafeVarargs
     public static <T1, T2> Collection<T2> viewReadOnly(@Nullable final Collection<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans, @Nullable final IgnitePredicate<? super T1>... p) {
@@ -1133,7 +1128,6 @@ public class GridFunc {
      * @param <V> Value type.
      * @return Light-weight view on given map with provided predicates and mapping.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> viewAsMap(@Nullable final Set<K> c,
         final IgniteClosure<? super K, V> mapClo, @Nullable final IgnitePredicate<? super K>... p) {
         A.notNull(mapClo, "trans");
@@ -1276,19 +1270,6 @@ public class GridFunc {
     }
 
     /**
-     * Returns a factory closure that creates new {@link ConcurrentLinkedDeque8} instance.
-     * Note that this method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link List}.
-     * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> IgniteCallable<ConcurrentLinkedDeque8<T>> newDeque() {
-        return (IgniteCallable<ConcurrentLinkedDeque8<T>>)DEQUE_FACTORY;
-    }
-
-    /**
      * Returns a factory closure that creates new {@link AtomicInteger} instance
      * initialized to {@code zero}. Note that this method does not create a new
      * closure but returns a static one.
@@ -1309,7 +1290,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Set} instance every time
      *      its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<Set<T>> newSet() {
         return (IgniteCallable<Set<T>>)SET_FACTORY;
     }
@@ -1323,7 +1303,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Map} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     @Deprecated
     public static <K, V> IgniteCallable<Map<K, V>> newMap() {
         return (IgniteCallable<Map<K, V>>)MAP_FACTORY;
@@ -1338,7 +1317,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Map} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <K, V> IgniteCallable<ConcurrentMap<K, V>> newCMap() {
         return (IgniteCallable<ConcurrentMap<K, V>>)CONCURRENT_MAP_FACTORY;
     }
@@ -1350,7 +1328,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link GridConcurrentHashSet} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <E> IgniteCallable<Set<E>> newCSet() {
         return (IgniteCallable<Set<E>>)CONCURRENT_SET_FACTORY;
     }
@@ -1431,7 +1408,6 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code true}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
     public static <T> IgnitePredicate<T> alwaysTrue() {
         return (IgnitePredicate<T>)ALWAYS_TRUE;
     }
@@ -1443,7 +1419,6 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code false}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
     public static <T> IgnitePredicate<T> alwaysFalse() {
         return (IgnitePredicate<T>)ALWAYS_FALSE;
     }
@@ -1665,7 +1640,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if each of its component predicates
      *      evaluates to {@code true}.
      */
-    @SuppressWarnings({"unchecked", "ConfusingArgumentToVarargsMethod"})
+    @SuppressWarnings({"unchecked"})
     public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
         if (isEmpty(ps))
             return F.alwaysTrue();
@@ -1738,7 +1713,6 @@ public class GridFunc {
      * @param it Iterable to fetch.
      * @return Modified target collection.
      */
-    @SuppressWarnings("unchecked")
     @Deprecated
     public static <T, C extends Collection<T>> C addAll(C c, Iterable<? extends T> it) {
         if (it == null)
@@ -1927,7 +1901,6 @@ public class GridFunc {
      * @param <X> Type of the free variable for the closure and type of the array
      *      elements.
      */
-    @SuppressWarnings("RedundantTypeArguments")
     @Deprecated
     public static <X> void forEach(X[] c, IgniteInClosure<? super X> f, @Nullable IgnitePredicate<? super X>... p) {
         A.notNull(c, "c", f, "f");
@@ -2188,6 +2161,7 @@ public class GridFunc {
      * @param t2 Second object in pair.
      * @param <T> Type of objects in pair.
      * @return Pair of objects.
+     * @deprecated Use {@link T2} instead.
      */
     @Deprecated
     public static <T> IgnitePair<T> pair(@Nullable T t1, @Nullable T t2) {
@@ -3047,7 +3021,6 @@ public class GridFunc {
      * @param <V> Value type.
      * @return Closure that returns value for an entry.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgniteClosure<Cache.Entry<K, V>, V> cacheEntry2Get() {
         return (IgniteClosure<Cache.Entry<K, V>, V>)CACHE_ENTRY_VAL_GET;
     }
@@ -3059,7 +3032,6 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if entry has peek value.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasPeekValue() {
         return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
     }

@@ -23,6 +23,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <iterator>
 
 #include <ignite/common/common.h>
 #include <ignite/common/platform_utils.h>
@@ -70,6 +71,67 @@ namespace ignite
          * @param str String to be transformed.
          */
         IGNITE_IMPORT_EXPORT void StripSurroundingWhitespaces(std::string& str);
+
+        /**
+         * Skip leading spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return Iterator to first non-blanc character.
+         */
+        template<typename Iterator>
+        Iterator SkipLeadingSpaces(Iterator begin, Iterator end)
+        {
+            Iterator res = begin;
+
+            while (isspace(*res) && res != end)
+                ++res;
+
+            return res;
+        }
+
+        /**
+         * Skip trailing spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return Iterator to last non-blanc character.
+         */
+        template<typename Iterator>
+        Iterator SkipTrailingSpaces(Iterator begin, Iterator end)
+        {
+            Iterator res = end - 1;
+
+            while (isspace(*res) && res != begin - 1)
+                --res;
+
+            return res + 1;
+        }
+
+        /**
+         * Remove leading and trailing spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return String without leading and trailing spaces.
+         */
+        template<typename Iterator>
+        std::string StripSurroundingWhitespaces(Iterator begin, Iterator end)
+        {
+            std::string res;
+
+            if (begin >= end)
+                return res;
+
+            Iterator skipped_leading = SkipLeadingSpaces(begin, end);
+            Iterator skipped_trailing = SkipTrailingSpaces(skipped_leading, end);
+
+            res.reserve(skipped_trailing - skipped_leading);
+
+            std::copy(skipped_leading, skipped_trailing, std::back_inserter(res));
+
+            return res;
+        }
 
         /**
          * Get string representation of long in decimal form.
@@ -427,6 +489,15 @@ namespace ignite
         };
 
         /**
+         * Returns the bigger type.
+         */
+        template<typename T1, typename T2>
+        struct Bigger
+        {
+            typedef typename Conditional<(sizeof(T1) > sizeof(T2)), T1, T2>::type type;
+        };
+
+        /**
          * Utility class to bind class instance with member function.
          */
         template<typename R, typename T>
@@ -476,6 +547,62 @@ namespace ignite
         {
             return BoundInstance<R, T>(instance, mfunc);
         }
+
+        /**
+         * Method guard class template.
+         *
+         * Upon destruction calls provided method on provided class instance.
+         *
+         * @tparam T Value type.
+         */
+        template<typename T>
+        class MethodGuard
+        {
+        public:
+            /** Value type. */
+            typedef T ValueType;
+
+            /** Mehtod type. */
+            typedef void (ValueType::*MethodType)();
+
+            /**
+             * Constructor.
+             *
+             * @param val Instance, to call method on.
+             * @param method Method to call.
+             */
+            MethodGuard(ValueType* val, MethodType method) :
+                val(val),
+                method(method)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~MethodGuard()
+            {
+                if (val && method)
+                    (val->*method)();
+            }
+
+            /**
+             * Release control over object.
+             */
+            void Release()
+            {
+                val = 0;
+                method = 0;
+            }
+
+        private:
+            /** Instance, to call method on. */
+            ValueType* val;
+
+            /** Method to call. */
+            MethodType method;
+        };
 
         /**
          * Get dynamic library full name.

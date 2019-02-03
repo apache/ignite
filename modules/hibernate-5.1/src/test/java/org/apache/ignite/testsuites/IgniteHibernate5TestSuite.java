@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.cache.hibernate.HibernateL2CacheConfigurationSelfTest;
+import org.apache.ignite.cache.hibernate.HibernateL2CacheMultiJvmTest;
 import org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest;
 import org.apache.ignite.cache.hibernate.HibernateL2CacheStrategySelfTest;
 import org.apache.ignite.cache.hibernate.HibernateL2CacheTransactionalSelfTest;
@@ -27,33 +27,28 @@ import org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreNodeRestar
 import org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreSelfTest;
 import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreFactorySelfTest;
 import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreSessionListenerSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Hibernate integration tests.
  */
-public class IgniteHibernate5TestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Hibernate5 Integration Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    HibernateL2CacheSelfTest.class,
+    HibernateL2CacheTransactionalSelfTest.class,
+    HibernateL2CacheTransactionalUseSyncSelfTest.class,
+    HibernateL2CacheConfigurationSelfTest.class,
+    HibernateL2CacheStrategySelfTest.class,
+    HibernateL2CacheMultiJvmTest.class,
 
-        // Hibernate L2 cache.
-        suite.addTestSuite(HibernateL2CacheSelfTest.class);
-        suite.addTestSuite(HibernateL2CacheTransactionalSelfTest.class);
-        suite.addTestSuite(HibernateL2CacheTransactionalUseSyncSelfTest.class);
-        suite.addTestSuite(HibernateL2CacheConfigurationSelfTest.class);
-        suite.addTestSuite(HibernateL2CacheStrategySelfTest.class);
+    CacheHibernateBlobStoreSelfTest.class,
 
-        suite.addTestSuite(CacheHibernateBlobStoreSelfTest.class);
+    CacheHibernateBlobStoreNodeRestartTest.class,
 
-        suite.addTestSuite(CacheHibernateBlobStoreNodeRestartTest.class);
+    CacheHibernateStoreSessionListenerSelfTest.class,
 
-        suite.addTestSuite(CacheHibernateStoreSessionListenerSelfTest.class);
-
-        suite.addTestSuite(CacheHibernateStoreFactorySelfTest.class);
-
-        return suite;
-    }
+    CacheHibernateStoreFactorySelfTest.class
+})
+public class IgniteHibernate5TestSuite {
 }

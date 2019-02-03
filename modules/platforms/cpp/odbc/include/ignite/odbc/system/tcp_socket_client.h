@@ -60,15 +60,15 @@ namespace ignite
                  *
                  * @param hostname Remote host name.
                  * @param port TCP service port.
+                 * @param timeout Timeout.
                  * @param diag Diagnostics collector.
                  * @return True on success.
                  */
-                virtual bool Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag);
+                virtual bool Connect(const char* hostname, uint16_t port, int32_t timeout,
+                    diagnostic::Diagnosable& diag);
 
                 /**
                  * Close established connection.
-                 *
-                 * @return True on success.
                  */
                 virtual void Close();
 
@@ -119,6 +119,11 @@ namespace ignite
                  */
                 static bool IsSocketOperationInterrupted(int errorCode);
             private:
+                /**
+                 * Close established connection.
+                 */
+                void InternalClose();
+
                 /**
                  * Tries set socket options.
                  */

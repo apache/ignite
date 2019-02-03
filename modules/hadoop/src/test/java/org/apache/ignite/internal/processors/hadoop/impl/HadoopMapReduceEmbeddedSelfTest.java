@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount1;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopMapReduceEmbeddedSelfTestState.flags;
@@ -58,6 +59,7 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testMultiReducerWholeMapReduceExecution() throws Exception {
         checkMultiReducerWholeMapReduceExecution(false);
     }
@@ -65,6 +67,7 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testMultiReducerWholeMapReduceExecutionStriped() throws Exception {
         checkMultiReducerWholeMapReduceExecution(true);
     }

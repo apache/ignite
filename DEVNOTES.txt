@@ -1,4 +1,4 @@
-Ignite Fabric Maven Build Instructions
+Apache Ignite Maven Build Instructions
 ======================================
 1) Optional: build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
 
@@ -15,14 +15,14 @@ Ignite Fabric Maven Build Instructions
 
         mvn initialize -Pjavadoc
 
-4) Assembly Apache Ignite fabric:
+4) Assembly Apache Ignite:
 
         mvn initialize -Prelease
 
-Look for apache-ignite-fabric-<version>-bin.zip in ./target/bin directory.
+Look for apache-ignite-<version>-bin.zip in ./target/bin directory.
 
 
-Ignite Fabric with LGPL Maven Build Instructions
+Apache Ignite with LGPL Maven Build Instructions
 ================================================
 1) Optional: build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
 
@@ -39,11 +39,11 @@ Ignite Fabric with LGPL Maven Build Instructions
 
         mvn initialize -Pjavadoc,lgpl
 
-4) Assembly Apache Ignite fabric with LGPL dependencies:
+4) Assembly Apache Ignite  with LGPL dependencies:
 
-        mvn initialize -Prelease,lgpl -Dignite.edition=fabric-lgpl
+        mvn initialize -Prelease,lgpl -Dignite.edition=apache-ignite-lgpl
 
-   Look for apache-ignite-fabric-lgpl-<version>-bin.zip in ./target/bin directory.
+   Look for apache-ignite-lgpl-<version>-bin.zip in ./target/bin directory.
 
 
 Ignite Hadoop Accelerator Maven Build Instructions
@@ -60,7 +60,7 @@ Ignite Hadoop Accelerator Maven Build Instructions
 
 2) Assembly Hadoop Accelerator:
 
-        mvn initialize -Prelease -Dignite.edition=hadoop
+        mvn initialize -Prelease -Dignite.edition=apache-ignite-hadoop
 
    Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory. Resulting binary
    assembly will also include integration module for Apache Spark.
@@ -75,36 +75,39 @@ Instructions can be found at modules/platforms/cpp/DEVNOTES.txt.
 
 Apache Ignite RPM Package Build Instructions
 ============================================
-1) Install dependencies
+1) Build Apache Ignite binary archive (instructions above)
 
-        yum install -y rpmdevtools rpm-build
+2) Run packaging script and follow messages if they required interaction
 
-2) Create directory layout
+        packaging/package.sh --rpm
 
-        rpmdev-setuptree
-
-3) Copy build specification and additional sources required for build
-
-        cp -rfv packaging/rpm/* ~/rpmbuild
-
-4) Copy built binary from target/bin to sources directory
-
-        cp -rfv target/bin/apache-ignite-<version>-bin.zip ~/rpmbuild/SOURCES/apache-ignite.zip
-
-5) Run build process
-
-        rpmbuild -bb ~/rpmbuild/SPECS/apache-ignite.spec
-
-   NOTE: to build also SRPM package, run with -ba flag instead
-
-   Package will be available in ~/rpmbuild/RPMS/noarch
+   Packages will be available in packaging/ directory
 
 
-Install and Run Apache Ignite from RPM
-======================================
-1) Install package
+Apache Ignite DEB Package Build Instructions
+============================================
+1) Build Apache Ignite binary archive (instructions above)
 
-        yum localinstall -y apache-ignite-<version>.rpm
+2) Build Apache Ignite RPM package (also above)
+
+3) Run packaging script and follow messages if they required interaction
+
+        packaging/package.sh --deb
+
+   Packages will be available in packaging/ directory
+
+   NOTE: to build both packages type at once, run
+
+        packaging/package.sh --rpm --deb
+
+
+Install and Run Apache Ignite from packages
+===========================================
+1) Install package with YUM or APT respectively
+
+        yum localinstall -y apache-ignite-<version>.noarch.rpm
+            or
+        dpkg -i apache-ignite_<version>_all.deb
 
 2) Start Apache Ignite service
 
@@ -144,26 +147,21 @@ Ignite Release Instructions
 
 3) Deploy Ignite release candidate to maven repository and dev-svn, make tag:
 
-   3.1) Deploy Ignite to maven repository, prepares sources and fabric edition binaries.
+   3.1) Deploy Ignite to maven repository, prepares sources and binaries.
 
-                mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=fabric -DskipTests
+                mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=apache-ignite -DskipTests
 
    3.2) Javadoc generation:
 
                 mvn initialize -Pjavadoc
 
-   3.3) Assembly Apache Ignite Fabric:
+   3.3) Assembly Apache Ignite:
 
                 mvn initialize -Prelease
 
    3.4) Assembly Hadoop Accelerator:
 
-                mvn initialize -Prelease -Dignite.edition=hadoop
-
-   NOTE: Binary artifact name can be changed by setting additional property -Dignite.zip.pattern. Binary artifact will be
-   created inside /target/bin folder when release profile is used.
-
-   NOTE: Sources artifact name is fixed. Sources artifact will be created inside /target dir when apache-release profile is used.
+                mvn initialize -Prelease -Dignite.edition=apache-ignite-hadoop
 
    NOTE: Nexus staging (repository.apache.org) should be closed with appropriate comment contains release version and
    release candidate number, for example "Apache Ignite 1.0.0-rc7", when mvn deploy finished.

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Contains tests for binary enums.
@@ -144,6 +145,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleRegistered() throws Exception {
         checkSimple(true);
     }
@@ -153,6 +155,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleNotRegistered() throws Exception {
         checkSimple(false);
     }
@@ -162,6 +165,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNestedRegistered() throws Exception {
         checkNested(true);
     }
@@ -171,6 +175,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNestedNotRegistered() throws Exception {
         checkNested(false);
     }
@@ -180,6 +185,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleBuilderRegistered() throws Exception {
         checkSimpleBuilder(true);
     }
@@ -189,6 +195,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleBuilderNotRegistered() throws Exception {
         checkSimpleBuilder(false);
     }
@@ -198,6 +205,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNestedBuilderRegistered() throws Exception {
         checkNestedBuilder(true);
     }
@@ -207,6 +215,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNestedBuilderNotRegistered() throws Exception {
         checkNestedBuilder(false);
     }
@@ -214,6 +223,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInstanceFromBytes() throws Exception {
         startUp(true);
 
@@ -353,6 +363,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleArrayRegistered() throws Exception {
         checkSimpleArray(true);
     }
@@ -362,6 +373,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleArrayNotRegistered() throws Exception {
         checkSimpleArray(false);
     }
@@ -371,6 +383,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleBuilderArrayRegistered() throws Exception {
         checkSimpleBuilderArray(true);
     }
@@ -380,6 +393,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleBuilderArrayNotRegistered() throws Exception {
         checkSimpleBuilderArray(false);
     }
@@ -420,6 +434,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testZeroTypeId() throws Exception {
         startUp(true);
 
@@ -437,6 +452,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
+    @Test
     public void testBinaryTypeEnumValues() throws Exception {
         startUp(false);
 
@@ -455,6 +471,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
+    @Test
     public void testEnumWrongBinaryConfig() throws Exception {
         this.register = true;
 
@@ -472,6 +489,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
+    @Test
     public void testEnumValidation() throws Exception {
         startUp(false);
 
@@ -493,6 +511,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
+    @Test
     public void testEnumMerge() throws Exception {
         startUp(false);
 
@@ -543,6 +562,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeclaredBodyEnumRegistered() throws Exception {
         checkDeclaredBodyEnum(true);
     }
@@ -552,6 +572,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeclaredBodyEnumNotRegistered() throws Exception {
         checkDeclaredBodyEnum(false);
     }
@@ -644,7 +665,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         if (register)
             assertEquals(val.name(), obj.enumName());
     }
-    
+
     /**
      * Validate single value.
      *
@@ -677,7 +698,6 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         /**
          * Default constructor.
          */
-        @SuppressWarnings("UnusedDeclaration")
         public EnumHolder() {
             // No-op.
         }

@@ -23,6 +23,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
@@ -84,6 +85,7 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultGroupLocalAttributesPreserved() throws Exception {
         useNonDfltCacheGrp = false;
 
@@ -96,6 +98,7 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNonDefaultGroupLocalAttributesPreserved() throws Exception {
         useNonDfltCacheGrp = true;
 

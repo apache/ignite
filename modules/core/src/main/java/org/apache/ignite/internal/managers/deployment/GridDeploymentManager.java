@@ -470,7 +470,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
                             "in some other mode). Either change IgniteConfiguration.getDeploymentMode() property to " +
                             "SHARED or CONTINUOUS or remove class from local classpath and any of " +
                             "the local GAR deployments that may have it [cls=" + meta.className() + ", depMode=" +
-                            locDep.deployMode() + ']', "Failed to deploy class in SHARED or CONTINUOUS mode.");
+                            locDep.deployMode() + ']');
 
                         return null;
                     }
@@ -478,8 +478,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
                     if (!locDep.userVersion().equals(meta.userVersion())) {
                         U.warn(log, "Failed to deploy class in SHARED or CONTINUOUS mode for given user version " +
                             "(class is locally deployed for a different user version) [cls=" + meta.className() +
-                            ", localVer=" + locDep.userVersion() + ", otherVer=" + meta.userVersion() + ']',
-                            "Failed to deploy class in SHARED or CONTINUOUS mode.");
+                            ", localVer=" + locDep.userVersion() + ", otherVer=" + meta.userVersion() + ']');
 
                         return null;
                     }

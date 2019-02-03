@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -61,6 +62,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntrySet() throws Exception {
         for (int i = 0; i < 10; i++) {
             log.info("Iteration: " + i);

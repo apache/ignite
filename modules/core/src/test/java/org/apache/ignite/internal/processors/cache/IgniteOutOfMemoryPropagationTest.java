@@ -32,12 +32,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 /**
  *
@@ -62,23 +62,18 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
     private IgniteEx client;
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        assert G.allGrids().isEmpty();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 20 * 60 * 1000;
     }
 
     /** */
+    @Test
     public void testPutOOMPropagation() throws Exception {
         testOOMPropagation(false);
     }
 
     /** */
+    @Test
     public void testStreamerOOMPropagation() throws Exception {
         testOOMPropagation(true);
     }
@@ -236,7 +231,7 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(10 * 1024 * 1024 + 1));
+            .setMaxSize(10L * 1024 * 1024 + 1));
 
         cfg.setDataStorageConfiguration(memCfg);
 

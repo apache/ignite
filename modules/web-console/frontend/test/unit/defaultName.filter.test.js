@@ -17,10 +17,9 @@
 
 import defaultName from '../../app/filters/default-name.filter';
 
-import { suite, test } from 'mocha';
 import { assert } from 'chai';
 
-const instance = defaultName[0]();
+const instance = defaultName();
 
 suite('defaultName', () => {
     test('defaultName filter', () => {

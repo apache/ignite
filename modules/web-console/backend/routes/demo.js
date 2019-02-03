@@ -95,10 +95,12 @@ module.exports.factory = (errors, settings, mongo, spacesService) => {
 
                                             domain.space = cacheDoc.space;
                                             domain.caches.push(cacheDoc._id);
+                                            domain.clusters.push(cluster._id);
 
                                             return domain.save()
                                                 .then((domainDoc) => {
                                                     cacheDoc.domains.push(domainDoc._id);
+                                                    cluster.models.push(domainDoc._id);
 
                                                     return cacheDoc.save();
                                                 });

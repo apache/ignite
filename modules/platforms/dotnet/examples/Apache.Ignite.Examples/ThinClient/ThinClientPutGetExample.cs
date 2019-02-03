@@ -45,10 +45,7 @@ namespace Apache.Ignite.Examples.ThinClient
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteClientConfiguration
-            {
-                Host = "127.0.0.1"
-            };
+            var cfg = new IgniteClientConfiguration("127.0.0.1");
 
             using (IIgniteClient igniteClient = Ignition.StartClient(cfg))
             {

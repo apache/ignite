@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Test;
 
 /**
  * Configuration validation tests.
@@ -47,6 +48,7 @@ public class HadoopValidationSelfTest extends HadoopAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValid() throws Exception {
         startGrids(1);
     }

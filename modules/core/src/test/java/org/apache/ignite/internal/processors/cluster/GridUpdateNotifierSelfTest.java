@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
@@ -54,8 +55,6 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
         Properties props = U.field(IgniteProperties.class, "PROPS");
@@ -66,6 +65,7 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotifier() throws Exception {
         String nodeVer = IgniteProperties.get("ignite.version");
 

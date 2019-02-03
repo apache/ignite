@@ -17,13 +17,16 @@
 
 package org.apache.ignite.p2p;
 
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -34,9 +37,6 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
  * Tests for continuous deployment with cache and changing topology.
  */
 public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of grids cache. */
     private static final int GRID_CNT = 2;
 
@@ -49,6 +49,12 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
     /** Second test task name. */
     private static final String TEST_TASK_2 = "org.apache.ignite.tests.p2p.GridP2PContinuousDeploymentTask2";
 
+    /** Test predicate. */
+    private static final String TEST_PREDICATE = "org.apache.ignite.tests.p2p.GridEventConsumeFilter";
+
+    /** Client mode. */
+    private boolean clientMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -60,11 +66,10 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
         else
             cfg.setCacheConfiguration(cacheConfiguration());
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        cfg.setPeerClassLoadingEnabled(true);
 
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
+        if (clientMode)
+            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -85,12 +90,12 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(GRID_CNT);
+    @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
@@ -98,7 +103,10 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment() throws Exception {
+        startGridsMultiThreaded(GRID_CNT);
+
         Ignite ignite = startGrid(IGNITE_INSTANCE_NAME);
 
         Class cls = getExternalClassLoader().loadClass(TEST_TASK_1);
@@ -114,5 +122,49 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
         compute(ignite.cluster().forRemotes()).execute(cls, null);
 
         stopGrid(IGNITE_INSTANCE_NAME);
+    }
+
+    /**
+     * Tests that server node joins correctly to existing cluster if it has deployed user class with enabled P2P.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testServerJoinWithP2PClassDeployedInCluster() throws Exception {
+        startGrids(GRID_CNT);
+
+        ClassLoader extLdr = getExternalClassLoader();
+
+        clientMode = true;
+
+        Ignite client = startGrid(2);
+
+        Class<?> cls = extLdr.loadClass(TEST_PREDICATE);
+
+        client.events().remoteListen(
+            new IgniteBiPredicate<UUID, Event>() {
+                @Override public boolean apply(UUID uuid, Event event) {
+                    return true;
+                }
+            },
+            (IgnitePredicate<Event>) cls.newInstance(),
+            EventType.EVT_CACHE_OBJECT_PUT
+        );
+
+        clientMode = false;
+
+        Ignite srv = startGrid(3);
+
+        srv.events().remoteListen(
+            new IgniteBiPredicate<UUID, Event>() {
+                @Override public boolean apply(UUID uuid, Event event) {
+                    return true;
+                }
+            },
+            (IgnitePredicate<Event>) cls.newInstance(),
+            EventType.EVT_CACHE_OBJECT_PUT
+        );
+
+        awaitPartitionMapExchange();
     }
 }

@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Events
                 if (hnd != null)
                 {
                     // Dispose handle as soon as future ends.
-                    task.ContinueWith(x => Ignite.HandleRegistry.Release(hnd.Value));
+                    task.ContWith(x => Ignite.HandleRegistry.Release(hnd.Value));
                 }
 
                 return task;

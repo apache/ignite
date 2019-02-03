@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.BitSetIntSet;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -41,32 +42,23 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final List<List<ClusterNode>> idealAssignment;
 
-    /** */
-    private final boolean clientEvtChange;
-
     /**
      * @param assign Assignment.
      */
-    public HistoryAffinityAssignment(GridAffinityAssignment assign) {
-        this.topVer = assign.topologyVersion();
-        this.assignment = assign.assignment();
-        this.idealAssignment = assign.idealAssignment();
-        this.clientEvtChange = assign.clientEventChange();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean clientEventChange() {
-        return clientEvtChange;
+    HistoryAffinityAssignment(AffinityAssignment assign) {
+        topVer = assign.topologyVersion();
+        assignment = assign.assignment();
+        idealAssignment = assign.idealAssignment();
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> idealAssignment() {
-        return idealAssignment;
+        return Collections.unmodifiableList(idealAssignment);
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignment() {
-        return assignment;
+        return Collections.unmodifiableList(assignment);
     }
 
     /** {@inheritDoc} */
@@ -83,19 +75,20 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     }
 
     /** {@inheritDoc} */
-    @Override public HashSet<UUID> getIds(int part) {
+    @Override public Collection<UUID> getIds(int part) {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        List<ClusterNode> nodes = assignment.get(part);
+        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
+            return assignments2ids(assignment.get(part));
+        else {
+            List<ClusterNode> nodes = assignment.get(part);
 
-        HashSet<UUID> ids = U.newHashSet(nodes.size());
-
-        for (int i = 0; i < nodes.size(); i++)
-            ids.add(nodes.get(i).id());
-
-        return ids;
-    }
+            return nodes.size() > AffinityAssignment.IGNITE_AFFINITY_BACKUPS_THRESHOLD
+                    ? assignments2ids(nodes)
+                    : F.viewReadOnly(nodes, F.node2id());
+        }
+     }
 
     /** {@inheritDoc} */
     @Override public Set<ClusterNode> nodes() {
@@ -108,7 +101,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
                 res.addAll(nodes);
         }
 
-        return res;
+        return Collections.unmodifiableSet(res);
     }
 
     /** {@inheritDoc} */
@@ -122,12 +115,12 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
                 res.add(nodes.get(0));
         }
 
-        return res;
+        return Collections.unmodifiableSet(res);
     }
 
     /** {@inheritDoc} */
     @Override public Set<Integer> primaryPartitions(UUID nodeId) {
-        Set<Integer> res = new HashSet<>();
+        Set<Integer> res = IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION ? new HashSet<>() : new BitSetIntSet();
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> nodes = assignment.get(p);
@@ -136,12 +129,12 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
                 res.add(p);
         }
 
-        return res;
+        return Collections.unmodifiableSet(res);
     }
 
     /** {@inheritDoc} */
     @Override public Set<Integer> backupPartitions(UUID nodeId) {
-        Set<Integer> res = new HashSet<>();
+        Set<Integer> res = IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION ? new HashSet<>() : new BitSetIntSet();
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> nodes = assignment.get(p);
@@ -157,7 +150,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
             }
         }
 
-        return res;
+        return Collections.unmodifiableSet(res);
     }
 
     /** {@inheritDoc} */

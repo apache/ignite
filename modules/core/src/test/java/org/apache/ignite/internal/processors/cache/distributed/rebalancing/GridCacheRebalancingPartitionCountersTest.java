@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -32,11 +33,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -61,6 +63,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
                                 .setMaxSize(100L * 1024 * 1024))
                         .setWalMode(WALMode.LOG_ONLY))
                 .setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
+                    .setAtomicityMode(atomicityMode())
                     .setBackups(2)
                     .setRebalanceBatchSize(4096) // Force to create several supply messages during rebalancing.
                     .setAffinity(
@@ -70,13 +73,20 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    }
+
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 
     /**
@@ -93,6 +103,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     /**
      * Tests that after rebalancing all partition update counters have the same value on all nodes.
      */
+    @Test
     public void test() throws Exception {
         IgniteEx ignite = (IgniteEx)startGrids(3);
 
@@ -141,7 +152,8 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
         assertTrue(primaryRemoved);
 
         ignite.cluster().active(true);
-        waitForRebalancing();
+
+        awaitPartitionMapExchange();
 
         List<String> issues = new ArrayList<>();
         HashMap<Integer, Long> partMap = new HashMap<>();

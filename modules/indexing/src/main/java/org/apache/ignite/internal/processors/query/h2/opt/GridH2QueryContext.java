@@ -17,21 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
+import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
@@ -42,58 +40,25 @@ public class GridH2QueryContext {
     private static final ThreadLocal<GridH2QueryContext> qctx = new ThreadLocal<>();
 
     /** */
-    private static final ConcurrentMap<Key, GridH2QueryContext> qctxs = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<QueryContextKey, GridH2QueryContext> qctxs = new ConcurrentHashMap<>();
 
     /** */
-    private final Key key;
-
-    /** */
-    private volatile boolean cleared;
+    private final QueryContextKey key;
 
     /** */
     private List<GridReservable> reservations;
 
-    /** Range streams for indexes. */
-    private Map<Integer, Object> streams;
+    /** */
+    private final IndexingQueryFilter filter;
 
-    /** Range sources for indexes. */
-    private Map<SourceKey, Object> sources;
+    /** Distributed join context. */
+    private DistributedJoinContext distributedJoinCtx;
 
     /** */
-    private int batchLookupIdGen;
+    private MvccSnapshot mvccSnapshot;
 
     /** */
-    private IndexingQueryFilter filter;
-
-    /** */
-    private AffinityTopologyVersion topVer;
-
-    /** */
-    private Map<UUID, int[]> partsMap;
-
-    /** */
-    private UUID[] partsNodes;
-
-    /** */
-    private DistributedJoinMode distributedJoinMode;
-
-    /** */
-    private int pageSize;
-
-    /** */
-    private GridH2CollocationModel qryCollocationMdl;
-
-    /**
-     * @param locNodeId Local node ID.
-     * @param nodeId The node who initiated the query.
-     * @param qryId The query ID.
-     * @param type Query type.
-     */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
-        assert type != MAP;
-
-        key = new Key(locNodeId, nodeId, qryId, 0, type);
-    }
+    private MapQueryLazyWorker lazyWorker;
 
     /**
      * @param locNodeId Local node ID.
@@ -102,68 +67,60 @@ public class GridH2QueryContext {
      * @param segmentId Index segment ID.
      * @param type Query type.
      */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
+    public GridH2QueryContext(
+        UUID locNodeId,
+        UUID nodeId,
+        long qryId,
+        int segmentId,
+        GridH2QueryType type,
+        IndexingQueryFilter filter
+    ) {
         assert segmentId == 0 || type == MAP;
 
-        key = new Key(locNodeId, nodeId, qryId, segmentId, type);
+        key = new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type);
+
+        this.filter = filter;
     }
 
     /**
-     * @return Type.
+     * @return Mvcc snapshot.
      */
-    public GridH2QueryType type() {
-        return key.type;
+    @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /**
-     * @return Origin node ID.
-     */
-    public UUID originNodeId() {
-        return key.nodeId;
-    }
-
-    /**
-     * @return Query request ID.
-     */
-    public long queryId() {
-        return key.qryId;
-    }
-
-    /**
-     * @return Query collocation model.
-     */
-    public GridH2CollocationModel queryCollocationModel() {
-        return qryCollocationMdl;
-    }
-
-    /**
-     * @param qryCollocationMdl Query collocation model.
-     */
-    public void queryCollocationModel(GridH2CollocationModel qryCollocationMdl) {
-        this.qryCollocationMdl = qryCollocationMdl;
-    }
-
-    /**
-     * @param distributedJoinMode Distributed join mode.
+     * @param mvccSnapshot Mvcc snapshot.
      * @return {@code this}.
      */
-    public GridH2QueryContext distributedJoinMode(DistributedJoinMode distributedJoinMode) {
-        this.distributedJoinMode = distributedJoinMode;
+    public GridH2QueryContext mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        this.mvccSnapshot = mvccSnapshot;
 
         return this;
     }
 
     /**
-     * @return Distributed join mode.
+     * @param distributedJoinCtx Distributed join context.
+     * @return This instance for chaining.
      */
-    public DistributedJoinMode distributedJoinMode() {
-        return distributedJoinMode;
+    public GridH2QueryContext distributedJoinContext(@Nullable DistributedJoinContext distributedJoinCtx) {
+        this.distributedJoinCtx = distributedJoinCtx;
+
+        return this;
+    }
+
+    /**
+     * @return Distributed join context.
+     */
+    @Nullable public DistributedJoinContext distributedJoinContext() {
+        return distributedJoinCtx;
     }
 
     /**
      * @param reservations Reserved partitions or group reservations.
      * @return {@code this}.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public GridH2QueryContext reservations(List<GridReservable> reservations) {
         this.reservations = reservations;
 
@@ -171,145 +128,10 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param topVer Topology version.
-     * @return {@code this}.
+     * @return index segment ID.
      */
-    public GridH2QueryContext topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-
-        return this;
-    }
-
-    /**
-     * @return Topology version.
-     */
-    public AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
-
-    /**
-     * @param partsMap Partitions map.
-     * @return {@code this}.
-     */
-    public GridH2QueryContext partitionsMap(Map<UUID,int[]> partsMap) {
-        this.partsMap = partsMap;
-
-        return this;
-    }
-
-    /**
-     * @return Partitions map.
-     */
-    public Map<UUID,int[]> partitionsMap() {
-        return partsMap;
-    }
-
-    /**
-     * @param p Partition.
-     * @param cctx Cache context.
-     * @return Owning node ID.
-     */
-    public UUID nodeForPartition(int p, GridCacheContext<?, ?> cctx) {
-        UUID[] nodeIds = partsNodes;
-
-        if (nodeIds == null) {
-            assert partsMap != null;
-
-            nodeIds = new UUID[cctx.affinity().partitions()];
-
-            for (Map.Entry<UUID, int[]> e : partsMap.entrySet()) {
-                UUID nodeId = e.getKey();
-                int[] nodeParts = e.getValue();
-
-                assert nodeId != null;
-                assert !F.isEmpty(nodeParts);
-
-                for (int part : nodeParts) {
-                    assert nodeIds[part] == null;
-
-                    nodeIds[part] = nodeId;
-                }
-            }
-
-            partsNodes = nodeIds;
-        }
-
-        return nodeIds[p];
-    }
-
-    /** @return index segment ID. */
     public int segment() {
-        return key.segmentId;
-    }
-
-    /**
-     * @param batchLookupId Batch lookup ID.
-     * @param streams Range streams.
-     */
-    public synchronized void putStreams(int batchLookupId, Object streams) {
-        if (this.streams == null) {
-            if (streams == null)
-                return;
-
-            this.streams = new HashMap<>();
-        }
-
-        if (streams == null)
-            this.streams.remove(batchLookupId);
-        else
-            this.streams.put(batchLookupId, streams);
-    }
-
-    /**
-     * @param batchLookupId Batch lookup ID.
-     * @return Range streams.
-     */
-    @SuppressWarnings("unchecked")
-    public synchronized <T> T getStreams(int batchLookupId) {
-        if (streams == null)
-            return null;
-
-        return (T)streams.get(batchLookupId);
-    }
-
-    /**
-     * @param ownerId Owner node ID.
-     * @param segmentId Index segment ID.
-     * @param batchLookupId Batch lookup ID.
-     * @param src Range source.
-     */
-    public synchronized void putSource(UUID ownerId, int segmentId, int batchLookupId, Object src) {
-        SourceKey srcKey = new SourceKey(ownerId, segmentId, batchLookupId);
-
-        if (src != null) {
-            if (sources == null)
-                sources = new HashMap<>();
-
-            sources.put(srcKey, src);
-        }
-        else if (sources != null)
-            sources.remove(srcKey);
-    }
-
-    /**
-     * @param ownerId Owner node ID.
-     * @param segmentId Index segment ID.
-     * @param batchLookupId Batch lookup ID.
-     * @return Range source.
-     */
-    @SuppressWarnings("unchecked")
-    public synchronized <T> T getSource(UUID ownerId, int segmentId, int batchLookupId) {
-        if (sources == null)
-            return null;
-
-        return (T)sources.get(new SourceKey(ownerId, segmentId, batchLookupId));
-    }
-
-    /**
-     * @return Next batch ID.
-     */
-    public int nextBatchLookupId() {
-        return ++batchLookupIdGen;
+        return key.segmentId();
     }
 
     /**
@@ -322,7 +144,7 @@ public class GridH2QueryContext {
          assert qctx.get() == null;
 
          // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
+         if (x.key.type() == MAP && x.distributedJoinContext() != null && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 
          qctx.set(x);
@@ -349,9 +171,13 @@ public class GridH2QueryContext {
     public static boolean clear(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         boolean res = false;
 
-        for (Key key : qctxs.keySet()) {
-            if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
-                res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentId, type), false);
+        for (QueryContextKey key : qctxs.keySet()) {
+            if (key.localNodeId().equals(locNodeId) &&
+                key.nodeId().equals(nodeId) &&
+                key.queryId() == qryId &&
+                key.type() == type
+            )
+                res |= doClear(key, false);
         }
 
         return res;
@@ -362,8 +188,8 @@ public class GridH2QueryContext {
      * @param nodeStop Node is stopping.
      * @return {@code True} if context was found.
      */
-    private static boolean doClear(Key key, boolean nodeStop) {
-        assert key.type == MAP : key.type;
+    private static boolean doClear(QueryContextKey key, boolean nodeStop) {
+        assert key.type() == MAP : key.type();
 
         GridH2QueryContext x = qctxs.remove(key);
 
@@ -372,7 +198,10 @@ public class GridH2QueryContext {
 
         assert x.key.equals(key);
 
-        x.clearContext(nodeStop);
+        if (x.lazyWorker() != null)
+            x.lazyWorker().stop(nodeStop);
+        else
+            x.clearContext(nodeStop);
 
         return true;
     }
@@ -382,7 +211,8 @@ public class GridH2QueryContext {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public void clearContext(boolean nodeStop) {
-        cleared = true;
+        if (distributedJoinCtx != null)
+            distributedJoinCtx.cancel();
 
         List<GridReservable> r = reservations;
 
@@ -393,19 +223,12 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @return {@code true} If the context is cleared.
-     */
-    public boolean isCleared() {
-        return cleared;
-    }
-
-    /**
      * @param locNodeId Local node ID.
      * @param nodeId Dead node ID.
      */
     public static void clearAfterDeadNode(UUID locNodeId, UUID nodeId) {
-        for (Key key : qctxs.keySet()) {
-            if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId))
+        for (QueryContextKey key : qctxs.keySet()) {
+            if (key.localNodeId().equals(locNodeId) && key.nodeId().equals(nodeId))
                 doClear(key, false);
         }
     }
@@ -414,8 +237,8 @@ public class GridH2QueryContext {
      * @param locNodeId Local node ID.
      */
     public static void clearLocalNodeStop(UUID locNodeId) {
-        for (Key key : qctxs.keySet()) {
-            if (key.locNodeId.equals(locNodeId))
+        for (QueryContextKey key : qctxs.keySet()) {
+            if (key.localNodeId().equals(locNodeId))
                 doClear(key, true);
         }
     }
@@ -446,7 +269,7 @@ public class GridH2QueryContext {
         int segmentId,
         GridH2QueryType type
     ) {
-        return qctxs.get(new Key(locNodeId, nodeId, qryId, segmentId, type));
+        return qctxs.get(new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type));
     }
 
     /**
@@ -457,28 +280,18 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param filter Filter.
-     * @return {@code this}.
+     * @return Lazy worker, if any, or {@code null} if none.
      */
-    public GridH2QueryContext filter(IndexingQueryFilter filter) {
-        this.filter = filter;
-
-        return this;
+    public MapQueryLazyWorker lazyWorker() {
+        return lazyWorker;
     }
 
     /**
-     * @return Page size.
-     */
-    public int pageSize() {
-        return pageSize;
-    }
-
-    /**
-     * @param pageSize Page size.
+     * @param lazyWorker Lazy worker, if any, or {@code null} if none.
      * @return {@code this}.
      */
-    public GridH2QueryContext pageSize(int pageSize) {
-        this.pageSize = pageSize;
+    public GridH2QueryContext lazyWorker(MapQueryLazyWorker lazyWorker) {
+        this.lazyWorker = lazyWorker;
 
         return this;
     }
@@ -486,118 +299,5 @@ public class GridH2QueryContext {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridH2QueryContext.class, this);
-    }
-
-    /**
-     * Unique key for the query context.
-     */
-    private static class Key {
-        /** */
-        private final UUID locNodeId;
-
-        /** */
-        private final UUID nodeId;
-
-        /** */
-        private final long qryId;
-
-        /** */
-        private final int segmentId;
-
-        /** */
-        private final GridH2QueryType type;
-
-        /**
-         * @param locNodeId Local node ID.
-         * @param nodeId The node who initiated the query.
-         * @param qryId The query ID.
-         * @param segmentId Index segment ID.
-         * @param type Query type.
-         */
-        private Key(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
-            assert locNodeId != null;
-            assert nodeId != null;
-            assert type != null;
-
-            this.locNodeId = locNodeId;
-            this.nodeId = nodeId;
-            this.qryId = qryId;
-            this.segmentId = segmentId;
-            this.type = type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            Key key = (Key)o;
-
-            return qryId == key.qryId && nodeId.equals(key.nodeId) && type == key.type &&
-               locNodeId.equals(key.locNodeId) ;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = locNodeId.hashCode();
-
-            res = 31 * res + nodeId.hashCode();
-            res = 31 * res + (int)(qryId ^ (qryId >>> 32));
-            res = 31 * res + type.hashCode();
-            res = 31 * res + segmentId;
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(Key.class, this);
-        }
-    }
-
-    /**
-     * Key for source.
-     */
-    private static final class SourceKey {
-        /** */
-        UUID ownerId;
-
-        /** */
-        int segmentId;
-
-        /** */
-        int batchLookupId;
-
-        /**
-         * @param ownerId Owner node ID.
-         * @param segmentId Index segment ID.
-         * @param batchLookupId Batch lookup ID.
-         */
-        SourceKey(UUID ownerId, int segmentId, int batchLookupId) {
-            this.ownerId = ownerId;
-            this.segmentId = segmentId;
-            this.batchLookupId = batchLookupId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (o == null || !(o instanceof SourceKey))
-                return false;
-
-            SourceKey srcKey = (SourceKey)o;
-
-            return batchLookupId == srcKey.batchLookupId && segmentId == srcKey.segmentId &&
-                ownerId.equals(srcKey.ownerId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int hash = ownerId.hashCode();
-            hash = 31 * hash + segmentId;
-            return 31 * hash + batchLookupId;
-        }
     }
 }

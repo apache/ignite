@@ -27,7 +27,9 @@ export default angular
             instance.$referenceElement = el;
             instance.destroy = flow(instance.destroy, () => instance.$referenceElement = null);
             instance.$applyPlacement = flow(instance.$applyPlacement, () => {
-                if (!instance.$element) return;
+                if (!instance.$element)
+                    return;
+
                 const refWidth = instance.$referenceElement[0].getBoundingClientRect().width;
                 const elWidth = instance.$element[0].getBoundingClientRect().width;
                 if (refWidth > elWidth) {

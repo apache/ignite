@@ -24,19 +24,14 @@ import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  *
  */
 public class JdbcThinSchemaCaseTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
@@ -51,12 +46,6 @@ public class JdbcThinSchemaCaseTest extends JdbcThinAbstractSelfTest {
             cacheConfiguration("test0", "test0"),
             cacheConfiguration("test1", "tEst1"),
             cacheConfiguration("test2", "\"TestCase\""));
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -87,15 +76,11 @@ public class JdbcThinSchemaCaseTest extends JdbcThinAbstractSelfTest {
         startGridsMultiThreaded(GRID_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"EmptyTryBlock", "unused"})
+    @SuppressWarnings({"unused"})
+    @Test
     public void testSchemaName() throws Exception {
         checkSchemaConnection("test0");
         checkSchemaConnection("test1");

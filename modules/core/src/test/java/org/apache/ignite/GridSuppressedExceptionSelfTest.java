@@ -18,16 +18,24 @@
 package org.apache.ignite;
 
 import java.io.IOException;
-import junit.framework.TestCase;
+import java.util.List;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
-public class GridSuppressedExceptionSelfTest extends TestCase {
+public class GridSuppressedExceptionSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHasCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -39,6 +47,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -54,6 +63,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXHasCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -70,6 +80,28 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testXGetSuppressedList() throws Exception {
+        IgniteCheckedException me = prepareMultiException();
+
+        assertEquals(3, X.getSuppressedList(me).size());
+
+        RuntimeException e = new RuntimeException();
+        e.addSuppressed(me);
+
+        List<Throwable> suppresseds = X.getSuppressedList(e);
+
+        assertEquals(4, suppresseds.size());
+
+        assertEquals("Test message.", suppresseds.get(0).getMessage());
+        for (int i = 1; i <= 3; i++)
+            assertEquals("Demo exception.", suppresseds.get(1).getMessage());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testXCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 

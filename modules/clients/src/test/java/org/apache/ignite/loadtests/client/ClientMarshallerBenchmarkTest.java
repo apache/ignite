@@ -22,12 +22,16 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
 
@@ -41,15 +45,21 @@ public class ClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
     /**
      */
     public ClientMarshallerBenchmarkTest() {
-        marshallers = new GridClientMarshaller[] {
-            new GridClientJdkMarshaller(),
-            new GridClientOptimizedMarshaller()
-        };
+        try {
+            marshallers = new GridClientMarshaller[] {
+                new GridClientJdkMarshaller(MarshallerUtils.classNameFilter(this.getClass().getClassLoader())),
+                new GridClientOptimizedMarshaller()
+            };
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheRequestTime() throws Exception {
         GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 

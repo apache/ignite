@@ -92,6 +92,12 @@ namespace ignite
         IGNITE_IMPORT_EXPORT bool IsValidDirectory(const std::string& path);
 
         /**
+         * Deletes provided filesystem element if exists.
+         * @return @c true if the provided path exists.
+         */
+        IGNITE_IMPORT_EXPORT bool DeletePath(const std::string& path);
+
+        /**
          * Write file separator to a stream.
          * @param ostr Stream.
          * @return The same stream for chaining.
@@ -104,6 +110,13 @@ namespace ignite
          * @return The same stream for chaining.
          */
         IGNITE_IMPORT_EXPORT StdCharOutStream& Dle(StdCharOutStream& ostr);
+
+        /**
+         * Get random seed.
+         *
+         * @return Random seed.
+         */
+        unsigned GetRandSeed();
     }
 }
 

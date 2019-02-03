@@ -64,7 +64,19 @@ module.exports.factory = (settings, agentsHnd, errors) => {
                             prop.push(`server-uri=${host}`);
                             prop.push('#Uncomment following options if needed:');
                             prop.push('#node-uri=http://localhost:8080');
+                            prop.push('#node-login=ignite');
+                            prop.push('#node-password=ignite');
                             prop.push('#driver-folder=./jdbc-drivers');
+                            prop.push('#Uncomment and configure following SSL options if needed:');
+                            prop.push('#node-key-store=client.jks');
+                            prop.push('#node-key-store-password=MY_PASSWORD');
+                            prop.push('#node-trust-store=ca.jks');
+                            prop.push('#node-trust-store-password=MY_PASSWORD');
+                            prop.push('#server-key-store=client.jks');
+                            prop.push('#server-key-store-password=MY_PASSWORD');
+                            prop.push('#server-trust-store=ca.jks');
+                            prop.push('#server-trust-store-password=MY_PASSWORD');
+                            prop.push('#cipher-suites=CIPHER1,CIPHER2,CIPHER3');
 
                             zip.file(`${folder}/default.properties`, prop.join('\n'));
 

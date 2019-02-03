@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.sql.Time;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -59,6 +61,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimitiveMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
@@ -100,6 +103,29 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testTimeMarshalling() throws Exception {
+        BinaryMarshaller marsh = createMarshaller();
+
+        TimeValue obj = new TimeValue(11111L);
+
+        BinaryObjectImpl binObj = toBinary(obj, marsh);
+
+        BinaryFieldEx field = (BinaryFieldEx)binObj.type().field("time");
+
+        ByteBuffer buf = ByteBuffer.allocate(16);
+
+        field.writeField(binObj, buf);
+
+        buf.flip();
+
+        assertEquals(field.value(binObj), field.<Time>readField(buf));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDecimalFieldMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
@@ -157,7 +183,6 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject {
         /** */
         private byte bVal;
@@ -194,10 +219,22 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    private static class TimeValue {
+        /** */
+        private Time time;
+
+        /**
+         * @param time Time.
+         */
+        TimeValue(long time) {
+            this.time = new Time(time);
+        }
+    }
+
     /**
      *
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class DecimalValue {
         /** */
         private BigDecimal decVal;

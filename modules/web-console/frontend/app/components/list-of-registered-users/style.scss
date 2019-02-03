@@ -18,17 +18,18 @@
 ignite-list-of-registered-users {
     display: block;
 
-    .ui-grid-settings--heading {
+    .user-cell {
         display: flex;
+        overflow-wrap: normal;
+        white-space: normal;
+
+        label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     }
 
-    & > a {
-        display: inline-block;
-        margin: 10px;
-        margin-left: 0;
-
-        &.active {
-            font-weight: bold;
-        }
+    .form-field--inline:first-child {
+        margin-right: 20px;
     }
 }

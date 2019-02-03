@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,10 +31,9 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -47,16 +45,11 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
     private static final String MYCACHE = "mycache";
 
     /** */
-    public static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     public static final int NODES_CNT = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCacheConfiguration(cacheConfiguration(), new CacheConfiguration(DEFAULT_CACHE_NAME));
 
@@ -84,11 +77,6 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 400_000;
     }
@@ -96,6 +84,7 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalance() throws Exception {
         // Fill cache with large dataset to make rebalancing slow.
         try (IgniteDataStreamer<Object, Object> streamer = grid(0).dataStreamer(MYCACHE)) {
@@ -109,11 +98,9 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
         int newNodeCacheSize;
 
         // Start manual rebalancing.
-        IgniteCompute compute = newNode.compute().withAsync();
+        IgniteCompute compute = newNode.compute();
 
-        compute.broadcast(new MyCallable());
-
-        final ComputeTaskFuture<Object> rebalanceTaskFuture = compute.future();
+        final IgniteFuture<?> rebalanceTaskFuture =  compute.broadcastAsync(new MyCallable());
 
         boolean rebalanceFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -151,7 +138,7 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
                 assertNotNull(cache);
 
                 boolean finished;
-                
+
                 log.info("Start rebalancing cache: " + cacheName + ", size: " + cache.localSize());
 
                 do {

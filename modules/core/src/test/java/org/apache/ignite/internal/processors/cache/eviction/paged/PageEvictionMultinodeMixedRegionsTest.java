@@ -20,12 +20,11 @@ package org.apache.ignite.internal.processors.cache.eviction.paged;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Enables but not touches persistent region, checks page eviction and PDS+no PDS mode.
  */
-public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinodeTest {
+public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -34,7 +33,8 @@ public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinode
 
         DataRegionConfiguration persReg = new DataRegionConfiguration()
             .setName("persisted")
-            .setPersistenceEnabled(true);
+            .setPersistenceEnabled(true)
+            .setMaxSize(128L * 1024 * 1024); // limit memory to save space on agents
 
         cfg.getDataStorageConfiguration().setDataRegionConfigurations(persReg);
 
@@ -43,17 +43,17 @@ public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinode
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         super.beforeTestsStarted();
 
-        clientGrid.active(true);
+        clientGrid().cluster().active(true);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
+        stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }

@@ -18,41 +18,49 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
 
 /** */
 public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+    /** */
+    @Before
+    public void check() {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 
     /** */
-    @SuppressWarnings("unused")
+    @Test
     public void testExceptionPropagation() throws Exception {
-        try (Ignite srv = startGrid("server")) {
-
-            GridStringLogger log = new GridStringLogger();
-
-            try (Ignite client = startGrid("client", getConfiguration("client").setGridLogger(log).setClientMode(true))) {
+        try (IgniteEx srv = startGrid("server")) {
+            try (Ignite client = startGrid("client", getConfiguration("client").setClientMode(true))) {
+                final String srvcName = "my-service";
 
                 try {
-                    client.services().deployClusterSingleton("my-service", new ServiceImpl());
-                }
-                catch (IgniteException ignored) {
-                    assertTrue(log.toString().contains("ServiceImpl init exception"));
+                    client.services().deployClusterSingleton(srvcName, new ServiceImpl());
 
-                    return; // Exception is what we expect.
+                    fail("Deployment exception has been expected.");
                 }
+                catch (ServiceDeploymentException ex) {
+                    String errMsg = ex.getSuppressed()[0].getMessage();
 
-                // Fail explicitly if we've managed to get here though we shouldn't have.
-                fail("https://issues.apache.org/jira/browse/IGNITE-3392");
+                    // Check that message contains cause node id
+                    assertTrue(errMsg.contains(srv.cluster().localNode().id().toString()));
+
+                    // Check that message contains service name
+                    assertTrue(errMsg.contains(srvcName));
+
+                    Throwable cause = ex.getSuppressed()[0].getCause();
+
+                    // Check that error's cause contains users message
+                    assertTrue(cause.getMessage().contains("ServiceImpl init exception"));
+                }
             }
         }
     }

@@ -24,6 +24,7 @@ import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 /**
  * Test file protocol scanner.
@@ -43,6 +44,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploymentFromFolder() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
         checkTask("GridUriDeploymentTestWithNameTask0");
@@ -53,13 +55,14 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploymentFromFile() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
         checkTask("GridUriDeploymentTestWithNameTask3");
     }
 
     /**
-     * Tests task from file 'deployfile_nodescr.gar'.
+     * Tests task from file 'deployfile-nodescr.gar'.
      *
      * Looks for task {@code GridUriDeploymentTestTask4} without descriptor file from GAR-file.
      * That task loads resource {@code spring.xml}.
@@ -70,13 +73,14 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDescriptorDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask4");
         checkTask("GridUriDeploymentTestWithNameTask4");
     }
 
     /**
-     * Tests task from file 'deployfile_bad.gar'.
+     * Tests task from file 'deployfile-bad.gar'.
      *
      * Looks for tasks {@code GridUriDeploymentAbstractTestTask}
      * {@code GridInnerTestTask}
@@ -85,15 +89,20 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBadDeployment() throws Exception {
         checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentAbstractTestTask");
+
         checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridInnerTestTask");
+        checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentInnerTestTask$GridInnerTestTask");
+        checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentInnerTestTask.GridInnerTestTask");
+
         checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentInterfaceTestTask");
         checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentNonePublicTestTask");
     }
 
     /**
-     * Tests task from file 'deploy_depend.gar'.
+     * Tests task from file 'deployfile-depend.gar'.
      *
      * Looks for task {@code GridUriDeploymentTestTask1} with descriptor file from GAR-file.
      * That task loads resource {@code spring1.xml} and imports external class from /lib/*.jar
@@ -105,12 +114,15 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDependenceDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask1");
+        getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask1")
+            .getResourceClass().newInstance();
     }
 
     /**
-     * Tests task from file 'deploy_nodescr_depend.gar'.
+     * Tests task from file 'deploydir-nodescr-depend.gar'.
      *
      * Looks for task {@code GridUriDeploymentTestTask2} without descriptor file from GAR-file.
      * That task loads resource {@code spring2.xml} and imports external class from /lib/*.jar
@@ -122,8 +134,11 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDescriptorDependenceDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask2");
+        getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask2")
+            .getResourceClass().newInstance();
     }
 
     /**
@@ -140,6 +155,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSignedDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask5");
         checkTask("GridUriDeploymentTestWithNameTask5");

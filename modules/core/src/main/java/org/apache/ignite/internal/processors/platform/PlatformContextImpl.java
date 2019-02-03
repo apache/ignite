@@ -326,14 +326,13 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public void processMetadata(BinaryRawReaderEx reader) {
         Collection<BinaryMetadata> metas = PlatformUtils.readBinaryMetadataCollection(reader);
 
         BinaryContext binCtx = cacheObjProc.binaryContext();
 
         for (BinaryMetadata meta : metas)
-            binCtx.updateMetadata(meta.typeId(), meta);
+            binCtx.updateMetadata(meta.typeId(), meta, false);
     }
 
     /** {@inheritDoc} */

@@ -113,12 +113,6 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public int getRowSize(MetastorageDataRow row) throws IgniteCheckedException {
-        return 4 + row.value().length;
-    }
-
-
-    /** {@inheritDoc} */
     @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("SimpleDataPageIO [\n");
         printPageLayout(addr, pageSize, sb);

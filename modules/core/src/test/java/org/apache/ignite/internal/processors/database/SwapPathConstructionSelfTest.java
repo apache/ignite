@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test verifies correct construction of swap file path {@link DataRegionConfiguration#setSwapPath(String)}
@@ -68,16 +69,17 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     private void cleanUpSwapDir() {
         Path relDir = Paths.get(U.getIgniteHome(), RELATIVE_SWAP_PATH);
 
-        deleteRecursively(relDir.toFile());
+        U.delete(relDir.toFile());
 
         Path absDir = Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH);
 
-        deleteRecursively(absDir.toFile());
+        U.delete(absDir.toFile());
     }
 
     /**
      * Verifies relative swap file path construction. Directory with swap files is cleaned up during after-test phase.
      */
+    @Test
     public void testRelativeSwapFilePath() throws Exception {
         memCfg = createMemoryConfiguration(true);
 
@@ -94,6 +96,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
      * Verifies absolute swap file path construction. System tmp directory is used to allocate swap files,
      * so no clean up is needed.
      */
+    @Test
     public void testAbsoluteSwapFilePath() throws Exception {
         memCfg = createMemoryConfiguration(false);
 
@@ -124,7 +127,9 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
 
         Object memProvider = U.field(pageMem, "directMemoryProvider");
 
-        return ((File) U.field(memProvider, "allocationPath")).getAbsolutePath();
+        Object memProvider0 = U.field(memProvider, "memProvider");
+
+        return ((File) U.field(memProvider0, "allocationPath")).getAbsolutePath();
     }
 
     /**
@@ -136,7 +141,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("default");
-        memPlcCfg.setMaxSize(20 * 1024 * 1024);
+        memPlcCfg.setMaxSize(20L * 1024 * 1024);
 
         if (isRelativePath)
             memPlcCfg.setSwapPath(RELATIVE_SWAP_PATH);

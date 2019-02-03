@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests SPI in multi-threaded environment.
@@ -65,6 +66,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSpi() throws Exception {
         final AtomicInteger writeFinished = new AtomicInteger();
 
@@ -196,8 +198,6 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         deleteFolder(new File(U.getIgniteHome(), PATH));
     }
 }

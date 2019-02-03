@@ -28,6 +28,7 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLocalFileSystemV1;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Test file systems for the working directory multi-threading support.
@@ -158,6 +159,7 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testLocal() throws Exception {
         testFileSystem(URI.create("file:///"));
     }

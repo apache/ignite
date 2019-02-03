@@ -18,15 +18,15 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,26 +38,25 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
  */
 public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean clientMode;
 
@@ -72,6 +71,9 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
 
     /** */
     private static final int BINARY_TYPE_ID = 708045005;
+
+    /** */
+    private static final long MAX_AWAIT = 9_000;
 
     /** */
     private static final AtomicInteger metadataReqsCounter = new AtomicInteger(0);
@@ -90,7 +92,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             });
         }
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -99,39 +101,11 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /**
-     *
-     */
-    private static final class ErrorHolder {
-        /** */
-        private volatile Error e;
-
-        /**
-         * @param e Exception.
-         */
-        void error(Error e) {
-            this.e = e;
-        }
-
-        /**
-         *
-         */
-        void fail() {
-            throw e;
-        }
-
-        /**
-         *
-         */
-        boolean isEmpty() {
-            return e == null;
-        }
     }
 
     /** {@inheritDoc} */
@@ -141,45 +115,29 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         stopAllGrids();
     }
 
-    /** */
-    private static final CountDownLatch LATCH1 = new CountDownLatch(1);
-
     /**
      * Verifies that if thread tries to read metadata with ongoing update it gets blocked
      * until acknowledge message arrives.
      */
+    @Test
     public void testReadRequestBlockedOnUpdatingMetadata() throws Exception {
-        applyDiscoveryHook = true;
-        discoveryHook = new DiscoveryHook() {
-            @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
-                DiscoveryCustomMessage customMsg = msg == null ? null
-                        : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
-
-                if (customMsg instanceof MetadataUpdateAcceptedMessage) {
-                    if (((MetadataUpdateAcceptedMessage)customMsg).typeId() == BINARY_TYPE_ID)
-                        try {
-                            Thread.sleep(300);
-                        }
-                        catch (InterruptedException ignored) {
-                            // No-op.
-                        }
-                }
-            }
-        };
-
-        final IgniteEx ignite0 = startGrid(0);
+        final CyclicBarrier barrier = new CyclicBarrier(2);
 
         applyDiscoveryHook = false;
 
-        final IgniteEx ignite1 = startGrid(1);
+        final Ignite ignite0 = startGrid(0);
+        final Ignite ignite1 = startGrid(1);
 
-        final ErrorHolder errorHolder = new ErrorHolder();
+        final GridFutureAdapter finishFut = new GridFutureAdapter();
 
         applyDiscoveryHook = true;
         discoveryHook = new DiscoveryHook() {
             private volatile IgniteEx ignite;
 
             @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+                if (finishFut.isDone())
+                    return;
+
                 DiscoveryCustomMessage customMsg = msg == null ? null
                         : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
 
@@ -190,10 +148,17 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
                         Object transport = U.field(binaryProc, "transport");
 
                         try {
+                            barrier.await(MAX_AWAIT, TimeUnit.MILLISECONDS);
+
                             Map syncMap = U.field(transport, "syncMap");
 
-                            int size = syncMap.size();
-                            assertEquals("unexpected size of syncMap: ", 1, size);
+                            GridTestUtils.waitForCondition(new PA() {
+                                @Override public boolean apply() {
+                                    return syncMap.size() == 1;
+                                }
+                            }, MAX_AWAIT);
+
+                            assertEquals("unexpected size of syncMap: ", 1, syncMap.size());
 
                             Object syncKey = syncMap.keySet().iterator().next();
 
@@ -202,9 +167,11 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
 
                             int ver = U.field(syncKey, "ver");
                             assertEquals("unexpected pendingVersion: ", 2, ver);
+
+                            finishFut.onDone();
                         }
-                        catch (AssertionFailedError err) {
-                            errorHolder.error(err);
+                        catch (Throwable t) {
+                            finishFut.onDone(t);
                         }
                     }
                 }
@@ -218,47 +185,41 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         final IgniteEx ignite2 = startGrid(2);
         discoveryHook.ignite(ignite2);
 
-        ignite0.executorService().submit(new Runnable() {
+        // Unfinished PME may affect max await timeout.
+        awaitPartitionMapExchange();
+
+        // Update metadata (version 1).
+        ignite0.executorService(ignite0.cluster().forLocal()).submit(new Runnable() {
             @Override public void run() {
                 addIntField(ignite0, "f1", 101, 1);
             }
         }).get();
 
-        UUID id2 = ignite2.localNode().id();
-
-        ClusterGroup cg2 = ignite2.cluster().forNodeId(id2);
-
-        Future<?> fut = ignite1.executorService().submit(new Runnable() {
+        // Update metadata (version 2).
+        ignite1.executorService(ignite1.cluster().forLocal()).submit(new Runnable() {
             @Override public void run() {
-                LATCH1.countDown();
                 addStringField(ignite1, "f2", "str", 2);
             }
         });
 
-        ignite2.compute(cg2).withAsync().call(new IgniteCallable<Object>() {
+        // Read metadata.
+        IgniteFuture readFut = ignite2.compute(ignite2.cluster().forLocal()).callAsync(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                try {
-                    LATCH1.await();
-                }
-                catch (InterruptedException ignored) {
-                    // No-op.
-                }
+                barrier.await(MAX_AWAIT, TimeUnit.MILLISECONDS);
 
-                Object fieldVal = ((BinaryObject) ignite2.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(1)).field("f1");
-
-                return fieldVal;
+                return ((BinaryObject) ignite2.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(1)).field("f1");
             }
         });
 
-        fut.get();
+        finishFut.get(MAX_AWAIT);
 
-        if (!errorHolder.isEmpty())
-            errorHolder.fail();
+        assertEquals(101, readFut.get(MAX_AWAIT));
     }
 
     /**
      * Verifies that all sequential updates that don't introduce any conflicts are accepted and observed by all nodes.
      */
+    @Test
     public void testSequentialUpdatesNoConflicts() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -292,6 +253,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     /**
      * Verifies that client is able to detect obsolete metadata situation and request up-to-date from the cluster.
      */
+    @Test
     public void testClientRequestsUpToDateMetadata() throws Exception {
         final IgniteEx ignite0 = startGrid(0);
 
@@ -327,6 +289,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     /**
      * Verifies that client resends request for up-to-date metadata in case of failure on server received first request.
      */
+    @Test
     public void testClientRequestsUpToDateMetadataOneNodeDies() throws Exception {
         final Ignite srv0 = startGrid(0);
         replaceWithStoppingMappingRequestListener(((GridKernalContext)U.field(srv0, "ctx")).io(), 0);

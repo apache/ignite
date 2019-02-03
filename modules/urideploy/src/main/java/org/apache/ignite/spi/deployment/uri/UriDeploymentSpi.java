@@ -41,6 +41,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -334,6 +336,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     private String deployTmpDirPath;
 
     /** List of URIs to be scanned. */
+    @GridToStringInclude
     private List<String> uriList = new ArrayList<>();
 
     /** List of encoded URIs. */
@@ -343,11 +346,11 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     private boolean checkMd5;
 
     /** */
-    @SuppressWarnings({"CollectionDeclaredAsConcreteClass"})
     private final LinkedList<GridUriDeploymentUnitDescriptor> unitLoaders = new LinkedList<>();
 
     /** */
     @SuppressWarnings({"TypeMayBeWeakened"})
+    @GridToStringExclude
     private final LastTimeUnitDescriptorComparator unitComp = new LastTimeUnitDescriptorComparator();
 
     /** List of scanner managers. Every URI has it's own manager. */
@@ -370,7 +373,6 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     private IgniteLogger log;
 
     /** NOTE: flag for test purposes only. */
-    @SuppressWarnings("UnusedDeclaration")
     private boolean delayOnNewOrUpdatedFile;
 
     /** Configured scanners. */

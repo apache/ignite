@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::IgniteBinding class.
+ */
+
 #ifndef _IGNITE_IGNITE_BINDING
 #define _IGNITE_IGNITE_BINDING
 

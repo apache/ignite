@@ -31,32 +31,19 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
 public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -67,6 +54,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionIncreaseAtomic() throws Exception {
         checkVersionIncrease(cacheConfigurations(ATOMIC));
     }
@@ -74,8 +62,17 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionIncreaseTx() throws Exception {
         checkVersionIncrease(cacheConfigurations(TRANSACTIONAL));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testVersionIncreaseMvccTx() throws Exception {
+        checkVersionIncrease(cacheConfigurations(TRANSACTIONAL_SNAPSHOT));
     }
 
     /**
@@ -84,7 +81,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
      */
     private void checkVersionIncrease(List<CacheConfiguration<Object, Object>> ccfgs) throws Exception {
         try {
-            assert ccfgs.size() > 0;
+            assert !ccfgs.isEmpty();
 
             Ignite ignite = startGrid(0);
 
@@ -142,7 +139,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
 
             int nodeIdx = 1;
 
-            for (int n = 0; n < 10; n++) {
+            for (int n = 0; n < SF.applyLB(10, 2); n++) {
                 startGrid(nodeIdx++);
 
                 for (int i = 0; i < caches.size(); i++)

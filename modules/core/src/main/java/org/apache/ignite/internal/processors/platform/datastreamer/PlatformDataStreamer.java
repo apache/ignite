@@ -39,7 +39,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Interop data streamer wrapper.
  */
-@SuppressWarnings({"UnusedDeclaration", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class PlatformDataStreamer extends PlatformAbstractTarget {
     /** Policy: continue. */
     private static final int PLC_CONTINUE = 0;
@@ -91,6 +91,12 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_SET_TIMEOUT = 13;
+
+    /** */
+    private static final int OP_PER_THREAD_BUFFER_SIZE = 14;
+
+    /** */
+    private static final int OP_SET_PER_THREAD_BUFFER_SIZE = 15;
 
     /** Cache name. */
     private final String cacheName;
@@ -186,6 +192,11 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 ldr.perNodeBufferSize((int) val);
 
                 return TRUE;
+            
+            case OP_SET_PER_THREAD_BUFFER_SIZE:
+                ldr.perThreadBufferSize((int) val);
+
+                return TRUE;
 
             case OP_SET_SKIP_STORE:
                 ldr.skipStore(val == TRUE);
@@ -230,6 +241,9 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
             case OP_PER_NODE_BUFFER_SIZE:
                 return ldr.perNodeBufferSize();
+            
+            case OP_PER_THREAD_BUFFER_SIZE:
+                return ldr.perThreadBufferSize();
 
             case OP_SKIP_STORE:
                 return ldr.skipStore() ? TRUE : FALSE;

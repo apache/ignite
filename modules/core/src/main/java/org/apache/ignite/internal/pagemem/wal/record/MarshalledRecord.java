@@ -18,7 +18,6 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 
 /**
  * Special type of WAL record. Shouldn't be stored in file.

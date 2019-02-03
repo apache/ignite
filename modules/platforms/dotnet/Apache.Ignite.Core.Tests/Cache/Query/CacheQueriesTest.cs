@@ -350,7 +350,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc)
             {
                 EnableDistributedJoins = distrJoin,
+#pragma warning disable 618
                 ReplicatedOnly = false,
+#pragma warning restore 618
                 Timeout = TimeSpan.FromSeconds(3)
             };
 
@@ -381,7 +383,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 EnableDistributedJoins = distrJoin,
                 EnforceJoinOrder = enforceJoinOrder,
                 Colocated = !distrJoin,
+#pragma warning disable 618
                 ReplicatedOnly = false,
+#pragma warning restore 618
                 Local = loc,
                 Timeout = TimeSpan.FromSeconds(2),
                 Lazy = lazy
@@ -616,8 +620,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestCustomSchema()
         {
-            var doubles = GetIgnite().GetOrCreateCache<int, double>(new CacheConfiguration("doubles", typeof(double)));
-            var strings = GetIgnite().GetOrCreateCache<int, string>(new CacheConfiguration("strings", typeof(string)));
+            var doubles = GetIgnite().GetOrCreateCache<int, double>(new CacheConfiguration("doubles",
+                    new QueryEntity(typeof(int), typeof(double))));
+            var strings = GetIgnite().GetOrCreateCache<int, string>(new CacheConfiguration("strings",
+                    new QueryEntity(typeof(int), typeof(string))));
 
             doubles[1] = 36.6;
             strings[1] = "foo";

@@ -30,39 +30,35 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link SqlFieldsQueryEx#skipReducerOnUpdate} flag.
  */
-public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends AbstractIndexingCommonTest {
+    /** */
+    private static final int NODE_COUNT = 4;
 
     /** */
-    private static int NODE_COUNT = 4;
+    private static final String NODE_CLIENT = "client";
 
     /** */
-    private static String NODE_CLIENT = "client";
+    private static final String CACHE_ACCOUNT = "acc";
 
     /** */
-    private static String CACHE_ACCOUNT = "acc";
+    private static final String CACHE_REPORT = "rep";
 
     /** */
-    private static String CACHE_REPORT = "rep";
+    private static final String CACHE_STOCK = "stock";
 
     /** */
-    private static String CACHE_STOCK = "stock";
+    private static final String CACHE_TRADE = "trade";
 
     /** */
-    private static String CACHE_TRADE = "trade";
-
-    /** */
-    private static String CACHE_LIST = "list";
+    private static final String CACHE_LIST = "list";
 
     /** */
     private static IgniteEx client;
@@ -70,12 +66,6 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
@@ -167,17 +157,9 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
 
         startGrids(NODE_COUNT);
 
-        client = (IgniteEx)startGrid(NODE_CLIENT);
+        client = startGrid(NODE_CLIENT);
 
         awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -193,49 +175,56 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
         client.cache(CACHE_LIST).clear();
     }
 
-    /**
-     *
-     * @throws Exception If failed.
-     */
-    public void testUpdate() throws Exception {
-        Map<Integer, Account> accounts = getAccounts(100, 1, 100);
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
 
-        String text = "UPDATE \"acc\".Account SET depo = depo - ? WHERE depo > 0";
-
-        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts, new SqlFieldsQueryEx(text, false).setArgs(10));
+        client = null;
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testUpdateFastKey() throws Exception {
+    @Test
+    public void testUpdate() {
+        Map<Integer, Account> accounts = getAccounts(100, 1, 100);
+
+        String text = "UPDATE \"acc\".Account SET depo = depo - ? WHERE depo > 0";
+
+        checkUpdate(client.cache(CACHE_ACCOUNT), accounts, new SqlFieldsQueryEx(text, false).setArgs(10));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testUpdateFastKey() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
 
         String text = "UPDATE \"acc\".Account SET depo = depo - ? WHERE _key = ?";
 
-        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
+        checkUpdate(client.cache(CACHE_ACCOUNT), accounts,
             new SqlFieldsQueryEx(text, false).setArgs(10, 1));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testUpdateLimit() throws Exception {
+    @Test
+    public void testUpdateLimit() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
 
         String text = "UPDATE \"acc\".Account SET depo = depo - ? WHERE sn >= ? AND sn < ? LIMIT ?";
 
-        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
+        checkUpdate(client.cache(CACHE_ACCOUNT), accounts,
             new SqlFieldsQueryEx(text, false).setArgs(10, 0, 10, 10));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testUpdateWhereSubquery() throws Exception {
+    @Test
+    public void testUpdateWhereSubquery() {
         Map<Integer, Account> accounts = getAccounts(100, 1, -100);
 
         Map<Integer, Trade> trades = getTrades(100, 2);
@@ -245,15 +234,15 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
         String text = "UPDATE \"trade\".Trade t SET qty = ? " +
             "WHERE accountId IN (SELECT p._key FROM \"acc\".Account p WHERE depo < ?)";
 
-        checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
+        checkUpdate(client.cache(CACHE_TRADE), trades,
             new SqlFieldsQueryEx(text, false).setArgs(0, 0));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testUpdateSetSubquery() throws Exception {
+    @Test
+    public void testUpdateSetSubquery() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
         Map<Integer, Trade> trades = getTrades(100, 2);
 
@@ -262,15 +251,15 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
         String text = "UPDATE \"trade\".Trade t SET qty = " +
             "(SELECT a.depo/t.price FROM \"acc\".Account a WHERE t.accountId = a._key)";
 
-        checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
+        checkUpdate(client.cache(CACHE_TRADE), trades,
             new SqlFieldsQueryEx(text, false));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testUpdateSetTableSubquery() throws Exception {
+    @Test
+    public void testUpdateSetTableSubquery() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
         Map<Integer, Trade> trades = getTrades(100, 2);
 
@@ -279,15 +268,15 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
         String text = "UPDATE \"trade\".Trade t SET (qty) = " +
             "(SELECT a.depo/t.price FROM \"acc\".Account a WHERE t.accountId = a._key)";
 
-        checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
+        checkUpdate(client.cache(CACHE_TRADE), trades,
             new SqlFieldsQueryEx(text, false));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testInsertValues() throws Exception {
+    @Test
+    public void testInsertValues() {
         String text = "INSERT INTO \"acc\".Account (_key, name, sn, depo)" +
             " VALUES (?, ?, ?, ?), (?, ?, ?, ?)";
 
@@ -297,9 +286,9 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testInsertFromSelect() throws Exception {
+    @Test
+    public void testInsertFromSelect() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
 
         client.cache(CACHE_ACCOUNT).putAll(accounts);
@@ -313,9 +302,9 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testInsertFromSelectOrderBy() throws Exception {
+    @Test
+    public void testInsertFromSelectOrderBy() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
 
         client.cache(CACHE_ACCOUNT).putAll(accounts);
@@ -330,9 +319,9 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testInsertFromSelectUnion() throws Exception {
+    @Test
+    public void testInsertFromSelectUnion() {
         Map<Integer, Account> accounts = getAccounts(20, 1, 1000);
 
         client.cache(CACHE_ACCOUNT).putAll(accounts);
@@ -348,9 +337,9 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testInsertFromSelectGroupBy() throws Exception {
+    @Test
+    public void testInsertFromSelectGroupBy() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
         Map<Integer, Trade> trades = getTrades(100, 2);
 
@@ -368,9 +357,9 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testInsertFromSelectDistinct() throws Exception {
+    @Test
+    public void testInsertFromSelectDistinct() {
         Map<Integer, Account> accounts = getAccounts(100, 2, 100);
 
         client.cache(CACHE_ACCOUNT).putAll(accounts);
@@ -384,9 +373,9 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testInsertFromSelectJoin() throws Exception {
+    @Test
+    public void testInsertFromSelectJoin() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
         Map<Integer, Stock> stocks = getStocks(5);
 
@@ -403,39 +392,39 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testDelete() throws Exception {
+    @Test
+    public void testDelete() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
 
         client.cache(CACHE_ACCOUNT).putAll(accounts);
 
         String text = "DELETE FROM \"acc\".Account WHERE sn > ?";
 
-        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
+        checkUpdate(client.cache(CACHE_ACCOUNT), accounts,
             new SqlFieldsQueryEx(text, false).setArgs(10));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testDeleteTop() throws Exception {
+    @Test
+    public void testDeleteTop() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
 
         client.cache(CACHE_ACCOUNT).putAll(accounts);
 
         String text = "DELETE TOP ? FROM \"acc\".Account WHERE sn < ?";
 
-        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
+        checkUpdate(client.cache(CACHE_ACCOUNT), accounts,
             new SqlFieldsQueryEx(text, false).setArgs(10, 10));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testDeleteWhereSubquery() throws Exception {
+    @Test
+    public void testDeleteWhereSubquery() {
         Map<Integer, Account> accounts = getAccounts(20, 1, 100);
         Map<Integer, Trade> trades = getTrades(10, 2);
 
@@ -445,29 +434,29 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
         String text = "DELETE FROM \"acc\".Account " +
             "WHERE _key IN (SELECT t.accountId FROM \"trade\".Trade t)";
 
-        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
+        checkUpdate(client.cache(CACHE_ACCOUNT), accounts,
             new SqlFieldsQueryEx(text, false));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testMergeValues() throws Exception {
+    @Test
+    public void testMergeValues() {
         Map<Integer, Account> accounts = getAccounts(1, 1, 100);
 
         String text = "MERGE INTO \"acc\".Account (_key, name, sn, depo)" +
             " VALUES (?, ?, ?, ?), (?, ?, ?, ?)";
 
-        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
+        checkUpdate(client.cache(CACHE_ACCOUNT), accounts,
             new SqlFieldsQueryEx(text, false).setArgs(0, "John Marry", 11111, 100, 1, "Marry John", 11112, 200));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testMergeFromSelectJoin() throws Exception {
+    @Test
+    public void testMergeFromSelectJoin() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
         Map<Integer, Stock> stocks = getStocks(5);
 
@@ -482,15 +471,15 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
             "SELECT 5*a._key + s._key, a._key, s._key, ?, a.depo/? " +
             "FROM \"acc\".Account a JOIN \"stock\".Stock s ON 1=1";
 
-        checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
+        checkUpdate(client.cache(CACHE_TRADE), trades,
             new SqlFieldsQueryEx(text, false).setArgs(10, 10));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testMergeFromSelectOrderBy() throws Exception {
+    @Test
+    public void testMergeFromSelectOrderBy() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
 
         client.cache(CACHE_ACCOUNT).putAll(accounts);
@@ -503,15 +492,15 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
             "SELECT a._key, a._key, ?, a.depo/?, ? FROM \"acc\".Account a " +
             "ORDER BY a.sn DESC";
 
-        checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
+        checkUpdate(client.cache(CACHE_TRADE), trades,
             new SqlFieldsQueryEx(text, false).setArgs(1, 10, 10));
     }
 
     /**
      *
-     * @throws Exception If failed.
      */
-    public void testMergeFromSelectGroupBy() throws Exception {
+    @Test
+    public void testMergeFromSelectGroupBy() {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
         Map<Integer, Trade> trades = getTrades(100, 2);
 
@@ -582,9 +571,8 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
         int count = 0;
 
         for (int i = 0; i < numAccounts; ++i) {
-            for (int j = 0; j < numStocks; ++j) {
+            for (int j = 0; j < numStocks; ++j)
                 res.put(count++, new Trade(i, j, 100, 100));
-            }
         }
 
         return res;
@@ -630,7 +618,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
     }
 
     /** */
-    public class Account {
+    public static class Account {
         /** */
         @QuerySqlField
         String name;
@@ -676,7 +664,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
     }
 
     /** */
-    public class Stock {
+    public static class Stock {
         /** */
         @QuerySqlField
         String ticker;
@@ -698,7 +686,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
     }
 
     /** */
-    public class Trade {
+    public static class Trade {
         /** */
         @QuerySqlField
         int accountId;
@@ -752,7 +740,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
     }
 
     /** */
-    public class Report {
+    public static class Report {
         /** */
         @QuerySqlField
         int accountId;

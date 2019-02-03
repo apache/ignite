@@ -22,7 +22,7 @@ import java.util.concurrent.Callable;
 /**
  * Test thread that has convenience failure checks.
  */
-@SuppressWarnings({"ProhibitedExceptionThrown", "CatchGenericClass"})
+@SuppressWarnings({"ProhibitedExceptionThrown"})
 public class GridTestThread extends Thread {
     /** Error. */
     private Throwable err;
@@ -36,7 +36,6 @@ public class GridTestThread extends Thread {
     /**
      * @param run Target runnable.
      */
-    @SuppressWarnings({"NullableProblems"})
     public GridTestThread(Runnable run) {
         this(run, null);
     }
@@ -44,7 +43,6 @@ public class GridTestThread extends Thread {
     /**
      * @param call Target callable.
      */
-    @SuppressWarnings({"NullableProblems"})
     public GridTestThread(Callable<?> call) {
         this(call, null);
     }

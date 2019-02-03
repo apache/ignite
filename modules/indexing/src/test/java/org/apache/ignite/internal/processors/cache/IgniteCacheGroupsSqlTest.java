@@ -30,16 +30,13 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.AffinityKey;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -52,22 +49,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final String GROUP1 = "grp1";
 
     /** */
     private static final String GROUP2 = "grp2";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -86,6 +71,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlQuery() throws Exception {
         Ignite node = ignite(0);
 
@@ -112,6 +98,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery1() throws Exception {
         joinQuery(GROUP1, GROUP2, REPLICATED, PARTITIONED, TRANSACTIONAL, TRANSACTIONAL);
     }
@@ -119,6 +106,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery2() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -131,6 +119,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery3() throws Exception {
         joinQuery(GROUP1, GROUP1, PARTITIONED, PARTITIONED, TRANSACTIONAL, ATOMIC);
     }
@@ -138,6 +127,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery4() throws Exception {
         joinQuery(GROUP1, GROUP1, REPLICATED, REPLICATED, ATOMIC, TRANSACTIONAL);
     }
@@ -145,6 +135,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery5() throws Exception {
         joinQuery(GROUP1, null, REPLICATED, PARTITIONED, TRANSACTIONAL, TRANSACTIONAL);
     }
@@ -152,6 +143,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery6() throws Exception {
         joinQuery(GROUP1, null, PARTITIONED, PARTITIONED, TRANSACTIONAL, ATOMIC);
     }
@@ -175,12 +167,12 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
         IgniteCache pers = srv0.createCache(personCacheConfiguration(grp1, "pers")
             .setAffinity(new RendezvousAffinityFunction().setPartitions(10))
             .setCacheMode(cm1)
-            .setAtomicityMode(cam1));
+            .setAtomicityMode(cam1)).withAllowAtomicOpsInTx();
 
         IgniteCache acc = srv0.createCache(accountCacheConfiguration(grp2, "acc")
             .setAffinity(new RendezvousAffinityFunction().setPartitions(10))
             .setCacheMode(cm2)
-            .setAtomicityMode(cam2));
+            .setAtomicityMode(cam2)).withAllowAtomicOpsInTx();
 
         try(Transaction tx = cam1 == TRANSACTIONAL || cam2 == TRANSACTIONAL ? srv0.transactions().txStart() : null) {
             for (int i = 0; i < keys; i++) {

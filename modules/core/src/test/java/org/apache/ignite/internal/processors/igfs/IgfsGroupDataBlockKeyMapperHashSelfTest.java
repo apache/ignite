@@ -21,6 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.junit.Test;
 
 /**
  * Tests for {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper} hash.
@@ -29,6 +30,7 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistribution() throws Exception {
         for (int i = 0; i < 100; i++) {
             int grpSize = ThreadLocalRandom.current().nextInt(2, 100000);
@@ -41,6 +43,7 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIntOverflowDistribution() throws Exception {
         for (int i = 0; i < 100; i++)
             checkIntOverflowDistribution(ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE));
@@ -101,7 +104,6 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("NumericOverflow")
     public void checkIntOverflowDistribution(int partCnt) throws Exception {
         IgniteUuid fileId = IgniteUuid.randomUuid();
 

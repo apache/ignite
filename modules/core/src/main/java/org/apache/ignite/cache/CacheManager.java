@@ -148,7 +148,6 @@ public class CacheManager implements javax.cache.CacheManager {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V, C extends Configuration<K, V>> Cache<K, V> createCache(String cacheName, C cacheCfg)
         throws IllegalArgumentException {
         kernalGateway.readLock();
@@ -219,17 +218,7 @@ public class CacheManager implements javax.cache.CacheManager {
         kernalGateway.readLock();
 
         try {
-            IgniteCache<K, V> cache = getCache0(cacheName);
-
-            if (cache != null) {
-                if(cache.getConfiguration(Configuration.class).getKeyType() != Object.class)
-                    throw new IllegalArgumentException();
-
-                if(cache.getConfiguration(Configuration.class).getValueType() != Object.class)
-                    throw new IllegalArgumentException();
-            }
-
-            return cache;
+            return getCache0(cacheName);
         }
         finally {
             kernalGateway.readUnlock();
@@ -258,8 +247,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
         try {
             if (kernalGateway.getState() != GridKernalState.STARTED)
-                return Collections.emptySet(); // javadoc of #getCacheNames() says that IllegalStateException should be
-                                               // thrown but CacheManagerTest.close_cachesEmpty() require empty collection.
+                throw new IllegalStateException();
 
             Collection<String> res = new ArrayList<>();
 

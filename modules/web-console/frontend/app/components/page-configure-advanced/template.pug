@@ -14,13 +14,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.pca-sidebar
-    nav.pca-menu(bs-affix)
+nav.pca-menu
+    ul
         li(ng-repeat='item in $ctrl.menuItems')
-            a(ui-sref-active='active' ui-sref='{{::item.sref}}')
-                span.fa-stack
-                    i.fa.fa-circle-thin.fa-stack-2x
-                    i.fa.fa-stack-1x {{::$index + 1}}
-                | {{::item.text}}
+            a.pca-menu-link.btn-ignite(ui-sref-active='active' ui-sref='{{::item.sref}}')
+                svg(ng-if='::item.icon' ignite-icon='{{::item.icon}}').icon-left
+                |{{::item.text}}
 
-.pca-content.docs-content(ui-view='')
+ui-view

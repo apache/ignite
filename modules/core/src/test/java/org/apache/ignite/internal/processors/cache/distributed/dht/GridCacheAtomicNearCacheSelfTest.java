@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -100,6 +101,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoBackups() throws Exception {
         doStartGrids(0);
 
@@ -109,6 +111,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithBackups() throws Exception {
         doStartGrids(2);
 
@@ -118,7 +121,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
     private void checkNearCache() throws Exception {
         checkPut();
 
@@ -525,7 +527,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
     private void checkRemove() throws Exception {
         log.info("Check remove.");
 

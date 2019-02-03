@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 
 /**
- *
+ * Abstract test class for Full API cache tests with presence of BaselineTopology.
  */
 public abstract class IgniteBaselineAbstractFullApiSelfTest extends GridCacheAbstractFullApiSelfTest {
     /** {@inheritDoc} */
@@ -33,11 +33,20 @@ public abstract class IgniteBaselineAbstractFullApiSelfTest extends GridCacheAbs
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(200 * 1024 * 1024)
+                    .setMaxSize(256L * 1024 * 1024)
                     .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */

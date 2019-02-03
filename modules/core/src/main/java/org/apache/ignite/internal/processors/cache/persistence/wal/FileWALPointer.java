@@ -28,6 +28,9 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** Pointer serialized size. */
+    public static final int POINTER_SIZE = 16;
+
     /** Absolute WAL segment file index (incrementing counter) */
     private final long idx;
 
@@ -77,7 +80,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     }
 
     /** {@inheritDoc} */
-    @Override public WALPointer next() {
+    @Override public FileWALPointer next() {
         if (len == 0)
             throw new IllegalStateException("Failed to calculate next WAL pointer " +
                 "(this pointer is a terminal): " + this);

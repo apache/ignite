@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -161,6 +162,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param addPrevVal If {@code true} sends previous value to backups.
      * @param prevVal Previous value.
      * @param updateCntr Partition update counter.
+     * @param cacheOp Corresponding cache operation.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     final void addWriteEntry(
@@ -173,7 +175,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
-        long updateCntr) {
+        long updateCntr,
+        GridCacheOperation cacheOp) {
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
         List<ClusterNode> affNodes = affAssignment.get(entry.partition());
@@ -222,7 +225,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                     conflictVer,
                     addPrevVal,
                     prevVal,
-                    updateCntr);
+                    updateCntr,
+                    cacheOp);
             }
         }
     }

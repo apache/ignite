@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,29 +36,24 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.DiscoverySpiTestListener;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage;
+import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessageV2;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
-import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
-import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
@@ -93,9 +87,6 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
     /** */
     public static final String EXT_RESOURCE_CLS_NAME = "org.apache.ignite.tests.p2p.TestUserResource";
-
-    /** Shared IP finder. */
-    private final transient TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     protected static CountDownLatch rcvLatch;
@@ -202,24 +193,12 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
         ignite2 = null;
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TestTcpDiscoverySpi discoSpi = new TestTcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
-
-        return cfg;
-    }
-
     /**
      * Tests simple message sending-receiving.
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testSendReceiveMessage() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
@@ -269,6 +248,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      * @throws Exception If error occurs.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testStopLocalListen() throws Exception {
         final AtomicInteger msgCnt1 = new AtomicInteger();
 
@@ -381,6 +361,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testSendReceiveMessageWithStringTopic() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
@@ -504,6 +485,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testSendReceiveMessageWithEnumTopic() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
@@ -628,6 +610,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testRemoteListen() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
@@ -664,7 +647,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("TooBroadScope")
+    @Test
     public void testStopRemoteListen() throws Exception {
         final AtomicInteger msgCnt1 = new AtomicInteger();
 
@@ -758,6 +741,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testRemoteListenOrderedMessages() throws Exception {
         List<TestMessage> msgs = Arrays.asList(
             new TestMessage(MSG_1),
@@ -802,7 +786,6 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         assertFalse(error.get());
 
-        //noinspection AssertEqualsBetweenInconvertibleTypes
         assertEquals(msgs, Arrays.asList(rcvMsgs.toArray()));
     }
 
@@ -812,6 +795,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testRemoteListenWithIntTopic() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
@@ -951,6 +935,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testSendMessageWithExternalClassLoader() throws Exception {
         URL[] urls = new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
 
@@ -995,7 +980,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @Test
     public void testNullMessages() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1033,10 +1018,15 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncOld() throws Exception {
         final AtomicInteger msgCnt = new AtomicInteger();
 
-        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)ignite2.configuration().getDiscoverySpi();
+        IgniteDiscoverySpi discoSpi = (IgniteDiscoverySpi)ignite2.configuration().getDiscoverySpi();
+
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+        discoSpi.setInternalListener(lsnr);
 
         assertFalse(ignite2.message().isAsync());
 
@@ -1054,7 +1044,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
             }
         }, IllegalStateException.class, null);
 
-        discoSpi.blockCustomEvent();
+        lsnr.blockCustomEvent(StartRoutineDiscoveryMessage.class, StartRoutineDiscoveryMessageV2.class);
 
         final String topic = "topic";
 
@@ -1079,7 +1069,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertFalse(starFut.isDone());
 
-        discoSpi.stopBlock();
+        lsnr.stopBlockCustomEvents();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -1095,7 +1085,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertTrue(starFut.isDone());
 
-        discoSpi.blockCustomEvent();
+        lsnr.blockCustomEvent(StopRoutineDiscoveryMessage.class);
 
         message(ignite1.cluster().forRemotes()).send(topic, "msg1");
 
@@ -1125,7 +1115,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertFalse(stopFut.isDone());
 
-        discoSpi.stopBlock();
+        lsnr.stopBlockCustomEvents();
 
         stopFut.get();
 
@@ -1141,12 +1131,17 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsync() throws Exception {
         final AtomicInteger msgCnt = new AtomicInteger();
 
-        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)ignite2.configuration().getDiscoverySpi();
+        IgniteDiscoverySpi discoSpi = (IgniteDiscoverySpi)ignite2.configuration().getDiscoverySpi();
 
-        discoSpi.blockCustomEvent();
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+        discoSpi.setInternalListener(lsnr);
+
+        lsnr.blockCustomEvent(StartRoutineDiscoveryMessage.class, StartRoutineDiscoveryMessageV2.class);
 
         final String topic = "topic";
 
@@ -1167,7 +1162,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertFalse(starFut.isDone());
 
-        discoSpi.stopBlock();
+        lsnr.stopBlockCustomEvents();
 
         UUID id = starFut.get();
 
@@ -1175,7 +1170,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertTrue(starFut.isDone());
 
-        discoSpi.blockCustomEvent();
+        lsnr.blockCustomEvent(StopRoutineDiscoveryMessage.class);
 
         message(ignite1.cluster().forRemotes()).send(topic, "msg1");
 
@@ -1195,7 +1190,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertFalse(stopFut.isDone());
 
-        discoSpi.stopBlock();
+        lsnr.stopBlockCustomEvents();
 
         stopFut.get();
 
@@ -1209,93 +1204,11 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     }
 
     /**
-     *
-     */
-    static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
-        /** */
-        private boolean blockCustomEvt;
-
-        /** */
-        private final Object mux = new Object();
-
-        /** */
-        private List<DiscoverySpiCustomMessage> blockedMsgs = new ArrayList<>();
-
-        /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-            synchronized (mux) {
-                if (blockCustomEvt) {
-                    DiscoveryCustomMessage msg0 = GridTestUtils.getFieldValue(msg, "delegate");
-
-                    if (msg0 instanceof MappingProposedMessage || msg0 instanceof MappingAcceptedMessage){
-                        super.sendCustomEvent(msg);
-
-                        return;
-                    }
-
-                    if (msg0 instanceof StopRoutineDiscoveryMessage || msg0 instanceof StartRoutineDiscoveryMessage) {
-                        log.info("Block custom message: " + msg0);
-
-                        blockedMsgs.add(msg);
-
-                        mux.notifyAll();
-
-                        return;
-                    }
-                }
-            }
-
-            super.sendCustomEvent(msg);
-        }
-
-        /**
-         *
-         */
-        public void blockCustomEvent() {
-            synchronized (mux) {
-                assert blockedMsgs.isEmpty() : blockedMsgs;
-
-                blockCustomEvt = true;
-            }
-        }
-
-        /**
-         * @throws InterruptedException If interrupted.
-         */
-        public void waitCustomEvent() throws InterruptedException {
-            synchronized (mux) {
-                while (blockedMsgs.isEmpty())
-                    mux.wait();
-            }
-        }
-
-        /**
-         *
-         */
-        public void stopBlock() {
-            List<DiscoverySpiCustomMessage> msgs;
-
-            synchronized (this) {
-                msgs = new ArrayList<>(blockedMsgs);
-
-                blockCustomEvt = false;
-
-                blockedMsgs.clear();
-            }
-
-            for (DiscoverySpiCustomMessage msg : msgs) {
-                log.info("Resend blocked message: " + msg);
-
-                super.sendCustomEvent(msg);
-            }
-        }
-    }
-
-    /**
      * Tests that message listener registers only for one oldest node.
      *
      * @throws Exception If an error occurred.
      */
+    @Test
     public void testRemoteListenForOldest() throws Exception {
         remoteListenForOldest(ignite1);
 

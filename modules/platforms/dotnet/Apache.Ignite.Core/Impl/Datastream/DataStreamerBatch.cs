@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             if (prev != null)
                 Thread.MemoryBarrier(); // Prevent "prev" field escape.
 
-            _fut.Task.ContinueWith(x => ParentsCompleted());
+            _fut.Task.ContWith(x => ParentsCompleted());
         }
 
         /// <summary>

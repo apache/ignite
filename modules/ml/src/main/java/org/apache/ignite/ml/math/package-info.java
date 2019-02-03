@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains main APIs for distributed code algebra.
+ * Contains main APIs for matrix/vector algebra.
  */
 package org.apache.ignite.ml.math;

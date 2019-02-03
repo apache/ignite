@@ -20,27 +20,13 @@ package org.apache.ignite.services;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test verifying that services thread pool is properly used.
  */
 public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -49,6 +35,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultPoolSize() throws Exception {
         Ignite ignite = startGrid("grid", new IgniteConfiguration());
 
@@ -61,6 +48,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInheritedPoolSize() throws Exception {
         Ignite ignite = startGrid("grid", new IgniteConfiguration().setPublicThreadPoolSize(42));
 
@@ -73,6 +61,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomPoolSize() throws Exception {
         Ignite ignite = startGrid("grid", new IgniteConfiguration().setServiceThreadPoolSize(42));
 
@@ -85,6 +74,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecution() throws Exception {
         startGrid(0); // Server.
 

@@ -22,22 +22,13 @@ export const REMOVE_CACHE = Symbol('REMOVE_CACHE');
 export const SET_SELECTED_CACHES = Symbol('SET_SELECTED_CACHES');
 export const SET_CLUSTER = Symbol('SET_CLUSTER');
 
+import {uniqueName} from 'app/utils/uniqueName';
+
 const defaults = {
     clusterID: -1,
     cluster: null,
     newClusterCaches: [],
     oldClusterCaches: []
-};
-
-const uniqueName = (name, items) => {
-    let i = 0;
-    let newName = name;
-    const isUnique = (item) => item.name === newName;
-    while (items.some(isUnique)) {
-        i += 1;
-        newName = `${name} (${i})`;
-    }
-    return newName;
 };
 
 const defaultSpace = (root) => [...root.list.spaces.keys()][0];
@@ -56,7 +47,7 @@ export const reducer = (state = defaults, action, root) => {
                 : Object.assign({}, action.cluster, {
                     _id: -1,
                     space: defaultSpace(root),
-                    name: uniqueName('New cluster', [...root.list.clusters.values()])
+                    name: uniqueName('Cluster', [...root.list.clusters.values()])
                 });
             const value = Object.assign({}, state, {
                 clusterID: cluster._id,
@@ -70,7 +61,7 @@ export const reducer = (state = defaults, action, root) => {
             const cache = {
                 _id: action._id,
                 space: defaultSpace(root),
-                name: uniqueName('New cache', [...root.list.caches.values(), ...state.newClusterCaches]),
+                name: uniqueName('Cache', [...root.list.caches.values(), ...state.newClusterCaches]),
                 cacheMode: 'PARTITIONED',
                 atomicityMode: 'ATOMIC',
                 readFromBackup: true,

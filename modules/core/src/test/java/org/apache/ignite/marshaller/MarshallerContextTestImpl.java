@@ -19,19 +19,19 @@ package org.apache.ignite.marshaller;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Test marshaller context.
  */
 public class MarshallerContextTestImpl extends MarshallerContextImpl {
     /** */
-    private static final ConcurrentMap<Integer, String> map = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<Integer, String> map = new ConcurrentHashMap<>();
 
     /** */
     private final Collection<String> excluded;

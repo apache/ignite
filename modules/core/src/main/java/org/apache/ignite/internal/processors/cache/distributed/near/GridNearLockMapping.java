@@ -112,7 +112,7 @@ public class GridNearLockMapping {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(GridNearLockMapping.class, this);
     }
 }

@@ -26,10 +26,6 @@
 #include <string>
 #include <algorithm>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/regex.hpp>
 #include <boost/test/unit_test.hpp>
 
@@ -64,7 +60,7 @@ struct ErrorTestSuiteFixture : odbc::OdbcTestSuite
 {
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-test.xml", name);
+        return StartPlatformNode("queries-test.xml", name);
     }
 
     /**

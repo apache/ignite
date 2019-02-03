@@ -21,18 +21,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  */
 public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private String backup;
 
@@ -55,8 +50,6 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         cfg.setClientMode(client);
 
         return cfg;
@@ -65,15 +58,15 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotifierEnabledForCluster() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5413");
-
         checkNotifierStatusForCluster(true);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotifierDisabledForCluster() throws Exception {
         checkNotifierStatusForCluster(false);
     }

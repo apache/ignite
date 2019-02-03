@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test checks that local cacheLoad task never blocks remote
@@ -61,6 +62,7 @@ public class GridStoreLoadCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         for (int i = 0; i < 3; i++) {
             IgniteEx srv1 = startGrid(0);

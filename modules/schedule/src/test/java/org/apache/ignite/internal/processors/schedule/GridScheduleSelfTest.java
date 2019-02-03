@@ -39,6 +39,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.scheduler.SchedulerFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -66,13 +67,6 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         execCntr.set(0);
         exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -96,6 +90,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRunLocal() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
             IgniteFuture<?> fut = grid(i).scheduler().runLocal(new TestRunnable());
@@ -109,6 +104,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallLocal() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
             IgniteFuture<?> fut = grid(i).scheduler().callLocal(new TestCallable());
@@ -122,6 +118,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScheduleRunnable() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -239,6 +236,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScheduleCallable() throws Exception {
         SchedulerFuture<Integer> fut = null;
 
@@ -296,6 +294,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRunnableCancel() throws Exception {
         SchedulerFuture fut = null;
 
@@ -346,6 +345,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidPatterns() throws Exception {
         Runnable run = new Runnable() {
             @Override public void run() {
@@ -417,6 +417,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoNextExecutionTime() throws Exception {
         Callable<Integer> run = new Callable<Integer>() {
             @Override public Integer call() {

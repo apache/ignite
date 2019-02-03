@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.sql.ResultSet;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.jetbrains.annotations.Nullable;
-
-import java.sql.ResultSet;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * Mapper query results.
@@ -43,7 +43,7 @@ class MapQueryResults {
     private final GridQueryCancel[] cancels;
 
     /** */
-    private final String cacheName;
+    private final GridCacheContext<?, ?> cctx;
 
     /** Lazy worker. */
     private final MapQueryLazyWorker lazyWorker;
@@ -51,20 +51,24 @@ class MapQueryResults {
     /** */
     private volatile boolean cancelled;
 
+    /** {@code SELECT FOR UPDATE} flag. */
+    private final boolean forUpdate;
+
     /**
      * Constructor.
-     *
+     * @param h2 Indexing instance.
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      * @param lazyWorker Lazy worker (if any).
+     * @param forUpdate {@code SELECT FOR UPDATE} flag.
      */
-    @SuppressWarnings("unchecked")
-    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable String cacheName,
-        @Nullable MapQueryLazyWorker lazyWorker) {
+    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
+        @Nullable MapQueryLazyWorker lazyWorker, boolean forUpdate) {
+        this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
-        this.cacheName = cacheName;
+        this.cctx = cctx;
         this.lazyWorker = lazyWorker;
 
         results = new AtomicReferenceArray<>(qrys);
@@ -101,14 +105,14 @@ class MapQueryResults {
 
     /**
      * Add result.
-     *
      * @param qry Query result index.
      * @param q Query object.
      * @param qrySrcNodeId Query source node.
      * @param rs Result set.
+     * @param params Query arguments.
      */
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cacheName, qrySrcNodeId, q, params, lazyWorker);
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker);
 
         if (lazyWorker != null)
             lazyWorker.result(res);
@@ -171,5 +175,12 @@ class MapQueryResults {
      */
     long queryRequestId() {
         return qryReqId;
+    }
+
+    /**
+     * @return {@code SELECT FOR UPDATE} flag.
+     */
+    public boolean isForUpdate() {
+        return forUpdate;
     }
 }

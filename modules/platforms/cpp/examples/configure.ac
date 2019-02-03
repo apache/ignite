@@ -19,7 +19,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Apache Ignite C++ Examples], [2.5.0.26265], [dev@ignite.apache.org], [ignite-examples], [ignite.apache.org])
+AC_INIT([Apache Ignite C++ Examples], [2.8.0.34042], [dev@ignite.apache.org], [ignite-examples], [ignite.apache.org])
 
 AC_CANONICAL_HOST
 AC_CONFIG_MACRO_DIR([m4])
@@ -58,6 +58,7 @@ AC_CONFIG_FILES([ \
     query-example/Makefile \
     continuous-query-example/Makefile \
     compute-example/Makefile \
+    thin-client-put-get-example/Makefile \
 ])
 
 AC_OUTPUT

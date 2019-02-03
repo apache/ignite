@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -53,7 +54,6 @@ import java.util.UUID;
 /**
  * Interop services.
  */
-@SuppressWarnings({"UnusedDeclaration"})
 public class PlatformServices extends PlatformAbstractTarget {
     /** */
     private static final int OP_DOTNET_DEPLOY = 1;
@@ -581,7 +581,12 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
 
-                return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
+                try {
+                    return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
+                }
+                catch (Throwable t) {
+                    throw IgniteUtils.cast(t);
+                }
             }
         }
 
@@ -666,7 +671,6 @@ public class PlatformServices extends PlatformAbstractTarget {
          *
          * @return Primitive wrapper, or the same class.
          */
-        @SuppressWarnings("unchecked")
         private static Class wrap(Class c) {
             return c.isPrimitive() ? PRIMITIVES_TO_WRAPPERS.get(c) : c;
         }

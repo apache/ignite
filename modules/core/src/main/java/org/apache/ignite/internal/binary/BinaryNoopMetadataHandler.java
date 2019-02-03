@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Collection;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 
@@ -42,7 +43,7 @@ public class BinaryNoopMetadataHandler implements BinaryMetadataHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException {
+    @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException {
         // No-op.
     }
 
@@ -58,6 +59,11 @@ public class BinaryNoopMetadataHandler implements BinaryMetadataHandler {
 
     /** {@inheritDoc} */
     @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
         return null;
     }
 }

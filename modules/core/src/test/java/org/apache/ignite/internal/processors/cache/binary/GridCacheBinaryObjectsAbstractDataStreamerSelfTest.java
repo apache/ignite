@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -85,11 +86,6 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
         startGridsMultiThreaded(gridCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return Cache mode.
      */
@@ -116,6 +112,7 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
      * @throws Exception If failed.
      */
     @SuppressWarnings("BusyWait")
+    @Test
     public void testGetPut() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 

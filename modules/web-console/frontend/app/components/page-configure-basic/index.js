@@ -18,12 +18,11 @@
 import angular from 'angular';
 
 import component from './component';
-import service from './service';
-
-import pcbScaleNumber from './components/pcbScaleNumber';
+import {reducer} from './reducer';
 
 export default angular
     .module('ignite-console.page-configure-basic', [])
-    .component('pageConfigureBasic', component)
-    .directive('pcbScaleNumber', pcbScaleNumber)
-    .service('PageConfigureBasic', service);
+    .run(['ConfigureState', (ConfigureState) => ConfigureState.addReducer((state, action) => Object.assign(state, {
+        configureBasic: reducer(state.configureBasic, action, state)
+    }))])
+    .component('pageConfigureBasic', component);

@@ -215,7 +215,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param <V1> Cache value type.
      * @return Base cache for this projection.
      */
-    @SuppressWarnings({"ClassReferencesSubclass"})
     public <K1, V1> IgniteInternalCache<K1, V1> cache();
 
     /**
@@ -302,11 +301,10 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * @param key Key.
      * @param peekModes Peek modes.
-     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V localPeek(K key, CachePeekMode[] peekModes, @Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable public V localPeek(K key, CachePeekMode[] peekModes)
         throws IgniteCheckedException;
 
     /**
@@ -1658,20 +1656,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long igfsDataSpaceUsed();
 
     /**
-     * Checks whether this cache is Mongo data cache.
-     *
-     * @return {@code True} if this cache is mongo data cache.
-     */
-    public boolean isMongoDataCache();
-
-    /**
-     * Checks whether this cache is Mongo meta cache.
-     *
-     * @return {@code True} if this cache is mongo meta cache.
-     */
-    public boolean isMongoMetaCache();
-
-    /**
      * @param keepBinary Keep binary flag.
      * @param p Optional key/value predicate.
      * @return Scan query iterator.
@@ -1695,6 +1679,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Cache with no-retries behavior enabled.
      */
     public IgniteInternalCache<K, V> withNoRetries();
+
+    /**
+     * @return New projection based on this one, but with atomic cache operations allowed to be used.
+     */
+    public <K1, V1> IgniteInternalCache<K1, V1> withAllowAtomicOpsInTx();
 
     /**
      * @param key Key.
@@ -1827,4 +1816,27 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return A collection of lost partitions if a cache is in recovery state.
      */
     public Collection<Integer> lostPartitions();
+
+    /**
+     * Preload cache partition.
+     * @param part Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void preloadPartition(int part) throws IgniteCheckedException;
+
+    /**
+     * Preload cache partition.
+     * @param part Partition.
+     * @return Future to be completed whenever preloading completes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException;
+
+    /**
+     * Preloads cache partition if it exists on local node.
+     * @param part Partition.
+     * @return {@code True} if partition was preloaded, {@code false} if it doesn't belong to local node.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean localPreloadPartition(int part) throws IgniteCheckedException;
 }

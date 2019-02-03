@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.visor.util;
 
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Exception wrapper for safe for transferring to Visor.
@@ -56,12 +57,10 @@ public class VisorExceptionWrapper extends Throwable {
         if (cause.getCause() != null)
             initCause(new VisorExceptionWrapper(cause.getCause()));
 
-        Throwable[] suppressed = cause.getSuppressed();
+        List<Throwable> suppressed = X.getSuppressedList(cause);
 
-        if (!F.isEmpty(suppressed)) {
-            for (Throwable sup : suppressed)
-                addSuppressed(new VisorExceptionWrapper(sup));
-        }
+        for (Throwable sup : suppressed)
+            addSuppressed(new VisorExceptionWrapper(sup));
     }
 
     /**

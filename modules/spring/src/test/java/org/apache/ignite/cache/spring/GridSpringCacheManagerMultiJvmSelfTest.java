@@ -29,6 +29,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -36,11 +38,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  * Spring cache test in multi jvm environment.
  */
 public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
         return true;
@@ -59,6 +56,8 @@ public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9488")
+    @Test
     public void testSyncCache() throws Exception {
         IgniteEx loc = startGrid(0);
 

@@ -110,7 +110,7 @@ public class BinaryTypeImpl implements BinaryType {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(BinaryTypeImpl.class, this);
     }
 }

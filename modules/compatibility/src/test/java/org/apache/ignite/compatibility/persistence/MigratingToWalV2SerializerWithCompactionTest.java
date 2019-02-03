@@ -34,13 +34,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.junit.Test;
 
 /**
  * Saves data using previous version of ignite and then load this data using actual version
  */
 public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
-    private static final String TEST_CACHE_NAME = DummyPersistenceCompatibilityTest.class.getSimpleName();
+    private static final String TEST_CACHE_NAME = MigratingToWalV2SerializerWithCompactionTest.class.getSimpleName();
 
     /** Entries count. */
     private static final int ENTRIES = 300;
@@ -52,13 +53,6 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
     private static final int PAYLOAD_SIZE = 20000;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -66,7 +60,10 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(true))
+                new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)
+                    .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+            )
             .setWalSegmentSize(WAL_SEGMENT_SIZE)
             .setWalCompactionEnabled(true)
             .setWalMode(WALMode.LOG_ONLY)
@@ -82,6 +79,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCompactingOldWalFiles() throws Exception {
         doTestStartupWithOldVersion("2.3.0");
     }

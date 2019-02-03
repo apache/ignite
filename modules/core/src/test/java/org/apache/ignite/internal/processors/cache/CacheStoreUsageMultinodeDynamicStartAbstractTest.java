@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Test;
 
 /**
  *
@@ -37,16 +38,10 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
         startGrid(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicStart() throws Exception {
         checkStoreWithDynamicStart(false);
     }
@@ -54,6 +49,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicStartNearEnabled() throws Exception {
         nearCache = true;
 
@@ -63,6 +59,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicFromClientStart() throws Exception {
         checkStoreWithDynamicStart(true);
     }
@@ -70,6 +67,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicStartFromClientNearEnabled() throws Exception {
         nearCache = true;
 
@@ -79,6 +77,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicStartLocalStore() throws Exception {
         locStore = true;
 
@@ -88,6 +87,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicStartFromClientLocalStore() throws Exception {
         locStore = true;
 
@@ -97,6 +97,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicStartLocalStoreNearEnabled() throws Exception {
         locStore = true;
 
@@ -108,6 +109,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicStartWriteBehindStore() throws Exception {
         writeBehind = true;
 
@@ -117,6 +119,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicStartFromClientWriteBehindStore() throws Exception {
         writeBehind = true;
 
@@ -126,6 +129,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicStartWriteBehindStoreNearEnabled() throws Exception {
         writeBehind = true;
 

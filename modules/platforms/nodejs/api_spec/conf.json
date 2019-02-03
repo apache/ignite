@@ -1,0 +1,12 @@
+{
+  "plugins": [
+     "plugins/markdown"
+  ],
+  "source": {
+    "include": [ "../lib" ],
+    "includePattern": ".+\\.js$"
+  },
+  "opts": {
+    "destination": "."
+  }
+}

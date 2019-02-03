@@ -15,45 +15,16 @@
  * limitations under the License.
  */
 
-const path = require('path');
-const { Selector } = require('testcafe');
-const { AngularJSSelector } = require('testcafe-angular-selectors');
+import { Role, t } from 'testcafe';
+import { resolveUrl } from './environment/envtools';
+import {pageSignin as page} from './page-models/pageSignin';
 
-const igniteSignUp = async(t) => {
-    await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}`);
+export const createRegularUser = () => {
+    return Role(resolveUrl('/signin'), async() => {
+        await t.eval(() => window.localStorage.clear());
 
-    await t.click(Selector('a').withText('Sign Up'));
-
-    await t
-        .click(Selector('#signup_email'))
-        .typeText(Selector('#signup_email'), 'a@a')
-        .typeText(AngularJSSelector.byModel('ui.password'), 'a')
-        .typeText(AngularJSSelector.byModel('ui_exclude.confirm'), 'a')
-        .typeText(AngularJSSelector.byModel('ui.firstName'), 'John')
-        .typeText(AngularJSSelector.byModel('ui.lastName'), 'Doe')
-        .typeText(AngularJSSelector.byModel('ui.company'), 'DevNull LTD')
-        .click('#country')
-        .click(Selector('span').withText('Brazil'))
-        .click('#signup');
-
-    // close modal window
-    await t.click('.modal-header button.close');
+        // Disable "Getting started" modal.
+        await t.eval(() => window.localStorage.showGettingStarted = 'false');
+        await page.login('a@a', 'a');
+    });
 };
-
-
-const igniteSignIn = async(t) => {
-    await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}`);
-
-    await t
-        .typeText(AngularJSSelector.byModel('ui.email'), 'a@a')
-        .typeText(AngularJSSelector.byModel('ui.password'), 'a')
-        .click('#login');
-
-    // close modal window
-    await t.click('.modal-header button.close');
-};
-
-const signIn = process.env.IGNITE_MODULES ? require(path.join(process.env.IGNITE_MODULES, 'e2e/testcafe/roles.js')).igniteSignIn : igniteSignIn;
-const signUp = process.env.IGNITE_MODULES ? require(path.join(process.env.IGNITE_MODULES, 'e2e/testcafe/roles.js')).igniteSignUp : igniteSignUp;
-
-module.exports = { signUp, signIn };

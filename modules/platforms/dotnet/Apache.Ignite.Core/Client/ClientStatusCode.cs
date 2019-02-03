@@ -52,6 +52,16 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// The too many cursors (see <see cref="ClientConnectorConfiguration.MaxOpenCursorsPerConnection"/>).
         /// </summary>
-        TooManyCursors = 1010
+        TooManyCursors = 1010,
+
+        /// <summary>
+        /// Authorization failure.
+        /// </summary>
+        SecurityViolation = 1012,
+
+        /// <summary>
+        /// Authentication failed.
+        /// </summary>
+        AuthenticationFailed = 2000
     }
 }

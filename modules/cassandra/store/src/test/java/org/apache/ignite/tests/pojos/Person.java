@@ -41,7 +41,7 @@ public class Person implements Externalizable {
     private String fullName;
 
     /** */
-    private int age;
+    private short age;
 
     /** */
     private boolean married;
@@ -59,12 +59,11 @@ public class Person implements Externalizable {
     private List<String> phones;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public Person() {
     }
 
     /** */
-    public Person(long personNum, String firstName, String lastName, int age, boolean married,
+    public Person(long personNum, String firstName, String lastName, short age, boolean married,
         long height, float weight, Date birthDate, List<String> phones) {
         this.personNum = personNum;
         this.firstName = firstName;
@@ -83,7 +82,7 @@ public class Person implements Externalizable {
         out.writeLong(personNum);
         out.writeObject(firstName);
         out.writeObject(lastName);
-        out.writeInt(age);
+        out.writeShort(age);
         out.writeBoolean(married);
         out.writeLong(height);
         out.writeFloat(weight);
@@ -97,7 +96,7 @@ public class Person implements Externalizable {
         personNum = in.readLong();
         firstName = (String)in.readObject();
         lastName = (String)in.readObject();
-        age = in.readInt();
+        age = in.readShort();
         married = in.readBoolean();
         height = in.readLong();
         weight = in.readFloat();
@@ -164,117 +163,98 @@ public class Person implements Externalizable {
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setPersonNumber(long personNum) {
         this.personNum = personNum;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public long getPersonNumber() {
         return personNum;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setFirstName(String name) {
         firstName = name;
         fullName = firstName + " " + lastName;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public String getFirstName() {
         return firstName;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setLastName(String name) {
         lastName = name;
         fullName = firstName + " " + lastName;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public String getLastName() {
         return lastName;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public String getFullName() {
         return fullName;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
-    public void setAge(int age) {
+    public void setAge(short age) {
         this.age = age;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
-    public int getAge() {
+    public short getAge() {
         return age;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setMarried(boolean married) {
         this.married = married;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public boolean getMarried() {
         return married;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setHeight(long height) {
         this.height = height;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public long getHeight() {
         return height;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setWeight(float weight) {
         this.weight = weight;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public float getWeight() {
         return weight;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setBirthDate(Date date) {
         birthDate = date;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public Date getBirthDate() {
         return birthDate;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setPhones(List<String> phones) {
         this.phones = phones;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public List<String> getPhones() {
         return phones;
     }

@@ -38,6 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -179,16 +180,12 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
             igfs.clear();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-    }
-
     /**
      * Checks events on CRUD operations on a single file in nested directories.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleFileNestedDirs() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -270,6 +267,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDirWithFiles() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -351,6 +349,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleEmptyDir() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -408,6 +407,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoFiles() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -495,6 +495,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteNonRecursive() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -549,6 +550,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFile() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -616,6 +618,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNestedEmptyDirs() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -666,6 +669,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleFileOverwrite() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -752,6 +756,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFileDataEvents() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 

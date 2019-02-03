@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.CodeDom.Compiler;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Common;
@@ -56,23 +55,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestLoadFromGac()
         {
             Assert.False(IsLoaded("System.Data.Linq"));
-
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = "config\\start-test-grid3.xml",
-                Assemblies =
-                    new List<string>
-                    {
-                        "System.Data.Linq,Culture=neutral,Version=1.0.0.0,PublicKeyToken=b77a5c561934e089"
-                    },
-                JvmClasspath = TestUtils.CreateTestClasspath()
-            };
-
-
-            var grid = Ignition.Start(cfg);
-
-            Assert.IsNotNull(grid);
-
+            StartWithDll("System.Data.Linq,Culture=neutral,Version=1.0.0.0,PublicKeyToken=b77a5c561934e089");
             Assert.True(IsLoaded("System.Data.Linq"));
         }
 
@@ -83,20 +66,8 @@ namespace Apache.Ignite.Core.Tests
         public void TestLoadFromCurrentDir()
         {
             Assert.False(IsLoaded("testDll"));
-
             GenerateDll("testDll.dll");
-
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = "config\\start-test-grid3.xml",
-                Assemblies = new List<string> {"testDll.dll"},
-                JvmClasspath = TestUtils.CreateTestClasspath()
-            };
-
-            var grid = Ignition.Start(cfg);
-
-            Assert.IsNotNull(grid);
-
+            StartWithDll("testDll.dll");
             Assert.True(IsLoaded("testDll"));
         }
 
@@ -115,16 +86,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateDll(dirInfo.FullName + "/dllFromDir2.dll");
             File.WriteAllText(dirInfo.FullName + "/notADll.txt", "notADll");
 
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = "config\\start-test-grid3.xml",
-                Assemblies = new List<string> {dirInfo.FullName},
-                JvmClasspath = TestUtils.CreateTestClasspath()
-            };
-
-            var grid = Ignition.Start(cfg);
-
-            Assert.IsNotNull(grid);
+            StartWithDll(dirInfo.FullName);
 
             Assert.True(IsLoaded("dllFromDir1"));
             Assert.True(IsLoaded("dllFromDir2"));
@@ -137,20 +99,8 @@ namespace Apache.Ignite.Core.Tests
         public void TestLoadFromCurrentDirByName()
         {
             Assert.False(IsLoaded("testDllByName"));
-
             GenerateDll("testDllByName.dll");
-
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = "config\\start-test-grid3.xml",
-                Assemblies = new List<string> {"testDllByName"},
-                JvmClasspath = TestUtils.CreateTestClasspath()
-            };
-
-            var grid = Ignition.Start(cfg);
-
-            Assert.IsNotNull(grid);
-
+            StartWithDll("testDllByName");
             Assert.True(IsLoaded("testDllByName"));
         }
 
@@ -162,20 +112,8 @@ namespace Apache.Ignite.Core.Tests
         {
             var dllPath = Path.GetTempPath() + "/tempDll.dll";
             Assert.False(IsLoaded("tempDll"));
-
             GenerateDll(dllPath);
-
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = "config\\start-test-grid3.xml",
-                Assemblies = new List<string> {dllPath},
-                JvmClasspath = TestUtils.CreateTestClasspath()
-            };
-
-            var grid = Ignition.Start(cfg);
-
-            Assert.IsNotNull(grid);
-
+            StartWithDll(dllPath);
             Assert.True(IsLoaded("tempDll"));
         }
 
@@ -185,14 +123,22 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestLoadUnexistingLibrary()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = "config\\start-test-grid3.xml",
-                Assemblies = new List<string> {"unexistingAssembly.820482.dll"},
-                JvmClasspath = TestUtils.CreateTestClasspath()
+                Assemblies = new [] {"unexistingAssembly.820482.dll"},
             };
 
             Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+        }
+
+        private static void StartWithDll(string dll)
+        {
+            var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                Assemblies = new[] {dll}
+            });
+            
+            Assert.IsNotNull(ignite);
         }
 
         /// <summary>

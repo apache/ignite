@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFac
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Tests KerberosHadoopFileSystemFactory.
@@ -41,6 +42,7 @@ public class KerberosHadoopFileSystemFactorySelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testParameters() throws Exception {
         checkParameters(null, null, -1);
 
@@ -60,7 +62,6 @@ public class KerberosHadoopFileSystemFactorySelfTest extends GridCommonAbstractT
      * @param keyTabPrincipal Key tab principal.
      * @param reloginInterval Re-login interval.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkParameters(String keyTab, String keyTabPrincipal, long reloginInterval) {
         final KerberosHadoopFileSystemFactory fac = new KerberosHadoopFileSystemFactory();
 
@@ -85,6 +86,7 @@ public class KerberosHadoopFileSystemFactorySelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         KerberosHadoopFileSystemFactory fac = new KerberosHadoopFileSystemFactory();
 

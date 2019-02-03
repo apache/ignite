@@ -32,7 +32,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Metadata storage.
@@ -59,6 +61,9 @@ public class IndexStorageImpl implements IndexStorage {
     /** Cache group ID. */
     private final int grpId;
 
+    /** Whether group is shared. */
+    private final boolean grpShared;
+
     /** */
     private final int allocPartId;
 
@@ -74,21 +79,24 @@ public class IndexStorageImpl implements IndexStorage {
         final IgniteWriteAheadLogManager wal,
         final AtomicLong globalRmvId,
         final int grpId,
+        boolean grpShared,
         final int allocPartId,
         final byte allocSpace,
         final ReuseList reuseList,
         final long rootPageId,
-        final boolean initNew
+        final boolean initNew,
+        final FailureProcessor failureProcessor
     ) {
         try {
             this.pageMem = pageMem;
             this.grpId = grpId;
+            this.grpShared = grpShared;
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;
             this.reuseList = reuseList;
 
             metaTree = new MetaTree(grpId, allocPartId, allocSpace, pageMem, wal, globalRmvId, rootPageId,
-                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew);
+                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew, failureProcessor);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -96,7 +104,15 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage getOrAllocateForTree(final String idxName) throws IgniteCheckedException {
+    @Override public RootPage allocateCacheIndex(Integer cacheId, String idxName, int segment)
+        throws IgniteCheckedException {
+        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
+
+        return allocateIndex(maskedIdxName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RootPage allocateIndex(String idxName) throws IgniteCheckedException {
         final MetaTree tree = metaTree;
 
         synchronized (this) {
@@ -129,8 +145,15 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage dropRootPage(final String idxName)
+    @Override public RootPage dropCacheIndex(Integer cacheId, String idxName, int segment)
         throws IgniteCheckedException {
+        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
+
+        return dropIndex(maskedIdxName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RootPage dropIndex(final String idxName) throws IgniteCheckedException {
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
         final IndexItem row = metaTree.remove(new IndexItem(idxNameBytes, 0));
@@ -149,6 +172,19 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /**
+     * Mask cache index name.
+     *
+     * @param idxName Index name.
+     * @return Masked name.
+     */
+    private String maskCacheIndexName(Integer cacheId, String idxName, int segment) {
+        if (grpShared)
+            idxName = Integer.toString(cacheId) + "_" + idxName;
+
+        return idxName + "%" + segment;
+    }
+
+    /**
      *
      */
     private static class MetaTree extends BPlusTree<IndexItem, IndexItem> {
@@ -164,6 +200,7 @@ public class IndexStorageImpl implements IndexStorage {
          * @param reuseList Reuse list.
          * @param innerIos Inner IOs.
          * @param leafIos Leaf IOs.
+         * @param failureProcessor if the tree is corrupted.
          * @throws IgniteCheckedException If failed.
          */
         private MetaTree(
@@ -177,9 +214,10 @@ public class IndexStorageImpl implements IndexStorage {
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
-            final boolean initNew
+            final boolean initNew,
+            @Nullable FailureProcessor failureProcessor
         ) throws IgniteCheckedException {
-            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos);
+            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos, failureProcessor);
 
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;
@@ -215,7 +253,7 @@ public class IndexStorageImpl implements IndexStorage {
         }
 
         /** {@inheritDoc} */
-        @Override protected IndexItem getRow(final BPlusIO<IndexItem> io, final long pageAddr,
+        @Override public IndexItem getRow(final BPlusIO<IndexItem> io, final long pageAddr,
             final int idx, Object ignore) throws IgniteCheckedException {
             return readRow(pageAddr, ((IndexIO)io).getOffset(pageAddr, idx));
         }

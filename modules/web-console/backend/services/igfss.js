@@ -93,6 +93,31 @@ module.exports.factory = (mongo, spacesService, errors) => {
     };
 
     class IgfssService {
+        static shortList(userId, demo, clusterId) {
+            return spacesService.spaceIds(userId, demo)
+                .then((spaceIds) => mongo.Igfs.find({space: {$in: spaceIds}, clusters: clusterId }).select('name defaultMode affinnityGroupSize').lean().exec());
+        }
+
+        static get(userId, demo, _id) {
+            return spacesService.spaceIds(userId, demo)
+                .then((spaceIds) => mongo.Igfs.findOne({space: {$in: spaceIds}, _id}).lean().exec());
+        }
+
+        static upsert(igfs) {
+            if (_.isNil(igfs._id))
+                return Promise.reject(new errors.IllegalArgumentException('IGFS id can not be undefined or null'));
+
+            const query = _.pick(igfs, ['space', '_id']);
+
+            return mongo.Igfs.update(query, {$set: igfs}, {upsert: true}).exec()
+                .catch((err) => {
+                    if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
+                        throw new errors.DuplicateKeyException(`IGFS with name: "${igfs.name}" already exist.`);
+
+                    throw err;
+                });
+        }
+
         /**
          * Create or update IGFS.
          *
@@ -117,22 +142,27 @@ module.exports.factory = (mongo, spacesService, errors) => {
         }
 
         /**
-         * Remove IGFS.
+         * Remove IGFSs.
          *
-         * @param {mongo.ObjectId|String} igfsId - The IGFS id for remove.
+         * @param {Array.<String>|String} ids - The IGFS ids for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */
-        static remove(igfsId) {
-            if (_.isNil(igfsId))
+        static remove(ids) {
+            if (_.isNil(ids))
                 return Promise.reject(new errors.IllegalArgumentException('IGFS id can not be undefined or null'));
 
-            return mongo.Cluster.update({igfss: {$in: [igfsId]}}, {$pull: {igfss: igfsId}}, {multi: true}).exec()
-                // TODO WC-201 fix clenup on node filter on deletion for cluster serviceConfigurations and caches.
+            ids = _.castArray(ids);
+
+            if (_.isEmpty(ids))
+                return Promise.resolve({rowsAffected: 0});
+
+            return mongo.Cluster.update({igfss: {$in: ids}}, {$pull: {igfss: {$in: ids}}}, {multi: true}).exec()
+                // TODO WC-201 fix cleanup on node filter on deletion for cluster serviceConfigurations and caches.
                 // .then(() => mongo.Cluster.update({ 'serviceConfigurations.$.nodeFilter.kind': { $ne: 'IGFS' }, 'serviceConfigurations.nodeFilter.IGFS.igfs': igfsId},
                 //     {$unset: {'serviceConfigurations.$.nodeFilter.IGFS.igfs': ''}}, {multi: true}).exec())
                 // .then(() => mongo.Cluster.update({ 'serviceConfigurations.nodeFilter.kind': 'IGFS', 'serviceConfigurations.nodeFilter.IGFS.igfs': igfsId},
                 //     {$unset: {'serviceConfigurations.$.nodeFilter': ''}}, {multi: true}).exec())
-                .then(() => mongo.Igfs.remove({_id: igfsId}).exec())
+                .then(() => mongo.Igfs.remove({_id: {$in: ids}}).exec())
                 .then(convertRemoveStatus);
         }
 

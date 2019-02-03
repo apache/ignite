@@ -37,7 +37,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- *
+ * Failover cache test with remove operations executed with presence of BaselineTopology
+ * when one random node from BLT is constantly restarted during the load.
  */
 public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstractRemoveFailureTest {
     /** */
@@ -69,9 +70,9 @@ public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstra
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)
-                    .setInitialSize(512 * 1024 * 1024)
-                    .setMaxSize(512 * 1024 * 1024)
-                    .setCheckpointPageBufferSize(512 * 1024 * 1024)
+                    .setInitialSize(512L * 1024 * 1024)
+                    .setMaxSize(512L * 1024 * 1024)
+                    .setCheckpointPageBufferSize(512L * 1024 * 1024)
                 )
         );
 
@@ -80,7 +81,7 @@ public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(GRIDS_COUNT);
 
@@ -93,9 +94,7 @@ public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */

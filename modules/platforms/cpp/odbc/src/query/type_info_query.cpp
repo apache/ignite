@@ -394,7 +394,7 @@ namespace ignite
 
             bool TypeInfoQuery::DataAvailable() const
             {
-                return cursor != types.end();;
+                return cursor != types.end();
             }
 
             int64_t TypeInfoQuery::AffectedRows() const

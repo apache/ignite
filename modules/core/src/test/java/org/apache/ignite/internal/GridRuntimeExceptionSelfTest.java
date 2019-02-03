@@ -40,6 +40,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 
@@ -74,14 +75,10 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         startGrid();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteFailed() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -112,6 +109,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapFailed() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -142,6 +140,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResultFailed() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -172,6 +171,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReduceFailed() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

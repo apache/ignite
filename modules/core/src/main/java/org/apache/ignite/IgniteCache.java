@@ -177,6 +177,18 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
 
     /**
+     * By default atomic operations are allowed in transaction.
+     * To restrict transactions from operations with atomic caches you can set system property
+     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code false}.
+     * <p>
+     * If you want to use atomic operations inside transactions in case they are restricted by system property,
+     * you should allow it before transaction start.
+     *
+     * @return Cache with atomic operations allowed in transactions.
+     */
+    public <K1, V1> IgniteCache<K1, V1> withAllowAtomicOpsInTx();
+
+    /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
      *
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
@@ -429,9 +441,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default optional peek mode.
+     * Peeks at a value in the local storage using an optional peek mode.
      * <p>
-     * This method will not load value from any persistent store or from a remote node.
+     * This method will not load a value from the configured {@link CacheStore} or from a remote node.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in any transactions.
      *
@@ -1453,10 +1465,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * See {@link CacheConfiguration#getRebalanceDelay()} for more information on how to configure
      * rebalance re-partition delay.
      * <p>
-     * @return Future that will be completed when rebalancing is finished. Future.get() returns true
+     * @return Future that will be completed when rebalancing is finished. Future.get() returns {@code true}
      *      when rebalance was successfully finished.
      */
-    public IgniteFuture<?> rebalance();
+    public IgniteFuture<Boolean> rebalance();
 
     /**
      * Returns future that will be completed when all indexes for this cache are ready to use.
@@ -1504,7 +1516,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Gets a collection of lost partition IDs.
      *
-     * @return Lost paritions.
+     * @return Lost partitions.
      */
     public Collection<Integer> lostPartitions();
 
@@ -1514,4 +1526,56 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param enabled Statistics enabled flag.
      */
     public void enableStatistics(boolean enabled);
+
+    /**
+     * Clear cluster statistics for this cache.
+     */
+    public void clearStatistics();
+
+    /**
+     * Efficiently preloads cache primary partition into page memory.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     */
+    public void preloadPartition(int partition);
+
+    /**
+     * Efficiently preloads cache partition into page memory.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     * @return A future representing pending completion of the partition preloading.
+     */
+    public IgniteFuture<Void> preloadPartitionAsync(int partition);
+
+    /**
+     * Efficiently preloads cache partition into page memory if it exists on the local node.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     * @return {@code True} if partition was preloaded, {@code false} if it doesn't belong to local node.
+     */
+    public boolean localPreloadPartition(int partition);
 }

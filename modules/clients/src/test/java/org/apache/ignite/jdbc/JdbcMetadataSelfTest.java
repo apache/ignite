@@ -18,12 +18,14 @@
 package org.apache.ignite.jdbc;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
@@ -34,14 +36,14 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.sql.Types.INTEGER;
-import static java.sql.Types.OTHER;
 import static java.sql.Types.VARCHAR;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.OTHER;
+import static java.sql.Types.DATE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -49,21 +51,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Metadata tests.
  */
 public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** URL. */
     private static final String URL = "jdbc:ignite://127.0.0.1/pers";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
@@ -103,16 +96,14 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         personCache.put(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
-    }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        jcache(grid(0), cacheConfiguration(), "metaTest", AffinityKey.class, MetaTest.class);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResultSetMetaData() throws Exception {
         Statement stmt = DriverManager.getConnection(URL).createStatement();
 
@@ -145,6 +136,42 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDecimalAndDateTypeMetaData() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            Statement stmt = conn.createStatement();
+
+            ResultSet rs = stmt.executeQuery(
+                    "select t.decimal, t.date from \"metaTest\".MetaTest as t");
+
+            assert rs != null;
+
+            ResultSetMetaData meta = rs.getMetaData();
+
+            assert meta != null;
+
+            assert meta.getColumnCount() == 2;
+
+            assert "METATEST".equalsIgnoreCase(meta.getTableName(1));
+            assert "DECIMAL".equalsIgnoreCase(meta.getColumnName(1));
+            assert "DECIMAL".equalsIgnoreCase(meta.getColumnLabel(1));
+            assert meta.getColumnType(1) == DECIMAL;
+            assert "DECIMAL".equals(meta.getColumnTypeName(1));
+            assert "java.math.BigDecimal".equals(meta.getColumnClassName(1));
+
+            assert "METATEST".equalsIgnoreCase(meta.getTableName(2));
+            assert "DATE".equalsIgnoreCase(meta.getColumnName(2));
+            assert "DATE".equalsIgnoreCase(meta.getColumnLabel(2));
+            assert meta.getColumnType(2) == DATE;
+            assert "DATE".equals(meta.getColumnTypeName(2));
+            assert "java.sql.Date".equals(meta.getColumnClassName(2));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testGetTables() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -181,6 +208,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetColumns() throws Exception {
         final boolean primitivesInformationIsLostAfterStore = ignite(0).configuration().getMarshaller() instanceof BinaryMarshaller;
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -274,6 +302,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMetadataResultSetClose() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
@@ -292,7 +321,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
         @QuerySqlField(index = false)
@@ -325,7 +353,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
         @QuerySqlField
@@ -342,6 +369,33 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         private Organization(int id, String name) {
             this.id = id;
             this.name = name;
+        }
+    }
+
+    /**
+     * Meta Test.
+     */
+    private static class MetaTest implements Serializable {
+        /** ID. */
+        @QuerySqlField
+        private final int id;
+
+        /** Date. */
+        @QuerySqlField
+        private final Date date;
+
+        /** decimal. */
+        @QuerySqlField
+        private final BigDecimal decimal;
+
+        /**
+         * @param id ID.
+         * @param date Date.
+         */
+        private MetaTest(int id, Date date, BigDecimal decimal) {
+            this.id = id;
+            this.date = date;
+            this.decimal = decimal;
         }
     }
 }

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test SQLSTATE codes propagation with (any) Ignite JDBC driver.
@@ -69,17 +70,11 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
             .setInterceptor(new TestCacheInterceptor()));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Test that H2 specific error codes get propagated to Ignite SQL exceptions.
      * @throws SQLException if failed.
      */
+    @Test
     public void testParsingErrors() throws SQLException {
         checkErrorState("gibberish", "42000",
             "Failed to parse query. Syntax error in SQL statement \"GIBBERISH[*] \"");
@@ -89,6 +84,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * Test that error codes from tables related DDL operations get propagated to Ignite SQL exceptions.
      * @throws SQLException if failed.
      */
+    @Test
     public void testTableErrors() throws SQLException {
         checkErrorState("DROP TABLE \"PUBLIC\".missing", "42000", "Table doesn't exist: MISSING");
     }
@@ -97,6 +93,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * Test that error codes from indexes related DDL operations get propagated to Ignite SQL exceptions.
      * @throws SQLException if failed.
      */
+    @Test
     public void testIndexErrors() throws SQLException {
         checkErrorState("DROP INDEX \"PUBLIC\".missing", "42000", "Index doesn't exist: MISSING");
     }
@@ -105,9 +102,10 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * Test that error codes from DML operations get propagated to Ignite SQL exceptions.
      * @throws SQLException if failed.
      */
+    @Test
     public void testDmlErrors() throws SQLException {
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, null)", "22004",
-            "Value for INSERT, MERGE, or UPDATE must not be null");
+            "Value for INSERT, COPY, MERGE, or UPDATE must not be null");
 
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "0700B",
             "Value conversion failed [from=java.lang.String, to=java.lang.Integer]");
@@ -117,6 +115,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * Test error code for the case when user attempts to refer a future currently unsupported.
      * @throws SQLException if failed.
      */
+    @Test
     public void testUnsupportedSql() throws SQLException {
         checkErrorState("ALTER TABLE \"test\".Integer MODIFY COLUMN _key CHAR", "0A000",
             "ALTER COLUMN is not supported");
@@ -126,6 +125,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * Test error code for the case when user attempts to use a closed connection.
      * @throws SQLException if failed.
      */
+    @Test
     public void testConnectionClosed() throws SQLException {
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
@@ -238,6 +238,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * Test error code for the case when user attempts to use a closed result set.
      * @throws SQLException if failed.
      */
+    @Test
     public void testResultSetClosed() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -259,6 +260,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to an {@code int}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidIntFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -267,10 +269,10 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                     rs.next();
 
-                    rs.getLong(1);
+                    rs.getInt(1);
                 }
             }
-        }, "0700B", "Cannot convert to long");
+        }, "0700B", "Cannot convert to int");
     }
 
     /**
@@ -278,6 +280,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to an {@code long}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidLongFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -297,6 +300,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to an {@code float}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidFloatFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -316,6 +320,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to an {@code double}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidDoubleFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -335,6 +340,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to an {@code byte}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidByteFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -354,6 +360,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to an {@code short}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidShortFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -373,6 +380,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to an {@code BigDecimal}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidBigDecimalFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -392,6 +400,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to an {@code boolean}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidBooleanFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -411,6 +420,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to an {@code boolean}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidObjectFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -430,6 +440,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to a {@link Date}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidDateFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -449,6 +460,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to a {@link Time}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidTimeFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -468,6 +480,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to a {@link Timestamp}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidTimestampFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -487,6 +500,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * from column whose value can't be converted to a {@link URL}.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidUrlFormat() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -506,6 +520,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException if failed.
      */
+    @Test
     public void testNotNullViolation() throws SQLException {
         try (Connection conn = getConnection()) {
             conn.setSchema("PUBLIC");
@@ -535,6 +550,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException if failed.
      */
+    @Test
     public void testNotNullRestrictionReadThroughCacheStore() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -555,6 +571,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException if failed.
      */
+    @Test
     public void testNotNullRestrictionCacheInterceptor() throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -573,6 +590,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testSelectWrongTable() throws SQLException {
         checkSqlErrorMessage("select from wrong", "42000",
             "Failed to parse query. Table \"WRONG\" not found");
@@ -583,6 +601,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testSelectWrongColumnName() throws SQLException {
         checkSqlErrorMessage("select wrong from test", "42000",
             "Failed to parse query. Column \"WRONG\" not found");
@@ -593,6 +612,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testSelectWrongSyntax() throws SQLException {
         checkSqlErrorMessage("select from test where", "42000",
             "Failed to parse query. Syntax error in SQL statement \"SELECT FROM TEST WHERE[*]");
@@ -603,6 +623,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testDmlWrongTable() throws SQLException {
         checkSqlErrorMessage("insert into wrong (id, val) values (3, 'val3')", "42000",
             "Failed to parse query. Table \"WRONG\" not found");
@@ -622,6 +643,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testDmlWrongColumnName() throws SQLException {
         checkSqlErrorMessage("insert into test (id, wrong) values (3, 'val3')", "42000",
             "Failed to parse query. Column \"WRONG\" not found");
@@ -641,6 +663,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testDmlWrongSyntax() throws SQLException {
         checkSqlErrorMessage("insert test (id, val) values (3, 'val3')", "42000",
             "Failed to parse query. Syntax error in SQL statement \"INSERT TEST[*] (ID, VAL)");
@@ -660,6 +683,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testDdlWrongTable() throws SQLException {
         checkSqlErrorMessage("create table test (id int primary key, val varchar)", "42000",
             "Table already exists: TEST");
@@ -682,6 +706,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testDdlWrongColumnName() throws SQLException {
         checkSqlErrorMessage("create index idx1 on test (wrong)", "42000",
             "Column doesn't exist: WRONG");
@@ -695,6 +720,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testDdlWrongSyntax() throws SQLException {
         checkSqlErrorMessage("create table test2 (id int wrong key, val varchar)", "42000",
             "Failed to parse query. Syntax error in SQL statement \"CREATE TABLE TEST2 (ID INT WRONG[*]");
@@ -724,7 +750,6 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @param expState expected SQLSTATE code.
      * @throws SQLException if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkErrorState(final String sql, String expState, String expMsg) throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -741,7 +766,6 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @param expState expected SQLSTATE code.
      * @throws SQLException if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void checkErrorState(final ConnClosure clo, String expState, String expMsg) throws SQLException {
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
@@ -762,7 +786,6 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @param expState expected SQLSTATE code.
      * @throws SQLException if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void checkErrorState(final IgniteCallable<Void> clo, String expState, String expMsg) throws SQLException {
         SQLException ex = (SQLException)GridTestUtils.assertThrows(null, clo, SQLException.class, expMsg);
 

@@ -37,8 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
  *
@@ -81,7 +80,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(500 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(500L * 1024 * 1024).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
             .setPageSize(PAGE_SIZE);
 
@@ -100,7 +99,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         super.beforeTest();
     }
@@ -109,12 +108,13 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoverySeveralRestarts() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -170,6 +170,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoveryWithDynamicCache() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -223,6 +224,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoveryWithDynamicCacheLargeObjects() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);

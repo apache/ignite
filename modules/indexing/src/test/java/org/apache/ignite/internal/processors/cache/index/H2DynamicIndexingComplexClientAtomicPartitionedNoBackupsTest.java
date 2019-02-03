@@ -24,7 +24,7 @@ import org.apache.ignite.cache.CacheMode;
  * Test to check work of DML+DDL operations of atomic partitioned cache without backups
  * with queries initiated from client node.
  */
-public class H2DynamicIndexingComplexClientAtomicPartitionedNoBackupsTest extends H2DynamicIndexingComplexTest {
+public class H2DynamicIndexingComplexClientAtomicPartitionedNoBackupsTest extends H2DynamicIndexingComplexAbstractTest {
     /**
      * Constructor.
      */

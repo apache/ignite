@@ -40,10 +40,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
@@ -66,9 +64,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
@@ -98,12 +93,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         );
 
         cfg.setCacheConfiguration(cache);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -140,11 +129,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(URL);
 
@@ -172,6 +156,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableUsage() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where id = ?");
 
@@ -207,6 +192,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryExecuteException() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where boolVal is not distinct from ?");
 
@@ -264,6 +250,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBoolean() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where boolVal is not distinct from ?");
 
@@ -303,6 +290,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByte() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where byteVal is not distinct from ?");
 
@@ -342,6 +330,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShort() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where shortVal is not distinct from ?");
 
@@ -381,6 +370,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInteger() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where intVal is not distinct from ?");
 
@@ -420,6 +410,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLong() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where longVal is not distinct from ?");
 
@@ -459,6 +450,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFloat() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where floatVal is not distinct from ?");
 
@@ -498,6 +490,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDouble() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where doubleVal is not distinct from ?");
 
@@ -537,6 +530,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigDecimal() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where bigVal is not distinct from ?");
 
@@ -576,6 +570,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testString() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where strVal is not distinct from ?");
 
@@ -615,6 +610,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testArray() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where arrVal is not distinct from ?");
 
@@ -654,6 +650,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDate() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where dateVal is not distinct from ?");
 
@@ -693,6 +690,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTime() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where timeVal is not distinct from ?");
 
@@ -732,6 +730,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestamp() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where tsVal is not distinct from ?");
 
@@ -771,6 +770,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearParameter() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where boolVal is not distinct from ?");
 
@@ -794,6 +794,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotSupportedTypes() throws Exception {
         stmt = conn.prepareStatement("");
 
@@ -986,7 +987,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * Test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {
         /** */
         @QuerySqlField

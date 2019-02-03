@@ -22,18 +22,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for local affinity function.
  */
 public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODE_CNT = 1;
 
@@ -42,8 +37,6 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -61,11 +54,7 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
         startGrids(NODE_CNT);
     }
 
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-        stopAllGrids();
-    }
-
+    @Test
     public void testWronglySetAffinityFunctionForLocalCache() {
         Ignite node = ignite(NODE_CNT - 1);
 

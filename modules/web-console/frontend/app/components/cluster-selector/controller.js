@@ -15,41 +15,75 @@
  * limitations under the License.
  */
 
-export default class {
-    static $inject = ['$scope', 'AgentManager', 'IgniteConfirm'];
+import _ from 'lodash';
 
-    constructor($scope, agentMgr, Confirm) {
-        Object.assign(this, { $scope, agentMgr, Confirm });
+import { BehaviorSubject } from 'rxjs';
+import {tap, filter, combineLatest} from 'rxjs/operators';
+
+export default class {
+    static $inject = ['AgentManager', 'IgniteConfirm', 'IgniteVersion', 'IgniteMessages'];
+
+    /**
+     * @param agentMgr Agent manager.
+     * @param Confirm Confirmation service.
+     * @param Version Version check service.
+     * @param Messages Messages service.
+     */
+    constructor(agentMgr, Confirm, Version, Messages) {
+        this.agentMgr = agentMgr;
+        this.Confirm = Confirm;
+        this.Version = Version;
+        this.Messages = Messages;
 
         this.clusters = [];
         this.isDemo = agentMgr.isDemoMode();
+        this._inProgressSubject = new BehaviorSubject(false);
     }
 
     $onInit() {
-        this.clusters$ = this.agentMgr.connectionSbj
-            .do(({ cluster, clusters }) => {
-                this.cluster = cluster;
-                this.clusters = clusters;
+        if (this.isDemo)
+            return;
+
+        this.inProgress$ = this._inProgressSubject.asObservable();
+
+        this.clusters$ = this.agentMgr.connectionSbj.pipe(
+            combineLatest(this.inProgress$),
+            tap(([sbj, inProgress]) => this.inProgress = inProgress),
+            filter(([sbj, inProgress]) => !inProgress),
+            tap(([{cluster, clusters}]) => {
+                this.cluster = cluster ? {...cluster} : null;
+                this.clusters = _.orderBy(clusters, ['name'], ['asc']);
             })
-            .subscribe(() => {});
+        )
+        .subscribe(() => {});
     }
 
     $onDestroy() {
-        this.clusters$.unsubscribe();
+        if (!this.isDemo)
+            this.clusters$.unsubscribe();
     }
 
     change() {
         this.agentMgr.switchCluster(this.cluster);
     }
 
+    isChangeStateAvailable() {
+        return !this.isDemo && this.cluster && this.Version.since(this.cluster.clusterVersion, '2.0.0');
+    }
+
     toggle($event) {
         $event.preventDefault();
 
         const toggleClusterState = () => {
-            this.inProgress = true;
+            this._inProgressSubject.next(true);
 
             return this.agentMgr.toggleClusterState()
-                .finally(() => this.inProgress = false);
+                .then(() => this._inProgressSubject.next(false))
+                .catch((err) => {
+                    this._inProgressSubject.next(false);
+
+                    this.Messages.showError('Failed to toggle cluster state: ', err);
+                });
         };
 
         if (this.cluster.active) {

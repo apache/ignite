@@ -63,7 +63,7 @@ public class PersistentStoreConfiguration implements Serializable {
     public static final int DFLT_WAL_SEGMENT_SIZE = 64 * 1024 * 1024;
 
     /** Default wal mode. */
-    public static final WALMode DFLT_WAL_MODE = WALMode.DEFAULT;
+    public static final WALMode DFLT_WAL_MODE = WALMode.LOG_ONLY;
 
     /** Default Wal flush frequency. */
     public static final int DFLT_WAL_FLUSH_FREQ = 2000;
@@ -483,6 +483,9 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param walMode Wal mode.
      */
     public PersistentStoreConfiguration setWalMode(WALMode walMode) {
+        if (walMode == WALMode.DEFAULT)
+            walMode = WALMode.FSYNC;
+
         this.walMode = walMode;
 
         return this;
@@ -623,7 +626,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * <b>Note:</b> setting this value with {@link WALMode#DEFAULT} may generate file size overhead for WAL segments in case
+     * <b>Note:</b> setting this value with {@link WALMode#FSYNC} may generate file size overhead for WAL segments in case
      * grid is used rarely.
      *
      * @param walAutoArchiveAfterInactivity time in millis to run auto archiving segment (even if incomplete) after last

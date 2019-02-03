@@ -22,6 +22,8 @@
 #include "ignite/odbc/ssl/ssl_mode.h"
 
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
+#include "ignite/odbc/config/config_tools.h"
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 namespace ignite
 {
@@ -34,8 +36,11 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(480),
+                    height(600),
                     connectionSettingsGroupBox(),
+                    sslSettingsGroupBox(),
+                    authSettingsGroupBox(),
+                    additionalSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
                     addressLabel(),
@@ -50,6 +55,11 @@ namespace ignite
                     collocatedCheckBox(),
                     protocolVersionLabel(),
                     protocolVersionComboBox(),
+                    userLabel(),
+                    userEdit(),
+                    passwordLabel(),
+                    passwordEdit(),
+                    nestedTxModeComboBox(),
                     okButton(),
                     cancelButton(),
                     config(config),
@@ -95,6 +105,7 @@ namespace ignite
                     int groupSizeY = width - 2 * MARGIN;
 
                     groupPosY += INTERVAL + CreateConnectionSettingsGroup(MARGIN, groupPosY, groupSizeY);
+                    groupPosY += INTERVAL + CreateAuthSettingsGroup(MARGIN, groupPosY, groupSizeY);
                     groupPosY += INTERVAL + CreateSslSettingsGroup(MARGIN, groupPosY, groupSizeY);
                     groupPosY += INTERVAL + CreateAdditionalSettingsGroup(MARGIN, groupPosY, groupSizeY);
 
@@ -124,7 +135,9 @@ namespace ignite
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
-                    val = config.GetAddress().c_str();
+                    std::string addr = config::AddressesToString(config.GetAddresses());
+
+                    val = addr.c_str();
                     addressLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
                         "Address:", ChildId::ADDRESS_LABEL);
                     addressEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::ADDRESS_EDIT);
@@ -147,17 +160,17 @@ namespace ignite
 
                     const ProtocolVersion::VersionSet& supported = ProtocolVersion::GetSupported();
 
-                    ProtocolVersion version = ProtocolVersion::GetCurrent();
-                    ProtocolVersion::VersionSet::const_iterator it;
-                    for (it = supported.begin(); it != supported.end(); ++it)
+                    ProtocolVersion version = config.GetProtocolVersion();
+
+                    if (!version.IsSupported())
+                        version = ProtocolVersion::GetCurrent();
+
+                    for (ProtocolVersion::VersionSet::const_iterator it = supported.begin(); it != supported.end(); ++it)
                     {
                         protocolVersionComboBox->AddString(it->ToString());
 
-                        if (*it == config.GetProtocolVersion())
-                        {
+                        if (*it == version)
                             protocolVersionComboBox->SetSelection(id);
-                            version = *it;
-                        }
 
                         ++id;
                     }
@@ -166,6 +179,38 @@ namespace ignite
 
                     connectionSettingsGroupBox = CreateGroupBox(posX, posY, sizeX, rowPos - posY,
                         "Connection settings", ChildId::CONNECTION_SETTINGS_GROUP_BOX);
+
+                    return rowPos - posY;
+                }
+
+                int DsnConfigurationWindow::CreateAuthSettingsGroup(int posX, int posY, int sizeX)
+                {
+                    enum { LABEL_WIDTH = 120 };
+
+                    int labelPosX = posX + INTERVAL;
+
+                    int editSizeX = sizeX - LABEL_WIDTH - 3 * INTERVAL;
+                    int editPosX = labelPosX + LABEL_WIDTH + INTERVAL;
+
+                    int rowPos = posY + 2 * INTERVAL;
+
+                    const char* val = config.GetUser().c_str();
+
+                    userLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "User :", ChildId::USER_LABEL);
+                    userEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::USER_EDIT);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    val = config.GetPassword().c_str();
+                    passwordLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "Password:", ChildId::PASSWORD_LABEL);
+                    passwordEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::USER_EDIT, ES_PASSWORD);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    authSettingsGroupBox = CreateGroupBox(posX, posY, sizeX, rowPos - posY,
+                        "Authentication settings", ChildId::AUTH_SETTINGS_GROUP_BOX);
 
                     return rowPos - posY;
                 }
@@ -183,11 +228,15 @@ namespace ignite
 
                     int rowPos = posY + 2 * INTERVAL;
 
-                    const char* val = config.GetSslMode().c_str();
-                    SslMode::T sslMode = SslMode::FromString(val, SslMode::DISABLE);
+                    SslMode::Type sslMode = config.GetSslMode();
+                    std::string sslModeStr = SslMode::ToString(sslMode);
 
-                    sslModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Mode:", ChildId::SSL_MODE_LABEL);
-                    sslModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT, "", ChildId::SSL_MODE_COMBO_BOX);
+                    const char* val = sslModeStr.c_str();
+
+                    sslModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Mode:", ChildId::SSL_MODE_LABEL);
+                    sslModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        "", ChildId::SSL_MODE_COMBO_BOX);
 
                     sslModeComboBox->AddString("disable");
                     sslModeComboBox->AddString("require");
@@ -197,24 +246,30 @@ namespace ignite
                     rowPos += INTERVAL + ROW_HEIGHT;
 
                     val = config.GetSslKeyFile().c_str();
-                    sslKeyFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Private Key:", ChildId::SSL_KEY_FILE_LABEL);
-                    sslKeyFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::SSL_KEY_FILE_EDIT);
+                    sslKeyFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Private Key:", ChildId::SSL_KEY_FILE_LABEL);
+                    sslKeyFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::SSL_KEY_FILE_EDIT);
 
                     SHAutoComplete(sslKeyFileEdit->GetHandle(), SHACF_DEFAULT);
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
                     val = config.GetSslCertFile().c_str();
-                    sslCertFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Certificate:", ChildId::SSL_CERT_FILE_LABEL);
-                    sslCertFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::SSL_CERT_FILE_EDIT);
+                    sslCertFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Certificate:", ChildId::SSL_CERT_FILE_LABEL);
+                    sslCertFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::SSL_CERT_FILE_EDIT);
 
                     SHAutoComplete(sslCertFileEdit->GetHandle(), SHACF_DEFAULT);
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
                     val = config.GetSslCaFile().c_str();
-                    sslCaFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Certificate Authority:", ChildId::SSL_CA_FILE_LABEL);
-                    sslCaFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::SSL_CA_FILE_EDIT);
+                    sslCaFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Certificate Authority:", ChildId::SSL_CA_FILE_LABEL);
+                    sslCaFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::SSL_CA_FILE_EDIT);
 
                     SHAutoComplete(sslCaFileEdit->GetHandle(), SHACF_DEFAULT);
 
@@ -232,7 +287,7 @@ namespace ignite
 
                 int DsnConfigurationWindow::CreateAdditionalSettingsGroup(int posX, int posY, int sizeX)
                 {
-                    enum { LABEL_WIDTH = 80 };
+                    enum { LABEL_WIDTH = 130 };
 
                     int labelPosX = posX + INTERVAL;
 
@@ -241,7 +296,10 @@ namespace ignite
 
                     int checkBoxSize = (sizeX - 3 * INTERVAL) / 2;
 
-                    const ProtocolVersion version = config.GetProtocolVersion();
+                    ProtocolVersion version = config.GetProtocolVersion();
+
+                    if (!version.IsSupported())
+                        version = ProtocolVersion::GetCurrent();
 
                     int rowPos = posY + 2 * INTERVAL;
 
@@ -255,11 +313,35 @@ namespace ignite
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
+                    nestedTxModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "Nested Transaction Mode:", ChildId::NESTED_TX_MODE_LABEL);
+                    nestedTxModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        "", ChildId::NESTED_TX_MODE_COMBO_BOX);
+
+                    int id = 0;
+
+                    const NestedTxMode::ModeSet& supported = NestedTxMode::GetValidValues();
+
+                    for (NestedTxMode::ModeSet::const_iterator it = supported.begin(); it != supported.end(); ++it)
+                    {
+                        nestedTxModeComboBox->AddString(NestedTxMode::ToString(*it));
+
+                        if (*it == config.GetNestedTxMode())
+                            nestedTxModeComboBox->SetSelection(id);
+
+                        ++id;
+                    }
+
+                    nestedTxModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_5_0);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
                     distributedJoinsCheckBox = CreateCheckBox(labelPosX, rowPos, checkBoxSize, ROW_HEIGHT,
                         "Distributed Joins", ChildId::DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
 
-                    enforceJoinOrderCheckBox = CreateCheckBox(labelPosX + checkBoxSize + INTERVAL, rowPos, checkBoxSize,
-                        ROW_HEIGHT, "Enforce Join Order", ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
+                    enforceJoinOrderCheckBox = CreateCheckBox(labelPosX + checkBoxSize + INTERVAL,
+                        rowPos, checkBoxSize, ROW_HEIGHT, "Enforce Join Order",
+                        ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
 
                     rowPos += ROW_HEIGHT;
 
@@ -374,6 +456,7 @@ namespace ignite
                                     ProtocolVersion version = ProtocolVersion::FromString(versionStr);
                                     lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
                                     skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+                                    nestedTxModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_5_0);
 
                                     break;
                                 }
@@ -385,7 +468,7 @@ namespace ignite
                                     std::string sslModeStr;
                                     sslModeComboBox->GetText(sslModeStr);
 
-                                    SslMode::T sslMode = SslMode::FromString(sslModeStr, SslMode::DISABLE);
+                                    SslMode::Type sslMode = SslMode::FromString(sslModeStr, SslMode::DISABLE);
 
                                     sslKeyFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
                                     sslCertFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
@@ -418,75 +501,100 @@ namespace ignite
                 void DsnConfigurationWindow::RetrieveParameters(config::Configuration& cfg) const
                 {
                     RetrieveConnectionParameters(cfg);
+                    RetrieveAuthParameters(cfg);
                     RetrieveSslParameters(cfg);
                     RetrieveAdditionalParameters(cfg);
                 }
 
                 void DsnConfigurationWindow::RetrieveConnectionParameters(config::Configuration& cfg) const
                 {
-                    std::string dsn;
-                    std::string address;
-                    std::string schema;
-                    std::string version;
+                    std::string dsnStr;
+                    std::string addressStr;
+                    std::string schemaStr;
+                    std::string versionStr;
 
-                    nameEdit->GetText(dsn);
-                    addressEdit->GetText(address);
-                    schemaEdit->GetText(schema);
-                    protocolVersionComboBox->GetText(version);
+                    nameEdit->GetText(dsnStr);
+                    addressEdit->GetText(addressStr);
+                    schemaEdit->GetText(schemaStr);
+                    protocolVersionComboBox->GetText(versionStr);
 
-                    common::StripSurroundingWhitespaces(address);
-                    common::StripSurroundingWhitespaces(dsn);
+                    common::StripSurroundingWhitespaces(addressStr);
+                    common::StripSurroundingWhitespaces(dsnStr);
                     // Stripping of whitespaces off the schema skipped intentionally
 
-                    LOG_MSG("Retriving arguments:");
-                    LOG_MSG("DSN:                " << dsn);
-                    LOG_MSG("Address:            " << address);
-                    LOG_MSG("Schema:             " << schema);
-                    LOG_MSG("Protocol version:   " << version);
+                    LOG_MSG("Retrieving arguments:");
+                    LOG_MSG("DSN:                " << dsnStr);
+                    LOG_MSG("Address:            " << addressStr);
+                    LOG_MSG("Schema:             " << schemaStr);
+                    LOG_MSG("Protocol version:   " << versionStr);
 
-                    if (dsn.empty())
+                    if (dsnStr.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
 
-                    cfg.SetDsn(dsn);
-                    cfg.SetAddress(address);
-                    cfg.SetSchema(schema);
+                    diagnostic::DiagnosticRecordStorage diag;
+
+                    std::vector<EndPoint> addresses;
+
+                    config::ParseAddress(addressStr, addresses, &diag);
+
+                    if (diag.GetStatusRecordsNumber() > 0)
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            diag.GetStatusRecord(1).GetMessageText().c_str());
+                    }
+
+                    ProtocolVersion version = ProtocolVersion::FromString(versionStr);
+
+                    if (!version.IsSupported())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Protocol version is not supported.");
+
+                    cfg.SetDsn(dsnStr);
+                    cfg.SetAddresses(addresses);
+                    cfg.SetSchema(schemaStr);
                     cfg.SetProtocolVersion(version);
+                }
+
+                void DsnConfigurationWindow::RetrieveAuthParameters(config::Configuration& cfg) const
+                {
+                    std::string user;
+                    std::string password;
+
+                    userEdit->GetText(user);
+                    passwordEdit->GetText(password);
+
+                    cfg.SetUser(user);
+                    cfg.SetPassword(password);
                 }
 
                 void DsnConfigurationWindow::RetrieveSslParameters(config::Configuration& cfg) const
                 {
-                    std::string sslMode;
-                    std::string sslKey;
-                    std::string sslCert;
-                    std::string sslCa;
+                    std::string sslModeStr;
+                    std::string sslKeyStr;
+                    std::string sslCertStr;
+                    std::string sslCaStr;
 
-                    sslModeComboBox->GetText(sslMode);
-                    sslKeyFileEdit->GetText(sslKey);
-                    sslCertFileEdit->GetText(sslCert);
-                    sslCaFileEdit->GetText(sslCa);
+                    sslModeComboBox->GetText(sslModeStr);
+                    sslKeyFileEdit->GetText(sslKeyStr);
+                    sslCertFileEdit->GetText(sslCertStr);
+                    sslCaFileEdit->GetText(sslCaStr);
 
-                    LOG_MSG("Retriving arguments:");
-                    LOG_MSG("SSL Mode:           " << sslMode);
-                    LOG_MSG("SSL Key:            " << sslKey);
-                    LOG_MSG("SSL Certificate:    " << sslCert);
-                    LOG_MSG("SSL CA:             " << sslCa);
+                    LOG_MSG("Retrieving arguments:");
+                    LOG_MSG("SSL Mode:           " << sslModeStr);
+                    LOG_MSG("SSL Key:            " << sslKeyStr);
+                    LOG_MSG("SSL Certificate:    " << sslCertStr);
+                    LOG_MSG("SSL CA:             " << sslCaStr);
+
+                    ssl::SslMode::Type sslMode = ssl::SslMode::FromString(sslModeStr, ssl::SslMode::DISABLE);
 
                     cfg.SetSslMode(sslMode);
-                    cfg.SetSslKeyFile(sslKey);
-                    cfg.SetSslCertFile(sslCert);
-                    cfg.SetSslCaFile(sslCa);
+                    cfg.SetSslKeyFile(sslKeyStr);
+                    cfg.SetSslCertFile(sslCertStr);
+                    cfg.SetSslCaFile(sslCaStr);
                 }
 
                 void DsnConfigurationWindow::RetrieveAdditionalParameters(config::Configuration& cfg) const
                 {
                     std::string pageSizeStr;
-
-                    bool distributedJoins;
-                    bool enforceJoinOrder;
-                    bool replicatedOnly;
-                    bool collocated;
-                    bool lazy;
-                    bool skipReducerOnUpdate;
 
                     pageSizeEdit->GetText(pageSizeStr);
 
@@ -495,23 +603,31 @@ namespace ignite
                     if (pageSize <= 0)
                         pageSize = config.GetPageSize();
 
-                    distributedJoins = distributedJoinsCheckBox->IsChecked();
-                    enforceJoinOrder = enforceJoinOrderCheckBox->IsChecked();
-                    replicatedOnly = replicatedOnlyCheckBox->IsChecked();
-                    collocated = collocatedCheckBox->IsChecked();
-                    lazy = lazyCheckBox->IsChecked();
-                    skipReducerOnUpdate = skipReducerOnUpdateCheckBox->IsChecked();
+                    std::string nestedTxModeStr;
 
-                    LOG_MSG("Retriving arguments:");
-                    LOG_MSG("Page size:                 " << pageSize);
-                    LOG_MSG("Distributed Joins:         " << (distributedJoins ? "true" : "false"));
-                    LOG_MSG("Enforce Join Order:        " << (enforceJoinOrder ? "true" : "false"));
-                    LOG_MSG("Replicated only:           " << (replicatedOnly ? "true" : "false"));
-                    LOG_MSG("Collocated:                " << (collocated ? "true" : "false"));
-                    LOG_MSG("Lazy:                      " << (lazy ? "true" : "false"));
-                    LOG_MSG("Skip reducer on update:    " << (skipReducerOnUpdate ? "true" : "false"));
+                    nestedTxModeComboBox->GetText(nestedTxModeStr);
+
+                    NestedTxMode::Type mode = NestedTxMode::FromString(nestedTxModeStr, config.GetNestedTxMode());
+
+                    bool distributedJoins = distributedJoinsCheckBox->IsChecked();
+                    bool enforceJoinOrder = enforceJoinOrderCheckBox->IsChecked();
+                    bool replicatedOnly = replicatedOnlyCheckBox->IsChecked();
+                    bool collocated = collocatedCheckBox->IsChecked();
+                    bool lazy = lazyCheckBox->IsChecked();
+                    bool skipReducerOnUpdate = skipReducerOnUpdateCheckBox->IsChecked();
+
+                    LOG_MSG("Retrieving arguments:");
+                    LOG_MSG("Page size:              " << pageSize);
+                    LOG_MSG("Nested TX Mode:         " << NestedTxMode::ToString(mode));
+                    LOG_MSG("Distributed Joins:      " << (distributedJoins ? "true" : "false"));
+                    LOG_MSG("Enforce Join Order:     " << (enforceJoinOrder ? "true" : "false"));
+                    LOG_MSG("Replicated only:        " << (replicatedOnly ? "true" : "false"));
+                    LOG_MSG("Collocated:             " << (collocated ? "true" : "false"));
+                    LOG_MSG("Lazy:                   " << (lazy ? "true" : "false"));
+                    LOG_MSG("Skip reducer on update: " << (skipReducerOnUpdate ? "true" : "false"));
 
                     cfg.SetPageSize(pageSize);
+                    cfg.SetNestedTxMode(mode);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
                     cfg.SetReplicatedOnly(replicatedOnly);

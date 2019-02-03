@@ -34,10 +34,8 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
  * Test verifies that binary metadata of values stored in cache and indexes upon these values
@@ -115,7 +113,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -128,6 +126,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
     /**
      * Test for values without class created with BinaryObjectBuilder.
      */
+    @Test
     public void testClasslessBinaryValuesRestored() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -165,6 +164,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
      * Test for regular objects stored in cache with compactFooter=true setting
      * (no metainformation to deserialize values is stored with values themselves).
      */
+    @Test
     public void testRegularClassesRestored() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -193,13 +193,13 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 }

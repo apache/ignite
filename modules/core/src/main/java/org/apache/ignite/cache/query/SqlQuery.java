@@ -20,6 +20,8 @@ package org.apache.ignite.cache.query;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -59,6 +61,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** Partitions for query */
     private int[] parts;
+
+    /** */
+    private Boolean dataPageScanEnabled;
 
     /**
      * Constructs query for the given type name and SQL query.
@@ -238,7 +243,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @param replicatedOnly The query contains only replicated tables.
      * @return {@code this} For chaining.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public SqlQuery<K, V> setReplicatedOnly(boolean replicatedOnly) {
         this.replicatedOnly = replicatedOnly;
 
@@ -249,7 +256,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * Check is the query contains only replicated tables.
      *
      * @return {@code true} If the query contains only replicated tables.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public boolean isReplicatedOnly() {
         return replicatedOnly;
     }
@@ -274,6 +283,32 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
         this.parts = prepare(parts);
 
         return this;
+    }
+
+    /**
+     * Sets data page scan enabled or disabled.
+     *
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}
+     * and generally improves performance of full-scan SQL queries.
+     * When enabled, result may miss some concurrent updates or produce duplicates for the same key.
+     * To avoid these issues use with {@link CacheAtomicityMode#TRANSACTIONAL_SNAPSHOT}.
+     *
+     * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     * @return {@code this} for chaining.
+     */
+    public SqlQuery<K,V> setDataPageScanEnabled(Boolean dataPageScanEnabled) {
+        this.dataPageScanEnabled = dataPageScanEnabled;
+
+        return this;
+    }
+
+    /**
+     * Checks if data page scan enabled.
+     *
+     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled;
     }
 
     /** {@inheritDoc} */

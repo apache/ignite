@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheBasicOpAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,21 +49,25 @@ public class GridCachePartitionedBasicOpSelfTest extends GridCacheBasicOpAbstrac
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testBasicOps() throws Exception {
         super.testBasicOps();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testBasicOpsAsync() throws Exception {
         super.testBasicOpsAsync();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testOptimisticTransaction() throws Exception {
         super.testOptimisticTransaction();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPutWithExpiration() throws Exception {
         super.testPutWithExpiration();
     }

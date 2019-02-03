@@ -20,14 +20,15 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC query fetch request.
  */
 public class JdbcQueryFetchRequest extends JdbcRequest {
-    /** Query ID. */
-    private long queryId;
+    /** Cursor ID. */
+    private long cursorId;
 
     /** Fetch size. */
     private int pageSize;
@@ -40,21 +41,21 @@ public class JdbcQueryFetchRequest extends JdbcRequest {
     }
 
     /**
-     * @param queryId Query ID.
+     * @param cursorId Cursor ID.
      * @param pageSize Fetch size.
      */
-    public JdbcQueryFetchRequest(long queryId, int pageSize) {
+    public JdbcQueryFetchRequest(long cursorId, int pageSize) {
         super(QRY_FETCH);
 
-        this.queryId = queryId;
+        this.cursorId = cursorId;
         this.pageSize = pageSize;
     }
 
     /**
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long queryId() {
-        return queryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /**
@@ -65,20 +66,22 @@ public class JdbcQueryFetchRequest extends JdbcRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.writeBinary(writer, ver);
 
-        writer.writeLong(queryId);
+        writer.writeLong(cursorId);
         writer.writeInt(pageSize);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.readBinary(reader, ver);
 
-        queryId = reader.readLong();
+        cursorId = reader.readLong();
         pageSize = reader.readInt();
-   }
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

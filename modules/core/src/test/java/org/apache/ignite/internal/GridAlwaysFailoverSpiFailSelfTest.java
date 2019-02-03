@@ -36,6 +36,7 @@ import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Always failover SPI test.
@@ -43,7 +44,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 @GridCommonTest(group = "Kernal Self")
 public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /** */
-    private boolean isFailoverCalled;
+    private static boolean isFailoverCalled1;
+
+    /** */
+    private boolean isFailoverCalled2;
 
     /** */
     public GridAlwaysFailoverSpiFailSelfTest() {
@@ -59,12 +63,10 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings({"UnusedCatchParameter", "ThrowableInstanceNeverThrown"})
-    public void testFailoverTask() throws Exception {
-        isFailoverCalled = false;
+    /** */
+    @Test
+    public void testFailoverTask() {
+        isFailoverCalled1 = false;
 
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -80,15 +82,13 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
             //No-op
         }
 
-        assert isFailoverCalled;
+        assert isFailoverCalled1;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings({"UnusedCatchParameter", "ThrowableInstanceNeverThrown"})
-    public void testNoneFailoverTask() throws Exception {
-        isFailoverCalled = false;
+    /** */
+    @Test
+    public void testNoneFailoverTask() {
+        isFailoverCalled2 = false;
 
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -104,14 +104,15 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
             //No-op
         }
 
-        assert !isFailoverCalled;
+        assert !isFailoverCalled2;
     }
 
     /** */
     private class GridTestFailoverSpi extends AlwaysFailoverSpi {
         /** {@inheritDoc} */
         @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> grid) {
-            isFailoverCalled = true;
+            isFailoverCalled1 = true;
+            isFailoverCalled2 = true;
 
             return super.failover(ctx, grid);
         }

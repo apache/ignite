@@ -30,8 +30,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 /**
  * Topology validator test.
@@ -98,7 +98,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         int c = 0;
 
         for (ClusterNode node : nodes) {
-            if (!CU.clientNode(node))
+            if (!node.isClient())
                 c++;
         }
 
@@ -241,6 +241,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyValidator() throws Exception {
         putValid(DEFAULT_CACHE_NAME);
         remove(DEFAULT_CACHE_NAME);

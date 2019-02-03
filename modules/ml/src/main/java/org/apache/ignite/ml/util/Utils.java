@@ -22,7 +22,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.Iterator;
 import java.util.Random;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteException;
 
 /**
@@ -97,5 +103,70 @@ public class Utils {
      */
     public static int[] selectKDistinct(int n, int k) {
         return selectKDistinct(n, k, new Random());
+    }
+
+    /**
+     * Convert given iterator to a stream with known count of entries.
+     *
+     * @param iter Iterator.
+     * @param cnt Count.
+     * @param <T> Type of entries.
+     * @return Stream constructed from iterator.
+     */
+    public static <T> Stream<T> asStream(Iterator<T> iter, long cnt) {
+        return StreamSupport.stream(
+                Spliterators.spliterator(iter, cnt, Spliterator.ORDERED),
+                false);
+    }
+
+    /**
+     * Convert given iterator to a stream.
+     *
+     * @param iter Iterator.
+     * @param <T> Iterator content type.
+     * @return Stream constructed from iterator.
+     */
+    public static <T> Stream<T> asStream(Iterator<T> iter) {
+        return StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(iter, Spliterator.ORDERED),
+                false);
+    }
+
+    /**
+     * Serialized the specified object.
+     *
+     * @param o Object to be serialized.
+     * @return Serialized object as byte array.
+     */
+    public static <T extends Serializable> byte[] serialize(T o) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            oos.writeObject(o);
+            oos.flush();
+
+            return baos.toByteArray();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Deserialized object represented as a byte array.
+     *
+     * @param o Serialized object.
+     * @param <T> Type of serialized object.
+     * @return Deserialized object.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T extends Serializable> T deserialize(byte[] o) {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(o);
+             ObjectInputStream ois = new ObjectInputStream(bais)) {
+
+            return (T)ois.readObject();
+        }
+        catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

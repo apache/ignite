@@ -241,7 +241,7 @@ public class IgniteExceptionRegistry {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(ExceptionInfo.class, this);
         }
     }

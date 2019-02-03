@@ -30,9 +30,6 @@ import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -47,9 +44,6 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
     /** File path. */
     protected static final IgfsPath FILE = new IgfsPath("/file");
-
-    /** Shared IP finder. */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** IGFS. */
     protected static IgniteFileSystem igfs;
@@ -84,21 +78,11 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
         cfg.setIgniteInstanceName("grid");
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         Ignite g = G.start(cfg);
 
         igfs = g.fileSystem("igfs");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(false);
     }
 
     /** {@inheritDoc} */

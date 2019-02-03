@@ -38,6 +38,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.node.VisorNodePingTask;
 import org.apache.ignite.internal.visor.node.VisorNodePingTaskArg;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests that node will start with custom binary serializer and thin client will connect to such node.
@@ -88,6 +89,7 @@ public class BinaryConfigurationCustomSerializerSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testThinClientConnected() throws Exception {
         UUID nid = ignite(0).cluster().localNode().id();
 

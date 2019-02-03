@@ -32,6 +32,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.jdbcx.JdbcDataSource;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Test for Cache JDBC blob store factory.
@@ -46,6 +48,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXmlConfiguration() throws Exception {
         try (Ignite ignite = Ignition.start("modules/spring/src/test/config/store-cache.xml")) {
             try(Ignite ignite1 = Ignition.start("modules/spring/src/test/config/store-cache1.xml")) {
@@ -59,6 +62,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheConfiguration() throws Exception {
         try (Ignite ignite = Ignition.start("modules/spring/src/test/config/node.xml")) {
             try (Ignite ignite1 = Ignition.start("modules/spring/src/test/config/node1.xml")) {
@@ -76,6 +80,8 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
+    @Test
     public void testIncorrectBeanConfiguration() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

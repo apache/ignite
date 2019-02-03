@@ -46,24 +46,20 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /** */
-public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
     /** Name of client node. */
     private static String NODE_CLIENT = "client";
 
@@ -111,13 +107,6 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-        disco.setForceServerMode(true);
-
-        c.setDiscoverySpi(disco);
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
@@ -243,13 +232,6 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -257,6 +239,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testQueryEntityGetSetNotNullFields() throws Exception {
         QueryEntity qe = new QueryEntity();
 
@@ -274,6 +257,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testQueryEntityEquals() throws Exception {
         QueryEntity a = new QueryEntity();
 
@@ -291,6 +275,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAtomicOrImplicitTxPut() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -308,6 +293,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAtomicOrImplicitTxPutIfAbsent() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -325,6 +311,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAtomicOrImplicitTxGetAndPut() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -342,6 +329,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAtomicOrImplicitTxGetAndPutIfAbsent() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -359,6 +347,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAtomicOrImplicitTxReplace() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -377,6 +366,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAtomicOrImplicitTxGetAndReplace() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -395,29 +385,19 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAtomicOrImplicitTxPutAll() throws Exception {
-        executeWithAllCaches(new TestClosure() {
-            @Override public void run() throws Exception {
-                Throwable t = GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        cache.putAll(F.asMap(key1, okValue, key2, badValue));
-
-                        return null;
-                    }
-                }, IgniteSQLException.class);
-
-                IgniteSQLException ex = X.cause(t, IgniteSQLException.class);
-
-                assertNotNull(ex);
-
-                assertTrue(ex.getMessage().contains(ERR_MSG));
-
-                assertEquals(isLocalAtomic() ? 1 : 0, cache.size());
-            }
-        });
+        doAtomicOrImplicitTxPutAll(F.asMap(1, okValue, 5, badValue), 1);
     }
 
     /** */
+    @Test
+    public void testAtomicOrImplicitTxPutAllForSingleValue() throws Exception {
+        doAtomicOrImplicitTxPutAll(F.asMap(5, badValue), 0);
+    }
+
+    /** */
+    @Test
     public void testAtomicOrImplicitTxInvoke() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -433,6 +413,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAtomicOrImplicitTxInvokeAll() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -454,6 +435,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTxPutCreate() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -476,6 +458,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTxPutUpdate() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -499,6 +482,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTxPutIfAbsent() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -520,6 +504,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTxGetAndPut() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -541,6 +526,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTxGetAndPutIfAbsent() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -562,6 +548,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTxReplace() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -586,6 +573,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTxGetAndReplace() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -610,27 +598,19 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTxPutAll() throws Exception {
-        executeWithAllTxCaches(new TestClosure() {
-            @Override public void run() throws Exception {
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
-                            cache.putAll(F.asMap(key1, okValue, key2, badValue));
-
-                            tx.commit();
-                        }
-
-                        assertEquals(0, cache.size());
-
-                        return null;
-                    }
-                }, CacheException.class, ERR_MSG);
-            }
-        });
+        doTxPutAll(F.asMap(1, okValue, 5, badValue));
     }
 
     /** */
+    @Test
+    public void testTxPutAllForSingleValue() throws Exception {
+        doTxPutAll(F.asMap(5, badValue));
+    }
+
+    /** */
+    @Test
     public void testTxInvoke() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -655,6 +635,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTxInvokeAll() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
@@ -681,6 +662,77 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testAtomicOrImplicitTxInvokeDelete() throws Exception {
+        executeWithAllCaches(new TestClosure() {
+            @Override public void run() throws Exception {
+                cache.put(key1, okValue);
+
+                cache.invoke(key1, new TestEntryProcessor(null));
+
+                assertEquals(0, cache.size());
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testAtomicOrImplicitTxInvokeAllDelete() throws Exception {
+        executeWithAllCaches(new TestClosure() {
+            @Override public void run() throws Exception {
+                cache.put(key1, okValue);
+                cache.put(key2, okValue);
+
+                cache.invokeAll(F.asMap(
+                    key1, new TestEntryProcessor(null),
+                    key2, new TestEntryProcessor(null)));
+
+                assertEquals(0, cache.size());
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testTxInvokeDelete() throws Exception {
+        executeWithAllTxCaches(new TestClosure() {
+            @Override public void run() throws Exception {
+                cache.put(key1, okValue);
+
+                try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
+                    cache.invoke(key1, new TestEntryProcessor(null));
+
+                    tx.commit();
+                }
+
+                assertEquals(0, cache.size());
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testTxInvokeAllDelete() throws Exception {
+        executeWithAllTxCaches(new TestClosure() {
+            @Override public void run() throws Exception {
+                cache.put(key1, okValue);
+                cache.put(key2, okValue);
+
+                try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
+                    cache.invokeAll(F.asMap(
+                        key1, new TestEntryProcessor(null),
+                        key2, new TestEntryProcessor(null)));
+
+                    tx.commit();
+                }
+
+                assertEquals(0, cache.size());
+            }
+        });
+    }
+
+    /** */
+    @Test
     public void testDynamicTableCreateNotNullFieldsAllowed() throws Exception {
         executeSql("CREATE TABLE test(id INT PRIMARY KEY, field INT NOT NULL)");
 
@@ -698,6 +750,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAlterTableAddColumnNotNullFieldAllowed() throws Exception {
         executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT)");
 
@@ -707,11 +760,13 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAtomicNotNullCheckDmlInsertValues() throws Exception {
         checkNotNullCheckDmlInsertValues(CacheAtomicityMode.ATOMIC);
     }
 
     /** */
+    @Test
     public void testTransactionalNotNullCheckDmlInsertValues() throws Exception {
         checkNotNullCheckDmlInsertValues(CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -742,11 +797,13 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAtomicAddColumnNotNullCheckDmlInsertValues() throws Exception {
         checkAddColumnNotNullCheckDmlInsertValues(CacheAtomicityMode.ATOMIC);
     }
 
     /** */
+    @Test
     public void testTransactionalAddColumnNotNullCheckDmlInsertValues() throws Exception {
         checkAddColumnNotNullCheckDmlInsertValues(CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -779,6 +836,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testNotNullCheckDmlInsertFromSelect() throws Exception {
         executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR, age INT)");
 
@@ -804,6 +862,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testNotNullCheckDmlUpdateValues() throws Exception {
         executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR NOT NULL)");
 
@@ -830,6 +889,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testNotNullCheckDmlUpdateFromSelect() throws Exception {
         executeSql("CREATE TABLE src(id INT PRIMARY KEY, name VARCHAR)");
         executeSql("CREATE TABLE dest(id INT PRIMARY KEY, name VARCHAR NOT NULL)");
@@ -877,6 +937,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** Check QueryEntity configuration fails with NOT NULL field and read-through. */
+    @Test
     public void testReadThroughRestrictionQueryEntity() throws Exception {
         // Node start-up failure (read-through cache store).
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
@@ -895,6 +956,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** Check QueryEntity configuration fails with NOT NULL field and cache interceptor. */
+    @Test
     public void testInterceptorRestrictionQueryEntity() throws Exception {
         // Node start-up failure (interceptor).
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
@@ -913,6 +975,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** Check create table fails with NOT NULL field and read-through. */
+    @Test
     public void testReadThroughRestrictionCreateTable() throws Exception {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -923,6 +986,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** Check create table fails with NOT NULL field and cache interceptor. */
+    @Test
     public void testInterceptorRestrictionCreateTable() throws Exception {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -933,6 +997,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** Check alter table fails with NOT NULL field and read-through. */
+    @Test
     public void testReadThroughRestrictionAlterTable() throws Exception {
         executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) " +
             "WITH \"template=" + CACHE_READ_THROUGH + "\"");
@@ -945,6 +1010,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** Check alter table fails with NOT NULL field and cache interceptor. */
+    @Test
     public void testInterceptorRestrictionAlterTable() throws Exception {
         executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) " +
             "WITH \"template=" + CACHE_INTERCEPTOR + "\"");
@@ -954,6 +1020,50 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
                 return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
             }
         }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
+    }
+
+    /** */
+    private void doAtomicOrImplicitTxPutAll(final Map<Integer, Person> values, int expAtomicCacheSize) throws Exception {
+        executeWithAllCaches(new TestClosure() {
+            @Override public void run() throws Exception {
+                Throwable t = GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        cache.putAll(values);
+
+                        return null;
+                    }
+                }, IgniteSQLException.class);
+
+                IgniteSQLException ex = X.cause(t, IgniteSQLException.class);
+
+                assertNotNull(ex);
+
+                assertTrue(ex.getMessage().contains(ERR_MSG));
+
+                assertEquals(isLocalAtomic() ? expAtomicCacheSize : 0, cache.size());
+            }
+        });
+    }
+
+    /** */
+    private void doTxPutAll(Map<Integer, Person> values) throws Exception {
+        executeWithAllTxCaches(new TestClosure() {
+            @Override public void run() throws Exception {
+                GridTestUtils.assertThrows(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
+                            cache.putAll(values);
+
+                            tx.commit();
+                        }
+
+                        assertEquals(0, cache.size());
+
+                        return null;
+                    }
+                }, CacheException.class, ERR_MSG);
+            }
+        });
     }
 
     /** */
@@ -1137,7 +1247,10 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         @Override public Object process(MutableEntry<Integer, Person> entry,
             Object... objects) throws EntryProcessorException {
 
-            entry.setValue(value);
+            if (value == null)
+                entry.remove();
+            else
+                entry.setValue(value);
 
             return null;
         }

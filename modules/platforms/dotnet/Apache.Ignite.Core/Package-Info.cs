@@ -26,11 +26,11 @@ namespace Apache.Ignite.Core
 
     /**
 
-    \mainpage Apache Ignite.NET In-Memory Data Fabric
+    \mainpage Apache Ignite.NET
 
-    Apache Ignite.NET In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for 
-    computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with 
-    traditional disk-based or flash-based technologies.
+    Apache Ignite is a memory-centric distributed database, caching,
+	and processing platform for transactional, analytical,
+	and streaming workloads, delivering in-memory speeds at petabyte scale.
 
     */
 }

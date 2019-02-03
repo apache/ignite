@@ -21,6 +21,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 
@@ -31,9 +32,8 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersions() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5413");
-
         String propVal = System.getProperty(IGNITE_UPDATE_NOTIFIER);
 
         System.setProperty(IGNITE_UPDATE_NOTIFIER, "true");

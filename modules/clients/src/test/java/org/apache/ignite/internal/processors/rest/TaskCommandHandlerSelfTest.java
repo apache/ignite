@@ -41,13 +41,10 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandH
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -59,9 +56,6 @@ import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
  * Test for {@code GridTaskCommandHandler}
  */
 public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -86,8 +80,6 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         System.clearProperty(IgniteSystemProperties.IGNITE_REST_MAX_TASK_RESULTS);
     }
 
@@ -114,12 +106,6 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
         clientCfg.setPort(BINARY_PORT);
 
         cfg.setConnectorConfiguration(clientCfg);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration("replicated"),
             cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
@@ -166,6 +152,7 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyTasksRun() throws Exception {
         GridClientCompute compute = client.compute();
 

@@ -23,6 +23,7 @@ import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 /**
  * DUAL_ASYNC mode test.
@@ -38,8 +39,9 @@ public class Hadoop1OverIgfsProxyTest extends Hadoop1DualAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinity() throws Exception {
-        long fileSize = 32 * 1024 * 1024;
+        long fileSize = 32L * 1024 * 1024;
 
         IgfsPath filePath = new IgfsPath("/file");
 
