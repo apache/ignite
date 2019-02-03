@@ -60,16 +60,16 @@ public class ReduceTable extends TableBase {
     /**
      * @return Merge index.
      */
-    public ReduceMergeIndex getMergeIndex() {
-        return (ReduceMergeIndex)idxs.get(idxs.size() - 1); // Sorted index must be the last.
+    public ReduceIndex getMergeIndex() {
+        return (ReduceIndex)idxs.get(idxs.size() - 1); // Sorted index must be the last.
     }
 
     /**
      * @param idx Index.
      * @return Scan index.
      */
-    public static GridH2ScanIndex<ReduceMergeIndex> createScanIndex(ReduceMergeIndex idx) {
-        return new ReduceTableScanIndex(idx);
+    public static GridH2ScanIndex<ReduceIndex> createScanIndex(ReduceIndex idx) {
+        return new ReduceScanIndex(idx);
     }
 
     /** {@inheritDoc} */

@@ -86,7 +86,7 @@ public class ReduceBlockList<Z> extends AbstractList<Z> implements RandomAccess 
      * @return Last block.
      */
     public List<Z> lastBlock() {
-        return ReduceMergeIndex.last(blocks);
+        return ReduceIndex.last(blocks);
     }
 
     /**

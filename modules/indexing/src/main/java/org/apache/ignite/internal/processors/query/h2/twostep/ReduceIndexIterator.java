@@ -29,7 +29,7 @@ import org.h2.result.Row;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Iterator that transparently and sequentially traverses a bunch of {@link ReduceMergeIndex} objects.
+ * Iterator that transparently and sequentially traverses a bunch of {@link ReduceIndex} objects.
  */
 public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
     /** Reduce query executor. */
@@ -48,7 +48,7 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
     private final boolean distributedJoins;
 
     /** Iterator over indexes. */
-    private final Iterator<ReduceMergeIndex> idxIter;
+    private final Iterator<ReduceIndex> idxIter;
 
     /** Current cursor. */
     private Cursor cursor;

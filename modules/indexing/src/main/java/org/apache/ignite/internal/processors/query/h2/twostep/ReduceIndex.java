@@ -55,7 +55,7 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
 /**
  * Merge index.
  */
-public abstract class ReduceMergeIndex extends BaseIndex {
+public abstract class ReduceIndex extends BaseIndex {
     /** */
     private static final int MAX_FETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_MAX_SIZE, 10_000);
 
@@ -63,8 +63,8 @@ public abstract class ReduceMergeIndex extends BaseIndex {
     private static final int PREFETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
 
     /** */
-    private static final AtomicReferenceFieldUpdater<ReduceMergeIndex, ConcurrentMap> LAST_PAGES_UPDATER =
-        AtomicReferenceFieldUpdater.newUpdater(ReduceMergeIndex.class, ConcurrentMap.class, "lastPages");
+    private static final AtomicReferenceFieldUpdater<ReduceIndex, ConcurrentMap> LAST_PAGES_UPDATER =
+        AtomicReferenceFieldUpdater.newUpdater(ReduceIndex.class, ConcurrentMap.class, "lastPages");
 
     static {
         if (!U.isPow2(PREFETCH_SIZE)) {
@@ -126,7 +126,7 @@ public abstract class ReduceMergeIndex extends BaseIndex {
      * @param type Type.
      * @param cols Columns.
      */
-    protected ReduceMergeIndex(GridKernalContext ctx,
+    protected ReduceIndex(GridKernalContext ctx,
         ReduceTable tbl,
         String name,
         IndexType type,
@@ -140,7 +140,7 @@ public abstract class ReduceMergeIndex extends BaseIndex {
     /**
      * @param ctx Context.
      */
-    protected ReduceMergeIndex(GridKernalContext ctx) {
+    protected ReduceIndex(GridKernalContext ctx) {
         this.ctx = ctx;
 
         fetched = new ReduceBlockList<>(PREFETCH_SIZE);
@@ -219,8 +219,8 @@ public abstract class ReduceMergeIndex extends BaseIndex {
      * @param queue Queue to poll.
      * @return Next page.
      */
-    private GridResultPage takeNextPage(Pollable<GridResultPage> queue) {
-        GridResultPage page;
+    private ReduceResultPage takeNextPage(Pollable<ReduceResultPage> queue) {
+        ReduceResultPage page;
 
         for (;;) {
             try {
@@ -244,9 +244,9 @@ public abstract class ReduceMergeIndex extends BaseIndex {
      * @param iter Current iterator.
      * @return The same or new iterator.
      */
-    protected final Iterator<Value[]> pollNextIterator(Pollable<GridResultPage> queue, Iterator<Value[]> iter) {
+    protected final Iterator<Value[]> pollNextIterator(Pollable<ReduceResultPage> queue, Iterator<Value[]> iter) {
         if (!iter.hasNext()) {
-            GridResultPage page = takeNextPage(queue);
+            ReduceResultPage page = takeNextPage(queue);
 
             if (!page.isLast())
                 page.fetchNextPage(); // Failed will throw an exception here.
@@ -276,7 +276,7 @@ public abstract class ReduceMergeIndex extends BaseIndex {
         if (nodeId == null)
             nodeId = F.first(sources);
 
-        addPage0(new GridResultPage(null, nodeId, null) {
+        addPage0(new ReduceResultPage(null, nodeId, null) {
             @Override public boolean isFail() {
                 return true;
             }
@@ -322,7 +322,7 @@ public abstract class ReduceMergeIndex extends BaseIndex {
     /**
      * @param page Page.
      */
-    private void markLastPage(GridResultPage page) {
+    private void markLastPage(ReduceResultPage page) {
         GridQueryNextPageResponse res = page.response();
 
         if (!res.last()) {
@@ -353,7 +353,7 @@ public abstract class ReduceMergeIndex extends BaseIndex {
     /**
      * @param page Page.
      */
-    public final void addPage(GridResultPage page) {
+    public final void addPage(ReduceResultPage page) {
         markLastPage(page);
         addPage0(page);
     }
@@ -362,16 +362,16 @@ public abstract class ReduceMergeIndex extends BaseIndex {
      * @param lastPage Real last page.
      * @return Created dummy page.
      */
-    protected final GridResultPage createDummyLastPage(GridResultPage lastPage) {
+    protected final ReduceResultPage createDummyLastPage(ReduceResultPage lastPage) {
         assert !lastPage.isDummyLast(); // It must be a real last page.
 
-        return new GridResultPage(ctx, lastPage.source(), null).setLast(true);
+        return new ReduceResultPage(ctx, lastPage.source(), null).setLast(true);
     }
 
     /**
      * @param page Page.
      */
-    protected abstract void addPage0(GridResultPage page);
+    protected abstract void addPage0(ReduceResultPage page);
 
     /** {@inheritDoc} */
     @Override public final Cursor find(Session ses, SearchRow first, SearchRow last) {

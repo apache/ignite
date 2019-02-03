@@ -42,12 +42,12 @@ import org.h2.value.Value;
 /**
  * Unsorted merge index.
  */
-public final class ReduceIndexUnsorted extends ReduceMergeIndex {
+public final class ReduceIndexUnsorted extends ReduceIndex {
     /** */
     private static final IndexType TYPE = IndexType.createScan(false);
 
     /** */
-    private final PollableQueue<GridResultPage> queue = new PollableQueue<>();
+    private final PollableQueue<ReduceResultPage> queue = new PollableQueue<>();
 
     /** */
     private final AtomicInteger activeSources = new AtomicInteger(-1);
@@ -100,7 +100,7 @@ public final class ReduceIndexUnsorted extends ReduceMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override protected void addPage0(GridResultPage page) {
+    @Override protected void addPage0(ReduceResultPage page) {
         assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
 
         // Do not add empty page to avoid premature stream termination.

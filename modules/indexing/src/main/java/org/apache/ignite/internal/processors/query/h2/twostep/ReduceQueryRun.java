@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ReduceQueryRun {
     /** */
-    private final List<ReduceMergeIndex> idxs;
+    private final List<ReduceIndex> idxs;
 
     /** */
     private CountDownLatch latch;
@@ -132,7 +132,7 @@ public class ReduceQueryRun {
         while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
             latch.countDown();
 
-        for (ReduceMergeIndex idx : idxs) // Fail all merge indexes.
+        for (ReduceIndex idx : idxs) // Fail all merge indexes.
             idx.fail(state.nodeId, state.ex);
     }
 
@@ -201,7 +201,7 @@ public class ReduceQueryRun {
     /**
      * @return Indexes.
      */
-    List<ReduceMergeIndex> indexes() {
+    List<ReduceIndex> indexes() {
         return idxs;
     }
 

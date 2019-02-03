@@ -28,11 +28,11 @@ import java.util.HashSet;
 /**
  * Scan index wrapper.
  */
-public class ReduceTableScanIndex extends GridH2ScanIndex<ReduceMergeIndex> {
+public class ReduceScanIndex extends GridH2ScanIndex<ReduceIndex> {
     /**
      * @param delegate Delegate.
      */
-    public ReduceTableScanIndex(ReduceMergeIndex delegate) {
+    public ReduceScanIndex(ReduceIndex delegate) {
         super(delegate);
     }
 

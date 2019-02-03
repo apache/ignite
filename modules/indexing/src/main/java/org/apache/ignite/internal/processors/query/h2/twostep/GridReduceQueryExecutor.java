@@ -207,7 +207,7 @@ public class GridReduceQueryExecutor {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 for (ReduceQueryRun r : runs.values()) {
-                    for (ReduceMergeIndex idx : r.indexes()) {
+                    for (ReduceIndex idx : r.indexes()) {
                         if (idx.hasSource(nodeId)) {
                             handleNodeLeft(r, nodeId);
 
@@ -306,12 +306,12 @@ public class GridReduceQueryExecutor {
 
         final int pageSize = r.pageSize();
 
-        ReduceMergeIndex idx = r.indexes().get(msg.query());
+        ReduceIndex idx = r.indexes().get(msg.query());
 
-        GridResultPage page;
+        ReduceResultPage page;
 
         try {
-            page = new GridResultPage(ctx, node.id(), msg) {
+            page = new ReduceResultPage(ctx, node.id(), msg) {
                 @Override public void fetchNextPage() {
                     if (r.hasErrorOrRetry()) {
                         if (r.exception() != null)
@@ -566,7 +566,7 @@ public class GridReduceQueryExecutor {
             final Collection<ClusterNode> finalNodes = nodes;
 
             for (GridCacheSqlQuery mapQry : mapQueries) {
-                ReduceMergeIndex idx;
+                ReduceIndex idx;
 
                 if (!skipMergeTbl) {
                     ReduceTable tbl;
@@ -1026,7 +1026,7 @@ public class GridReduceQueryExecutor {
         if (distributedJoins)
             send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
         else {
-            for (ReduceMergeIndex idx : r.indexes()) {
+            for (ReduceIndex idx : r.indexes()) {
                 if (!idx.fetchedAll()) {
                     send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
 
