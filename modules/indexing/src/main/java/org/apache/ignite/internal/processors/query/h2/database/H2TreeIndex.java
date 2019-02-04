@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedLookupBatch;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
@@ -55,10 +57,16 @@ import org.apache.ignite.internal.processors.query.h2.opt.join.RangeStream;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SegmentKey;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -76,13 +84,17 @@ import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
+import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.CacheException;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_OK;
+import static org.h2.result.Row.MEMORY_CALCULATE;
 
 /**
  * H2 Index over {@link BPlusTree}.
@@ -127,6 +139,13 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** */
     private final GridMessageListener msgLsnr;
+
+    /** */
+    private final CIX2<ClusterNode,Message> locNodeHnd = new CIX2<ClusterNode,Message>() {
+        @Override public void applyx(ClusterNode locNode, Message msg) {
+            onMessage0(locNode.id(), msg);
+        }
+    };
 
     /**
      * @param cctx Cache context.
@@ -478,13 +497,19 @@ public class H2TreeIndex extends H2TreeIndexBase {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected H2Tree treeForRead(int segment) {
+    /**
+     * @param segment Segment Id.
+     * @return Snapshot for requested segment if there is one.
+     */
+    private H2Tree treeForRead(int segment) {
         return segments[segment];
     }
 
-    /** {@inheritDoc} */
-    @Override protected BPlusTree.TreeRowClosure<H2Row, H2Row> filter(GridH2QueryContext qctx) {
+    /**
+     * @param qctx Query context.
+     * @return Row filter.
+     */
+    private BPlusTree.TreeRowClosure<H2Row, H2Row> filter(GridH2QueryContext qctx) {
         if (qctx == null) {
             assert !cctx.mvccEnabled();
 
@@ -611,11 +636,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             nodes,
             msg,
             null,
-            new CIX2<ClusterNode,Message>() {
-                @Override public void applyx(ClusterNode clusterNode, Message msg) {
-                    onMessage0(clusterNode.id(), msg);
-                }
-            },
+            locNodeHnd,
             GridIoPolicy.IDX_POOL,
             false
         );
@@ -769,13 +790,107 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /**
+     * Find rows for the segments (distributed joins).
+     *
+     * @param bounds Bounds.
+     * @param segment Segment.
+     * @param filter Filter.
+     * @return Iterator.
+     */
+    @SuppressWarnings("unchecked")
+    public Iterator<H2Row> findForSegment(GridH2RowRangeBounds bounds, int segment,
+        BPlusTree.TreeRowClosure<H2Row, H2Row> filter) {
+        SearchRow first = toSearchRow(bounds.first());
+        SearchRow last = toSearchRow(bounds.last());
+
+        IgniteTree t = treeForRead(segment);
+
+        try {
+            GridCursor<H2Row> range = ((BPlusTree)t).find(first, last, filter, null);
+
+            if (range == null)
+                range = H2Utils.EMPTY_CURSOR;
+
+            H2Cursor cur = new H2Cursor(range);
+
+            return new CursorIteratorWrapper(cur);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
+    }
+
+    /**
+     * @param msg Row message.
+     * @return Search row.
+     */
+    private SearchRow toSearchRow(GridH2RowMessage msg) {
+        if (msg == null)
+            return null;
+
+        Value[] vals = new Value[getTable().getColumns().length];
+
+        assert vals.length > 0;
+
+        List<GridH2ValueMessage> msgVals = msg.values();
+
+        for (int i = 0; i < indexColumns.length; i++) {
+            if (i >= msgVals.size())
+                continue;
+
+            try {
+                vals[indexColumns[i].column.getColumnId()] = msgVals.get(i).value(ctx);
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+        }
+
+        return database.createRow(vals, MEMORY_CALCULATE);
+    }
+
+    /**
+     * @param row Search row.
+     * @return Row message.
+     */
+    public GridH2RowMessage toSearchRowMessage(SearchRow row) {
+        if (row == null)
+            return null;
+
+        List<GridH2ValueMessage> vals = new ArrayList<>(indexColumns.length);
+
+        for (IndexColumn idxCol : indexColumns) {
+            Value val = row.getValue(idxCol.column.getColumnId());
+
+            if (val == null)
+                break;
+
+            try {
+                vals.add(GridH2ValueMessageFactory.toMessage(val));
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+        }
+
+        GridH2RowMessage res = new GridH2RowMessage();
+
+        res.values(vals);
+
+        return res;
+    }
+
+    /**
      *
      */
+    @SuppressWarnings({"PublicInnerClass", "AssignmentOrReturnOfFieldWithMutableType"})
     public class IndexColumnsInfo {
         /** */
         private final int inlineSize;
+
         /** */
         private final IndexColumn[] cols;
+
         /** */
         private final List<InlineIndexHelper> inlineIdx;
 
@@ -783,12 +898,12 @@ public class H2TreeIndex extends H2TreeIndexBase {
          * @param colsList Index columns list
          * @param cfgInlineSize Inline size from cache config.
          */
+        @SuppressWarnings("ZeroLengthArrayAllocation")
         public IndexColumnsInfo(List<IndexColumn> colsList, int cfgInlineSize) {
-            this.cols = colsList.toArray(new IndexColumn[0]);
+            cols = colsList.toArray(new IndexColumn[0]);
 
-            this.inlineIdx = getAvailableInlineColumns(cols);
-
-            this.inlineSize = computeInlineSize(inlineIdx, cfgInlineSize);
+            inlineIdx = getAvailableInlineColumns(cols);
+            inlineSize = computeInlineSize(inlineIdx, cfgInlineSize);
         }
 
         /**

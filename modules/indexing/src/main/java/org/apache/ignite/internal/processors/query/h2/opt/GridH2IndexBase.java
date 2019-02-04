@@ -17,38 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.H2Cursor;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModelMultiplier;
-import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
-import org.apache.ignite.internal.util.IgniteTree;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
-
-import javax.cache.CacheException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import static org.h2.result.Row.MEMORY_CALCULATE;
 
 /**
  * Index base.
@@ -174,83 +154,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * @return Kernal context.
-     */
-    private GridKernalContext kernalContext() {
-        return getTable().rowDescriptor().context().kernalContext();
-    }
-
-    /**
-     * @param qctx Query context.
-     * @return Row filter.
-     */
-    protected BPlusTree.TreeRowClosure<H2Row, H2Row> filter(GridH2QueryContext qctx) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param msg Row message.
-     * @return Search row.
-     */
-    private SearchRow toSearchRow(GridH2RowMessage msg) {
-        if (msg == null)
-            return null;
-
-        GridKernalContext ctx = kernalContext();
-
-        Value[] vals = new Value[getTable().getColumns().length];
-
-        assert vals.length > 0;
-
-        List<GridH2ValueMessage> msgVals = msg.values();
-
-        for (int i = 0; i < indexColumns.length; i++) {
-            if (i >= msgVals.size())
-                continue;
-
-            try {
-                vals[indexColumns[i].column.getColumnId()] = msgVals.get(i).value(ctx);
-            }
-            catch (IgniteCheckedException e) {
-                throw new CacheException(e);
-            }
-        }
-
-        return database.createRow(vals, MEMORY_CALCULATE);
-    }
-
-    /**
-     * @param row Search row.
-     * @return Row message.
-     */
-    public GridH2RowMessage toSearchRowMessage(SearchRow row) {
-        if (row == null)
-            return null;
-
-        List<GridH2ValueMessage> vals = new ArrayList<>(indexColumns.length);
-
-        for (IndexColumn idxCol : indexColumns) {
-            Value val = row.getValue(idxCol.column.getColumnId());
-
-            if (val == null)
-                break;
-
-            try {
-                vals.add(GridH2ValueMessageFactory.toMessage(val));
-            }
-            catch (IgniteCheckedException e) {
-                throw new CacheException(e);
-            }
-        }
-
-        GridH2RowMessage res = new GridH2RowMessage();
-
-        res.values(vals);
-
-        return res;
-    }
-
-    /**
      * @return Index segments count.
      */
     public abstract int segmentsCount();
@@ -288,45 +191,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
             key = ctx.toCacheKeyObject(o);
 
         return segmentForPartition(ctx.affinity().partition(key));
-    }
-
-    /**
-     * Find rows for the segments (distributed joins).
-     *
-     * @param bounds Bounds.
-     * @param segment Segment.
-     * @param filter Filter.
-     * @return Iterator.
-     */
-    @SuppressWarnings("unchecked")
-    public Iterator<H2Row> findForSegment(GridH2RowRangeBounds bounds, int segment,
-        BPlusTree.TreeRowClosure<H2Row, H2Row> filter) {
-        SearchRow first = toSearchRow(bounds.first());
-        SearchRow last = toSearchRow(bounds.last());
-
-        IgniteTree t = treeForRead(segment);
-
-        try {
-            GridCursor<H2Row> range = ((BPlusTree)t).find(first, last, filter, null);
-
-            if (range == null)
-                range = H2Utils.EMPTY_CURSOR;
-
-            H2Cursor cur = new H2Cursor(range);
-
-            return new CursorIteratorWrapper(cur);
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
-    }
-
-    /**
-     * @param segment Segment Id.
-     * @return Snapshot for requested segment if there is one.
-     */
-    protected <K, V> IgniteTree<K, V> treeForRead(int segment) {
-        throw new UnsupportedOperationException();
     }
 
     /**

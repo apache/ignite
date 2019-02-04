@@ -43,13 +43,14 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
      * @param pk Primary key.
      * @param colsList Index columns.
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     public H2TreeClientIndex(
         GridH2Table tbl,
         String name,
         boolean pk,
         List<IndexColumn> colsList
     ) {
-        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
 
         IndexColumn.mapColumns(cols, tbl);
 
@@ -59,11 +60,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public void refreshColumnIds() {
-        //do nothing.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroy(boolean rmvIndex) {
         //do nothing.
     }
 
@@ -99,11 +95,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
-        throw SHOULDNT_BE_INVOKED_EXCEPTION;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected H2Tree treeForRead(int segment) {
         throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 }
