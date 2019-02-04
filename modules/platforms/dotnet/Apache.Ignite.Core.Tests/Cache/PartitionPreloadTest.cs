@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                DataStorageConfiguration = new DataStorageConfiguration()
+                DataStorageConfiguration = new DataStorageConfiguration
                 {
                     WalMode = WalMode.Fsync,
                     WalSegmentSize = 16 * 1 << 20, // 16 MB.
@@ -162,13 +162,13 @@ namespace Apache.Ignite.Core.Tests.Cache
                     },
                 },
                 WorkDirectory = TempDir,
-                CacheConfiguration = new List<CacheConfiguration>()
+                CacheConfiguration = new List<CacheConfiguration>
                 {
                     new CacheConfiguration(MemCacheName)
                     {
                         WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync,
                         AtomicityMode = CacheAtomicityMode.Transactional,
-                        AffinityFunction = new RendezvousAffinityFunction()
+                        AffinityFunction = new RendezvousAffinityFunction
                         {
                             ExcludeNeighbors = false,
                             Partitions = 32
@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     {
                         WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync,
                         AtomicityMode = CacheAtomicityMode.Transactional,
-                        AffinityFunction = new RendezvousAffinityFunction()
+                        AffinityFunction = new RendezvousAffinityFunction
                         {
                             ExcludeNeighbors = false,
                             Partitions = 32
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Perform test operations.
         /// </summary>
-        /// <param name="testNode">Onwer of preloaded partition.</param>
+        /// <param name="testNode">Owner of preloaded partition.</param>
         /// <param name="execNode">Node on which operation will be executed.</param>
         /// <param name="preloadMode">Preload mode <see cref="PreloadMode"/></param>
         private void PerformPreloadTest(IIgnite testNode, IIgnite execNode, PreloadMode preloadMode)
