@@ -943,7 +943,6 @@ namespace Apache.Ignite.Core.Cache
         /// exception.
         /// </summary>
         /// <param name="partition">Partition number.</param>
-        /// <returns></returns>
         void PreloadPartition(int partition);
         
         /// <summary>
@@ -958,7 +957,7 @@ namespace Apache.Ignite.Core.Cache
         /// exception.
         /// </summary>
         /// <param name="partition">Partition number.</param>
-        /// <returns></returns>
+        /// <returns>Task.</returns>
         Task PreloadPartitionAsync(int partition);
         
         /// <summary>
