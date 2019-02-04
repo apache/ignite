@@ -46,16 +46,16 @@ public class GridH2QueryContext {
     private final QueryContextKey key;
 
     /** */
-    private List<GridReservable> reservations;
-
-    /** */
     private final IndexingQueryFilter filter;
 
     /** Distributed join context. */
-    private DistributedJoinContext distributedJoinCtx;
+    private final DistributedJoinContext distributedJoinCtx;
 
     /** */
-    private MvccSnapshot mvccSnapshot;
+    private final MvccSnapshot mvccSnapshot;
+
+    /** */
+    private final List<GridReservable> reservations;
 
     /** */
     private MapQueryLazyWorker lazyWorker;
@@ -66,20 +66,30 @@ public class GridH2QueryContext {
      * @param qryId The query ID.
      * @param segmentId Index segment ID.
      * @param type Query type.
+     * @param filter Filter.
+     * @param distributedJoinCtx Distributed join context.
+     * @param mvccSnapshot MVCC snapshot.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public GridH2QueryContext(
         UUID locNodeId,
         UUID nodeId,
         long qryId,
         int segmentId,
         GridH2QueryType type,
-        IndexingQueryFilter filter
+        @Nullable IndexingQueryFilter filter,
+        @Nullable DistributedJoinContext distributedJoinCtx,
+        @Nullable MvccSnapshot mvccSnapshot,
+        @Nullable List<GridReservable> reservations
     ) {
         assert segmentId == 0 || type == MAP;
 
         key = new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type);
 
         this.filter = filter;
+        this.distributedJoinCtx = distributedJoinCtx;
+        this.mvccSnapshot = mvccSnapshot;
+        this.reservations = reservations;
     }
 
     /**
@@ -90,41 +100,10 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param mvccSnapshot Mvcc snapshot.
-     * @return {@code this}.
-     */
-    public GridH2QueryContext mvccSnapshot(MvccSnapshot mvccSnapshot) {
-        this.mvccSnapshot = mvccSnapshot;
-
-        return this;
-    }
-
-    /**
-     * @param distributedJoinCtx Distributed join context.
-     * @return This instance for chaining.
-     */
-    public GridH2QueryContext distributedJoinContext(@Nullable DistributedJoinContext distributedJoinCtx) {
-        this.distributedJoinCtx = distributedJoinCtx;
-
-        return this;
-    }
-
-    /**
      * @return Distributed join context.
      */
     @Nullable public DistributedJoinContext distributedJoinContext() {
         return distributedJoinCtx;
-    }
-
-    /**
-     * @param reservations Reserved partitions or group reservations.
-     * @return {@code this}.
-     */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public GridH2QueryContext reservations(List<GridReservable> reservations) {
-        this.reservations = reservations;
-
-        return this;
     }
 
     /**
@@ -140,23 +119,32 @@ public class GridH2QueryContext {
      *
      * @param x Query context.
      */
-     public static void set(GridH2QueryContext x) {
-         assert qctx.get() == null;
+    public static void setThreadLocal(GridH2QueryContext x) {
+        assert qctx.get() == null;
 
-         // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type() == MAP && x.distributedJoinContext() != null && qctxs.putIfAbsent(x.key, x) != null)
-             throw new IllegalStateException("Query context is already set.");
+        qctx.set(x);
+    }
 
-         qctx.set(x);
+    /**
+     * Sets current thread local context. This method must be called when all the non-volatile properties are
+     * already set to ensure visibility for other threads.
+     *
+     * @param ctx Query context.
+     */
+    public static void setShared(GridH2QueryContext ctx) {
+        assert ctx.key.type() == MAP;
+        assert ctx.distributedJoinContext() != null;
+
+        GridH2QueryContext oldCtx = qctxs.putIfAbsent(ctx.key, ctx);
+
+        assert oldCtx == null;
     }
 
     /**
      * Drops current thread local context.
      */
     public static void clearThreadLocal() {
-        GridH2QueryContext x = qctx.get();
-
-        assert x != null;
+        assert qctx.get() != null;
 
         qctx.remove();
     }
@@ -168,7 +156,7 @@ public class GridH2QueryContext {
      * @param type Query type.
      * @return {@code True} if context was found.
      */
-    public static boolean clear(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
+    public static boolean clearShared(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         boolean res = false;
 
         for (QueryContextKey key : qctxs.keySet()) {
@@ -226,7 +214,7 @@ public class GridH2QueryContext {
      * @param locNodeId Local node ID.
      * @param nodeId Dead node ID.
      */
-    public static void clearAfterDeadNode(UUID locNodeId, UUID nodeId) {
+    public static void clearSharedOnNodeLeave(UUID locNodeId, UUID nodeId) {
         for (QueryContextKey key : qctxs.keySet()) {
             if (key.localNodeId().equals(locNodeId) && key.nodeId().equals(nodeId))
                 doClear(key, false);
@@ -236,7 +224,7 @@ public class GridH2QueryContext {
     /**
      * @param locNodeId Local node ID.
      */
-    public static void clearLocalNodeStop(UUID locNodeId) {
+    public static void clearSharedOnLocalNodeStop(UUID locNodeId) {
         for (QueryContextKey key : qctxs.keySet()) {
             if (key.localNodeId().equals(locNodeId))
                 doClear(key, true);
@@ -248,7 +236,7 @@ public class GridH2QueryContext {
      *
      * @return Current thread local query context or {@code null} if the query runs outside of Ignite context.
      */
-    @Nullable public static GridH2QueryContext get() {
+    @Nullable public static GridH2QueryContext getThreadLocal() {
         return qctx.get();
     }
 
@@ -262,7 +250,7 @@ public class GridH2QueryContext {
      * @param type Query type.
      * @return Query context.
      */
-    @Nullable public static GridH2QueryContext get(
+    @Nullable public static GridH2QueryContext getShared(
         UUID locNodeId,
         UUID nodeId,
         long qryId,

@@ -365,13 +365,13 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             if (!cctx.mvccEnabled() && indexType.isPrimaryKey() && lower != null && upper != null &&
                 tree.compareRows((H2Row)lower, (H2Row)upper) == 0) {
-                H2Row row = tree.findOne((H2Row)lower, filter(GridH2QueryContext.get()), null);
+                H2Row row = tree.findOne((H2Row)lower, filter(GridH2QueryContext.getThreadLocal()), null);
 
                 return (row == null) ? GridH2Cursor.EMPTY : new SingleRowCursor(row);
             }
             else {
                 return new H2Cursor(tree.find((H2Row)lower,
-                    (H2Row)upper, filter(GridH2QueryContext.get()), null));
+                    (H2Row)upper, filter(GridH2QueryContext.getThreadLocal()), null));
             }
         }
         catch (IgniteCheckedException e) {
@@ -451,7 +451,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            GridH2QueryContext qctx = GridH2QueryContext.get();
+            GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
 
             return tree.size(filter(qctx));
         }
@@ -464,7 +464,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
         try {
             H2Tree tree = treeForRead(threadLocalSegment());
-            GridH2QueryContext qctx = GridH2QueryContext.get();
+            GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
 
             return new SingleRowCursor(b ? tree.findFirst(filter(qctx)): tree.findLast(filter(qctx)));
         }
@@ -600,7 +600,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
 
         if (qctx == null || qctx.distributedJoinContext() == null || !getTable().isPartitioned())
             return null;
@@ -682,7 +682,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         res.segment(msg.segment());
         res.batchLookupId(msg.batchLookupId());
 
-        GridH2QueryContext qctx = GridH2QueryContext.get(
+        GridH2QueryContext qctx = GridH2QueryContext.getShared(
             ctx.localNodeId(),
             msg.originNodeId(),
             msg.queryId(),
@@ -762,7 +762,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param msg Response message.
      */
     private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
-        GridH2QueryContext qctx = GridH2QueryContext.get(
+        GridH2QueryContext qctx = GridH2QueryContext.getShared(
             ctx.localNodeId(),
             msg.originNodeId(),
             msg.queryId(),

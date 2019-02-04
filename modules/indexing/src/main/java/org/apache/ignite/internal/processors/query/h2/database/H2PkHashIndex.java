@@ -102,7 +102,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
         IndexingQueryCacheFilter filter = null;
         MvccSnapshot mvccSnapshot = null;
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
 
         int seg = 0;
 

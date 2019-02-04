@@ -349,7 +349,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         long time = System.currentTimeMillis();
 
         IndexingQueryFilter qryFilter = null;
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
 
         if (qctx != null)
             qryFilter = qctx.filter();

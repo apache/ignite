@@ -114,6 +114,7 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Q
 /**
  * Reduce query executor.
  */
+@SuppressWarnings("IfMayBeConditional")
 public class GridReduceQueryExecutor {
     /** Default retry timeout. */
     public static final long DFLT_RETRY_TIMEOUT = 30_000L;
@@ -387,6 +388,7 @@ public class GridReduceQueryExecutor {
      * @param dataPageScanEnabled If data page scan is enabled.
      * @return Rows iterator.
      */
+    @SuppressWarnings("BusyWait")
     public Iterator<List<?>> query(
         String schemaName,
         final GridCacheTwoStepQuery qry,
@@ -765,10 +767,13 @@ public class GridReduceQueryExecutor {
                             qryReqId,
                             0,
                             REDUCE,
+                            null,
+                            null,
+                            null,
                             null
                         );
 
-                        GridH2QueryContext.set(qctx);
+                        GridH2QueryContext.setThreadLocal(qctx);
 
                         try {
                             if (qry.explain())

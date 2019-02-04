@@ -57,7 +57,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         if(segmentsCount() == 1)
             return 0;
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
 
         if(qctx == null)
             throw new IllegalStateException("GridH2QueryContext is not initialized.");

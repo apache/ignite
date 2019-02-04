@@ -542,14 +542,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-            final GridH2QueryContext ctx = new GridH2QueryContext(
-                nodeId,
-                nodeId,
-                0,
-                0,
-                LOCAL,
-                filter
-            );
+            MvccSnapshot mvccSnapshot = null;
 
             boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(p);
 
@@ -557,7 +550,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
                     "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-            if (this.ctx.security().enabled()) {
+            if (ctx.security().enabled()) {
                 GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
                 parser.parse(p);
@@ -574,9 +567,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     mvccTracker = mvccTracker(stmt, startTx);
 
                 if (mvccTracker != null) {
-                    ctx.mvccSnapshot(mvccTracker.snapshot());
+                    mvccSnapshot = mvccTracker.snapshot();
 
-                    tx = checkActive(tx(this.ctx));
+                    tx = checkActive(tx(ctx));
 
                     opTimeout = operationTimeout(opTimeout, tx);
                 }
@@ -632,11 +625,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             String qry0 = qry;
             int timeout0 = opTimeout;
 
+            final GridH2QueryContext qctx = new GridH2QueryContext(
+                nodeId,
+                nodeId,
+                0,
+                0,
+                LOCAL,
+                filter,
+                null,
+                mvccSnapshot,
+                null
+            );
+
             return new GridQueryFieldsResultAdapter(meta, null) {
                 @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
-                    assert GridH2QueryContext.get() == null;
+                    assert GridH2QueryContext.getThreadLocal() == null;
 
-                    GridH2QueryContext.set(ctx);
+                    GridH2QueryContext.setThreadLocal(qctx);
 
                     ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = connMgr.detachThreadConnection();
 
@@ -647,7 +652,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             assert tx0.mvccSnapshot() != null;
 
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
-                                IgniteH2Indexing.this.ctx.localNodeId(),
+                                ctx.localNodeId(),
                                 tx0.nearXidVersion(),
                                 tx0.mvccSnapshot(),
                                 tx0.threadId(),
@@ -664,14 +669,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 @Override public void apply(IgniteInternalFuture<Long> fut) {
                                     if (fut.error() != null) {
                                         sfuFut0.onResult(
-                                            IgniteH2Indexing.this.ctx.localNodeId(),
+                                            ctx.localNodeId(),
                                             0L,
                                             false,
                                             fut.error());
                                     }
                                     else {
                                         sfuFut0.onResult(
-                                            IgniteH2Indexing.this.ctx.localNodeId(),
+                                            ctx.localNodeId(),
                                             fut.result(),
                                             false,
                                             null);
@@ -2550,7 +2555,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         mapQryExec.cancelLazyWorkers();
 
-        GridH2QueryContext.clearLocalNodeStop(nodeId);
+        GridH2QueryContext.clearSharedOnLocalNodeStop(nodeId);
 
         runningQueryMgr.stop();
         schemaMgr.stop();

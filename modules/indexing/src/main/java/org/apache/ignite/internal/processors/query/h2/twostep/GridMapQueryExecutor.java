@@ -173,7 +173,7 @@ public class GridMapQueryExecutor {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                GridH2QueryContext.clearAfterDeadNode(locNodeId, nodeId);
+                GridH2QueryContext.clearSharedOnNodeLeave(locNodeId, nodeId);
 
                 MapNodeResults nodeRess = qryRess.remove(nodeId);
 
@@ -268,12 +268,12 @@ public class GridMapQueryExecutor {
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
-        boolean clear = GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
+        boolean clear = GridH2QueryContext.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
 
         if (!clear) {
             nodeRess.onCancel(qryReqId);
 
-            GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
+            GridH2QueryContext.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
         }
 
         nodeRess.cancelRequest(qryReqId);
@@ -846,10 +846,10 @@ public class GridMapQueryExecutor {
                 throw new IllegalStateException();
 
             // Prepare query context.
-            DistributedJoinContext distirbutedJoinCtx = null;
+            DistributedJoinContext distributedJoinCtx = null;
 
-            if (distributeJoins) {
-                distirbutedJoinCtx = new DistributedJoinContext(
+            if (distributeJoins && !replicated) {
+                distributedJoinCtx = new DistributedJoinContext(
                     local,
                     topVer,
                     partsMap,
@@ -867,25 +867,28 @@ public class GridMapQueryExecutor {
                 reqId,
                 segmentId,
                 qryTyp,
-                h2.backupFilter(topVer, parts)
+                h2.backupFilter(topVer, parts),
+                distributedJoinCtx,
+                mvccSnapshot,
+                reserved
             )
-                .distributedJoinContext(distirbutedJoinCtx)
-                .reservations(reserved)
-                .mvccSnapshot(mvccSnapshot)
                 .lazyWorker(worker);
 
             Connection conn = h2.connections().connectionForThread().connection(schemaName);
 
             H2Utils.setupConnection(conn, distributeJoins, enforceJoinOrder);
 
-            GridH2QueryContext.set(qctx);
+            GridH2QueryContext.setThreadLocal(qctx);
+
+            if (distributedJoinCtx != null)
+                GridH2QueryContext.setShared(qctx);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
 
             try {
                 if (nodeRess.cancelled(reqId)) {
-                    GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qryTyp);
+                    GridH2QueryContext.clearShared(ctx.localNodeId(), node.id(), reqId, qryTyp);
 
                     nodeRess.cancelRequest(reqId);
 
@@ -1074,7 +1077,7 @@ public class GridMapQueryExecutor {
      * Releases reserved partitions.
      */
     private void releaseReservations() {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
 
         if (qctx != null) { // No-op if already released.
             GridH2QueryContext.clearThreadLocal();

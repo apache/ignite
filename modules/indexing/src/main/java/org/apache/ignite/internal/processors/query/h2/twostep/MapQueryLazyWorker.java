@@ -133,7 +133,7 @@ public class MapQueryLazyWorker extends GridWorker {
                 }
             });
         else {
-            GridH2QueryContext qctx = GridH2QueryContext.get();
+            GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
 
             if (qctx != null) {
                 qctx.clearContext(nodeStop);
