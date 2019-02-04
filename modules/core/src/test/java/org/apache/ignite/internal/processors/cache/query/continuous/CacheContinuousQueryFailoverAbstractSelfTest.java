@@ -79,7 +79,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -113,7 +112,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -2077,9 +2075,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                                 //assertTrue(e.getCause() instanceof TransactionSerializationException);
                                 //assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
-                                IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
-
-                                if (sqlEx == null || sqlEx.statusCode() != TRANSACTION_SERIALIZATION_ERROR)
+                                if (!(e.getCause() instanceof TransactionSerializationException))
                                     log.error("Unexpected exception, retry: ", e);
                             }
                         }
