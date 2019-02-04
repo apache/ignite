@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  */
 public class QueryContextRegistry {
     /** Current local context. */
-    private static final ThreadLocal<GridH2QueryContext> curCtx = new ThreadLocal<>();
+    private final ThreadLocal<GridH2QueryContext> curCtx = new ThreadLocal<>();
 
     /** Shared contexts. */
     private final ConcurrentMap<QueryContextKey, GridH2QueryContext> sharedCtxs = new ConcurrentHashMap<>();
@@ -40,7 +40,7 @@ public class QueryContextRegistry {
      *
      * @return Current thread local query context or {@code null} if the query runs outside of Ignite context.
      */
-    @Nullable public static GridH2QueryContext getThreadLocal() {
+    @Nullable public GridH2QueryContext getThreadLocal() {
         return curCtx.get();
     }
 
@@ -50,7 +50,7 @@ public class QueryContextRegistry {
      *
      * @param x Query context.
      */
-    public static void setThreadLocal(GridH2QueryContext x) {
+    public void setThreadLocal(GridH2QueryContext x) {
         assert curCtx.get() == null;
 
         curCtx.set(x);
@@ -59,7 +59,7 @@ public class QueryContextRegistry {
     /**
      * Drops current thread local context.
      */
-    public static void clearThreadLocal() {
+    public void clearThreadLocal() {
         assert curCtx.get() != null;
 
         curCtx.remove();

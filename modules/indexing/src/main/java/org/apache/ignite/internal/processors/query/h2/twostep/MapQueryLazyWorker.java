@@ -49,6 +49,9 @@ public class MapQueryLazyWorker extends GridWorker {
     /** Map query executor. */
     private final GridMapQueryExecutor exec;
 
+    /** Query context registry. */
+    private final QueryContextRegistry qryCtxRegistry;
+
     /** Latch decremented when worker finishes. */
     private final CountDownLatch stopLatch = new CountDownLatch(1);
 
@@ -62,13 +65,15 @@ public class MapQueryLazyWorker extends GridWorker {
      * @param key Lazy worker key.
      * @param log Logger.
      * @param exec Map query executor.
+     * @param qryCtxRegistry Query context registry.
      */
     public MapQueryLazyWorker(@Nullable String instanceName, MapQueryLazyWorkerKey key, IgniteLogger log,
-        GridMapQueryExecutor exec) {
+        GridMapQueryExecutor exec, QueryContextRegistry qryCtxRegistry) {
         super(instanceName, workerName(instanceName, key), log);
 
         this.key = key;
         this.exec = exec;
+        this.qryCtxRegistry = qryCtxRegistry;
     }
 
     /** {@inheritDoc} */
@@ -134,12 +139,12 @@ public class MapQueryLazyWorker extends GridWorker {
                 }
             });
         else {
-            GridH2QueryContext qctx = QueryContextRegistry.getThreadLocal();
+            GridH2QueryContext qctx = qryCtxRegistry.getThreadLocal();
 
             if (qctx != null) {
                 qctx.clearContext(nodeStop);
 
-                QueryContextRegistry.clearThreadLocal();
+                qryCtxRegistry.clearThreadLocal();
             }
 
             isCancelled = true;

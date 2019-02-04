@@ -644,9 +644,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return new GridQueryFieldsResultAdapter(meta, null) {
                 @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
-                    assert QueryContextRegistry.getThreadLocal() == null;
+                    assert qryCtxRegistry.getThreadLocal() == null;
 
-                    QueryContextRegistry.setThreadLocal(qctx);
+                    qryCtxRegistry.setThreadLocal(qctx);
 
                     ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = connMgr.detachThreadConnection();
 
@@ -720,7 +720,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         throw e;
                     }
                     finally {
-                        QueryContextRegistry.clearThreadLocal();
+                        qryCtxRegistry.clearThreadLocal();
                     }
                 }
             };

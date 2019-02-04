@@ -179,6 +179,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
         int segmentsCnt,
         QueryContextRegistry qryCtxRegistry
     ) throws IgniteCheckedException {
+        super(table);
+
         assert segmentsCnt > 0 : segmentsCnt;
 
         ctx = cctx.kernalContext();
@@ -372,13 +374,13 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             if (!cctx.mvccEnabled() && indexType.isPrimaryKey() && lower != null && upper != null &&
                 tree.compareRows((H2Row)lower, (H2Row)upper) == 0) {
-                H2Row row = tree.findOne((H2Row)lower, filter(QueryContextRegistry.getThreadLocal()), null);
+                H2Row row = tree.findOne((H2Row)lower, filter(qryCtxRegistry.getThreadLocal()), null);
 
                 return (row == null) ? GridH2Cursor.EMPTY : new SingleRowCursor(row);
             }
             else {
                 return new H2Cursor(tree.find((H2Row)lower,
-                    (H2Row)upper, filter(QueryContextRegistry.getThreadLocal()), null));
+                    (H2Row)upper, filter(qryCtxRegistry.getThreadLocal()), null));
             }
         }
         catch (IgniteCheckedException e) {
@@ -458,7 +460,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            GridH2QueryContext qctx = QueryContextRegistry.getThreadLocal();
+            GridH2QueryContext qctx = qryCtxRegistry.getThreadLocal();
 
             return tree.size(filter(qctx));
         }
@@ -471,7 +473,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
         try {
             H2Tree tree = treeForRead(threadLocalSegment());
-            GridH2QueryContext qctx = QueryContextRegistry.getThreadLocal();
+            GridH2QueryContext qctx = qryCtxRegistry.getThreadLocal();
 
             return new SingleRowCursor(b ? tree.findFirst(filter(qctx)): tree.findLast(filter(qctx)));
         }
@@ -607,7 +609,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
-        GridH2QueryContext qctx = QueryContextRegistry.getThreadLocal();
+        GridH2QueryContext qctx = qryCtxRegistry.getThreadLocal();
 
         if (qctx == null || qctx.distributedJoinContext() == null || !getTable().isPartitioned())
             return null;
@@ -630,7 +632,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
 
-        return new DistributedLookupBatch(this, cctx, ucast, affColId);
+        return new DistributedLookupBatch(this, cctx, queryContextRegistry(), ucast, affColId);
     }
 
     /**

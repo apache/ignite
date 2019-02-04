@@ -763,7 +763,7 @@ public class GridMapQueryExecutor {
         if (lazy && worker == null) {
             // Lazy queries must be re-submitted to dedicated workers.
             MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
-            worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
+            worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this, qryCtxRegistry);
 
             worker.submit(new Runnable() {
                 @Override public void run() {
@@ -881,7 +881,7 @@ public class GridMapQueryExecutor {
 
             H2Utils.setupConnection(conn, distributeJoins, enforceJoinOrder);
 
-            QueryContextRegistry.setThreadLocal(qctx);
+            qryCtxRegistry.setThreadLocal(qctx);
 
             if (distributedJoinCtx != null)
                 qryCtxRegistry.setShared(qctx);
@@ -1080,10 +1080,10 @@ public class GridMapQueryExecutor {
      * Releases reserved partitions.
      */
     private void releaseReservations() {
-        GridH2QueryContext qctx = QueryContextRegistry.getThreadLocal();
+        GridH2QueryContext qctx = qryCtxRegistry.getThreadLocal();
 
         if (qctx != null) { // No-op if already released.
-            QueryContextRegistry.clearThreadLocal();
+            qryCtxRegistry.clearThreadLocal();
 
             if (qctx.distributedJoinContext() == null)
                 qctx.clearContext(false);

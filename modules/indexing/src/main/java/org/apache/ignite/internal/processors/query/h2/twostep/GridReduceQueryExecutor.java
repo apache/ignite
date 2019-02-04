@@ -774,7 +774,9 @@ public class GridReduceQueryExecutor {
                             null
                         );
 
-                        QueryContextRegistry.setThreadLocal(qctx);
+                        QueryContextRegistry qryCtxRegistry = h2.queryContextRegistry();
+
+                        qryCtxRegistry.setThreadLocal(qctx);
 
                         try {
                             if (qry.explain())
@@ -794,7 +796,7 @@ public class GridReduceQueryExecutor {
                             mvccTracker = null; // To prevent callback inside finally block;
                         }
                         finally {
-                            QueryContextRegistry.clearThreadLocal();
+                            qryCtxRegistry.clearThreadLocal();
                         }
                     }
                 }
