@@ -4310,6 +4310,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     throw e;
                 }
+                catch (RuntimeException e) {
+                    tx.rollback();
+
+                    throw e;
+                }
                 finally {
                     ctx.tm().resetContext();
 
