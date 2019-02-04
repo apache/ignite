@@ -2047,6 +2047,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         final AtomicInteger threadSeq = new AtomicInteger(0);
 
+        final Set<String> exceptions = new GridConcurrentHashSet<>();
+
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 try {
@@ -2075,8 +2077,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                                 //assertTrue(e.getCause() instanceof TransactionSerializationException);
                                 //assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
-                                if (!(e.getCause() instanceof TransactionSerializationException))
-                                    log.error("Unexpected exception, retry: ", e);
+                                if (!(e.getCause() instanceof TransactionSerializationException)) {
+                                    Throwable cause = X.getCause(e);
+                                    if (cause == null && exceptions.add("null"))
+                                        log.error("====== Unexpected exception, retry: ", e);
+
+                                    if (cause != null && exceptions.add(cause.getClass().getSimpleName()))
+                                        log.error("======  Unexpected exception, retry: ", e);
+                                }
                             }
                         }
 

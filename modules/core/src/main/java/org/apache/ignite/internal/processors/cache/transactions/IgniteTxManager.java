@@ -501,8 +501,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             taskNameHash,
             lb);
 
-        if (idMap.size() > 1_000_000)
-            log.error("======Memory leak thread=" + Thread.currentThread().getName() +", trace=" + Arrays.toString(Thread.currentThread().getStackTrace()));
+        if (idMap.size() >= 10_000 && idMap.size() % 10_000 == 0)
+            log.error("====== Memory leak size=" + idMap.size() + ", thread=" + Thread.currentThread().getName() +", trace=" + Arrays.toString(Thread.currentThread().getStackTrace()));
 
         if (tx.system()) {
             AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);

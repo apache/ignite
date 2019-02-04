@@ -560,6 +560,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     ) {
         assert key != null;
 
+//        if (true) //TODO Reproducer
+//            throw new CacheException("pizdets!");
+
         if (cacheCtx.mvccEnabled())
             return mvccPutAllAsync0(cacheCtx, Collections.singletonMap(key, val),
                 entryProcessor == null ? null : Collections.singletonMap(key, entryProcessor), invokeArgs, retval, filter);
