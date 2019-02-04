@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.IO;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Configuration;
@@ -29,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using NUnit.Framework;
 
     /// <summary>
-    /// 
+    /// Tests partition preload API.
     /// </summary>
     [Category(TestUtils.CategoryIntensive)]
     public class PartitionPreloadTest
@@ -56,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         private const int EntriesCount = 1000;
 
         /// <summary>
-        ///
+        /// Tests that preloading partition on client locally returns <code>false</code>.
         /// </summary>
         [Test]
         public void TestLocalPreloadPartitionClient()
@@ -67,16 +68,31 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
         
         /// <summary>
-        /// 
+        /// Preload partitions synchronously.
         /// </summary>
         [Test]
         public void TestPreloadPartition()
         {
             PerformPreloadTest(GetGrid(0), GetClient, PreloadMode.Sync);
         }
+
+        /// <summary>
+        /// Tests that incorrect usage of API throws exceptions.
+        /// </summary>
+        [Test]
+        public void TestPreloadPartitionInMemoryFail()
+        {
+            var cache = GetClient.GetCache<int, int>(MemCacheName);
+
+            Assert.Throws<CacheException>(() => cache.PreloadPartition(0));
+
+            var task = cache.PreloadPartitionAsync(0);
+
+            Assert.Throws<CacheException>(() => task.WaitResult());
+        }
         
         /// <summary>
-        /// 
+        /// Preload partitions asynchronously.
         /// </summary>
         [Test]
         public void TestPreloadPartitionAsync()
@@ -85,7 +101,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
         
         /// <summary>
-        /// 
+        /// Preload partitions locally.
         /// </summary>
         [Test]
         public void TestLocalPreloadPartition()
@@ -93,17 +109,20 @@ namespace Apache.Ignite.Core.Tests.Cache
             PerformPreloadTest(GetGrid(0), GetClient, PreloadMode.Local);
         }
 
-        [TestFixtureSetUp]
-        public void SetUpFixture()
+        /// <summary>
+        /// Test set up.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
         {
             StartGrids();
         }
         
         /// <summary>
-        /// 
+        /// Test tear down.
         /// </summary>
-        [TestFixtureTearDown]
-        public void TearDownFixture()
+        [TearDown]
+        public void TearDown()
         {
             Ignition.StopAll(true);
             
