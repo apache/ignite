@@ -34,11 +34,5 @@ public enum GridH2QueryType {
     /**
      * Local query. It may be also a query over replicated cache but all the data is available locally.
      */
-    LOCAL,
-
-    /**
-     * Replicated query over a network. Such a query can be sent from a client node or node which
-     * did not load all the partitions yet.
-     */
-    REPLICATED;
+    LOCAL
 }

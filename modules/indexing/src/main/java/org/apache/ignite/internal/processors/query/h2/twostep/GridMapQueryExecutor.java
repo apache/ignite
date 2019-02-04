@@ -110,7 +110,6 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
@@ -860,13 +859,11 @@ public class GridMapQueryExecutor {
                 );
             }
 
-            GridH2QueryType qryTyp = replicated ? REPLICATED : MAP;
-
             GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
                 node.id(),
                 reqId,
                 segmentId,
-                qryTyp,
+                GridH2QueryType.MAP,
                 h2.backupFilter(topVer, parts),
                 distributedJoinCtx,
                 mvccSnapshot,
@@ -888,7 +885,7 @@ public class GridMapQueryExecutor {
 
             try {
                 if (nodeRess.cancelled(reqId)) {
-                    GridH2QueryContext.clearShared(ctx.localNodeId(), node.id(), reqId, qryTyp);
+                    GridH2QueryContext.clearShared(ctx.localNodeId(), node.id(), reqId, MAP);
 
                     nodeRess.cancelRequest(reqId);
 
