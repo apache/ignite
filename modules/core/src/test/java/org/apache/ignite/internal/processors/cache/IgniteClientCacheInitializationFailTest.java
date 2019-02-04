@@ -399,11 +399,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public List<GridRunningQueryInfo> runningSqlQueries() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
             return null;
         }

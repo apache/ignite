@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -41,7 +42,8 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
             newColumn("QUERY_ID"),
             newColumn("SQL"),
             newColumn("SCHEMA_NAME"),
-            newColumn("CANCELABLE", Value.BOOLEAN),
+            newColumn("LOCAL", Value.BOOLEAN),
+            newColumn("START_TIME", Value.TIMESTAMP_TZ),
             newColumn("DURATION", Value.LONG)
         );
     }
@@ -50,7 +52,7 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition qryIdCond = conditionForColumn("QUERY_ID", first, last);
 
-        List<GridRunningQueryInfo> runningSqlQueries = ctx.query().runningSqlQueries();
+        List<GridRunningQueryInfo> runningSqlQueries = ((IgniteH2Indexing)ctx.query().getIndexing()).runningSqlQueries();
 
         if (qryIdCond.isEquality()) {
             String qryId = qryIdCond.valueForEquality().getString();
@@ -77,7 +79,8 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
                     info.globalQueryId(),
                     info.query(),
                     info.schemaName(),
-                    info.cancelable(),
+                    info.local(),
+                    valueTimestampZoneFromMillis(info.startTime()),
                     duration
                 )
             );
@@ -93,6 +96,6 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return ctx.query().runningSqlQueries().size();
+        return ((IgniteH2Indexing)ctx.query().getIndexing()).runningSqlQueries().size();
     }
 }

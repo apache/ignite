@@ -23,6 +23,7 @@ import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.Column;
+import org.h2.util.DateTimeUtils;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
@@ -157,5 +158,18 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
             return ValueNull.INSTANCE;
         else
             return ValueTimestamp.fromMillis(millis);
+    }
+
+    /**
+     * Converts millis to ValueTimestamp in default time zone.
+     *
+     * @param millis Millis.
+     */
+    protected static Value valueTimestampZoneFromMillis(long millis) {
+        long dateVal = DateTimeUtils.dateValueFromDate(millis);
+
+        long nanos = DateTimeUtils.nanosFromDate(millis);
+
+        return DateTimeUtils.timestampTimeZoneFromLocalDateValueAndNanos(dateVal, nanos);
     }
 }

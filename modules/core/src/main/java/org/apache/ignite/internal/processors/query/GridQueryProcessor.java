@@ -2369,18 +2369,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Collect all SQL running queries.
-     *
-     * @return List of SQL running queries.
-     */
-    public List<GridRunningQueryInfo> runningSqlQueries() {
-        if (moduleEnabled())
-            return idx.runningSqlQueries();
-
-        return Collections.emptyList();
-    }
-
-    /**
      * Cancel specified queries.
      *
      * @param queries Queries ID's to cancel.

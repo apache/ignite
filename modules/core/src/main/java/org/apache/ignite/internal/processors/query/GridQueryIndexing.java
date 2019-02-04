@@ -374,11 +374,4 @@ public interface GridQueryIndexing {
      * @return {@code true} If context has been initialized.
      */
     public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
-
-    /**
-     * Return SQL running queries.
-     *
-     * @return SQL running queries.
-     */
-    List<GridRunningQueryInfo> runningSqlQueries();
 }

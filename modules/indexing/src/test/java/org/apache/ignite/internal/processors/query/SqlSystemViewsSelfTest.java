@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -64,10 +65,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.h2.api.TimestampWithTimeZone;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -206,20 +207,34 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         cache.put(100,"200");
 
-        String sql = "SELECT SQL, QUERY_ID FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES";
+        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES";
 
-        FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql));
+        FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql).setLocal(true));
 
-        List<?> cur = cache.query(new SqlFieldsQuery(sql)).getAll();
+        List<?> cur = cache.query(new SqlFieldsQuery(sql).setLocal(true)).getAll();
 
         assertEquals(2, cur.size());
 
         List<?> res0 = (List<?>)cur.get(0);
         List<?> res1 = (List<?>)cur.get(1);
 
+        TimestampWithTimeZone tsTz = (TimestampWithTimeZone)res0.get(4);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        int sysTZOff = TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60 / 1000;
+
+        assertEquals(sysTZOff, tsTz.getTimeZoneOffsetMins());
+
+        long diffInMinutes = Math.abs((tsTz.getNanosSinceMidnight() / 1_000_000_000 / 60) - (now.getHour() * 60 + now.getMinute()));
+
+        assertTrue(diffInMinutes < 3);
+
         assertEquals(sql, res0.get(0));
 
         assertEquals(sql, res1.get(0));
+
+        assertTrue((Boolean)res0.get(3));
 
         String id0 = (String)res0.get(1);
         String id1 = (String)res1.get(1);
@@ -257,6 +272,10 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         res1 = (List<?>)cur.get(1);
 
         assertTrue(expSqlQry, res0.get(0).equals(expSqlQry) || res1.get(0).equals(expSqlQry));
+
+        assertFalse((Boolean)res0.get(3));
+
+        assertFalse((Boolean)res1.get(3));
 
         notClosedQryCursor.close();
 
