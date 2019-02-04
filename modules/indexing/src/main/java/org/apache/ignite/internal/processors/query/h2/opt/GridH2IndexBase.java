@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeStream;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SegmentKey;
-import org.apache.ignite.internal.processors.query.h2.sql.SplitterContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -210,18 +209,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Multiplier.
      */
     public final int getDistributedMultiplier(Session ses, TableFilter[] filters, int filter) {
-        // We do optimizations with respect to distributed joins only on PREPARE stage only.
-        // Notice that we check for isJoinBatchEnabled, because we can do multiple different
-        // optimization passes on PREPARE stage.
-        // Query expressions can not be distributed as well.
-        SplitterContext ctx = SplitterContext.get();
+        CollocationModelMultiplier mul = CollocationModel.distributedMultiplier(ses, filters, filter);
 
-        if (!ctx.distributedJoins() || !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
-            return CollocationModelMultiplier.COLLOCATED.multiplier();
-
-        assert filters != null;
-
-        return CollocationModel.distributedMultiplier(ctx, ses, filters, filter);
+        return mul.multiplier();
     }
 
     /** {@inheritDoc} */

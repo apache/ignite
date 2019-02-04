@@ -629,18 +629,22 @@ public final class CollocationModel {
     /**
      * Get distributed multiplier for the given sequence of tables.
      *
-     * @param ctx Splitter context.
      * @param ses Session.
      * @param filters Filters.
      * @param filter Filter index.
      * @return Multiplier.
      */
-    public static int distributedMultiplier(
-        SplitterContext ctx,
-        Session ses,
-        TableFilter[] filters,
-        int filter
-    ) {
+    public static CollocationModelMultiplier distributedMultiplier(Session ses, TableFilter[] filters, int filter) {
+        // Notice that we check for isJoinBatchEnabled, because we can do multiple different
+        // optimization passes on PREPARE stage.
+        // Query expressions can not be distributed as well.
+        SplitterContext ctx = SplitterContext.get();
+
+        if (!ctx.distributedJoins() || !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
+            return CollocationModelMultiplier.COLLOCATED;
+
+        assert filters != null;
+
         clearViewIndexCache(ses);
 
         CollocationModel model = buildCollocationModel(ctx, ses.getSubQueryInfo(), filters, filter, false);
