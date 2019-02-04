@@ -73,8 +73,6 @@ import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
-
 /**
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
  */
@@ -296,13 +294,16 @@ public final class UpdatePlanBuilder {
             colTypes[i] = col.resultType().type();
 
             int colId = col.column().getColumnId();
+
             if (desc.isKeyColumn(colId)) {
                 keyColIdx = i;
+
                 continue;
             }
 
             if (desc.isValueColumn(colId)) {
                 valColIdx = i;
+
                 continue;
             }
 
@@ -820,8 +821,8 @@ public final class UpdatePlanBuilder {
                 return true;
 
             // column ids 0..1 are _key, _val
-            if (colId >= DEFAULT_COLUMNS_COUNT) {
-                if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
+            if (colId >= QueryUtils.DEFAULT_COLUMNS_COUNT) {
+                if (desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
                     return true;
             }
         }
@@ -874,9 +875,10 @@ public final class UpdatePlanBuilder {
             }
             else {
                 // Column ids 0..2 are _key, _val, _ver
-                assert colId >= DEFAULT_COLUMNS_COUNT : "Unexpected column [name=" + col + ", id=" + colId + "].";
+                assert colId >= QueryUtils.DEFAULT_COLUMNS_COUNT :
+                    "Unexpected column [name=" + col + ", id=" + colId + "].";
 
-                if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
+                if (desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
                     hasKeyProps = true;
                 else
                     hasValProps = true;

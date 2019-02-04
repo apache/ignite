@@ -35,8 +35,8 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,8 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
-
-import com.google.common.base.Predicate;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -55,8 +54,8 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
@@ -77,7 +76,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
@@ -1336,7 +1334,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertEquals(0, goldenMap.size());
 
         final Predicate<Long> rowMatcher = new Predicate<Long>() {
-            @Override public boolean apply(Long row) {
+            @Override public boolean test(Long row) {
                 return row % 7 == 0;
             }
         };
@@ -1344,7 +1342,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         final BPlusTree.TreeRowClosure<Long, Long> rowClosure = new BPlusTree.TreeRowClosure<Long, Long>() {
             @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
                 throws IgniteCheckedException {
-                return rowMatcher.apply(io.getLookupRow(tree, pageAddr, idx));
+                return rowMatcher.test(io.getLookupRow(tree, pageAddr, idx));
             }
         };
 
@@ -1361,7 +1359,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(goldenMap.put(row, row), testTree.put(row));
             assertEquals(row, testTree.findOne(row));
 
-            if (rowMatcher.apply(row))
+            if (rowMatcher.test(row))
                 ++correctMatchingRows;
 
             assertEquals(correctMatchingRows, testTree.size(rowClosure));
@@ -1386,7 +1384,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(row, testTree.remove(row));
             assertNull(testTree.findOne(row));
 
-            if (rowMatcher.apply(row))
+            if (rowMatcher.test(row))
                 --correctMatchingRows;
 
             assertEquals(correctMatchingRows, testTree.size(rowClosure));
@@ -2238,7 +2236,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7265")
     @Test
     public void testIterateConcurrentPutRemove_1() throws Exception {
         MAX_PER_PAGE = 1;
@@ -2250,8 +2247,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testIterateConcurrentPutRemove_5() throws Exception {
-        MAX_PER_PAGE = 5;
+    public void testIterateConcurrentPutRemove_2() throws Exception {
+        MAX_PER_PAGE = 2;
 
         iterateConcurrentPutRemove();
     }
@@ -2272,7 +2269,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private void iterateConcurrentPutRemove() throws Exception {
         final TestTree tree = createTestTree(true);
 
-        final int KEYS = 10_000;
+        // Single key per page is a degenerate case: it is very hard to merge pages in a tree because
+        // to merge we need to remove a split key from a parent page and add it to a back page, but this
+        // is impossible if we already have a key in a back page, thus we will have lots of empty routing pages.
+        // This way the tree grows faster than shrinks and gets out of height limit of 26 (for this page size) quickly.
+        // Since the tree height can not be larger than the key count for this case, we can use 26 as a safe number.
+        final int KEYS = MAX_PER_PAGE == 1 ? 26 : 10_000;
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
