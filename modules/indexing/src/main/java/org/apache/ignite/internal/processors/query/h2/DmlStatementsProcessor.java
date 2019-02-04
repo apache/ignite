@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -93,6 +94,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
@@ -289,21 +291,9 @@ public class DmlStatementsProcessor {
                     ress.add(res);
                 }
                 catch (Exception e ) {
-                    String sqlState;
+                    SQLException sqlEx = QueryUtils.toSqlException(e);
 
-                    int code;
-
-                    if (e instanceof IgniteSQLException) {
-                        sqlState = ((IgniteSQLException)e).sqlState();
-
-                        code = ((IgniteSQLException)e).statusCode();
-                    } else {
-                        sqlState = SqlStateCode.INTERNAL_ERROR;
-
-                        code = IgniteQueryErrorCode.UNKNOWN;
-                    }
-
-                    batchException = chainException(batchException, new SQLException(e.getMessage(), sqlState, code, e));
+                    batchException = chainException(batchException, sqlEx);
 
                     cntPerRow[cntr++] = Statement.EXECUTE_FAILED;
                 }
@@ -633,9 +623,14 @@ public class DmlStatementsProcessor {
             catch (IgniteCheckedException e) {
                 checkSqlException(e);
 
-                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
+                Exception ex = IgniteUtils.convertExceptionNoWrap(e);
 
-                throw new IgniteSQLException("Failed to run update. " + e.getMessage(), e);
+                if (ex instanceof IgniteException)
+                    throw (IgniteException)ex;
+
+                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", ex);
+
+                throw new IgniteSQLException("Failed to run update. " + ex.getMessage(), ex);
             }
             finally {
                 if (commit)
@@ -968,8 +963,7 @@ public class DmlStatementsProcessor {
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
             else
-                throw new IgniteSQLException("Duplicate key during INSERT [key=" + t.getKey() + ']',
-                    DUPLICATE_KEY);
+                throw new TransactionDuplicateKeyException("Duplicate key during INSERT [key=" + t.getKey() + ']');
         }
         else {
             // Keys that failed to INSERT due to duplication.
