@@ -1512,22 +1512,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
-            // todo: add one statement optimization?
-
-//            {
-//                SqlCommand nativeCmd = parseNativeLeadingStatement(schemaName, qry);
-//
-//                if (!(nativeCmd instanceof SqlCommitTransactionCommand || nativeCmd instanceof SqlRollbackTransactionCommand)
-//                    && !ctx.state().publicApiActiveState(true)) {
-//                    throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
-//                        "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-//                        "join the cluster. To activate the cluster call Ignite.active(true).");
-//                }
-//
-//                if (nativeCmd != null)
-//                    return queryDistributedSqlFieldsNative(schemaName, qry, nativeCmd, cliCtx);
-//            }
-
             List<FieldsQueryCursor<List<?>>> res;
 
             {
@@ -1588,9 +1572,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // fixme fail on multiply statements?
             while (remainingSql != null) {
                 SqlFieldsQuery remainingQry = remainingSql != qry.getSql() ? cloneFieldsQuery(qry).setSql(remainingSql) : qry;
-                // todo: refactor?
 
-                //List<FieldsQueryCursor<List<?>>> curStmtRes = null;
+                List<? extends FieldsQueryCursor<List<?>>> curStmtRes = null;
 
                 {
                     // Try to parse remaining sql with native parser:
@@ -1609,42 +1592,50 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 "join the cluster. To activate the cluster call Ignite.active(true).");
                         }
 
-                        res.addAll(queryDistributedSqlFieldsNative(schemaName, qry, nativeCmd, cliCtx));
-
                         remainingSql = parsed.remainingSql();
-                        continue;
+
+                        if (remainingSql != null && failOnMultipleStmts)
+                            throw new IgniteSQLException("Multiple statements queries are not supported");
+
+
+                        curStmtRes = queryDistributedSqlFieldsNative(schemaName, qry, nativeCmd, cliCtx);
                     }
                 }
 
-                ParsingResult parseRes = parseAndSplit(
-                    schemaName,
-                    remainingQry,
-                    firstArg);
+                if (curStmtRes == null) {
+                    //fallback to h2 parser
+                    ParsingResult parseRes = parseAndSplit(
+                        schemaName,
+                        remainingQry,
+                        firstArg);
 
-                // Let's avoid second reflection getter call by returning Prepared object too
-                Prepared prepared = parseRes.prepared();
+                    // Let's avoid second reflection getter call by returning Prepared object too
+                    Prepared prepared = parseRes.prepared();
 
-                GridCacheTwoStepQuery twoStepQry = parseRes.twoStepQuery();
+                    GridCacheTwoStepQuery twoStepQry = parseRes.twoStepQuery();
 
-                List<GridQueryFieldMetadata> meta = parseRes.meta();
+                    List<GridQueryFieldMetadata> meta = parseRes.meta();
 
-                SqlFieldsQuery newQry = parseRes.newQuery();
+                    SqlFieldsQuery newQry = parseRes.newQuery();
 
-                remainingSql = parseRes.remainingSql();
+                    remainingSql = parseRes.remainingSql();
 
-                if (remainingSql != null && failOnMultipleStmts)
-                    throw new IgniteSQLException("Multiple statements queries are not supported");
+                    if (remainingSql != null && failOnMultipleStmts)
+                        throw new IgniteSQLException("Multiple statements queries are not supported");
 
-                firstArg += prepared.getParameters().size();
+                    firstArg += prepared.getParameters().size();
 
-                res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, startTx, tracker,
-                    cancel, registerAsNewQry));
+                    curStmtRes = doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, startTx, tracker,
+                        cancel, registerAsNewQry);
 
-                // We cannot cache two-step query for multiple statements query except the last statement
-                if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
-                    !parseRes.twoStepQuery().explain() && remainingSql == null)
-                    twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
-                        twoStepQry.copy()));
+                    // We cannot cache two-step query for multiple statements query except the last statement
+                    if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
+                        !parseRes.twoStepQuery().explain() && remainingSql == null)
+                        twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
+                            twoStepQry.copy()));
+                }
+
+                res.addAll(curStmtRes);
             }
 
             return res;

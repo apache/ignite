@@ -49,6 +49,7 @@ public class IgniteCacheSqlDdlMultistatementSelfTest extends GridCommonAbstractT
     public void testCreateManyIndexes() throws Exception{
         execute("CREATE TABLE public.transactions (pk INT, id INT, k VARCHAR, v VARCHAR, PRIMARY KEY (pk, id)); " +
             "CREATE INDEX transactions_id_k_v ON public.transactions (id, k, v) INLINE_SIZE 150; " +
+            "INSERT INTO public.transactions VALUES (1,2,'some', 'word') ; " +
             "CREATE INDEX transactions_k_v_id ON public.transactions (k, v, id) INLINE_SIZE 150; " +
             "CREATE INDEX transactions_pk_id ON public.transactions (pk, id) INLINE_SIZE 20;");
     }
