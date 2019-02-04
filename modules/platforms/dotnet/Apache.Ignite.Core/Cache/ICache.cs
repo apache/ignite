@@ -930,5 +930,24 @@ namespace Apache.Ignite.Core.Cache
         /// Reset query metrics.
         /// </summary>
         void ResetQueryMetrics();
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="partition"></param>
+        void PreloadPartition(int partition);
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="partition"></param>
+        /// <returns></returns>
+        Task PreloadPartitionAsync(int partition);
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="partition"></param>
+        bool LocalPreloadPartition(int partition);
     }
 }

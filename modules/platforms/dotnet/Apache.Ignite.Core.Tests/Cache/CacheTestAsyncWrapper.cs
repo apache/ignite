@@ -594,6 +594,21 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             _cache.ResetQueryMetrics();
         }
+
+        public void PreloadPartition(int partition)
+        {
+            _cache.PreloadPartition(partition);
+        }
+
+        public Task PreloadPartitionAsync(int partition)
+        {
+            return _cache.PreloadPartitionAsync(partition);
+        }
+
+        public bool LocalPreloadPartition(int partition)
+        {
+            return _cache.LocalPreloadPartition(partition);
+        }
     }
 
     /// <summary>

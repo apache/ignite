@@ -106,6 +106,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         GlobalMetrics = 83,
         GetLostPartitions = 84,
         QueryMetrics = 85,
-        ResetQueryMetrics = 86
+        ResetQueryMetrics = 86,
+        PreloadPartition = 87,
+        PreloadPartitionAsync = 88,
+        LocalPreloadPartition = 89
     }
 }
