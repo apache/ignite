@@ -568,7 +568,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                     boolean ping2 = ((IgniteEx) srv0).context().discovery().pingNode(client.cluster().localNode().id());
 
                     return ping1 && ping2;
-                } catch (IgniteClientDisconnectedCheckedException e) {
+                } catch (IgniteClientDisconnectedException | IgniteClientDisconnectedCheckedException e) {
                     return false;
                 }
             }
