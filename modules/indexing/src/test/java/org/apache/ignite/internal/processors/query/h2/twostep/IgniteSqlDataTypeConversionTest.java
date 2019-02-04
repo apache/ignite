@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.math.BigDecimal;
 import java.sql.Time;
@@ -25,6 +25,9 @@ import java.util.Date;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.sql.optimizer.affinity.IgniteDataTypeConversionException;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterType;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -32,7 +35,7 @@ import org.h2.value.Value;
 import org.junit.Test;
 
 /**
- * Data convertion tests.
+ * Data conversion tests.
  */
 public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
     /** Map to convert <code>PartitionParameterType</code> instances to correspondig java classes. */
@@ -93,7 +96,7 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertNull() throws Exception {
-        checkConvertation2(null);
+        checkConvertation(null);
     }
 
     /**
@@ -103,8 +106,8 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertBoolean() throws Exception {
-        checkConvertation2(Boolean.TRUE);
-        checkConvertation2(Boolean.FALSE);
+        checkConvertation(Boolean.TRUE);
+        checkConvertation(Boolean.FALSE);
     }
 
     /**
@@ -114,10 +117,10 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertByte() throws Exception {
-        checkConvertation2((byte)42);
-        checkConvertation2((byte)0);
-        checkConvertation2(Byte.MIN_VALUE);
-        checkConvertation2(Byte.MAX_VALUE);
+        checkConvertation((byte)42);
+        checkConvertation((byte)0);
+        checkConvertation(Byte.MIN_VALUE);
+        checkConvertation(Byte.MAX_VALUE);
     }
 
     /**
@@ -127,10 +130,10 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertShort() throws Exception {
-        checkConvertation2((short)42);
-        checkConvertation2((short)0);
-        checkConvertation2(Short.MIN_VALUE);
-        checkConvertation2(Short.MAX_VALUE);
+        checkConvertation((short)42);
+        checkConvertation((short)0);
+        checkConvertation(Short.MIN_VALUE);
+        checkConvertation(Short.MAX_VALUE);
     }
 
     /**
@@ -140,10 +143,10 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertInteger() throws Exception {
-        checkConvertation2(42);
-        checkConvertation2(0);
-        checkConvertation2(Integer.MIN_VALUE);
-        checkConvertation2(Integer.MAX_VALUE);
+        checkConvertation(42);
+        checkConvertation(0);
+        checkConvertation(Integer.MIN_VALUE);
+        checkConvertation(Integer.MAX_VALUE);
     }
 
     /**
@@ -153,10 +156,10 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertLong() throws Exception {
-        checkConvertation2(42L);
-        checkConvertation2(0L);
-        checkConvertation2(Long.MIN_VALUE);
-        checkConvertation2(Long.MAX_VALUE);
+        checkConvertation(42L);
+        checkConvertation(0L);
+        checkConvertation(Long.MIN_VALUE);
+        checkConvertation(Long.MAX_VALUE);
     }
 
     /**
@@ -166,17 +169,17 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertFloat() throws Exception {
-        checkConvertation2(42.1f);
-        checkConvertation2(0.1f);
-        checkConvertation2(0f);
-        checkConvertation2(1.2345678E7f);
+        checkConvertation(42.1f);
+        checkConvertation(0.1f);
+        checkConvertation(0f);
+        checkConvertation(1.2345678E7f);
 
-        checkConvertation2(Float.POSITIVE_INFINITY);
-        checkConvertation2(Float.NEGATIVE_INFINITY);
-        checkConvertation2(Float.NaN);
+        checkConvertation(Float.POSITIVE_INFINITY);
+        checkConvertation(Float.NEGATIVE_INFINITY);
+        checkConvertation(Float.NaN);
 
-        checkConvertation2(Float.MIN_VALUE);
-        checkConvertation2(Float.MAX_VALUE);
+        checkConvertation(Float.MIN_VALUE);
+        checkConvertation(Float.MAX_VALUE);
     }
 
     /**
@@ -186,17 +189,17 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertDouble() throws Exception {
-        checkConvertation2(42.2d);
-        checkConvertation2(0.2d);
-        checkConvertation2(0d);
-        checkConvertation2(1.2345678E7d);
+        checkConvertation(42.2d);
+        checkConvertation(0.2d);
+        checkConvertation(0d);
+        checkConvertation(1.2345678E7d);
 
-        checkConvertation2(Double.POSITIVE_INFINITY);
-        checkConvertation2(Double.NEGATIVE_INFINITY);
-        checkConvertation2(Double.NaN);
+        checkConvertation(Double.POSITIVE_INFINITY);
+        checkConvertation(Double.NEGATIVE_INFINITY);
+        checkConvertation(Double.NaN);
 
-        checkConvertation2(Double.MIN_VALUE);
-        checkConvertation2(Double.MAX_VALUE);
+        checkConvertation(Double.MIN_VALUE);
+        checkConvertation(Double.MAX_VALUE);
     }
 
     /**
@@ -206,44 +209,44 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertString() throws Exception {
-        checkConvertation2("42");
-        checkConvertation2("0");
+        checkConvertation("42");
+        checkConvertation("0");
 
-        checkConvertation2("42.3");
-        checkConvertation2("0.3");
+        checkConvertation("42.3");
+        checkConvertation("0.3");
 
-        checkConvertation2("42.4f");
-        checkConvertation2("0.4d");
+        checkConvertation("42.4f");
+        checkConvertation("0.4d");
 
-        checkConvertation2("04d17cf3-bc20-4e3d-9ff7-72437cdae227");
+        checkConvertation("04d17cf3-bc20-4e3d-9ff7-72437cdae227");
 
-        checkConvertation2("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+        checkConvertation("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
 
-        checkConvertation2("aaa");
-        checkConvertation2(" aaa ");
+        checkConvertation("aaa");
+        checkConvertation(" aaa ");
 
-        checkConvertation2("true");
-        checkConvertation2("t");
-        checkConvertation2("yes");
-        checkConvertation2("y");
-        checkConvertation2("false");
-        checkConvertation2("f");
-        checkConvertation2("no");
-        checkConvertation2("n");
+        checkConvertation("true");
+        checkConvertation("t");
+        checkConvertation("yes");
+        checkConvertation("y");
+        checkConvertation("false");
+        checkConvertation("f");
+        checkConvertation("no");
+        checkConvertation("n");
 
-        checkConvertation2(" true ");
+        checkConvertation(" true ");
 
-        checkConvertation2("null");
-        checkConvertation2("NULL");
+        checkConvertation("null");
+        checkConvertation("NULL");
 
-        checkConvertation2("2000-01-02");
+        checkConvertation("2000-01-02");
 
-        checkConvertation2("10:00:00");
+        checkConvertation("10:00:00");
 
-        checkConvertation2("2001-01-01 23:59:59.123456");
+        checkConvertation("2001-01-01 23:59:59.123456");
     }
 
     /**
@@ -253,13 +256,13 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertDecimal() throws Exception {
-        checkConvertation2(new BigDecimal(42.5));
-        checkConvertation2(new BigDecimal(0.5));
-        checkConvertation2(new BigDecimal(0));
-        checkConvertation2(new BigDecimal(1.2345678E7));
+        checkConvertation(new BigDecimal(42.5));
+        checkConvertation(new BigDecimal(0.5));
+        checkConvertation(new BigDecimal(0));
+        checkConvertation(new BigDecimal(1.2345678E7));
 
-        checkConvertation2(new BigDecimal(Double.MIN_VALUE));
-        checkConvertation2(new BigDecimal(Double.MAX_VALUE));
+        checkConvertation(new BigDecimal(Double.MIN_VALUE));
+        checkConvertation(new BigDecimal(Double.MAX_VALUE));
     }
 
     /**
@@ -269,7 +272,7 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertDate() throws Exception {
-        checkConvertation2(new Date());
+        checkConvertation(new Date());
     }
 
     /**
@@ -279,7 +282,7 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertTime() throws Exception {
-        checkConvertation2(new Time(12345));
+        checkConvertation(new Time(12345));
     }
 
     /**
@@ -289,7 +292,7 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertTimestamp() throws Exception {
-        checkConvertation2(new Timestamp(54321));
+        checkConvertation(new Timestamp(54321));
     }
 
     /**
@@ -299,9 +302,9 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertUUID() throws Exception {
-        checkConvertation2(UUID.randomUUID());
-        checkConvertation2(UUID.fromString("00000000-0000-0000-0000-00000000000a"));
-        checkConvertation2(new UUID(0L, 1L));
+        checkConvertation(UUID.randomUUID());
+        checkConvertation(UUID.fromString("00000000-0000-0000-0000-00000000000a"));
+        checkConvertation(new UUID(0L, 1L));
     }
 
     /**
@@ -310,14 +313,14 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      * @param arg Argument to convert.
      * @throws Exception If failed.
      */
-    private void checkConvertation2(Object arg) throws Exception {
+    private void checkConvertation(Object arg) throws Exception {
         for (PartitionParameterType targetType : PartitionParameterType.values()) {
             Object convertationRes;
 
             try {
                 convertationRes = PartitionUtils.convert(arg, targetType);
             }
-            catch (IllegalArgumentException convertaitionException) {
+            catch (IgniteDataTypeConversionException convertaitionException) {
                 if (arg != null && (targetType == PartitionParameterType.TIME ||
                     targetType == PartitionParameterType.TIMESTAMP || targetType == PartitionParameterType.DATE))
                     assertTrue(convertaitionException.getMessage().contains("Unable to convert arg"));

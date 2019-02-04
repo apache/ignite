@@ -14,33 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Client context. Passed to partition resolver on thin clients.
+ * Exception that represents datatype conversion failure.
  */
-public class PartitionClientContext {
-    /**
-     * Resolve partition.
-     *
-     * @param arg Argument.
-     * @param typ Type.
-     * @param cacheName Cache name.
-     * @return Partition or {@code null} if cannot be resolved.
-     */
-    @Nullable public Integer partition(Object arg, @Nullable PartitionParameterType typ, String cacheName) {
-        try {
-            Object convertedArg = PartitionUtils.convert(arg, typ);
-        }
-        catch (IgniteDataTypeConversionException e) {
-            // TODO: IGNITE-10308: Implement partition resolution logic.
-            // Skip partition awareness phase.
-            return null;
-        }
+public class IgniteDataTypeConversionException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        // TODO: IGNITE-10308: Implement partition resolution logic.
-        return null;
+    /**
+     * Creates exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public IgniteDataTypeConversionException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Creates exception with given error message and cause.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be {@code null}).
+     */
+    public IgniteDataTypeConversionException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }
