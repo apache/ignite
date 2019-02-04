@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.transactions;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
  * Exception thrown whenever grid transactions has been automatically rolled back.
  */
-public class IgniteTxRollbackCheckedException extends IgniteCheckedException {
+public class IgniteTxRollbackCheckedException extends TransactionCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
