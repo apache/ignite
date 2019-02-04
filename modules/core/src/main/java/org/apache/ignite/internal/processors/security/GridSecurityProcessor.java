@@ -96,5 +96,6 @@ public interface GridSecurityProcessor extends GridProcessor {
     /**
      * @return GridSecurityProcessor is enable.
      */
+    @Deprecated
     public boolean enabled();
 }

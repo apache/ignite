@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.security;
 
 import java.util.Collection;
@@ -30,13 +47,6 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  * Default Grid security Manager implementation.
  */
 public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, GridProcessor {
-    /** Security session that is used if GridSecurityProcessor is not enabled. */
-    private static final IgniteSecuritySession SECURITY_SESSION_DISABLED_MODE = new IgniteSecuritySession() {
-        @Override public void close() {
-            //no-op
-        }
-    };
-
     /** Current security context. */
     private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
 
@@ -65,43 +75,31 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public IgniteSecuritySession startSession(SecurityContext secCtx) {
-        if (enabled()) {
-            assert secCtx != null;
+        assert secCtx != null;
 
-            SecurityContext old = curSecCtx.get();
+        SecurityContext old = curSecCtx.get();
 
-            curSecCtx.set(secCtx);
+        curSecCtx.set(secCtx);
 
-            return new IgniteSecuritySessionImpl(this, old);
-        }
-
-        return SECURITY_SESSION_DISABLED_MODE;
+        return new IgniteSecuritySessionImpl(this, old);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteSecuritySession startSession(UUID nodeId) {
-        if (enabled()) {
-            return startSession(
-                secCtxs.computeIfAbsent(nodeId,
-                    uuid -> nodeSecurityContext(
-                        marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().node(uuid)
-                    )
+        return startSession(
+            secCtxs.computeIfAbsent(nodeId,
+                uuid -> nodeSecurityContext(
+                    marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().node(uuid)
                 )
-            );
-        }
-
-        return SECURITY_SESSION_DISABLED_MODE;
+            )
+        );
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        SecurityContext res = null;
+        SecurityContext res = curSecCtx.get();
 
-        if (enabled()) {
-            res = curSecCtx.get();
-
-            assert res != null;
-        }
+        assert res != null;
 
         return res;
     }
@@ -139,20 +137,16 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm) throws SecurityException {
-        SecurityContext secCtx = null;
+        SecurityContext secCtx = curSecCtx.get();
 
-        if (enabled()) {
-            secCtx = curSecCtx.get();
-
-            assert secCtx != null;
-        }
+        assert secCtx != null;
 
         secPrc.authorize(name, perm, secCtx);
     }
 
     /** {@inheritDoc} */
     @Override public boolean enabled() {
-        return secPrc.enabled();
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -167,11 +161,9 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        if (enabled()) {
-            ctx.event().addDiscoveryEventListener(
-                (evt, discoCache) -> secCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
-            );
-        }
+        ctx.event().addDiscoveryEventListener(
+            (evt, discoCache) -> secCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
+        );
 
         secPrc.onKernalStart(active);
     }

@@ -167,6 +167,7 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorImpl;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
@@ -987,7 +988,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new GridTimeoutProcessor(ctx));
 
             // Start security processors.
-            startProcessor(new IgniteSecurityProcessorImpl(ctx, createComponent(GridSecurityProcessor.class, ctx)));
+            startProcessor(igniteSecurityProcessor(createComponent(GridSecurityProcessor.class, ctx)));
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
@@ -1296,6 +1297,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (!isDaemon())
             ctx.discovery().ackTopology(ctx.discovery().localJoin().joinTopologyVersion().topologyVersion(),
                 EventType.EVT_NODE_JOINED, localNode());
+    }
+
+    /**
+     * @param prc GridSecurityProcessor from plugin context or null.
+     * @return IgniteSecurityProcessor.
+     */
+    private GridProcessor igniteSecurityProcessor(GridSecurityProcessor prc) {
+        return prc != null ? new IgniteSecurityProcessorImpl(ctx, prc) : new NoOpIgniteSecurityProcessor();
     }
 
     /**
@@ -4149,6 +4158,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (cls.equals(IGridClusterStateProcessor.class))
             return (T)new GridClusterStateProcessor(ctx);
+
+        if(cls.equals(GridSecurityProcessor.class))
+            return null;
 
         Class<T> implCls = null;
 
