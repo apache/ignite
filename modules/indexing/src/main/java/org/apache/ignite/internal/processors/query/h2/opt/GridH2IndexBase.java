@@ -27,14 +27,17 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
+import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedLookupBatch;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeStream;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SegmentKey;
+import org.apache.ignite.internal.processors.query.h2.sql.SplitterContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -54,7 +57,6 @@ import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.IndexCondition;
 import org.h2.index.IndexLookupBatch;
-import org.h2.index.ViewIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -72,11 +74,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.buildCollocationModel;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_OK;
@@ -186,7 +184,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param row Row.
      * @return Existing row or {@code null}.
      */
-    public abstract GridH2Row put(GridH2Row row);
+    public abstract H2CacheRow put(H2CacheRow row);
 
     /**
      * Puts row.
@@ -194,15 +192,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param row Row.
      * @return {@code True} if existing row row has been replaced.
      */
-    public abstract boolean putx(GridH2Row row);
-
-    /**
-     * Remove row from index.
-     *
-     * @param row Row.
-     * @return Removed row.
-     */
-    public abstract GridH2Row remove(SearchRow row);
+    public abstract boolean putx(H2CacheRow row);
 
     /**
      * Removes row from index.
@@ -214,41 +204,23 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
     /**
      * @param ses Session.
-     */
-    private static void clearViewIndexCache(Session ses) {
-        Map<Object,ViewIndex> viewIdxCache = ses.getViewIndexCache(true);
-
-        if (!viewIdxCache.isEmpty())
-            viewIdxCache.clear();
-    }
-
-    /**
-     * @param ses Session.
      * @param filters All joined table filters.
      * @param filter Current filter.
      * @return Multiplier.
      */
     public final int getDistributedMultiplier(Session ses, TableFilter[] filters, int filter) {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
         // We do optimizations with respect to distributed joins only on PREPARE stage only.
         // Notice that we check for isJoinBatchEnabled, because we can do multiple different
         // optimization passes on PREPARE stage.
         // Query expressions can not be distributed as well.
-        if (qctx == null || qctx.type() != PREPARE || qctx.distributedJoinMode() == OFF ||
-            !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
-            return CollocationModel.MULTIPLIER_COLLOCATED;
+        SplitterContext ctx = SplitterContext.get();
 
-        // We have to clear this cache because normally sub-query plan cost does not depend on anything
-        // other than index condition masks and sort order, but in our case it can depend on order
-        // of previous table filters.
-        clearViewIndexCache(ses);
+        if (!ctx.distributedJoins() || !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
+            return CollocationModel.MULTIPLIER_COLLOCATED;
 
         assert filters != null;
 
-        CollocationModel c = buildCollocationModel(qctx, ses.getSubQueryInfo(), filters, filter, false);
-
-        return c.calculateMultiplier();
+        return CollocationModel.distributedMultiplier(ctx, ses, filters, filter);
     }
 
     /** {@inheritDoc} */
@@ -295,7 +267,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        if (qctx == null || qctx.distributedJoinMode() == OFF || !getTable().isPartitioned())
+        if (qctx == null || qctx.distributedJoinContext() == null || !getTable().isPartitioned())
             return null;
 
         IndexColumn affCol = getTable().getAffinityKeyColumn();
@@ -395,6 +367,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
         if (qctx == null)
             res.status(STATUS_NOT_FOUND);
         else {
+            DistributedJoinContext joinCtx = qctx.distributedJoinContext();
+
+            assert joinCtx != null;
+
             try {
                 RangeSource src;
 
@@ -406,14 +382,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 }
                 else {
                     // This is request to fetch next portion of data.
-                    src = qctx.getSource(node.id(), msg.segment(), msg.batchLookupId());
+                    src = joinCtx.getSource(node.id(), msg.segment(), msg.batchLookupId());
 
                     assert src != null;
                 }
 
                 List<GridH2RowRange> ranges = new ArrayList<>();
 
-                int maxRows = qctx.pageSize();
+                int maxRows = joinCtx.pageSize();
 
                 assert maxRows > 0 : maxRows;
 
@@ -434,11 +410,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 if (src.hasMoreRows()) {
                     // Save source for future fetches.
                     if (msg.bounds() != null)
-                        qctx.putSource(node.id(), msg.segment(), msg.batchLookupId(), src);
+                        joinCtx.putSource(node.id(), msg.segment(), msg.batchLookupId(), src);
                 }
                 else if (msg.bounds() == null) {
                     // Drop saved source.
-                    qctx.putSource(node.id(), msg.segment(), msg.batchLookupId(), null);
+                    joinCtx.putSource(node.id(), msg.segment(), msg.batchLookupId(), null);
                 }
 
                 res.ranges(ranges);
@@ -459,7 +435,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param qctx Query context.
      * @return Row filter.
      */
-    protected BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter(GridH2QueryContext qctx) {
+    protected BPlusTree.TreeRowClosure<H2Row, H2Row> filter(GridH2QueryContext qctx) {
         throw new UnsupportedOperationException();
     }
 
@@ -474,7 +450,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
         if (qctx == null)
             return;
 
-        Map<SegmentKey, RangeStream> streams = qctx.getStreams(msg.batchLookupId());
+        DistributedJoinContext joinCtx = qctx.distributedJoinContext();
+
+        assert joinCtx != null;
+
+        Map<SegmentKey, RangeStream> streams = joinCtx.getStreams(msg.batchLookupId());
 
         if (streams == null)
             return;
@@ -589,7 +569,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         CacheObject key;
 
-        final Value keyColValue = row.getValue(KEY_COL);
+        final Value keyColValue = row.getValue(QueryUtils.KEY_COL);
 
         assert keyColValue != null;
 
@@ -612,15 +592,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Iterator.
      */
     @SuppressWarnings("unchecked")
-    public Iterator<GridH2Row> findForSegment(GridH2RowRangeBounds bounds, int segment,
-        BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter) {
+    public Iterator<H2Row> findForSegment(GridH2RowRangeBounds bounds, int segment,
+        BPlusTree.TreeRowClosure<H2Row, H2Row> filter) {
         SearchRow first = toSearchRow(bounds.first());
         SearchRow last = toSearchRow(bounds.last());
 
         IgniteTree t = treeForRead(segment);
 
         try {
-            GridCursor<GridH2Row> range = ((BPlusTree)t).find(first, last, filter, null);
+            GridCursor<H2Row> range = ((BPlusTree)t).find(first, last, filter, null);
 
             if (range == null)
                 range = H2Utils.EMPTY_CURSOR;

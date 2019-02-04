@@ -32,14 +32,11 @@ import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset that require to start the whole Ignite
  * infrastructure. For manual run.
  */
-@RunWith(JUnit4.class)
 public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;

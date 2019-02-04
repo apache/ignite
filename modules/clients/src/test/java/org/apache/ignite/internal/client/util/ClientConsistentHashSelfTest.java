@@ -32,13 +32,10 @@ import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for consistent hash management class.
  */
-@RunWith(JUnit4.class)
 public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
     /** Replicas count. */
     private static final int REPLICAS = 512;

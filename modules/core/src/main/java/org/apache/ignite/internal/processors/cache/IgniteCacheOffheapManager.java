@@ -275,12 +275,13 @@ public interface IgniteCacheOffheapManager {
      * @param needOldVal {@code True} if need old value.
      * @param filter Filter.
      * @param retVal Flag to return previous value.
+     * @param keepBinary Keep binary flag.
      * @param entryProc Entry processor.
      * @param invokeArgs Entry processor invoke arguments.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public MvccUpdateResult mvccUpdate(
+    public MvccUpdateResult mvccUpdate(
         GridCacheMapEntry entry,
         CacheObject val,
         GridCacheVersion ver,
@@ -292,6 +293,7 @@ public interface IgniteCacheOffheapManager {
         boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
         boolean retVal,
+        boolean keepBinary,
         EntryProcessor entryProc,
         Object[] invokeArgs) throws IgniteCheckedException;
 
@@ -418,6 +420,7 @@ public interface IgniteCacheOffheapManager {
      * @param backup Backup entries flag.
      * @param topVer Topology version.
      * @param mvccSnapshot MVCC snapshot.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -425,29 +428,20 @@ public interface IgniteCacheOffheapManager {
         boolean primary,
         boolean backup,
         AffinityTopologyVersion topVer,
-        @Nullable MvccSnapshot mvccSnapshot)
-        throws IgniteCheckedException;
-
-    /**
-     * @param cacheId Cache ID.
-     * @param part Partition.
-     * @return Partition data iterator.
-     * @throws IgniteCheckedException If failed.
-     */
-    public default GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part)
-        throws IgniteCheckedException {
-        return cachePartitionIterator(cacheId, part, null);
-    }
+        @Nullable MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
      * @param part Partition.
      * @param mvccSnapshot MVCC snapshot.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
     public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part,
-        @Nullable MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
+        @Nullable MvccSnapshot mvccSnapshot, Boolean dataPageScanEnabled) throws IgniteCheckedException;
 
     /**
      * @param part Partition number.
@@ -481,6 +475,7 @@ public interface IgniteCacheOffheapManager {
      * @param topVer Topology version.
      * @param keepBinary Keep binary flag.
      * @param mvccSnapshot MVCC snapshot.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Entries iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -490,7 +485,9 @@ public interface IgniteCacheOffheapManager {
         final boolean backup,
         final AffinityTopologyVersion topVer,
         final boolean keepBinary,
-        @Nullable final MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
+        @Nullable final MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
@@ -811,6 +808,7 @@ public interface IgniteCacheOffheapManager {
          * @param noCreate Flag indicating that row should not be created if absent.
          * @param needOldVal {@code True} if need old value.
          * @param retVal Flag to return previous value.
+         * @param keepBinary Keep binary flag.
          * @return Update result.
          * @throws IgniteCheckedException If failed.
          */
@@ -828,7 +826,8 @@ public interface IgniteCacheOffheapManager {
             boolean needHist,
             boolean noCreate,
             boolean needOldVal,
-            boolean retVal) throws IgniteCheckedException;
+            boolean retVal,
+            boolean keepBinary) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

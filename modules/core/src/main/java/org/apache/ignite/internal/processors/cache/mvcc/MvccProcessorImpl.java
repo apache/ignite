@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -119,6 +120,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_IN
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_READ_OP_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_OP_CNTR;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.belongToSameTx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.hasNewVersion;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
@@ -234,7 +236,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     @Override public void start() throws IgniteCheckedException {
         ctx.event().addDiscoveryEventListener(this::onDiscovery, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
 
-        ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, new CoordinatorMessageListener());
+        ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, new MvccMessageListener());
 
         ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
             new CustomEventListener<DynamicCacheChangeBatch>() {
@@ -305,10 +307,31 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
+    @Override public void onCacheStop(final GridCacheContext cctx) {
+        if (cctx.mvccEnabled() && txLog != null) {
+            assert mvccEnabled && mvccSupported;
+
+            boolean hasMvccCaches = ctx.cache().cacheDescriptors().values().stream()
+                .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
+
+            if (!hasMvccCaches)
+                stopTxLog();
+        }
+    }
+
+
+    /** {@inheritDoc} */
     @Override public void beforeStop(IgniteCacheDatabaseSharedManager mgr) {
+        stopTxLog();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stopTxLog() {
         stopVacuumWorkers();
 
         txLog = null;
+
+        mvccEnabled = false;
     }
 
     /** {@inheritDoc} */
@@ -355,7 +378,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         assert CU.isPersistenceEnabled(ctx.config());
 
         //noinspection ConstantConditions
-        ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
+        ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 0,
             TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
     }
 
@@ -450,8 +473,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 RecoveryBallotBox ballotBox = recoveryBallotBoxes
                     .computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
 
-                ballotBox
-                    .voters(evt.topologyNodes().stream().map(ClusterNode::id).collect(Collectors.toList()));
+                ballotBox.voters(evt.topologyNodes().stream()
+                    // Nodes not supporting MVCC will never send votes to us. So, filter them away.
+                    .filter(this::supportsMvcc)
+                    .map(ClusterNode::id)
+                    .collect(Collectors.toList()));
 
                 tryFinishRecoveryVoting(nodeId, ballotBox);
             }
@@ -590,7 +616,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public byte state(long crdVer, long cntr) {
-        assert txLog != null && mvccEnabled;
+        assert txLog != null && mvccEnabled : mvccEnabled;
 
         try {
             return txLog.get(crdVer, cntr);
@@ -609,7 +635,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void updateState(MvccVersion ver, byte state, boolean primary) {
-        assert txLog != null && mvccEnabled;
+        assert mvccEnabled;
+        assert txLog != null || waitMap.isEmpty();
+
+        // txLog may not exist if node is non-affinity for any mvcc-cache.
+        if (txLog == null)
+            return;
 
         try {
             txLog.put(new TxKey(ver.coordinatorVersion(), ver.counter()), state, primary);
@@ -634,15 +665,23 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked) {
-        TxKey key = new TxKey(locked.coordinatorVersion(), locked.counter());
+    @Override public IgniteInternalFuture<Void> waitForLock(GridCacheContext cctx, MvccVersion waiterVer,
+        MvccVersion blockerVer) {
+        TxKey key = new TxKey(blockerVer.coordinatorVersion(), blockerVer.counter());
 
-        LockFuture fut = new LockFuture(cctx.ioPolicy());
+        LockFuture fut = new LockFuture(cctx.ioPolicy(), waiterVer);
 
         Waiter waiter = waitMap.merge(key, fut, Waiter::concat);
 
         if (!waiter.hasLocalTransaction() && (waiter = waitMap.remove(key)) != null)
             waiter.run(ctx);
+        else {
+            DeadlockDetectionManager.DelayedDeadlockComputation delayedComputation
+                = ctx.cache().context().deadlockDetectionMgr().initDelayedComputation(waiterVer, blockerVer);
+
+            if (delayedComputation != null)
+                fut.listen(fut0 -> delayedComputation.cancel());
+        }
 
         return fut;
     }
@@ -1059,13 +1098,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                     vacuumWorkers.add(new VacuumScheduler(ctx, log, this));
 
-                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++) {
+                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++)
                         vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
-                    }
 
-                    for (GridWorker worker : vacuumWorkers) {
+                    for (GridWorker worker : vacuumWorkers)
                         new IgniteThread(worker).start();
-                    }
 
                     return;
                 }
@@ -1107,9 +1144,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             if (!queue.isEmpty()) {
                 IgniteCheckedException ex = vacuumCancelledException();
 
-                for (VacuumTask task : queue) {
+                for (VacuumTask task : queue)
                     task.onDone(ex);
-                }
             }
         }
     }
@@ -1628,17 +1664,35 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public Optional<? extends MvccVersion> checkWaiting(MvccVersion mvccVer) {
+        return waitMap.entrySet().stream()
+            .filter(e -> e.getValue().lockFuture(mvccVer) != null)
+            .map(Map.Entry::getKey)
+            .map(key -> new MvccVersionImpl(key.major(), key.minor(), 0))
+            .findAny();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void failWaiter(MvccVersion mvccVer, Exception e) {
+        waitMap.values().stream()
+            .map(w -> w.lockFuture(mvccVer))
+            .filter(Objects::nonNull)
+            .findAny()
+            .ifPresent(w -> w.onDone(e));
+    }
+
     /**
      *
      */
-    private class CoordinatorMessageListener implements GridMessageListener {
+    private class MvccMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             MvccMessage msg0 = (MvccMessage)msg;
 
             if (msg0.waitForCoordinatorInit() && !initFut.isDone()) {
                 initFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                    @Override public void apply(IgniteInternalFuture<Void> future) {
+                    @Override public void apply(IgniteInternalFuture<Void> fut) {
                         assert curCrd.local();
 
                         processMessage(nodeId, msg);
@@ -1680,7 +1734,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "CoordinatorMessageListener[]";
+            return "MvccMessageListener[]";
         }
     }
 
@@ -1782,18 +1836,28 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
          * @return {@code True} if it is a compound waiter.
          */
         boolean compound();
+
+        /**
+         * @param checkedVer Version of transaction checking for wait.
+         * @return Lock future corresponding to checked transaction or {@code null} if it is not waiting.
+         */
+        @Nullable GridFutureAdapter<?> lockFuture(MvccVersion checkedVer);
     }
 
     /** */
     private static class LockFuture extends GridFutureAdapter<Void> implements Waiter, Runnable {
         /** */
         private final byte plc;
+        /** */
+        private final MvccVersion waitingTxVer;
 
         /**
          * @param plc Pool policy.
+         * @param waitingTxVer Waiting tx version.
          */
-        LockFuture(byte plc) {
+        LockFuture(byte plc, MvccVersion waitingTxVer) {
             this.plc = plc;
+            this.waitingTxVer = waitingTxVer;
         }
 
         /** {@inheritDoc} */
@@ -1804,7 +1868,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public void run(GridKernalContext ctx) {
             try {
-                ctx.pools().poolForPolicy(plc).execute(this);
+                if (!isDone())
+                    ctx.pools().poolForPolicy(plc).execute(this);
             }
             catch (IgniteCheckedException e) {
                 U.error(ctx.log(LockFuture.class), e);
@@ -1824,6 +1889,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public boolean compound() {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFutureAdapter<?> lockFuture(MvccVersion checkedVer) {
+            return belongToSameTx(waitingTxVer, checkedVer) ? this : null;
         }
     }
 
@@ -1847,6 +1917,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public boolean compound() {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFutureAdapter<?> lockFuture(MvccVersion checkedVer) {
+            return null;
         }
     }
 
@@ -1888,9 +1963,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public void run(GridKernalContext ctx) {
             if (inner.getClass() == ArrayList.class) {
-                for (Waiter waiter : (List<Waiter>)inner) {
+                for (Waiter waiter : (List<Waiter>)inner)
                     waiter.run(ctx);
-                }
             }
             else
                 ((Waiter)inner).run(ctx);
@@ -1909,6 +1983,22 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public boolean compound() {
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFutureAdapter<?> lockFuture(MvccVersion checkedVer) {
+            if (inner.getClass() == ArrayList.class) {
+                for (Waiter waiter : (List<Waiter>)inner) {
+                    GridFutureAdapter<?> waitFut;
+
+                    if ((waitFut = waiter.lockFuture(checkedVer)) != null)
+                        return waitFut;
+                }
+
+                return null;
+            }
+            else
+                return ((Waiter)inner).lockFuture(checkedVer);
         }
     }
 
@@ -2250,7 +2340,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                     part.dataStore().updateTxState(cctx, row);
                             }
                             else
-                                part.dataStore().updateTxState(cctx, (MvccDataRow) rest);
+                                part.dataStore().updateTxState(cctx, (MvccDataRow)rest);
                         }
                     }
                     finally {

@@ -435,7 +435,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long readLock(int grpId, long pageId, long page) {
-        return readLockPage(page, new FullPageId(pageId, grpId), false);
+        return readLock(page, pageId, false);
     }
 
     /** {@inheritDoc} */
@@ -1392,23 +1392,17 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /**
      * @param absPtr Absolute pointer to read lock.
-     * @param fullId Full page ID.
+     * @param pageId Page ID.
      * @param force Force flag.
      * @return Pointer to the page read buffer.
      */
-    private long readLockPage(long absPtr, FullPageId fullId, boolean force) {
-        return readLockPage(absPtr, fullId, force, true);
+    private long readLock(long absPtr, long pageId, boolean force) {
+        return readLock(absPtr, pageId, force, true);
     }
 
-    /**
-     * @param absPtr Absolute pointer to read lock.
-     * @param fullId Full page ID.
-     * @param force Force flag.
-     * @param touch Update page timestamp.
-     * @return Pointer to the page read buffer.
-     */
-    private long readLockPage(long absPtr, FullPageId fullId, boolean force, boolean touch) {
-        int tag = force ? -1 : PageIdUtils.tag(fullId.pageId());
+    /** {@inheritDoc} */
+    @Override  public long readLock(long absPtr, long pageId, boolean force, boolean touch) {
+        int tag = force ? -1 : PageIdUtils.tag(pageId);
 
         boolean locked = rwLock.readLock(absPtr + PAGE_LOCK_OFFSET, tag);
 
@@ -1425,7 +1419,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long readLockForce(int grpId, long pageId, long page) {
-        return readLockPage(page, new FullPageId(pageId, grpId), true);
+        return readLock(page, pageId, true);
     }
 
     /**
@@ -1554,7 +1548,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             long pageId = PageIO.getPageId(page + PAGE_OVERHEAD);
 
             assert pageId != 0 : U.hexLong(PageHeader.readPageId(page));
-            assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
+            assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : dumpPage(pageId, fullId.groupId());
             assert PageIO.getType(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
 
             try {
@@ -1570,6 +1564,20 @@ public class PageMemoryImpl implements PageMemoryEx {
                 throw ex;
             }
         }
+    }
+
+    /**
+     * Prepares page details for assertion.
+     * @param pageId Page id.
+     * @param grpId Group id.
+     */
+    @NotNull private String dumpPage(long pageId, int grpId) {
+        int pageIdx = PageIdUtils.pageIndex(pageId);
+        int partId = PageIdUtils.partId(pageId);
+        long off = (long)(pageIdx + 1) * pageSize();
+
+        return U.hexLong(pageId) + " (grpId=" + grpId + ", pageIdx=" + pageIdx + ", partId=" + partId + ", offH=" +
+            Long.toHexString(off) + ")";
     }
 
     /**
@@ -2137,7 +2145,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (ctx.kernalContext().query() == null || !ctx.kernalContext().query().moduleEnabled())
                 return;
 
-            long pageAddr = readLockPage(absPtr, fullPageId, true, false);
+            long pageAddr = PageMemoryImpl.this.readLock(absPtr, fullPageId.pageId(), true, false);
 
             try {
                 if (PageIO.getType(pageAddr) != PageIO.T_DATA)

@@ -66,7 +66,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.Command;
+import org.apache.ignite.internal.commandline.CommandArgFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -107,8 +109,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
@@ -128,7 +128,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Command line handler test.
  */
-@RunWith(JUnit4.class)
 public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /** System out. */
     protected PrintStream sysOut;
@@ -269,7 +268,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        if(!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0))) {
+        if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0))) {
             // Add force to avoid interactive confirmation.
             args.add(CMD_AUTO_CONFIRMATION);
         }
@@ -945,9 +944,29 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "help"));
 
+        String output = testOut.toString();
+
         for (CacheCommand cmd : CacheCommand.values()) {
-            if (cmd != HELP)
-                assertTrue(cmd.text(), testOut.toString().contains(cmd.toString()));
+            if (cmd != HELP) {
+                assertTrue(cmd.text(), output.contains(cmd.toString()));
+
+                for (CommandArg arg : CommandArgFactory.getArgs(cmd))
+                    assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCorrectCacheOptionsNaming() throws Exception {
+        Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
+
+        for(CacheCommand cmd : CacheCommand.values()) {
+            for (CommandArg arg : CommandArgFactory.getArgs(cmd))
+                assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
     }
 
@@ -1018,6 +1037,63 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
         assertTrue(testOut.toString().contains("found 2 conflict partitions"));
+    }
+
+    /**
+     * Tests that empty partitions with non-zero update counter are not included into the idle_verify dump.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheIdleVerifyDumpSkipZerosUpdateCounters() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(2);
+
+        ignite.cluster().active(true);
+
+        int emptyPartId = 31;
+
+        // Less than parts number for ability to check skipZeros flag.
+        createCacheAndPreload(ignite, emptyPartId);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skip-zeros", DEFAULT_CACHE_NAME));
+
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        String zeroUpdateCntrs = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertTrue(zeroUpdateCntrs.contains("idle_verify check has finished, found " + emptyPartId + " partitions"));
+        assertTrue(zeroUpdateCntrs.contains("1 partitions was skipped"));
+        assertTrue(zeroUpdateCntrs.contains("idle_verify check has finished, no conflicts have been found."));
+
+        assertSort(emptyPartId, zeroUpdateCntrs);
+
+        testOut.reset();
+
+        // The result of the following cache operations is that
+        // the size of the 32-th partition is equal to zero and update counter is equal to 2.
+        ignite.cache(DEFAULT_CACHE_NAME).put(emptyPartId, emptyPartId);
+
+        ignite.cache(DEFAULT_CACHE_NAME).remove(emptyPartId, emptyPartId);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skip-zeros", DEFAULT_CACHE_NAME));
+
+        fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        String nonZeroUpdateCntrs = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertTrue(nonZeroUpdateCntrs.contains("idle_verify check has finished, found " + 31 + " partitions"));
+        assertTrue(nonZeroUpdateCntrs.contains("1 partitions was skipped"));
+        assertTrue(nonZeroUpdateCntrs.contains("idle_verify check has finished, no conflicts have been found."));
+
+        assertSort(31, zeroUpdateCntrs);
+
+        assertEquals(zeroUpdateCntrs, nonZeroUpdateCntrs);
     }
 
     /**
@@ -1388,7 +1464,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertNotNull(memorySysCacheCtx);
 
         corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s0",
-                "default-volatile-ds-group"), true, false);
+            "default-volatile-ds-group"), true, false);
 
         corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s" + parts / 2,
             "default-volatile-ds-group"), false, true);
@@ -1699,7 +1775,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "seq"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "--seq"));
 
         assertTrue(testOut.toString().contains("testSeq"));
         assertTrue(testOut.toString().contains("testSeq2"));
@@ -1725,7 +1801,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "groups"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "--groups"));
 
         assertTrue(testOut.toString().contains("G100"));
     }

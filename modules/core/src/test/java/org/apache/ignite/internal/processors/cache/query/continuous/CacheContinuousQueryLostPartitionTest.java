@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static javax.cache.configuration.FactoryBuilder.factoryOf;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -46,7 +44,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  * Test from https://issues.apache.org/jira/browse/IGNITE-2384.
  */
-@RunWith(JUnit4.class)
 public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "test_cache";
