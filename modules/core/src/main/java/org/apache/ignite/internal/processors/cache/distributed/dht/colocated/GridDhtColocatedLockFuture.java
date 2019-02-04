@@ -829,6 +829,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         // We must acquire topology snapshot from the topology version future.
         cctx.topology().readLock();
 
+        final GridDhtTopologyFuture fut;
+        final boolean finish; //Todo make pretty
+
         try {
             if (cctx.topology().stopping()) {
                 onDone(
@@ -839,9 +842,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 return;
             }
 
-            GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+            fut = cctx.topologyVersionFuture();
+            finish = fut.isDone();
 
-            if (fut.isDone()) {
+            if (finish) {
                 Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                 if (err != null) {
@@ -870,29 +874,36 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     }
                 }
 
-                map(keys, remap, false);
+                trackable = true;
 
-                if (c != null)
-                    c.run();
-
-                markInitialized();
-            }
-            else {
-                cctx.time().waitAsync(fut, tx == null ? 0 : tx.remainingTime(), (e, timedOut) -> {
-                    if (errorOrTimeoutOnTopologyVersion(e, timedOut))
-                        return;
-
-                    try {
-                        mapOnTopology(remap, c);
-                    }
-                    finally {
-                        cctx.shared().txContextReset();
-                    }
-                });
+                if (!remap)
+                    cctx.mvcc().addFuture(this);
             }
         }
         finally {
             cctx.topology().readUnlock();
+        }
+
+        if (finish) {
+            map(keys, remap, false);
+
+            if (c != null)
+                c.run();
+
+            markInitialized();
+        }
+        else {
+            cctx.time().waitAsync(fut, tx == null ? 0 : tx.remainingTime(), (e, timedOut) -> {
+                if (errorOrTimeoutOnTopologyVersion(e, timedOut))
+                    return;
+
+                try {
+                    mapOnTopology(remap, c);
+                }
+                finally {
+                    cctx.shared().txContextReset();
+                }
+            });
         }
     }
 
@@ -1139,15 +1150,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     iter.remove();
                 }
             }
-
-            if (hasRmtNodes) {
-                trackable = true;
-
-                if (!remap && !cctx.mvcc().addFuture(this))
-                    throw new IllegalStateException("Duplicate future ID: " + this);
-            }
-            else
-                trackable = false;
         }
         finally {
             /** Notify ready {@link mappings} waiters. See {@link #cancel()} */
