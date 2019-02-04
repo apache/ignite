@@ -251,70 +251,70 @@ export default angular.module('ignite-console', [
     permanentNotifications.name,
     timedRedirection.name,
     signupConfirmation.name,
-noDataCmp.name])
-.service('$exceptionHandler', $exceptionHandler)
-// Directives.
-.directive('igniteAutoFocus', igniteAutoFocus)
-.directive('igniteCopyToClipboard', igniteCopyToClipboard)
-.directive('hideOnStateChange', igniteHideOnStateChange)
-.directive('igniteMatch', igniteMatch)
-.directive('igniteOnClickFocus', igniteOnClickFocus)
-.directive('igniteOnEnter', igniteOnEnter)
-.directive('igniteOnEnterFocusMove', igniteOnEnterFocusMove)
-.directive('igniteOnEscape', igniteOnEscape)
-.directive('igniteRetainSelection', igniteRetainSelection)
-.directive('igniteOnFocusOut', igniteOnFocusOut)
-.directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
-.directive('btnIgniteLinkDashedSecondary', btnIgniteLink)
-// Services.
-.service('IgniteErrorPopover', ErrorPopover)
-.service('JavaTypes', JavaTypes)
-.service('SqlTypes', SqlTypes)
-.service('IgniteChartColors', ChartColors)
-.service('IgniteConfirm', IgniteConfirm)
-.service('Confirm', Confirm)
-.service('IgniteConfirmBatch', ConfirmBatch)
-.service('IgniteCopyToClipboard', CopyToClipboard)
-.service('IgniteCountries', Countries)
-.service('IgniteFocus', Focus)
-.service('IgniteInetAddress', InetAddress)
-.service('IgniteMessages', Messages)
-.service('IgniteErrorParser', ErrorParser)
-.service('IgniteModelNormalizer', ModelNormalizer)
-.service('IgniteLegacyTable', LegacyTable)
-.service('IgniteFormUtils', FormUtils)
-.service('IgniteLegacyUtils', LegacyUtils)
-.service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
-.service('CSV', CSV)
+    noDataCmp.name])
+    .service('$exceptionHandler', $exceptionHandler)
+    // Directives.
+    .directive('igniteAutoFocus', igniteAutoFocus)
+    .directive('igniteCopyToClipboard', igniteCopyToClipboard)
+    .directive('hideOnStateChange', igniteHideOnStateChange)
+    .directive('igniteMatch', igniteMatch)
+    .directive('igniteOnClickFocus', igniteOnClickFocus)
+    .directive('igniteOnEnter', igniteOnEnter)
+    .directive('igniteOnEnterFocusMove', igniteOnEnterFocusMove)
+    .directive('igniteOnEscape', igniteOnEscape)
+    .directive('igniteRetainSelection', igniteRetainSelection)
+    .directive('igniteOnFocusOut', igniteOnFocusOut)
+    .directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
+    .directive('btnIgniteLinkDashedSecondary', btnIgniteLink)
+    // Services.
+    .service('IgniteErrorPopover', ErrorPopover)
+    .service('JavaTypes', JavaTypes)
+    .service('SqlTypes', SqlTypes)
+    .service('IgniteChartColors', ChartColors)
+    .service('IgniteConfirm', IgniteConfirm)
+    .service('Confirm', Confirm)
+    .service('IgniteConfirmBatch', ConfirmBatch)
+    .service('IgniteCopyToClipboard', CopyToClipboard)
+    .service('IgniteCountries', Countries)
+    .service('IgniteFocus', Focus)
+    .service('IgniteInetAddress', InetAddress)
+    .service('IgniteMessages', Messages)
+    .service('IgniteErrorParser', ErrorParser)
+    .service('IgniteModelNormalizer', ModelNormalizer)
+    .service('IgniteLegacyTable', LegacyTable)
+    .service('IgniteFormUtils', FormUtils)
+    .service('IgniteLegacyUtils', LegacyUtils)
+    .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
+    .service('CSV', CSV)
 
-.service('Store', Store)
-// Filters.
-.filter('byName', byName)
-.filter('bytes', bytes)
-.filter('defaultName', defaultName)
-.filter('domainsValidation', domainsValidation)
-.filter('duration', duration)
-.filter('hasPojo', hasPojo)
-.filter('uiGridSubcategories', uiGridSubcategories)
-.filter('id8', id8)
-.config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider',
-    /**
-     * @param {angular.translate.ITranslateProvider} $translateProvider
-     * @param {import('@uirouter/angularjs').StateProvider} $stateProvider
-     * @param {ng.ILocationProvider} $locationProvider
-     * @param {import('@uirouter/angularjs').UrlRouterProvider} $urlRouterProvider
-     */
-    ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
-        $translateProvider.translations('en', i18n);
-        $translateProvider.preferredLanguage('en');
+    .service('Store', Store)
+    // Filters.
+    .filter('byName', byName)
+    .filter('bytes', bytes)
+    .filter('defaultName', defaultName)
+    .filter('domainsValidation', domainsValidation)
+    .filter('duration', duration)
+    .filter('hasPojo', hasPojo)
+    .filter('uiGridSubcategories', uiGridSubcategories)
+    .filter('id8', id8)
+    .config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider',
+        /**
+         * @param {angular.translate.ITranslateProvider} $translateProvider
+         * @param {import('@uirouter/angularjs').StateProvider} $stateProvider
+         * @param {ng.ILocationProvider} $locationProvider
+         * @param {import('@uirouter/angularjs').UrlRouterProvider} $urlRouterProvider
+         */
+        ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
+            $translateProvider.translations('en', i18n);
+            $translateProvider.preferredLanguage('en');
 
             // Set up the states.
             $stateProvider
-            .state('base', {
-                url: '',
-                abstract: true,
-                template: baseTemplate
-            });
+                .state('base', {
+                    url: '',
+                    abstract: true,
+                    template: baseTemplate
+                });
 
             $urlRouterProvider.otherwise('/404');
             $locationProvider.html5Mode(true);
@@ -365,17 +365,17 @@ noDataCmp.name])
                         localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
                 }
                 catch (ignored) {
-                // No-op.
+                    // No-op.
                 }
             });
         }
     ])
     .run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
-        /**
-         * @param {ng.IRootScopeService} $root
-         * @param {ng.IHttpService} $http
-         * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
-         */
+    /**
+    * @param {ng.IRootScopeService} $root
+    * @param {ng.IHttpService} $http
+    * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
+    */
         ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
             $root.revertIdentity = () => {
                 $http.get('/api/v1/admin/revert/identity')
@@ -387,8 +387,8 @@ noDataCmp.name])
         }
     ])
     .run(['IgniteIcon',
-        /**
-         * @param {import('./components/ignite-icon/service').default} IgniteIcon
-         */
+    /**
+    * @param {import('./components/ignite-icon/service').default} IgniteIcon
+    */
         (IgniteIcon) => IgniteIcon.registerIcons(icons)
     ]);
