@@ -1475,11 +1475,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     // todo : dont use String.substring, use ref to the String obj and pos instead.
+    /**
+     * Intermediate parsing result of the native (non-h2) parser. Queries are parsed lazily.
+     * Original query is represented by this class: parsed head and the tail as a text.
+     */
     public static class NativeParsingResult {
+        /** Parsed leading command. */
         private final SqlCommand newCmd;
 
+        /** The rest of the sql script */
         private final String remainingSql;
 
+        /** Constructs parsing result. */
         public NativeParsingResult(SqlCommand newCmd, String remainingSql) {
             assert !(newCmd == null && remainingSql != null);
 
@@ -1487,18 +1494,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             this.remainingSql = remainingSql;
         }
 
+        /**
+         * Parsed leading command from the original query.
+         */
         public SqlCommand newCmd() {
             return newCmd;
         }
 
+        /**
+         * Not yet parsed part of the query. {@code Null} if there is no one.
+         */
         public String remainingSql() {
             return remainingSql;
         }
 
+        /**
+         * Create parsing result in case parser met
+         */
         public static NativeParsingResult eof() {
             return new NativeParsingResult(null, null);
         }
 
+        /**
+         * Determine if parser reached the end of the script.
+         */
         public boolean isEof() {
             return newCmd == null;
         }
@@ -1569,7 +1588,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             String remainingSql = qry.getSql();
 
-            // fixme fail on multiply statements?
             while (remainingSql != null) {
                 SqlFieldsQuery remainingQry = remainingSql != qry.getSql() ? cloneFieldsQuery(qry).setSql(remainingSql) : qry;
 
