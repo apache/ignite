@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
@@ -866,10 +865,7 @@ public class GridMapQueryExecutor {
             }
 
             GridH2QueryContext qctx = new GridH2QueryContext(
-                node.id(),
-                reqId,
                 segmentId,
-                GridH2QueryType.MAP,
                 h2.backupFilter(topVer, parts),
                 distributedJoinCtx,
                 mvccSnapshot,
@@ -884,7 +880,7 @@ public class GridMapQueryExecutor {
             qryCtxRegistry.setThreadLocal(qctx);
 
             if (distributedJoinCtx != null)
-                qryCtxRegistry.setShared(qctx);
+                qryCtxRegistry.setShared(node.id(), reqId, qctx);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;

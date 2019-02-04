@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
@@ -28,14 +27,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
-
 /**
  * Thread local SQL query context which is intended to be accessible from everywhere.
  */
 public class GridH2QueryContext {
-    /** */
-    private final QueryContextKey key;
+    /** Segment ID. */
+    private final int segment;
 
     /** */
     private final IndexingQueryFilter filter;
@@ -55,40 +52,24 @@ public class GridH2QueryContext {
     /**
      * Constructor.
      *
-     * @param nodeId The node who initiated the query.
-     * @param qryId The query ID.
-     * @param segmentId Index segment ID.
-     * @param type Query type.
+     * @param segment Index segment ID.
      * @param filter Filter.
      * @param distributedJoinCtx Distributed join context.
      * @param mvccSnapshot MVCC snapshot.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public GridH2QueryContext(
-        UUID nodeId,
-        long qryId,
-        int segmentId,
-        GridH2QueryType type,
+        int segment,
         @Nullable IndexingQueryFilter filter,
         @Nullable DistributedJoinContext distributedJoinCtx,
         @Nullable MvccSnapshot mvccSnapshot,
         @Nullable List<GridReservable> reservations
     ) {
-        assert segmentId == 0 || type == MAP;
-
-        key = new QueryContextKey(nodeId, qryId, segmentId, type);
-
+        this.segment = segment;
         this.filter = filter;
         this.distributedJoinCtx = distributedJoinCtx;
         this.mvccSnapshot = mvccSnapshot;
         this.reservations = reservations;
-    }
-
-    /**
-     * @return Key.
-     */
-    public QueryContextKey key() {
-        return key;
     }
 
     /**
@@ -106,10 +87,10 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @return index segment ID.
+     * @return Index segment ID.
      */
     public int segment() {
-        return key.segmentId();
+        return segment;
     }
 
     /**

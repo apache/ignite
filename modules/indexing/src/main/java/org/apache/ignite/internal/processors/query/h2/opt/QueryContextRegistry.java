@@ -71,9 +71,8 @@ public class QueryContextRegistry {
      * @param segmentId Index segment ID.
      * @return Query context.
      */
-    @Nullable public GridH2QueryContext getShared(UUID nodeId, long qryId, int segmentId
-    ) {
-        return sharedCtxs.get(new QueryContextKey(nodeId, qryId, segmentId, GridH2QueryType.MAP));
+    @Nullable public GridH2QueryContext getShared(UUID nodeId, long qryId, int segmentId) {
+        return sharedCtxs.get(new QueryContextKey(nodeId, qryId, segmentId));
     }
 
     /**
@@ -82,10 +81,12 @@ public class QueryContextRegistry {
      *
      * @param ctx Query context.
      */
-    public void setShared(GridH2QueryContext ctx) {
+    public void setShared(UUID nodeId, long qryId, GridH2QueryContext ctx) {
         assert ctx.distributedJoinContext() != null;
 
-        GridH2QueryContext oldCtx = sharedCtxs.putIfAbsent(ctx.key(), ctx);
+        QueryContextKey key = new QueryContextKey(nodeId, qryId, ctx.segment());
+
+        GridH2QueryContext oldCtx = sharedCtxs.putIfAbsent(key, ctx);
 
         assert oldCtx == null;
     }
@@ -138,8 +139,6 @@ public class QueryContextRegistry {
 
         if (ctx == null)
             return false;
-
-        assert ctx.key().equals(key);
 
         if (ctx.lazyWorker() != null)
             ctx.lazyWorker().stop(nodeStop);

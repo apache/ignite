@@ -108,7 +108,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkAc
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.setDataPageScanEnabled;
 
@@ -758,15 +757,10 @@ public class GridReduceQueryExecutor {
                     else {
                         cancel.checkCancelled();
 
-                        UUID locNodeId = ctx.localNodeId();
-
                         H2Utils.setupConnection(r.connection(), false, enforceJoinOrder);
 
                         GridH2QueryContext qctx = new GridH2QueryContext(
-                            locNodeId,
-                            qryReqId,
                             0,
-                            REDUCE,
                             null,
                             null,
                             null,
