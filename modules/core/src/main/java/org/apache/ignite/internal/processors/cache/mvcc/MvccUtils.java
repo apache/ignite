@@ -239,7 +239,7 @@ public class MvccUtils {
         long snapshotCntr = snapshot.counter();
         int snapshotOpCntr = snapshot.operationCounter();
 
-        assert (snapshotOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+        assert (snapshotOpCntr & ~MVCC_OP_COUNTER_MASK) == 0 : snapshot;
 
         if (mvccCrd > snapshotCrd)
             return false; // Rows in the future are never visible.
