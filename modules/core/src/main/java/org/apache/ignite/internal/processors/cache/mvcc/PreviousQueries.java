@@ -45,7 +45,7 @@ class PreviousQueries {
         Set<Long> cntrs;
 
         /** */
-        boolean done() {
+        boolean isDone() {
             return init && (cntrs == null || cntrs.stream().allMatch(l -> l < 0));
         }
 
@@ -72,7 +72,7 @@ class PreviousQueries {
 
         nodes.stream().map(ClusterNode::id).forEach(uuid -> active.putIfAbsent(uuid, new Node()));
 
-        active.entrySet().removeIf(e -> !alivePredicate.test(e.getKey()) || e.getValue().done());
+        active.entrySet().removeIf(e -> !alivePredicate.test(e.getKey()) || e.getValue().isDone());
 
         if (active.isEmpty())
             done = true;
@@ -138,7 +138,7 @@ class PreviousQueries {
             if (wasNull || !cntrs.remove(qryId))
                 cntrs.add(-qryId);
 
-            if (init && node.done())
+            if (init && node.isDone())
                 removeAndCheckDone(nodeId);
         }
     }
