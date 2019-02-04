@@ -692,11 +692,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
         res.batchLookupId(msg.batchLookupId());
 
         GridH2QueryContext qctx = qryCtxRegistry.getShared(
-            ctx.localNodeId(),
             msg.originNodeId(),
             msg.queryId(),
-            msg.originSegmentId(),
-            MAP
+            msg.originSegmentId()
         );
 
         if (qctx == null)
@@ -772,11 +770,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
      */
     private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
         GridH2QueryContext qctx = qryCtxRegistry.getShared(
-            ctx.localNodeId(),
             msg.originNodeId(),
             msg.queryId(),
-            msg.originSegmentId(),
-            MAP
+            msg.originSegmentId()
         );
 
         if (qctx == null)

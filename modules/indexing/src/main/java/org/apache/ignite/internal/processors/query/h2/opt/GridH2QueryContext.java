@@ -53,7 +53,8 @@ public class GridH2QueryContext {
     private MapQueryLazyWorker lazyWorker;
 
     /**
-     * @param locNodeId Local node ID.
+     * Constructor.
+     *
      * @param nodeId The node who initiated the query.
      * @param qryId The query ID.
      * @param segmentId Index segment ID.
@@ -64,7 +65,6 @@ public class GridH2QueryContext {
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public GridH2QueryContext(
-        UUID locNodeId,
         UUID nodeId,
         long qryId,
         int segmentId,
@@ -76,7 +76,7 @@ public class GridH2QueryContext {
     ) {
         assert segmentId == 0 || type == MAP;
 
-        key = new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type);
+        key = new QueryContextKey(nodeId, qryId, segmentId, type);
 
         this.filter = filter;
         this.distributedJoinCtx = distributedJoinCtx;

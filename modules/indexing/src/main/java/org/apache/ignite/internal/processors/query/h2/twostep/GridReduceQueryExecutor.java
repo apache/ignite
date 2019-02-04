@@ -764,7 +764,6 @@ public class GridReduceQueryExecutor {
 
                         GridH2QueryContext qctx = new GridH2QueryContext(
                             locNodeId,
-                            locNodeId,
                             qryReqId,
                             0,
                             REDUCE,

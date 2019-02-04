@@ -632,7 +632,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             final GridH2QueryContext qctx = new GridH2QueryContext(
                 nodeId,
-                nodeId,
                 0,
                 0,
                 MAP,
@@ -2560,7 +2559,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         mapQryExec.cancelLazyWorkers();
 
-        qryCtxRegistry.clearSharedOnLocalNodeLeave(nodeId);
+        qryCtxRegistry.clearSharedOnLocalNodeStop();
 
         runningQueryMgr.stop();
         schemaMgr.stop();

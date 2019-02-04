@@ -110,7 +110,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUE
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
+
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
@@ -178,7 +178,7 @@ public class GridMapQueryExecutor {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                qryCtxRegistry.clearSharedOnRemoteNodeLeave(locNodeId, nodeId);
+                qryCtxRegistry.clearSharedOnRemoteNodeStop(nodeId);
 
                 MapNodeResults nodeRess = qryRess.remove(nodeId);
 
@@ -273,12 +273,12 @@ public class GridMapQueryExecutor {
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
-        boolean clear = qryCtxRegistry.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
+        boolean clear = qryCtxRegistry.clearShared(node.id(), qryReqId);
 
         if (!clear) {
             nodeRess.onCancel(qryReqId);
 
-            qryCtxRegistry.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
+            qryCtxRegistry.clearShared(node.id(), qryReqId);
         }
 
         nodeRess.cancelRequest(qryReqId);
@@ -865,7 +865,7 @@ public class GridMapQueryExecutor {
                 );
             }
 
-            GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
+            GridH2QueryContext qctx = new GridH2QueryContext(
                 node.id(),
                 reqId,
                 segmentId,
@@ -891,7 +891,7 @@ public class GridMapQueryExecutor {
 
             try {
                 if (nodeRess.cancelled(reqId)) {
-                    qryCtxRegistry.clearShared(ctx.localNodeId(), node.id(), reqId, MAP);
+                    qryCtxRegistry.clearShared(node.id(), reqId);
 
                     nodeRess.cancelRequest(reqId);
 
