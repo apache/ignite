@@ -67,7 +67,6 @@ import org.h2.value.Value;
 import javax.cache.CacheException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -97,12 +96,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     private IgniteLogger log;
 
     /** */
-    private final CIX2<ClusterNode,Message> locNodeHnd = new CIX2<ClusterNode,Message>() {
-        @Override public void applyx(ClusterNode clusterNode, Message msg) {
-            onMessage0(clusterNode.id(), msg);
-        }
-    };
-
     protected GridCacheContext<?, ?> ctx;
 
     /**
@@ -524,21 +517,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         res.values(vals);
 
         return res;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param cmp Comparator.
-     */
-    public static <Z> void bubbleUp(Z[] arr, int off, Comparator<Z> cmp) {
-        // TODO Optimize: use binary search if the range in array is big.
-        for (int i = off, last = arr.length - 1; i < last; i++) {
-            if (cmp.compare(arr[i], arr[i + 1]) <= 0)
-                break;
-
-            U.swap(arr, i, i + 1);
-        }
     }
 
     /**
