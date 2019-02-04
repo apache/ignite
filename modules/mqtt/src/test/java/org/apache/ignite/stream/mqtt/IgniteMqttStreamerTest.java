@@ -55,15 +55,12 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Test for {@link MqttStreamer}.
  */
-@RunWith(JUnit4.class)
 public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /** The test data. */
     private static final Map<Integer, String> TEST_DATA = new HashMap<>();

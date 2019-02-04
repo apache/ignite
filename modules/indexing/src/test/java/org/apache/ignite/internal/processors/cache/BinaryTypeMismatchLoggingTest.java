@@ -35,13 +35,10 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests of binary type mismatch logging.
  */
-@RunWith(JUnit4.class)
 public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /** */
     public static final String MESSAGE_PAYLOAD_VALUE = "expValType=Payload, actualValType=o.a.i.i.processors.cache.BinaryTypeMismatchLoggingTest$Payload";

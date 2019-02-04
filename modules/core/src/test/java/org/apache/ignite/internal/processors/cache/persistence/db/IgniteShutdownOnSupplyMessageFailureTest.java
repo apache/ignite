@@ -46,15 +46,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
-/**
- *
- */
-@RunWith(JUnit4.class)
+/** */
 public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstractTest {
     /** Rebalance cache name. */
     private static final String TEST_REBALANCE_CACHE = "b13813zk";

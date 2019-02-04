@@ -216,7 +216,7 @@ public interface VectorGenerator extends Supplier<Vector> {
     public default DataStreamGenerator asDataStream() {
         final VectorGenerator gen = this;
         return new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(gen).map(v -> new LabeledVector<>(v, 0.0));
             }
         };

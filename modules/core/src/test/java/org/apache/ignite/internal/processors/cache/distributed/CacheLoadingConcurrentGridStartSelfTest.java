@@ -54,8 +54,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -65,7 +63,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  * Tests for cache data loading during simultaneous grids start.
  */
-@RunWith(JUnit4.class)
 public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractTest implements Serializable {
     /** Grids count */
     private static int GRIDS_CNT = 5;
@@ -87,7 +84,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

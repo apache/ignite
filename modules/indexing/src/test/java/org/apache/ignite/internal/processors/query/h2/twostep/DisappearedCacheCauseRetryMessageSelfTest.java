@@ -33,8 +33,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.Organization;
@@ -43,7 +41,6 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 /**
  * Failed to reserve partitions for query (cache is not found on local node) Root cause test
  */
-@RunWith(JUnit4.class)
 public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
