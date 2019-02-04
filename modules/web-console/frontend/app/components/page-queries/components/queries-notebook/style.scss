@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+@import "../../../../../public/stylesheets/variables.scss";
+
 queries-notebook {
     // TODO: Delete this breadcrumbs styles after template refactoring to new design.
     .notebooks-top {
@@ -51,6 +53,7 @@ queries-notebook {
 
     .block-information {
         padding: 18px 10px 18px 36px;
+
 
         [ng-transclude] {
             display: flex;
@@ -102,6 +105,15 @@ queries-notebook {
             width: 100%;
             margin: 0;
         }
+    }
+
+    .empty-caches {
+        color: $ignite-placeholder-color;
+        display: flex;
+        padding: 10px;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
     }
 
     .notebook-top-buttons {
