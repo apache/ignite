@@ -15,23 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
-
-import org.apache.ignite.testframework.MvccFeatureChecker;
-
 /**
- * Tests an ability to async rollback near transactions.
+ * <!-- Package description. -->
+ * Examples for data stream generators.
  */
-public class TxRollbackAsyncNearCacheTest extends TxRollbackAsyncTest {
-    /** {@inheritDoc} */
-    @Override protected boolean nearCacheEnabled() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.setUp();
-    }
-}
+package org.apache.ignite.examples.ml.util.generators;
