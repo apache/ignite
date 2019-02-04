@@ -31,6 +31,7 @@ import java.util.Map;
 /**
  * Merge cursor from multiple nodes.
  */
+@SuppressWarnings("ComparatorNotSerializable")
 public class BroadcastCursor implements Cursor, Comparator<RangeStream> {
     /** Index. */
     private final GridH2IndexBase idx;
