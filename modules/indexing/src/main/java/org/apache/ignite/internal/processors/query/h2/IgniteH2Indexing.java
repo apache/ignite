@@ -92,9 +92,8 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
-import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
@@ -138,6 +137,7 @@ import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -1240,43 +1240,44 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Determines if a passed query can be executed natively.
+     * Tries to parse sql query text using native parser. Only first (leading) sql command of the multi-statement is
+     * actually parsed.
      *
      * @param schemaName Schema name.
-     * @param qry Query.
+     * @param qry which sql text to parse.
      * @return Command or {@code null} if cannot parse this query.
      */
-     @Nullable private SqlCommand parseQueryNative(String schemaName, SqlFieldsQuery qry) {
-        // Heuristic check for fast return.
-        if (!INTERNAL_CMD_RE.matcher(qry.getSql().trim()).find())
-            return null;
+     @Nullable private NativeParsingResult parseNativeLeadingStatement(String schemaName, SqlFieldsQuery qry) {
+         final NativeParsingResult NOT_YET_SUPPORTED = null;
+
+         String sql = qry.getSql();
+
+         // Heuristic check for fast return.
+         if (!INTERNAL_CMD_RE.matcher(sql.trim()).find())
+             return NOT_YET_SUPPORTED;
 
         try {
-            SqlParser parser = new SqlParser(schemaName, qry.getSql());
+            SqlParser parser = new SqlParser(schemaName, sql);
 
-            SqlCommand cmd = parser.nextCommand();
+            SqlCommand leadingCmd = parser.nextCommand();
 
-            // TODO support transaction commands in multi-statements
-            // https://issues.apache.org/jira/browse/IGNITE-10063
+            if (leadingCmd == null) // parser met EOF
+                return NativeParsingResult.eof();
 
-            // No support for multiple commands for now.
-            if (parser.nextCommand() != null)
-                return null;
+            if (!(leadingCmd instanceof SqlCreateIndexCommand
+                || leadingCmd instanceof SqlDropIndexCommand
+                || leadingCmd instanceof SqlBeginTransactionCommand
+                || leadingCmd instanceof SqlCommitTransactionCommand
+                || leadingCmd instanceof SqlRollbackTransactionCommand
+                || leadingCmd instanceof SqlBulkLoadCommand
+                || leadingCmd instanceof SqlAlterTableCommand
+                || leadingCmd instanceof SqlSetStreamingCommand
+                || leadingCmd instanceof SqlCreateUserCommand
+                || leadingCmd instanceof SqlAlterUserCommand
+                || leadingCmd instanceof SqlDropUserCommand))
+                return NOT_YET_SUPPORTED;
 
-            if (!(cmd instanceof SqlCreateIndexCommand
-                || cmd instanceof SqlDropIndexCommand
-                || cmd instanceof SqlBeginTransactionCommand
-                || cmd instanceof SqlCommitTransactionCommand
-                || cmd instanceof SqlRollbackTransactionCommand
-                || cmd instanceof SqlBulkLoadCommand
-                || cmd instanceof SqlAlterTableCommand
-                || cmd instanceof SqlSetStreamingCommand
-                || cmd instanceof SqlCreateUserCommand
-                || cmd instanceof SqlAlterUserCommand
-                || cmd instanceof SqlDropUserCommand))
-                return null;
-
-            return cmd;
+            return new NativeParsingResult(leadingCmd, parser.remainingSql());
         }
         catch (SqlStrictParseException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
@@ -1284,17 +1285,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (Exception e) {
             // Cannot parse, return.
             if (log.isDebugEnabled())
-                log.debug("Failed to parse SQL with native parser [qry=" + qry.getSql() + ", err=" + e + ']');
+                log.debug("Failed to parse SQL with native parser [qry=" + sql + ", err=" + e + ']');
 
             if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK))
-                return null;
+                return NOT_YET_SUPPORTED;
 
             int code = IgniteQueryErrorCode.PARSING;
 
             if (e instanceof SqlParseException)
                 code = ((SqlParseException)e).code();
 
-            throw new IgniteSQLException("Failed to parse DDL statement: " + qry.getSql() + ": " + e.getMessage(),
+            throw new IgniteSQLException("Failed to parse DDL statement: " + sql + ": " + e.getMessage(),
                 code, e);
         }
     }
@@ -1473,6 +1474,36 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+    // todo : dont use String.substring, use ref to the String obj and pos instead.
+    public static class NativeParsingResult {
+        private final SqlCommand newCmd;
+
+        private final String remainingSql;
+
+        public NativeParsingResult(SqlCommand newCmd, String remainingSql) {
+            assert !(newCmd == null && remainingSql != null);
+
+            this.newCmd = newCmd;
+            this.remainingSql = remainingSql;
+        }
+
+        public SqlCommand newCmd() {
+            return newCmd;
+        }
+
+        public String remainingSql() {
+            return remainingSql;
+        }
+
+        public static NativeParsingResult eof() {
+            return new NativeParsingResult(null, null);
+        }
+
+        public boolean isEof() {
+            return newCmd == null;
+        }
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"StringEquality", "unchecked"})
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
@@ -1481,24 +1512,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
-            SqlCommand nativeCmd = parseQueryNative(schemaName, qry);
+            // todo: add one statement optimization?
 
-            if (!(nativeCmd instanceof SqlCommitTransactionCommand || nativeCmd instanceof SqlRollbackTransactionCommand)
-                && !ctx.state().publicApiActiveState(true)) {
-                throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
-                    "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                    "join the cluster. To activate the cluster call Ignite.active(true).");
-            }
-
-            if (nativeCmd != null)
-                return queryDistributedSqlFieldsNative(schemaName, qry, nativeCmd, cliCtx);
+//            {
+//                SqlCommand nativeCmd = parseNativeLeadingStatement(schemaName, qry);
+//
+//                if (!(nativeCmd instanceof SqlCommitTransactionCommand || nativeCmd instanceof SqlRollbackTransactionCommand)
+//                    && !ctx.state().publicApiActiveState(true)) {
+//                    throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+//                        "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+//                        "join the cluster. To activate the cluster call Ignite.active(true).");
+//                }
+//
+//                if (nativeCmd != null)
+//                    return queryDistributedSqlFieldsNative(schemaName, qry, nativeCmd, cliCtx);
+//            }
 
             List<FieldsQueryCursor<List<?>>> res;
 
             {
                 // First, let's check if we already have a two-step query for this statement...
-                H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, qry.getSql(),
-                    qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), qry.isLocal());
+                H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(
+                    schemaName,
+                    qry.getSql(),
+                    qry.isCollocated(),
+                    qry.isDistributedJoins(),
+                    qry.isEnforceJoinOrder(),
+                    qry.isLocal());
 
                 H2TwoStepCachedQuery cachedQry;
 
@@ -1545,9 +1585,41 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             String remainingSql = qry.getSql();
 
+            // fixme fail on multiply statements?
             while (remainingSql != null) {
-                ParsingResult parseRes = parseAndSplit(schemaName,
-                    remainingSql != qry.getSql() ? cloneFieldsQuery(qry).setSql(remainingSql) : qry, firstArg);
+                SqlFieldsQuery remainingQry = remainingSql != qry.getSql() ? cloneFieldsQuery(qry).setSql(remainingSql) : qry;
+                // todo: refactor?
+
+                //List<FieldsQueryCursor<List<?>>> curStmtRes = null;
+
+                {
+                    // Try to parse remaining sql with native parser:
+                    NativeParsingResult parsed = parseNativeLeadingStatement(schemaName, remainingQry);
+
+                    if (parsed != null) {
+                        // parser supports leading statement.
+                        assert !parsed.isEof() : "There is nothing to parse.";
+
+                        SqlCommand nativeCmd = parsed.newCmd();
+
+                        if (!(nativeCmd instanceof SqlCommitTransactionCommand || nativeCmd instanceof SqlRollbackTransactionCommand)
+                            && !ctx.state().publicApiActiveState(true)) {
+                            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                                "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                                "join the cluster. To activate the cluster call Ignite.active(true).");
+                        }
+
+                        res.addAll(queryDistributedSqlFieldsNative(schemaName, qry, nativeCmd, cliCtx));
+
+                        remainingSql = parsed.remainingSql();
+                        continue;
+                    }
+                }
+
+                ParsingResult parseRes = parseAndSplit(
+                    schemaName,
+                    remainingQry,
+                    firstArg);
 
                 // Let's avoid second reflection getter call by returning Prepared object too
                 Prepared prepared = parseRes.prepared();

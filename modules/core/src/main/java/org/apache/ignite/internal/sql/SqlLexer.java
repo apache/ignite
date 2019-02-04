@@ -242,4 +242,14 @@ public class SqlLexer implements SqlLexerToken {
     private boolean eod() {
         return pos == inputChars.length - 1;
     }
+
+    /**
+     * Returns not yet seen part of the query or {@code null} if end of data is reached.
+     */
+    public String remainingSql(){
+        if (eod())
+            return null;
+
+        return sql.substring(pos);
+    }
 }
