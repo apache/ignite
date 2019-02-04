@@ -31,8 +31,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +47,7 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
     /** */
     private final IgniteUuid futId = IgniteUuid.randomUuid();
     /** */
+    @GridToStringExclude
     private boolean trackable = true;
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
@@ -88,9 +91,10 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
             MiniFuture miniFut = new MiniFuture(peer);
 
             try {
-                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
-
+                // we must add mini future before sending a message, otherwise mini future must miss completion
                 add(miniFut);
+
+                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 if (!(e instanceof ClusterTopologyCheckedException))
@@ -140,9 +144,10 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
      * @param nodeId Remote peer node id.
      */
     public void onResult(UUID nodeId) {
-        if (log.isInfoEnabled())
+        if (log.isInfoEnabled()) {
             log.info("Remote peer acked partition counters delivery [futId=" + futId +
                 ", node=" + nodeId + ']');
+        }
 
         completeMini(nodeId);
     }
@@ -167,8 +172,14 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
             if (mini.nodeId.equals(nodeId)) {
                 cctx.kernalContext().closure().runLocalSafe(mini::onDone);
 
-                break;
+                return;
             }
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("Failed to find mini future corresponding to node, can prevent parent future completion [" +
+                "futId=" + futId +
+                ", nodeId=" + nodeId + ']');
         }
     }
 
@@ -196,6 +207,11 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
         trackable = false;
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionCountersNeighborcastFuture.class, this, "innerFuts", futures());
+    }
+
     /**
      * Component of compound parent future. Represents interaction with one of remote peers.
      */
@@ -206,6 +222,11 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
         /** */
         private MiniFuture(UUID nodeId) {
             this.nodeId = nodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MiniFuture.class, this, "done", isDone());
         }
     }
 }
