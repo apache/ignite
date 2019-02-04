@@ -35,8 +35,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -46,7 +44,6 @@ import static org.mockito.Mockito.when;
 /**
  * Tests for {@link IgniteSource}.
  */
-@RunWith(JUnit4.class)
 public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String TEST_CACHE = "testCache";

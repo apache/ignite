@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
@@ -61,6 +62,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -509,16 +511,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         });
 
-        getTestCounters().incrementStarted();
-
         super.setUp();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        getTestCounters().incrementStopped();
-
-        super.tearDown();
     }
 
     /** {@inheritDoc} */
@@ -2075,5 +2068,47 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected static boolean isEventDrivenServiceProcessorEnabled() {
         return getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
+    }
+
+    /**
+     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
+     *
+     * @param countUpdate Number of events.
+     */
+    protected void awaitMetricsUpdate(int countUpdate) throws InterruptedException {
+        awaitMetricsUpdate(countUpdate, G.allGrids());
+    }
+
+    /**
+     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved on specific nodes.
+     *
+     * @param countUpdate Number of events.
+     * @param grids Collection of Ignite instances we are listening for metrics update
+     * @throws InterruptedException
+     */
+    protected void awaitMetricsUpdate(int countUpdate, Collection<Ignite> grids) throws InterruptedException {
+        if (countUpdate > 0) {
+
+            final CountDownLatch latch = new CountDownLatch(G.allGrids().size() * grids.size() * countUpdate);
+
+            final IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt.type() == EventType.EVT_NODE_METRICS_UPDATED;
+
+                    latch.countDown();
+
+                    return true;
+                }
+            };
+
+            for (Ignite g : grids)
+                g.events().localListen(lsnr, EventType.EVT_NODE_METRICS_UPDATED);
+
+            // Wait for metrics update.
+            assert latch.await(10, TimeUnit.SECONDS);
+
+            for (Ignite g : grids)
+                g.events().stopLocalListen(lsnr);
+        }
     }
 }

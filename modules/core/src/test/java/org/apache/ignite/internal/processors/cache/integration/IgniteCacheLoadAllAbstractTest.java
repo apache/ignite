@@ -35,15 +35,13 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Test for {@link Cache#loadAll(Set, boolean, CompletionListener)}.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private volatile boolean writeThrough = true;
@@ -52,15 +50,10 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     private static ConcurrentHashMap<Object, Object> storeMap;
 
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.setUp();
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setWriteThrough(writeThrough);
@@ -72,8 +65,16 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
         return ccfg;
     }
 
+    /** */
+    @Before
+    public void beforeIgniteCacheLoadAllAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         super.beforeTest();
 
         storeMap = new ConcurrentHashMap<>();

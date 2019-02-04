@@ -21,13 +21,10 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
     /** */
     private ThreadLocalObjectPool<Obj> pool = new ThreadLocalObjectPool<>(1, Obj::new, null, null);

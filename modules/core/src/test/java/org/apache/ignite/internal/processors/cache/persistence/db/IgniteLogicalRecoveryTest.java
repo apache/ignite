@@ -61,14 +61,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * A set of tests that check correctness of logical recovery performed during node start.
  */
-@RunWith(JUnit4.class)
 public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final int[] EVTS_DISABLED = {};
@@ -260,6 +258,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10582")
     @Test
     public void testRecoveryWithMvccCaches() throws Exception {
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
