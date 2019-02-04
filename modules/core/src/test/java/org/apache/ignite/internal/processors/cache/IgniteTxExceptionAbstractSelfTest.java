@@ -46,6 +46,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Test;
@@ -326,6 +327,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPutTx(boolean putBefore, TransactionConcurrency concurrency,
         TransactionIsolation isolation, final Integer... keys) throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10871", MvccFeatureChecker.forcedMvcc());
+
         if (MvccFeatureChecker.forcedMvcc() &&
             !MvccFeatureChecker.isSupported(concurrency, isolation))
             return;
@@ -378,6 +381,10 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
             }
 
             fail("Transaction should fail.");
+        }
+        catch (CacheException e){
+            if (!MvccFeatureChecker.forcedMvcc() || !(e.getCause() instanceof TransactionRollbackException))
+                throw e;
         }
         catch (TransactionHeuristicException e) {
             log.info("Expected exception: " + e);
@@ -478,13 +485,18 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         info("Going to put: " + key);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 grid(0).cache(DEFAULT_CACHE_NAME).put(key, 2);
 
                 return null;
             }
-        }, TransactionHeuristicException.class, null);
+        }, CacheException.class, null);
+
+        if (MvccFeatureChecker.forcedMvcc())
+            assertTrue(err.toString(), err.getCause() instanceof TransactionRollbackException); // Put operation fails.
+        else
+            assertTrue(err.toString(), err.getCause() instanceof TransactionHeuristicException); // Implicit tx commit fails.
 
         checkUnlocked(key);
     }
@@ -568,13 +580,18 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         info("Going to putAll: " + m);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 grid(0).cache(DEFAULT_CACHE_NAME).putAll(m);
 
                 return null;
             }
-        }, TransactionHeuristicException.class, null);
+        }, CacheException.class, null);
+
+        if (MvccFeatureChecker.forcedMvcc())
+            assertTrue(err.toString(), err.getCause() instanceof TransactionRollbackException); // Put operation fails.
+        else
+            assertTrue(err.toString(), err.getCause() instanceof TransactionHeuristicException); // Implicit tx commit fails.
 
         for (Integer key : m.keySet())
             checkUnlocked(key);

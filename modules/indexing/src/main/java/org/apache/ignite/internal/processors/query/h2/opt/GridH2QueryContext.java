@@ -17,26 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode;
-import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
-import org.apache.ignite.internal.processors.query.h2.opt.join.SourceKey;
+import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
@@ -53,40 +46,13 @@ public class GridH2QueryContext {
     private final QueryContextKey key;
 
     /** */
-    private volatile boolean cleared;
-
-    /** */
     private List<GridReservable> reservations;
 
-    /** Range streams for indexes. */
-    private Map<Integer, Object> streams;
-
-    /** Range sources for indexes. */
-    private Map<SourceKey, Object> sources;
-
     /** */
-    private int batchLookupIdGen;
+    private final IndexingQueryFilter filter;
 
-    /** */
-    private IndexingQueryFilter filter;
-
-    /** */
-    private AffinityTopologyVersion topVer;
-
-    /** */
-    private Map<UUID, int[]> partsMap;
-
-    /** */
-    private UUID[] partsNodes;
-
-    /** */
-    private DistributedJoinMode distributedJoinMode;
-
-    /** */
-    private int pageSize;
-
-    /** */
-    private CollocationModel qryCollocationMdl;
+    /** Distributed join context. */
+    private DistributedJoinContext distributedJoinCtx;
 
     /** */
     private MvccSnapshot mvccSnapshot;
@@ -98,29 +64,22 @@ public class GridH2QueryContext {
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
      * @param qryId The query ID.
-     * @param type Query type.
-     */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
-        assert type != MAP;
-
-        key = new QueryContextKey(locNodeId, nodeId, qryId, 0, type);
-    }
-
-    /**
-     * @param locNodeId Local node ID.
-     * @param nodeId The node who initiated the query.
-     * @param qryId The query ID.
      * @param segmentId Index segment ID.
      * @param type Query type.
      */
-    public GridH2QueryContext(UUID locNodeId,
+    public GridH2QueryContext(
+        UUID locNodeId,
         UUID nodeId,
         long qryId,
         int segmentId,
-        GridH2QueryType type) {
+        GridH2QueryType type,
+        IndexingQueryFilter filter
+    ) {
         assert segmentId == 0 || type == MAP;
 
         key = new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type);
+
+        this.filter = filter;
     }
 
     /**
@@ -141,61 +100,27 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @return Type.
+     * @param distributedJoinCtx Distributed join context.
+     * @return This instance for chaining.
      */
-    public GridH2QueryType type() {
-        return key.type();
-    }
-
-    /**
-     * @return Origin node ID.
-     */
-    public UUID originNodeId() {
-        return key.nodeId();
-    }
-
-    /**
-     * @return Query request ID.
-     */
-    public long queryId() {
-        return key.queryId();
-    }
-
-    /**
-     * @return Query collocation model.
-     */
-    public CollocationModel queryCollocationModel() {
-        return qryCollocationMdl;
-    }
-
-    /**
-     * @param qryCollocationMdl Query collocation model.
-     */
-    public void queryCollocationModel(CollocationModel qryCollocationMdl) {
-        this.qryCollocationMdl = qryCollocationMdl;
-    }
-
-    /**
-     * @param distributedJoinMode Distributed join mode.
-     * @return {@code this}.
-     */
-    public GridH2QueryContext distributedJoinMode(DistributedJoinMode distributedJoinMode) {
-        this.distributedJoinMode = distributedJoinMode;
+    public GridH2QueryContext distributedJoinContext(@Nullable DistributedJoinContext distributedJoinCtx) {
+        this.distributedJoinCtx = distributedJoinCtx;
 
         return this;
     }
 
     /**
-     * @return Distributed join mode.
+     * @return Distributed join context.
      */
-    public DistributedJoinMode distributedJoinMode() {
-        return distributedJoinMode;
+    @Nullable public DistributedJoinContext distributedJoinContext() {
+        return distributedJoinCtx;
     }
 
     /**
      * @param reservations Reserved partitions or group reservations.
      * @return {@code this}.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public GridH2QueryContext reservations(List<GridReservable> reservations) {
         this.reservations = reservations;
 
@@ -203,145 +128,10 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param topVer Topology version.
-     * @return {@code this}.
+     * @return index segment ID.
      */
-    public GridH2QueryContext topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-
-        return this;
-    }
-
-    /**
-     * @return Topology version.
-     */
-    public AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
-
-    /**
-     * @param partsMap Partitions map.
-     * @return {@code this}.
-     */
-    public GridH2QueryContext partitionsMap(Map<UUID,int[]> partsMap) {
-        this.partsMap = partsMap;
-
-        return this;
-    }
-
-    /**
-     * @return Partitions map.
-     */
-    public Map<UUID,int[]> partitionsMap() {
-        return partsMap;
-    }
-
-    /**
-     * @param p Partition.
-     * @param cctx Cache context.
-     * @return Owning node ID.
-     */
-    public UUID nodeForPartition(int p, GridCacheContext<?, ?> cctx) {
-        UUID[] nodeIds = partsNodes;
-
-        if (nodeIds == null) {
-            assert partsMap != null;
-
-            nodeIds = new UUID[cctx.affinity().partitions()];
-
-            for (Map.Entry<UUID, int[]> e : partsMap.entrySet()) {
-                UUID nodeId = e.getKey();
-                int[] nodeParts = e.getValue();
-
-                assert nodeId != null;
-                assert !F.isEmpty(nodeParts);
-
-                for (int part : nodeParts) {
-                    assert nodeIds[part] == null;
-
-                    nodeIds[part] = nodeId;
-                }
-            }
-
-            partsNodes = nodeIds;
-        }
-
-        return nodeIds[p];
-    }
-
-    /** @return index segment ID. */
     public int segment() {
         return key.segmentId();
-    }
-
-    /**
-     * @param batchLookupId Batch lookup ID.
-     * @param streams Range streams.
-     */
-    public synchronized void putStreams(int batchLookupId, Object streams) {
-        if (this.streams == null) {
-            if (streams == null)
-                return;
-
-            this.streams = new HashMap<>();
-        }
-
-        if (streams == null)
-            this.streams.remove(batchLookupId);
-        else
-            this.streams.put(batchLookupId, streams);
-    }
-
-    /**
-     * @param batchLookupId Batch lookup ID.
-     * @return Range streams.
-     */
-    @SuppressWarnings("unchecked")
-    public synchronized <T> T getStreams(int batchLookupId) {
-        if (streams == null)
-            return null;
-
-        return (T)streams.get(batchLookupId);
-    }
-
-    /**
-     * @param ownerId Owner node ID.
-     * @param segmentId Index segment ID.
-     * @param batchLookupId Batch lookup ID.
-     * @param src Range source.
-     */
-    public synchronized void putSource(UUID ownerId, int segmentId, int batchLookupId, Object src) {
-        SourceKey srcKey = new SourceKey(ownerId, segmentId, batchLookupId);
-
-        if (src != null) {
-            if (sources == null)
-                sources = new HashMap<>();
-
-            sources.put(srcKey, src);
-        }
-        else if (sources != null)
-            sources.remove(srcKey);
-    }
-
-    /**
-     * @param ownerId Owner node ID.
-     * @param segmentId Index segment ID.
-     * @param batchLookupId Batch lookup ID.
-     * @return Range source.
-     */
-    @SuppressWarnings("unchecked")
-    public synchronized <T> T getSource(UUID ownerId, int segmentId, int batchLookupId) {
-        if (sources == null)
-            return null;
-
-        return (T)sources.get(new SourceKey(ownerId, segmentId, batchLookupId));
-    }
-
-    /**
-     * @return Next batch ID.
-     */
-    public int nextBatchLookupId() {
-        return ++batchLookupIdGen;
     }
 
     /**
@@ -354,7 +144,7 @@ public class GridH2QueryContext {
          assert qctx.get() == null;
 
          // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type() == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
+         if (x.key.type() == MAP && x.distributedJoinContext() != null && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 
          qctx.set(x);
@@ -421,7 +211,8 @@ public class GridH2QueryContext {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public void clearContext(boolean nodeStop) {
-        cleared = true;
+        if (distributedJoinCtx != null)
+            distributedJoinCtx.cancel();
 
         List<GridReservable> r = reservations;
 
@@ -429,13 +220,6 @@ public class GridH2QueryContext {
             for (int i = 0; i < r.size(); i++)
                 r.get(i).release();
         }
-    }
-
-    /**
-     * @return {@code true} If the context is cleared.
-     */
-    public boolean isCleared() {
-        return cleared;
     }
 
     /**
@@ -496,33 +280,6 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param filter Filter.
-     * @return {@code this}.
-     */
-    public GridH2QueryContext filter(IndexingQueryFilter filter) {
-        this.filter = filter;
-
-        return this;
-    }
-
-    /**
-     * @return Page size.
-     */
-    public int pageSize() {
-        return pageSize;
-    }
-
-    /**
-     * @param pageSize Page size.
-     * @return {@code this}.
-     */
-    public GridH2QueryContext pageSize(int pageSize) {
-        this.pageSize = pageSize;
-
-        return this;
-    }
-
-    /**
      * @return Lazy worker, if any, or {@code null} if none.
      */
     public MapQueryLazyWorker lazyWorker() {
@@ -543,5 +300,4 @@ public class GridH2QueryContext {
     @Override public String toString() {
         return S.toString(GridH2QueryContext.class, this);
     }
-
 }
