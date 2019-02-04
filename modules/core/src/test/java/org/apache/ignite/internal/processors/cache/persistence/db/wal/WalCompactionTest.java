@@ -268,7 +268,6 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Test
     public void testOptimizedWalSegments() throws Exception {
         IgniteConfiguration icfg = getConfiguration(getTestIgniteInstanceName(0));
 
