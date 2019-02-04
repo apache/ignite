@@ -181,7 +181,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_CACHE_ID;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_STATE;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 
 /**
@@ -630,7 +630,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 nodeId,
                 0,
                 0,
-                LOCAL,
+                MAP,
                 filter,
                 null,
                 mvccSnapshot,

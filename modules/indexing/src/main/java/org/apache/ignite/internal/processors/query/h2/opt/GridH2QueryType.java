@@ -29,10 +29,5 @@ public enum GridH2QueryType {
     /**
      * Reduce query. Local query on a node which initiated the original query.
      */
-    REDUCE,
-
-    /**
-     * Local query. It may be also a query over replicated cache but all the data is available locally.
-     */
-    LOCAL
+    REDUCE
 }
