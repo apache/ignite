@@ -195,7 +195,7 @@ export default class AgentManager {
 
         this.clusterIsAvailable$ = this.connectionSbj.pipe(
             pluck('cluster'),
-            map((cluster) => !_.isNil(cluster))
+            map((cluster) => !!cluster)
         );
 
         if (!this.isDemoMode()) {
