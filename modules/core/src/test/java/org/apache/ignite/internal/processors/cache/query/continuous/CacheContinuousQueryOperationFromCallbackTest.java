@@ -56,6 +56,7 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -423,9 +424,8 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
                                 committed = true;
                             }
                             catch (Exception e) {
-                                assertTrue(e.getMessage(), e.getMessage() != null &&
-                                    (e.getMessage().contains("Transaction has been rolled back") ||
-                                        e.getMessage().contains("Cannot serialize transaction due to write conflict")));
+                                assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                assertEquals(ccfg.getAtomicityMode(), TRANSACTIONAL_SNAPSHOT);
                             }
                             finally {
                                 if (tx != null)
