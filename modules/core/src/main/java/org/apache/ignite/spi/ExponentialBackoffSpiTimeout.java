@@ -181,7 +181,7 @@ public class ExponentialBackoffSpiTimeout {
         long maxBackoffTimeout = connTimeout;
 
         for (int i = 1; i < reconCnt && maxBackoffTimeout < maxConnTimeout; i++)
-            maxBackoffTimeout += nextTimeout(connTimeout);
+            maxBackoffTimeout += nextTimeout(maxBackoffTimeout);
 
         return maxBackoffTimeout;
     }

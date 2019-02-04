@@ -539,6 +539,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (unknownNode) {
                         U.warn(log, "Respond UNKNOWN_NODE and close incoming connection, unknown node [nodeId=" + sndId + ", ses=" + ses + ']');
+
                         ses.send(new RecoveryLastReceivedMessage(UNKNOWN_NODE)).listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> fut) {
                                 ses.close();
@@ -3546,8 +3547,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         if (!commErrResolve && enableForcibleNodeKill) {
-            if (ctx.node(node.id()) != null && (node.isClient() || !getLocalNode().isClient())
-                && isRecoverableException(errs)) {
+            if (ctx.node(node.id()) != null
+                && node.isClient()
+                && !getLocalNode().isClient()
+                && isRecoverableException(errs)
+            ) {
+                //only server can fail client for now, as in TcpDiscovery resolveCommunicationFailure() is not supported.
                 String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
                     "cluster [" + "rmtNode=" + node + ']';
 
