@@ -21,6 +21,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
@@ -52,7 +53,7 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2R
  */
 public class DistributedLookupBatch implements IndexLookupBatch {
     /** Index. */
-    private final GridH2IndexBase idx;
+    private final H2TreeIndex idx;
 
     /** */
     private final GridCacheContext<?,?> cctx;
@@ -89,7 +90,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      * @param ucast Unicast or broadcast query.
      * @param affColId Affinity column ID.
      */
-    public DistributedLookupBatch(GridH2IndexBase idx, GridCacheContext<?, ?> cctx, boolean ucast, int affColId) {
+    public DistributedLookupBatch(H2TreeIndex idx, GridCacheContext<?, ?> cctx, boolean ucast, int affColId) {
         this.idx = idx;
         this.cctx = cctx;
         this.ucast = ucast;
