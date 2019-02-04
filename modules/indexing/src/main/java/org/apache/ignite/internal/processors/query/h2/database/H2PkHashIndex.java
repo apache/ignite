@@ -70,6 +70,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
      * @param colsList Index columns.
      * @param segments Segments.
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     public H2PkHashIndex(
         GridCacheContext<?, ?> cctx,
         GridH2Table tbl,
@@ -81,7 +82,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
         this.segments = segments;
 
-        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
 
         IndexColumn.mapColumns(cols, tbl);
 

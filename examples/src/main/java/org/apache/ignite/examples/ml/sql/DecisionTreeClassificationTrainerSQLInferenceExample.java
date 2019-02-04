@@ -116,7 +116,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
 
             // Model storage is used to store raw serialized model.
             System.out.println("Saving model into model storage...");
-            IgniteModelStorageUtil.saveModel(mdl, "titanik_model_tree");
+            IgniteModelStorageUtil.saveModel(ignite, mdl, "titanik_model_tree");
 
             // Making inference using saved model.
             System.out.println("Inference...");
@@ -130,6 +130,8 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 for (List<?> row : cursor)
                     System.out.println("|     " + row.get(0) + " |        " + row.get(1) + " |");
             }
+
+            IgniteModelStorageUtil.removeModel(ignite, "titanik_model_tree");
         }
     }
 }

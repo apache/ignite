@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange;
@@ -36,7 +36,7 @@ import static java.util.Collections.emptyIterator;
  */
 public class RangeSource {
     /** Index. */
-    private final GridH2IndexBase idx;
+    private final H2TreeIndex idx;
 
     /** */
     private Iterator<GridH2RowRangeBounds> boundsIter;
@@ -59,7 +59,7 @@ public class RangeSource {
      * @param filter Filter.
      */
     public RangeSource(
-        GridH2IndexBase idx,
+        H2TreeIndex idx,
         Iterable<GridH2RowRangeBounds> bounds,
         int segment,
         BPlusTree.TreeRowClosure<H2Row, H2Row> filter

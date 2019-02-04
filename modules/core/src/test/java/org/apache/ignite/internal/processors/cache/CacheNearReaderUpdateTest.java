@@ -343,7 +343,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         boolean storeEnabled,
         boolean nearCache) {
         if (storeEnabled)
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
