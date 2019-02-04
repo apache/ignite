@@ -29,11 +29,11 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  * Registry of all currently available query contexts.
  */
 public class QueryContextRegistry {
-    /** */
-    private static final ThreadLocal<GridH2QueryContext> qctx = new ThreadLocal<>();
+    /** Current local context. */
+    private static final ThreadLocal<GridH2QueryContext> curCtx = new ThreadLocal<>();
 
-    /** */
-    private static final ConcurrentMap<QueryContextKey, GridH2QueryContext> qctxs = new ConcurrentHashMap<>();
+    /** Shared contexts. */
+    private static final ConcurrentMap<QueryContextKey, GridH2QueryContext> sharedCtxs = new ConcurrentHashMap<>();
 
     /**
      * Access current thread local query context (if it was set).
@@ -41,7 +41,7 @@ public class QueryContextRegistry {
      * @return Current thread local query context or {@code null} if the query runs outside of Ignite context.
      */
     @Nullable public static GridH2QueryContext getThreadLocal() {
-        return qctx.get();
+        return curCtx.get();
     }
 
     /**
@@ -51,18 +51,18 @@ public class QueryContextRegistry {
      * @param x Query context.
      */
     public static void setThreadLocal(GridH2QueryContext x) {
-        assert qctx.get() == null;
+        assert curCtx.get() == null;
 
-        qctx.set(x);
+        curCtx.set(x);
     }
 
     /**
      * Drops current thread local context.
      */
     public static void clearThreadLocal() {
-        assert qctx.get() != null;
+        assert curCtx.get() != null;
 
-        qctx.remove();
+        curCtx.remove();
     }
 
     /**
@@ -82,7 +82,7 @@ public class QueryContextRegistry {
         int segmentId,
         GridH2QueryType type
     ) {
-        return qctxs.get(new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type));
+        return sharedCtxs.get(new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type));
     }
 
     /**
@@ -95,7 +95,7 @@ public class QueryContextRegistry {
         assert ctx.key().type() == MAP;
         assert ctx.distributedJoinContext() != null;
 
-        GridH2QueryContext oldCtx = qctxs.putIfAbsent(ctx.key(), ctx);
+        GridH2QueryContext oldCtx = sharedCtxs.putIfAbsent(ctx.key(), ctx);
 
         assert oldCtx == null;
     }
@@ -111,7 +111,7 @@ public class QueryContextRegistry {
     public static boolean clearShared(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         boolean res = false;
 
-        for (QueryContextKey key : qctxs.keySet()) {
+        for (QueryContextKey key : sharedCtxs.keySet()) {
             if (key.localNodeId().equals(locNodeId) &&
                 key.nodeId().equals(nodeId) &&
                 key.queryId() == qryId &&
@@ -129,7 +129,7 @@ public class QueryContextRegistry {
      */
     // TODO: Local node should go away.
     public static void clearSharedOnRemoteNodeLeave(UUID locNodeId, UUID rmtNodeId) {
-        for (QueryContextKey key : qctxs.keySet()) {
+        for (QueryContextKey key : sharedCtxs.keySet()) {
             if (key.localNodeId().equals(locNodeId) && key.nodeId().equals(rmtNodeId))
                 doClear(key, false);
         }
@@ -140,7 +140,7 @@ public class QueryContextRegistry {
      */
     // TODO: Most likely we do not need it.
     public static void clearSharedOnLocalNodeLeave(UUID locNodeId) {
-        for (QueryContextKey key : qctxs.keySet()) {
+        for (QueryContextKey key : sharedCtxs.keySet()) {
             if (key.localNodeId().equals(locNodeId))
                 doClear(key, true);
         }
@@ -154,7 +154,7 @@ public class QueryContextRegistry {
     private static boolean doClear(QueryContextKey key, boolean nodeStop) {
         assert key.type() == MAP : key.type();
 
-        GridH2QueryContext ctx = qctxs.remove(key);
+        GridH2QueryContext ctx = sharedCtxs.remove(key);
 
         if (ctx == null)
             return false;
