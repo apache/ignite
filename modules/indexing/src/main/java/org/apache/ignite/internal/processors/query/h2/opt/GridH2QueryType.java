@@ -40,10 +40,5 @@ public enum GridH2QueryType {
      * Replicated query over a network. Such a query can be sent from a client node or node which
      * did not load all the partitions yet.
      */
-    REPLICATED,
-
-    /**
-     * Parsing and optimization stage.
-     */
-    PREPARE,
+    REPLICATED;
 }
