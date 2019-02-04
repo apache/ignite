@@ -435,8 +435,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
         else
             U.warn(log, "Received state finish message with unexpected ID: " + msg);
-
-        ctx.internalSubscriptionProcessor().getChangeStateListeners().forEach(listener -> listener.onAfterStateChange(msg));
     }
 
     /** */

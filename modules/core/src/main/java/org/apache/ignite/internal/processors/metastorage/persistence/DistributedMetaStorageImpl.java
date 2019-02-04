@@ -366,7 +366,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFutureAdapter<Boolean> writeAsync(@NotNull String key, @NotNull Serializable val)
+    @Override public GridFutureAdapter<?> writeAsync(@NotNull String key, @NotNull Serializable val)
         throws IgniteCheckedException {
         assert val != null : key;
 
@@ -800,7 +800,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @throws IgniteCheckedException If there was an error while sending discovery message or message was sent but
      * cluster is not active.
      */
-    private GridFutureAdapter<Boolean> startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
+    private GridFutureAdapter<?> startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();

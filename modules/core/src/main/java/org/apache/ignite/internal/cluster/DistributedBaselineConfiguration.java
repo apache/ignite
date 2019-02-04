@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedProperty;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedProperty;
@@ -70,8 +71,9 @@ public class DistributedBaselineConfiguration {
      * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline.
      * @throws IgniteCheckedException if failed.
      */
-    public void setBaselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteCheckedException {
-        this.baselineAutoAdjustEnabled.propagateAsync(baselineAutoAdjustEnabled);
+    public GridFutureAdapter<Boolean> updateBaselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled)
+        throws IgniteCheckedException {
+        return this.baselineAutoAdjustEnabled.propagateAsync(baselineAutoAdjustEnabled);
     }
 
     /**
@@ -87,8 +89,9 @@ public class DistributedBaselineConfiguration {
      * discovery event(node join/exit).
      * @throws IgniteCheckedException If failed.
      */
-    public void setBaselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteCheckedException {
-        this.baselineAutoAdjustTimeout.propagate(baselineAutoAdjustTimeout);
+    public GridFutureAdapter<Boolean> updateBaselineAutoAdjustTimeoutAsync(
+        long baselineAutoAdjustTimeout) throws IgniteCheckedException {
+        return this.baselineAutoAdjustTimeout.propagateAsync(baselineAutoAdjustTimeout);
     }
 
     /**

@@ -22,7 +22,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.cluster.ChangeStateProcessListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.jetbrains.annotations.NotNull;
@@ -50,9 +49,6 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
      * Listeners of distributed configuration controlled by {@link org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor}.
      */
     private List<DistributedConfigurationLifecycleListener> distributedConfigurationListeners = new ArrayList<>();
-
-    /** */
-    private List<ChangeStateProcessListener> changeStateListeners = new ArrayList<>();
 
     /**
      * @param ctx Kernal context.
@@ -108,18 +104,5 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
     public List<DistributedConfigurationLifecycleListener> getDistributedConfigurationListeners() {
         return distributedConfigurationListeners;
-    }
-
-    /** */
-    public void registerChangeStateListener(
-        @NotNull ChangeStateProcessListener lifecycleListener) {
-        requireNonNull(changeStateListeners, "Change state subscriber should be not-null.");
-
-        changeStateListeners.add(lifecycleListener);
-    }
-
-    /** */
-    public List<ChangeStateProcessListener> getChangeStateListeners() {
-        return changeStateListeners;
     }
 }

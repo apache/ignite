@@ -15,24 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.lang;
+package org.apache.ignite.internal.processors.configuration.distributed;
 
-import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Represents a function that accepts two arguments and produces a result.
- *
- * @param <E> Type of first closure parameter.
- * @param <U> Type of second closure parameter.
- * @param <R> Type of result value.
+ * Exception of distributed property still have not been allowed for write value.
  */
-public interface IgniteThrowableBiFunction<E, U, R> extends Serializable {
+public class NotWritablePropertyException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
     /**
-     * Consumer body.
-     *
-     * @param e Consumer parameter.
-     * @throws IgniteCheckedException if body execution was failed.
+     * @param name Name of detached property.
      */
-    public R accept(E e, U r) throws IgniteCheckedException;
+    public NotWritablePropertyException(String name) {
+        super("Property '" + name + "' is not ready for cluster wide update, perhaps cluster is not active yet.");
+    }
 }

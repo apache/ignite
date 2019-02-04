@@ -21,7 +21,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
@@ -45,14 +44,14 @@ class BaselineAutoAdjustExecutor {
      * @param log Logger.
      * @param cluster Ignite cluster.
      * @param executorService Thread pool for changing baseline.
-     * @param enabled {@code true} if baseline auto-adjust enabled.
+     * @param enabledSupplier Supplier return {@code true} if baseline auto-adjust enabled.
      */
     public BaselineAutoAdjustExecutor(IgniteLogger log, IgniteClusterImpl cluster, ExecutorService executorService,
-        BooleanSupplier enabled) {
+        BooleanSupplier enabledSupplier) {
         this.log = log;
         this.cluster = cluster;
         this.executorService = executorService;
-        isBaselineAutoAdjustEnabled = enabled;
+        isBaselineAutoAdjustEnabled = enabledSupplier;
     }
 
     /**
@@ -63,18 +62,17 @@ class BaselineAutoAdjustExecutor {
     public void execute(BaselineAutoAdjustData data) {
         executorService.submit(() ->
             {
-                if (data.isInvalidate() || !isBaselineAutoAdjustEnabled.getAsBoolean())
+                if (data.isInvalidated() || !isBaselineAutoAdjustEnabled.getAsBoolean())
                     return;
 
                 executionGuard.lock();
                 try {
-                    if (data.isInvalidate())
+                    if (data.isInvalidated() || !isBaselineAutoAdjustEnabled.getAsBoolean())
                         return;
 
                     cluster.triggerBaselineAutoAdjust(data.getTargetTopologyVersion());
                 }
                 catch (IgniteException e) {
-                    //TODO any actions?
                     log.error("Error during baseline changing", e);
                 }
                 finally {

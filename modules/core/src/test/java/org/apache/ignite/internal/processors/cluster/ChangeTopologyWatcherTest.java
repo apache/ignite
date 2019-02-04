@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.BaselineNode;
@@ -96,8 +97,7 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineAutoAdjustAfterNodeLeft() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
+        Ignite ignite0 = startGrids(2);
 
         ignite0.cluster().active(true);
 
@@ -120,9 +120,7 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineAutoAdjustSinceSecondNodeLeft() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
-        IgniteEx ignite2 = startGrid(2);
+        Ignite ignite0 = startGrids(3);
 
         ignite0.cluster().active(true);
 
@@ -168,7 +166,9 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(
             () -> ignite0.cluster().currentBaselineTopology().size() == 2
-                && ignite0.cluster().currentBaselineTopology().stream().map(BaselineNode::consistentId).anyMatch(ignite1.localNode().consistentId()::equals)
+                && ignite0.cluster().currentBaselineTopology().stream()
+                .map(BaselineNode::consistentId)
+                .anyMatch(ignite1.localNode().consistentId()::equals)
             ,
             AUTO_ADJUST_TIMEOUT * 2
         ));
@@ -178,10 +178,10 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
      * @param ignite0 Node to check.
      * @return {@code true} if current baseline consist from one node.
      */
-    private boolean isCurrentBaselineFromOneNode(IgniteEx ignite0) {
+    private boolean isCurrentBaselineFromOneNode(Ignite ignite0) {
         return ignite0.cluster().currentBaselineTopology().stream()
             .map(BaselineNode::consistentId)
-            .allMatch(ignite0.localNode().consistentId()::equals);
+            .allMatch(((IgniteEx)ignite0).localNode().consistentId()::equals);
     }
 
     /**
@@ -190,8 +190,8 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
     @Test
     public void testBaselineAutoAdjustDisabledAfterGridHasLostPart() throws Exception {
         AUTO_ADJUST_TIMEOUT = 0;
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
+
+        Ignite ignite0 = startGrids(2);
 
         ignite0.cluster().active(true);
 
@@ -219,8 +219,7 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
      */
     @Test(expected = BaselineAdjustForbiddenException.class)
     public void testBaselineAutoAdjustThrowExceptionWhenBaselineChangedManually() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
+        Ignite ignite0 = startGrids(2);
 
         ignite0.cluster().active(true);
 
@@ -230,35 +229,54 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        ignite0.cluster().setBaselineTopology(Arrays.asList(ignite0.localNode()));
+        ignite0.cluster().setBaselineTopology(Arrays.asList(((IgniteEx)ignite0).localNode()));
     }
 
     /**
      * @throws Exception if failed.
      */
     @Test
-    public void testBaselineAutoAdjustDisabledBaselineNotEqualGridActivation() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
+    public void testBaselineAutoAdjustTriggeredAfterFirstEventRegardlessInitBaseline() throws Exception {
+        AUTO_ADJUST_TIMEOUT = 3000;
+
+        Ignite ignite0 = startGrids(3);
 
         ignite0.cluster().active(true);
 
         assertTrue(ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
 
+        Set<Object> baselineNodes = ignite0.cluster().currentBaselineTopology().stream()
+            .map(BaselineNode::consistentId)
+            .collect(Collectors.toSet());
+
         stopAllGrids();
 
-        ignite0 = startGrid(0);
+        ignite0 = startGrids(2);
 
         ignite0.cluster().active(true);
 
-        assertFalse(ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
+        Set<Object> baselineNodesAfterRestart = ignite0.cluster().currentBaselineTopology().stream()
+            .map(BaselineNode::consistentId)
+            .collect(Collectors.toSet());
+
+        assertEquals(baselineNodes, baselineNodesAfterRestart);
+
+        stopGrid(1);
+
+        Ignite finalIgnite = ignite0;
+
+        assertTrue(waitForCondition(
+            () -> isCurrentBaselineFromOneNode(finalIgnite)
+            ,
+            AUTO_ADJUST_TIMEOUT * 2
+        ));
     }
 
     /**
      * @throws Exception if failed.
      */
     @Test
-    public void testBaselineAutoAdjustDisabledBaselineNotEqualGridActivation2() throws Exception {
+    public void testBaselineAutoAdjustIgnoreClientNodes() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         startGrid(1);
 
@@ -268,11 +286,11 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        doSleep(AUTO_ADJUST_TIMEOUT/2);
+        doSleep(AUTO_ADJUST_TIMEOUT / 2);
 
         IgniteEx igniteClient = startGrid(getConfiguration(getTestIgniteInstanceName(2)).setClientMode(true));
 
-        doSleep(AUTO_ADJUST_TIMEOUT/2);
+        doSleep(AUTO_ADJUST_TIMEOUT / 2);
 
         igniteClient.close();
 

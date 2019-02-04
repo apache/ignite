@@ -21,22 +21,17 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.ACTUALIZE;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.CLUSTER_WIDE_UPDATE;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.REGISTER;
+import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
 /**
  * Processor of distributed configuration.
@@ -262,7 +257,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
                 distributedMetastorage.compareAndSetAsync(toMetaStorageKey(key), expectedOldValue, newValue)
         );
 
-        if (isLocalNodeCoordinator()) {
+        if (isLocalNodeCoordinator(ctx.discovery())) {
             try {
                 Serializable oldVal = distributedMetastorage.read(prop.getName());
 
@@ -273,24 +268,6 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
                 log.error("Can not set init value to metastore for key='" + prop.getName() + "'", e);
             }
         }
-    }
-
-    /**
-     * @return Cluster coordinator, {@code null} if failed to determine.
-     */
-    @Nullable private ClusterNode coordinator() {
-        return U.oldest(ctx.discovery().aliveServerNodes(), null);
-    }
-
-    /**
-     * @return {@code true} if local node is coordinator.
-     */
-    private boolean isLocalNodeCoordinator() {
-        DiscoverySpi spi = ctx.discovery().getInjectedDiscoverySpi();
-
-        return spi instanceof TcpDiscoverySpi
-            ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
-            : F.eq(ctx.discovery().localNode(), coordinator());
     }
 
     /**

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -55,40 +54,47 @@ public class DistributedProperty<T extends Serializable> {
      * Change value across whole cluster.
      *
      * @param newVal Value which this property should be changed on.
-     * @return {@code true} if value was successfully updated and {@code false} if cluster wide update have not
-     * permitted yet.
+     * @return {@code true} if value was successfully updated and {@code false} if cluster wide update was failed,
+     * perhaps some concurrent operation was changed this value in same moment.
      * @throws DetachedPropertyException If this property have not been attached to processor yet, please call {@link
      * DistributedConfigurationProcessor#registerProperty(DistributedProperty)} before this method.
+     * @throws NotWritablePropertyException If this property don't ready to cluster wide update yet, perhaps cluster is
+     * not active yet.
      * @throws IgniteCheckedException If failed during cluster wide update.
      */
     public boolean propagate(T newVal) throws IgniteCheckedException {
+        ensureClusterWideUpdateIsReady();
+
+        return clusterWideUpdater.update(name, val, newVal).get();
+    }
+
+    /**
+     * @throws DetachedPropertyException If this property have not been attached to processor yet, please call {@link
+     * DistributedConfigurationProcessor#registerProperty(DistributedProperty)} before this method.
+     * @throws NotWritablePropertyException If this property don't ready to cluster wide update yet, perhaps cluster is
+     * not active yet.
+     */
+    private void ensureClusterWideUpdateIsReady() throws DetachedPropertyException, NotWritablePropertyException {
         if (!attached)
             throw new DetachedPropertyException(name);
 
-        return clusterWideUpdater != null && Boolean.TRUE.equals(clusterWideUpdater.update(name, val, newVal).get());
+        if (clusterWideUpdater == null)
+            throw new NotWritablePropertyException(name);
     }
 
     /**
      * Change value across whole cluster.
      *
      * @param newVal Value which this property should be changed on.
-     * @return {@code true} if value was successfully updated and {@code false} if cluster wide update have not
-     * permitted yet.
+     * @return Future for update operation.
      * @throws DetachedPropertyException If this property have not been attached to processor yet, please call {@link
      * DistributedConfigurationProcessor#registerProperty(DistributedProperty)} before this method.
+     * @throws NotWritablePropertyException If this property don't ready to cluster wide update yet, perhaps cluster is
+     * not active yet.
      * @throws IgniteCheckedException If failed during cluster wide update.
      */
     public GridFutureAdapter<Boolean> propagateAsync(T newVal) throws IgniteCheckedException {
-        if (!attached)
-            throw new DetachedPropertyException(name);
-
-        if (clusterWideUpdater == null) {
-            GridFutureAdapter<Boolean> adapter = new GridFutureAdapter<>();
-
-            adapter.onDone(false);
-
-            return adapter;
-        }
+        ensureClusterWideUpdateIsReady();
 
         return clusterWideUpdater.update(name, val, newVal);
     }

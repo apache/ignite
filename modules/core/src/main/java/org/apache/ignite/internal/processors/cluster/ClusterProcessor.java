@@ -126,8 +126,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
     /** */
     private boolean sndMetrics;
 
-
-
     /**
      * @param ctx Kernal context.
      */
@@ -273,8 +271,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
             });
         }
     }
-
-
 
     /**
      * @return Logger for diagnostic category.

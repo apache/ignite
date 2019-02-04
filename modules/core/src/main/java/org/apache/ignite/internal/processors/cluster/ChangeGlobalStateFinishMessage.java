@@ -53,7 +53,10 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
      * @param clusterActive New cluster state.
      * @param isBaselineAutoAdjust {@code true} Is this message created automatically by reason baseline auto adjust.
      */
-    public ChangeGlobalStateFinishMessage(UUID reqId, boolean clusterActive, Boolean transitionRes,
+    public ChangeGlobalStateFinishMessage(
+        UUID reqId,
+        boolean clusterActive,
+        Boolean transitionRes,
         boolean isBaselineAutoAdjust) {
         assert reqId != null;
 

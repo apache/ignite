@@ -29,7 +29,7 @@ class BaselineAutoAdjustData {
     private final long targetTopologyVersion;
 
     /** {@code true} If this data don't actual anymore and it setting should be skipped. */
-    private volatile boolean isInvalidate = false;
+    private volatile boolean invalidated = false;
 
     /**
      * @param evt Event with which this data correspond to. For statistic only.
@@ -44,7 +44,7 @@ class BaselineAutoAdjustData {
      * Mark that this data are invalid.
      */
     private void onInvalidate() {
-        isInvalidate = true;
+        invalidated = true;
     }
 
     /**
@@ -57,8 +57,8 @@ class BaselineAutoAdjustData {
     /**
      * @return {@code true} If this data still actual and can be set.
      */
-    public boolean isInvalidate() {
-        return isInvalidate;
+    public boolean isInvalidated() {
+        return invalidated;
     }
 
     /**
