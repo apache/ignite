@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
-import {timer, merge, defer, of, from} from 'rxjs';
+import {timer, merge, defer, of} from 'rxjs';
 import {tap, switchMap, exhaustMap, take, pluck, distinctUntilChanged, filter, map, catchError} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';

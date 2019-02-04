@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-
 import {merge} from 'rxjs';
 import {tap, pluck, distinctUntilChanged} from 'rxjs/operators';
 
