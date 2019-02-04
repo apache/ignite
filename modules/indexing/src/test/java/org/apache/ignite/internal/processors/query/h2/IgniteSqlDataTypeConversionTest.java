@@ -18,53 +18,52 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.math.BigDecimal;
-import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterType;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionUtils;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.value.Value;
 import org.junit.Test;
 
+/**
+ * Data convertion tests.
+ */
 public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
+    /** Map to convert <code>PartitionParameterType</code> instances to correspondig java classes. */
     private static final Map<PartitionParameterType, Class<?>> PARAMETER_TYPE_TO_JAVA_CLASS;
 
+    /** Map to convert <code>PartitionParameterType</code> instances to correspondig H2 data types. */
     private static final Map<PartitionParameterType, Integer> IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE;
 
-    /** Default node. */
-    private static IgniteEx ignite;
+    /** Ignite H2 Indexing. */
+    private static IgniteH2Indexing idx;
 
     static {
-        Map<PartitionParameterType, Class<?>> paramTypeToJavaClass = new HashMap<>();
+        Map<PartitionParameterType, Class<?>> paramTypeToJavaCls = new EnumMap<>(PartitionParameterType.class);
 
-        paramTypeToJavaClass.put(PartitionParameterType.BOOLEAN, Boolean.class);
-        paramTypeToJavaClass.put(PartitionParameterType.BYTE, Byte.class);
-        paramTypeToJavaClass.put(PartitionParameterType.SHORT, Short.class);
-        paramTypeToJavaClass.put(PartitionParameterType.INT, Integer.class);
-        paramTypeToJavaClass.put(PartitionParameterType.LONG, Long.class);
-        paramTypeToJavaClass.put(PartitionParameterType.FLOAT, Float.class);
-        paramTypeToJavaClass.put(PartitionParameterType.DOUBLE, Double.class);
-        paramTypeToJavaClass.put(PartitionParameterType.STRING, String.class);
-        paramTypeToJavaClass.put(PartitionParameterType.DECIMAL, BigDecimal.class);
-        paramTypeToJavaClass.put(PartitionParameterType.DATE, Date.class);
-        paramTypeToJavaClass.put(PartitionParameterType.TIME, Time.class);
-        paramTypeToJavaClass.put(PartitionParameterType.TIMESTAMP, Timestamp.class);
-        paramTypeToJavaClass.put(PartitionParameterType.UUID, UUID.class);
+        paramTypeToJavaCls.put(PartitionParameterType.BOOLEAN, Boolean.class);
+        paramTypeToJavaCls.put(PartitionParameterType.BYTE, Byte.class);
+        paramTypeToJavaCls.put(PartitionParameterType.SHORT, Short.class);
+        paramTypeToJavaCls.put(PartitionParameterType.INT, Integer.class);
+        paramTypeToJavaCls.put(PartitionParameterType.LONG, Long.class);
+        paramTypeToJavaCls.put(PartitionParameterType.FLOAT, Float.class);
+        paramTypeToJavaCls.put(PartitionParameterType.DOUBLE, Double.class);
+        paramTypeToJavaCls.put(PartitionParameterType.STRING, String.class);
+        paramTypeToJavaCls.put(PartitionParameterType.DECIMAL, BigDecimal.class);
+        paramTypeToJavaCls.put(PartitionParameterType.DATE, Date.class);
+        paramTypeToJavaCls.put(PartitionParameterType.TIME, Time.class);
+        paramTypeToJavaCls.put(PartitionParameterType.TIMESTAMP, Timestamp.class);
+        paramTypeToJavaCls.put(PartitionParameterType.UUID, UUID.class);
 
-        PARAMETER_TYPE_TO_JAVA_CLASS = Collections.unmodifiableMap(paramTypeToJavaClass);
+        PARAMETER_TYPE_TO_JAVA_CLASS = Collections.unmodifiableMap(paramTypeToJavaCls);
 
-        Map<PartitionParameterType, Integer> igniteParamTypeToH2ParamType = new HashMap<>();
+        Map<PartitionParameterType, Integer> igniteParamTypeToH2ParamType = new EnumMap<>(PartitionParameterType.class);
         igniteParamTypeToH2ParamType.put(PartitionParameterType.BOOLEAN, Value.BOOLEAN);
         igniteParamTypeToH2ParamType.put(PartitionParameterType.BYTE, Value.BYTE);
         igniteParamTypeToH2ParamType.put(PartitionParameterType.SHORT, Value.SHORT);
@@ -82,195 +81,273 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
         IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE = Collections.unmodifiableMap(igniteParamTypeToH2ParamType);
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        ignite = startGrid(0);
+        idx = (IgniteH2Indexing)startGrid(0).context().query().getIndexing();
     }
 
+    /**
+     * Test null value conversion.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void convertNull() throws Exception {
-        checkConvertation(null);
+        checkConvertation2(null);
     }
 
+    /**
+     * Test boolean conversion.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void convertBoolean() throws Exception {
-        checkConvertation(Boolean.TRUE);
-        checkConvertation(Boolean.FALSE);
+        checkConvertation2(Boolean.TRUE);
+        checkConvertation2(Boolean.FALSE);
     }
 
+    /**
+     * Test byte conversion.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void convertByte() throws Exception {
-        checkConvertation((byte)42);
-        checkConvertation((byte)0);
-        checkConvertation(Byte.MIN_VALUE);
-        checkConvertation(Byte.MAX_VALUE);
+        checkConvertation2((byte)42);
+        checkConvertation2((byte)0);
+        checkConvertation2(Byte.MIN_VALUE);
+        checkConvertation2(Byte.MAX_VALUE);
     }
 
+    /**
+     * Test short conversion.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void convertShort() throws Exception {
-        checkConvertation((short)42);
-        checkConvertation((short)0);
-        checkConvertation(Short.MIN_VALUE);
-        checkConvertation(Short.MAX_VALUE);
+        checkConvertation2((short)42);
+        checkConvertation2((short)0);
+        checkConvertation2(Short.MIN_VALUE);
+        checkConvertation2(Short.MAX_VALUE);
     }
 
+    /**
+     * Test int conversion.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void convertInteger() throws Exception {
-        checkConvertation(42);
-        checkConvertation(0);
-        checkConvertation(Integer.MIN_VALUE);
-        checkConvertation(Integer.MAX_VALUE);
+        checkConvertation2(42);
+        checkConvertation2(0);
+        checkConvertation2(Integer.MIN_VALUE);
+        checkConvertation2(Integer.MAX_VALUE);
     }
 
+    /**
+     * Test long conversion.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void convertLong() throws Exception {
-        checkConvertation(42L);
-        checkConvertation(0L);
-        checkConvertation(Long.MIN_VALUE);
-        checkConvertation(Long.MAX_VALUE);
+        checkConvertation2(42L);
+        checkConvertation2(0L);
+        checkConvertation2(Long.MIN_VALUE);
+        checkConvertation2(Long.MAX_VALUE);
     }
 
+    /**
+     * Test float conversion.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void convertFloat() throws Exception {
-        checkConvertation(42.1f);
-        checkConvertation(0.1f);
-        checkConvertation(0f);
-        checkConvertation(1.2345678E7f);
+        checkConvertation2(42.1f);
+        checkConvertation2(0.1f);
+        checkConvertation2(0f);
+        checkConvertation2(1.2345678E7f);
 
-        checkConvertation(Float.POSITIVE_INFINITY);
-        checkConvertation(Float.NEGATIVE_INFINITY);
-        checkConvertation(Float.NaN);
+        checkConvertation2(Float.POSITIVE_INFINITY);
+        checkConvertation2(Float.NEGATIVE_INFINITY);
+        checkConvertation2(Float.NaN);
 
-        checkConvertation(Float.MIN_VALUE);
-        checkConvertation(Float.MAX_VALUE);
+        checkConvertation2(Float.MIN_VALUE);
+        checkConvertation2(Float.MAX_VALUE);
     }
 
+    /**
+     * Test double conversion.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void convertDouble() throws Exception {
-        checkConvertation(42.2d);
-        checkConvertation(0.2d);
-        checkConvertation(0d);
-        checkConvertation(1.2345678E7d);
+        checkConvertation2(42.2d);
+        checkConvertation2(0.2d);
+        checkConvertation2(0d);
+        checkConvertation2(1.2345678E7d);
 
-        checkConvertation(Double.POSITIVE_INFINITY);
-        checkConvertation(Double.NEGATIVE_INFINITY);
-        checkConvertation(Double.NaN);
+        checkConvertation2(Double.POSITIVE_INFINITY);
+        checkConvertation2(Double.NEGATIVE_INFINITY);
+        checkConvertation2(Double.NaN);
 
-        checkConvertation(Double.MIN_VALUE);
-        checkConvertation(Double.MAX_VALUE);
+        checkConvertation2(Double.MIN_VALUE);
+        checkConvertation2(Double.MAX_VALUE);
     }
 
-    /** {@inheritDoc} */
-    public boolean getBoolean(Object val) throws SQLException {
+    /**
+     * Test string conversion.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void convertString() throws Exception {
+        checkConvertation2("42");
+        checkConvertation2("0");
 
-        if (val == null)
-            return false;
+        checkConvertation2("42.3");
+        checkConvertation2("0.3");
 
-        Class<?> cls = val.getClass();
+        checkConvertation2("42.4f");
+        checkConvertation2("0.4d");
 
-        if (cls == Boolean.class)
-            return ((Boolean)val);
-        else if (val instanceof Number)
-            return ((Number)val).intValue() != 0;
-        else if (cls == String.class || cls == Character.class) {
+        checkConvertation2("04d17cf3-bc20-4e3d-9ff7-72437cdae227");
+
+        checkConvertation2("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+        checkConvertation2("aaa");
+        checkConvertation2(" aaa ");
+
+        checkConvertation2("true");
+        checkConvertation2("t");
+        checkConvertation2("yes");
+        checkConvertation2("y");
+        checkConvertation2("false");
+        checkConvertation2("f");
+        checkConvertation2("no");
+        checkConvertation2("n");
+
+        checkConvertation2(" true ");
+
+        checkConvertation2("null");
+        checkConvertation2("NULL");
+
+        checkConvertation2("2000-01-02");
+
+        checkConvertation2("10:00:00");
+
+        checkConvertation2("2001-01-01 23:59:59.123456");
+    }
+
+    /**
+     * Test decimal conversion.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void convertDecimal() throws Exception {
+        checkConvertation2(new BigDecimal(42.5));
+        checkConvertation2(new BigDecimal(0.5));
+        checkConvertation2(new BigDecimal(0));
+        checkConvertation2(new BigDecimal(1.2345678E7));
+
+        checkConvertation2(new BigDecimal(Double.MIN_VALUE));
+        checkConvertation2(new BigDecimal(Double.MAX_VALUE));
+    }
+
+    /**
+     * Test date conversion.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void convertDate() throws Exception {
+        checkConvertation2(new Date());
+    }
+
+    /**
+     * Test time conversion.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void convertTime() throws Exception {
+        checkConvertation2(new Time(12345));
+    }
+
+    /**
+     * Test timestamp conversion.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void convertTimestamp() throws Exception {
+        checkConvertation2(new Timestamp(54321));
+    }
+
+    /**
+     * Test uuid conversion.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void convertUUID() throws Exception {
+        checkConvertation2(UUID.randomUUID());
+        checkConvertation2(UUID.fromString("00000000-0000-0000-0000-00000000000a"));
+        checkConvertation2(new UUID(0L, 1L));
+    }
+
+    /**
+     * Actual conversial check logic.
+     *
+     * @param arg Argument to convert.
+     * @throws Exception If failed.
+     */
+    private void checkConvertation2(Object arg) throws Exception {
+        for (PartitionParameterType targetType : PartitionParameterType.values()) {
+            Object convertationRes;
+
             try {
-                return Integer.parseInt(val.toString()) != 0;
+                convertationRes = PartitionUtils.convert(arg, targetType);
             }
-            catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to boolean: " + val, SqlStateCode.CONVERSION_FAILED, e);
-            }
-        }
-        else
-            throw new SQLException("Cannot convert to boolean: " + val, SqlStateCode.CONVERSION_FAILED);
-    }
-
-    @SuppressWarnings({"ThrowableNotThrown", "AssertWithSideEffects"})
-    private void checkConvertation(Object arg) throws Exception {
-        // TODO: 31.01.19 instead of tmpTypes PartitionParameterType.values() should be used when Time, Date and Timestamp are supported.
-        Collection<PartitionParameterType> tmpTypes = Arrays.asList(
-            PartitionParameterType.BOOLEAN,
-            PartitionParameterType.BYTE,
-            PartitionParameterType.SHORT,
-            PartitionParameterType.INT,
-            PartitionParameterType.LONG,
-            PartitionParameterType.DECIMAL,
-            PartitionParameterType.DOUBLE,
-            PartitionParameterType.FLOAT,
-            PartitionParameterType.STRING);
-
-        IgniteH2Indexing idx = (IgniteH2Indexing)ignite.context().query().getIndexing();
-
-        for (PartitionParameterType targetType : tmpTypes) {
-            // TODO: 01.02.19 collapse
-            if (arg != null && (
-                (arg.getClass().equals(Short.class) && targetType == PartitionParameterType.BYTE && (((short)arg) > Byte.MAX_VALUE || ((short)arg) < Byte.MIN_VALUE)) ||
-                    (arg.getClass().equals(Integer.class) && targetType == PartitionParameterType.BYTE && (((int)arg) > Byte.MAX_VALUE || ((int)arg) < Byte.MIN_VALUE)) ||
-                    (arg.getClass().equals(Integer.class) && targetType == PartitionParameterType.SHORT && (((int)arg) > Short.MAX_VALUE || ((int)arg) < Short.MIN_VALUE)) ||
-                    (arg.getClass().equals(Long.class) && targetType == PartitionParameterType.BYTE && (((long)arg) > Byte.MAX_VALUE || ((long)arg) < Byte.MIN_VALUE)) ||
-                    (arg.getClass().equals(Long.class) && targetType == PartitionParameterType.SHORT && (((long)arg) > Short.MAX_VALUE || ((long)arg) < Short.MIN_VALUE)) ||
-                    (arg.getClass().equals(Long.class) && targetType == PartitionParameterType.INT && (((long)arg) > Integer.MAX_VALUE || ((long)arg) < Integer.MIN_VALUE)) ||
-                    (arg.getClass().equals(Float.class) && targetType == PartitionParameterType.BYTE && (((float)arg) > Byte.MAX_VALUE || ((float)arg) < Byte.MIN_VALUE)) ||
-                    (arg.getClass().equals(Float.class) && targetType == PartitionParameterType.SHORT && (((float)arg) > Short.MAX_VALUE || ((float)arg) < Short.MIN_VALUE)) ||
-                    (arg.getClass().equals(Float.class) && targetType == PartitionParameterType.INT && (((float)arg) > Integer.MAX_VALUE || ((float)arg) < Integer.MIN_VALUE)) ||
-                    (arg.getClass().equals(Float.class) && targetType == PartitionParameterType.LONG && (((float)arg) > Long.MAX_VALUE || ((float)arg) < Long.MIN_VALUE)) ||
-                    (arg.getClass().equals(Double.class) && targetType == PartitionParameterType.BYTE && (((double)arg) > Byte.MAX_VALUE || ((double)arg) < Byte.MIN_VALUE)) ||
-                    (arg.getClass().equals(Double.class) && targetType == PartitionParameterType.SHORT && (((double)arg) > Short.MAX_VALUE || ((double)arg) < Short.MIN_VALUE)) ||
-                    (arg.getClass().equals(Double.class) && targetType == PartitionParameterType.INT && (((double)arg) > Integer.MAX_VALUE || ((double)arg) < Integer.MIN_VALUE)) ||
-                    (arg.getClass().equals(Double.class) && targetType == PartitionParameterType.LONG && (((double)arg) > Long.MAX_VALUE || ((double)arg) < Long.MIN_VALUE)))) {
-                GridTestUtils.assertThrows(log, () -> {
-                    PartitionUtils.convert(arg, targetType);
-
-                    return null;
-                }, IllegalArgumentException.class, "Unable to convert arg");
-
-                GridTestUtils.assertThrows(log, () -> {
-                    H2Utils.convert(arg, idx, IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
-
-                    return null;
-                }, org.h2.message.DbException.class, "Numeric value out of range");
-            }
-            else if (arg instanceof Boolean && targetType == PartitionParameterType.UUID) {
-                GridTestUtils.assertThrows(log, () -> {
-                    PartitionUtils.convert(arg, targetType);
-
-                    return null;
-                }, IllegalArgumentException.class, "Unable to convert arg");
-
-                GridTestUtils.assertThrows(log, () -> {
-                    H2Utils.convert(arg, idx, IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
-
-                    return null;
-                }, org.h2.message.DbException.class, "Data conversion error");
-            }
-            else if (arg != null &&
-                ((arg.getClass().equals(Double.class) && (arg.equals(Double.POSITIVE_INFINITY) || arg.equals(Double.NEGATIVE_INFINITY) || arg.equals(Double.NaN)) && targetType == PartitionParameterType.DECIMAL) ||
-                    (arg.getClass().equals(Float.class) && (arg.equals(Float.POSITIVE_INFINITY) || arg.equals(Float.NEGATIVE_INFINITY) || arg.equals(Float.NaN)) && targetType == PartitionParameterType.DECIMAL))) {
-                GridTestUtils.assertThrows(log, () -> {
-                    PartitionUtils.convert(arg, targetType);
-
-                    return null;
-                }, IllegalArgumentException.class, "Unable to convert arg");
-
-                GridTestUtils.assertThrows(log, () -> {
-                    H2Utils.convert(arg, idx, IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
-
-                    return null;
-                }, org.h2.message.DbException.class, "Data conversion error");
-            }
-            else {
-                Object convertationH2Res = H2Utils.convert(arg, idx,
-                    IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
-
-                Object convertationRes = PartitionUtils.convert(arg, targetType);
-
-                if (convertationRes == null)
-                    assertNull(convertationH2Res);
+            catch (IllegalArgumentException convertaitionException) {
+                if (arg != null && (targetType == PartitionParameterType.TIME ||
+                    targetType == PartitionParameterType.TIMESTAMP || targetType == PartitionParameterType.DATE))
+                    assertTrue(convertaitionException.getMessage().contains("Unable to convert arg"));
                 else {
-                    assertEquals(PARAMETER_TYPE_TO_JAVA_CLASS.get(targetType), convertationRes.getClass());
-                    assertEquals(convertationH2Res.getClass(), convertationRes.getClass());
-                    assertEquals(convertationH2Res, convertationRes);
+                    try {
+                        H2Utils.convert(arg, idx, IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
+
+                        fail("Data conversion failed in Ignite but not in H2.");
+                    }
+                    catch (org.h2.message.DbException h2Exception) {
+                        assertTrue(convertaitionException.getMessage().contains("Unable to convert arg"));
+
+                        assertTrue(h2Exception.getMessage().contains("Numeric value out of range") ||
+                            h2Exception.getMessage().contains("Data conversion error"));
+                    }
+
                 }
+                return;
+            }
+
+            Object convertationH2Res = H2Utils.convert(arg, idx,
+                IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
+
+            if (convertationRes == null)
+                assertNull(convertationH2Res);
+            else {
+                assertEquals(PARAMETER_TYPE_TO_JAVA_CLASS.get(targetType), convertationRes.getClass());
+                assertEquals(convertationH2Res.getClass(), convertationRes.getClass());
+                assertEquals(convertationH2Res, convertationRes);
             }
         }
     }
-
 }
