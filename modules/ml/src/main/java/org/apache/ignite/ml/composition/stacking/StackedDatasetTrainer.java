@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
-import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.composition.combinators.parallel.ModelsParallelComposition;
 import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelComposition;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -32,8 +31,10 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * {@link DatasetTrainer} encapsulating stacking technique for model training.
@@ -230,18 +231,16 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
 
     /** {@inheritDoc} */
     @Override public <K, V> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
 
-        return new StackedModel<>(getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor));
+        return new StackedModel<>(getTrainer().fit(datasetBuilder, extractor));
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> StackedModel<IS, IA, O, AM> update(StackedModel<IS, IA, O, AM> mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor) {
+        DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, L> extractor) {
 
-        return new StackedModel<>(getTrainer().update(mdl, datasetBuilder, featureExtractor, lbExtractor));
+        return new StackedModel<>(getTrainer().update(mdl, datasetBuilder, extractor));
     }
 
     /**
@@ -271,14 +270,10 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
         return AdaptableDatasetTrainer
             .of(composition)
             .afterTrainedModel(lst -> lst.stream().reduce(aggregatingInputMerger).get())
-            .andThen(aggregatorTrainer, model -> new DatasetMapping<L, L>() {
-                @Override public Vector mapFeatures(Vector v) {
+            .andThen(aggregatorTrainer, model -> new IgniteFunction<LabeledVector<L>, LabeledVector<L>>() {
+                @Override public LabeledVector<L> apply(LabeledVector<L> v) {
                     List<IgniteModel<IS, IA>> models = ((ModelsParallelComposition<IS, IA>)model.innerModel()).submodels();
-                    return featureMapper.apply(models, v);
-                }
-
-                @Override public L mapLabels(L lbl) {
-                    return lbl;
+                    return new LabeledVector<>(featureMapper.apply(models, v.features()), v.label());
                 }
             }).unsafeSimplyTyped();
     }
@@ -360,8 +355,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
      */
     @Override protected <K, V> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
         // This method is never called, we override "update" instead.
         throw new IllegalStateException();
     }
