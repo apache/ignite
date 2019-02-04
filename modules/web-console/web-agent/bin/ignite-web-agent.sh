@@ -54,7 +54,8 @@ if [ -z "$JVM_OPTS" ] ; then
     fi
 fi
 
-JVM_OPTS="${JVM_OPTS} -Djava.net.useSystemProxies=true"
+# https://confluence.atlassian.com/kb/basic-authentication-fails-for-outgoing-proxy-in-java-8u111-909643110.html
+JVM_OPTS="${JVM_OPTS} -Djava.net.useSystemProxies=true -Djdk.http.auth.tunneling.disabledSchemes="
 
 #
 # Final JVM_OPTS for Java 9+ compatibility
