@@ -297,14 +297,21 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param msg Message.
      */
     public void send(Collection<ClusterNode> nodes, Message msg) {
-        if (!getTable().rowDescriptor().indexing().send(msgTopic,
+        boolean res = getTable().rowDescriptor().indexing().send(msgTopic,
             -1,
             nodes,
             msg,
             null,
-            locNodeHnd,
+            new CIX2<ClusterNode,Message>() {
+                @Override public void applyx(ClusterNode clusterNode, Message msg) {
+                    onMessage0(clusterNode.id(), msg);
+                }
+            },
             GridIoPolicy.IDX_POOL,
-            false))
+            false
+        );
+
+        if (!res)
             throw H2Utils.retryException("Failed to send message to nodes: " + nodes);
     }
 
