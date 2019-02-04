@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
-import {map, distinctUntilChanged, tap, pluck} from 'rxjs/operators';
+import _ from 'lodash';
+
+import {merge} from 'rxjs';
+import {tap, pluck, distinctUntilChanged} from 'rxjs/operators';
 
 import {WellKnownOperationStatus} from 'app/types';
 import {IgniteChartController} from '../../controller';
@@ -31,18 +34,33 @@ export default class IgniteChartNoDataCtrl implements ng.IOnChanges, ng.IOnDestr
 
     handleClusterInactive: boolean;
 
+    connectionState$ = this.AgentManager.connectionSbj.pipe(
+        pluck('state'),
+        distinctUntilChanged(),
+        tap((state) => {
+            if (state === 'AGENT_DISCONNECTED')
+                this.destroyChart();
+        })
+    );
+
     cluster$ = this.AgentManager.connectionSbj.pipe(
         pluck('cluster'),
+        distinctUntilChanged(),
         tap((cluster) => {
             if (_.isNil(cluster) && !this.AgentManager.isDemoMode()) {
                 this.destroyChart();
                 return;
             }
 
-            if (cluster.active === false && this.handleClusterInactive)
+            if (!_.isNil(cluster) && cluster.active === false && this.handleClusterInactive)
                 this.destroyChart();
 
         })
+    );
+
+    subsribers$ = merge(
+        this.connectionState$,
+        this.cluster$
     ).subscribe();
 
     $onChanges(changes) {
@@ -51,7 +69,7 @@ export default class IgniteChartNoDataCtrl implements ng.IOnChanges, ng.IOnDestr
     }
 
     $onDestroy() {
-        this.cluster$.unsubscribe();
+        this.subsribers$.unsubscribe();
     }
 
     destroyChart() {
