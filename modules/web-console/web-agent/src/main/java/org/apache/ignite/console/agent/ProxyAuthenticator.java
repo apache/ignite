@@ -31,6 +31,8 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.Route;
 
+import static java.net.Authenticator.RequestorType.PROXY;
+
 /**
  * Request interactive proxy credentials.
  *
@@ -56,8 +58,7 @@ public class ProxyAuthenticator implements Authenticator {
 
             PasswordAuthentication auth = java.net.Authenticator.requestPasswordAuthentication(
                 proxyAddr.getHostName(), proxyAddr.getAddress(), proxyAddr.getPort(),
-                url.scheme(), challenge.realm(), challenge.scheme(), url.url(),
-                java.net.Authenticator.RequestorType.PROXY);
+                url.scheme(), challenge.realm(), challenge.scheme(), url.url(), PROXY);
 
             if (auth != null) {
                 String cred = Credentials.basic(auth.getUserName(), new String(auth.getPassword()), challenge.charset());
