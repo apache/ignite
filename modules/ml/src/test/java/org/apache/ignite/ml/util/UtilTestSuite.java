@@ -15,27 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference;
+package org.apache.ignite.ml.util;
 
-import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilderTest;
-import org.apache.ignite.ml.inference.builder.SingleModelBuilderTest;
-import org.apache.ignite.ml.inference.builder.ThreadedModelBuilderTest;
-import org.apache.ignite.ml.inference.storage.model.DefaultModelStorageTest;
-import org.apache.ignite.ml.inference.util.DirectorySerializerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all tests located in {@link org.apache.ignite.ml.inference} package.
+ * Test suite for all tests located in {@link org.apache.ignite.ml.util} package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    SingleModelBuilderTest.class,
-    ThreadedModelBuilderTest.class,
-    DirectorySerializerTest.class,
-    DefaultModelStorageTest.class,
-    IgniteDistributedModelBuilderTest.class,
-    IgniteModelStorageUtilTest.class
+    LRUCacheTest.class
 })
-public class InferenceTestSuite {
+public class UtilTestSuite {
 }
