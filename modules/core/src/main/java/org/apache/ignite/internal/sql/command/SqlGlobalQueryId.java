@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Sql global query id
  */
+// TODO: Remove
 public class SqlGlobalQueryId {
     /** Node id. */
     private UUID nodeId;

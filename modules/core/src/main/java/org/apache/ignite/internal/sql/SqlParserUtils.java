@@ -194,6 +194,7 @@ public class SqlParserUtils {
      * @param lex Lexer.
      * @return Global query id.
      */
+    // TODO: Move to KILL command.
     public static SqlGlobalQueryId parseGlobalQueryId(SqlLexer lex) {
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {
 
@@ -210,6 +211,7 @@ public class SqlParserUtils {
                     return new SqlGlobalQueryId(nodeId, qryId);
                 }
                 catch (NumberFormatException e) {
+                    // TODO: This is not accurate - we should inform user what is wrong instead of throwing generic exception.
                     // Fall through.
                 }
             }

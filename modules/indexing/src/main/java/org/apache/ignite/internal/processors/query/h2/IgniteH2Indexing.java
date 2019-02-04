@@ -2462,10 +2462,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         JdbcUtils.serializer = h2Serializer();
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, (nodeId, msg, plc) -> {
+            // TODO: Should we take busy lock? This might be dangerous for heavy queries which ocuppied the whole pool.
             if (!busyLock.enterBusy())
                 return;
 
             try {
+                // TODO: Copy-paste, not needed
                 if (msg instanceof GridCacheQueryMarshallable)
                     ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
 
@@ -2482,6 +2484,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param nodeId Node ID.
      * @param msg Message.
      */
+    // TODO: Response?
     public void onMessage(UUID nodeId, Object msg) {
         try {
             assert msg != null;

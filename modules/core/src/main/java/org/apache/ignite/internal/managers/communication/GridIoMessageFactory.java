@@ -234,6 +234,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            // TODO: No minuses please.
             case -54:
                 msg = new GridQueryKillRequest();
 
