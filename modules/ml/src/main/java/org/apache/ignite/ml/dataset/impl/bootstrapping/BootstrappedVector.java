@@ -28,7 +28,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * Represents vector with repetitions counters for subsamples in bootstrapped dataset.
  * Each counter shows the number of repetitions of the vector for the n-th sample.
  */
-public class BootstrappedVector extends LabeledVector<Vector, Double> {
+public class BootstrappedVector extends LabeledVector<Double> {
     /** Serial version uid. */
     private static final long serialVersionUID = -4583008673032917259L;
 

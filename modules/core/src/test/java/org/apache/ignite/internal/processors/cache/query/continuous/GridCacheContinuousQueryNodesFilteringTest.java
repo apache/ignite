@@ -34,12 +34,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /** */
 @SuppressWarnings("unused")
-@RunWith(JUnit4.class)
 public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final String ENTRY_FILTER_CLS_NAME = "org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilter";

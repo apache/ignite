@@ -35,13 +35,10 @@ import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for lazy query execution.
  */
-@RunWith(JUnit4.class)
 public class LazyQuerySelfTest extends AbstractIndexingCommonTest {
     /** Keys ocunt. */
     private static final int KEY_CNT = 200;

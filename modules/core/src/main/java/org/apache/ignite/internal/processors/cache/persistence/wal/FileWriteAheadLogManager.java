@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -89,8 +90,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.aware.Segment
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.AbstractFileHandle;
-import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileHandleManagerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileHandleManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileHandleManagerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileWriteHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.LockedSegmentFileInputFactory;
@@ -107,6 +108,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.io.GridFileUtils;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CO;
@@ -350,6 +352,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** FileHandleManagerFactory. */
     private final FileHandleManagerFactory fileHandleManagerFactory;
 
+    /** Switch segment record offset. */
+    private final AtomicLongArray switchSegmentRecordOffset;
+
     /**
      * @param ctx Kernal context.
      */
@@ -380,6 +385,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         maxSegCountWithoutCheckpoint =
                 (long)((U.adjustedWalHistorySize(dsCfg, log) * CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE)
                         / dsCfg.getWalSegmentSize());
+
+        switchSegmentRecordOffset = isArchiverEnabled() ? new AtomicLongArray(dsCfg.getWalSegments()) : null;
     }
 
     /**
@@ -1175,6 +1182,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (metrics.metricsEnabled())
                 metrics.onWallRollOver();
 
+            if (switchSegmentRecordOffset != null) {
+                int idx = (int)((cur.getSegmentId() + 1) % dsCfg.getWalSegments());
+
+                switchSegmentRecordOffset.set(idx, hnd.getSwitchSegmentRecordOffset());
+            }
+
             FileWriteHandle next = initNextWriteHandle(cur);
 
             next.writeHeader();
@@ -1307,6 +1320,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileWriteHandle hnd;
 
             boolean interrupted = false;
+
+            if (switchSegmentRecordOffset != null)
+                switchSegmentRecordOffset.set((int)((cur.getSegmentId() + 1) % dsCfg.getWalSegments()), 0);
 
             while (true) {
                 try {
@@ -1788,7 +1804,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 Files.deleteIfExists(dstTmpFile.toPath());
 
-                Files.copy(origFile.toPath(), dstTmpFile.toPath());
+                boolean copied = false;
+
+                if (switchSegmentRecordOffset != null) {
+                    long offs = switchSegmentRecordOffset.get((int)segIdx);
+
+                    if (offs > 0) {
+                        switchSegmentRecordOffset.set((int)segIdx, 0);
+
+                        if (offs < origFile.length()) {
+                            GridFileUtils.copy(ioFactory, origFile, ioFactory, dstTmpFile, offs);
+
+                            copied = true;
+                        }
+                    }
+                }
+
+                if (!copied)
+                    Files.copy(origFile.toPath(), dstTmpFile.toPath());
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 

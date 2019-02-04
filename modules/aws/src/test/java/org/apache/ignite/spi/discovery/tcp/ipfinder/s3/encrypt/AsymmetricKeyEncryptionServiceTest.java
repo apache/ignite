@@ -30,13 +30,10 @@ import java.util.Base64;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Contains tests for {@link AsymmetricKeyEncryptionService}.
  */
-@RunWith(JUnit4.class)
 public class AsymmetricKeyEncryptionServiceTest extends GridCommonAbstractTest {
     /** Asymmetric key encryption service. */
     private AsymmetricKeyEncryptionService encryptionSvc;

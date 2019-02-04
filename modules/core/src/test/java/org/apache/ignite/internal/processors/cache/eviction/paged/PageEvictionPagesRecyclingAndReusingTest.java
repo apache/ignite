@@ -30,13 +30,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstractTest {
     /** Test timeout. */
     private static final long TEST_TIMEOUT = 10 * 60 * 1000;

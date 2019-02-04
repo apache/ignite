@@ -19,13 +19,10 @@ package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test REST with enabled authentication and token.
  */
-@RunWith(JUnit4.class)
 public class JettyRestProcessorAuthenticationWithTokenSelfTest extends JettyRestProcessorAuthenticationAbstractTest {
     /** */
     private String tok = "";

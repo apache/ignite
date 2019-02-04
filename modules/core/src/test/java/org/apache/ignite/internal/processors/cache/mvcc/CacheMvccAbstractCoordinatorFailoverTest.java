@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
@@ -31,7 +28,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Mvcc cache API coordinator failover test.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvccAbstractBasicCoordinatorFailoverTest {
     /**
      * @throws Exception If failed.
@@ -56,7 +52,6 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testAccountsTxScan_Server_Backups0_CoordinatorFails() throws Exception {
         accountsTxReadAll(2, 0, 0, 64,
