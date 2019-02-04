@@ -294,13 +294,16 @@ public final class UpdatePlanBuilder {
             colTypes[i] = col.resultType().type();
 
             int colId = col.column().getColumnId();
+
             if (desc.isKeyColumn(colId)) {
                 keyColIdx = i;
+
                 continue;
             }
 
             if (desc.isValueColumn(colId)) {
                 valColIdx = i;
+
                 continue;
             }
 
