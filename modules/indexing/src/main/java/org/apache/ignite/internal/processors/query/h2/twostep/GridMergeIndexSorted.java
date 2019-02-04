@@ -32,6 +32,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -49,7 +50,6 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyIterator;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase.bubbleUp;
 
 /**
  * Sorted index.
@@ -258,7 +258,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
                 return; // All streams are done.
 
             if (streams[off].next())
-                bubbleUp(streams, off, streamCmp);
+                H2Utils.bubbleUp(streams, off, streamCmp);
             else
                 streams[off++] = null; // Move left bound and nullify empty stream.
         }
