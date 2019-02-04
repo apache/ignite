@@ -127,7 +127,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         if (nearEnabled())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         backups = DFLT_BACKUPS;
         partitions = DFLT_PARTITIONS;
