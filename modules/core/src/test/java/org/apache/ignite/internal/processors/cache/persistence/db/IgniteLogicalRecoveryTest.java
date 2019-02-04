@@ -258,7 +258,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10582")
     @Test
     public void testRecoveryWithMvccCaches() throws Exception {
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
