@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -102,7 +103,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
         IndexingQueryCacheFilter filter = null;
         MvccSnapshot mvccSnapshot = null;
 
-        GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
+        GridH2QueryContext qctx = QueryContextRegistry.getThreadLocal();
 
         int seg = 0;
 

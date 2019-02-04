@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -172,7 +173,7 @@ public class GridMapQueryExecutor {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                GridH2QueryContext.clearSharedOnNodeLeave(locNodeId, nodeId);
+                QueryContextRegistry.clearSharedOnRemoteNodeLeave(locNodeId, nodeId);
 
                 MapNodeResults nodeRess = qryRess.remove(nodeId);
 
@@ -267,12 +268,12 @@ public class GridMapQueryExecutor {
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
-        boolean clear = GridH2QueryContext.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
+        boolean clear = QueryContextRegistry.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
 
         if (!clear) {
             nodeRess.onCancel(qryReqId);
 
-            GridH2QueryContext.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
+            QueryContextRegistry.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
         }
 
         nodeRess.cancelRequest(qryReqId);
@@ -875,17 +876,17 @@ public class GridMapQueryExecutor {
 
             H2Utils.setupConnection(conn, distributeJoins, enforceJoinOrder);
 
-            GridH2QueryContext.setThreadLocal(qctx);
+            QueryContextRegistry.setThreadLocal(qctx);
 
             if (distributedJoinCtx != null)
-                GridH2QueryContext.setShared(qctx);
+                QueryContextRegistry.setShared(qctx);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
 
             try {
                 if (nodeRess.cancelled(reqId)) {
-                    GridH2QueryContext.clearShared(ctx.localNodeId(), node.id(), reqId, MAP);
+                    QueryContextRegistry.clearShared(ctx.localNodeId(), node.id(), reqId, MAP);
 
                     nodeRess.cancelRequest(reqId);
 
@@ -1074,10 +1075,10 @@ public class GridMapQueryExecutor {
      * Releases reserved partitions.
      */
     private void releaseReservations() {
-        GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
+        GridH2QueryContext qctx = QueryContextRegistry.getThreadLocal();
 
         if (qctx != null) { // No-op if already released.
-            GridH2QueryContext.clearThreadLocal();
+            QueryContextRegistry.clearThreadLocal();
 
             if (qctx.distributedJoinContext() == null)
                 qctx.clearContext(false);

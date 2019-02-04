@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
@@ -36,12 +34,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  * Thread local SQL query context which is intended to be accessible from everywhere.
  */
 public class GridH2QueryContext {
-    /** */
-    private static final ThreadLocal<GridH2QueryContext> qctx = new ThreadLocal<>();
-
-    /** */
-    private static final ConcurrentMap<QueryContextKey, GridH2QueryContext> qctxs = new ConcurrentHashMap<>();
-
     /** */
     private final QueryContextKey key;
 
@@ -93,6 +85,13 @@ public class GridH2QueryContext {
     }
 
     /**
+     * @return Key.
+     */
+    public QueryContextKey key() {
+        return key;
+    }
+
+    /**
      * @return Mvcc snapshot.
      */
     @Nullable public MvccSnapshot mvccSnapshot() {
@@ -114,87 +113,6 @@ public class GridH2QueryContext {
     }
 
     /**
-     * Sets current thread local context. This method must be called when all the non-volatile properties are
-     * already set to ensure visibility for other threads.
-     *
-     * @param x Query context.
-     */
-    public static void setThreadLocal(GridH2QueryContext x) {
-        assert qctx.get() == null;
-
-        qctx.set(x);
-    }
-
-    /**
-     * Sets current thread local context. This method must be called when all the non-volatile properties are
-     * already set to ensure visibility for other threads.
-     *
-     * @param ctx Query context.
-     */
-    public static void setShared(GridH2QueryContext ctx) {
-        assert ctx.key.type() == MAP;
-        assert ctx.distributedJoinContext() != null;
-
-        GridH2QueryContext oldCtx = qctxs.putIfAbsent(ctx.key, ctx);
-
-        assert oldCtx == null;
-    }
-
-    /**
-     * Drops current thread local context.
-     */
-    public static void clearThreadLocal() {
-        assert qctx.get() != null;
-
-        qctx.remove();
-    }
-
-    /**
-     * @param locNodeId Local node ID.
-     * @param nodeId The node who initiated the query.
-     * @param qryId The query ID.
-     * @param type Query type.
-     * @return {@code True} if context was found.
-     */
-    public static boolean clearShared(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
-        boolean res = false;
-
-        for (QueryContextKey key : qctxs.keySet()) {
-            if (key.localNodeId().equals(locNodeId) &&
-                key.nodeId().equals(nodeId) &&
-                key.queryId() == qryId &&
-                key.type() == type
-            )
-                res |= doClear(key, false);
-        }
-
-        return res;
-    }
-
-    /**
-     * @param key Context key.
-     * @param nodeStop Node is stopping.
-     * @return {@code True} if context was found.
-     */
-    private static boolean doClear(QueryContextKey key, boolean nodeStop) {
-        assert key.type() == MAP : key.type();
-
-        GridH2QueryContext x = qctxs.remove(key);
-
-        if (x == null)
-            return false;
-
-        assert x.key.equals(key);
-
-        if (x.lazyWorker() != null)
-            x.lazyWorker().stop(nodeStop);
-        else
-            x.clearContext(nodeStop);
-
-        return true;
-    }
-
-    /**
      * @param nodeStop Node is stopping.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -208,56 +126,6 @@ public class GridH2QueryContext {
             for (int i = 0; i < r.size(); i++)
                 r.get(i).release();
         }
-    }
-
-    /**
-     * @param locNodeId Local node ID.
-     * @param nodeId Dead node ID.
-     */
-    public static void clearSharedOnNodeLeave(UUID locNodeId, UUID nodeId) {
-        for (QueryContextKey key : qctxs.keySet()) {
-            if (key.localNodeId().equals(locNodeId) && key.nodeId().equals(nodeId))
-                doClear(key, false);
-        }
-    }
-
-    /**
-     * @param locNodeId Local node ID.
-     */
-    public static void clearSharedOnLocalNodeStop(UUID locNodeId) {
-        for (QueryContextKey key : qctxs.keySet()) {
-            if (key.localNodeId().equals(locNodeId))
-                doClear(key, true);
-        }
-    }
-
-    /**
-     * Access current thread local query context (if it was set).
-     *
-     * @return Current thread local query context or {@code null} if the query runs outside of Ignite context.
-     */
-    @Nullable public static GridH2QueryContext getThreadLocal() {
-        return qctx.get();
-    }
-
-    /**
-     * Access query context from another thread.
-     *
-     * @param locNodeId Local node ID.
-     * @param nodeId The node who initiated the query.
-     * @param qryId The query ID.
-     * @param segmentId Index segment ID.
-     * @param type Query type.
-     * @return Query context.
-     */
-    @Nullable public static GridH2QueryContext getShared(
-        UUID locNodeId,
-        UUID nodeId,
-        long qryId,
-        int segmentId,
-        GridH2QueryType type
-    ) {
-        return qctxs.get(new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type));
     }
 
     /**

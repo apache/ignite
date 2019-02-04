@@ -94,6 +94,7 @@ import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -639,9 +640,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return new GridQueryFieldsResultAdapter(meta, null) {
                 @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
-                    assert GridH2QueryContext.getThreadLocal() == null;
+                    assert QueryContextRegistry.getThreadLocal() == null;
 
-                    GridH2QueryContext.setThreadLocal(qctx);
+                    QueryContextRegistry.setThreadLocal(qctx);
 
                     ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = connMgr.detachThreadConnection();
 
@@ -715,7 +716,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         throw e;
                     }
                     finally {
-                        GridH2QueryContext.clearThreadLocal();
+                        QueryContextRegistry.clearThreadLocal();
                     }
                 }
             };
@@ -2555,7 +2556,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         mapQryExec.cancelLazyWorkers();
 
-        GridH2QueryContext.clearSharedOnLocalNodeStop(nodeId);
+        QueryContextRegistry.clearSharedOnLocalNodeLeave(nodeId);
 
         runningQueryMgr.stop();
         schemaMgr.stop();

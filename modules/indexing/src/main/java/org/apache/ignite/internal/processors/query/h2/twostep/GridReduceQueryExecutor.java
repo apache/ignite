@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -773,7 +774,7 @@ public class GridReduceQueryExecutor {
                             null
                         );
 
-                        GridH2QueryContext.setThreadLocal(qctx);
+                        QueryContextRegistry.setThreadLocal(qctx);
 
                         try {
                             if (qry.explain())
@@ -793,7 +794,7 @@ public class GridReduceQueryExecutor {
                             mvccTracker = null; // To prevent callback inside finally block;
                         }
                         finally {
-                            GridH2QueryContext.clearThreadLocal();
+                            QueryContextRegistry.clearThreadLocal();
                         }
                     }
                 }

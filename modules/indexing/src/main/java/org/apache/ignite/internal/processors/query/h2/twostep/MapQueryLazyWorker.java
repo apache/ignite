@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
@@ -133,12 +134,12 @@ public class MapQueryLazyWorker extends GridWorker {
                 }
             });
         else {
-            GridH2QueryContext qctx = GridH2QueryContext.getThreadLocal();
+            GridH2QueryContext qctx = QueryContextRegistry.getThreadLocal();
 
             if (qctx != null) {
                 qctx.clearContext(nodeStop);
 
-                GridH2QueryContext.clearThreadLocal();
+                QueryContextRegistry.clearThreadLocal();
             }
 
             isCancelled = true;
