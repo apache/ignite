@@ -1209,7 +1209,8 @@ public class GridReduceQueryExecutor {
             specialize,
             locNodeHnd,
             GridIoPolicy.QUERY_POOL,
-            runLocParallel);
+            runLocParallel
+        );
     }
 
     /**
