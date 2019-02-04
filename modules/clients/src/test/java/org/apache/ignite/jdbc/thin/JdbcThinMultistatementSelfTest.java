@@ -19,6 +19,7 @@ package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
 import java.sql.Statement;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -29,13 +30,19 @@ import org.junit.Test;
 public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "false");
+        
         startGrids(2);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
+    /**
+     * Execute sql script using thin driver.
+     */
     private void execute(String sql) throws Exception {
         try (Connection c = GridTestUtils.connect(grid(0), null)) {
             try (Statement stmt = c.createStatement()) {
@@ -45,8 +52,11 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Assert that script containing both h2 and non h2 (native) sql statements is handled correctly.
+     */
     @Test
-    public void testCreateManyIndexes() throws Exception{
+    public void testMixedCommands() throws Exception{
         execute("CREATE TABLE public.transactions (pk INT, id INT, k VARCHAR, v VARCHAR, PRIMARY KEY (pk, id)); " +
             "CREATE INDEX transactions_id_k_v ON public.transactions (id, k, v) INLINE_SIZE 150; " +
             "INSERT INTO public.transactions VALUES (1,2,'some', 'word') ; " +
@@ -54,6 +64,9 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
             "CREATE INDEX transactions_pk_id ON public.transactions (pk, id) INLINE_SIZE 20;");
     }
 
+    /**
+     * Sanity test for scripts, containing empty statements are handled correctly.
+     */
     @Test
     public void testEmptyStatements() throws Exception {
         execute(";; ;;;;");
