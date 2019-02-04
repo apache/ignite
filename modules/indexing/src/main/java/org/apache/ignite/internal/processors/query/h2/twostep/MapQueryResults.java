@@ -25,8 +25,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
-
 /**
  * Mapper query results.
  */
@@ -232,7 +230,7 @@ class MapQueryResults {
     public void release() {
         GridH2QueryContext.clearThreadLocal();
 
-        if (qctx.distributedJoinMode() == OFF)
+        if (qctx.distributedJoinContext() == null)
             qctx.clearContext(false);
     }
 }

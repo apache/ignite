@@ -76,7 +76,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         for (int i = 0; i < GRID_CNT; i++) {
             assert near(grid(i)).size() == 0 : "Near cache size is not zero for grid: " + i;

@@ -963,7 +963,7 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteString(label);
             });
             
-            return new TransactionsImpl(this, platformTargetInternal, GetLocalNode().Id);
+            return new TransactionsImpl(this, platformTargetInternal, GetLocalNode().Id, label);
         }
 
         /// <summary>
