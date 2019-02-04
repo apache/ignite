@@ -151,7 +151,7 @@ public class MvccDataRow extends DataRow {
         this.mvccCntr = mvccVer.counter();
         this.mvccOpCntr = mvccVer.operationCounter();
 
-        assert (mvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+        assert (mvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0 : mvccOpCntr;
 
         if (newMvccVer == null) {
             newMvccCrd = MVCC_CRD_COUNTER_NA;
@@ -163,7 +163,7 @@ public class MvccDataRow extends DataRow {
             newMvccCntr = newMvccVer.counter();
             newMvccOpCntr = newMvccVer.operationCounter();
 
-            assert (newMvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+            assert (newMvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0 : newMvccOpCntr;
         }
     }
 
@@ -233,8 +233,6 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public int newMvccOperationCounter() {
-        assert (newMvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
-
         return newMvccOpCntr;
     }
 
@@ -245,7 +243,7 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public void newMvccVersion(long crd, long cntr, int opCntr) {
-        assert (opCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+        assert (opCntr & ~MVCC_OP_COUNTER_MASK) == 0 : opCntr;
 
         newMvccCrd = crd;
         newMvccCntr = cntr;
@@ -257,7 +255,7 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public void mvccVersion(long crd, long cntr, int opCntr) {
-        assert (opCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+        assert (opCntr & ~MVCC_OP_COUNTER_MASK) == 0 : opCntr;
 
         mvccCrd = crd;
         mvccCntr = cntr;
