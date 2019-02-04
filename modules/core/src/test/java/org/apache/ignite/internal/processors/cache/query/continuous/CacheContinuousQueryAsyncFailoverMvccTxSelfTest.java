@@ -16,10 +16,12 @@
  */
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.Arrays;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -27,6 +29,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class CacheContinuousQueryAsyncFailoverMvccTxSelfTest  extends CacheContinuousQueryFailoverAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -44,9 +47,21 @@ public class CacheContinuousQueryAsyncFailoverMvccTxSelfTest  extends CacheConti
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
-    @Test
+    //@Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
+    //@Test
     @Override public void testBackupQueueEvict() throws Exception {
         // No-op.
+    }
+
+    @Parameterized.Parameters
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[60][0]);
+    }
+
+    /** {@inheritDoc} */
+   // @Ignore("https://issues.apache.org/jira/browse/IGNITE-11148")
+    @Test
+    @Override public void testMultiThreadedFailover() throws Exception {
+       super.testMultiThreadedFailover();
     }
 }

@@ -4272,6 +4272,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     return t;
                 }
                 catch (IgniteInterruptedCheckedException | IgniteTxHeuristicCheckedException | NodeStoppingException e) {
+                    // TODO rollback could tx here.
+
+                    log.error("===== Unaborted tx.", e);
+
                     throw e;
                 }
                 catch (IgniteCheckedException e) {

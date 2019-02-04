@@ -17,16 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverMvccTxSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverTxSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverAtomicReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverMvccTxReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverMvccTxSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -36,16 +27,16 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     // Continuous queries failover tests.
-    CacheContinuousQueryFailoverAtomicSelfTest.class,
-    CacheContinuousQueryFailoverAtomicReplicatedSelfTest.class,
-    CacheContinuousQueryFailoverTxSelfTest.class,
-    CacheContinuousQueryFailoverTxReplicatedSelfTest.class,
-    CacheContinuousQueryFailoverMvccTxSelfTest.class,
-    CacheContinuousQueryFailoverMvccTxReplicatedSelfTest.class,
-
-    CacheContinuousQueryAsyncFailoverAtomicSelfTest.class,
-    CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class,
-    CacheContinuousQueryAsyncFailoverTxSelfTest.class,
+//    CacheContinuousQueryFailoverAtomicSelfTest.class,
+//    CacheContinuousQueryFailoverAtomicReplicatedSelfTest.class,
+//    CacheContinuousQueryFailoverTxSelfTest.class,
+//    CacheContinuousQueryFailoverTxReplicatedSelfTest.class,
+//    CacheContinuousQueryFailoverMvccTxSelfTest.class,
+//    CacheContinuousQueryFailoverMvccTxReplicatedSelfTest.class,
+//
+//    CacheContinuousQueryAsyncFailoverAtomicSelfTest.class,
+//    CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class,
+//    CacheContinuousQueryAsyncFailoverTxSelfTest.class,
     CacheContinuousQueryAsyncFailoverMvccTxSelfTest.class
 })
 public class IgniteCacheQuerySelfTestSuite4 {
