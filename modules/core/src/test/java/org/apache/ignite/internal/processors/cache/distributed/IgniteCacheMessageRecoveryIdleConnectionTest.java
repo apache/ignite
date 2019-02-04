@@ -30,6 +30,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -120,7 +121,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
 
             int iter = 0;
 
-            long stopTime = System.currentTimeMillis() + 90_000;
+            long stopTime = System.currentTimeMillis() + GridTestUtils.SF.apply(90_000);
 
             while (System.currentTimeMillis() < stopTime) {
                 if (iter++ % 50 == 0)
@@ -149,7 +150,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
             }
         }
         finally {
-            ignite(0).destroyCache(ccfg.getName());
+            ignite(0).destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 }

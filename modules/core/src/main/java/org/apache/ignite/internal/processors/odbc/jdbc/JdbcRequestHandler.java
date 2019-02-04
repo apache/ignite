@@ -69,6 +69,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
@@ -1070,6 +1072,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return resulting {@link JdbcResponse}.
      */
     private JdbcResponse exceptionToResult(Exception e) {
+        if (e instanceof TransactionSerializationException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, e.getMessage());
+        if (e instanceof TransactionDuplicateKeyException)
+            return new JdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, e.getMessage());
+        if (e instanceof MvccUtils.NonMvccTransactionException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, e.getMessage());
+        if (e instanceof MvccUtils.UnsupportedTxModeException)
+            return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, e.getMessage());
         if (e instanceof IgniteSQLException)
             return new JdbcResponse(((IgniteSQLException) e).statusCode(), e.getMessage());
         else

@@ -15,35 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.transactions;
+package org.apache.ignite.transactions;
 
 /**
- * Exception thrown whenever grid transaction enters an unknown state.
- * This exception is usually thrown whenever commit partially succeeds.
- * Cache will still resolve this situation automatically to ensure data
- * integrity, by invalidating all values participating in this transaction
- * on remote nodes.
+ * Exception thrown whenever transaction tries to inserts entry with same mvcc version more than once.
  */
-public class IgniteTxHeuristicCheckedException extends TransactionCheckedException {
+public class TransactionDuplicateKeyException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new heuristic exception with given error message.
+     * Creates new duplicate ket exception with given error message.
      *
-     * @param msg Error message.
+     * @param msg Error message.\
+     * @param cause Optional nested exception (can be {@code null}).
      */
-    public IgniteTxHeuristicCheckedException(String msg) {
-        super(msg);
+    public TransactionDuplicateKeyException(String msg, Exception cause) {
+        super(msg, cause);
     }
 
     /**
-     * Creates new heuristic exception with given error message and optional nested exception.
+     * Creates new duplicate ket exception with given error message.
      *
      * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public IgniteTxHeuristicCheckedException(String msg, Throwable cause) {
-        super(msg, cause);
+    public TransactionDuplicateKeyException(String msg) {
+        super(msg);
     }
 }

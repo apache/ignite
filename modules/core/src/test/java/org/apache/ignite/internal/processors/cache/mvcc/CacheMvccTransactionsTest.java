@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import javax.cache.processor.EntryProcessorException;
@@ -90,6 +91,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -1789,8 +1791,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int cacheParts,
         ReadMode readMode
     ) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         final int ACCOUNTS = 20;
 
         final int ACCOUNT_START_VAL = 1000;
@@ -1864,6 +1864,12 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                                 cache.cache.put(id2, new MvccTestAccount(a2.val - 1, 1));
 
                                 tx.commit();
+                            }
+                            catch (CacheException ex) {
+                                if (ex.getCause() instanceof TransactionSerializationException)
+                                    continue;
+
+                                throw ex;
                             }
                         }
                         finally {
@@ -2214,6 +2220,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                                 tx.commit();
                             }
                             catch (Exception e) {
+                                if (e.getCause() instanceof TransactionSerializationException)
+                                    continue;
+
                                 Assert.assertTrue("Unexpected error: " + e, X.hasCause(e, ClusterTopologyException.class));
                             }
                         }
@@ -2952,8 +2961,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int cacheBackups,
         int cacheParts,
         long time) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         final int KEYS_PER_PART = 20;
 
         final int writers = 4;
@@ -3044,6 +3051,12 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                             cache.cache.put(k2, new MvccTestAccount(acc2.val - 1, acc2.updateCnt + 1));
 
                             tx.commit();
+                        }
+                        catch (CacheException ex) {
+                            if (ex.getCause() instanceof TransactionSerializationException)
+                                continue;
+
+                            throw ex;
                         }
                         finally {
                             cache.readUnlock();
