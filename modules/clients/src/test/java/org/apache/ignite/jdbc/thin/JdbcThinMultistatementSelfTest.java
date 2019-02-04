@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
 import java.sql.Statement;
@@ -26,7 +26,7 @@ import org.junit.Test;
 /**
  * Tests for ddl queries that contain multiply sql statements, separated by ";".
  */
-public class IgniteCacheSqlDdlMultistatementSelfTest extends GridCommonAbstractTest {
+public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
         startGrids(2);
