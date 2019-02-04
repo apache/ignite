@@ -54,9 +54,6 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
  * Index base.
  */
 public abstract class GridH2IndexBase extends BaseIndex {
-    /** */
-    public static final Object EXPLICIT_NULL = new Object();
-
     /** {@inheritDoc} */
     @Override public final void close(Session ses) {
         // No-op. Actual index destruction must happen in method destroy.
