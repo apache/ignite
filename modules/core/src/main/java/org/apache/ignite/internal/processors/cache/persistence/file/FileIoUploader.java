@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static java.nio.file.StandardOpenOption.READ;
 
 /** */
-public class FileIoUploader extends AbstractFileIoConnector {
+public class FileIoUploader extends AbstractFileInterplayer {
     /** */
     private static final int CHUNK_SIZE = 1024 * 1024;
 

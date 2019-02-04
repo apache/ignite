@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.compact;
 
 /**
  *
@@ -152,7 +153,7 @@ public class GridDhtPartitionDownloader {
 
         U.log(log, "Handle created channel [grp=" + grp.cacheOrGroupName() +
             ", channel=" + channel + ", grpDir=" + grpDir + ", rmtId=" + rmtId +
-            ", parts=" + parts + ']');
+            ", parts=" + compact(parts) + ']');
 
         try {
             File out = new File(grpDir, "downloads");
@@ -180,9 +181,15 @@ public class GridDhtPartitionDownloader {
             }
 
             downloader.close();
+
+            downloadFut.onDone();
+
+            // Todo Merge partition files.
         }
         catch (Exception e) {
             log.error("Download process terminated unexpectedly.", e);
+
+            downloadFut.onDone(e);
         }
         finally {
             U.closeQuiet(channel);

@@ -28,7 +28,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 /** */
-public class FileIoDownloader extends AbstractFileIoConnector {
+public class FileIoDownloader extends AbstractFileInterplayer {
     /** */
     private final File downloadDir;
 
@@ -66,6 +66,7 @@ public class FileIoDownloader extends AbstractFileIoConnector {
             }
         }
 
+        // Todo should be send ack
         writeFileMeta(ioMeta.get1(), ioMeta.get2());
 
         return file;

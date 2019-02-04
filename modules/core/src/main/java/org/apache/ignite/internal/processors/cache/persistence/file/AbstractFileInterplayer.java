@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -28,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public abstract class AbstractFileIoConnector implements AutoCloseable {
+public abstract class AbstractFileInterplayer implements AutoCloseable {
     /** */
     protected final SocketChannel channel;
 
@@ -45,14 +43,14 @@ public abstract class AbstractFileIoConnector implements AutoCloseable {
     private final DataOutputStream dos;
 
     /** */
-    protected AbstractFileIoConnector(
+    protected AbstractFileInterplayer(
         SocketChannel channel,
         FileIOFactory factory,
         IgniteLogger log
     ) throws IOException {
         this.channel = channel;
-        this.dis = new DataInputStream(new BufferedInputStream(channel.socket().getInputStream()));
-        this.dos = new DataOutputStream(new BufferedOutputStream(channel.socket().getOutputStream()));
+        this.dis = new DataInputStream(channel.socket().getInputStream());
+        this.dos = new DataOutputStream(channel.socket().getOutputStream());
         this.factory = factory;
         this.log = log;
     }
@@ -67,7 +65,7 @@ public abstract class AbstractFileIoConnector implements AutoCloseable {
         String name = dis.readUTF();
         Long size = dis.readLong();
 
-        // CRC32 ?
+        // Todo CRC32 ?
 
         if (name == null || size == null)
             throw new IOException("Unable to recieve file metadata from the remote node.");
@@ -88,23 +86,25 @@ public abstract class AbstractFileIoConnector implements AutoCloseable {
         dos.writeUTF(name);
         dos.writeLong(size);
 
+        // Todo CRC32 ?
+
         dos.flush();
     }
 
     /** */
-    public void sendFileIoAck() {
+    public void readAck() {
 
     }
 
     /** */
-    public void receiveFileIoAck() {
+    public void writeAck() {
 
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        channel.close();
         dos.close();
         dis.close();
+        channel.close();
     }
 }
