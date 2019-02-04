@@ -358,4 +358,11 @@ public class SqlParser {
     public String remainingSql() {
         return lex.remainingSql();
     }
+
+    /**
+     * Already processed sql statement(s).
+     */
+    public String processedSql(){
+        return lex.processedSql();
+    }
 }

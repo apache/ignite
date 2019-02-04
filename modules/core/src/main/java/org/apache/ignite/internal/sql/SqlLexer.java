@@ -252,4 +252,14 @@ public class SqlLexer implements SqlLexerToken {
 
         return sql.substring(pos);
     }
+
+    /**
+     * Returns already processed part of the query or {@code null} if we at the start point.
+     */
+    public String processedSql() {
+        if (pos == 0)
+            return null;
+
+        return sql.substring(0, pos);
+    }
 }

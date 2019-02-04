@@ -18,6 +18,8 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -33,6 +35,16 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
         System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "false");
         
         startGrids(2);
+
+        execute("CREATE TABLE TEST_TX " +
+            "(ID INT PRIMARY KEY, AGE INT, NAME VARCHAR) " +
+            "WITH \"atomicity=transactional_snapshot\";");
+
+        execute("INSERT INTO TEST_TX VALUES " +
+            "(1, 17, 'James'), " +
+            "(2, 43, 'Valery'), " +
+            "(3, 25, 'Michel'), " +
+            "(4, 19, 'Nick');");
     }
 
     /** {@inheritDoc} */
@@ -73,5 +85,40 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
         execute(" ;; ;;;; ");
         execute("CREATE TABLE ONE (id INT PRIMARY KEY, VAL VARCHAR);;;;UPDATE ONE SET VAL = 'SOME';;;  ");
         execute("CREATE TABLE TWO (id INT PRIMARY KEY, VAL VARCHAR);;  ;;UPDATE TWO SET VAL = 'SOME'");
+    }
+
+    @Test
+    public void testMultiStatement() throws Exception {
+        String complexQueryBegin =
+            "INSERT INTO TEST_TX VALUES (5, 28, 'Leo'); " +
+                "BEGIN; " +
+                "UPDATE TEST_TX  SET name = 'Nickolas' WHERE name = 'Nick';" +
+                "SELECT * FROM TEST_TX WHERE name = 'Michel'; ";
+
+
+
+        try (Connection c = GridTestUtils.connect(grid(0), null)) {
+            try (PreparedStatement p = c.prepareStatement(complexQueryBegin + "COMMIT;")) {
+                p.execute();
+
+                assertTrue("Expected update count of the INSERT.", p.getUpdateCount() != -1);
+                assertTrue("Expected update count of the BEGIN", p.getUpdateCount() != -1);
+                assertTrue("Expected update count of the UPDATE", p.getUpdateCount() != -1);
+                assertTrue("Expected result set of the SELECT", p.getMoreResults());
+                try (ResultSet sel = p.getResultSet()) {
+                    assertTrue(sel.next());
+
+                    int age = sel.getInt("AGE");
+
+                    assertEquals("25", age);
+                }
+
+               assertTrue("Expected update count of the COMMIT", p.getUpdateCount() != -1);
+
+                boolean hasMore = !p.getMoreResults() && p.getUpdateCount() != -1;
+                
+                assertTrue("There should have been no results.", hasMore);
+            }
+        }
     }
 }

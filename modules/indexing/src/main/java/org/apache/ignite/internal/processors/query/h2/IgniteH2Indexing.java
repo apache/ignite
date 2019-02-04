@@ -1277,7 +1277,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 || leadingCmd instanceof SqlDropUserCommand))
                 return NOT_YET_SUPPORTED;
 
-            return new NativeParsingResult(leadingCmd, parser.remainingSql());
+            SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.processedSql());
+            return new NativeParsingResult(leadingCmd, newQry, parser.remainingSql());
         }
         catch (SqlStrictParseException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
@@ -1483,13 +1484,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** Parsed leading command. */
         private final SqlCommand newCmd;
 
+        /** Query that {@linkplain #newCmd} represents. */
+        private final SqlFieldsQuery newQry;
+
         /** The rest of the sql script */
         private final String remainingSql;
 
         /** Constructs parsing result. */
-        public NativeParsingResult(SqlCommand newCmd, String remainingSql) {
+        public NativeParsingResult(SqlCommand newCmd, SqlFieldsQuery newQry, String remainingSql) {
             assert !(newCmd == null && remainingSql != null);
 
+            this.newQry = newQry;
             this.newCmd = newCmd;
             this.remainingSql = remainingSql;
         }
@@ -1509,10 +1514,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /**
+         * Sql query that {@linkplain #newCmd} represents.
+         */
+        public SqlFieldsQuery newQry() {
+            return newQry;
+        }
+
+        /**
          * Create parsing result in case parser met
          */
         public static NativeParsingResult eof() {
-            return new NativeParsingResult(null, null);
+            return new NativeParsingResult(null, null,null);
         }
 
         /**
@@ -1615,8 +1627,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         if (remainingSql != null && failOnMultipleStmts)
                             throw new IgniteSQLException("Multiple statements queries are not supported");
 
+                        assert parsed.newQry().getSql() != null;
 
-                        curStmtRes = queryDistributedSqlFieldsNative(schemaName, qry, nativeCmd, cliCtx);
+                        curStmtRes = queryDistributedSqlFieldsNative(schemaName, parsed.newQry(), nativeCmd, cliCtx);
                     }
                 }
 
