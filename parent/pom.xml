@@ -77,6 +77,7 @@
         <httpcore.version>4.4.3</httpcore.version>
         <jackson.version>2.9.6</jackson.version>
         <jackson1.version>1.9.13</jackson1.version>
+        <jaxb.api.version>2.1</jaxb.api.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
