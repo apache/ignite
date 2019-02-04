@@ -177,9 +177,10 @@ public class MvccDataRow extends DataRow {
 
         mvccOpCntr = withHint & MVCC_OP_COUNTER_MASK;
         mvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
-        keyAbsentFlag = (withHint & MVCC_KEY_ABSENT_BEFORE_MASK) != 0;
 
         assert MvccUtils.mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
+
+        keyAbsentFlag = (withHint & MVCC_KEY_ABSENT_BEFORE_MASK) != 0;
 
         // xid_max.
         newMvccCrd = PageUtils.getLong(addr, off + 20);
@@ -190,8 +191,10 @@ public class MvccDataRow extends DataRow {
         newMvccOpCntr = withHint & MVCC_OP_COUNTER_MASK;
         newMvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
 
-        assert (newMvccOpCntr & MVCC_KEY_ABSENT_BEFORE_MASK) == 0 : newMvccOpCntr;
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
+
+        if (newMvccCrd != MVCC_CRD_COUNTER_NA)
+            keyAbsentFlag = (withHint & MVCC_KEY_ABSENT_BEFORE_MASK) != 0;
 
         return MVCC_INFO_SIZE;
     }
@@ -242,6 +245,8 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public void newMvccVersion(long crd, long cntr, int opCntr) {
+        assert (opCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+
         newMvccCrd = crd;
         newMvccCntr = cntr;
         newMvccOpCntr = opCntr;
@@ -252,6 +257,8 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public void mvccVersion(long crd, long cntr, int opCntr) {
+        assert (opCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+
         mvccCrd = crd;
         mvccCntr = cntr;
         mvccOpCntr = opCntr;
