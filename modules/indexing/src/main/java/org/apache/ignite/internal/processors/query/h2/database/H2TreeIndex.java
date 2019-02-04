@@ -148,6 +148,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
         }
     };
 
+    /** Query context registry. */
+    private final QueryContextRegistry qryCtxRegistry;
+
     /**
      * @param cctx Cache context.
      * @param rowCache Row cache.
@@ -159,6 +162,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param wrappedColsList Index columns as is.
      * @param inlineSize Inline size.
      * @param segmentsCnt Count of tree segments.
+     * @param qryCtxRegistry Query context registry.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("MapReplaceableByEnumMap")
@@ -172,7 +176,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
         List<IndexColumn> unwrappedColsList,
         List<IndexColumn> wrappedColsList,
         int inlineSize,
-        int segmentsCnt
+        int segmentsCnt,
+        QueryContextRegistry qryCtxRegistry
     ) throws IgniteCheckedException {
         assert segmentsCnt > 0 : segmentsCnt;
 
@@ -189,6 +194,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         this.idxName = idxName;
 
         this.table = table;
+        this.qryCtxRegistry = qryCtxRegistry;
 
         GridQueryTypeDescriptor typeDesc = table.rowDescriptor().type();
 
@@ -683,7 +689,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         res.segment(msg.segment());
         res.batchLookupId(msg.batchLookupId());
 
-        GridH2QueryContext qctx = QueryContextRegistry.getShared(
+        GridH2QueryContext qctx = qryCtxRegistry.getShared(
             ctx.localNodeId(),
             msg.originNodeId(),
             msg.queryId(),
@@ -763,7 +769,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param msg Response message.
      */
     private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
-        GridH2QueryContext qctx = QueryContextRegistry.getShared(
+        GridH2QueryContext qctx = qryCtxRegistry.getShared(
             ctx.localNodeId(),
             msg.originNodeId(),
             msg.queryId(),

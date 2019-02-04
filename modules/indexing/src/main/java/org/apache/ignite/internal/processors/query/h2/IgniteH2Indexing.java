@@ -245,6 +245,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Cache object value context. */
     protected CacheQueryObjectValueContext valCtx;
 
+    /** Query context registry. */
+    private final QueryContextRegistry qryCtxRegistry = new QueryContextRegistry();
+
     /** */
     private DmlStatementsProcessor dmlProc;
 
@@ -421,7 +424,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     unwrappedCols,
                     wrappedCols,
                     inlineSize,
-                    segments
+                    segments,
+                    qryCtxRegistry
                 );
             }
             else
@@ -2556,7 +2560,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         mapQryExec.cancelLazyWorkers();
 
-        QueryContextRegistry.clearSharedOnLocalNodeLeave(nodeId);
+        qryCtxRegistry.clearSharedOnLocalNodeLeave(nodeId);
 
         runningQueryMgr.stop();
         schemaMgr.stop();
@@ -2717,6 +2721,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         mapQryExec.cancelLazyWorkers();
 
         connMgr.onKernalStop();
+    }
+
+    /**
+     * @return Query context registry.
+     */
+    public QueryContextRegistry queryContextRegistry() {
+        return qryCtxRegistry;
     }
 
     /**

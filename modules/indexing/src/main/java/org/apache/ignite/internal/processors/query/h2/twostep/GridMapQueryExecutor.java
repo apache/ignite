@@ -131,6 +131,9 @@ public class GridMapQueryExecutor {
     /** */
     private IgniteH2Indexing h2;
 
+    /** Query context registry. */
+    private QueryContextRegistry qryCtxRegistry;
+
     /** */
     private ConcurrentMap<UUID, MapNodeResults> qryRess = new ConcurrentHashMap<>();
 
@@ -165,6 +168,8 @@ public class GridMapQueryExecutor {
         this.ctx = ctx;
         this.h2 = h2;
 
+        qryCtxRegistry = h2.queryContextRegistry();
+
         log = ctx.log(GridMapQueryExecutor.class);
 
         final UUID locNodeId = ctx.localNodeId();
@@ -173,7 +178,7 @@ public class GridMapQueryExecutor {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                QueryContextRegistry.clearSharedOnRemoteNodeLeave(locNodeId, nodeId);
+                qryCtxRegistry.clearSharedOnRemoteNodeLeave(locNodeId, nodeId);
 
                 MapNodeResults nodeRess = qryRess.remove(nodeId);
 
@@ -268,12 +273,12 @@ public class GridMapQueryExecutor {
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
-        boolean clear = QueryContextRegistry.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
+        boolean clear = qryCtxRegistry.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
 
         if (!clear) {
             nodeRess.onCancel(qryReqId);
 
-            QueryContextRegistry.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
+            qryCtxRegistry.clearShared(ctx.localNodeId(), node.id(), qryReqId, MAP);
         }
 
         nodeRess.cancelRequest(qryReqId);
@@ -879,14 +884,14 @@ public class GridMapQueryExecutor {
             QueryContextRegistry.setThreadLocal(qctx);
 
             if (distributedJoinCtx != null)
-                QueryContextRegistry.setShared(qctx);
+                qryCtxRegistry.setShared(qctx);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
 
             try {
                 if (nodeRess.cancelled(reqId)) {
-                    QueryContextRegistry.clearShared(ctx.localNodeId(), node.id(), reqId, MAP);
+                    qryCtxRegistry.clearShared(ctx.localNodeId(), node.id(), reqId, MAP);
 
                     nodeRess.cancelRequest(reqId);
 

@@ -33,7 +33,7 @@ public class QueryContextRegistry {
     private static final ThreadLocal<GridH2QueryContext> curCtx = new ThreadLocal<>();
 
     /** Shared contexts. */
-    private static final ConcurrentMap<QueryContextKey, GridH2QueryContext> sharedCtxs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<QueryContextKey, GridH2QueryContext> sharedCtxs = new ConcurrentHashMap<>();
 
     /**
      * Access current thread local query context (if it was set).
@@ -75,7 +75,7 @@ public class QueryContextRegistry {
      * @param type Query type.
      * @return Query context.
      */
-    @Nullable public static GridH2QueryContext getShared(
+    @Nullable public GridH2QueryContext getShared(
         UUID locNodeId,
         UUID nodeId,
         long qryId,
@@ -91,7 +91,7 @@ public class QueryContextRegistry {
      *
      * @param ctx Query context.
      */
-    public static void setShared(GridH2QueryContext ctx) {
+    public void setShared(GridH2QueryContext ctx) {
         assert ctx.key().type() == MAP;
         assert ctx.distributedJoinContext() != null;
 
@@ -108,7 +108,7 @@ public class QueryContextRegistry {
      * @return {@code True} if context was found.
      */
     // TODO: Remove local node, type
-    public static boolean clearShared(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
+    public boolean clearShared(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         boolean res = false;
 
         for (QueryContextKey key : sharedCtxs.keySet()) {
@@ -128,7 +128,7 @@ public class QueryContextRegistry {
      * @param rmtNodeId Remote node ID.
      */
     // TODO: Local node should go away.
-    public static void clearSharedOnRemoteNodeLeave(UUID locNodeId, UUID rmtNodeId) {
+    public void clearSharedOnRemoteNodeLeave(UUID locNodeId, UUID rmtNodeId) {
         for (QueryContextKey key : sharedCtxs.keySet()) {
             if (key.localNodeId().equals(locNodeId) && key.nodeId().equals(rmtNodeId))
                 doClear(key, false);
@@ -139,7 +139,7 @@ public class QueryContextRegistry {
      * @param locNodeId Local node ID.
      */
     // TODO: Most likely we do not need it.
-    public static void clearSharedOnLocalNodeLeave(UUID locNodeId) {
+    public void clearSharedOnLocalNodeLeave(UUID locNodeId) {
         for (QueryContextKey key : sharedCtxs.keySet()) {
             if (key.localNodeId().equals(locNodeId))
                 doClear(key, true);
@@ -151,7 +151,7 @@ public class QueryContextRegistry {
      * @param nodeStop Node is stopping.
      * @return {@code True} if context was found.
      */
-    private static boolean doClear(QueryContextKey key, boolean nodeStop) {
+    private boolean doClear(QueryContextKey key, boolean nodeStop) {
         assert key.type() == MAP : key.type();
 
         GridH2QueryContext ctx = sharedCtxs.remove(key);
@@ -167,12 +167,5 @@ public class QueryContextRegistry {
             ctx.clearContext(nodeStop);
 
         return true;
-    }
-
-    /**
-     * Private constructor.
-     */
-    private QueryContextRegistry() {
-        // No-op.
     }
 }
