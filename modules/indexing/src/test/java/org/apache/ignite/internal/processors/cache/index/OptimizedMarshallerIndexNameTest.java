@@ -39,8 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -51,7 +49,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * See IGNITE-6915 for details.
  */
 
-@RunWith(JUnit4.class)
 public class OptimizedMarshallerIndexNameTest extends AbstractIndexingCommonTest {
     /** Test name 1 */
     private static final String TEST_NAME1 = "Name1";

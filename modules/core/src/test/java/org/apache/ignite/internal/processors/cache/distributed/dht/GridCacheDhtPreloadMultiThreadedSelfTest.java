@@ -34,13 +34,10 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * MultiThreaded load test for DHT preloader.
  */
-@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstractTest {
     /**
      * Creates new test.
@@ -139,7 +136,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
      */
     @Test
     public void testConcurrentNodesStartStop() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         try {
             multithreadedAsync(

@@ -28,8 +28,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.UUID;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Checks whether storing to local store doesn't cause binary objects unmarshalling,
@@ -39,7 +37,6 @@ import org.junit.runners.JUnit4;
  *     https://issues.apache.org/jira/browse/IGNITE-2753
  *     </a>
  */
-@RunWith(JUnit4.class)
 public class GridLocalCacheStoreManagerDeserializationTest extends GridCacheStoreManagerDeserializationTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

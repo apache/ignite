@@ -26,8 +26,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.util.typedef.internal.D;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Base scenario for memory leak:
@@ -36,7 +34,6 @@ import org.junit.runners.JUnit4;
  * 3. IgniteCacheDatabaseSharedManager started and onActive called here. Memory allocated;
  * 4. Call active(true) again. Activation successfull, non heap memory leak introduced;
  */
-@RunWith(JUnit4.class)
 public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
     /** */
     private static final int PAGE_SIZE = 4 * 1024;
