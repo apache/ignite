@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.transactions;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
- * Exception thrown whenever transaction enters an unknown state.
+ * Exception thrown whenever mvcc transaction enters an unknown state.
  */
-public class IgniteTxMvccVersionCheckedException extends IgniteCheckedException {
+public class IgniteTxUnexpectedStateCheckedException extends TransactionCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +29,7 @@ public class IgniteTxMvccVersionCheckedException extends IgniteCheckedException 
      *
      * @param msg Error message.
      */
-    public IgniteTxMvccVersionCheckedException(String msg) {
+    public IgniteTxUnexpectedStateCheckedException(String msg) {
         super(msg);
     }
 
@@ -41,7 +39,7 @@ public class IgniteTxMvccVersionCheckedException extends IgniteCheckedException 
      * @param msg Error message.
      * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public IgniteTxMvccVersionCheckedException(String msg, Throwable cause) {
+    public IgniteTxUnexpectedStateCheckedException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

@@ -15,35 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.transactions;
+package org.apache.ignite.console.agent;
+
+import java.io.IOException;
 
 /**
- * Exception thrown whenever grid transaction enters an unknown state.
- * This exception is usually thrown whenever commit partially succeeds.
- * Cache will still resolve this situation automatically to ensure data
- * integrity, by invalidating all values participating in this transaction
- * on remote nodes.
+ * This class extends {@link IOException} and represents an authentication failure to the proxy.
  */
-public class IgniteTxHeuristicCheckedException extends TransactionCheckedException {
+public class ProxyAuthException extends IOException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new heuristic exception with given error message.
-     *
-     * @param msg Error message.
+     * {@inheritDoc}
      */
-    public IgniteTxHeuristicCheckedException(String msg) {
+    public ProxyAuthException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates new heuristic exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
+     * {@inheritDoc}
      */
-    public IgniteTxHeuristicCheckedException(String msg, Throwable cause) {
-        super(msg, cause);
+    public ProxyAuthException(String msg, Throwable ex) {
+        super(msg, ex);
     }
 }

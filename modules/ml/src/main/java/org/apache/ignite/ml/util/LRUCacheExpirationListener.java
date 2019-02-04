@@ -15,31 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.transactions;
+package org.apache.ignite.ml.util;
 
 /**
- * Exception thrown whenever grid transactions time out.
+ * LRU cache expiration listener.
+ *
+ * @param <V> Type of a value.
  */
-public class IgniteTxTimeoutCheckedException extends TransactionCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+@FunctionalInterface
+public interface LRUCacheExpirationListener<V> {
     /**
-     * Creates new timeout exception with given error message.
+     * Handles entry expiration, is called before value is moved from cache.
      *
-     * @param msg Error message.
+     * @param val Value to be expired and removed.
      */
-    public IgniteTxTimeoutCheckedException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public IgniteTxTimeoutCheckedException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
+    public void entryExpired(V val);
 }

@@ -17,33 +17,25 @@
 
 package org.apache.ignite.internal.transactions;
 
-/**
- * Exception thrown whenever grid transaction enters an unknown state.
- * This exception is usually thrown whenever commit partially succeeds.
- * Cache will still resolve this situation automatically to ensure data
- * integrity, by invalidating all values participating in this transaction
- * on remote nodes.
- */
-public class IgniteTxHeuristicCheckedException extends TransactionCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
-    /**
-     * Creates new heuristic exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public IgniteTxHeuristicCheckedException(String msg) {
+/**
+ * Internal transaction exceptions base.
+ */
+public abstract class TransactionCheckedException extends IgniteCheckedException {
+    /** */
+    TransactionCheckedException(String msg) {
         super(msg);
     }
 
-    /**
-     * Creates new heuristic exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public IgniteTxHeuristicCheckedException(String msg, Throwable cause) {
+    /** */
+    TransactionCheckedException(Throwable cause) {
+        super(cause);
+    }
+
+    /** */
+    TransactionCheckedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }
