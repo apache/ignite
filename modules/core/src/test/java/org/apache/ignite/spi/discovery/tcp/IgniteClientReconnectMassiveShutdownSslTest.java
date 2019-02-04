@@ -19,13 +19,10 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Client reconnect test in multi threaded mode while cache operations are in progress.
  */
-@RunWith(JUnit4.class)
 public class IgniteClientReconnectMassiveShutdownSslTest extends IgniteClientReconnectMassiveShutdownTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

@@ -29,10 +29,11 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -69,6 +70,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
      * @param colsList Index columns.
      * @param segments Segments.
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     public H2PkHashIndex(
         GridCacheContext<?, ?> cctx,
         GridH2Table tbl,
@@ -80,7 +82,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
         this.segments = segments;
 
-        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
 
         IndexColumn.mapColumns(cols, tbl);
 
@@ -117,6 +119,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
         KeyCacheObject upperObj = upper != null ? cctx.toCacheKeyObject(upper.getValue(0).getObject()) : null;
 
         try {
+            CacheDataRowStore.setSkipVersion(true);
+
             Collection<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
 
             for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
@@ -134,6 +138,9 @@ public class H2PkHashIndex extends GridH2IndexBase {
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
+        finally {
+            CacheDataRowStore.setSkipVersion(false);
+        }
     }
 
     /** {@inheritDoc} */
@@ -142,7 +149,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row put(GridH2Row row) {
+    @Override public H2CacheRow put(H2CacheRow row) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.
         assert false;
 
@@ -150,20 +157,11 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(GridH2Row row) {
+    @Override public boolean putx(H2CacheRow row) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.
         assert false;
 
         throw DbException.getUnsupportedException("putx");
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridH2Row remove(SearchRow row) {
-        // Should not be called directly. Rows are removed from underlying cache data stores.
-
-        assert false;
-
-        throw DbException.getUnsupportedException("remove");
     }
 
     /** {@inheritDoc} */
@@ -248,6 +246,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /** {@inheritDoc} */
         @Override public boolean next() {
             try {
+                CacheDataRowStore.setSkipVersion(true);
+
                 GridQueryTypeDescriptor type = desc.type();
 
                 for (;;) {
@@ -268,6 +268,9 @@ public class H2PkHashIndex extends GridH2IndexBase {
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
+            }
+            finally {
+                CacheDataRowStore.setSkipVersion(false);
             }
         }
 

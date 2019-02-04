@@ -176,6 +176,14 @@ namespace Apache.Ignite.Core.Transactions
         }
 
         /// <summary>
+        /// Label of current transaction.
+        /// </summary>
+        string Label
+        {
+            get;
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this transaction was marked as rollback-only.
         /// </summary>
         bool IsRollbackOnly
