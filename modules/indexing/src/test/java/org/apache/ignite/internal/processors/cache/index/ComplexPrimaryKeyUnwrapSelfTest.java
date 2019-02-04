@@ -27,14 +27,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test of creating and using PK indexes for tables created through SQL.
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-@RunWith(JUnit4.class)
 public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest {
     /** Counter to generate unique table names. */
     private static int tblCnt = 0;

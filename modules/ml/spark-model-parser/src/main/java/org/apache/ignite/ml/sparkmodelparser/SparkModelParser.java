@@ -29,11 +29,14 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.GDBTrainer;
+import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -83,9 +86,80 @@ public class SparkModelParser {
                 return loadDecisionTreeModel(ignitePathToMdl);
             case RANDOM_FOREST:
                 return loadRandomForestModel(ignitePathToMdl);
+            case KMEANS:
+                return loadKMeansModel(ignitePathToMdl);
+            case DECISION_TREE_REGRESSION:
+                return loadDecisionTreeRegressionModel(ignitePathToMdl);
+            case RANDOM_FOREST_REGRESSION:
+                return loadRandomForestRegressionModel(ignitePathToMdl);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
+    }
+
+    /**
+     * Load Random Forest Regression model.
+     *
+     * @param pathToMdl Path to model.
+     */
+    private static Model loadRandomForestRegressionModel(String pathToMdl) {
+        final List<IgniteModel<Vector, Double>> models = parseTreesForRandomForestAlgorithm(pathToMdl);
+        if (models == null)
+            return null;
+        return new ModelsComposition(models, new MeanValuePredictionsAggregator());
+    }
+
+    /**
+     * Load Decision Tree Regression model.
+     *
+     * @param pathToMdl Path to model.
+     */
+    private static Model loadDecisionTreeRegressionModel(String pathToMdl) {
+        return loadDecisionTreeModel(pathToMdl);
+    }
+
+    /**
+     * Load K-Means model.
+     *
+     * @param pathToMdl Path to model.
+     */
+    private static Model loadKMeansModel(String pathToMdl) {
+        Vector[] centers = null;
+
+        try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdl), new Configuration()))) {
+            PageReadStore pages;
+            final MessageType schema = r.getFooter().getFileMetaData().getSchema();
+            final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
+
+            while (null != (pages = r.readNextRowGroup())) {
+                final int rows = (int)pages.getRowCount();
+                final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
+                centers = new DenseVector[rows];
+
+                for (int i = 0; i < rows; i++) {
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
+                    // final int clusterIdx = g.getInteger(0, 0);
+
+                    Group clusterCenterCoeff = g.getGroup(1, 0).getGroup(3, 0);
+
+                    final int amountOfCoefficients = clusterCenterCoeff.getFieldRepetitionCount(0);
+
+                    centers[i] = new DenseVector(amountOfCoefficients);
+
+                    for (int j = 0; j < amountOfCoefficients; j++) {
+                        double coefficient = clusterCenterCoeff.getGroup(0, j).getDouble(0, 0);
+                        centers[i].set(j, coefficient);
+                    }
+                }
+            }
+
+        }
+        catch (IOException e) {
+            System.out.println("Error reading parquet file.");
+            e.printStackTrace();
+        }
+
+        return new KMeansModel(centers, new EuclideanDistance());
     }
 
     /**
@@ -197,6 +271,18 @@ public class SparkModelParser {
      * @param pathToMdl Path to model.
      */
     private static Model loadRandomForestModel(String pathToMdl) {
+        final List<IgniteModel<Vector, Double>> models = parseTreesForRandomForestAlgorithm(pathToMdl);
+        if (models == null)
+            return null;
+        return new ModelsComposition(models, new OnMajorityPredictionsAggregator());
+    }
+
+    /**
+     * Parse trees from file for common Random Forest ensemble.
+     *
+     * @param pathToMdl Path to model.
+     */
+    private static List<IgniteModel<Vector, Double>> parseTreesForRandomForestAlgorithm(String pathToMdl) {
         try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdl), new Configuration()))) {
             PageReadStore pages;
 
@@ -226,11 +312,9 @@ public class SparkModelParser {
                     }
                 }
             }
-
-            final List<IgniteModel<Vector, Double>> models = new ArrayList<>();
+            List<IgniteModel<Vector, Double>> models = new ArrayList<>();
             nodesByTreeId.forEach((key, nodes) -> models.add(buildDecisionTreeModel(nodes)));
-
-            return new ModelsComposition(models, new OnMajorityPredictionsAggregator());
+            return models;
         }
         catch (IOException e) {
             System.out.println("Error reading parquet file.");

@@ -28,13 +28,10 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for empty transaction while is then enlisted with real value.
  */
-@RunWith(JUnit4.class)
 public class MvccEmptyTransactionSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

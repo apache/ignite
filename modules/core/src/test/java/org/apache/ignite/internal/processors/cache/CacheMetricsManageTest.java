@@ -53,13 +53,10 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE1 = "cache1";
@@ -91,7 +88,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJmxPdsStatisticsEnable() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9224", MvccFeatureChecker.forcedMvcc());
 
         testJmxStatisticsEnable(true);
     }

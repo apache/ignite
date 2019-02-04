@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
@@ -50,10 +48,10 @@ public class RangeSource {
     private final int segment;
 
     /** */
-    private final BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter;
+    private final BPlusTree.TreeRowClosure<H2Row, H2Row> filter;
 
     /** Iterator. */
-    private Iterator<GridH2Row> iter = emptyIterator();
+    private Iterator<H2Row> iter = emptyIterator();
 
     /**
      * @param bounds Bounds.
@@ -64,7 +62,7 @@ public class RangeSource {
         GridH2IndexBase idx,
         Iterable<GridH2RowRangeBounds> bounds,
         int segment,
-        BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter
+        BPlusTree.TreeRowClosure<H2Row, H2Row> filter
     ) {
         this.idx = idx;
         this.segment = segment;
@@ -76,7 +74,7 @@ public class RangeSource {
     /**
      * @return {@code true} If there are more rows in this source.
      */
-    public boolean hasMoreRows() throws IgniteCheckedException {
+    public boolean hasMoreRows() {
         return boundsIter.hasNext() || iter.hasNext();
     }
 

@@ -29,15 +29,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
     /** */
     private IgniteCache<?, ?> cache;

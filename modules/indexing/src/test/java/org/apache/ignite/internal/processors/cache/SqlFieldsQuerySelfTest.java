@@ -29,13 +29,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /** INSERT statement. */
     private static final String INSERT = "insert into Person(_key, name) values (5, 'x')";
