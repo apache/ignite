@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -187,11 +186,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** */
     private transient UUID routineId;
 
-    /** Buffer for events arriving during the listener start. Used for MVCC races prevention.  */
-    private final transient Set<PendingEvent> pendingEvts = new HashSet<>();
-
-    /** Local update counters values on listener start. */
-    private transient volatile Map<Integer, T2<Long, Long>> localInitUpdCntrs;
+    /** Local update counters values on listener start. Used for skipping events fired before the listener start. */
+    private transient volatile Map<Integer, T2<Long, Long>> locInitUpdCntrs;
 
     /** */
     private transient GridKernalContext ctx;
@@ -317,7 +313,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /** {@inheritDoc} */
     @Override public Map<Integer, T2<Long, Long>> updateCounters() {
-        return localInitUpdCntrs;
+        return locInitUpdCntrs;
     }
 
     /** {@inheritDoc} */
@@ -380,52 +376,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             @Override public void onExecution() {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                /*
-                 * When MVCC is enabled CQ events may arrive in unordered sequence of corresponding update
-                 * counters. To ensure that all events are sent to CQ listeners without any gaps we do these steps:
-                 * 1. Choose the point in update counters sequence (current update counters {@code initUpdCntrs}) from
-                 *    which all events will be sent to the listener and the previous ones will be ignored.
-                 * 2. Collect all arrived events in the {@code pending} temporary store until choosing the start point.
-                 * 3. Flush collected events to listeners if their update counter value is equals or bigger than
-                 *    start point chosen in p.1.
-                 */
-                if (cctx != null && cctx.mvccEnabled() && cctx.affinityNode()) {
-                    synchronized (pendingEvts) {
-                        localInitUpdCntrs = toCountersMap(cctx.topology().localUpdateCounters(false));
-
-                        // Flush all pending events to CQ listeners.
-                        for (PendingEvent evt : pendingEvts) {
-                            int part = evt.part();
-                            long updCntr = evt.counter();
-                            T2<Long, Long> initCntr = localInitUpdCntrs.get(part);
-
-                            if (initCntr == null || initCntr.get2() <= updCntr) {
-                                if (evt.skipCounter()) {
-                                    CounterSkipContext skipCtx = skipUpdateCounter(evt.cacheContext(), null, evt.part(),
-                                        evt.counter(), evt.topologyVersion(), evt.primary());
-
-                                    final List<Runnable> procC = skipCtx != null ? skipCtx.processClosures() : null;
-
-                                    if (procC != null) {
-                                        ctx.closure().runLocalSafe(new Runnable() {
-                                            @Override public void run() {
-                                                for (Runnable c : procC)
-                                                    c.run();
-                                            }
-                                        });
-                                    }
-                                }
-                                else
-                                    onEntryUpdated(evt.event(), evt.primary(), evt.recordIgniteEvt(), null);
-                            }
-                        }
-
-                        pendingEvts.clear();
-                    }
-                }
-                else if (!cctx.isLocal())
-                    localInitUpdCntrs = toCountersMap(cctx.topology().localUpdateCounters(false));
-
                 if (cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     //noinspection unchecked
                     ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -444,6 +394,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         taskName()
                     ));
                 }
+            }
+
+            @Override public void onRegister() {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx != null && !cctx.isLocal())
+                    locInitUpdCntrs = toCountersMap(cctx.topology().localUpdateCounters(false));
             }
 
             @Override public boolean keepBinary() {
@@ -466,7 +423,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (cctx == null)
                     return;
 
-                if (cctx.mvccEnabled() && !needNotifyNow(false, null, -1, -1, null, primary, evt, recordIgniteEvt))
+                if (!needNotifyNow(false, cctx, -1, -1,  evt))
                     return;
 
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
@@ -576,7 +533,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (skipCtx == null)
                     skipCtx = new CounterSkipContext(part, cntr, topVer);
 
-                if (cctx.mvccEnabled() && !needNotifyNow(true, cctx, part, cntr, topVer, primary, null, false))
+                if (!needNotifyNow(true, cctx, part, cntr, null))
                     return skipCtx;
 
                 if (loc) {
@@ -658,57 +615,33 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
              * Checks whether it is need to notify listeners right now or wait until the query handler is registered
              * entirely. This delay in listeners notification allows to prevent races on MVCC continuous query start.
              *
-             * @param skipEvent {@code True} if this is a skip counter event.
+             * @param skipEvt {@code True} if this is a skip counter event.
              * @param cctx Cache context.
              * @param part Partition id.
              * @param cntr Update counter.
-             * @param topVer Topology version.
-             * @param primary Primary flag.
              * @param evt CQ event.
-             * @param recordIgniteEvt Record flag.
              * @return {@code True} if notification should happen immediately, or {@code false} if it should be delayed.
              */
-            private boolean needNotifyNow(boolean skipEvent,
+            private boolean needNotifyNow(boolean skipEvt,
                 GridCacheContext cctx,
                 int part,
                 long cntr,
-                AffinityTopologyVersion topVer,
-                boolean primary,
-                CacheContinuousQueryEvent evt,
-                boolean recordIgniteEvt) {
-                assert cacheContext(ctx).mvccEnabled();
+                CacheContinuousQueryEvent evt) {
+                assert !skipEvt || evt == null;
+                assert skipEvt || part == -1 && cntr == -1; // part == -1 && cntr == -1 means skip counter.
 
-                cntr = skipEvent ? cntr : evt.getPartitionUpdateCounter();
-                part = skipEvent ? part : evt.partitionId();
+                if (!cctx.mvccEnabled() || cctx.isLocal())
+                    return true;
 
-                if (localInitUpdCntrs != null) {
-                    T2<Long, Long> initCntr = localInitUpdCntrs.get(part);
+                assert locInitUpdCntrs != null;
 
-                    // Do not notify listener if entry was updated before the query is started.
-                    if (initCntr != null && cntr < initCntr.get2())
-                        return false;
-                }
-                else {
-                    synchronized (pendingEvts) {
-                        // Query was not started yet. Let's postpone event until start.
-                        if (localInitUpdCntrs == null) { // Double check.
-                            PendingEvent pendingEvent = skipEvent ? new PendingEvent(cctx, part, cntr, topVer, primary) :
-                                new PendingEvent(evt, primary, recordIgniteEvt);
+                cntr = skipEvt ? cntr : evt.getPartitionUpdateCounter();
+                part = skipEvt ? part : evt.partitionId();
 
-                            pendingEvts.add(pendingEvent);
+                T2<Long, Long> initCntr = locInitUpdCntrs.get(part);
 
-                            return false;
-                        }
-                        else {
-                            T2<Long, Long> initCntr = localInitUpdCntrs.get(part);
-
-                            if (initCntr != null && cntr < initCntr.get2())
-                                return false;
-                        }
-                    }
-                }
-
-                return true;
+                // Do not notify listener if entry was updated before the query is started.
+                return initCntr == null || cntr >= initCntr.get2();
             }
         };
 
@@ -1509,129 +1442,5 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
 
         return transVal;
-    }
-
-    /**
-     * Holder for the pending events. This events are used for storing CQ updates during listener start when MVCC is
-     * enabled. This updates store prevents holes in updates sequences which are possible in MVCC case.
-     */
-    private static class PendingEvent {
-        /** */
-        private final CacheContinuousQueryEvent evt;
-
-        /** */
-        private final boolean primary;
-
-        /** */
-        private final boolean recordIgniteEvt;
-
-        /** */
-        private final GridCacheContext cctx;
-
-        /** */
-        private final int part;
-
-        /** */
-        private final long cntr;
-
-        /** */
-        private final AffinityTopologyVersion topVer;
-
-        /** */
-        private final boolean skipCounter;
-
-        /**
-         * Constructor for postponed event.
-         *
-         * @param evt Event.
-         * @param primary Primary flag.
-         * @param recordIgniteEvt Record event flag.
-         */
-        private PendingEvent(CacheContinuousQueryEvent evt, boolean primary, boolean recordIgniteEvt) {
-            this.evt = evt;
-            this.primary = primary;
-            this.recordIgniteEvt = recordIgniteEvt;
-            this.cctx = null;
-            this.part = evt.partitionId();
-            this.cntr = evt.getPartitionUpdateCounter();
-            this.topVer = evt.entry().topologyVersion();
-            this.skipCounter = false;
-        }
-
-        /**
-         * Constructor for postponed skip update counter event.
-         *
-         * @param cctx Cache context.
-         * @param part Partition id.
-         * @param cntr Partition counter,
-         * @param topVer Topology version.
-         * @param primary Primary flag.
-         */
-        private PendingEvent(GridCacheContext cctx, int part, long cntr, AffinityTopologyVersion topVer, boolean primary) {
-            this.evt = null;
-            this.primary = primary;
-            this.recordIgniteEvt = false;
-            this.cctx = cctx;
-            this.part = part;
-            this.cntr = cntr;
-            this.topVer = topVer;
-            this.skipCounter = true;
-        }
-
-        /**
-         * @return CQ event
-         */
-        public CacheContinuousQueryEvent event() {
-            return evt;
-        }
-
-        /**
-         * @return {@code True} if primary.
-         */
-        public boolean primary() {
-            return primary;
-        }
-
-        /**
-         * @return {@code True} if record event.
-         */
-        public boolean recordIgniteEvt() {
-            return recordIgniteEvt;
-        }
-
-        /**
-         * @return Cache context.
-         */
-        public GridCacheContext cacheContext() {
-            return cctx;
-        }
-
-        /**
-         * @return Partition id.
-         */
-        public int part() {
-            return part;
-        }
-
-        /**
-         * @return Counter.
-         */
-        public long counter() {
-            return cntr;
-        }
-
-        /**
-         * @return Topology version.
-         */
-        public AffinityTopologyVersion topologyVersion() {
-            return topVer;
-        }
-
-        /**
-         * @return {@code True} if this is a skip update counter event.
-         */
-        public boolean skipCounter() {
-            return skipCounter;
-        }
     }
 }

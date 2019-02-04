@@ -160,7 +160,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
 
             assert ctx0 != null;
 
-            ctx0.continuousQueries().getListenerReadLock().lock();
+            ctx0.group().listenerLock().readLock().lock();
 
             try {
                 boolean hasListeners = ctx0.hasContinuousQueryListeners(tx);
@@ -253,7 +253,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
                 }
             }
             finally {
-                ctx0.continuousQueries().getListenerReadLock().unlock();
+                ctx0.group().listenerLock().readLock().unlock();
             }
         }
     }
