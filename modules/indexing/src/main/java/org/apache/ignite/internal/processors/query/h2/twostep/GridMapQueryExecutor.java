@@ -171,8 +171,6 @@ public class GridMapQueryExecutor {
 
         log = ctx.log(GridMapQueryExecutor.class);
 
-        final UUID locNodeId = ctx.localNodeId();
-
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
