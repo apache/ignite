@@ -25,16 +25,17 @@ import org.apache.ignite.examples.SpatialQueryExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.SpatialQueryExampleSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.platform.suite.api.SelectClasses;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Examples test suite. <p> Contains only Spring ignite examples tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@RunWith(JUnitPlatform.class)
+@SelectClasses({
     HibernateL2CacheExampleSelfTest.class,
     SpatialQueryExampleSelfTest.class,
     ComputeScheduleExampleSelfTest.class,
