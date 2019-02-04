@@ -34,6 +34,15 @@ public interface ModelDescriptorStorage extends Iterable<IgniteBiTuple<String, M
     public void put(String mdlId, ModelDescriptor mdl);
 
     /**
+     * Saves the specified model descriptor with the specified model identifier if it's not saved yet.
+     *
+     * @param mdlId Model identifier.
+     * @param mdl Model descriptor.
+     * @return {@code true} if model descriptor has been successfully saved, otherwise {@code false}.
+     */
+    public boolean putIfAbsent(String mdlId, ModelDescriptor mdl);
+
+    /**
      * Returns model descriptor saved for the specified model identifier.
      *
      * @param mdlId Model identifier.

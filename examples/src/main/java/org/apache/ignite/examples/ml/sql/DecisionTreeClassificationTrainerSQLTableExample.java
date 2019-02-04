@@ -21,14 +21,14 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.sql.SQLFeatureLabelExtractor;
+import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
@@ -102,21 +102,12 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
             System.out.println(">>> Perform training...");
-            IgniteCache<Integer, BinaryObject> titanicTrainCache = ignite.cache("SQL_PUBLIC_TITANIK_TRAIN");
             DecisionTreeNode mdl = trainer.fit(
-                // We have to specify ".withKeepBinary(true)" because SQL caches contains only binary objects and this
-                // information has to be passed into the trainer.
-                new CacheBasedDatasetBuilder<>(ignite, titanicTrainCache).withKeepBinary(true),
-                (k, v) -> VectorUtils.of(
-                    // We have to handle null values here to avoid NpE during unboxing.
-                    replaceNull(v.<Integer>field("pclass")),
-                    "male".equals(v.<String>field("sex")) ? 1 : 0,
-                    replaceNull(v.<Double>field("age")),
-                    replaceNull(v.<Integer>field("sibsp")),
-                    replaceNull(v.<Integer>field("parch")),
-                    replaceNull(v.<Double>field("fare"))
-                ),
-                (k, v) -> replaceNull(v.<Integer>field("survived"))
+                new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
+                new SQLFeatureLabelExtractor()
+                    .withFeatureFields("pclass", "age", "sibsp", "parch", "fare")
+                    .withFeatureField("sex", e -> "male".equals(e) ? 1 : 0)
+                    .withLabelField("survived")
             );
 
             System.out.println(">>> Perform inference...");
@@ -128,15 +119,14 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
                 "parch, " +
                 "fare from titanik_test"))) {
                 for (List<?> passenger : cursor) {
-                    Vector input = VectorUtils.of(
-                        // We have to handle null values here to avoid NpE during unboxing.
-                        replaceNull((Integer)passenger.get(0)),
-                        "male".equals(passenger.get(1)) ? 1 : 0,
-                        replaceNull((Double)passenger.get(2)),
-                        replaceNull((Integer)passenger.get(3)),
-                        replaceNull((Integer)passenger.get(4)),
-                        replaceNull((Double)passenger.get(5))
-                    );
+                    Vector input = VectorUtils.of(new Double[]{
+                        asDouble(passenger.get(0)),
+                        "male".equals(passenger.get(1)) ? 1.0 : 0.0,
+                        asDouble(passenger.get(2)),
+                        asDouble(passenger.get(3)),
+                        asDouble(passenger.get(4)),
+                        asDouble(passenger.get(5))
+                    });
 
                     double prediction = mdl.predict(input);
 
@@ -149,16 +139,22 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
     }
 
     /**
-     * Replaces NULL values by 0.
+     * Converts specified number into double.
      *
-     * @param obj Input value.
-     * @param <T> Type of value.
-     * @return Input value of 0 if value is null.
+     * @param obj Number.
+     * @param <T> Type of number.
+     * @return Double.
      */
-    private static <T extends Number> double replaceNull(T obj) {
+    private static <T extends Number> Double asDouble(Object obj) {
         if (obj == null)
-            return 0;
+            return null;
 
-        return obj.doubleValue();
+        if (obj instanceof Number) {
+            Number num = (Number) obj;
+
+            return num.doubleValue();
+        }
+
+        throw new IllegalArgumentException("Object is expected to be a number [obj=" + obj + "]");
     }
 }
