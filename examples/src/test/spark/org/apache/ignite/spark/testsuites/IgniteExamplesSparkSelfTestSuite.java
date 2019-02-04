@@ -22,8 +22,9 @@ import org.apache.ignite.spark.examples.JavaIgniteDataFrameSelfTest;
 import org.apache.ignite.spark.examples.SharedRDDExampleSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.platform.suite.api.SelectClasses;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
@@ -32,8 +33,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  * <p>
  * Contains only Spring ignite examples tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@RunWith(JUnitPlatform.class)
+@SelectClasses({
     SharedRDDExampleSelfTest.class,
     IgniteDataFrameSelfTest.class,
     JavaIgniteDataFrameSelfTest.class,
