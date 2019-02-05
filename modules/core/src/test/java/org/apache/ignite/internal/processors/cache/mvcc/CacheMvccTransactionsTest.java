@@ -2219,7 +2219,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                                 if (e.getCause() instanceof TransactionSerializationException)
                                     continue;
 
-                                Assert.assertTrue("Unexpected error: " + e, X.hasCause(e, ClusterTopologyException.class));
+                                if (X.hasCause(e, ClusterTopologyException.class) )
+                                  Assert.assertTrue("Unexpected error: " + e, X.hasCause(e, ClusterTopologyException.class));
+                                else
+                                    fail();
                             }
                         }
                         finally {

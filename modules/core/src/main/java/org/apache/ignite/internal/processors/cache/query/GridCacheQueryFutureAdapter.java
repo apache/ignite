@@ -251,7 +251,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         if (error() != null) {
             clear();
 
-            throw new IgniteCheckedException("Query execution failed: " + qry, error());
+            throw U.cast(error());
         }
     }
 
@@ -374,13 +374,16 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 synchronized (this) {
                     enqueue(Collections.emptyList());
 
-                    onDone(new IgniteCheckedException(nodeId != null ?
-                        S.toString("Failed to execute query on node",
-                            "query", qry, true,
-                            "nodeId", nodeId, false) :
-                        S.toString("Failed to execute query locally",
-                            "query", qry, true),
-                        err));
+                    if (err instanceof IgniteCheckedException)
+                        onDone(err);
+                    else
+                        onDone(new IgniteCheckedException(nodeId != null ?
+                            S.toString("Failed to execute query on node",
+                                "query", qry, true,
+                                "nodeId", nodeId, false) :
+                            S.toString("Failed to execute query locally",
+                                "query", qry, true),
+                            err));
 
                     onPage(nodeId, true);
 
