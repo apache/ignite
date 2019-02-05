@@ -3725,21 +3725,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
                 else {
-                    if (nodesHist.contains(node.id())) {
-                        try {
-                            trySendMessageDirectly(node, new TcpDiscoveryDuplicateIdMessage(locNodeId,
-                                node));
-                        }
-                        catch (IgniteSpiException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to send duplicate ID message to node " +
-                                    "[node=" + node +
-                                    ", err=" + e.getMessage() + ']');
+                    if (!node.isClient() && !node.isDaemon()) {
+                        if (nodesHist.contains(node.id())) {
+                            try {
+                                trySendMessageDirectly(node, new TcpDiscoveryDuplicateIdMessage(locNodeId,
+                                    node));
+                            }
+                            catch (IgniteSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send duplicate ID message to node " +
+                                        "[node=" + node +
+                                        ", err=" + e.getMessage() + ']');
 
-                            onException("Failed to send duplicate ID message to node: " + node, e);
-                        }
+                                onException("Failed to send duplicate ID message to node: " + node, e);
+                            }
 
-                        return;
+                            return;
+                        }
                     }
                 }
 
