@@ -30,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import javax.cache.CacheException;
@@ -43,10 +44,14 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -121,6 +126,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExe
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
+import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -145,6 +151,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -291,11 +298,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** */
-    private final CIX2<ClusterNode, Message> locNodeQueryHnd = new CIX2<ClusterNode, Message>() {
+    private final CIX2<ClusterNode, Message> locNodeQryHnd = new CIX2<ClusterNode, Message>() {
         @Override public void applyx(ClusterNode locNode, Message msg) {
             onMessage(locNode.id(), msg);
         }
     };
+
+    /** Cancellation runs. */
+    private ConcurrentHashMap<KillQueryRun, GridFutureAdapter> cancellationRuns = new ConcurrentHashMap<>();
 
     /**
      * @param c Connection.
@@ -1382,14 +1392,50 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ClusterNode node = ctx.cluster().get().node(cmd.getNodeId());
 
         if (node != null) {
-            send(GridTopic.TOPIC_QUERY,
+            boolean resRequired = !cmd.isAsync();
+
+            GridFutureAdapter fut = null;
+
+            KillQueryRun run = null;
+
+            if (resRequired) {
+                fut = new GridFutureAdapter<>();
+
+                run = new KillQueryRun(cmd.getNodeId(), cmd.getNodeQryId());
+
+                GridFutureAdapter prevFut = cancellationRuns.putIfAbsent(run, fut);
+
+                if (prevFut != null) {
+                    fut = prevFut;
+
+                    //We shouldn't send new response for the same cancellation request.
+                    resRequired = false;
+                }
+            }
+
+            boolean snd = send(GridTopic.TOPIC_QUERY,
                 GridTopic.TOPIC_QUERY.ordinal(),
                 Collections.singleton(node),
-                new GridQueryKillRequest(cmd.getNodeQryId()),
+                new GridQueryKillRequest(cmd.getNodeQryId(), resRequired),
                 null,
-                locNodeQueryHnd,
+                locNodeQryHnd,
                 GridIoPolicy.MANAGEMENT_POOL,
                 false);
+
+            if (fut != null) {
+                if (!snd) {
+                    cancellationRuns.remove(run, fut);
+
+                    return;
+                }
+
+                try {
+                    fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteSQLException("Failed to cancel KILL QUERY", e);
+                }
+            }
         }
         else
             U.warn(log, "Kill query command runs on unknown node [qry=" + qry.getSql() + ", nodeId=" + cmd.getNodeId() + "]");
@@ -2461,30 +2507,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         JdbcUtils.serializer = h2Serializer();
 
-        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, (nodeId, msg, plc) -> {
-            // TODO: Should we take busy lock? This might be dangerous for heavy queries which ocuppied the whole pool.
-            if (!busyLock.enterBusy())
-                return;
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, (nodeId, msg, plc) -> onMessage(nodeId, msg));
 
-            try {
-                // TODO: Copy-paste, not needed
-                if (msg instanceof GridCacheQueryMarshallable)
-                    ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(final Event evt) {
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                onMessage(nodeId, msg);
+                Iterator<Map.Entry<KillQueryRun, GridFutureAdapter>> it = cancellationRuns.entrySet().iterator();
+
+                while(it.hasNext()){
+                    Map.Entry<KillQueryRun, GridFutureAdapter> entry = it.next();
+
+                    if(entry.getKey().nodeId().equals(nodeId)){
+                        entry.getValue().onDone();
+
+                        it.remove();
+                    }
+                }
             }
-            finally {
-                busyLock.leaveBusy();
-            }
-        });
-
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
 
     /**
      * @param nodeId Node ID.
      * @param msg Message.
      */
-    // TODO: Response?
     public void onMessage(UUID nodeId, Object msg) {
         try {
             assert msg != null;
@@ -2497,7 +2544,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             boolean processed = true;
 
             if (msg instanceof GridQueryKillRequest)
-                onQueryKillRequest((GridQueryKillRequest)msg);
+                onQueryKillRequest((GridQueryKillRequest)msg, node);
+            if (msg instanceof GridQueryKillResponse)
+                onQueryKillResponse((GridQueryKillResponse)msg, node);
             else
                 processed = false;
 
@@ -2514,9 +2563,34 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Process request to kill query.
      *
      * @param msg Message.
+     * @param node Cluster node.
      */
-    private void onQueryKillRequest(GridQueryKillRequest msg) {
+    private void onQueryKillRequest(GridQueryKillRequest msg, ClusterNode node) {
         cancelQueries(singletonList(msg.nodeQryId()));
+
+        if(msg.resposeRequired()){
+            send(GridTopic.TOPIC_QUERY,
+                GridTopic.TOPIC_QUERY.ordinal(),
+                Collections.singleton(node),
+                new GridQueryKillResponse(msg.nodeQryId()),
+                null,
+                locNodeQryHnd,
+                GridIoPolicy.MANAGEMENT_POOL,
+                false);
+        }
+    }
+
+    /**
+     * Process response to kill query request.
+     *
+     * @param msg Message.
+     * @param node Cluster node.
+     */
+    private void onQueryKillResponse(GridQueryKillResponse msg, ClusterNode node) {
+        GridFutureAdapter fut = cancellationRuns.remove(new KillQueryRun(node.id(), msg.nodeQryId()));
+
+        if(fut != null)
+            fut.onDone();
     }
 
     /**

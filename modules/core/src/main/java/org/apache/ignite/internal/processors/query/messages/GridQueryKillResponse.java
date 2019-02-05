@@ -25,32 +25,28 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Query kill request.
+ * Query kill response.
  */
-public class GridQueryKillRequest implements Message {
+public class GridQueryKillResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Query id on a node. */
     private long nodeQryId;
 
-    /** Response required flag. */
-    private boolean resRequired;
 
     /**
      * Default constructor.
      */
-    public GridQueryKillRequest() {
+    public GridQueryKillResponse() {
         // No-op.
     }
 
     /**
      * @param nodeQryId Query ID on a node.
-     * @param resRequired {@code true} in case reposnse required.
      */
-    public GridQueryKillRequest(long nodeQryId, boolean resRequired) {
+    public GridQueryKillResponse(long nodeQryId) {
         this.nodeQryId = nodeQryId;
-        this.resRequired = resRequired;
     }
 
     /**
@@ -60,12 +56,6 @@ public class GridQueryKillRequest implements Message {
         return nodeQryId;
     }
 
-    /**
-     * @return {@code true} in case response should be send back.
-     */
-    public boolean resposeRequired() {
-        return resRequired;
-    }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
@@ -89,12 +79,6 @@ public class GridQueryKillRequest implements Message {
                     return false;
 
                 writer.incrementState();
-
-            case 1:
-                if(!writer.writeBoolean("resRequired", resRequired))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -115,31 +99,23 @@ public class GridQueryKillRequest implements Message {
                     return false;
 
                 reader.incrementState();
-
-            case 1:
-                resRequired = reader.readBoolean("resRequired");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridQueryKillRequest.class);
+        return reader.afterMessageRead(GridQueryKillResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 172;
+        return 173;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridQueryKillRequest.class, this);
+        return S.toString(GridQueryKillResponse.class, this);
     }
 }

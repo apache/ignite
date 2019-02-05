@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.sql;
 
-import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.sql.command.SqlGlobalQueryId;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -186,38 +184,6 @@ public class SqlParserUtils {
             return lex.token();
 
         throw errorUnexpectedToken(lex, "[string]", additionalExpTokens);
-    }
-
-    /**
-     * Process global query id.
-     *
-     * @param lex Lexer.
-     * @return Global query id.
-     */
-    // TODO: Move to KILL command.
-    public static SqlGlobalQueryId parseGlobalQueryId(SqlLexer lex) {
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {
-
-            String token = lex.token();
-
-            String[] ids = token.split("_");
-
-            if (ids.length == 2) {
-                try {
-                    UUID nodeId = UUID.fromString(ids[0]);
-
-                    long qryId = Long.parseLong(ids[1]);
-
-                    return new SqlGlobalQueryId(nodeId, qryId);
-                }
-                catch (NumberFormatException e) {
-                    // TODO: This is not accurate - we should inform user what is wrong instead of throwing generic exception.
-                    // Fall through.
-                }
-            }
-        }
-
-        throw errorUnexpectedToken(lex, "[global query id]");
     }
 
     /**

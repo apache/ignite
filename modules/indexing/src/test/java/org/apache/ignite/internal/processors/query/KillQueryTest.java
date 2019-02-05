@@ -186,17 +186,49 @@ public class KillQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testKillUnknownQry() {
+        testKillUnknownQry(false);
+    }
+
+    /**
+     * Trying to async cancel unexist query.
+     */
+    @Test
+    public void testAsyncKillUnknownQry() {
+        testKillUnknownQry(true);
+    }
+
+    /**
+     * Trying to cancel unexist query.
+     *
+     * @param async execute cancellation in ASYNC mode.
+     */
+    private void testKillUnknownQry(boolean async) {
         igniteForKillRequest.cache(DEFAULT_CACHE_NAME)
-            .query(createKillQuery(UUID.randomUUID(), Long.MAX_VALUE));
+            .query(createKillQuery(UUID.randomUUID(), Long.MAX_VALUE, async));
+    }
+
+    /**
+     * Trying to kill already killed query. No exceptions expected.
+     */
+    @Test
+    public void testKillAlreadyKilledQuery() {
+        testKillAlreadyKilledQuery(false);
+    }
+
+    /**
+     * Trying to kill already killed query. No exceptions expected.
+     */
+    @Test
+    public void testAsyncKillAlreadyKilledQuery() {
+        testKillAlreadyKilledQuery(true);
     }
 
     /**
      * Trying to kill already killed query. No exceptions expected.
      *
-     * @throws Exception If failed.
+     * @param async execute cancellation in ASYNC mode.
      */
-    @Test
-    public void testKillAlreadyKilledQuery() {
+    private void testKillAlreadyKilledQuery(boolean async) {
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery("select * from Integer"));
@@ -207,7 +239,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         GridRunningQueryInfo runQryInfo = runningQueries.get(0);
 
-        SqlFieldsQuery killQry = createKillQuery(runQryInfo.globalQueryId());
+        SqlFieldsQuery killQry = createKillQuery(runQryInfo.globalQueryId(), async);
 
         IgniteCache<Object, Object> reqCache = igniteForKillRequest.cache(DEFAULT_CACHE_NAME);
 
@@ -223,16 +255,16 @@ public class KillQueryTest extends GridCommonAbstractTest {
      * @param qryId Node query id.
      * @return
      */
-    private SqlFieldsQuery createKillQuery(UUID nodeId, long qryId) {
-        return createKillQuery(nodeId + "_" + qryId);
+    private SqlFieldsQuery createKillQuery(UUID nodeId, long qryId, boolean async) {
+        return createKillQuery(nodeId + "_" + qryId, async);
     }
 
     /**
      * @param globalQryId Global query id.
      * @return
      */
-    private SqlFieldsQuery createKillQuery(String globalQryId) {
-        return new SqlFieldsQuery("KILL QUERY '" + globalQryId + "'");
+    private SqlFieldsQuery createKillQuery(String globalQryId, boolean async) {
+        return new SqlFieldsQuery("KILL QUERY '" + globalQryId + "'" + (async ? " ASYNC" : ""));
     }
 
     /**
@@ -242,7 +274,27 @@ public class KillQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCancelQuery() throws Exception {
-        IgniteInternalFuture cancelRes = cancel(1);
+        testCancelQuery(false);
+    }
+
+    /**
+     * Trying to async cancel long running query. No exceptions expected.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAsyncCancelQuery() throws Exception {
+        testCancelQuery(true);
+    }
+
+    /**
+     * Trying to cancel long running query. No exceptions expected.
+     *
+     * @param async execute cancellation in ASYNC mode.
+     * @throws Exception If failed.
+     */
+    private void testCancelQuery(boolean async) throws Exception {
+        IgniteInternalFuture cancelRes = cancel(1, async);
 
         GridTestUtils.assertThrows(log, () -> {
             stmt.executeQuery("select * from Integer where _key in " +
@@ -262,6 +314,26 @@ public class KillQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testKillMultipleStatementsQuery() throws Exception {
+        testKillMultipleStatementsQuery(false);
+    }
+
+    /**
+     * Trying to async cancel long running multiple statments query. No exceptions expected.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAsyncKillMultipleStatementsQuery() throws Exception {
+        testKillMultipleStatementsQuery(true);
+    }
+
+    /**
+     * Trying to async cancel long running multiple statments query. No exceptions expected.
+     *
+     * @param async execute cancellation in ASYNC mode.
+     * @throws Exception If failed.
+     */
+    private void testKillMultipleStatementsQuery(boolean async) throws Exception {
         try (Statement anotherStatment = conn.createStatement()) {
             anotherStatment.setFetchSize(1);
 
@@ -269,7 +341,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
             assert rs.next();
 
-            IgniteInternalFuture cancelRes = cancel(3);
+            IgniteInternalFuture cancelRes = cancel(3, async);
 
             GridTestUtils.assertThrows(log, () -> {
                 // Executes multiple long running query
@@ -293,6 +365,26 @@ public class KillQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCancelBatchQuery() throws Exception {
+        testCancelBatchQuery(false);
+    }
+
+    /**
+     * Trying to async cancel long running batch query. No exceptions expected.     *
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAsyncCancelBatchQuery() throws Exception {
+        testCancelBatchQuery(true);
+    }
+
+    /**
+     * Trying to cancel long running batch query. No exceptions expected.     *
+     *
+     * @param async execute cancellation in ASYNC mode.
+     * @throws Exception If failed.
+     */
+    private void testCancelBatchQuery(boolean async) throws Exception {
         try (Statement stmt2 = conn.createStatement()) {
             stmt2.setFetchSize(1);
 
@@ -300,7 +392,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
             Assert.assertTrue(rs.next());
 
-            IgniteInternalFuture cancelRes = cancel(2);
+            IgniteInternalFuture cancelRes = cancel(2, async);
 
             GridTestUtils.assertThrows(log, () -> {
                 stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
@@ -327,13 +419,34 @@ public class KillQueryTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-11176")
     @Test
     public void testCancellingLongRunningFileUpload() throws Exception {
+        testCancellingLongRunningFileUpload(false);
+    }
+
+    /**
+     * Trying to async cancel long running file upload. No exceptions expected.
+     *
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11176")
+    @Test
+    public void testAsyncCancellingLongRunningFileUpload() throws Exception {
+        testCancellingLongRunningFileUpload(true);
+    }
+
+    /**
+     * Trying to cancel long running file upload. No exceptions expected.
+     *
+     * @param async execute cancellation in ASYNC mode.
+     * @throws Exception If failed.
+     */
+    private void testCancellingLongRunningFileUpload(boolean async) throws Exception {
         IgniteInternalFuture cancelRes = GridTestUtils.runAsync(() -> {
             try {
                 Thread.sleep(200);
 
                 GridRunningQueryInfo runQry = ignite.context().query().runningQueries(-1).iterator().next();
 
-                igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runQry.globalQueryId()));
+                igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runQry.globalQueryId(), async));
             }
             catch (Exception e) {
                 log.error("Unexpected exception.", e);
@@ -360,7 +473,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      *
      * @return <code>IgniteInternalFuture</code> to check whether exception was thrown.
      */
-    private IgniteInternalFuture cancel(int expQryNum) {
+    private IgniteInternalFuture cancel(int expQryNum, boolean async) {
         return GridTestUtils.runAsync(() -> {
             try {
                 TestSQLFunctions.cancelLatch.await();
@@ -368,7 +481,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
                 List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query().runningQueries(-1);
 
                 for (GridRunningQueryInfo runningQuery : runningQueries)
-                    igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runningQuery.globalQueryId()));
+                    igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runningQuery.globalQueryId(), async));
 
                 assertEquals(expQryNum, runningQueries.size());
 

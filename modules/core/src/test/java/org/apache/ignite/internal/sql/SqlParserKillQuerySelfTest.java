@@ -44,30 +44,44 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
 
         long qryId = ThreadLocalRandom.current().nextLong();
 
-        assertKillQuery("KILL QUERY '" + nodeId + "_" + qryId + "'", nodeId, qryId);
+        assertKillQuery("KILL QUERY '" + nodeId + "_" + qryId + "'", nodeId, qryId, false);
 
-        assertKillQuery("KILL QUERY '" + nodeId + "_" + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID);
+        assertKillQuery("KILL QUERY '" + nodeId + "_" + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID, false);
 
-        assertKillQuery("kill query '" + nodeId + "_" + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID);
+        assertKillQuery("kill query '" + nodeId + "_" + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID, false);
 
-        assertKillQuery("kIlL qUeRy '" + nodeId + "_" + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID);
+        assertKillQuery("kIlL qUeRy '" + nodeId + "_" + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID, false);
 
-        assertKillQuery("KILL QUERY '" + nodeId + "_" + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID);
+        assertKillQuery("KILL QUERY '" + nodeId + "_" + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID, false);
 
-        assertParseError("KILL QUERY '" + nodeId + "_*1'", "Unexpected token: \"" + nodeId + "_*1\" (expected: \"[global query id]\")");
+        assertParseError("KILL QUERY '" + nodeId + "_*1'", expectedExceptionMessage(nodeId + "_*1"));
 
-        assertParseError("KILL QUERY '" + nodeId + "_a'", "Unexpected token: \"" + nodeId + "_a\" (expected: \"[global query id]\")");
+        assertParseError("KILL QUERY '" + nodeId + "_a'", expectedExceptionMessage(nodeId + "_a"));
 
-        assertParseError("KILL QUERY '" + nodeId  + "_1 1'", "Unexpected token: \"" + nodeId + "_1 1\" (expected: \"[global query id]\")");
+        assertParseError("KILL QUERY '" + nodeId  + "_1 1'", expectedExceptionMessage(nodeId + "_1 1"));
 
         assertParseError("KILL QUERY '" + nodeId  + "_1' 1", "Unexpected token: \"1\"");
 
         assertParseError("KILL '" + nodeId + "_" + TEST_QRY_ID + "'", "Unexpected token: \"" + nodeId + "_341\" (expected: \"QUERY\")");
 
-        assertParseError("KILL QUERY", "Unexpected end of command (expected: \"[global query id]\")");
+        assertParseError("KILL QUERY ", expectedExceptionMessage(""));
 
-        assertParseError("KILL QUERY " + nodeId + "_123", " (expected: \"[global query id]\")");
+        assertParseError("KILL QUERY", expectedExceptionMessage(""));
+
+        assertParseError("KILL QUERY " + nodeId + "_123", expectedExceptionMessage(nodeId.toString().split("-")[0].toUpperCase()));
+
+        assertKillQuery("KILL QUERY '" + nodeId + "_" + qryId + "'  ASYNC", nodeId, qryId, true);
+
+        assertParseError("KILL QUERY '" + nodeId + "_" + qryId + "' ASYNC 1", "Unexpected token: \"1\"");
+
     }
+
+
+    private String expectedExceptionMessage(String globalQryId){
+        return "Token '" + globalQryId + "' has incorrect format. Global query id should be a quoted string contains " +
+            "nodeId and nodeQryId separated by underscore, e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
+    }
+
 
     /**
      * Make sure that parse error occurs.
@@ -86,7 +100,7 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
      * @param nodeIdExp Expected UUID.
      * @param qryIdExp Expected query id.
      */
-    private static void assertKillQuery(String sql, UUID nodeIdExp, long qryIdExp) {
+    private static void assertKillQuery(String sql, UUID nodeIdExp, long qryIdExp, boolean async) {
         SqlCommand cmd = parse(sql);
 
         Assert.assertTrue(cmd instanceof SqlKillQueryCommand);
@@ -96,6 +110,8 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
         Assert.assertEquals(nodeIdExp, killQryCmd.getNodeId());
 
         Assert.assertEquals(qryIdExp, killQryCmd.getNodeQryId());
+
+        Assert.assertEquals(async, killQryCmd.isAsync());
     }
 
     /**

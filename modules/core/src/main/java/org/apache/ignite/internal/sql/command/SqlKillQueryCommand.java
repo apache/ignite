@@ -20,27 +20,88 @@ package org.apache.ignite.internal.sql.command;
 
 import java.util.UUID;
 import org.apache.ignite.internal.sql.SqlLexer;
+import org.apache.ignite.internal.sql.SqlLexerToken;
+import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlParserUtils;
 
 /**
  * KILL QUERY command.
  */
 public class SqlKillQueryCommand implements SqlCommand {
+    /** */
+    private static final String ASYNC = "ASYNC";
     /** Node query id. */
     private long nodeQryId;
 
     /** Node id. */
     private UUID nodeId;
 
+    /** Async flag. */
+    private boolean async;
+
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        SqlGlobalQueryId globalQryId = SqlParserUtils.parseGlobalQueryId(lex);
+        parseGlobalQueryId(lex);
 
-        nodeId = globalQryId.nodeId();
-
-        nodeQryId = globalQryId.nodeQryId();
+        async = parseAsync(lex);
 
         return this;
+    }
+
+    /**
+     * Parse ASYNC flag.
+     *
+     * @param lex Lexer.
+     * @return async flag.
+     */
+    private boolean parseAsync(SqlLexer lex) {
+        SqlLexerToken nextTok = lex.lookAhead();
+
+        if (nextTok.tokenType() == SqlLexerTokenType.DEFAULT && nextTok.token().equals(ASYNC)){
+                lex.shift();
+
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Parse global query id.
+     *
+     * @param lex Lexer.
+     */
+    private void parseGlobalQueryId(SqlLexer lex) {
+        String tok = "";
+
+
+        if(lex.shift()) {
+            if (lex.tokenType() == SqlLexerTokenType.STRING) {
+                tok = lex.token();
+
+                String[] ids = tok.split("_");
+
+                if (ids.length == 2) {
+                    try {
+                        nodeId = UUID.fromString(ids[0]);
+
+                        nodeQryId = Long.parseLong(ids[1]);
+
+                        return;
+                    }
+                    catch (Exception ignore) {
+                        // Fall through.
+                    }
+                }
+            }
+            else
+                tok = lex.token();
+        }
+
+
+        throw SqlParserUtils.error(lex, "Token '" + tok + "' has incorrect format. Global query id should be a " +
+            "quoted string contains nodeId and nodeQryId separated by underscore, " +
+            "e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'");
     }
 
     /** {@inheritDoc} */
@@ -65,5 +126,12 @@ public class SqlKillQueryCommand implements SqlCommand {
      */
     public UUID getNodeId() {
         return nodeId;
+    }
+
+    /**
+     * @return Async flag.
+     */
+    public boolean isAsync(){
+        return async;
     }
 }

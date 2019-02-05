@@ -183,6 +183,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
+import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
@@ -227,16 +228,10 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            // -54 - SQL.
+            // -54 is reserved for SQL.
             // -46 ... -51 - snapshot messages.
             case -61:
                 msg = new IgniteDiagnosticMessage();
-
-                break;
-
-            // TODO: No minuses please.
-            case -54:
-                msg = new GridQueryKillRequest();
 
                 break;
 
@@ -1148,6 +1143,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 171:
                 msg = new ProbedTx();
+
+                break;
+
+            case 172:
+                msg = new GridQueryKillRequest();
+
+                break;
+
+            case 173:
+                msg = new GridQueryKillResponse();
 
                 break;
 
