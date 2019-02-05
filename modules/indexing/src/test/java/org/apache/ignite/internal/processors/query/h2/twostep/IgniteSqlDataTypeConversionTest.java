@@ -37,6 +37,7 @@ import org.junit.Test;
 /**
  * Data conversion tests.
  */
+// TODO: No "Ignite" prefix
 public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
     /** Map to convert <code>PartitionParameterType</code> instances to correspondig java classes. */
     private static final Map<PartitionParameterType, Class<?>> PARAMETER_TYPE_TO_JAVA_CLASS;
@@ -67,6 +68,7 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
         PARAMETER_TYPE_TO_JAVA_CLASS = Collections.unmodifiableMap(paramTypeToJavaCls);
 
         Map<PartitionParameterType, Integer> igniteParamTypeToH2ParamType = new EnumMap<>(PartitionParameterType.class);
+
         igniteParamTypeToH2ParamType.put(PartitionParameterType.BOOLEAN, Value.BOOLEAN);
         igniteParamTypeToH2ParamType.put(PartitionParameterType.BYTE, Value.BYTE);
         igniteParamTypeToH2ParamType.put(PartitionParameterType.SHORT, Value.SHORT);

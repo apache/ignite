@@ -52,21 +52,6 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionSingleNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTable;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityDescriptor;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableModel;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionAffinityFunctionType;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionAllNode;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionCompositeNode;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionCompositeNodeOperator;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionConstantNode;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionGroupNode;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionJoinCondition;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNode;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNoneNode;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterNode;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionSingleNode;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTable;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityDescriptor;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableModel;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.h2.value.Value;
@@ -690,6 +675,7 @@ public class PartitionExtractor {
             case Value.DECIMAL:
                 return PartitionParameterType.DECIMAL;
 
+            // TODO: Remove temporal types
             case Value.DATE:
                 return PartitionParameterType.DATE;
 

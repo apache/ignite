@@ -23,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Exception that represents datatype conversion failure.
  */
+// TODO: Exception should not be thrown. Some special value should be returned instead.
 public class IgniteDataTypeConversionException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;

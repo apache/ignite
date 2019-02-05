@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Utility methods for partition extractor.
  */
+// TODO: Rename to PartitionDataTypeUtils.
 public class PartitionUtils {
 
     /** Decimal representation of maximum long value. */
@@ -127,6 +128,9 @@ public class PartitionUtils {
                 s = p.length() < 40 ? p : arg.toString();
                 return stringToUUID(s);
             case STRING:
+                // TODO: Remove and user UUID.fromString(). If there are any subtle differences between
+                // TODO: UUID.fromString and H2 logic, they should be explained in comments so that we understand
+                // TODO: what part of conversions are absent in our logic.
                 return stringToUUID((String)arg);
             default:
                 throw new IllegalArgumentException("Unable to convert arg [" + arg + "] " +
@@ -155,6 +159,7 @@ public class PartitionUtils {
             case FLOAT:
                 return String.valueOf(arg);
             case DECIMAL: {
+                // TODO: What for? Explain in comments difference between toPlainString and toString
                 String p = ((BigDecimal)arg).toPlainString();
                 return p.length() < 40 ? p : arg.toString();
             }
@@ -368,6 +373,7 @@ public class PartitionUtils {
      * @param argType Type of the argument.
      * @return Converted value.
      */
+    // TODO: Investigate other vendors: what happens for out-of-bound case? e.g. convert(257) -> error or -1 or something else?
     @NotNull private static Object getByte(Object arg, PartitionParameterType targetType,
         PartitionParameterType argType) {
         switch (argType) {
@@ -378,10 +384,13 @@ public class PartitionUtils {
             case LONG:
                 return convertToByte(((Number)arg).longValue(), argType);
             case DECIMAL:
+                // TODO: Remove intermediate
                 return convertToByte(convertToLong((BigDecimal)arg, argType), argType);
             case DOUBLE:
+                // TODO: Remove intermediate
                 return convertToByte(convertToLong((Double)arg, argType), argType);
             case FLOAT:
+                // TODO: Remove intermediate
                 return convertToByte(convertToLong((Float)arg, argType), argType);
             case STRING:
                 return Byte.parseByte(((String)arg).trim());
@@ -399,6 +408,7 @@ public class PartitionUtils {
      * @param argType Type of the argument.
      * @return Converted value.
      */
+    // TODO: Investigate other vendors: what happens for -1?
     @NotNull private static Object getBoolean(Object arg, PartitionParameterType targetType,
         PartitionParameterType argType) {
         switch (argType) {
@@ -413,8 +423,10 @@ public class PartitionUtils {
             case DECIMAL:
                 return !arg.equals(BigDecimal.ZERO);
             case DOUBLE:
+                // TODO: signum
                 return (Double)arg != 0;
             case FLOAT:
+                // TODO: signum
                 return (Float)arg != 0;
             case STRING: {
                 String sVal = (String)arg;
@@ -454,6 +466,7 @@ public class PartitionUtils {
      * @param c The Java class.
      * @return The <code>PartitionParameterType</code> type.
      */
+    // TODO: Do we need it?
     private static PartitionParameterType typeFromClass(Class<?> c) {
         assert c != null;
 
