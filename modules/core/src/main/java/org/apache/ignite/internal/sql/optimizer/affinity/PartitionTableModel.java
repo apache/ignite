@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionJoinCondition;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionJoinGroup;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTable;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityDescriptor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
