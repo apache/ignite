@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetSizeRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheLocalPeekRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheNodePartitionsRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePartitionsRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutIfAbsentRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
@@ -68,6 +69,8 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_3_0;
 
 /**
  * Thin client message parser.
@@ -168,8 +171,11 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /* Cache service info. */
 
-    /** */
+    /** Deprecated since 1.3.0. Replaced by OP_CACHE_PARTITIONS. */
     private static final short OP_CACHE_NODE_PARTITIONS = 1100;
+
+    /** */
+    private static final short OP_CACHE_PARTITIONS = 1101;
 
     /* Query operations. */
     /** */
@@ -205,7 +211,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
-    
+
     /** Client version */
     private final ClientListenerProtocolVersion ver;
 
@@ -221,7 +227,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
         marsh = cacheObjProc.marshaller();
-        
+
         this.ver = ver;
     }
 
@@ -344,8 +350,15 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_CACHE_DESTROY:
                 return new ClientCacheDestroyRequest(reader);
 
-            case OP_CACHE_NODE_PARTITIONS:
+            case OP_CACHE_NODE_PARTITIONS: {
+                if (ver.compareTo(VER_1_3_0) >= 0)
+                    break;
+
                 return new ClientCacheNodePartitionsRequest(reader);
+            }
+
+            case OP_CACHE_PARTITIONS:
+                return new ClientCachePartitionsRequest(reader);
 
             case OP_CACHE_GET_NAMES:
                 return new ClientCacheGetNamesRequest(reader);

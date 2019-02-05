@@ -17,39 +17,37 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectableNodePartitions;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
  * Client cache nodes partitions response.
- * Deprecated since 1.3.0. Replaced with {@link ClientCachePartitionsResponse}.
  */
-class ClientCacheNodePartitionsResponse extends ClientResponse {
+class ClientCachePartitionsResponse extends ClientResponse {
     /** Node partitions. */
-    private final Collection<ClientConnectableNodePartitions> nodeParts;
+    private final ArrayList<ClientCachePartitionsMapping> mappings;
 
     /**
      * @param requestId Request id.
-     * @param nodeParts Node partitions info.
+     * @param mappings Mappings for caches.
      */
-    ClientCacheNodePartitionsResponse(long requestId, Collection<ClientConnectableNodePartitions> nodeParts) {
+    ClientCachePartitionsResponse(long requestId, ArrayList<ClientCachePartitionsMapping> mappings) {
         super(requestId);
 
-        assert nodeParts != null;
+        assert mappings != null;
 
-        this.nodeParts = nodeParts;
+        this.mappings = mappings;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(BinaryRawWriterEx writer) {
         super.encode(writer);
 
-        writer.writeInt(nodeParts.size());
+        writer.writeInt(mappings.size());
 
-        for (ClientConnectableNodePartitions nodePart : nodeParts) {
-            nodePart.write(writer);
+        for (ClientCachePartitionsMapping mapping : mappings) {
+            mapping.write(writer);
         }
     }
 }
