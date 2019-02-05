@@ -1247,8 +1247,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry which sql text to parse.
      * @return Command or {@code null} if cannot parse this query.
      */
-     @Nullable private NativeParsingResult parseNativeLeadingStatement(String schemaName, SqlFieldsQuery qry) {
-         final NativeParsingResult NOT_YET_SUPPORTED = null;
+     @Nullable private ParsingResult parseNativeLeadingStatement(String schemaName, SqlFieldsQuery qry) {
+         final ParsingResult NOT_YET_SUPPORTED = null;
 
          String sql = qry.getSql();
 
@@ -1261,8 +1261,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             SqlCommand leadingCmd = parser.nextCommand();
 
-            if (leadingCmd == null) // parser met EOF
-                return NativeParsingResult.eof();
+            assert leadingCmd != null : "Empty query. Parser met end of data";
 
             if (!(leadingCmd instanceof SqlCreateIndexCommand
                 || leadingCmd instanceof SqlDropIndexCommand
@@ -1278,7 +1277,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return NOT_YET_SUPPORTED;
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.processedSql());
-            return new NativeParsingResult(leadingCmd, newQry, parser.remainingSql());
+
+            return ParsingResult.nativeResult(newQry, leadingCmd, parser.remainingSql());
         }
         catch (SqlStrictParseException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
@@ -1475,66 +1475,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    // todo : dont use String.substring, use ref to the String obj and pos instead.
-    /**
-     * Intermediate parsing result of the native (non-h2) parser. Queries are parsed lazily.
-     * Original query is represented by this class: parsed head and the tail as a text.
-     */
-    public static class NativeParsingResult {
-        /** Parsed leading command. */
-        private final SqlCommand newCmd;
-
-        /** Query that {@linkplain #newCmd} represents. */
-        private final SqlFieldsQuery newQry;
-
-        /** The rest of the sql script */
-        private final String remainingSql;
-
-        /** Constructs parsing result. */
-        public NativeParsingResult(SqlCommand newCmd, SqlFieldsQuery newQry, String remainingSql) {
-            assert !(newCmd == null && remainingSql != null);
-
-            this.newQry = newQry;
-            this.newCmd = newCmd;
-            this.remainingSql = remainingSql;
-        }
-
-        /**
-         * Parsed leading command from the original query.
-         */
-        public SqlCommand newCmd() {
-            return newCmd;
-        }
-
-        /**
-         * Not yet parsed part of the query. {@code Null} if there is no one.
-         */
-        public String remainingSql() {
-            return remainingSql;
-        }
-
-        /**
-         * Sql query that {@linkplain #newCmd} represents.
-         */
-        public SqlFieldsQuery newQry() {
-            return newQry;
-        }
-
-        /**
-         * Create parsing result in case parser met
-         */
-        public static NativeParsingResult eof() {
-            return new NativeParsingResult(null, null,null);
-        }
-
-        /**
-         * Determine if parser reached the end of the script.
-         */
-        public boolean isEof() {
-            return newCmd == null;
-        }
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings({"StringEquality", "unchecked"})
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
@@ -1603,43 +1543,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             while (remainingSql != null) {
                 SqlFieldsQuery remainingQry = remainingSql != qry.getSql() ? cloneFieldsQuery(qry).setSql(remainingSql) : qry;
 
-                List<? extends FieldsQueryCursor<List<?>>> curStmtRes = null;
+                ParsingResult parseRes = parse(schemaName, remainingQry, firstArg);
 
-                {
-                    // Try to parse remaining sql with native parser:
-                    NativeParsingResult parsed = parseNativeLeadingStatement(schemaName, remainingQry);
+                SqlCommand nativeCmd = parseRes.newCmd();
 
-                    if (parsed != null) {
-                        // parser supports leading statement.
-                        assert !parsed.isEof() : "There is nothing to parse.";
+                remainingSql = parseRes.remainingSql();
 
-                        SqlCommand nativeCmd = parsed.newCmd();
+                if (remainingSql != null && failOnMultipleStmts)
+                    throw new IgniteSQLException("Multiple statements queries are not supported");
 
-                        if (!(nativeCmd instanceof SqlCommitTransactionCommand || nativeCmd instanceof SqlRollbackTransactionCommand)
-                            && !ctx.state().publicApiActiveState(true)) {
-                            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
-                                "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                                "join the cluster. To activate the cluster call Ignite.active(true).");
-                        }
+                SqlFieldsQuery newQry = parseRes.newQuery();
 
-                        remainingSql = parsed.remainingSql();
+                assert newQry.getSql() != null;
 
-                        if (remainingSql != null && failOnMultipleStmts)
-                            throw new IgniteSQLException("Multiple statements queries are not supported");
+                if (nativeCmd != null) {
 
-                        assert parsed.newQry().getSql() != null;
-
-                        curStmtRes = queryDistributedSqlFieldsNative(schemaName, parsed.newQry(), nativeCmd, cliCtx);
+                    if (!(nativeCmd instanceof SqlCommitTransactionCommand || nativeCmd instanceof SqlRollbackTransactionCommand)
+                        && !ctx.state().publicApiActiveState(true)) {
+                        throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                            "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                            "join the cluster. To activate the cluster call Ignite.active(true).");
                     }
-                }
 
-                if (curStmtRes == null) {
-                    //fallback to h2 parser
-                    ParsingResult parseRes = parseAndSplit(
-                        schemaName,
-                        remainingQry,
-                        firstArg);
-
+                    res.addAll(queryDistributedSqlFieldsNative(schemaName, newQry, nativeCmd, cliCtx));
+                } else {
                     // Let's avoid second reflection getter call by returning Prepared object too
                     Prepared prepared = parseRes.prepared();
 
@@ -1647,17 +1574,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     List<GridQueryFieldMetadata> meta = parseRes.meta();
 
-                    SqlFieldsQuery newQry = parseRes.newQuery();
-
-                    remainingSql = parseRes.remainingSql();
-
-                    if (remainingSql != null && failOnMultipleStmts)
-                        throw new IgniteSQLException("Multiple statements queries are not supported");
-
                     firstArg += prepared.getParameters().size();
 
-                    curStmtRes = doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, startTx, tracker,
-                        cancel, registerAsNewQry);
+                    res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, startTx, tracker,
+                        cancel, registerAsNewQry));
 
                     // We cannot cache two-step query for multiple statements query except the last statement
                     if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
@@ -1665,8 +1585,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
                             twoStepQry.copy()));
                 }
-
-                res.addAll(curStmtRes);
             }
 
             return res;
@@ -1684,6 +1602,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw e;
         }
     }
+
+    /**
+     * Parses generic query. Tries to parse query natively and uses h2 parser if attempt was not succeed.
+     * Actually, only first (leading) sql statement is performed (Lazy parsing).
+     *
+     * @param schemaName schema name.
+     * @param qry query to parse.
+     * @param firstArg index of the first argument of the leading query. In other words - offset in the qry args array.
+     * @return Parsing result that contains Parsed leading query and remaining sql script.
+     */
+    private ParsingResult parse (String schemaName, SqlFieldsQuery qry, int firstArg) {
+        ParsingResult parseRes = parseNativeLeadingStatement(schemaName, qry);
+
+        if (parseRes != null)
+            return parseRes;
+
+        // parse with h2 parser:
+        return parseAndSplit(schemaName, qry, firstArg);
+    }
+
 
     /**
      * Execute an all-ready {@link SqlFieldsQuery}.
@@ -1935,7 +1873,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             connMgr.statementCacheForThread().remove(schemaName, qry.getSql());
 
         if (!hasTwoStep)
-            return new ParsingResult(prepared, newQry, remainingSql, null, null, null);
+            return ParsingResult.nonTwoStep(prepared, newQry, remainingSql);
 
         final UUID locNodeId = ctx.localNodeId();
 
@@ -1953,7 +1891,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
-            return new ParsingResult(prepared, newQry, remainingSql, twoStepQry, cachedQryKey, meta);
+            return ParsingResult.twoStepResult(prepared, newQry, remainingSql, twoStepQry, cachedQryKey, meta);
         }
 
         try {
@@ -1963,7 +1901,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             try {
                 GridCacheTwoStepQuery twoStepQry = split(prepared, newQry);
 
-                return new ParsingResult(prepared, newQry, remainingSql, twoStepQry,
+                return ParsingResult.twoStepResult(prepared, newQry, remainingSql, twoStepQry,
                     cachedQryKey, H2Utils.meta(stmt.getMetaData()));
             }
             catch (IgniteCheckedException e) {

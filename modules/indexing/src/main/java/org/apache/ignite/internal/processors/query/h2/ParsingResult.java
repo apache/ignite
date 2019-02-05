@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.h2.command.Prepared;
 
 /**
@@ -39,22 +40,64 @@ final class ParsingResult {
     /** Two-step query, or {@code} null if this result is for local query. */
     private final GridCacheTwoStepQuery twoStepQry;
 
-    /** Two-step query key to cache {@link #twoStepQry}, or {@code null} if there's no need to worry
-     * about two-step caching. */
+    /**
+     * Two-step query key to cache {@link #twoStepQry}, or {@code null} if there's no need to worry about two-step
+     * caching.
+     */
     private final H2TwoStepCachedQueryKey twoStepQryKey;
 
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> meta;
 
+    /** Parsed native command/ */
+    private final SqlCommand newCmd;
+
     /** Simple constructor. */
-    ParsingResult(Prepared prepared, SqlFieldsQuery newQry, String remainingSql, GridCacheTwoStepQuery twoStepQry,
-        H2TwoStepCachedQueryKey twoStepQryKey, List<GridQueryFieldMetadata> meta) {
+    private ParsingResult(Prepared prepared, SqlFieldsQuery newQry, String remainingSql,
+        GridCacheTwoStepQuery twoStepQry,
+        H2TwoStepCachedQueryKey twoStepQryKey, List<GridQueryFieldMetadata> meta, SqlCommand newCmd) {
         this.prepared = prepared;
         this.newQry = newQry;
         this.remainingSql = remainingSql;
         this.twoStepQry = twoStepQry;
         this.twoStepQryKey = twoStepQryKey;
         this.meta = meta;
+        this.newCmd = newCmd;
+    }
+
+    /**
+     * Construct result in case of h2 parsing and two step query.
+     */
+    public static ParsingResult twoStepResult(
+        Prepared prepared,
+        SqlFieldsQuery newQry,
+        String remainingSql,
+        GridCacheTwoStepQuery twoStepQry,
+        H2TwoStepCachedQueryKey twoStepQryKey,
+        List<GridQueryFieldMetadata> meta) {
+        return new ParsingResult(prepared, newQry, remainingSql, twoStepQry, twoStepQryKey, meta, null);
+    }
+
+    /**
+     * Construct parsing result in case of native parsing.
+     *
+     * @param newQry leading sql statement of the original multi-statement query.
+     * @param newCmd parsed sql command. Represents newQry.
+     * @param remainingSql the rest of the original query.
+     */
+    public static ParsingResult nativeResult(SqlFieldsQuery newQry, SqlCommand newCmd, String remainingSql) {
+        return new ParsingResult(null, newQry, remainingSql, null, null, null, newCmd);
+    }
+
+    /**
+     * Result in case we use h2 but don't have two step query.
+     *
+     * @param prepared h2's parsed prepared statement. The leading statement of the original multi-statement query.
+     * @param newQry SqlFields query that prepare represents.
+     * @param remainingSql the rest of the original query.
+     */
+    public static ParsingResult nonTwoStep(Prepared prepared, SqlFieldsQuery newQry, String remainingSql) {
+        return new ParsingResult(prepared, newQry, remainingSql, null, null, null, null);
     }
 
     /**
@@ -69,6 +112,11 @@ final class ParsingResult {
      */
     SqlFieldsQuery newQuery() {
         return newQry;
+    }
+
+    /** Parsed sql command. */
+    public SqlCommand newCmd() {
+        return newCmd;
     }
 
     /**
@@ -93,8 +141,8 @@ final class ParsingResult {
     }
 
     /**
-     * @return Two-step query key to cache {@link #twoStepQry}, or {@code null} if there's no need to worry
-     * about two-step caching.
+     * @return Two-step query key to cache {@link #twoStepQry}, or {@code null} if there's no need to worry about
+     * two-step caching.
      */
     H2TwoStepCachedQueryKey twoStepQueryKey() {
         return twoStepQryKey;
