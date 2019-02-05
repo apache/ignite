@@ -33,7 +33,7 @@ import org.junit.runners.JUnit4;
  * Testing permissions when the filter of ScanQuery is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
+public class ScanQueryCacheSecurityTest extends AbstractCacheSecurityTest {
     /**
      *
      */

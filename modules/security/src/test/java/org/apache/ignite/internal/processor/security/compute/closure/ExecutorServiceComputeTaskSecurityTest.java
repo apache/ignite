@@ -34,7 +34,7 @@ import org.junit.runners.JUnit4;
  * Testing permissions when the service task is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class ExecutorServiceTaskSecurityTest extends AbstractComputeTaskSecurityTest {
+public class ExecutorServiceComputeTaskSecurityTest extends AbstractComputeTaskSecurityTest {
     /**
      *
      */

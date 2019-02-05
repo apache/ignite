@@ -36,7 +36,7 @@ import org.junit.runners.JUnit4;
  * Testing permissions when the message listener is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
+public class IgniteMessagingResolveSecurityContextTest extends AbstractResolveSecurityContextTest {
     /** Barrier. */
     private static final CyclicBarrier BARRIER = new CyclicBarrier(3);
 

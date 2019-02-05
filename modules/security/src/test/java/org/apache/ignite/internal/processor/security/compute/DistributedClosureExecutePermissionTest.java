@@ -28,7 +28,7 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 /**
  * Test task execute permission for compute broadcast.
  */
-public class TaskExecutePermissionForDistributedClosureTest extends AbstractTaskExecutePermissionTest {
+public class DistributedClosureExecutePermissionTest extends AbstractTaskExecutePermissionTest {
     /** Test callable. */
     protected static final IgniteCallable<Object> TEST_CALLABLE = () -> {
         IS_EXECUTED.set(true);

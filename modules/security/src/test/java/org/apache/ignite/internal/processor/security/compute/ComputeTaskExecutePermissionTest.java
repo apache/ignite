@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Test task execute permission for compute task.
  */
-public class TaskExecutePermissionForComputeTaskTest extends AbstractTaskExecutePermissionTest {
+public class ComputeTaskExecutePermissionTest extends AbstractTaskExecutePermissionTest {
     /** Allowed task. */
     private static final AllowedTask TEST_TASK = new AllowedTask();
 

@@ -28,7 +28,7 @@ import static java.util.Collections.singletonList;
 /**
  * Test task execute permission for Executor Service.
  */
-public class TaskExecutePermissionForExecutorServiceTest extends AbstractTaskExecutePermissionTest {
+public class ExecutorServiceExecutePermissionTest extends AbstractTaskExecutePermissionTest {
     /** Test callable. */
     protected static final IgniteCallable<Object> TEST_CALLABLE = () -> {
         IS_EXECUTED.set(true);

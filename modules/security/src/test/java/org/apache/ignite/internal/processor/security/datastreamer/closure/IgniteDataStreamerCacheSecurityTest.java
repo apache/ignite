@@ -36,7 +36,7 @@ import org.junit.runners.JUnit4;
  * Testing permissions when the closure od DataStreamer is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
+public class IgniteDataStreamerCacheSecurityTest extends AbstractCacheSecurityTest {
     /**
      *
      */

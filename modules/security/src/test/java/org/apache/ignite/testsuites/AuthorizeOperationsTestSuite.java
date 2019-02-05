@@ -21,19 +21,19 @@ import org.apache.ignite.internal.processor.security.cache.CachePermissionsTest;
 import org.apache.ignite.internal.processor.security.cache.EntryProcessorCachePermissionTest;
 import org.apache.ignite.internal.processor.security.cache.LoadCachePermissionTest;
 import org.apache.ignite.internal.processor.security.cache.ScanQueryCachePermissionTest;
-import org.apache.ignite.internal.processor.security.cache.closure.EntryProcessorSecurityTest;
+import org.apache.ignite.internal.processor.security.cache.closure.EntryProcessorCacheSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.closure.LoadCacheSecurityTest;
-import org.apache.ignite.internal.processor.security.cache.closure.ScanQuerySecurityTest;
+import org.apache.ignite.internal.processor.security.cache.closure.ScanQueryCacheSecurityTest;
 import org.apache.ignite.internal.processor.security.client.ThinClientSecurityTest;
-import org.apache.ignite.internal.processor.security.compute.TaskExecutePermissionForComputeTaskTest;
-import org.apache.ignite.internal.processor.security.compute.TaskExecutePermissionForDistributedClosureTest;
-import org.apache.ignite.internal.processor.security.compute.TaskExecutePermissionForExecutorServiceTest;
+import org.apache.ignite.internal.processor.security.compute.ComputeTaskExecutePermissionTest;
+import org.apache.ignite.internal.processor.security.compute.DistributedClosureExecutePermissionTest;
+import org.apache.ignite.internal.processor.security.compute.ExecutorServiceExecutePermissionTest;
 import org.apache.ignite.internal.processor.security.compute.closure.ComputeTaskSecurityTest;
-import org.apache.ignite.internal.processor.security.compute.closure.DistributedClosureSecurityTest;
-import org.apache.ignite.internal.processor.security.compute.closure.ExecutorServiceTaskSecurityTest;
+import org.apache.ignite.internal.processor.security.compute.closure.DistributedClosureComputeTaskSecurityTest;
+import org.apache.ignite.internal.processor.security.compute.closure.ExecutorServiceComputeTaskSecurityTest;
 import org.apache.ignite.internal.processor.security.datastreamer.DataStreamerCachePermissionTest;
-import org.apache.ignite.internal.processor.security.datastreamer.closure.IgniteDataStreamerSecurityTest;
-import org.apache.ignite.internal.processor.security.messaging.IgniteMessagingTest;
+import org.apache.ignite.internal.processor.security.datastreamer.closure.IgniteDataStreamerCacheSecurityTest;
+import org.apache.ignite.internal.processor.security.messaging.IgniteMessagingResolveSecurityContextTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -47,19 +47,19 @@ import org.junit.runners.Suite;
     ScanQueryCachePermissionTest.class,
     LoadCachePermissionTest.class,
     EntryProcessorCachePermissionTest.class,
-    TaskExecutePermissionForExecutorServiceTest.class,
-    TaskExecutePermissionForDistributedClosureTest.class,
-    TaskExecutePermissionForComputeTaskTest.class,
+    ExecutorServiceExecutePermissionTest.class,
+    DistributedClosureExecutePermissionTest.class,
+    ComputeTaskExecutePermissionTest.class,
 
-    DistributedClosureSecurityTest.class,
+    DistributedClosureComputeTaskSecurityTest.class,
     ComputeTaskSecurityTest.class,
-    ExecutorServiceTaskSecurityTest.class,
-    ScanQuerySecurityTest.class,
-    EntryProcessorSecurityTest.class,
-    IgniteDataStreamerSecurityTest.class,
+    ExecutorServiceComputeTaskSecurityTest.class,
+    ScanQueryCacheSecurityTest.class,
+    EntryProcessorCacheSecurityTest.class,
+    IgniteDataStreamerCacheSecurityTest.class,
     LoadCacheSecurityTest.class,
     ThinClientSecurityTest.class,
-    IgniteMessagingTest.class,
+    IgniteMessagingResolveSecurityContextTest.class,
 })
 public class AuthorizeOperationsTestSuite {
 }

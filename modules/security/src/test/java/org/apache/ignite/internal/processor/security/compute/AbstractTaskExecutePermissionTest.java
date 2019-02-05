@@ -90,7 +90,7 @@ public abstract class AbstractTaskExecutePermissionTest extends AbstractSecurity
     @Test
     public void test() {
         for (TestRunnable r : runnablesForNodes(srvAllowed, clntAllowed))
-            allowRun(r);
+            allowedRun(r);
 
         for (TestRunnable r : runnablesForNodes(srvForbidden, clntForbidden))
             forbiddenRun(r);
@@ -133,7 +133,7 @@ public abstract class AbstractTaskExecutePermissionTest extends AbstractSecurity
     /**
      * @param r TestRunnable.
      */
-    private void allowRun(TestRunnable r) {
+    private void allowedRun(TestRunnable r) {
         IS_EXECUTED.set(false);
 
         try {

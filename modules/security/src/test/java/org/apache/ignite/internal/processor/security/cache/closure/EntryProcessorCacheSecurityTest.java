@@ -34,7 +34,7 @@ import org.junit.runners.JUnit4;
  * Testing permissions when EntryProcessor closure is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
+public class EntryProcessorCacheSecurityTest extends AbstractCacheSecurityTest {
     /**
      *
      */
