@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -45,12 +47,40 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.model.Statement;
 
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
  */
+@RunWith(Parameterized.class)
 public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
+    /** */
+    @Parameterized.Parameters
+    public static List<Object[]> params() {
+        return Arrays.asList(new Object[20][0]);
+    }
+
+    /** */
+    @Rule
+    public TestRule runSingleTest = new TestRule() {
+        @Override public Statement apply(Statement base, Description description) {
+            if (description.getMethodName().contains("testRebalancingDuringLoad_10_10_1_1"))
+                return base;
+            else {
+                return new Statement() {
+                    @Override public void evaluate() throws Throwable {
+                        // skip test
+                    }
+                };
+            }
+        }
+    };
     /** */
     private static final int GRID_CNT = 4;
 
@@ -230,7 +260,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_10_10_1_1() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10583", MvccFeatureChecker.forcedMvcc());
+//        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10583", MvccFeatureChecker.forcedMvcc());
 
         checkRebalancingDuringLoad(10, 10, 1, 1);
     }
