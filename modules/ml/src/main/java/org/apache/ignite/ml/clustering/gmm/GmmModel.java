@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.DistributionMixture;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
 
-public class GmmModel extends DistributionMixture implements IgniteModel<Vector, Double> {
+public class GmmModel extends DistributionMixture<MultivariateGaussianDistribution> implements IgniteModel<Vector, Double> {
     public GmmModel(Vector componentProbs, List<MultivariateGaussianDistribution> distributions) {
         super(componentProbs, distributions);
     }

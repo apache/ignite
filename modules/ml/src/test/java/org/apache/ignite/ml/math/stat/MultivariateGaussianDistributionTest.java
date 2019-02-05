@@ -13,7 +13,7 @@ public class MultivariateGaussianDistributionTest {
             new DenseMatrix(new double[][] {new double[] {1, -0.5}, new double[] {-0.5, 1}})
         );
 
-        Assert.assertEquals(0.183, distribution.apply(VectorUtils.of(1, 2)), 0.01);
-        Assert.assertEquals(0.094, distribution.apply(VectorUtils.of(0, 2)), 0.01);
+        Assert.assertEquals(0.183, distribution.prob(VectorUtils.of(1, 2)), 0.01);
+        Assert.assertEquals(0.094, distribution.prob(VectorUtils.of(0, 2)), 0.01);
     }
 }

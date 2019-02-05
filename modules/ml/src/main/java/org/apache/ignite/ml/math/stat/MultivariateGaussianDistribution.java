@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.math.stat;
 
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -26,9 +27,15 @@ public class MultivariateGaussianDistribution implements Distribution {
     private final double normalizer;
 
     public MultivariateGaussianDistribution(Vector mean, Matrix covariance) {
+        A.ensure(covariance.columnSize() == covariance.rowSize(), "Covariance matrix should be square");
+        A.ensure(mean.size() == covariance.rowSize(), "Covariance matrix should be built from same space as mean vector");
+
         this.mean = mean;
         invCovariance = covariance.inverse();
-        normalizer = Math.pow(2 * Math.PI, ((double)invCovariance.rowSize()) / 2) * Math.sqrt(covariance.determinant());
+
+        double determinant = covariance.determinant();
+        A.ensure(determinant > 0, "Covariance matrix should be positife definite");
+        normalizer = Math.pow(2 * Math.PI, ((double)invCovariance.rowSize()) / 2) * Math.sqrt(determinant);
     }
 
     @Override public double prob(Vector x) {
@@ -40,5 +47,13 @@ public class MultivariateGaussianDistribution implements Distribution {
         assert ePower.columnSize() == 1 && ePower.rowSize() == 1;
 
         return Math.pow(Math.E, ePower.get(0, 0)) / normalizer;
+    }
+
+    @Override public int dimension() {
+        return mean.size();
+    }
+
+    public Vector mean() {
+        return mean.copy();
     }
 }

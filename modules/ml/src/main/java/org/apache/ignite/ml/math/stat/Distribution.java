@@ -22,4 +22,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 public interface Distribution extends Serializable {
     public double prob(Vector x);
+
+    public int dimension();
 }
