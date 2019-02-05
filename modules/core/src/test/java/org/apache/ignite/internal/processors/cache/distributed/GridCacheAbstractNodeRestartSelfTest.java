@@ -63,9 +63,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /** Cache name. */
     protected static final String CACHE_NAME = "TEST_CACHE";
 
-    /** */
-    private static final long TEST_TIMEOUT = 5 * 60 * 1000;
-
     /** Default backups. */
     private static final int DFLT_BACKUPS = 1;
 
@@ -186,11 +183,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      */
     protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return TEST_TIMEOUT;
     }
 
     /**
@@ -957,7 +949,12 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                             error("Unexpected exception in put-worker.", e);
                         }
                     }
-                }, "put-worker-" + i);
+                }, "put-worker-" + i) {
+                    @Override public void interrupt() {
+                        error(getName() + " was interrupted by " + Thread.currentThread());
+                        super.interrupt();
+                    }
+                };
 
                 t.start();
 
@@ -992,7 +989,12 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                             error("Unexpected exception in restart-worker.", e);
                         }
                     }
-                }, "restart-worker-" + i);
+                }, "restart-worker-" + i) {
+                    @Override public void interrupt() {
+                        error(getName() + " was interrupted by " + Thread.currentThread());
+                        super.interrupt();
+                    }
+                };
 
                 t.start();
 
