@@ -5090,7 +5090,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         if (leafIos.getType() == type)
             return leafIos.forVersion(ver);
 
-        throw new IllegalStateException("Unknown page type: " + type + " pageId: " + U.hexLong(PageIO.getPageId(pageAddr)));
+        throw new IllegalStateException("Unknown page type: " + type +
+            " pageId: " + U.hexLong(PageIO.getPageId(pageAddr)) +
+            " thread: " + Thread.currentThread().getName());
     }
 
     /**
