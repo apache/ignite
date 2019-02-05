@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -974,6 +975,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         if (e instanceof TransactionSerializationException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, msg);
+        if (e instanceof TransactionAlreadyCompletedException)
+            return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, msg);
         if (e instanceof MvccUtils.NonMvccTransactionException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, msg);
         if (e instanceof MvccUtils.UnsupportedTxModeException)
