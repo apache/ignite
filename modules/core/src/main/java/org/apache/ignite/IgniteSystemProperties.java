@@ -722,12 +722,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";
 
     /**
-     * Start Ignite on versions of JRE 7 older than 1.7.0_71. For proper work it may require
-     * disabling JIT in some places.
-     */
-    public static final String IGNITE_FORCE_START_JAVA7 = "IGNITE_FORCE_START_JAVA7";
-
-    /**
      * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
      * support service security permissions. In this case security permissions will be ignored
      * (if they set).
