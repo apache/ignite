@@ -3724,6 +3724,24 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     return;
                 }
+                else {
+                    if (nodesHist.contains(node.id())) {
+                        try {
+                            trySendMessageDirectly(node, new TcpDiscoveryDuplicateIdMessage(locNodeId,
+                                node));
+                        }
+                        catch (IgniteSpiException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to send duplicate ID message to node " +
+                                    "[node=" + node +
+                                    ", err=" + e.getMessage() + ']');
+
+                            onException("Failed to send duplicate ID message to node: " + node, e);
+                        }
+
+                        return;
+                    }
+                }
 
                 if (spi.nodeAuth != null) {
                     // Authenticate node first.
@@ -6694,25 +6712,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 spi.getSocketTimeout();
 
             if (state == CONNECTED) {
-                TcpDiscoveryNode node = msg.node();
-
-                if (!node.isClient() && !node.isDaemon()) {
-                    if (nodesHist.contains(node.id())) {
-                        spi.writeToSocket(msg, sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
-
-                        return false;
-                    }
-                }
-
-                // Check that joining node can accept incoming connections.
-                if (node.clientRouterNodeId() == null) {
-                    if (!pingJoiningNode(node)) {
-                        spi.writeToSocket(msg, sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
-
-                        return false;
-                    }
-                }
-
                 spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
                 if (log.isDebugEnabled())
@@ -6761,31 +6760,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 return false;
             }
-        }
-
-        /**
-         * @param node Node.
-         */
-        private boolean pingJoiningNode(TcpDiscoveryNode node) {
-            for (InetSocketAddress addr : spi.getNodeAddresses(node, false)) {
-                try {
-                    if (!(addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr))) {
-                        IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null);
-
-                        if (t != null)
-                            return true;
-                    }
-                }
-                catch (IgniteCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to ping joining node, closing connection. [node=" + node +
-                            ", err=" + e.getMessage() + ']');
-                }
-            }
-
-            U.warn(log, "Failed to ping joining node, closing connection. [node=" + node + ']');
-
-            return false;
         }
 
         /** {@inheritDoc} */
