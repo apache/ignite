@@ -45,7 +45,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     public static final ClientListenerProtocolVersion VER_1_2_0 = ClientListenerProtocolVersion.create(1, 2, 0);
 
     /** Version 1.3.0. Added: Best Effort Affinity support, IEP-23. */
-    public static final ClientListenerProtocolVersion VER_1_3_0 = ClientListenerProtocolVersion.create(1, 2, 0);
+    public static final ClientListenerProtocolVersion VER_1_3_0 = ClientListenerProtocolVersion.create(1, 3, 0);
 
     /** Current version. */
     public static final ClientListenerProtocolVersion CURRENT_VER = VER_1_3_0;
