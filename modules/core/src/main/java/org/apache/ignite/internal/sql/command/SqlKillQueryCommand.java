@@ -57,6 +57,7 @@ public class SqlKillQueryCommand implements SqlCommand {
     private boolean parseAsync(SqlLexer lex) {
         SqlLexerToken nextTok = lex.lookAhead();
 
+        // TODO: Reuse in utils
         if (nextTok.tokenType() == SqlLexerTokenType.DEFAULT && nextTok.token().equals(ASYNC)){
                 lex.shift();
 
@@ -73,7 +74,6 @@ public class SqlKillQueryCommand implements SqlCommand {
      */
     private void parseGlobalQueryId(SqlLexer lex) {
         String tok = "";
-
 
         if(lex.shift()) {
             if (lex.tokenType() == SqlLexerTokenType.STRING) {
@@ -98,7 +98,6 @@ public class SqlKillQueryCommand implements SqlCommand {
                 tok = lex.token();
         }
 
-
         throw SqlParserUtils.error(lex, "Token '" + tok + "' has incorrect format. Global query id should be a " +
             "quoted string contains nodeId and nodeQryId separated by underscore, " +
             "e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'");
@@ -117,6 +116,7 @@ public class SqlKillQueryCommand implements SqlCommand {
     /**
      * @return Node query id.
      */
+    // TODO: No abbreviations, no get
     public long getNodeQryId() {
         return nodeQryId;
     }
@@ -124,6 +124,7 @@ public class SqlKillQueryCommand implements SqlCommand {
     /**
      * @return Node order id.
      */
+    // TODO: no get
     public UUID getNodeId() {
         return nodeId;
     }
@@ -131,6 +132,7 @@ public class SqlKillQueryCommand implements SqlCommand {
     /**
      * @return Async flag.
      */
+    // TODO: no get
     public boolean isAsync(){
         return async;
     }

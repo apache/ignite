@@ -1393,7 +1393,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cmd Command.
      * @param qry Query.
      */
+    // TODO: Why SqlFieldsQuery is passed here?
     private void processKillQueryCommand(SqlKillQueryCommand cmd, SqlFieldsQuery qry) {
+
+        // TODO: Use discovery: ctx.discovery().node(cmd.getNodeId())
+
         ClusterNode node = ctx.cluster().get().node(cmd.getNodeId());
 
         if (node != null) {
@@ -1418,16 +1422,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
+            // TODO: Do not send for "joined" future.
             boolean snd = send(GridTopic.TOPIC_QUERY,
                 GridTopic.TOPIC_QUERY.ordinal(),
                 Collections.singleton(node),
                 new GridQueryKillRequest(cmd.getNodeQryId(), resRequired),
                 null,
                 locNodeQryHnd,
-                GridIoPolicy.MANAGEMENT_POOL,
-                false);
+                GridIoPolicy.MANAGEMENT_POOL, // TODO: Let's user QUERY_POOL as a short-term solution until cancel is reworked
+                false
+            );
 
             if (fut != null) {
+                // TODO: There should be consistent semantics for node leave (cannot send), generic future await
+                // TODO: error (for whatever reason) and no query on remote node (???)
                 if (!snd) {
                     cancellationRuns.remove(run, fut);
 
@@ -2571,6 +2579,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param node Cluster node.
      */
     private void onQueryKillRequest(GridQueryKillRequest msg, ClusterNode node) {
+        // TODO: Handle errors from cancel: should be embedded with error text.
         cancelQueries(singletonList(msg.nodeQryId()));
 
         if(msg.resposeRequired()){
@@ -2580,7 +2589,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 new GridQueryKillResponse(msg.nodeQryId()),
                 null,
                 locNodeQryHnd,
-                GridIoPolicy.MANAGEMENT_POOL,
+                GridIoPolicy.MANAGEMENT_POOL, // TODO: QUERY_POOL
                 false);
         }
     }
@@ -2594,7 +2603,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private void onQueryKillResponse(GridQueryKillResponse msg, ClusterNode node) {
         GridFutureAdapter fut = cancellationRuns.remove(new KillQueryRun(node.id(), msg.nodeQryId()));
 
-        if(fut != null)
+        if (fut != null)
             fut.onDone();
     }
 
