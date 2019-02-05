@@ -55,6 +55,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         /** */
         private const int EntriesCount = 1000;
+        
+        /** */
+        private static readonly TimeSpan CheckpointFrequency = TimeSpan.FromSeconds(1);
 
         /// <summary>
         /// Tests that preloading partition on client locally returns <code>false</code>.
@@ -142,7 +145,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     WalSegmentSize = 16 * 1 << 20, // 16 MB.
                     PageSize = 1 << 10, // 1 KB.
                     MetricsEnabled = true,
-                    CheckpointFrequency = TimeSpan.FromSeconds(1),
+                    CheckpointFrequency = CheckpointFrequency,
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = PersistenceRegionName,
@@ -247,8 +250,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 }  
             }
 
-            // Wait for checkpoint.
-            Thread.Sleep(TimeSpan.FromSeconds(2));
+            // Wait for checkpoint (wait for doubled CheckpointFrequency interval).
+            Thread.Sleep(CheckpointFrequency.Add(CheckpointFrequency));
             
             switch (preloadMode)
             {
