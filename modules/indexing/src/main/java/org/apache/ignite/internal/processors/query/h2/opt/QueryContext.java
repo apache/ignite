@@ -99,7 +99,7 @@ public class QueryContext {
         if (distributedJoinCtx != null)
             distributedJoinCtx.cancel();
 
-        if (!nodeStop)
+        if (!nodeStop && reservations != null)
             reservations.release();
     }
 
