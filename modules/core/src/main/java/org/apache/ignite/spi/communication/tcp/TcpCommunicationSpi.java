@@ -363,6 +363,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Default connections per node. */
     public static final int DFLT_CONN_PER_NODE = 1;
 
+    /** Default maximum timeout of waiting the remote node context initialization (value is <tt>60,000</tt> ms). */
+    public static final long DFLT_MAX_WAIT_TIMEOUT = 60 * 1000;
+
+    /**
+     * Initial period of time of waiting for the remote node context initialization (starting value is <tt>200</tt> ms).
+     * Begining from initial timeout value it will be doubled each time the local node should wait for the remote.
+     */
+    public static final long INITIAL_WAIT_TIMEOUT = 200;
+
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {
         @Override public void run() {
@@ -3311,7 +3320,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
                 !node.isClient());
 
-            long needWaitDelay0 = 200;
+            long needWaitDelay0 = INITIAL_WAIT_TIMEOUT;
 
             while (session == null) { // Reconnection on handshake timeout.
                 if (stopping)
@@ -3432,7 +3441,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                     https://issues.apache.org/jira/browse/IGNITE-7648
                                     We should add failure detection check here like exception case.
                                 */
-                                if (needWaitDelay0 < 60_000)
+                                if (needWaitDelay0 < DFLT_MAX_WAIT_TIMEOUT)
                                     needWaitDelay0 *= 2;
 
                                 if (log.isDebugEnabled())
@@ -3719,7 +3728,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             ByteBuffer buf;
 
-            // Step 1. Get remote node respose with remote nodeId.
+            // Step 1. Get remote node response with the remote nodeId value.
             if (isSslEnabled()) {
                 assert sslMeta != null;
 
@@ -3795,7 +3804,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             else
                 U.writeFully(ch, ByteBuffer.wrap(U.IGNITE_HEADER));
 
-            // Step 2. Prepare Handshake message to send remote node.
+            // Step 2. Prepare Handshake message to send to the remote node.
             if (log.isDebugEnabled())
                 log.debug("Writing handshake message [rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
 
@@ -3820,7 +3829,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (log.isDebugEnabled())
                 log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
 
-            // Step 3. Waiting the response from remote node with their receive count.
+            // Step 3. Waiting for response from the remote node with their receive count message.
             if (isSslEnabled()) {
                 assert sslHnd != null;
 

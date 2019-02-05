@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.communication.tcp.internal;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 
 /**
  * Internal exception class for proper timeout handling.
