@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -717,7 +716,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         Collection<Integer> lostParts = cache.lostPartitions();
 
-        int part = cache.lostPartitions().stream().findFirst().orElseThrow(AssertionFailedError::new);
+        int part = cache.lostPartitions().stream().findFirst().orElseThrow(AssertionError::new);
 
         Integer remainingPart = null;
 

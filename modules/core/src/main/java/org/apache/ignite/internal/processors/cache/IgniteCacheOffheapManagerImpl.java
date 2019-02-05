@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccTreeClos
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -2985,7 +2985,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 try {
                     return isVisible(cctx, snapshot, io, dataPageAddr, itemId, pageSize);
                 }
-                catch (IgniteTxMvccVersionCheckedException e) {
+                catch (IgniteTxUnexpectedStateCheckedException e) {
                     // TODO this catch must not be needed if we switch Vacuum to data page scan
                     // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
                     // asynchronously and node hasn't received finish message yet but coordinator has already removed it from

@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.configuration.distributed;
 
-import java.io.Serializable;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiConsumer;
-
 /**
  * Implementation of {@link DistributedProperty} for {@link Boolean}.
  */
