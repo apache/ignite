@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -31,8 +33,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.model.Statement;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
@@ -44,7 +51,30 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Mvcc SQL API coordinator failover test.
  */
+@RunWith(Parameterized.class)
 public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheMvccAbstractBasicCoordinatorFailoverTest {
+    /** */
+    @Parameterized.Parameters
+    public static List<Object[]> params() {
+        return Arrays.asList(new Object[100][0]);
+    }
+
+    /** */
+    @Rule
+    public TestRule runSingleTest = new TestRule() {
+        @Override public Statement apply(Statement base, Description description) {
+            if (description.getMethodName().contains("testPutAllGetAll_SingleNode_RestartCoordinator_ScanDml_Persistence"))
+                return base;
+            else {
+                return new Statement() {
+                    @Override public void evaluate() throws Throwable {
+                        // skip test
+                    }
+                };
+            }
+        }
+    };
+
     /**
      * @throws Exception If failed.
      */
@@ -77,7 +107,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10767")
+//    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10767")
     @Test
     public void testPutAllGetAll_SingleNode_RestartCoordinator_ScanDml_Persistence() throws Exception {
         persistence = true;
