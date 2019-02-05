@@ -31,6 +31,8 @@ import org.apache.ignite.ml.inference.builder.AsyncModelBuilder;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilder;
 import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
 import org.apache.ignite.ml.inference.reader.ModelReader;
+import org.apache.ignite.ml.math.primitives.vector.NamedVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.xgboost.parser.XGModelParser;
 
 /**
@@ -69,7 +71,7 @@ public class XGBoostModelParserExample {
             if (testExpRes == null)
                 throw new IllegalArgumentException("File not found [resource_path=" + TEST_ER_RES + "]");
 
-            try (Model<HashMap<String, Double>, Future<Double>> mdl = mdlBuilder.build(reader, parser);
+            try (Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, parser);
                  Scanner testDataScanner = new Scanner(testData);
                  Scanner testExpResultsScanner = new Scanner(testExpRes)) {
 
@@ -86,7 +88,7 @@ public class XGBoostModelParserExample {
                             testObj.put("f" + keyVal[0], Double.parseDouble(keyVal[1]));
                     }
 
-                    double prediction = mdl.predict(testObj).get();
+                    double prediction = mdl.predict(VectorUtils.of(testObj)).get();
 
                     double expPrediction = Double.parseDouble(testExpResultsStr);
 

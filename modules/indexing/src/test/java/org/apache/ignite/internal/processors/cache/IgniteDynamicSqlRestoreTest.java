@@ -48,8 +48,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -58,7 +56,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  *
  */
 @SuppressWarnings("Duplicates")
-@RunWith(JUnit4.class)
 public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implements Serializable {
 
     public static final String TEST_CACHE_NAME = "test";

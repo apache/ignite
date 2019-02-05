@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.TimeUnit;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.AccessedExpiryPolicy;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,22 +36,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
-
-import javax.cache.configuration.Factory;
-import javax.cache.expiry.AccessedExpiryPolicy;
-import javax.cache.expiry.CreatedExpiryPolicy;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.ExpiryPolicy;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVariationsAbstractTest {
     /** */
     private static final int TIMEOUT = 400;
@@ -55,7 +51,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
 
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         super.setUp();
     }
@@ -70,7 +66,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      */
     @Test
     public void testReadThroughWithExpirePolicy() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
         Ignite ig = testedGrid();
 
@@ -113,7 +109,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      */
     @Test
     public void testReadThroughExpirePolicyConfigured() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
         Ignite ig = testedGrid();
 
@@ -169,7 +165,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      */
     @Test
     public void testReadThroughEvictionPolicy() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
         Ignite ig = testedGrid();
 

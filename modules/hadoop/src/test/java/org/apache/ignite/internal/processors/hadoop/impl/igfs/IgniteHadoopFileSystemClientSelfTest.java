@@ -46,8 +46,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -58,7 +56,6 @@ import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEnd
 /**
  * Test interaction between a IGFS client and a IGFS server.
  */
-@RunWith(JUnit4.class)
 public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest {
     /** Logger. */
     private static final Log LOG = LogFactory.getLog(IgniteHadoopFileSystemClientSelfTest.class);

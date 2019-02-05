@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.cache.Cache;
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -57,9 +56,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -67,7 +65,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * Sandbox test to measure progress of grid write operations. If no progress occur during period of time, then thread
  * dumps are generated.
  */
-@RunWith(JUnit4.class)
 public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. Random to cover external stores possible problems. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
@@ -431,7 +428,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                     for (int i = finalJ * recsPerThread; i < ((finalJ + 1) * recsPerThread); i++) {
                         HugeIndexedObject obj = restartedCache.get(i);
                         int actVal = obj.iVal;
-                        TestCase.assertEquals(i, actVal);
+                        Assert.assertEquals(i, actVal);
                         watchdog2.reportProgress(1);
                     }
                     return null;
@@ -468,7 +465,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
                 int actVal = values.get(next.getKey()).iVal;
                 int i = key;
-                TestCase.assertEquals(i, actVal);
+                Assert.assertEquals(i, actVal);
 
                 if (i % 1000 == 0)
                     X.println(" >> Verified: " + i);
@@ -553,8 +550,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 if (keepInDb(i)) {
                     final HugeIndexedObject obj = restartedCache.get(i);
 
-                    TestCase.assertNotNull(obj);
-                    TestCase.assertEquals(i, obj.iVal);
+                    Assert.assertNotNull(obj);
+                    Assert.assertEquals(i, obj.iVal);
                 }
 
                 if (i % 1000 == 0)

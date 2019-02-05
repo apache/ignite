@@ -51,15 +51,12 @@ import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.util.typedef.X;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
 /**
  * Tests correct sorting.
  */
-@RunWith(JUnit4.class)
 public class HadoopSortingTest extends HadoopAbstractSelfTest {
     /** */
     private static final String PATH_INPUT = "/test-in";

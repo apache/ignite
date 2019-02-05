@@ -28,12 +28,11 @@ import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelCom
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
 
@@ -118,7 +117,7 @@ public class BaggedTrainer<L> extends
                             newFeaturesValues[j] = featureValues.get(mapping[j]);
 
                         return VectorUtils.of(newFeaturesValues);
-                    }).beforeTrainedModel(getProjector(mappings.get(mdlIdx)));
+                    }).beforeTrainedModel(VectorUtils.getProjector(mappings.get(mdlIdx)));
                 }
                 return tr
                     .withUpstreamTransformerBuilder(BaggingUpstreamTransformer.builder(subsampleRatio, mdlIdx))
@@ -146,33 +145,19 @@ public class BaggedTrainer<L> extends
         return Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random(seed));
     }
 
-    /**
-     * Get projector from index mapping.
-     *
-     * @param mapping Index mapping.
-     * @return Projector.
-     */
-    public static IgniteFunction<Vector, Vector> getProjector(int[] mapping) {
-        return v -> {
-            Vector res = VectorUtils.zeroes(mapping.length);
-            for (int i = 0; i < mapping.length; i++)
-                res.set(i, v.get(mapping[i]));
 
-            return res;
-        };
-    }
 
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
+        FeatureLabelExtractor<K, V, L> extractor) {
+        IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, extractor);
         return new BaggedModel(fit);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, featureExtractor, lbExtractor);
+        FeatureLabelExtractor<K, V, L> extractor) {
+        IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, extractor);
         return new BaggedModel(updated);
     }
 
@@ -205,7 +190,7 @@ public class BaggedTrainer<L> extends
      * @return Updated model.
      */
     @Override protected <K, V> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
         // Should be never called.
         throw new IllegalStateException();
     }

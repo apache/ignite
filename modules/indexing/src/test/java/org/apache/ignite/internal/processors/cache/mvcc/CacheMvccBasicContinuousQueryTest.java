@@ -56,8 +56,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -71,7 +69,6 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 /**
  * Basic continuous queries test with enabled mvcc.
  */
-@RunWith(JUnit4.class)
 public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /** */
     private static final long LATCH_TIMEOUT = 5000;
@@ -252,7 +249,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
 
                 return null;
             }
-        },  CacheException.class, "Failed to run update. Transaction is too large. Consider reducing transaction size");
+        },  CacheException.class, "Transaction is too large. Consider reducing transaction size");
     }
 
     /**

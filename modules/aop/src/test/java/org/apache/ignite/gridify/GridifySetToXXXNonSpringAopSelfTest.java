@@ -26,8 +26,6 @@ import java.util.List;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * To run this test with JBoss AOP make sure of the following:
@@ -54,7 +52,6 @@ import org.junit.runners.JUnit4;
  * 2. Classpath should contains the ${IGNITE_HOME}/modules/tests/config/aop/aspectj folder.
  */
 @GridCommonTest(group="AOP")
-@RunWith(JUnit4.class)
 public class GridifySetToXXXNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
