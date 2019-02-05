@@ -1504,9 +1504,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
+                    // TODO: This is a bug (missed security check) which will go away should we encapsulate parsing logic properly
                     res = Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
                         startTx, tracker, cancel, registerAsNewQry));
-
 
                     if (!twoStepQry.explain())
                         twoStepCache.putIfAbsent(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
@@ -1515,6 +1515,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
+            // TODO: Looks like we can remove it without secrificing anything.
             {
                 // Second, let's check if we already have a parsed statement...
                 PreparedStatement cachedStmt;
@@ -1557,7 +1558,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 assert newQry.getSql() != null;
 
                 if (nativeCmd != null) {
-
                     if (!(nativeCmd instanceof SqlCommitTransactionCommand || nativeCmd instanceof SqlRollbackTransactionCommand)
                         && !ctx.state().publicApiActiveState(true)) {
                         throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
@@ -1566,7 +1566,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
 
                     res.addAll(queryDistributedSqlFieldsNative(schemaName, newQry, nativeCmd, cliCtx));
-                } else {
+                }
+                else {
                     // Let's avoid second reflection getter call by returning Prepared object too
                     Prepared prepared = parseRes.prepared();
 
