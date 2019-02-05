@@ -4315,6 +4315,13 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && !locNodeId.equals(node.id())) {
+                if (!node.isClient() && !node.isDaemon() && nodesHist.contains(node.id())) {
+                    U.warn(log, "Discarding node added message since local node has already seen " +
+                        "joining node in topology [node=" + node + ", locNode=" + locNode + ", msg=" + msg + ']');
+
+                    return;
+                }
+
                 if (node.internalOrder() <= ring.maxInternalOrder()) {
                     if (log.isDebugEnabled())
                         log.debug("Discarding node added message since new node's order is less than " +
@@ -6688,6 +6695,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (state == CONNECTED) {
                 TcpDiscoveryNode node = msg.node();
+
+                if (!node.isClient() && !node.isDaemon()) {
+                    if (nodesHist.contains(node.id())) {
+                        spi.writeToSocket(msg, sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
+
+                        return false;
+                    }
+                }
 
                 // Check that joining node can accept incoming connections.
                 if (node.clientRouterNodeId() == null) {
