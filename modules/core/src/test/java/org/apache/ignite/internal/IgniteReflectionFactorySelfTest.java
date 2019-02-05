@@ -23,17 +23,15 @@ import java.util.Map;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link IgniteReflectionFactory} class.
  */
 public class IgniteReflectionFactorySelfTest {
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testByteMethod() throws Exception {
+    public void testByteMethod() {
         byte    expByteVal    = 42;
         short   expShortVal   = 42;
         int     expIntVal     = 42;
@@ -64,8 +62,8 @@ public class IgniteReflectionFactorySelfTest {
         assertEquals(expShortVal, instance.getShortField());
         assertEquals(expIntVal, instance.getIntField());
         assertEquals(expLongVal, instance.getLongField());
-        assertEquals(expFloatVal, instance.getFloatField());
-        assertEquals(expDoubleVal, instance.getDoubleField());
+        assertEquals(expFloatVal, instance.getFloatField(), 0);
+        assertEquals(expDoubleVal, instance.getDoubleField(), 0);
         assertEquals(expCharVal, instance.getCharField());
         assertEquals(expBooleanVal, instance.getBooleanField());
     }

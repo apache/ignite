@@ -27,6 +27,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -60,6 +61,9 @@ import org.locationtech.jts.geom.Geometry;
  */
 @SuppressWarnings("unused"/*reflection*/)
 public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex {
+    /** Cache context. */
+    private final GridCacheContext ctx;
+
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -101,6 +105,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      */
     @SuppressWarnings("unchecked")
     public GridH2SpatialIndex(GridH2Table tbl, String idxName, int segmentsCnt, IndexColumn... cols) {
+        super(tbl);
+
         if (cols.length > 1)
             throw DbException.getUnsupportedException("can only do one column");
 
@@ -173,7 +179,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             assert key != null;
 
-            final int seg = segmentForRow(row);
+            final int seg = segmentForRow(ctx, row);
 
             Long rowId = keyToId.get(key);
 
@@ -249,7 +255,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             assert oldRow != null;
 
-            final int seg = segmentForRow(row);
+            final int seg = segmentForRow(ctx, row);
 
             if (!segments[seg].remove(getEnvelope(row, rowId), rowId))
                 throw DbException.throwInternalError("row not found");
@@ -345,7 +351,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         long time = System.currentTimeMillis();
 
         IndexingQueryFilter qryFilter = null;
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        QueryContext qctx = queryContextRegistry().getThreadLocal();
 
         if (qctx != null)
             qryFilter = qctx.filter();

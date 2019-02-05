@@ -14,15 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc;
+
+package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 /**
- * SQL dialect to use with {@link TcpDiscoveryJdbcIpFinder}.
+ * Multiplier for different collocation types.
  */
-public interface JdbcIpFinderDialect {
+public enum CollocationModelMultiplier {
+    /** Tables are collocated, cheap. */
+    COLLOCATED(1),
+
+    /** */
+    UNICAST(50),
+
+    /** */
+    BROADCAST(200),
+
+    /** Force REPLICATED tables to be at the end of join sequence. */
+    REPLICATED_NOT_LAST(10_000);
+
+    /** Multiplier value. */
+    private final int multiplier;
+
     /**
-     * Gets table name in a valid form to use as IP addresses
-     * @return Table name.
+     * Constructor.
+     *
+     * @param multiplier Multiplier value.
      */
-    public String tableName();
+    CollocationModelMultiplier(int multiplier) {
+        this.multiplier = multiplier;
+    }
+
+    /**
+     * @return Multiplier value.
+     */
+    public int multiplier() {
+        return multiplier;
+    }
 }

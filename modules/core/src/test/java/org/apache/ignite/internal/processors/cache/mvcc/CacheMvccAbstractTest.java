@@ -1723,12 +1723,19 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected final void checkActiveQueriesCleanup(Ignite node) throws Exception {
-        final MvccProcessorImpl crd = mvccProcessor(node);
+        final MvccProcessorImpl prc = mvccProcessor(node);
 
-        assertTrue("Active queries not cleared: " + node.name(), GridTestUtils.waitForCondition(
+        MvccCoordinator crd = prc.currentCoordinator();
+
+        if (!crd.local())
+            return;
+
+        assertTrue("Coordinator is not initialized: " + prc, GridTestUtils.waitForCondition(crd::initialized, 8_000));
+
+        assertTrue("Active queries are not cleared: " + node.name(), GridTestUtils.waitForCondition(
             new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    Object activeQueries = GridTestUtils.getFieldValue(crd, "activeQueries");
+                    Object activeQueries = GridTestUtils.getFieldValue(prc, "activeQueries");
 
                     synchronized (activeQueries) {
                         Long minQry = GridTestUtils.getFieldValue(activeQueries, "minQry");
@@ -1754,16 +1761,20 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             }, 8_000)
         );
 
-        assertTrue("Previous coordinator queries not empty: " + node.name(), GridTestUtils.waitForCondition(
+        assertTrue("Previous coordinator queries are not empty: " + node.name(), GridTestUtils.waitForCondition(
             new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    Map queries = GridTestUtils.getFieldValue(crd, "prevCrdQueries", "activeQueries");
-                    Boolean prevDone = GridTestUtils.getFieldValue(crd, "prevCrdQueries", "prevQueriesDone");
+                    PreviousQueries prevQueries = GridTestUtils.getFieldValue(prc, "prevQueries");
 
-                    if (!queries.isEmpty() || !prevDone)
-                        log.info("Previous coordinator state [prevDone=" + prevDone + ", queries=" + queries + ']');
+                    synchronized (prevQueries) {
+                        Map queries = GridTestUtils.getFieldValue(prevQueries, "active");
+                        Boolean prevDone = GridTestUtils.getFieldValue(prevQueries, "done");
 
-                    return queries.isEmpty();
+                        if (!queries.isEmpty() || !prevDone)
+                            log.info("Previous coordinator state [prevDone=" + prevDone + ", queries=" + queries + ']');
+
+                        return queries.isEmpty();
+                    }
                 }
             }, 8_000)
         );
