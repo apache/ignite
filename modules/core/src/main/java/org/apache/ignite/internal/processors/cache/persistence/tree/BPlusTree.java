@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BPLUS_TREE_LOCK_RETRIES;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Bool.DONE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Bool.FALSE;
@@ -164,7 +165,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         BPlusIO io = io(pageAddr);
 
                         if (io.isLeaf())
-                            return Collections.emptyList();
+                            return emptyList();
 
                         int cnt = io.getCount(pageAddr);
 
@@ -1760,12 +1761,27 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
+     * @param sortedRows Iterator over search rows sorted according to this tree sort order.
+     * @return List of removed rows.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final List<T> removeAll(Iterator<? extends L> sortedRows) throws IgniteCheckedException {
+        RemoveAll r = new RemoveAll(sortedRows, true);
+
+        doRemove(r);
+
+        List<T> res = r.removedRows;
+
+        return res == null ? emptyList() : res;
+    }
+
+    /**
      * @param row Lookup row.
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
     @Override public final T remove(L row) throws IgniteCheckedException {
-        return doRemove(new Remove(row, true), row);
+        return doRemove(new Remove(row, true));
     }
 
     /**
@@ -1774,7 +1790,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return {@code True} if removed row.
      */
     public final boolean removex(L row) throws IgniteCheckedException {
-        Boolean res = (Boolean)doRemove(new Remove(row, false), row);
+        Boolean res = (Boolean)doRemove(new Remove(row, false));
 
         return res == Boolean.TRUE;
     }
@@ -1964,11 +1980,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param r Remove operation.
-     * @param row Lookup row.
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    private T doRemove(Remove r, L row) throws IgniteCheckedException {
+    private T doRemove(Remove r) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
@@ -1998,19 +2013,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             }
 
                             assert res == FOUND: res;
+                            assert r.isFinished();
                         }
 
-                        assert r.isFinished();
+                        if (r.nextRow(FOUND))
+                            continue;
 
                         return r.rmvd;
                 }
             }
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
+            throw new IgniteCheckedException("Runtime failure on search row: " + r.row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on search row: " + row, e);
+            throw new CorruptedTreeException("Runtime failure on search row: " + r.row, e);
         }
         finally {
             r.releaseAll();
@@ -4166,13 +4183,34 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
+    /**
+     * Remove all operation.
+     */
     final class RemoveAll extends Remove {
+        /** */
+        List<T> removedRows;
+
+        /** */
+        Iterator<? extends L> sortedRows;
+
         /**
          * @param row Row.
          * @param needOld {@code True} If need return old value.
          */
-        private RemoveAll(L row, boolean needOld) {
-            super(row, needOld);
+        RemoveAll(Iterator<? extends L> sortedRows, boolean needOld) {
+            super(sortedRows.next(), needOld);
+
+            this.sortedRows = sortedRows;
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean nextRow(Result res) {
+            if (!switchToNextRow(res, sortedRows))
+                return false;
+
+            // TODO
+
+            return true;
         }
     }
 
@@ -4205,7 +4243,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param row Row.
          * @param needOld {@code True} If need return old value.
          */
-        private Remove(L row, boolean needOld) {
+        Remove(L row, boolean needOld) {
             super(row, false);
 
             this.needOld = needOld;
