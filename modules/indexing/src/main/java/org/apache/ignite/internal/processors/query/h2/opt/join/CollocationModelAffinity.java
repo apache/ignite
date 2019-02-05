@@ -15,33 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.transactions;
-
-import org.apache.ignite.IgniteCheckedException;
+package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 /**
- * Exception thrown whenever transaction enters an unknown state.
+ * Affinity of a table relative to previous joined tables.
  */
-public class IgniteTxMvccVersionCheckedException extends IgniteCheckedException {
+public enum CollocationModelAffinity {
     /** */
-    private static final long serialVersionUID = 0L;
+    NONE,
 
-    /**
-     * Creates new exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public IgniteTxMvccVersionCheckedException(String msg) {
-        super(msg);
-    }
+    /** */
+    HAS_AFFINITY_CONDITION,
 
-    /**
-     * Creates new exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public IgniteTxMvccVersionCheckedException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
+    /** */
+    COLLOCATED_JOIN
 }

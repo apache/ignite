@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMa
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
@@ -65,6 +67,8 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -1458,6 +1462,40 @@ public class QueryUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Converts exception in to IgniteSqlException.
+     * @param e Exception.
+     * @return IgniteSqlException.
+     */
+    @NotNull public static SQLException toSqlException(Exception e) {
+        String sqlState;
+
+        int code;
+
+        if (e instanceof IgniteSQLException) {
+            sqlState = ((IgniteSQLException)e).sqlState();
+
+            code = ((IgniteSQLException)e).statusCode();
+        }
+        else if (e instanceof TransactionDuplicateKeyException){
+            code = IgniteQueryErrorCode.DUPLICATE_KEY;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
+        }
+        else if (e instanceof TransactionSerializationException){
+            code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
+        }
+        else {
+            sqlState = SqlStateCode.INTERNAL_ERROR;
+
+            code = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        return new SQLException(e.getMessage(), sqlState, code, e);
     }
 
     /**

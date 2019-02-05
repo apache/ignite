@@ -25,8 +25,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.helpers.FileWatchdog;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Checking that Log4j configuration is updated when its source file is changed.

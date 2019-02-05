@@ -30,6 +30,9 @@ import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
  * SQL feature label extractor that should be used to extract features and label from binary objects in SQL table.
  */
 public class SQLFeatureLabelExtractor implements FeatureLabelExtractor<Object, BinaryObject, Double> {
+    /** */
+    private static final long serialVersionUID = 9040557299449762021L;
+
     /** Feature extractors for each needed fields as a list of functions. */
     private final List<Function<BinaryObject, Number>> featureExtractors = new ArrayList<>();
 

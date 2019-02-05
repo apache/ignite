@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -54,7 +54,7 @@ class MapQueryResults {
     private final boolean forUpdate;
 
     /** Query context. */
-    private final GridH2QueryContext qctx;
+    private final QueryContext qctx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -72,7 +72,7 @@ class MapQueryResults {
      * @param log Logger instance.
      */
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        boolean forUpdate, boolean lazy, GridH2QueryContext qctx, IgniteLogger log) {
+        boolean forUpdate, boolean lazy, QueryContext qctx, IgniteLogger log) {
         this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
@@ -221,14 +221,14 @@ class MapQueryResults {
     /**
      * @return Query context.
      */
-    public GridH2QueryContext queryContext() {
+    public QueryContext queryContext() {
         return qctx;
     }
 
     /**
      */
     public void release() {
-        GridH2QueryContext.clearThreadLocal();
+        h2.queryContextRegistry().clearThreadLocal();
 
         if (qctx.distributedJoinContext() == null)
             qctx.clearContext(false);

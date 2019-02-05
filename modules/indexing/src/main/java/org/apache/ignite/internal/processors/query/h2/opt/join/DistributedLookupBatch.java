@@ -21,8 +21,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
@@ -51,11 +52,17 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2R
  * Index lookup batch.
  */
 public class DistributedLookupBatch implements IndexLookupBatch {
+    /** */
+    private static final Object EXPLICIT_NULL = new Object();
+
     /** Index. */
-    private final GridH2IndexBase idx;
+    private final H2TreeIndex idx;
 
     /** */
     private final GridCacheContext<?,?> cctx;
+
+    /** Query context registry. */
+    private final QueryContextRegistry qryCtxRegistry;
 
     /** */
     private final boolean ucast;
@@ -89,9 +96,11 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      * @param ucast Unicast or broadcast query.
      * @param affColId Affinity column ID.
      */
-    public DistributedLookupBatch(GridH2IndexBase idx, GridCacheContext<?, ?> cctx, boolean ucast, int affColId) {
+    public DistributedLookupBatch(H2TreeIndex idx, GridCacheContext<?, ?> cctx, QueryContextRegistry qryCtxRegistry,
+        boolean ucast, int affColId) {
         this.idx = idx;
         this.cctx = cctx;
+        this.qryCtxRegistry = qryCtxRegistry;
         this.ucast = ucast;
         this.affColId = affColId;
     }
@@ -112,7 +121,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
         Value affKeyLast = lastRow.getValue(affColId);
 
         if (affKeyFirst != null && equal(affKeyFirst, affKeyLast))
-            return affKeyFirst == ValueNull.INSTANCE ? GridH2IndexBase.EXPLICIT_NULL : affKeyFirst.getObject();
+            return affKeyFirst == ValueNull.INSTANCE ? EXPLICIT_NULL : affKeyFirst.getObject();
 
         if (idx.getTable().rowDescriptor().isKeyColumn(affColId))
             return null;
@@ -122,7 +131,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
         Value pkLast = lastRow.getValue(QueryUtils.KEY_COL);
 
         if (pkFirst == ValueNull.INSTANCE || pkLast == ValueNull.INSTANCE)
-            return GridH2IndexBase.EXPLICIT_NULL;
+            return EXPLICIT_NULL;
 
         if (pkFirst == null || pkLast == null || !equal(pkFirst, pkLast))
             return null;
@@ -146,7 +155,8 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             if (joinCtx == null) {
                 // It is the first call after query begin (may be after reuse),
                 // reinitialize query context and result.
-                GridH2QueryContext qctx = GridH2QueryContext.get();
+                QueryContext qctx = qryCtxRegistry.getThreadLocal();
+
                 res = new ArrayList<>();
 
                 assert qctx != null;
@@ -176,7 +186,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
 
         if (affKey != null) {
             // Affinity key is provided.
-            if (affKey == GridH2IndexBase.EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
+            if (affKey == EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
                 return false;
 
             segmentKeys = F.asList(rangeSegment(affKey, locQry));
@@ -325,7 +335,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      * @return Segment key for Affinity key.
      */
     public SegmentKey rangeSegment(Object affKeyObj, boolean isLocalQry) {
-        assert affKeyObj != null && affKeyObj != GridH2IndexBase.EXPLICIT_NULL : affKeyObj;
+        assert affKeyObj != null && affKeyObj != EXPLICIT_NULL : affKeyObj;
 
         ClusterNode node;
 

@@ -15,30 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.opt;
+package org.apache.ignite.ml.util;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Query type.
+ * Test suite for all tests located in {@link org.apache.ignite.ml.util} package.
  */
-public enum GridH2QueryType {
-    /**
-     * Map query. Runs over local partitions, possibly with distributed joins.
-     */
-    MAP,
-
-    /**
-     * Reduce query. Local query on a node which initiated the original query.
-     */
-    REDUCE,
-
-    /**
-     * Local query. It may be also a query over replicated cache but all the data is available locally.
-     */
-    LOCAL,
-
-    /**
-     * Replicated query over a network. Such a query can be sent from a client node or node which
-     * did not load all the partitions yet.
-     */
-    REPLICATED;
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    LRUCacheTest.class
+})
+public class UtilTestSuite {
 }
