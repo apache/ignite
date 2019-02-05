@@ -25,14 +25,15 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 
 /**
  * Leaf page for H2 row references.
  */
-public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow> implements H2RowLinkIO {
+public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<H2Row> implements H2RowLinkIO {
     /** Payload size. */
     protected final int payloadSize;
 
@@ -63,13 +64,13 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow
      * @return IOVersions for given payload.
      */
     @SuppressWarnings("unchecked")
-    public static IOVersions<? extends BPlusLeafIO<GridH2SearchRow>> getVersions(int payload, boolean mvccEnabled) {
+    public static IOVersions<? extends BPlusLeafIO<H2Row>> getVersions(int payload, boolean mvccEnabled) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
         if (payload == 0)
             return mvccEnabled ? H2MvccLeafIO.VERSIONS : H2LeafIO.VERSIONS;
         else
-            return (IOVersions<BPlusLeafIO<GridH2SearchRow>>)PageIO.getLeafVersions((short)(payload - 1), mvccEnabled);
+            return (IOVersions<BPlusLeafIO<H2Row>>)PageIO.getLeafVersions((short)(payload - 1), mvccEnabled);
     }
 
     /**
@@ -96,8 +97,8 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public final void storeByOffset(long pageAddr, int off, GridH2SearchRow row) {
-        GridH2Row row0 = (GridH2Row)row;
+    @Override public final void storeByOffset(long pageAddr, int off, H2Row row) {
+        H2CacheRow row0 = (H2CacheRow)row;
 
         assert row0.link() != 0;
 
@@ -122,7 +123,7 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow
     }
 
     /** {@inheritDoc} */
-    @Override public final void store(long dstPageAddr, int dstIdx, BPlusIO<GridH2SearchRow> srcIo, long srcPageAddr, int srcIdx) {
+    @Override public final void store(long dstPageAddr, int dstIdx, BPlusIO<H2Row> srcIo, long srcPageAddr, int srcIdx) {
         int srcOff = srcIo.offset(srcIdx);
 
         byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, payloadSize);
@@ -138,9 +139,19 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow
     }
 
     /** {@inheritDoc} */
-    @Override public final GridH2SearchRow getLookupRow(BPlusTree<GridH2SearchRow, ?> tree, long pageAddr, int idx)
+    @Override public final H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
-        return getLookupRow(tree, pageAddr, idx, null);
+        long link = getLink(pageAddr, idx);
+
+        if (storeMvccInfo()) {
+            long mvccCrdVer = getMvccCoordinatorVersion(pageAddr, idx);
+            long mvccCntr = getMvccCounter(pageAddr, idx);
+            int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
+
+            return ((H2Tree)tree).createMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr, null);
+        }
+
+        return ((H2Tree)tree).createRow(link, null);
     }
 
     /** {@inheritDoc} */

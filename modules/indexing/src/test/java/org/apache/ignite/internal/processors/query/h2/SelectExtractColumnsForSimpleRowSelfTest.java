@@ -102,13 +102,6 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         for (int i = 0; i < 100; ++i)
             sql("INSERT INTO test VALUES (?, ?, ?)", i, "val_" + i, i);
 
-        // scan and wildcard
-        res = sql("SELECT * FROM test AS d0");
-
-        assertEquals(100L, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 3, 4));
-
         // hidden fields, only key
         res = sql("SELECT id FROM test AS d0 WHERE _key < 5");
 
@@ -122,6 +115,13 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
             new UsedTableColumns("d0", true, false, 2));
+
+        // scan and wildcard
+        res = sql("SELECT * FROM test AS d0");
+
+        assertEquals(100L, res.size());
+        assertUsedColumns(qrys.get().get(0).usedColumns(),
+            new UsedTableColumns("d0", true, true, 2, 3, 4));
 
         // Single-partition query (use original query)
         res = sql("SELECT valStr FROM test AS d0 WHERE _key = 5");

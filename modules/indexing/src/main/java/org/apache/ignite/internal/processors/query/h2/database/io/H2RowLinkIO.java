@@ -21,8 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 
 /**
  * Row link IO.
@@ -79,7 +78,7 @@ public interface H2RowLinkIO {
      * @return Lookup row.
      * @throws IgniteCheckedException If failed.
      */
-    default GridH2Row getLookupRow(BPlusTree<GridH2SearchRow,?> tree, long pageAddr, int idx,
+    default H2Row getLookupRow(BPlusTree<H2Row,?> tree, long pageAddr, int idx,
         GridSqlUsedColumnInfo usedColInfo)
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
@@ -89,9 +88,9 @@ public interface H2RowLinkIO {
             long mvccCntr = getMvccCounter(pageAddr, idx);
             int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
 
-            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr, mvccOpCntr, usedColInfo);
+            return ((H2Tree)tree).createMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr, usedColInfo);
         }
 
-        return ((H2Tree)tree).createRowFromLink(link, usedColInfo);
+        return ((H2Tree)tree).createRow(link, usedColInfo);
     }
 }

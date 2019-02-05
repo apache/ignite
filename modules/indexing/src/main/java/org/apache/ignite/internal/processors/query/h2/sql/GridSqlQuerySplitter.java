@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -47,7 +48,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
@@ -133,6 +133,7 @@ public class GridSqlQuerySplitter {
      * @param distributedJoins Distributed joins flag.
      * @param extractor Partition extractor.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, boolean distributedJoins,
         PartitionExtractor extractor) {
         this.params = params;
@@ -179,6 +180,45 @@ public class GridSqlQuerySplitter {
      * @throws IgniteCheckedException If failed.
      */
     public static GridCacheTwoStepQuery split(
+        Connection conn,
+        Prepared prepared,
+        Object[] params,
+        boolean collocatedGrpBy,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        PartitionExtractor partExtractor
+    ) throws SQLException, IgniteCheckedException {
+        SplitterContext.set(distributedJoins);
+
+        try {
+            return split0(
+                conn,
+                prepared,
+                params,
+                collocatedGrpBy,
+                distributedJoins,
+                enforceJoinOrder,
+                partExtractor
+            );
+        }
+        finally {
+            SplitterContext.set(false);
+        }
+    }
+
+    /**
+     * @param conn Connection.
+     * @param prepared Prepared.
+     * @param params Parameters.
+     * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
+     * @param distributedJoins If distributed joins enabled.
+     * @param enforceJoinOrder Enforce join order.
+     * @param partExtractor Partition extractor.
+     * @return Two step query.
+     * @throws SQLException If failed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static GridCacheTwoStepQuery split0(
         Connection conn,
         Prepared prepared,
         Object[] params,
@@ -843,6 +883,7 @@ public class GridSqlQuerySplitter {
      * @param wrapAlias Alias of the wrap query.
      * @param select The original select.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private void pushDownSelectColumns(
         Set<GridSqlAlias> tblAliases,
         Map<String,GridSqlAlias> cols,
@@ -1244,6 +1285,7 @@ public class GridSqlQuerySplitter {
      * @param cols Columns from SELECT clause.
      * @return Map of columns with types.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private LinkedHashMap<String,?> collectColumns(List<GridSqlAst> cols) {
         LinkedHashMap<String, GridSqlType> res = new LinkedHashMap<>(cols.size(), 1f, false);
 
@@ -1530,6 +1572,7 @@ public class GridSqlQuerySplitter {
      * @param hasDistinctAggregate If query has distinct aggregate expression.
      * @param first If this is the first aggregate found in this expression.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private void splitAggregate(
         GridSqlAst parentExpr,
         int aggIdx,
@@ -1705,8 +1748,9 @@ public class GridSqlQuerySplitter {
                         keyUsed |= desc.isKeyColumn(colId);
                         valUsed |= desc.isValueColumn(colId);
 
-                        if (colId >= DEFAULT_COLUMNS_COUNT) {
-                            if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) || desc.isKeyAliasColumn(colId))
+                        if (colId >= QueryUtils.DEFAULT_COLUMNS_COUNT) {
+                            if (desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT)
+                                || desc.isKeyAliasColumn(colId))
                                 keyUsed = true;
                             else
                                 valUsed = true;

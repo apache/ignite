@@ -283,7 +283,6 @@ class ServiceDeploymentTask {
     /**
      * @param depActions Services deployment actions.
      */
-    @SuppressWarnings("ErrorNotRethrown")
     private void processDeploymentActions(@NotNull ServiceDeploymentActions depActions) {
         srvcProc.updateDeployedServices(depActions);
 

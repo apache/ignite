@@ -48,7 +48,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 /**
  * Test cases for multi-threaded tests.
  */
-@SuppressWarnings({"FieldCanBeLocal"})
 public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** Grid1. */
     private static Ignite ignite1;
