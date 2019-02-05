@@ -101,7 +101,6 @@ public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"Convert2Lambda"})
     @Test
     public void testAttributesSerializationFailure() throws Exception {
         final IgniteEx ignite0 = grid(0);
