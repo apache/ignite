@@ -38,9 +38,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -49,7 +48,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 /**
  * Test cases for multi-threaded tests.
  */
-@RunWith(JUnit4.class)
+@SuppressWarnings({"FieldCanBeLocal"})
 public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** Grid1. */
     private static Ignite ignite1;
@@ -63,11 +62,10 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** (for convenience). */
     private static IgniteCache<Integer, String> cache2;
 
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
-        super.setUp();
+    /** */
+    @Before
+    public void beforeGridCacheLockAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
     }
 
     /**
@@ -90,6 +88,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(cacheMode());

@@ -31,7 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.Before;
 
 /**
  * Abstract class for tests of service deployment process.
@@ -41,8 +41,8 @@ public abstract class ServiceDeploymentProcessAbstractTest extends GridCommonAbs
     protected static final long TEST_FUTURE_WAIT_TIMEOUT = 60_000;
 
     /** */
-    @BeforeClass
-    public static void check() {
+    @Before
+    public void check() {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 

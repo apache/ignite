@@ -21,13 +21,10 @@ import java.nio.charset.StandardCharsets;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Class to test {@link MockEncryptionService}.
  */
-@RunWith(JUnit4.class)
 public class MockEncryptionServiceTest extends GridCommonAbstractTest {
     /** Mock encryption service. */
     private MockEncryptionService mockEncryptionSvc;

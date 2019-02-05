@@ -23,13 +23,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.Pa
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * WAL delta records consistency test with explicit checks.
  */
-@RunWith(JUnit4.class)
 public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

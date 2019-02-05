@@ -40,8 +40,6 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnectionRes
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
@@ -53,7 +51,6 @@ import static org.apache.ignite.internal.client.integration.ClientAbstractSelfTe
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int RECONN_CNT = 3;

@@ -47,8 +47,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
@@ -58,7 +56,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
  * Grid node metrics self test.
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /** Test message size. */
     private static final int MSG_SIZE = 1024;

@@ -42,8 +42,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test scenario:
@@ -56,7 +54,6 @@ import org.junit.runners.JUnit4;
  *
  * Pass condition: new node successfully joins topology.
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);

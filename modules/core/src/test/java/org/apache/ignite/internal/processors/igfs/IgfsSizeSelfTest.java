@@ -50,8 +50,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -61,7 +59,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * {@link IgfsAttributes} test case.
  */
-@RunWith(JUnit4.class)
 public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** How many grids to start. */
     private static final int GRID_CNT = 3;
