@@ -19,11 +19,12 @@ package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.Statement;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -35,7 +36,13 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
         System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "false");
         
         startGrids(2);
+    }
 
+    /**
+     * Setup tables.
+     */
+    @Before
+    public void setupTables() throws Exception {
         execute("CREATE TABLE TEST_TX " +
             "(ID INT PRIMARY KEY, AGE INT, NAME VARCHAR) " +
             "WITH \"atomicity=transactional_snapshot\";");
@@ -46,6 +53,15 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
             "(3, 25, 'Michel'), " +
             "(4, 19, 'Nick');");
     }
+
+    @After
+    public void dropTables () throws Exception {
+        execute("DROP TABLE IF EXISTS TEST_TX; " +
+            "DROP TABLE IF EXISTS public.transactions; " +
+            "DROP TABLE IF EXISTS ONE;" +
+            "DROP TABLE IF EXISTS TWO;");
+    }
+
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -83,41 +99,37 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
     public void testEmptyStatements() throws Exception {
         execute(";; ;;;;");
         execute(" ;; ;;;; ");
-        execute("CREATE TABLE ONE (id INT PRIMARY KEY, VAL VARCHAR);;;;UPDATE ONE SET VAL = 'SOME';;;  ");
-        execute("CREATE TABLE TWO (id INT PRIMARY KEY, VAL VARCHAR);;  ;;UPDATE TWO SET VAL = 'SOME'");
+        execute("CREATE TABLE ONE (id INT PRIMARY KEY, VAL VARCHAR);;" +
+            "CREATE INDEX T_IDX ON ONE(val)" +
+            ";;UPDATE ONE SET VAL = 'SOME';;;  ");
+        execute("DROP INDEX T_IDX ;;  ;;" +
+            "UPDATE ONE SET VAL = 'SOME'");
     }
 
     @Test
-    public void testMultiStatement() throws Exception {
-        String complexQueryBegin =
+    public void testMultiStatementTx() throws Exception {
+        String complexQuery =
             "INSERT INTO TEST_TX VALUES (5, 28, 'Leo'); " +
                 "BEGIN; " +
                 "UPDATE TEST_TX  SET name = 'Nickolas' WHERE name = 'Nick';" +
-                "SELECT * FROM TEST_TX WHERE name = 'Michel'; ";
-
-
+                "INSERT INTO TEST_TX VALUES (6, 84, 'Gab'); " +
+                "DELETE FROM TEST_TX WHERE age < 19; " +
+                "COMMIT;";
 
         try (Connection c = GridTestUtils.connect(grid(0), null)) {
-            try (PreparedStatement p = c.prepareStatement(complexQueryBegin + "COMMIT;")) {
+            try (PreparedStatement p = c.prepareStatement(complexQuery)) {
                 p.execute();
 
                 assertTrue("Expected update count of the INSERT.", p.getUpdateCount() != -1);
                 assertTrue("Expected update count of the BEGIN", p.getUpdateCount() != -1);
                 assertTrue("Expected update count of the UPDATE", p.getUpdateCount() != -1);
-                assertTrue("Expected result set of the SELECT", p.getMoreResults());
-                try (ResultSet sel = p.getResultSet()) {
-                    assertTrue(sel.next());
+                assertTrue("Expected update count of the INSERT", p.getUpdateCount() != -1);
+                assertTrue("Expected update count of the DELETE", p.getUpdateCount() != -1);
 
-                    int age = sel.getInt("AGE");
+                assertTrue("Expected update count of the COMMIT", p.getUpdateCount() != -1);
 
-                    assertEquals("25", age);
-                }
-
-               assertTrue("Expected update count of the COMMIT", p.getUpdateCount() != -1);
-
-                boolean hasMore = !p.getMoreResults() && p.getUpdateCount() != -1;
-                
-                assertTrue("There should have been no results.", hasMore);
+                assertFalse("There should have been no results.", p.getMoreResults());
+                assertFalse("There should have been no update results.", p.getUpdateCount() != -1);
             }
         }
     }
