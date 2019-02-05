@@ -64,7 +64,7 @@ public class DistributedJoinContext {
     private UUID[] partsNodes;
 
     /** */
-    private boolean cancelled;
+    private volatile boolean cancelled;
 
     /**
      * Constructor.
