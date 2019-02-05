@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -56,6 +57,7 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -411,10 +413,9 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
 
                                 committed = true;
                             }
-                            catch (Exception e) {
-                                assertTrue(e.getMessage(), e.getMessage() != null &&
-                                    (e.getMessage().contains("Transaction has been rolled back") ||
-                                        e.getMessage().contains("Cannot serialize transaction due to write conflict")));
+                            catch (CacheException e) {
+                                assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                assertEquals(atomicityMode(cache), TRANSACTIONAL_SNAPSHOT);
                             }
                             finally {
                                 if (tx != null)
