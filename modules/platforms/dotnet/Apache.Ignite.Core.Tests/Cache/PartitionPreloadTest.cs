@@ -58,6 +58,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         
         /** */
         private static readonly TimeSpan CheckpointFrequency = TimeSpan.FromSeconds(1);
+        
+        /** */
+        private const string ExpectedErrorMessage = "Operation only applicable to caches with enabled persistence";
 
         /// <summary>
         /// Tests that preloading partition on client locally returns <code>false</code>.
@@ -87,11 +90,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = GetClient.GetCache<int, int>(MemCacheName);
 
-            Assert.Throws<CacheException>(() => cache.PreloadPartition(0));
+            var ex =Assert.Throws<CacheException>(() => cache.PreloadPartition(0));
+            
+            Assert.True(ex.Message.Contains(ExpectedErrorMessage), ex.Message);
 
             var task = cache.PreloadPartitionAsync(0);
 
-            Assert.Throws<CacheException>(() => task.WaitResult());
+            ex = Assert.Throws<CacheException>(() => task.WaitResult());
+            
+            Assert.True(ex.Message.Contains(ExpectedErrorMessage), ex.Message);
         }
         
         /// <summary>
