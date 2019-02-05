@@ -58,6 +58,7 @@ import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /** Parser of Spark models. */
 public class SparkModelParser {
@@ -187,22 +188,50 @@ public class SparkModelParser {
         switch (parsedSparkMdl) {
             case GRADIENT_BOOSTED_TREES:
                 return loadGBTClassifierModel(ignitePathToMdl, ignitePathToMdlMetaData);
+            case GRADIENT_BOOSTED_TREES_REGRESSION:
+                return loadGBTRegressionModel(ignitePathToMdl, ignitePathToMdlMetaData);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
     }
 
     /**
-     * Load GBT model.
+     * Load GDB Regression model.
      *
      * @param pathToMdl Path to model.
-     * @param ignitePathToMdlMetaData Ignite path to model meta data.
+     * @param pathToMdlMetaData Path to model meta data.
      */
-    private static Model loadGBTClassifierModel(String pathToMdl, String ignitePathToMdlMetaData) {
+    private static Model loadGBTRegressionModel(String pathToMdl, String pathToMdlMetaData) {
+        IgniteFunction<Double, Double> lbMapper = lb -> lb;
+
+        return parseAndBuildGDBModel(pathToMdl, pathToMdlMetaData, lbMapper);
+    }
+
+    /**
+     * Load GDB Classification model.
+     *
+     * @param pathToMdl Path to model.
+     * @param pathToMdlMetaData Path to model meta data.
+     */
+    private static Model loadGBTClassifierModel(String pathToMdl, String pathToMdlMetaData) {
+        IgniteFunction<Double, Double> lbMapper = lb -> lb > 0.5 ? 1.0 : 0.0;
+
+        return parseAndBuildGDBModel(pathToMdl, pathToMdlMetaData, lbMapper);
+    }
+
+    /**
+     * Parse and build common GDB model with the custom label mapper.
+     *
+     * @param pathToMdl Path to model.
+     * @param pathToMdlMetaData Path to model meta data.
+     * @param lbMapper Label mapper.
+     */
+    @Nullable private static Model parseAndBuildGDBModel(String pathToMdl, String pathToMdlMetaData,
+        IgniteFunction<Double, Double> lbMapper) {
         double[] treeWeights = null;
         final Map<Integer, Double> treeWeightsByTreeID = new HashMap<>();
 
-        try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(ignitePathToMdlMetaData), new Configuration()))) {
+        try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdlMetaData), new Configuration()))) {
             PageReadStore pagesMetaData;
             final MessageType schema = r.getFooter().getFileMetaData().getSchema();
             final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
@@ -219,7 +248,7 @@ public class SparkModelParser {
             }
         }
         catch (IOException e) {
-            System.out.println("Error reading parquet file with MetaData by the path: " + ignitePathToMdlMetaData);
+            System.out.println("Error reading parquet file with MetaData by the path: " + pathToMdlMetaData);
             e.printStackTrace();
         }
 
@@ -255,7 +284,7 @@ public class SparkModelParser {
 
             final List<IgniteModel<Vector, Double>> models = new ArrayList<>();
             nodesByTreeId.forEach((key, nodes) -> models.add(buildDecisionTreeModel(nodes)));
-            IgniteFunction<Double, Double> lbMapper = lb -> lb > 0.5 ? 1.0 : 0.0;
+
             return new GDBTrainer.GDBModel(models, new WeightedPredictionsAggregator(treeWeights), lbMapper);
         }
         catch (IOException e) {
