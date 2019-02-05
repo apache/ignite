@@ -1688,6 +1688,16 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Check whether statement is DML statement.
+     *
+     * @param stmt Statement.
+     * @return {@code True} if this is DML.
+     */
+    public static boolean isDml(Prepared stmt) {
+        return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
+    }
+
+    /**
      * @param stmt Prepared.
      * @return Target table.
      */

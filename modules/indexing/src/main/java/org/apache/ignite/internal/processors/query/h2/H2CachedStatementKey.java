@@ -46,21 +46,6 @@ class H2CachedStatementKey {
     }
 
     /**
-     * Build key with details relevant to DML plans cache.
-     *
-     * @param schemaName Schema name.
-     * @param sql SQL.
-     * @param fieldsQry Query with flags.
-     * @param loc DML {@code SELECT} Locality flag.
-     * @return Statement key.
-     * @see UpdatePlanBuilder
-     * @see DmlStatementsProcessor#getPlanForStatement
-     */
-    static H2CachedStatementKey forDmlStatement(String schemaName, String sql, SqlFieldsQuery fieldsQry, boolean loc) {
-        return new H2CachedStatementKey(schemaName, sql, fieldsQry, loc);
-    }
-
-    /**
      * Full-fledged constructor.
      *
      * @param schemaName Schema name.
@@ -68,7 +53,7 @@ class H2CachedStatementKey {
      * @param fieldsQry Query with flags.
      * @param loc DML {@code SELECT} Locality flag.
      */
-    private H2CachedStatementKey(String schemaName, String sql, SqlFieldsQuery fieldsQry, boolean loc) {
+    public H2CachedStatementKey(String schemaName, String sql, SqlFieldsQuery fieldsQry, boolean loc) {
         this.schemaName = schemaName;
         this.sql = sql;
 
