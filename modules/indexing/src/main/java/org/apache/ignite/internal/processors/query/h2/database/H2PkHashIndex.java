@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -102,7 +101,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
         Map<String, GridSqlUsedColumnInfo> usedCols = ((IgniteH2Indexing)cctx.kernalContext().query().getIndexing())
-            .queryContextRegistry().getThreadLocal().usedColumsInfo();
+            .queryContextRegistry().getThreadLocal().usedColumnsInfo();
 
         return find(filter.getSession(), first, last,
             usedCols != null ? usedCols.get(filter.getTableAlias()) : null);

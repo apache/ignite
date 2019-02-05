@@ -251,6 +251,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * !!! from all the index pages, so that row can be safely erased from the data page.
      *
      * @param link Link.
+     * @param usedColInfo Columns info to gather only specified columns (returns GridH2SimpleRow when columns specified).
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
@@ -271,7 +272,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      *
      * @param link Link.
      * @param mvccOpCntr MVCC operation counter.
-     * @param usedColInfo column info to gather only specified columns (returns GridH2SimpleRow when columns specified).
+     * @param usedColInfo Columns info to gather only specified columns (returns GridH2SimpleRow when columns specified).
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
@@ -297,7 +298,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param mvccCrdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
      * @param mvccOpCntr Mvcc operation counter.
-     * @param usedColInfo column info to gather only specified columns (returns GridH2SimpleRow when columns specified).
+     * @param usedColInfo Columns info to gather only specified columns (returns GridH2SimpleRow when columns specified).
      * @return Row.
      */
     private H2CacheRow createMvccRow0(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr,

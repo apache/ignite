@@ -30,12 +30,10 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
 import org.h2.value.DataType;
 import org.h2.value.Value;
-import org.h2.value.ValueNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -186,12 +184,6 @@ public class GridH2RowDescriptor {
         H2CacheRow row;
 
         try {
-//            if (dataRow.value() == null && colInfo == null) {
-//                // Only can happen for remove operation, can create simple search row.
-//                row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType));
-//            }
-//            else
-//                row = new GridH2KeyValueRowOnheap(this, dataRow);
             row = new H2CacheRow(this, dataRow);
         }
         catch (ClassCastException e) {

@@ -144,11 +144,17 @@ public class QueryContext {
         return S.toString(QueryContext.class, this);
     }
 
-    public void usedColumsInfo(Map<String, GridSqlUsedColumnInfo> usedCols) {
+    /**
+     * @param usedCols Information about used columns (table alias -> columns info).
+     */
+    public void usedColumnsInfo(Map<String, GridSqlUsedColumnInfo> usedCols) {
         this.usedCols = usedCols;
     }
 
-    public Map<String, GridSqlUsedColumnInfo> usedColumsInfo() {
+    /**
+     * @return Information about used columns (table alias -> columns info).
+     */
+    public Map<String, GridSqlUsedColumnInfo> usedColumnsInfo() {
         return usedCols;
     }
 }
