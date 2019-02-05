@@ -22,6 +22,7 @@ import com.google.common.io.CharStreams;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -44,9 +45,6 @@ public class MavenUtils {
 
     /** */
     private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
-
-    /** Default path for maven settings file. */
-    private static String localProxyMavenSettings = "~/.m2/local-proxy.xml";
 
     /** Set this flag to true if running PDS compatibility tests locally. */
     private static boolean useGgRepo;
@@ -153,15 +151,18 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
+        // Default platform independ path for maven settings file.
+        Path localProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
+
         String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
 
         SB mavenCommandArgs = new SB(" org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact);
 
         if (!F.isEmpty(localProxyMavenSettingsFromEnv))
-            localProxyMavenSettings = localProxyMavenSettingsFromEnv;
+            localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);
 
-        if (Files.exists(Paths.get(localProxyMavenSettings)))
-            mavenCommandArgs.a(" -s " + localProxyMavenSettings);
+        if (Files.exists(localProxyMavenSettings))
+            mavenCommandArgs.a(" -s " + localProxyMavenSettings.toString());
         else
             mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
 
