@@ -2016,7 +2016,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             F.asList(fldsQry.getArgs()), true);
 
         return dmlPrepareDistributedUpdate(schema, conn, stmt, fldsQry, backupFilter(topVer, parts), cancel, loc,
-            topVer, mvccSnapshot);
+            mvccSnapshot);
     }
 
     /**
@@ -3824,7 +3824,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param filter Backup filter.
      * @param cancel Query cancel object.
      * @param local {@code true} if should be executed locally.
-     * @param topVer Topology version.
      * @param mvccSnapshot MVCC snapshot.
      * @return Iterator upon updated values.
      * @throws IgniteCheckedException If failed.
@@ -3832,7 +3831,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private UpdateSourceIterator<?> dmlPrepareDistributedUpdate(String schema, Connection conn,
         PreparedStatement stmt, SqlFieldsQuery qry,
         IndexingQueryFilter filter, GridQueryCancel cancel, boolean local,
-        AffinityTopologyVersion topVer, MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
+        MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
 
         Prepared prepared = GridSqlQueryParser.prepared(stmt);
 
