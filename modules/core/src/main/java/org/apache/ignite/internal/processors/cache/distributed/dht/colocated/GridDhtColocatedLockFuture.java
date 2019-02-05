@@ -809,6 +809,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
             map(keys, false, true);
 
+            // Todo Lost here
+            trackable = true;
+            cctx.mvcc().addFuture(this);
+
             markInitialized();
 
             return;
