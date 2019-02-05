@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.util.Collections;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
