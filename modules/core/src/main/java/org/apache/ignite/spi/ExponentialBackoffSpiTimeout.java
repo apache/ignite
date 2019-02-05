@@ -29,7 +29,7 @@ import java.io.IOException;
  *
  * It contains 4 totalTimeout types:
  *  - connection totalTimeout to wait for socket.connect()
- *  - handshake totalTimeout to handle handshake after execution.
+ *  - handshake totalTimeout to handle handshake after connect.
  *  - recoonectDelay, sleep between retries on temporary network failures.
  *  - outOfTopologyDelay, sleep between retries, when initiator or target doesn't observe each other in topology.
  */

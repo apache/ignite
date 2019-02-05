@@ -223,7 +223,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
                         Thread.sleep(nodeAddFinishedDelay);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        fail("Unexpected interrupt on nodeAddFinishedDelay");
                     }
 
                 super.writeToSocket(sock, out, msg, timeout);

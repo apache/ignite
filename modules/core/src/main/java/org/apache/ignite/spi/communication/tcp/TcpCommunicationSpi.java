@@ -3289,6 +3289,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
 
                 try {
+                    if (getSpiContext().node(node.id()) == null)
+                        throw new ClusterTopologyCheckedException("Failed to send message (node left topology): " + node);
+
                     SocketChannel ch = SocketChannel.open();
 
                     ch.configureBlocking(true);
@@ -3301,13 +3304,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (sockSndBuf > 0)
                         ch.socket().setSendBufferSize(sockSndBuf);
-
-                    if (getSpiContext().node(node.id()) == null) {
-                        U.closeQuiet(ch);
-
-                        throw new ClusterTopologyCheckedException("Failed to send message " +
-                            "(node left topology): " + node);
-                    }
 
                     ConnectionKey connKey = new ConnectionKey(node.id(), connIdx, -1);
 
@@ -3335,6 +3331,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     try {
                         ch.socket().connect(addr, timeoutHelper.connTimeout());
+
+                        if (getSpiContext().node(node.id()) == null)
+                            throw new ClusterTopologyCheckedException("Failed to send message (node left topology): " + node);
 
                         if (isSslEnabled()) {
                             meta.put(SSL_META.ordinal(), sslMeta = new GridSslMeta());
