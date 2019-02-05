@@ -108,25 +108,31 @@ public class ExponentialBackoffSpiTimeout {
     }
 
     /**
-     * Get next timeout calculated on exponential backoffConnTimeout function.
-     * @return Timeout value;
+     * Get next connection timeout as min(calculated exponential timeout, remainingTime).
+     * @return Next Timeout value;
      */
     public int connTimeout() throws IOException {
-        if(checkTimeout(0))
-            throw new IOException("Network operation timed out [timeout = " +this +"]");
+        long remainingTime = remainingTime(U.currentTimeMillis());
 
-        return (int)currConnTimeout;
+        if (remainingTime <= 0)
+            throw new IOException("Connect operation timed out [timeout = " +this +"]");
+
+        return (int) Math.min((int)currConnTimeout, remainingTime);
     }
 
     /**
-     * @return Current hanshakeTimeout.
+     * Get next connection timeout as min(calculated exponential timeout, remainingTime).
+     *
+     * @return Next Timeout value;
      * @throws IgniteSpiOperationTimeoutException in case of timeout reached at the moment.
      */
     public long handshakeTimeout() throws IgniteSpiOperationTimeoutException {
-        if(checkTimeout(0))
+        long remainingTime = remainingTime(U.currentTimeMillis());
+
+        if (remainingTime <= 0)
             throw new IgniteSpiOperationTimeoutException("Network operation timed out [timeout = " +this +"]");
 
-        return currHandshakeTimeout;
+        return (int) Math.min((int) currHandshakeTimeout, remainingTime);
     }
 
     /**
