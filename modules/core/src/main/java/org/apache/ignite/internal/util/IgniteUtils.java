@@ -1248,7 +1248,7 @@ public abstract class IgniteUtils {
      */
     @Deprecated
     public static void debugStack(IgniteLogger log, String msg) {
-        log.error(msg, new Exception(debugPrefix() + msg));
+        error(log, msg, new Exception(debugPrefix() + msg));
     }
 
     /**

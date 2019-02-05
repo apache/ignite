@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.lang;
 
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
@@ -38,4 +39,13 @@ public interface GridCursor<T> {
      * @throws IgniteCheckedException If failed.
      */
     public T get() throws IgniteCheckedException;
+
+    /**
+     * @param action Consumer.
+     * @throws IgniteCheckedException If failed.
+     */
+    default void forEach(Consumer<? super T> action) throws IgniteCheckedException {
+        while(next())
+            action.accept(get());
+    }
 }

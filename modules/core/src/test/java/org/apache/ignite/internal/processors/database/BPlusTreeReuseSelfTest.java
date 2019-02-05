@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -44,6 +46,7 @@ import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStructure.randomInt;
+import static org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest.Operation.INVOKE_ALL;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
@@ -352,6 +355,101 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
 
             assertEqualContents(tree, set);
         }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvokeAllPageLeaks_true() throws IgniteCheckedException {
+        doTestInvokeAllPageLeaks(true, INVOKE_ALL);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvokeAllPageLeaks_false() throws IgniteCheckedException {
+        doTestInvokeAllPageLeaks(false, INVOKE_ALL);
+    }
+
+    /**
+     * @param canGetRow Can get row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void doTestInvokeAllPageLeaks(boolean canGetRow, Operation op) throws IgniteCheckedException {
+        class RemoveAllClosure
+            implements IgniteTree.InvokeClosure<Long>, Function<Long, IgniteTree.InvokeClosure<Long>> {
+            @Override public IgniteTree.InvokeClosure<Long> apply(Long aLong) {
+                return this;
+            }
+
+            @Override public void call(@Nullable Long row) throws IgniteCheckedException {
+                // No-op.
+            }
+
+            @Override public Long newRow() {
+                return null;
+            }
+
+            @Override public IgniteTree.OperationType operationType() {
+                return REMOVE;
+            }
+        }
+
+        long prevPages = 0;
+
+        for (int i = 0; i < 10; i++) {
+            TestTree tree = createTestTree(canGetRow);
+
+            assertTrue(tree.isEmpty());
+
+            int rowsCnt = 1000;
+
+            for (long x = 0; x < rowsCnt; x++)
+                tree.put(x);
+
+            assertEquals(rowsCnt, tree.size());
+
+            long pages = pageMem.loadedPages();
+
+            info("Pages: " + pages);
+
+            if (i < 2)
+                prevPages = pages;
+            else
+                assertEquals(prevPages, pages);
+
+            List<Long> rows = new ArrayList<>(rowsCnt);
+
+            tree.find(null, null).forEach(rows::add);
+
+            switch (op) {
+                case REMOVE:
+                    for (Long row : rows)
+                        tree.removex(row);
+                    break;
+                case INVOKE:
+                    for (Long row : rows)
+                        tree.invoke(row, null, new RemoveAllClosure());
+                    break;
+                case INVOKE_ALL:
+                    tree.invokeAll(rows.iterator(), null, new RemoveAllClosure());
+                    break;
+                case REMOVE_ALL:
+                    // TODO
+                default:
+                    fail();
+            }
+
+            assertTrue(tree.isEmpty());
+
+            tree.destroy();
+        }
+    }
+
+    enum Operation {
+        REMOVE, REMOVE_ALL, INVOKE, INVOKE_ALL
     }
 
     /**
