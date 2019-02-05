@@ -25,4 +25,4 @@ export default {
     bindings: {
         isLoading: '<'
     }
-};
+} as ng.IComponentOptions;

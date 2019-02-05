@@ -7,6 +7,8 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
+import angular from 'angular';
+
 import component from './component';
 
 export default angular

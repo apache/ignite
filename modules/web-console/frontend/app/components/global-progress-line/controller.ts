@@ -21,14 +21,9 @@ export default class GlobalProgressLine {
 
     static $inject = ['$element', '$document'];
 
-    /**
-     * @param {JQLite} $element
-     * @param {ng.IDocumentService} $document
-     */
-    constructor($element, $document) {
-        this.$element = $element;
-        this.$document = $document;
-    }
+    _child: Element;
+
+    constructor(private $element: JQLite, private $document: ng.IDocumentService) {}
 
     $onChanges() {
         if (this.isLoading === true) {
