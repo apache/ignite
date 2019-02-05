@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
+import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThreadLocalTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
@@ -58,6 +59,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
 
         suite.addTestSuite(CacheExchangeMergeTest.class);
+        suite.addTestSuite(ExchangeMergeStaleServerNodesTest.class);
 
         suite.addTestSuite(TxRollbackOnTimeoutTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
