@@ -173,9 +173,13 @@ public class VisorCacheRebalanceCollectorTask extends VisorMultiNodeTask<VisorCa
 
                 Collection<? extends BaselineNode> baseline = cluster.currentBaselineTopology();
 
-                boolean inBaseline = baseline.stream().anyMatch(n -> consistentId.equals(n.consistentId()));
+                if (baseline != null) {
+                    boolean inBaseline = baseline.stream().anyMatch(n -> consistentId.equals(n.consistentId()));
 
-                res.setBaseline(inBaseline ? NODE_IN_BASELINE : NODE_NOT_IN_BASELINE);
+                    res.setBaseline(inBaseline ? NODE_IN_BASELINE : NODE_NOT_IN_BASELINE);
+                }
+                else
+                    res.setBaseline(BASELINE_NOT_AVAILABLE);
             }
             else
                 res.setBaseline(BASELINE_NOT_AVAILABLE);

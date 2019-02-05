@@ -15,11 +15,7 @@
  * limitations under the License.
  */
 
-import merge from 'lodash/merge';
-import uniq from 'lodash/uniq';
-import map from 'lodash/map';
-import reduce from 'lodash/reduce';
-import isObject from 'lodash/isObject';
+import _ from 'lodash';
 import includes from 'lodash/includes';
 import isNil from 'lodash/isNil';
 import find from 'lodash/find';
@@ -52,42 +48,8 @@ const JAVA_CLASS_STRINGS = JAVA_CLASSES.slice();
  * Utility service for various check on java types.
  */
 export default class JavaTypes {
-    static $inject = ['IgniteClusterDefaults', 'IgniteCacheDefaults', 'IgniteIGFSDefaults'];
-
-    constructor(clusterDflts, cacheDflts, igfsDflts) {
-        this.enumClasses = uniq(this._enumClassesAcc(merge(clusterDflts, cacheDflts, igfsDflts), []));
-        this.shortEnumClasses = map(this.enumClasses, (cls) => this.shortClassName(cls));
-
+    constructor() {
         JAVA_CLASS_STRINGS.push({short: 'byte[]', full: 'byte[]', stringValue: '[B'});
-    }
-
-    /**
-     * Collects recursive enum classes.
-     *
-     * @param root Root object.
-     * @param classes Collected classes.
-     * @return {Array.<String>}
-     * @private
-     */
-    _enumClassesAcc(root, classes) {
-        return reduce(root, (acc, val, key) => {
-            if (key === 'clsName')
-                acc.push(val);
-            else if (isObject(val))
-                this._enumClassesAcc(val, acc);
-
-            return acc;
-        }, classes);
-    }
-
-    /**
-     * Check if class name is non enum class in Ignite configuration.
-     *
-     * @param clsName
-     * @return {boolean}
-     */
-    nonEnum(clsName) {
-        return !includes(this.shortEnumClasses, clsName) && !includes(this.enumClasses, clsName);
     }
 
     /**

@@ -35,14 +35,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Testing {@link TcpCommunicationSpi} that will send the wait handshake message on received connections until SPI
  * context initialized.
  */
-@RunWith(JUnit4.class)
 public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractTest {
     /** */
     private static final int START_PORT = 55443;

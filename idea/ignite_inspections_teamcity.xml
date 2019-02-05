@@ -11,6 +11,7 @@
         <option name="m_requireAnnotationsFirst" value="false" />
     </inspection_tool>
     <inspection_tool class="RedundantSuppression" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="ProblematicWhitespace" enabled="true" level="ERROR" enabled_by_default="true" />
     <!-- Disabled inspetions -->
     <inspection_tool class="AbsoluteAlignmentInUserInterface" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="AbstractBeanReferencesInspection" enabled="false" level="ERROR" enabled_by_default="false"/>

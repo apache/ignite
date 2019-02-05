@@ -26,13 +26,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String HOST = "127.0.0.1";
@@ -190,7 +187,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore(value = "https://issues.apache.org/jira/browse/IGNITE-590")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-590")
     @Test
     public void testIdleConnection() throws Exception {
         int srvsCnt = 4; // TODO: IGNITE-590 it may be wrong value. Need to investigate after IGNITE-590 will be fixed.

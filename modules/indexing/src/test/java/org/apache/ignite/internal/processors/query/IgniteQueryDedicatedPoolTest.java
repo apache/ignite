@@ -45,13 +45,10 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Ensures that SQL queries are executed in a dedicated thread pool.
  */
-@RunWith(JUnit4.class)
 public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     /** Name of the cache for test */
     private static final String CACHE_NAME = "query_pool_test";

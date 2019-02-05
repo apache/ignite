@@ -505,107 +505,102 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         ctx.database().checkpointReadLock();
 
         try {
-            synchronized (ctx.exchange().interruptLock()) {
-                if (Thread.currentThread().isInterrupted())
-                    throw new IgniteInterruptedCheckedException("Thread is interrupted: " + Thread.currentThread());
+            U.writeLock(lock);
 
-                U.writeLock(lock);
+            try {
+                if (stopping)
+                    return;
 
-                try {
-                    if (stopping)
-                        return;
+                assert lastTopChangeVer.equals(exchFut.initialVersion()) : "Invalid topology version [topVer=" + lastTopChangeVer +
+                    ", exchId=" + exchFut.exchangeId() + ']';
 
-                    assert lastTopChangeVer.equals(exchFut.initialVersion()) : "Invalid topology version [topVer=" + lastTopChangeVer +
-                        ", exchId=" + exchFut.exchangeId() + ']';
+                ExchangeDiscoveryEvents evts = exchFut.context().events();
 
-                    ExchangeDiscoveryEvents evts = exchFut.context().events();
+                if (affReady) {
+                    assert grp.affinity().lastVersion().equals(evts.topologyVersion()) : "Invalid affinity version [" +
+                        "grp=" + grp.cacheOrGroupName() +
+                        ", affVer=" + grp.affinity().lastVersion() +
+                        ", evtsVer=" + evts.topologyVersion() + ']';
 
-                    if (affReady) {
-                        assert grp.affinity().lastVersion().equals(evts.topologyVersion()) : "Invalid affinity version [" +
-                            "grp=" + grp.cacheOrGroupName() +
-                            ", affVer=" + grp.affinity().lastVersion() +
-                            ", evtsVer=" + evts.topologyVersion() + ']';
+                    lastTopChangeVer = readyTopVer = evts.topologyVersion();
 
-                        lastTopChangeVer = readyTopVer = evts.topologyVersion();
+                    discoCache = evts.discoveryCache();
+                }
 
-                        discoCache = evts.discoveryCache();
-                    }
+                if (log.isDebugEnabled()) {
+                    log.debug("Partition map beforeExchange [grp=" + grp.cacheOrGroupName() +
+                        ", exchId=" + exchFut.exchangeId() + ", fullMap=" + fullMapString() + ']');
+                }
 
-                    if (log.isDebugEnabled()) {
-                        log.debug("Partition map beforeExchange [grp=" + grp.cacheOrGroupName() +
-                            ", exchId=" + exchFut.exchangeId() + ", fullMap=" + fullMapString() + ']');
-                    }
+                long updateSeq = this.updateSeq.incrementAndGet();
 
-                    long updateSeq = this.updateSeq.incrementAndGet();
+                cntrMap.clear();
 
-                    cntrMap.clear();
+                initializeFullMap(updateSeq);
 
-                    initializeFullMap(updateSeq);
+                boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 
-                    boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
+                if (evts.hasServerLeft()) {
+                    List<DiscoveryEvent> evts0 = evts.events();
 
-                    if (evts.hasServerLeft()) {
-                        List<DiscoveryEvent> evts0 = evts.events();
+                    for (int i = 0; i < evts0.size(); i++) {
+                        DiscoveryEvent evt = evts0.get(i);
 
-                        for (int i = 0; i < evts0.size(); i++) {
-                            DiscoveryEvent evt = evts0.get(i);
-
-                            if (ExchangeDiscoveryEvents.serverLeftEvent(evt))
-                                removeNode(evt.eventNode().id());
-                        }
-                    }
-
-                    if (grp.affinityNode()) {
-                        if (grpStarted ||
-                            exchFut.firstEvent().type() == EVT_DISCOVERY_CUSTOM_EVT ||
-                            exchFut.serverNodeDiscoveryEvent()) {
-
-                            AffinityTopologyVersion affVer;
-                            List<List<ClusterNode>> affAssignment;
-
-                            if (affReady) {
-                                affVer = evts.topologyVersion();
-
-                                assert grp.affinity().lastVersion().equals(affVer) :
-                                        "Invalid affinity [topVer=" + grp.affinity().lastVersion() +
-                                                ", grp=" + grp.cacheOrGroupName() +
-                                                ", affVer=" + affVer +
-                                                ", fut=" + exchFut + ']';
-
-                                affAssignment = grp.affinity().readyAssignments(affVer);
-                            }
-                            else {
-                                assert !exchFut.context().mergeExchanges();
-
-                                affVer = exchFut.initialVersion();
-                                affAssignment = grp.affinity().idealAssignment();
-                            }
-
-                            initPartitions(affVer, affAssignment, exchFut, updateSeq);
-                        }
-                    }
-
-                    consistencyCheck();
-
-                    if (updateMoving) {
-                        assert grp.affinity().lastVersion().equals(evts.topologyVersion());
-
-                        createMovingPartitions(grp.affinity().readyAffinity(evts.topologyVersion()));
-                    }
-
-                    if (log.isDebugEnabled()) {
-                        log.debug("Partition map after beforeExchange [grp=" + grp.cacheOrGroupName() + ", " +
-                            "exchId=" + exchFut.exchangeId() + ", fullMap=" + fullMapString() + ']');
-                    }
-
-                    if (log.isTraceEnabled()) {
-                        log.trace("Partition states after beforeExchange [grp=" + grp.cacheOrGroupName()
-                            + ", exchId=" + exchFut.exchangeId() + ", states=" + dumpPartitionStates() + ']');
+                        if (ExchangeDiscoveryEvents.serverLeftEvent(evt))
+                            removeNode(evt.eventNode().id());
                     }
                 }
-                finally {
-                    lock.writeLock().unlock();
+
+                if (grp.affinityNode()) {
+                    if (grpStarted ||
+                        exchFut.firstEvent().type() == EVT_DISCOVERY_CUSTOM_EVT ||
+                        exchFut.serverNodeDiscoveryEvent()) {
+
+                        AffinityTopologyVersion affVer;
+                        List<List<ClusterNode>> affAssignment;
+
+                        if (affReady) {
+                            affVer = evts.topologyVersion();
+
+                            assert grp.affinity().lastVersion().equals(affVer) :
+                                    "Invalid affinity [topVer=" + grp.affinity().lastVersion() +
+                                            ", grp=" + grp.cacheOrGroupName() +
+                                            ", affVer=" + affVer +
+                                            ", fut=" + exchFut + ']';
+
+                            affAssignment = grp.affinity().readyAssignments(affVer);
+                        }
+                        else {
+                            assert !exchFut.context().mergeExchanges();
+
+                            affVer = exchFut.initialVersion();
+                            affAssignment = grp.affinity().idealAssignment();
+                        }
+
+                        initPartitions(affVer, affAssignment, exchFut, updateSeq);
+                    }
                 }
+
+                consistencyCheck();
+
+                if (updateMoving) {
+                    assert grp.affinity().lastVersion().equals(evts.topologyVersion());
+
+                    createMovingPartitions(grp.affinity().readyAffinity(evts.topologyVersion()));
+                }
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Partition map after beforeExchange [grp=" + grp.cacheOrGroupName() + ", " +
+                        "exchId=" + exchFut.exchangeId() + ", fullMap=" + fullMapString() + ']');
+                }
+
+                if (log.isTraceEnabled()) {
+                    log.trace("Partition states after beforeExchange [grp=" + grp.cacheOrGroupName()
+                        + ", exchId=" + exchFut.exchangeId() + ", states=" + dumpPartitionStates() + ']');
+                }
+            }
+            finally {
+                lock.writeLock().unlock();
             }
         }
         finally {
@@ -1172,7 +1167,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             Collection<UUID> diffIds = diffFromAffinity.get(p);
 
             if (!F.isEmpty(diffIds)) {
-                HashSet<UUID> affIds = affAssignment.getIds(p);
+                Collection<UUID> affIds = affAssignment.getIds(p);
 
                 for (UUID nodeId : diffIds) {
                     if (affIds.contains(nodeId)) {
@@ -1229,8 +1224,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 ", node2part=" + node2part + ']';
 
             // Node IDs can be null if both, primary and backup, nodes disappear.
-            List<ClusterNode> nodes = new ArrayList<>();
-
+            // Empirical size to reduce growing of ArrayList.
+            // We bear in mind that most of the time we filter OWNING partitions.
+            List<ClusterNode> nodes = new ArrayList<>(allIds.size() / 2 + 1);
             for (UUID id : allIds) {
                 if (hasState(p, id, state, states)) {
                     ClusterNode n = ctx.discovery().node(id);
