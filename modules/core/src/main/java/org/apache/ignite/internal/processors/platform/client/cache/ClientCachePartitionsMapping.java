@@ -19,16 +19,14 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionAffinityFunctionType;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityDescriptor;
@@ -134,7 +132,24 @@ class ClientCachePartitionsMapping
         );
     }
 
-    public void write(BinaryRawWriterEx writer) {
+    /**
+     * Writer mapping using binary writer.
+     * @param writer
+     */
+    public void write(BinaryRawWriter writer) {
+        writer.writeInt(cacheIds.size());
 
+        for (int id: cacheIds)
+            writer.writeInt(id);
+
+        writer.writeBoolean(affinityDescriptor == null);
+
+        if (affinityDescriptor == null)
+            return;
+
+        writer.writeInt(partitionsMap.size());
+
+        for (ClientCacheNodePartitions partitions: partitionsMap)
+            partitions.write(writer);
     }
 }
