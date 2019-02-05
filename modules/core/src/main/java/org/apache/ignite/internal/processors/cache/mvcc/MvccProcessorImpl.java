@@ -232,8 +232,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerDatabaseListener(this);
-
-
     }
 
     /** {@inheritDoc} */
