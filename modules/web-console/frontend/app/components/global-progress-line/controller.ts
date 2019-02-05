@@ -30,7 +30,7 @@ export default class GlobalProgressLine {
         this.$document = $document;
     }
 
-    $postLink() {
+    $onChanges() {
         if (this.isLoading === true) {
             this._child = this.$element[0].querySelector('.global-progress-line__progress-line');
             this.$document[0].querySelector('web-console-header').appendChild(this._child);
