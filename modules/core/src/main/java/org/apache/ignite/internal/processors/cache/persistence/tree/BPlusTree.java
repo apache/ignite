@@ -1765,7 +1765,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     @Override public final T remove(L row) throws IgniteCheckedException {
-        return doRemove(row, true);
+        return doRemove(new Remove(row, true), row);
     }
 
     /**
@@ -1774,9 +1774,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return {@code True} if removed row.
      */
     public final boolean removex(L row) throws IgniteCheckedException {
-        Boolean res = (Boolean)doRemove(row, false);
+        Boolean res = (Boolean)doRemove(new Remove(row, false), row);
 
-        return res != null ? res : false;
+        return res == Boolean.TRUE;
     }
 
     /**
@@ -1963,15 +1963,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
 
     /**
+     * @param r Remove operation.
      * @param row Lookup row.
-     * @param needOld {@code True} if need return removed row.
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    private T doRemove(L row, boolean needOld) throws IgniteCheckedException {
+    private T doRemove(Remove r, L row) throws IgniteCheckedException {
         checkDestroyed();
-
-        Remove r = new Remove(row, needOld);
 
         try {
             for (;;) {
@@ -2835,8 +2833,44 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return Insertion point.
          * @throws IgniteCheckedException If failed.
          */
-        int doFindInsertionPoint(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
-            return findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
+        final int doFindInsertionPoint(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
+            return gettingHigh ?
+                doFindInsertionPointGettingHigh(lvl, io, pageAddr, cnt) :
+                findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
+        }
+
+        /**
+         * For compound operations like {@link InvokeAll}.
+         *
+         * @param lvl Level.
+         * @param io Page IO.
+         * @param pageAddr Page address.
+         * @param cnt Row count.
+         * @return Insertion point.
+         */
+        private int doFindInsertionPointGettingHigh(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
+            int idx;
+
+            if (cnt == 0)
+                idx = -1; // The page is empty, nothing to search (and need to get higher if there are forward pages).
+            else {
+                // Try to compare with the rightmost row before doing binary search.
+                int cmp = compare(lvl, io, pageAddr, cnt - 1, row);
+
+                if (cmp > 0) // Search row is less than the last row in the page, need to do binary search.
+                    idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
+                else if (cmp == 0)
+                    idx = cnt - 1; // Search row is equal to the last row in the page.
+                else
+                    idx = -cnt - 1; // Search row is greater than the last row in the page.
+            }
+
+            // If we are not on the right edge of the page or there are no forward pages,
+            // then we are high enough to have valid search from here.
+            if (-idx - 1 != cnt || fwdId == 0L)
+                gettingHigh = false;
+
+            return idx;
         }
 
         /**
@@ -3768,45 +3802,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.sortedRows = sortedRows;
             this.closures = closures;
-        }
-
-        /** {@inheritDoc} */
-        @Override int doFindInsertionPoint(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
-            return gettingHigh ?
-                doFindInsertionPointGettingHigh(lvl, io, pageAddr, cnt) :
-                super.doFindInsertionPoint(lvl, io, pageAddr, cnt);
-        }
-
-        /**
-         * @param lvl Level.
-         * @param io Page IO.
-         * @param pageAddr Page address.
-         * @param cnt Row count.
-         * @return Insertion point.
-         */
-        private int doFindInsertionPointGettingHigh(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
-            int idx;
-
-            if (cnt == 0)
-                idx = -1; // The page is empty, nothing to search (and need to get higher if there are forward pages).
-            else {
-                // Try to compare with the rightmost row before doing binary search.
-                int cmp = compare(lvl, io, pageAddr, cnt - 1, row);
-
-                if (cmp > 0) // Search row is less than the last row in the page, need to do binary search.
-                    idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
-                else if (cmp == 0)
-                    idx = cnt - 1; // Search row is equal to the last row in the page.
-                else
-                    idx = -cnt - 1; // Search row is greater than the last row in the page.
-            }
-
-            // If we are not on the right edge of the page or there are no forward pages,
-            // then we are high enough to have valid search from here.
-            if (-idx - 1 != cnt || fwdId == 0L)
-                gettingHigh = false;
-
-            return idx;
         }
 
         /** {@inheritDoc} */
