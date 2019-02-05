@@ -34,6 +34,18 @@ import org.h2.value.Value;
  * Index base.
  */
 public abstract class GridH2IndexBase extends BaseIndex {
+    /** Underlying table. */
+    private final GridH2Table tbl;
+
+    /**
+     * Constructor.
+     *
+     * @param tbl Table.
+     */
+    protected GridH2IndexBase(GridH2Table tbl) {
+        this.tbl = tbl;
+    }
+
     /** {@inheritDoc} */
     @Override public final void close(Session ses) {
         // No-op. Actual index destruction must happen in method destroy.
@@ -57,7 +69,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         if(segmentsCount() == 1)
             return 0;
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        QueryContext qctx = queryContextRegistry().getThreadLocal();
 
         if(qctx == null)
             throw new IllegalStateException("GridH2QueryContext is not initialized.");
@@ -201,5 +213,19 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         for (int pos = 0; pos < columnIds.length; ++pos)
             columnIds[pos] = columns[pos].getColumnId();
+    }
+
+    /**
+     * @return Row descriptor.
+     */
+    protected GridH2RowDescriptor rowDescriptor() {
+        return tbl.rowDescriptor();
+    }
+
+    /**
+     * @return Query context registry.
+     */
+    protected QueryContextRegistry queryContextRegistry() {
+        return tbl.rowDescriptor().indexing().queryContextRegistry();
     }
 }
