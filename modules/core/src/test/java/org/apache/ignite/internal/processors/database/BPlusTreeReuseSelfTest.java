@@ -48,6 +48,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStructure.randomInt;
 import static org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest.Operation.INVOKE;
 import static org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest.Operation.INVOKE_ALL;
+import static org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest.Operation.REMOVE_ALL;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
@@ -407,6 +408,22 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     }
 
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testRemoveAllPageLeaks_true() throws IgniteCheckedException {
+        doTestInvokeAllPageLeaks(true, REMOVE_ALL);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testRemoveAllPageLeaks_false() throws IgniteCheckedException {
+        doTestInvokeAllPageLeaks(false, REMOVE_ALL);
+    }
+
+    /**
      * @param canGetRow Can get row.
      * @throws IgniteCheckedException If failed.
      */
@@ -462,15 +479,20 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
                     for (Long row : rows)
                         tree.removex(row);
                     break;
+
                 case INVOKE:
                     for (Long row : rows)
                         tree.invoke(row, null, new RemoveAllClosure());
                     break;
+
                 case INVOKE_ALL:
                     tree.invokeAll(rows.iterator(), null, new RemoveAllClosure());
                     break;
+
                 case REMOVE_ALL:
-                    // TODO
+                    tree.removeAll(rows.iterator());
+                    break;
+
                 default:
                     fail();
             }

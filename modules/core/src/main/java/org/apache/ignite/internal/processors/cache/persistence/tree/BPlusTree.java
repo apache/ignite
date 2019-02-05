@@ -1766,13 +1766,31 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public final List<T> removeAll(Iterator<? extends L> sortedRows) throws IgniteCheckedException {
-        RemoveAll r = new RemoveAll(sortedRows, true);
+        return doRemoveAll(sortedRows, true);
+    }
+
+    /**
+     * @param sortedRows Iterator over search rows sorted according to this tree sort order.
+     * @return List booleans indicating that the row at that index was removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public final List<Boolean> removeAllx(Iterator<? extends L> sortedRows) throws IgniteCheckedException {
+        return (List)doRemoveAll(sortedRows, false);
+    }
+
+    /**
+     * @param sortedRows Iterator over search rows sorted according to this tree sort order.
+     * @param needOld {@code True} If need return old value.
+     * @return List of removed rows.
+     * @throws IgniteCheckedException If failed.
+     */
+    private List<T> doRemoveAll(Iterator<? extends L> sortedRows, boolean needOld) throws IgniteCheckedException {
+        RemoveAll r = new RemoveAll(sortedRows, needOld);
 
         doRemove(r);
 
-        List<T> res = r.removedRows;
-
-        return res == null ? emptyList() : res;
+        return r.removedRows;
     }
 
     /**
@@ -2083,6 +2101,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     case GO_DOWN:
                         res = removeDown(r, r.pageId, r.backId, r.fwdId, lvl - 1);
 
+                        if (r.nextRow(res))
+                            continue;
+
                         if (res == RETRY) {
                             checkInterrupted();
 
@@ -2094,6 +2115,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = r.finishOrLockTail(pageId, page, backId, fwdId, lvl);
 
+                        if (r.nextRow(res))
+                            continue;
+
                         return res;
 
                     case NOT_FOUND:
@@ -2102,10 +2126,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         r.finish();
 
+                        if (r.nextRow(res))
+                            continue;
+
                         return res;
 
                     case FOUND:
-                        return r.tryRemoveFromLeaf(pageId, page, backId, fwdId, lvl);
+                        res = r.tryRemoveFromLeaf(pageId, page, backId, fwdId, lvl);
+
+                        if (r.nextRow(res))
+                            continue;
+
+                        return res;
 
                     default:
                         return res;
@@ -4201,16 +4233,30 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             super(sortedRows.next(), needOld);
 
             this.sortedRows = sortedRows;
+            removedRows = new ArrayList<>();
         }
 
         /** {@inheritDoc} */
         @Override boolean nextRow(Result res) {
-            if (!switchToNextRow(res, sortedRows))
-                return false;
+            return switchToNextRow(res, sortedRows);
+        }
 
-            // TODO
+        /** {@inheritDoc} */
+        @SuppressWarnings({"WrapperTypeMayBePrimitive", "unchecked"})
+        @Override void finish() {
+            super.finish();
 
-            return true;
+            T res;
+
+            if (needOld)
+                res = rmvd;
+            else {
+                // Dirty trick to convert boolean to T.
+                Boolean x = rmvd == Boolean.TRUE;
+                res = (T)x;
+            }
+
+            removedRows.add(res);
         }
     }
 
