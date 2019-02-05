@@ -2673,15 +2673,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         // Go down recursively.
                         res = visitDown(v, v.pageId, v.fwdId, lvl - 1);
 
-                        switch (res) {
-                            case RETRY:
-                                checkInterrupted();
+                        if (res == RETRY) {
+                            checkInterrupted();
 
-                                continue; // The child page got split, need to reread our page.
-
-                            default:
-                                return res;
+                            continue; // The child page got split, need to reread our page.
                         }
+
+                        return res;
 
                     case NOT_FOUND:
                         assert lvl == 0 : lvl;
@@ -2728,40 +2726,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * @param g Current operation.
-     * @param reuseBag Reuse bag.
-     * @param pageId Page id to add to the bag.
-     * @return The same or new reuse bag containing the given page id.
-     */
-    ReuseBag addFreePageToBag(Get g, ReuseBag reuseBag, long pageId) throws IgniteCheckedException {
-        if (g.invoke != null && g.invoke.addFreePage(pageId))
-            return reuseBag;
-
-        assert pageId != 0L;
-
-        if (reuseBag == null)
-            return new SinglePageReuseBag(pageId);
-
-        if (!reuseBag.addFreePage(pageId)) {
-            assert reuseBag.size() == 1;
-
-            reuseBag = new LongListReuseBag(4, reuseBag);
-            reuseBag.addFreePage(pageId);
-
-            assert reuseBag.size() == 2;
-        }
-
-        if (reuseBag.size() >= 128)
-            reuseFreePagesFromBag(reuseBag);
-
-        return reuseBag;
-    }
-
-    /**
      * @param reuseBag Reuse bag.
      * @throws IgniteCheckedException If failed.
      */
-    void reuseFreePagesFromBag(ReuseBag reuseBag) throws IgniteCheckedException {
+    final void reuseFreePagesFromBag(ReuseBag reuseBag) throws IgniteCheckedException {
         if (reuseBag != null && !reuseBag.isEmpty() && reuseList != null)
             reuseList.addForRecycle(reuseBag);
     }
@@ -2823,6 +2791,70 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.row = row;
             this.findLast = findLast;
+        }
+
+        /**
+         * @param g Current operation.
+         * @param reuseBag Reuse bag.
+         * @param pageId Page id to add to the bag.
+         * @return The same or new reuse bag containing the given page id.
+         */
+        protected final ReuseBag addFreePageToBag(ReuseBag reuseBag, long pageId) throws IgniteCheckedException {
+            if (invoke != null && invoke.addFreePage(pageId))
+                return reuseBag;
+
+            assert pageId != 0L;
+
+            if (reuseBag == null)
+                return new SinglePageReuseBag(pageId);
+
+            if (!reuseBag.addFreePage(pageId)) {
+                assert reuseBag.size() == 1;
+
+                reuseBag = new LongListReuseBag(4, reuseBag);
+                reuseBag.addFreePage(pageId);
+
+                assert reuseBag.size() == 2;
+            }
+
+            if (reuseBag.size() >= 128)
+                reuseFreePagesFromBag(reuseBag);
+
+            return reuseBag;
+        }
+
+        /**
+         * Used in batch operations like {@link InvokeAll}.
+         *
+         * @param res Last result.
+         * @param sortedRows Sorted rows.
+         * @return {@code true} If was successfully switched to the next row.
+         */
+        protected final boolean switchToNextRow(Result res, Iterator<? extends L> sortedRows) {
+            if (res.retry || !isFinished() || !sortedRows.hasNext())
+                return false;
+
+            // Well need to get high enough to start new search.
+            assert !gettingHigh;
+            gettingHigh = true;
+
+            // Reinitialize state to continue working with the next row.
+            lockRetriesCnt = getLockRetries();
+
+            row = sortedRows.next();
+            assert row != null;
+
+            return true;
+        }
+
+        /**
+         * Used in batch operations like {@link InvokeAll}.
+         *
+         * @param res Last result.
+         * @return {@code true} If we have switched to the next row to process it.
+         */
+        boolean nextRow(Result res) {
+            return false;
         }
 
         /**
@@ -3806,14 +3838,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** {@inheritDoc} */
         @Override boolean nextRow(Result res) {
-            if (res.retry || !isFinished() || !sortedRows.hasNext())
+            if (!switchToNextRow(res, sortedRows))
                 return false;
 
-            // Reinitialize state to continue working with the next row.
-            lockRetriesCnt = getLockRetries();
-
-            row = sortedRows.next();
-            assert row != null;
+            // Create a new closure for the switched row.
             clo = closures.apply(row);
             assert clo != null;
 
@@ -3821,15 +3849,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             foundRow = null;
             op = null;
 
-            assert !gettingHigh;
-            gettingHigh = true;
-
             return true;
         }
 
         /** {@inheritDoc} */
         @Override boolean addFreePage(long pageId) throws IgniteCheckedException {
-            reuseBag = addFreePageToBag(this, reuseBag, pageId);
+            reuseBag = addFreePageToBag(reuseBag, pageId);
 
             return true;
         }
@@ -3873,14 +3898,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.clo = clo;
             this.x = x;
-        }
-
-        /**
-         * @param res Last result.
-         * @return {@code true} If we have switched to the next row to process it.
-         */
-        boolean nextRow(Result res) {
-            return false;
         }
 
         /** {@inheritDoc} */
@@ -4149,10 +4166,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
+    final class RemoveAll extends Remove {
+        /**
+         * @param row Row.
+         * @param needOld {@code True} If need return old value.
+         */
+        private RemoveAll(L row, boolean needOld) {
+            super(row, needOld);
+        }
+    }
+
     /**
      * Remove operation.
      */
-    private final class Remove extends Get {
+    class Remove extends Get {
         /** We may need to lock part of the tree branch from the bottom to up for multiple levels. */
         Tail<L> tail;
 
@@ -4188,7 +4215,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param pageId Free page for reuse.
          */
         void addFreePage(long pageId) throws IgniteCheckedException {
-            reuseBag = addFreePageToBag(this, reuseBag, pageId);
+            reuseBag = addFreePageToBag(reuseBag, pageId);
         }
 
         /** {@inheritDoc} */
@@ -4205,7 +4232,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * Finish the operation.
          */
-        private void finish() {
+        void finish() {
             assert tail == null;
 
             row = null;
