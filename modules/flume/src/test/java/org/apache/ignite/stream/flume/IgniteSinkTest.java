@@ -34,15 +34,12 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * {@link IgniteSink} test.
  */
-@RunWith(JUnit4.class)
 public class IgniteSinkTest extends GridCommonAbstractTest {
     /** Number of events to be sent to memory channel. */
     private static final int EVENT_CNT = 10000;

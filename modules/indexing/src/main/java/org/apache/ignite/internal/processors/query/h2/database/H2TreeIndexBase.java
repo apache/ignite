@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
 import org.h2.result.SortOrder;
@@ -46,9 +47,12 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
     /**
      * Constructor.
      *
+     * @param tbl Table.
      * @param unwrappedColsList Unwrapped columns list.
      */
-    protected H2TreeIndexBase(List<IndexColumn> unwrappedColsList) {
+    protected H2TreeIndexBase(GridH2Table tbl, List<IndexColumn> unwrappedColsList) {
+        super(tbl);
+
         indexKeySql = unwrappedColsList.stream().map(IndexColumn::getSQL).collect(Collectors.joining(", "));
     }
 

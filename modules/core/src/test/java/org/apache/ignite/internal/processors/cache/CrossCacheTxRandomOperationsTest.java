@@ -41,9 +41,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -58,7 +57,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE1 = "cache1";
@@ -87,11 +85,15 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         return 6 * 60 * 1000;
     }
 
+    /** */
+    @Before
+    public void beforeCrossCacheTxRandomOperationsTest() {
+        if (nearCacheEnabled())
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (nearCacheEnabled())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(GRID_CNT - 1);

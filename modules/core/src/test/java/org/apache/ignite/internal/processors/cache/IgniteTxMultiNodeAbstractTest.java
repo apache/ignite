@@ -47,8 +47,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -57,7 +55,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Checks basic multi-node transactional operations.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTest {
     /** Debug flag. */
     private static final boolean DEBUG = false;

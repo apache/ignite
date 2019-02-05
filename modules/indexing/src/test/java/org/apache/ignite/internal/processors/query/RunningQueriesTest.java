@@ -67,15 +67,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
 /**
  * Tests for running queries.
  */
-@RunWith(JUnit4.class)
 public class RunningQueriesTest extends AbstractIndexingCommonTest {
     /** Timeout in sec. */
     private static final long TIMEOUT_IN_SEC = 5;
@@ -246,6 +243,32 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         assertNoRunningQueries();
 
+    }
+
+    /**
+     * Check cluster wide query id generation.
+     *
+     * @throws Exception Exception in case of failure.
+     */
+    @Test
+    public void testClusterWideQueryIdGeneration() throws Exception {
+        newBarrier(1);
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100; i++) {
+            FieldsQueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("SELECT * FROM Integer WHERE 1 = 1"));
+
+            Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
+
+            assertEquals(1, runningQueries.size());
+
+            GridRunningQueryInfo r = runningQueries.iterator().next();
+
+            assertEquals(ignite.context().localNodeId() + "_" + r.id(), r.globalQueryId());
+
+            cursor.close();
+        }
     }
 
     /**

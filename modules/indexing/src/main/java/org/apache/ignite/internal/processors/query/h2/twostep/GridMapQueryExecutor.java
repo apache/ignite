@@ -21,12 +21,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -75,9 +73,10 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
+import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
@@ -95,7 +94,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
 import org.h2.command.Prepared;
@@ -111,10 +109,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUE
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.distributedJoinMode;
+
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
@@ -134,6 +129,9 @@ public class GridMapQueryExecutor {
 
     /** */
     private IgniteH2Indexing h2;
+
+    /** Query context registry. */
+    private QueryContextRegistry qryCtxRegistry;
 
     /** */
     private ConcurrentMap<UUID, MapNodeResults> qryRess = new ConcurrentHashMap<>();
@@ -169,15 +167,15 @@ public class GridMapQueryExecutor {
         this.ctx = ctx;
         this.h2 = h2;
 
-        log = ctx.log(GridMapQueryExecutor.class);
+        qryCtxRegistry = h2.queryContextRegistry();
 
-        final UUID locNodeId = ctx.localNodeId();
+        log = ctx.log(GridMapQueryExecutor.class);
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                GridH2QueryContext.clearAfterDeadNode(locNodeId, nodeId);
+                qryCtxRegistry.clearSharedOnRemoteNodeStop(nodeId);
 
                 MapNodeResults nodeRess = qryRess.remove(nodeId);
 
@@ -272,12 +270,12 @@ public class GridMapQueryExecutor {
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
-        boolean clear = GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
+        boolean clear = qryCtxRegistry.clearShared(node.id(), qryReqId);
 
         if (!clear) {
             nodeRess.onCancel(qryReqId);
 
-            GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
+            qryCtxRegistry.clearShared(node.id(), qryReqId);
         }
 
         nodeRess.cancelRequest(qryReqId);
@@ -334,7 +332,18 @@ public class GridMapQueryExecutor {
         if (F.isEmpty(cacheIds))
             return null;
 
-        Collection<Integer> partIds = wrap(explicitParts);
+        Collection<Integer> partIds;
+
+        if (explicitParts == null)
+            partIds = null;
+        else if (explicitParts.length == 0)
+            partIds = Collections.emptyList();
+        else {
+            partIds = new ArrayList<>(explicitParts.length);
+
+            for (int explicitPart : explicitParts)
+                partIds.add(explicitPart);
+        }
 
         for (int i = 0; i < cacheIds.size(); i++) {
             GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheIds.get(i));
@@ -515,44 +524,6 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * @param ints Integers.
-     * @return Collection wrapper.
-     */
-    private static Collection<Integer> wrap(final int[] ints) {
-        if (ints == null)
-            return null;
-
-        if (ints.length == 0)
-            return Collections.emptySet();
-
-        return new AbstractCollection<Integer>() {
-            @SuppressWarnings("NullableProblems")
-            @Override public Iterator<Integer> iterator() {
-                return new Iterator<Integer>() {
-                    /** */
-                    private int i = 0;
-
-                    @Override public boolean hasNext() {
-                        return i < ints.length;
-                    }
-
-                    @Override public Integer next() {
-                        return ints[i++];
-                    }
-
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-
-            @Override public int size() {
-                return ints.length;
-            }
-        };
-    }
-
-    /**
      * @param node Node.
      * @param req Query request.
      */
@@ -563,9 +534,8 @@ public class GridMapQueryExecutor {
 
         final int[] parts = qryParts == null ? partsMap == null ? null : partsMap.get(ctx.localNodeId()) : qryParts;
 
-        final DistributedJoinMode joinMode = distributedJoinMode(
-            req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
-            req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
+        boolean distributedJoins = req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS);
+        boolean local = req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL);
 
         final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
@@ -660,7 +630,8 @@ public class GridMapQueryExecutor {
                     partsMap,
                     parts,
                     req.pageSize(),
-                    joinMode,
+                    distributedJoins,
+                    local,
                     enforceJoinOrder,
                     false, // Replicated is always false here (see condition above).
                     req.timeout(),
@@ -687,7 +658,8 @@ public class GridMapQueryExecutor {
                                 partsMap,
                                 parts,
                                 req.pageSize(),
-                                joinMode,
+                                distributedJoins,
+                                local,
                                 enforceJoinOrder,
                                 false,
                                 req.timeout(),
@@ -717,7 +689,8 @@ public class GridMapQueryExecutor {
             partsMap,
             parts,
             req.pageSize(),
-            joinMode,
+            distributedJoins,
+            local,
             enforceJoinOrder,
             replicated,
             req.timeout(),
@@ -742,7 +715,8 @@ public class GridMapQueryExecutor {
      * @param partsMap Partitions map for unstable topology.
      * @param parts Explicit partitions for current node.
      * @param pageSize Page size.
-     * @param distributedJoinMode Query distributed join mode.
+     * @param distributeJoins Query distributed join mode.
+     * @param local Lcoal flag.
      * @param lazy Streaming flag.
      * @param mvccSnapshot MVCC snapshot.
      * @param tx Transaction.
@@ -762,7 +736,8 @@ public class GridMapQueryExecutor {
         final Map<UUID, int[]> partsMap,
         final int[] parts,
         final int pageSize,
-        final DistributedJoinMode distributedJoinMode,
+        final boolean distributeJoins,
+        final boolean local,
         final boolean enforceJoinOrder,
         final boolean replicated,
         final int timeout,
@@ -785,7 +760,7 @@ public class GridMapQueryExecutor {
         if (lazy && worker == null) {
             // Lazy queries must be re-submitted to dedicated workers.
             MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
-            worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
+            worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this, qryCtxRegistry);
 
             worker.submit(new Runnable() {
                 @Override public void run() {
@@ -800,7 +775,8 @@ public class GridMapQueryExecutor {
                         partsMap,
                         parts,
                         pageSize,
-                        distributedJoinMode,
+                        distributeJoins,
+                        local,
                         enforceJoinOrder,
                         replicated,
                         timeout,
@@ -872,32 +848,44 @@ public class GridMapQueryExecutor {
                 throw new IllegalStateException();
 
             // Prepare query context.
-            GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
-                node.id(),
-                reqId,
+            DistributedJoinContext distributedJoinCtx = null;
+
+            if (distributeJoins && !replicated) {
+                distributedJoinCtx = new DistributedJoinContext(
+                    local,
+                    topVer,
+                    partsMap,
+                    node.id(),
+                    reqId,
+                    segmentId,
+                    pageSize
+                );
+            }
+
+            QueryContext qctx = new QueryContext(
                 segmentId,
-                replicated ? REPLICATED : MAP)
-                .filter(h2.backupFilter(topVer, parts))
-                .partitionsMap(partsMap)
-                .distributedJoinMode(distributedJoinMode)
-                .pageSize(pageSize)
-                .topologyVersion(topVer)
-                .reservations(reserved)
-                .mvccSnapshot(mvccSnapshot)
+                h2.backupFilter(topVer, parts),
+                distributedJoinCtx,
+                mvccSnapshot,
+                reserved
+            )
                 .lazyWorker(worker);
 
             Connection conn = h2.connections().connectionForThread().connection(schemaName);
 
-            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
+            H2Utils.setupConnection(conn, distributeJoins, enforceJoinOrder);
 
-            GridH2QueryContext.set(qctx);
+            qryCtxRegistry.setThreadLocal(qctx);
+
+            if (distributedJoinCtx != null)
+                qryCtxRegistry.setShared(node.id(), reqId, qctx);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
 
             try {
                 if (nodeRess.cancelled(reqId)) {
-                    GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qctx.type());
+                    qryCtxRegistry.clearShared(node.id(), reqId);
 
                     nodeRess.cancelRequest(reqId);
 
@@ -1086,12 +1074,12 @@ public class GridMapQueryExecutor {
      * Releases reserved partitions.
      */
     private void releaseReservations() {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        QueryContext qctx = qryCtxRegistry.getThreadLocal();
 
         if (qctx != null) { // No-op if already released.
-            GridH2QueryContext.clearThreadLocal();
+            qryCtxRegistry.clearThreadLocal();
 
-            if (qctx.distributedJoinMode() == OFF)
+            if (qctx.distributedJoinContext() == null)
                 qctx.clearContext(false);
         }
     }
@@ -1100,7 +1088,7 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param req DML request.
      */
-    private void onDmlRequest(final ClusterNode node, final GridH2DmlRequest req) throws IgniteCheckedException {
+    private void onDmlRequest(final ClusterNode node, final GridH2DmlRequest req) {
         int[] parts = req.queryPartitions();
 
         List<Integer> cacheIds = req.caches();
@@ -1388,7 +1376,7 @@ public class GridMapQueryExecutor {
 
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId, segmentId,
             /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
-                loc ? null : Collections.<Message>emptyList(),
+                loc ? null : Collections.emptyList(),
                 loc ? Collections.<Value[]>emptyList() : null,
                 false);
 

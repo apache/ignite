@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
@@ -30,6 +31,7 @@ import java.util.Map;
 /**
  * Merge cursor from multiple nodes.
  */
+@SuppressWarnings("ComparatorNotSerializable")
 public class BroadcastCursor implements Cursor, Comparator<RangeStream> {
     /** Index. */
     private final GridH2IndexBase idx;
@@ -122,7 +124,7 @@ public class BroadcastCursor implements Cursor, Comparator<RangeStream> {
         }
 
         // Bubble up current min stream with respect to fetched row to achieve correct sort order of streams.
-        GridH2IndexBase.bubbleUp(streams, off, this);
+        H2Utils.bubbleUp(streams, off, this);
 
         return true;
     }
