@@ -22,6 +22,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
@@ -54,19 +55,9 @@ public abstract class AbstractH2LeafIO extends BPlusLeafIO<H2Row> implements H2R
     }
 
     /** {@inheritDoc} */
-    @Override public final H2Row getLookupRow(BPlusTree<H2Row,?> tree, long pageAddr, int idx)
+    @Override public final H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
-        long link = getLink(pageAddr, idx);
-
-        if (storeMvccInfo()) {
-            long mvccCrdVer = getMvccCoordinatorVersion(pageAddr, idx);
-            long mvccCntr = getMvccCounter(pageAddr, idx);
-            int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
-
-            return ((H2Tree)tree).createMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr, null);
-        }
-
-        return ((H2Tree)tree).createRow(link, null);
+        return getLookupRow(tree, pageAddr, idx, null);
     }
 
     /** {@inheritDoc} */

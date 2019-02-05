@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -62,6 +63,9 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
     /** Client node name. */
     private static final String CLI_NAME = "cli";
 
+    /** Rows. */
+    private static int ROWS = 10;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(getConfiguration("srv1"));
@@ -99,7 +103,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
 
         sql("CREATE TABLE test (id LONG PRIMARY KEY, valStr VARCHAR, valLong LONG)");
 
-        for (int i = 0; i < 100; ++i)
+        for (int i = 0; i < ROWS; ++i)
             sql("INSERT INTO test VALUES (?, ?, ?)", i, "val_" + i, i);
 
         // hidden fields, only key
@@ -119,7 +123,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         // scan and wildcard
         res = sql("SELECT * FROM test AS d0");
 
-        assertEquals(100L, res.size());
+        assertEquals((long)ROWS, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
             new UsedTableColumns("d0", true, true, 2, 3, 4));
 
@@ -178,15 +182,15 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         List<List<?>> res;
 
         sql("CREATE TABLE person (id LONG, compId LONG, name VARCHAR, " +
-                "PRIMARY KEY (id, compId)) " +
-                "WITH \"AFFINITY_KEY=compId\"");
+            "PRIMARY KEY (id, compId)) " +
+            "WITH \"AFFINITY_KEY=compId\"");
 
         sql("CREATE TABLE company (id LONG PRIMARY KEY, name VARCHAR)");
         sql("CREATE INDEX idx_company_name ON company (name)");
 
         long persId = 0;
 
-        for (long compId = 0; compId < 10; ++compId) {
+        for (long compId = 0; compId < ROWS; ++compId) {
             sql("INSERT INTO company VALUES (?, ?)", compId, "company_" + compId);
 
             for (long persCnt = 0; persCnt < 10; ++persCnt, ++persId)
@@ -219,7 +223,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         sql("CREATE TABLE company (id LONG PRIMARY KEY, name VARCHAR)");
 
         long persId = 0;
-        for (long compId = 0; compId < 10; ++compId) {
+        for (long compId = 0; compId < ROWS; ++compId) {
             sql("INSERT INTO company VALUES (?, ?)", compId, "company_" + compId);
 
             for (long persCnt = 0; persCnt < 10; ++persCnt, ++persId)
@@ -248,7 +252,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
             "CREATE TABLE test (id LONG PRIMARY KEY, " +
                 "val0 VARCHAR, val1 VARCHAR, val2 VARCHAR, val3 VARCHAR, val4 VARCHAR, val5 VARCHAR, val6 VARCHAR)");
 
-        for (long i = 0; i < 10; ++i) {
+        for (long i = 0; i < ROWS; ++i) {
             sql("INSERT INTO test VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 i, "0_" + i, "1_" + i, "2_" + i, "3_" + i, "4_" + i, "5_" + i, "6_" + i);
         }
@@ -268,6 +272,44 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
             new UsedTableColumns("d2", true, true, 2, 7, 8));
 
         assertEquals(res.size(), 10);
+    }
+
+
+    /**
+     * Test compare last row on the page.
+     */
+    @Test
+    public void testManyPagesInlineKey() {
+        List<List<?>> res;
+
+        sql("CREATE TABLE test (id LONG PRIMARY KEY, " +
+                "val0 VARCHAR, val1 VARCHAR)");
+
+        sql("CREATE INDEX test_val0 ON test (val0)");
+        sql("CREATE INDEX test_val1 ON test (val1) INLINE_SIZE 0");
+
+        for (long i = 0; i < 10000; ++i) {
+            sql("INSERT INTO test  VALUES (?, ?, ?)",
+                i, "val0", "val1");
+        }
+
+//        res = sql(
+//            "SELECT val0 FROM test AS d0 WHERE val0 = 'val0'");
+//
+//        assertEquals(1, qrys.get().size());
+//        assertUsedColumns(qrys.get().get(0).usedColumns(),
+//            new UsedTableColumns("d0", false, true, 3));
+//
+//        assertEquals(10000, res.size());
+
+        res = sql(
+            "SELECT val1 FROM test AS d0 WHERE val1 = 'val1'");
+
+        assertEquals(1, qrys.get().size());
+        assertUsedColumns(qrys.get().get(0).usedColumns(),
+            new UsedTableColumns("d0", false, true, 4));
+
+        assertEquals(10000, res.size());
     }
 
     /**
@@ -339,25 +381,37 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static class UsedTableColumns {
-        /** */
+        /**
+         *
+         */
         @GridToStringInclude
         String alias;
 
-        /** */
+        /**
+         *
+         */
         @GridToStringInclude
-        int [] usedCols;
+        int[] usedCols;
 
-        /** */
+        /**
+         *
+         */
         @GridToStringInclude
         boolean isKeyUsed;
 
-        /** */
+        /**
+         *
+         */
         @GridToStringInclude
         boolean isValUsed;
 
-        /** */
+        /**
+         *
+         */
         UsedTableColumns(Map.Entry<String, GridSqlUsedColumnInfo> entry) {
             alias = entry.getKey().toUpperCase();
             usedCols = entry.getValue().columns();
@@ -365,8 +419,10 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
             isValUsed = entry.getValue().isValueUsed();
         }
 
-        /** */
-        UsedTableColumns(String alias, boolean isKeyUsed, boolean isValUsed, int...usedCols) {
+        /**
+         *
+         */
+        UsedTableColumns(String alias, boolean isKeyUsed, boolean isValUsed, int... usedCols) {
             this.alias = alias.toUpperCase();
             this.isKeyUsed = isKeyUsed;
             this.isValUsed = isValUsed;
@@ -386,8 +442,8 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
             return isKeyUsed == columns.isKeyUsed &&
                 isValUsed == columns.isValUsed &&
                 alias.length() < columns.alias.length()
-                    ? columns.alias.startsWith(alias)
-                    : alias.startsWith(columns.alias) &&
+                ? columns.alias.startsWith(alias)
+                : alias.startsWith(columns.alias) &&
                 Arrays.equals(usedCols, columns.usedCols);
         }
 

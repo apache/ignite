@@ -68,6 +68,10 @@ public interface H2RowLinkIO {
         return false;
     }
 
+    /** */
+    public int getCount(long pageAddr);
+
+
     /**
      * Get lookup row.
      *
@@ -82,6 +86,10 @@ public interface H2RowLinkIO {
         GridSqlUsedColumnInfo usedColInfo)
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
+
+        // We have to read FULL row if it is the last row on page to use it for lookup then.
+        if (idx == getCount(pageAddr) - 1)
+            usedColInfo = null;
 
         if (storeMvccInfo()) {
             long mvccCrdVer = getMvccCoordinatorVersion(pageAddr, idx);
