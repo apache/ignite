@@ -1375,7 +1375,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             });
 
             while (System.currentTimeMillis() < stopTime && !stop.get()) {
-                Thread.sleep(1000);
+                Thread.sleep(100);
 
                 if (System.currentTimeMillis() >= stopTime || stop.get())
                     break;
