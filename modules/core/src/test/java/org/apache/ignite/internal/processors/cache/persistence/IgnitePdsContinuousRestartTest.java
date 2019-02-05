@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -147,7 +146,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10561", MvccFeatureChecker.forcedMvcc());
+//        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10561", MvccFeatureChecker.forcedMvcc());
 
         super.beforeTest();
     }
