@@ -15,24 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep;
+package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongPredicate;
 
 /**
- * Mapper fake reservation object for replicated caches.
+ *
  */
-class MapReplicatedReservation implements GridReservable {
+public interface MvccCoordinatorChangeAware {
     /** */
-    static final MapReplicatedReservation INSTANCE = new MapReplicatedReservation();
+    AtomicLong ID_CNTR = new AtomicLong();
 
-    /** {@inheritDoc} */
-    @Override public boolean reserve() {
-        throw new IllegalStateException();
-    }
+    /** */
+    long MVCC_TRACKER_ID_NA = -1;
 
-    /** {@inheritDoc} */
-    @Override public void release() {
-        throw new IllegalStateException();
+    /** */
+    LongPredicate ID_FILTER = id -> id != MVCC_TRACKER_ID_NA;
+
+    /**
+     * Mvcc coordinator change callback.
+     *
+     * @param newCrd New mvcc coordinator.
+     * @return Query id if exists.
+     */
+    default long onMvccCoordinatorChange(MvccCoordinator newCrd) {
+        return MVCC_TRACKER_ID_NA;
     }
 }
