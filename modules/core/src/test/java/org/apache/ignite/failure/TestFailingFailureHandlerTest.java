@@ -30,7 +30,7 @@ import org.junit.runners.JUnit4;
 public class TestFailingFailureHandlerTest extends OomFailureHandlerTest {
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new TestFailingFailureHandler(this);
+        return new TestFailingFailureHandler(this, log);
     }
 
     /**

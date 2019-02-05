@@ -62,6 +62,8 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
      */
     @Test
     public void testNodeWithAttributeFailure() throws Exception {
+        expectFailure(IgniteException.class, "Class not found for continuous query remote filter ");
+
         try (Ignite node1 = startNodeWithCache()) {
             GridStringLogger log = new GridStringLogger();
 
@@ -72,6 +74,9 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
                 assertTrue(log.toString().contains("Class not found for continuous query remote filter " +
                     "[name=org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilter]"));
             }
+        }
+        finally {
+            expectNothing();
         }
     }
 

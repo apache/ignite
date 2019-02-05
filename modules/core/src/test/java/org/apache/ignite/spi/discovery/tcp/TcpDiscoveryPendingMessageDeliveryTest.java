@@ -23,6 +23,7 @@ import java.net.Socket;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
@@ -56,6 +57,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
     }
 
@@ -190,6 +193,9 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
      */
     @Test
     public void testDeliveryAllFailedMessagesInCorrectOrder() throws Exception {
+        expectFailure(RuntimeException.class, "Thread is dying");
+        expectFailure(IgniteException.class, "Worker ");
+
         IgniteEx coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
 

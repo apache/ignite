@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
 import junit.framework.AssertionFailedError;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
@@ -30,6 +32,9 @@ public class IgniteNoParrallelClusterIsAllowedTest extends IgniteChangeGlobalSta
      */
     @Test
     public void testSimple() throws Exception {
+        expectFailure(StorageException.class);
+        expectFailure(IgniteException.class, "GridWorker ");
+
         startPrimaryNodes(primaryNodes());
 
         tryToStartBackupClusterWhatShouldFail();
@@ -99,6 +104,8 @@ public class IgniteNoParrallelClusterIsAllowedTest extends IgniteChangeGlobalSta
      *
      */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
 
         cleanPersistenceDir();

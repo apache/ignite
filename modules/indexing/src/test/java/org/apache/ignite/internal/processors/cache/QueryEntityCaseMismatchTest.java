@@ -42,6 +42,8 @@ import org.junit.Test;
 public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
     }
 
@@ -97,6 +99,9 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheInitializationFailure() throws Exception {
+        expectFailure(IgniteCheckedException.class,
+            "QueryEntity 'keyFields' property must be a subset of keys from 'fields' property (case sensitive): ");
+
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(1);

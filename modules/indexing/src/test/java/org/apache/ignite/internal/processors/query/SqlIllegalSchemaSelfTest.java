@@ -39,6 +39,8 @@ import org.junit.Test;
 public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
     }
 
@@ -47,6 +49,9 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testBadCacheName() throws Exception {
+        expectFailure(IgniteCheckedException.class,
+            "SQL schema name derived from cache name is reserved");
+
         IgniteConfiguration cfg = getConfiguration();
 
         cfg.setCacheConfiguration(new CacheConfiguration().setName(QueryUtils.SCHEMA_SYS));
@@ -95,6 +100,8 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testBadSchemaLower() throws Exception {
+        expectFailure(IgniteCheckedException.class, "SQL schema name is reserved");
+
         IgniteConfiguration cfg = getConfiguration();
 
         cfg.setCacheConfiguration(new CacheConfiguration().setName("CACHE")
@@ -143,6 +150,8 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testBadSchemaUpper() throws Exception {
+        expectFailure(IgniteCheckedException.class, "SQL schema name is reserved");
+
         IgniteConfiguration cfg = getConfiguration();
 
         cfg.setCacheConfiguration(new CacheConfiguration().setName("CACHE")
@@ -191,6 +200,8 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testBadSchemaQuoted() throws Exception {
+        expectFailure(IgniteCheckedException.class, "SQL schema name is reserved");
+
         IgniteConfiguration cfg = getConfiguration();
 
         cfg.setCacheConfiguration(new CacheConfiguration().setName("CACHE")

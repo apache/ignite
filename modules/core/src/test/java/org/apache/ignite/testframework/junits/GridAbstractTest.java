@@ -1703,7 +1703,33 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return Failure handler implementation.
      */
     protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new TestFailingFailureHandler(this);
+        return new TestFailingFailureHandler(this, log);
+    }
+
+    /**
+     * Expect critical failure for default {@link TestFailingFailureHandler}.
+     *
+     * @param cls Class.
+     */
+    protected static boolean expectFailure(Class<? extends Throwable> cls) {
+        return TestFailingFailureHandler.expect(cls);
+    }
+
+    /**
+     * Expect critical failure for default {@link TestFailingFailureHandler}.
+     *
+     * @param cls Class.
+     * @param msg Failure message.
+     */
+    protected static boolean expectFailure(Class<? extends Throwable> cls, String msg) {
+        return TestFailingFailureHandler.expect(cls, msg);
+    }
+
+    /**
+     * Clear all expected failures for default {@link TestFailingFailureHandler}.
+     */
+    protected static void expectNothing() {
+        TestFailingFailureHandler.clear();
     }
 
     /**

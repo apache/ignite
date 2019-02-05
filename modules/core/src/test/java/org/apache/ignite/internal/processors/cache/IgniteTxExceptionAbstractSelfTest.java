@@ -32,8 +32,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.ExpectThrowableFailureHandler;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -49,6 +47,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -104,6 +103,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         super.beforeTestsStarted();
 
         lastKey = 0;
+
+        expectFailure(TransactionHeuristicException.class);
+        expectFailure(IgniteSpiException.class);
     }
 
     /** {@inheritDoc} */
@@ -131,14 +133,12 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         lastKey = 0;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        ExpectThrowableFailureHandler hnd = new ExpectThrowableFailureHandler(this, log);
-
-        hnd.add(TransactionHeuristicException.class);
-        hnd.add(IgniteSpiException.class);
-
-        return hnd;
+    /**
+     *
+     */
+    @AfterClass
+    public static void clearHandler() {
+        expectNothing();
     }
 
     /**

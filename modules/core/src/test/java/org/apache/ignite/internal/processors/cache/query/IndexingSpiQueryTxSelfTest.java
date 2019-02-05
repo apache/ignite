@@ -26,8 +26,6 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.ExpectThrowableFailureHandler;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -42,6 +40,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -73,13 +72,12 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        ExpectThrowableFailureHandler hnd = new ExpectThrowableFailureHandler(this, log);
-
-        hnd.add(IgniteTxHeuristicCheckedException.class);
-
-        return hnd;
+    /**
+     *
+     */
+    @After
+    public void clearHandler() {
+        expectNothing();
     }
 
     /** */
@@ -112,6 +110,8 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     private void doTestIndexingSpiWithTx(IgniteEx ignite, int key) throws Exception {
+        expectFailure(IgniteTxHeuristicCheckedException.class);;
+
         final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         final IgniteTransactions txs = ignite.transactions();

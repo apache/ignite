@@ -28,13 +28,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.failure.ExpectThrowableFailureHandler;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 /**
@@ -55,6 +54,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        expectFailure(NoClassDefFoundError.class);
 
         startGridsMultiThreaded(3);
 
@@ -82,13 +82,12 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        ExpectThrowableFailureHandler hnd = new ExpectThrowableFailureHandler(this, log);
-
-        hnd.add(NoClassDefFoundError.class);
-
-        return hnd;
+    /**
+     *
+     */
+    @AfterClass
+    public static void clearHandler() {
+        expectNothing();
     }
 
     /**

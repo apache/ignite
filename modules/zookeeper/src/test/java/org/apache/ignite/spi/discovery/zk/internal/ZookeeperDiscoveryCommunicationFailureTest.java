@@ -62,6 +62,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -71,6 +72,14 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Tests for Zookeeper SPI discovery.
  */
 public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscoverySpiTestBase {
+    /**
+     *
+     */
+    @After
+    public void clearHandler() {
+        expectNothing();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -567,6 +576,8 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
      * @throws Exception If failed.
      */
     private void defaultCommunicationFailureResolver_BreakCommunication(int startNodes, final int...breakNodes) throws Exception {
+        expectFailure(IllegalStateException.class, "is terminated unexpectedly.");
+
         sesTimeout = 5000;
 
         startGridsMultiThreaded(startNodes);

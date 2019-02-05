@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteState;
@@ -257,6 +258,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllClients(true);
         stopAllServers(true);
 
@@ -455,6 +458,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testServerNodeFail() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         startServerNodes(3);
         startClientNodes(3);
 
@@ -561,6 +567,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClientReconnectOnRouterFail() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         clientsPerSrv = 1;
 
         startServerNodes(3);
@@ -990,6 +999,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClientSegmentation() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         clientsPerSrv = 1;
 
         reconnectDisabled = true;
@@ -1102,6 +1114,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClientAndRouterFail() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         startServerNodes(2);
         startClientNodes(2);
 
@@ -1302,6 +1317,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTimeoutWaitingNodeAddedMessage() throws Exception {
+        expectFailure(IgniteException.class, "GridWorker ");
         longSockTimeouts = true;
 
         clientFailureDetectionTimeout = 20_000;
@@ -1841,6 +1857,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReconnectSegmentedAfterJoinTimeoutServerFailed() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         reconnectSegmentedAfterJoinTimeout(true);
     }
 
