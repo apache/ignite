@@ -123,7 +123,7 @@ public class ExponentialBackoffSpiTimeout {
     /**
      * Get next connection timeout as min(calculated exponential timeout, remainingTime).
      *
-     * @return Next Timeout value;
+     * @return Next Timeout value
      * @throws IgniteSpiOperationTimeoutException in case of timeout reached at the moment.
      */
     public long handshakeTimeout() throws IgniteSpiOperationTimeoutException {
