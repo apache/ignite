@@ -17,49 +17,55 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.reuse;
 
-import java.io.Externalizable;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * {@link GridLongList}-based reuse bag.
+ *
  */
-public final class LongListReuseBag extends GridLongList implements ReuseBag {
+public class SinglePageReuseBag implements ReuseBag {
     /** */
-    private static final long serialVersionUID = 0L;
+    protected long pageId;
 
     /**
-     * Default constructor for {@link Externalizable}.
+     * @param pageId Page ID.
      */
-    public LongListReuseBag() {
-        // No-op.
-    }
-
-    /**
-     * @param size Initial size.
-     * @param bag Bag to take pages from.
-     */
-    public LongListReuseBag(int size, ReuseBag bag) {
-        super(size);
-
-        if (bag != null) {
-            long pageId;
-
-            while ((pageId = bag.pollFreePage()) != 0L)
-                addFreePage(pageId);
-        }
+    public SinglePageReuseBag(long pageId) {
+        this.pageId = pageId;
     }
 
     /** {@inheritDoc} */
     @Override public boolean addFreePage(long pageId) {
         assert pageId != 0L;
 
-        add(pageId);
+        if (this.pageId != 0L)
+            return false;
 
+        this.pageId = pageId;
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public long pollFreePage() {
-        return isEmpty() ? 0L : remove();
+        long res = pageId;
+
+        pageId = 0L;
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEmpty() {
+        return pageId == 0L;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return pageId == 0L ? 0 : 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SinglePageReuseBag.class, this, "pageId", U.hexLong(pageId));
     }
 }

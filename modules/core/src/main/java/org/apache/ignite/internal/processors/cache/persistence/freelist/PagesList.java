@@ -43,13 +43,13 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractD
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.SinglePageReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -1180,7 +1180,7 @@ public abstract class PagesList extends DataStructure {
                 if (recycleId != 0L) {
                     assert !isReuseBucket(bucket);
 
-                    reuseList.addForRecycle(new SingletonReuseBag(recycleId));
+                    reuseList.addForRecycle(new SinglePageReuseBag(recycleId));
                 }
 
                 return dataPageId;
@@ -1307,7 +1307,7 @@ public abstract class PagesList extends DataStructure {
                 recycleId = merge(pageId, page, nextId, bucket, statHolder);
 
             if (recycleId != 0L)
-                reuseList.addForRecycle(new SingletonReuseBag(recycleId));
+                reuseList.addForRecycle(new SinglePageReuseBag(recycleId));
 
             return true;
         }
@@ -1545,45 +1545,6 @@ public abstract class PagesList extends DataStructure {
         // Ok to have a race here, see the field javadoc.
         if (!changed)
             changed = true;
-    }
-
-    /**
-     * Singleton reuse bag.
-     */
-    private static final class SingletonReuseBag implements ReuseBag {
-        /** */
-        long pageId;
-
-        /**
-         * @param pageId Page ID.
-         */
-        SingletonReuseBag(long pageId) {
-            this.pageId = pageId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addFreePage(long pageId) {
-            throw new IllegalStateException("Should never be called.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public long pollFreePage() {
-            long res = pageId;
-
-            pageId = 0L;
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isEmpty() {
-            return pageId == 0L;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(SingletonReuseBag.class, this, "pageId", U.hexLong(pageId));
-        }
     }
 
     /**

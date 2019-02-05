@@ -23,16 +23,22 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.reuse;
 public interface ReuseBag {
     /**
      * @param pageId Free page ID for reuse.
+     * @return {@code false} If was not able to add the page to this bag.
      */
-    public void addFreePage(long pageId);
+    boolean addFreePage(long pageId);
 
     /**
      * @return Free page ID for reuse or {@code 0} if empty.
      */
-    public long pollFreePage();
+    long pollFreePage();
 
     /**
      * @return {@code true} if no contained page IDs for reuse.
      */
-    public boolean isEmpty();
+    boolean isEmpty();
+
+    /**
+     * @return Number of pages for reuse in this bag.
+     */
+    int size();
 }

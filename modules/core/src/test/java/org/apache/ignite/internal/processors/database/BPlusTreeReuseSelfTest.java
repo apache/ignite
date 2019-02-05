@@ -46,6 +46,7 @@ import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStructure.randomInt;
+import static org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest.Operation.INVOKE;
 import static org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest.Operation.INVOKE_ALL;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
@@ -361,6 +362,38 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
+    public void testRemovePageLeaks_true() throws IgniteCheckedException {
+        doTestInvokeAllPageLeaks(true, Operation.REMOVE);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testRemovePageLeaks_false() throws IgniteCheckedException {
+        doTestInvokeAllPageLeaks(false, Operation.REMOVE);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvokePageLeaks_true() throws IgniteCheckedException {
+        doTestInvokeAllPageLeaks(true, INVOKE);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvokePageLeaks_false() throws IgniteCheckedException {
+        doTestInvokeAllPageLeaks(false, INVOKE);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
     public void testInvokeAllPageLeaks_true() throws IgniteCheckedException {
         doTestInvokeAllPageLeaks(true, INVOKE_ALL);
     }
@@ -404,7 +437,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
 
             assertTrue(tree.isEmpty());
 
-            int rowsCnt = 1000;
+            int rowsCnt = 3000;
 
             for (long x = 0; x < rowsCnt; x++)
                 tree.put(x);

@@ -58,13 +58,13 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.SinglePageReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridArrays;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
@@ -642,7 +642,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** */
-    private final PageHandler<Void, Bool> cutRoot = new CutRoot();
+    private final PageHandler<Void,Bool> cutRoot = new CutRoot();
 
     /**
      *
@@ -2729,6 +2729,45 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         return res;
     }
 
+    /**
+     * @param g Current operation.
+     * @param reuseBag Reuse bag.
+     * @param pageId Page id to add to the bag.
+     * @return The same or new reuse bag containing the given page id.
+     */
+    ReuseBag addFreePageToBag(Get g, ReuseBag reuseBag, long pageId) throws IgniteCheckedException {
+        if (g.invoke != null && g.invoke.addFreePage(pageId))
+            return reuseBag;
+
+        assert pageId != 0L;
+
+        if (reuseBag == null)
+            return new SinglePageReuseBag(pageId);
+
+        if (!reuseBag.addFreePage(pageId)) {
+            assert reuseBag.size() == 1;
+
+            reuseBag = new LongListReuseBag(4, reuseBag);
+            reuseBag.addFreePage(pageId);
+
+            assert reuseBag.size() == 2;
+        }
+
+        if (reuseBag.size() >= 128)
+            reuseFreePagesFromBag(reuseBag);
+
+        return reuseBag;
+    }
+
+    /**
+     * @param reuseBag Reuse bag.
+     * @throws IgniteCheckedException If failed.
+     */
+    void reuseFreePagesFromBag(ReuseBag reuseBag) throws IgniteCheckedException {
+        if (reuseBag != null && !reuseBag.isEmpty() && reuseList != null)
+            reuseList.addForRecycle(reuseBag);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(BPlusTree.class, this);
@@ -3715,6 +3754,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         Function<L, InvokeClosure<T>> closures;
 
+        /** */
+        ReuseBag reuseBag;
+
         /**
          * @param firstRow The first row.
          * @param sortedRows Sorted rows.
@@ -3788,6 +3830,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             gettingHigh = true;
 
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean addFreePage(long pageId) throws IgniteCheckedException {
+            reuseBag = addFreePageToBag(this, reuseBag, pageId);
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override void releaseAll() throws IgniteCheckedException {
+            super.releaseAll();
+
+            reuseFreePagesFromBag(reuseBag);
         }
     }
 
@@ -4088,12 +4144,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throws IgniteCheckedException {
             return ((Remove)op).finishOrLockTail(pageId, page, backId, fwdId, lvl);
         }
+
+        /**
+         * @param pageId Page Id for reuse.
+         * @return {@code true} If it was accepted.
+         */
+        boolean addFreePage(long pageId) throws IgniteCheckedException {
+            return false;
+        }
     }
 
     /**
      * Remove operation.
      */
-    private final class Remove extends Get implements ReuseBag {
+    private final class Remove extends Get {
         /** We may need to lock part of the tree branch from the bottom to up for multiple levels. */
         Tail<L> tail;
 
@@ -4110,7 +4174,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long page;
 
         /** */
-        Object freePages;
+        ReuseBag reuseBag;
 
         /** */
         final boolean needOld;
@@ -4125,58 +4189,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.needOld = needOld;
         }
 
-        /** {@inheritDoc} */
-        @Override public long pollFreePage() {
-            if (freePages == null)
-                return 0L;
-
-            if (freePages.getClass() == GridLongList.class) {
-                GridLongList list = ((GridLongList)freePages);
-
-                return list.isEmpty() ? 0L : list.remove();
-            }
-
-            long res = (long)freePages;
-
-            freePages = null;
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addFreePage(long pageId) {
-            assert pageId != 0L;
-
-            if (freePages == null)
-                freePages = pageId;
-            else {
-                GridLongList list;
-
-                if (freePages.getClass() == GridLongList.class)
-                    list = (GridLongList)freePages;
-                else {
-                    list = new GridLongList(4);
-
-                    list.add((Long)freePages);
-                    freePages = list;
-                }
-
-                list.add(pageId);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isEmpty() {
-            if (freePages == null)
-                return true;
-
-            if (freePages.getClass() == GridLongList.class) {
-                GridLongList list = ((GridLongList)freePages);
-
-                return list.isEmpty();
-            }
-
-            return false;
+        /**
+         * @param pageId Free page for reuse.
+         */
+        void addFreePage(long pageId) throws IgniteCheckedException {
+            reuseBag = addFreePageToBag(this, reuseBag, pageId);
         }
 
         /** {@inheritDoc} */
@@ -4783,9 +4800,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         private void reuseFreePages() throws IgniteCheckedException {
-            // If we have a bag, then it will be processed at the upper level.
-            if (reuseList != null && freePages != null)
-                reuseList.addForRecycle(this);
+            reuseFreePagesFromBag(reuseBag);
         }
 
         /**
