@@ -50,6 +50,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * Prevents partitions from being eveicted from node during query execution.
  */
 public class PartitionReservationManager {
+    /** Special instance of reservable object for REPLICATED caches. */
+    private static final ReplicatedReservable REPLICATED_RESERVABLE = new ReplicatedReservable();
+
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -120,7 +123,7 @@ public class PartitionReservationManager {
             GridReservable r = reservations.get(grpKey);
 
             if (explicitParts == null && r != null) { // Try to reserve group partition if any and no explicits.
-                if (r != MapReplicatedReservation.INSTANCE) {
+                if (r != REPLICATED_RESERVABLE) {
                     if (!r.reserve())
                         return new PartitionReservation(String.format("Failed to reserve partitions for query (group " +
                             "reservation failed) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
@@ -158,7 +161,7 @@ public class PartitionReservationManager {
                         }
 
                         // Mark that we checked this replicated cache.
-                        reservations.putIfAbsent(grpKey, MapReplicatedReservation.INSTANCE);
+                        reservations.putIfAbsent(grpKey, REPLICATED_RESERVABLE);
                     }
                 }
                 else { // Reserve primary partitions for partitioned cache (if no explicit given).
@@ -297,5 +300,20 @@ public class PartitionReservationManager {
      */
     private static GridDhtLocalPartition partition(GridCacheContext<?, ?> cctx, int p) {
         return cctx.topology().localPartition(p, NONE, false);
+    }
+
+    /**
+     * Mapper fake reservation object for replicated caches.
+     */
+    private static class ReplicatedReservable implements GridReservable {
+        /** {@inheritDoc} */
+        @Override public boolean reserve() {
+            throw new IllegalStateException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void release() {
+            throw new IllegalStateException();
+        }
     }
 }
