@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = GetClient.GetCache<int, int>(MemCacheName);
 
-            var ex =Assert.Throws<CacheException>(() => cache.PreloadPartition(0));
+            var ex = Assert.Throws<CacheException>(() => cache.PreloadPartition(0));
             
             Assert.True(ex.Message.Contains(ExpectedErrorMessage), ex.Message);
 
