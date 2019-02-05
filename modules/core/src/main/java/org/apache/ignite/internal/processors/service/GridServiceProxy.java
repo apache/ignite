@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 
@@ -63,9 +62,6 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 public class GridServiceProxy<T> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final IgniteProductVersion SVC_POOL_SINCE_VER = IgniteProductVersion.fromString("1.8.5");
 
     /** Grid logger. */
     @GridToStringExclude
@@ -184,8 +180,7 @@ public class GridServiceProxy<T> implements Serializable {
                         }
                     }
                     else {
-                        if (node.version().compareTo(SVC_POOL_SINCE_VER) >= 0)
-                            ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
+                        ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
 
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(

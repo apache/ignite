@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -31,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -165,6 +169,83 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     @Test
     public void testCoordinatorChangeActiveQueryClientFails_SimpleScan() throws Exception {
         checkCoordinatorChangeActiveQueryClientFails_Simple(new InitIndexing(Integer.class, Integer.class), SCAN, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTxReadAfterCoordinatorChangeDirectOrder() throws Exception {
+        testTxReadAfterCoordinatorChange(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTxReadAfterCoordinatorChangeReverseOrder() throws Exception {
+        testTxReadAfterCoordinatorChange(false);
+    }
+
+    /** */
+    private void testTxReadAfterCoordinatorChange(boolean directOrder) throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class).setNodeFilter(new CoordinatorNodeFilter());
+
+        MvccProcessorImpl.coordinatorAssignClosure(new CoordinatorAssignClosure());
+
+        IgniteEx node = startGrid(0);
+
+        nodeAttr = CRD_ATTR;
+
+        startGrid(1);
+
+        IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
+
+        cache.put(1,1);
+
+        Semaphore sem = new Semaphore(0);
+
+        IgniteInternalFuture future = GridTestUtils.runAsync(() -> {
+            IgniteCache<Integer, Integer> cache0 = node.cache(DEFAULT_CACHE_NAME);
+
+            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                Integer res = cache0.get(1);
+
+                sem.release();
+
+                // wait for coordinator change.
+                assertTrue(sem.tryAcquire(2, getTestTimeout(), TimeUnit.MILLISECONDS));
+
+                assertEquals(res, cache0.get(1));
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        assertTrue(sem.tryAcquire(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        if (directOrder)
+            stopGrid(1);
+
+        MvccProcessorImpl prc = mvccProcessor(startGrid(2));
+
+        if (!directOrder)
+            stopGrid(1);
+
+        awaitPartitionMapExchange();
+
+        MvccCoordinator crd = prc.currentCoordinator();
+
+        assert crd.local() && crd.initialized();
+
+        cache.put(1,2);
+        cache.put(1,3);
+
+        sem.release(2);
+
+        future.get(getTestTimeout());
     }
 
     /**

@@ -1,0 +1,89 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'general'
+-var model = 'backupItem'
+-var generatePojo = `${model}.generatePojo`
+
+panel-collapsible(opened=`::true` ng-form=form)
+    panel-title General
+    panel-description
+        | Domain model properties common for Query and Store.
+        a.link-success(href="https://apacheignite.readme.io/docs/cache-queries" target="_blank") More info about query configuration.
+        a.link-success(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info about store.
+    panel-content.pca-form-row
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Generate POJO classes',
+                    model: generatePojo,
+                    name: '"generatePojo"',
+                    tip: 'If selected then POJO classes will be generated from database tables'
+                })
+            .pc-form-grid-col-30
+                +form-field__dropdown({
+                    label: 'Caches:',
+                    model: `${model}.caches`,
+                    name: '"caches"',
+                    multiple: true,
+                    placeholder: 'Choose caches',
+                    placeholderEmpty: 'No valid caches configured',
+                    options: '$ctrl.cachesMenu',
+                    tip: 'Select caches to describe types in cache'
+                })
+            .pc-form-grid-col-30
+                +form-field__dropdown({
+                    label: 'Query metadata:',
+                    model: `${model}.queryMetadata`,
+                    name: '"queryMetadata"',
+                    required: 'true',
+                    placeholder: '',
+                    options: '::$ctrl.Models.queryMetadata.values',
+                    tip: 'Query metadata configured with:\
+                          <ul>\
+                            <li>Java annotations like @QuerySqlField</li>\
+                            <li>Configuration via QueryEntity class</li>\
+                          </ul>'
+                })
+
+            .pc-form-grid-col-60
+                +form-field__java-class--typeahead({
+                    label: 'Key type:',
+                    model: `${model}.keyType`,
+                    name: '"keyType"',
+                    options: '$ctrl.javaBuiltInClassesBase',
+                    required: 'true',
+                    placeholder: '{{ ' + generatePojo + ' ? "Full class name for Key" : "Key type name" }}',
+                    tip: 'Key class used to store key in cache',
+                    validationActive: generatePojo
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Value type:',
+                    model: `${model}.valueType`,
+                    name: '"valueType"',
+                    placeholder: '{{ ' + generatePojo +' ? "Enter fully qualified class name" : "Value type name" }}',
+                    tip: 'Value class used to store value in cache',
+                    validationActive: generatePojo
+                })(
+                    ignite-form-field-input-autofocus=autofocus
+                )
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'domainModelGeneral')

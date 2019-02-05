@@ -65,7 +65,6 @@ import static org.apache.ignite.lang.IgniteProductVersion.fromString;
  * Base SPI test class.
  * @param <T> SPI implementation class.
  */
-@SuppressWarnings({"JUnitTestCaseWithNonTrivialConstructors"})
 public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstractTest {
     /** */
     private static final IgniteProductVersion VERSION = fromString("99.99.99");
