@@ -1927,6 +1927,11 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                     assertTrue("res.size()=" + res.size() + ", keys.size()=" + keys.size(), res.size() <= keys.size());
                 }
+                catch (Error err) {
+                    error("Error on " + ((Ignite)cache.unwrap(Ignite.class)).name() + " " + err.getMessage());
+
+                    throw err;
+                }
 
                 return res;
 

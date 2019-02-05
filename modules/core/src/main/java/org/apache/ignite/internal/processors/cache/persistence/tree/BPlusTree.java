@@ -5092,7 +5092,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         throw new IllegalStateException("Unknown page type: " + type +
             ", pageId: " + U.hexLong(PageIO.getPageId(pageAddr)) +
-            ", thread: " + Thread.currentThread().getName() +
             ", class: " + getClass());
     }
 
