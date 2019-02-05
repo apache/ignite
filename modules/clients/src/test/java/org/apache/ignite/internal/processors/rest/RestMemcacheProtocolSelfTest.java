@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.rest;
 
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
