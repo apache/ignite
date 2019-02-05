@@ -30,7 +30,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -575,7 +574,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                     return true;
                 }
-                catch (AssertionFailedError e) {
+                catch (AssertionError e) {
                     throw e;
                 }
                 catch (Throwable e) {

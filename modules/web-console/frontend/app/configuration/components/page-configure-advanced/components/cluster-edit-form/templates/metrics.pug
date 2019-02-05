@@ -1,0 +1,71 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'metrics'
+-var model = '$ctrl.clonedCluster'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Metrics
+    panel-description Cluster runtime metrics settings.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Expire time:',
+                    model: `${model}.metricsExpireTime`,
+                    name: '"metricsExpireTime"',
+                    placeholder: 'Long.MAX_VALUE',
+                    min: '0',
+                    tip: 'Time in milliseconds after which a certain metric value is considered expired'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'History size:',
+                    model: `${model}.metricsHistorySize`,
+                    name: '"metricsHistorySize"',
+                    placeholder: '10000',
+                    min: '1',
+                    tip: 'Number of metrics kept in history to compute totals and averages'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Log frequency:',
+                    model: `${model}.metricsLogFrequency`,
+                    name: '"metricsLogFrequency"',
+                    placeholder: '60000',
+                    min: '0',
+                    tip: 'Frequency of metrics log print out<br/>\ ' +
+                    'When <b>0</b> log print of metrics is disabled'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Update frequency:',
+                    model: `${model}.metricsUpdateFrequency`,
+                    name: '"metricsUpdateFrequency"',
+                    placeholder: '2000',
+                    min: '-1',
+                    tip: 'Job metrics update frequency in milliseconds\
+                        <ul>\
+                            <li>If set to -1 job metrics are never updated</li>\
+                            <li>If set to 0 job metrics are updated on each job start and finish</li>\
+                            <li>Positive value defines the actual update frequency</li>\
+                        </ul>'
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterMetrics')

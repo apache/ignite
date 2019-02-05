@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.HashSet;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
@@ -29,6 +30,15 @@ import org.h2.table.TableFilter;
  * H2 tree index base.
  */
 public abstract class H2TreeIndexBase extends GridH2IndexBase {
+    /**
+     * Constructor.
+     *
+     * @param tbl Table.
+     */
+    protected H2TreeIndexBase(GridH2Table tbl) {
+        super(tbl);
+    }
+
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColumnsSet) {
