@@ -65,9 +65,11 @@ public class ClientResponse extends ClientListenerResponse {
 
     /**
      * Encodes the response data.
+     * @param writer Writer.
      */
     public void encode(BinaryRawWriterEx writer) {
         writer.writeLong(reqId);
+
         writer.writeInt(status());
 
         if (status() != ClientStatus.SUCCESS) {
