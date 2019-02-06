@@ -176,10 +176,16 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Extract person's name from result set.
+     */
     private static String name(ResultSet rs) throws SQLException {
         return rs.getString("NAME");
     }
 
+    /**
+     * Extract person's age from result set.
+     */
     private static int age(ResultSet rs) throws SQLException {
         return rs.getInt("AGE");
     }
