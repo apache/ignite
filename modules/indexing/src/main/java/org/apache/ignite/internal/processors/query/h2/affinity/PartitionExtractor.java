@@ -624,14 +624,14 @@ public class PartitionExtractor {
             return new PartitionConstantNode(tbl0, part);
         }
         else if (rightParam != null) {
-            int oclType = leftCol0.getType();
+            int colType = leftCol0.getType();
 
             return new PartitionParameterNode(
                 tbl0,
                 partResolver,
                 rightParam.index(),
                 leftCol0.getType(),
-                mappedType(oclType)
+                mappedType(colType)
             );
         }
         else

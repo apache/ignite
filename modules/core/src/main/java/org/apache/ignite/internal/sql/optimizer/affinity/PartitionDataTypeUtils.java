@@ -32,22 +32,22 @@ public class PartitionDataTypeUtils {
     private static final BigDecimal MIN_LONG_DECIMAL = BigDecimal.valueOf(Long.MIN_VALUE);
 
     /** Decimal representation of maximum int value. */
-    public static final BigDecimal MAX_INTEGER_DECIMAL = new BigDecimal(Integer.MAX_VALUE);
+    private static final BigDecimal MAX_INTEGER_DECIMAL = new BigDecimal(Integer.MAX_VALUE);
 
     /** Decimal representation of minimum int value. */
-    public static final BigDecimal MIN_INTEGER_DECIMAL = new BigDecimal(Integer.MIN_VALUE);
+    private static final BigDecimal MIN_INTEGER_DECIMAL = new BigDecimal(Integer.MIN_VALUE);
 
     /** Decimal representation of maximum short value. */
-    public static final BigDecimal MAX_SHORT_DECIMAL = new BigDecimal(Short.MAX_VALUE);
+    private static final BigDecimal MAX_SHORT_DECIMAL = new BigDecimal(Short.MAX_VALUE);
 
     /** Decimal representation of minimum short value. */
-    public static final BigDecimal MIN_SHORT_DECIMAL = new BigDecimal(Short.MIN_VALUE);
+    private static final BigDecimal MIN_SHORT_DECIMAL = new BigDecimal(Short.MIN_VALUE);
 
     /** Decimal representation of maximum byte value. */
-    public static final BigDecimal MAX_BYTE_DECIMAL = new BigDecimal(Byte.MAX_VALUE);
+    private static final BigDecimal MAX_BYTE_DECIMAL = new BigDecimal(Byte.MAX_VALUE);
 
     /** Decimal representation of minimum byte value. */
-    public static final BigDecimal MIN_BYTE_DECIMAL = new BigDecimal(Byte.MIN_VALUE);
+    private static final BigDecimal MIN_BYTE_DECIMAL = new BigDecimal(Byte.MIN_VALUE);
 
     /**
      * Convert argument to the given type.
@@ -101,6 +101,7 @@ public class PartitionDataTypeUtils {
                     return getString(arg, argType);
 
                 case UUID:
+                    // TODO: Encapsulate.
                     try {
                         return getUUID(arg, argType);
                     }
@@ -126,6 +127,8 @@ public class PartitionDataTypeUtils {
      */
     @NotNull private static Object getUUID(Object arg, PartitionParameterType argType) {
         switch (argType) {
+            // TODO: Consider removing all conversions except of String, unless it is proven useful
+            // TODO: (please consult to conversion rules of other vendors, not H2)
             case BYTE:
             case SHORT:
             case INT:
@@ -167,6 +170,7 @@ public class PartitionDataTypeUtils {
                 // We had to use such kind of convertation instead of common arg.toString() in order to match
                 // H2 convertation results. In case of using arg.toString() we will have inconsistant convertation
                 // results for values similar to BigDecimal.valueOf(12334535345456700.12345634534534578901).
+                // TODO: Exponent example to better understand subtle differences
                 String p = ((BigDecimal)arg).toPlainString();
                 return p.length() < 40 ? p : arg.toString();
             }
@@ -475,6 +479,12 @@ public class PartitionDataTypeUtils {
         }
     }
 
+    // TODO: Common method to convert integer type to long.
+    private static long convertIntegerTypeToLong(Object arg) {
+        // TODO
+        return 0;
+    }
+
     /**
      * Convert argument to <code>Boolean</code>.
      *
@@ -500,6 +510,7 @@ public class PartitionDataTypeUtils {
                 return Math.signum((Float)arg) != 0;
             case STRING: {
                 String sVal = (String)arg;
+
                 if ("true".equalsIgnoreCase(sVal) ||
                     "t".equalsIgnoreCase(sVal) ||
                     "yes".equalsIgnoreCase(sVal) ||
@@ -511,9 +522,9 @@ public class PartitionDataTypeUtils {
                     "n".equalsIgnoreCase(sVal))
                     return Boolean.FALSE;
                 else
+                    // TODO: Remove and add "1" and "0" as special cases for true and false respectively.
                     return new BigDecimal(sVal).signum() != 0;
             }
-            case UUID:
             default:
                 return DataTypeConvertationResult.FAILURE;
         }
@@ -553,6 +564,7 @@ public class PartitionDataTypeUtils {
             return PartitionParameterType.FLOAT;
         else if (UUID.class == c)
             return PartitionParameterType.UUID;
+        // TODO: Equality instead of isAssignableFrom
         else if (BigDecimal.class.isAssignableFrom(c))
             return PartitionParameterType.DECIMAL;
         else
@@ -567,6 +579,7 @@ public class PartitionDataTypeUtils {
      * @param s String to
      * @return UUID.
      */
+    // TODO: Looks good, but we need more tests (upper/lower cases, w/ and w/o hyphens)
     private static UUID stringToUUID(String s) {
         long low = 0, high = 0;
         for (int i = 0, j = 0, len = s.length(); i < len; i++) {
@@ -595,6 +608,7 @@ public class PartitionDataTypeUtils {
     /**
      * Data type convertation result.
      */
+    // TODO: Simplify, new Object() should be enough.
     @SuppressWarnings("PublicInnerClass")
     public enum DataTypeConvertationResult {
         /** Conversion failure. */
