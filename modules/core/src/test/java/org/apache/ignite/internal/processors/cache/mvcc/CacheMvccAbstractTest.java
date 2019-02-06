@@ -898,7 +898,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         final int writers = 4;
 
-        final int readers = 4;
+        final int readers = 8;
 
         GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer =
             new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
@@ -1806,8 +1806,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             case SCAN:
                 ScanQuery scanQry = new ScanQuery(new IgniteBiPredicate() {
                     @Override public boolean apply(Object k, Object v) {
-                        if (emulateLongQry)
-                            doSleep(ThreadLocalRandom.current().nextInt(50));
+//                        if (emulateLongQry)
+//                            doSleep(ThreadLocalRandom.current().nextInt(50));
 
                         return k.equals(key);
                     }
