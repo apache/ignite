@@ -65,7 +65,7 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  */
 public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstractTest {
     /** */
-    private static final long RECONNECT_TIMEOUT = 20_000;
+    private static final long RECONNECT_TIMEOUT = 10_000;
 
     /** */
     protected boolean clientMode;

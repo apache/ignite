@@ -388,7 +388,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** */
     private boolean enableForcibleNodeKill = IgniteSystemProperties
-        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, false);
+        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
     /** */
     private boolean enableTroubleshootingLog = IgniteSystemProperties
@@ -538,7 +538,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         unknownNode = !((IgniteDiscoverySpi)discoverySpi).knownNode(sndId);
 
                     if (unknownNode) {
-                        U.warn(log, "Respond UNKNOWN_NODE and close incoming connection, unknown node [nodeId=" + sndId + ", ses=" + ses + ']');
+                        U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId + ", ses=" + ses + ']');
 
                         ses.send(new RecoveryLastReceivedMessage(UNKNOWN_NODE)).listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> fut) {

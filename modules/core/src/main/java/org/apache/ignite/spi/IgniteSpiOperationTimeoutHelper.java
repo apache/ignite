@@ -30,9 +30,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  * Please use {@link ExponentialBackoffSpiTimeout}.
  *
+ *
  */
-@Deprecated
 public class IgniteSpiOperationTimeoutHelper {
+    // https://issues.apache.org/jira/browse/IGNITE-11221
+    // We need to reuse new logic ExponentialBackoffTimeout logic in TcpDiscovery instead of this class.
+
     /** */
     private long lastOperStartTs;
 
