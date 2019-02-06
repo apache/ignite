@@ -2034,7 +2034,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                         descendings.add(idxFieldUpper);
                                 }
 
-                                indexesCol.add(new CacheSqlIndexMetadata(e.getKey().toUpperCase(),
+                                indexesCol.add(new CacheSqlIndexMetadata(e.getKey(),
                                     idxFields, descendings, false));
                             }
                         }
