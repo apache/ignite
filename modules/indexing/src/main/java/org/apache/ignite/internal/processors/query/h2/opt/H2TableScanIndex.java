@@ -27,11 +27,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashSet;
 
 /**
- * Wrapper type for primary key.
+ * Scan index for {@link GridH2Table}. Delegates to {@link CacheDataTree} when either index rebuild is in progress,
+ * or when direct scan over data pages is enabled.
  */
-public class GridH2PrimaryScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
+public class H2TableScanIndex extends H2ScanIndex<GridH2IndexBase> {
     /** */
-    static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
+    private static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
 
     /** Parent table. */
     private final GridH2Table tbl;
@@ -46,7 +47,7 @@ public class GridH2PrimaryScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
      * @param treeIdx Tree index.
      * @param hashIdx Hash index.
      */
-    GridH2PrimaryScanIndex(GridH2Table tbl, GridH2IndexBase treeIdx, @Nullable GridH2IndexBase hashIdx) {
+    H2TableScanIndex(GridH2Table tbl, GridH2IndexBase treeIdx, @Nullable GridH2IndexBase hashIdx) {
         super(treeIdx);
 
         this.tbl = tbl;
@@ -71,9 +72,7 @@ public class GridH2PrimaryScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
         SortOrder sortOrder, HashSet<Column> allColumnsSet) {
-        long rows = getRowCountApproximation();
-
-        double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
+        double baseCost = super.getCost(ses, masks, filters, filter, sortOrder, allColumnsSet);
 
         int mul = delegate().getDistributedMultiplier(ses, filters, filter);
 
