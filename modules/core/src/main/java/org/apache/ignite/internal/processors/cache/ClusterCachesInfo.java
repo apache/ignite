@@ -139,20 +139,40 @@ class ClusterCachesInfo {
         if (ctx.isDaemon())
             return;
 
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches = localConfigData.caches();
+        filterRegisteredCachesAndCacheGroups(localConfigData.caches());
 
+        List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = locJoinCachesCtx.caches();
+
+        filterLocalJoinStartCaches(locJoinStartCaches);
+
+        locJoinCachesCtx = new LocalJoinCachesContext(
+            locJoinStartCaches,
+            registeredCacheGrps,
+            registeredCaches);
+    }
+
+    /**
+     * Filters from registered caches all caches that are not presented in node's local configuration.
+     *
+     * Then filters from registered cache groups all groups that became empty after registered caches were filtered.
+     *
+     * @param locCaches Caches from local node configuration (static configuration and persistent caches).
+     */
+    private void filterRegisteredCachesAndCacheGroups(Map<String, CacheJoinNodeDiscoveryData.CacheInfo> locCaches) {
+        //filter registered caches
         Iterator<Map.Entry<String, DynamicCacheDescriptor>> cachesIter = registeredCaches.entrySet().iterator();
 
         while (cachesIter.hasNext()) {
             Map.Entry<String, DynamicCacheDescriptor> e = cachesIter.next();
 
-            if (!caches.containsKey(e.getKey())) {
+            if (!locCaches.containsKey(e.getKey())) {
                 cachesIter.remove();
 
                 ctx.discovery().removeCacheFilter(e.getKey());
             }
         }
 
+        //filter registered cache groups
         Iterator<Map.Entry<Integer, CacheGroupDescriptor>> grpsIter = registeredCacheGrps.entrySet().iterator();
 
         while (grpsIter.hasNext()) {
@@ -174,11 +194,17 @@ class ClusterCachesInfo {
                 ctx.discovery().removeCacheGroup(e.getValue());
             }
         }
+    }
 
-        locJoinCachesCtx = new LocalJoinCachesContext(
-            locJoinCachesCtx.caches(),
-            registeredCacheGrps,
-            registeredCaches);
+    /**
+     * Filters from local join context cache descriptors that should be started on join.
+     *
+     * @param locJoinStartCaches Collection to filter.
+     */
+    private void filterLocalJoinStartCaches(
+        List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches) {
+
+        locJoinStartCaches.removeIf(next -> !registeredCaches.containsKey(next.getKey().cacheName()));
     }
 
     /**

@@ -58,11 +58,17 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
     /** */
     private static final String DYNAMIC_CACHE_NAME_2 = "dynamicCache2";
 
+    /** */
+    private static final String DYNAMIC_CACHE_NAME_3 = "dynamicCache3";
+
     /** Group where static and dynamic caches reside. */
     private static final String GROUP_WITH_STATIC_CACHES = "group1";
 
     /** Group where only dynamic caches reside. */
-    private static final String GROUP_WITH_DYNAMIC_CACHES = "group2";
+    private static final String DYNAMIC_CACHES_GROUP_WITH_FILTER = "group2";
+
+    /** Group where only dynamic caches reside. */
+    private static final String DYNAMIC_CACHES_GROUP_WITHOUT_FILTER = "group3";
 
     /** Node filter to pin dynamic caches to a specific node. */
     private static final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
@@ -184,9 +190,14 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
         );
 
         ig.getOrCreateCache(new CacheConfiguration<>(DYNAMIC_CACHE_NAME_2)
-            .setGroupName(GROUP_WITH_DYNAMIC_CACHES)
+            .setGroupName(DYNAMIC_CACHES_GROUP_WITH_FILTER)
             .setAffinity(new RendezvousAffinityFunction(false, 16))
             .setNodeFilter((IgnitePredicate<ClusterNode>)node -> node.consistentId().toString().contains(NODE_1_CONS_ID))
+        );
+
+        ig.getOrCreateCache(new CacheConfiguration<>(DYNAMIC_CACHE_NAME_3)
+            .setGroupName(DYNAMIC_CACHES_GROUP_WITHOUT_FILTER)
+            .setAffinity(new RendezvousAffinityFunction(false, 16))
         );
     }
 
