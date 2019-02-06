@@ -2170,8 +2170,65 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         PreparedStatement stmt = preparedStatementWithParams(conn, fldsQry.getSql(),
             F.asList(fldsQry.getArgs()), true);
 
-        return dmlPrepareDistributedUpdate(schema, conn, stmt, fldsQry, backupFilter(topVer, parts), cancel, loc,
-            mvccSnapshot);
+        IndexingQueryFilter filter = backupFilter(topVer, parts);
+
+        Prepared prepared = GridSqlQueryParser.prepared(stmt);
+
+        UpdatePlan plan = updatePlan(schema, conn, prepared, fldsQry, loc);
+
+        GridCacheContext planCctx = plan.cacheContext();
+
+        CacheOperationContext opCtx = planCctx.operationContextPerCall();
+
+        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
+        // TODO: Common context setting part?
+        if (planCctx.binaryMarshaller()) {
+            CacheOperationContext newOpCtx = null;
+
+            if (opCtx == null)
+                newOpCtx = new CacheOperationContext().keepBinary();
+            else if (!opCtx.isKeepBinary())
+                newOpCtx = opCtx.keepBinary();
+
+            if (newOpCtx != null)
+                planCctx.operationContextPerCall(newOpCtx);
+        }
+
+        QueryCursorImpl<List<?>> cur;
+
+        // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
+        // sub-query and not some dummy stuff like "select 1, 2, 3;"
+        if (!loc && !plan.isLocalSubquery()) {
+            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fldsQry.isCollocated())
+                .setArgs(fldsQry.getArgs())
+                .setDistributedJoins(fldsQry.isDistributedJoins())
+                .setEnforceJoinOrder(fldsQry.isEnforceJoinOrder())
+                .setLocal(fldsQry.isLocal())
+                .setPageSize(fldsQry.getPageSize())
+                .setTimeout(fldsQry.getTimeout(), TimeUnit.MILLISECONDS)
+                .setDataPageScanEnabled(fldsQry.isDataPageScanEnabled());
+
+            cur = (QueryCursorImpl<List<?>>)querySqlFields(schema, newFieldsQry, null, true, true,
+                new StaticMvccQueryTracker(planCctx, mvccSnapshot), cancel, false).get(0);
+        }
+        else {
+            final GridQueryFieldsResult res = queryLocalSqlFields(schema, plan.selectQuery(),
+                F.asList(fldsQry.getArgs()), filter, fldsQry.isEnforceJoinOrder(), false, fldsQry.getTimeout(), cancel,
+                new StaticMvccQueryTracker(planCctx, mvccSnapshot), null);
+
+            cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                @Override public Iterator<List<?>> iterator() {
+                    try {
+                        return res.iterator();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            }, cancel);
+        }
+
+        return plan.iteratorForTransaction(connMgr, cur);
     }
 
     /**
@@ -3492,82 +3549,5 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         UpdatePlan oldRes = dmlPlanCache.putIfAbsent(planKey, res);
 
         return oldRes != null ? oldRes : res;
-    }
-
-    /**
-     * @param schema Schema name.
-     * @param conn Connection.
-     * @param stmt Prepared statement.
-     * @param qry Sql fields query
-     * @param filter Backup filter.
-     * @param cancel Query cancel object.
-     * @param local {@code true} if should be executed locally.
-     * @param mvccSnapshot MVCC snapshot.
-     * @return Iterator upon updated values.
-     * @throws IgniteCheckedException If failed.
-     */
-    // TODO: Merge into prepareDistributedUpdate
-    private UpdateSourceIterator<?> dmlPrepareDistributedUpdate(String schema, Connection conn,
-        PreparedStatement stmt, SqlFieldsQuery qry,
-        IndexingQueryFilter filter, GridQueryCancel cancel, boolean local,
-        MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
-
-        Prepared prepared = GridSqlQueryParser.prepared(stmt);
-
-        UpdatePlan plan = updatePlan(schema, conn, prepared, qry, local);
-
-        GridCacheContext cctx = plan.cacheContext();
-
-        CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-        // TODO: Common context setting part?
-        if (cctx.binaryMarshaller()) {
-            CacheOperationContext newOpCtx = null;
-
-            if (opCtx == null)
-                newOpCtx = new CacheOperationContext().keepBinary();
-            else if (!opCtx.isKeepBinary())
-                newOpCtx = opCtx.keepBinary();
-
-            if (newOpCtx != null)
-                cctx.operationContextPerCall(newOpCtx);
-        }
-
-        QueryCursorImpl<List<?>> cur;
-
-        // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
-        // sub-query and not some dummy stuff like "select 1, 2, 3;"
-        if (!local && !plan.isLocalSubquery()) {
-            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), qry.isCollocated())
-                .setArgs(qry.getArgs())
-                .setDistributedJoins(qry.isDistributedJoins())
-                .setEnforceJoinOrder(qry.isEnforceJoinOrder())
-                .setLocal(qry.isLocal())
-                .setPageSize(qry.getPageSize())
-                .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS)
-                .setDataPageScanEnabled(qry.isDataPageScanEnabled());
-
-            cur = (QueryCursorImpl<List<?>>)querySqlFields(schema, newFieldsQry, null, true, true,
-                new StaticMvccQueryTracker(cctx, mvccSnapshot), cancel, false).get(0);
-        }
-        else {
-            final GridQueryFieldsResult res = queryLocalSqlFields(schema, plan.selectQuery(),
-                F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
-                new StaticMvccQueryTracker(cctx, mvccSnapshot), null);
-
-            cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                @Override public Iterator<List<?>> iterator() {
-                    try {
-                        return res.iterator();
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-            }, cancel);
-        }
-
-        return plan.iteratorForTransaction(connMgr, cur);
     }
 }
