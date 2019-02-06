@@ -31,11 +31,11 @@ import org.junit.Test;
 /**
  * Tests for ddl queries that contain multiply sql statements, separated by ";".
  */
-public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
+public class JdbcThinMultiStatementSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "false");
-        
+
         startGrids(2);
     }
 
@@ -60,7 +60,6 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
             "(4, 19, 'Nick');");
     }
 
-
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
@@ -82,7 +81,7 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
      * Assert that script containing both h2 and non h2 (native) sql statements is handled correctly.
      */
     @Test
-    public void testMixedCommands() throws Exception{
+    public void testMixedCommands() throws Exception {
         execute("CREATE TABLE public.transactions (pk INT, id INT, k VARCHAR, v VARCHAR, PRIMARY KEY (pk, id)); " +
             "CREATE INDEX transactions_id_k_v ON public.transactions (id, k, v) INLINE_SIZE 150; " +
             "INSERT INTO public.transactions VALUES (1,2,'some', 'word') ; " +
