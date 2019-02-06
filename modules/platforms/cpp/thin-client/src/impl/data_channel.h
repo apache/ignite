@@ -26,12 +26,13 @@
 
 #include <ignite/common/concurrent.h>
 
+#include <ignite/network/end_point.h>
+#include <ignite/network/socket_client.h>
+
 #include <ignite/impl/interop/interop_output_stream.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include "impl/protocol_version.h"
-#include "impl/net/end_point.h"
-#include "impl/socket_client.h"
 
 namespace ignite
 {
@@ -154,7 +155,7 @@ namespace ignite
                  * Get address.
                  * @return Address.
                  */
-                const net::EndPoint& GetAddress() const
+                const network::EndPoint& GetAddress() const
                 {
                     return address;
                 }
@@ -306,7 +307,7 @@ namespace ignite
                 common::concurrent::CriticalSection ioMutex;
 
                 /** Remote host address. */
-                net::EndPoint address;
+                network::EndPoint address;
 
                 /** Configuration. */
                 const ignite::thin::IgniteClientConfiguration& config;
@@ -321,7 +322,7 @@ namespace ignite
                 int64_t reqIdCounter;
 
                 /** Client Socket. */
-                std::auto_ptr<SocketClient> socket;
+                std::auto_ptr<network::SocketClient> socket;
             };
 
             /** Shared pointer type. */
