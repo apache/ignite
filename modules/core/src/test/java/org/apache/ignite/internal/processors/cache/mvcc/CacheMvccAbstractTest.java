@@ -1383,17 +1383,17 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 if (restartMode != null) {
                     switch (restartMode) {
                         case RESTART_CRD: {
-                            log.info("Start new coordinator: " + (crdIdx + 1));
-
-                            startGrid(crdIdx + 1);
-
-                            log.info("Stop current coordinator: " + crdIdx);
-
-                            stopGrid(crdIdx);
-
-                            crdIdx++;
-
-                            awaitPartitionMapExchange();
+//                            log.info("Start new coordinator: " + (crdIdx + 1));
+//
+//                            startGrid(crdIdx + 1);
+//
+//                            log.info("Stop current coordinator: " + crdIdx);
+//
+//                            stopGrid(crdIdx);
+//
+//                            crdIdx++;
+//
+//                            awaitPartitionMapExchange();
 
                             break;
                         }
