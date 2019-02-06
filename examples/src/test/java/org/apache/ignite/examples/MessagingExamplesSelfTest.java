@@ -19,7 +19,9 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.messaging.MessagingExample;
 import org.apache.ignite.examples.messaging.MessagingPingPongExample;
+import org.apache.ignite.examples.messaging.MessagingPingPongListenActorExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -49,10 +51,12 @@ public class MessagingExamplesSelfTest extends GridAbstractExamplesTest {
 
 //    TODO: IGNITE-711 next example(s) should be implemented for java 8
 //    or testing method(s) should be removed if example(s) does not applicable for java 8.
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testMessagingPingPongListenActorExample() throws Exception {
-//        MessagingPingPongListenActorExample.main(EMPTY_ARGS);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-711")
+    @Test
+    public void testMessagingPingPongListenActorExample() throws Exception {
+        MessagingPingPongListenActorExample.main(EMPTY_ARGS);
+    }
 }

@@ -19,8 +19,10 @@ package org.apache.ignite.examples;
 
 //import org.apache.ignite.examples.misc.lifecycle.*;
 
+import org.apache.ignite.examples.misc.lifecycle.LifecycleExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * LifecycleExample self test.
@@ -33,7 +35,8 @@ public class LifecycleExamplesSelfTest extends GridAbstractExamplesTest {
      *
      * @throws Exception If failed.
      */
-//    public void testLifecycleExample() throws Exception {
-//        LifecycleExample.main(EMPTY_ARGS);
-//    }
+    @Test
+    public void testLifecycleExample() throws Exception {
+        LifecycleExample.main(EMPTY_ARGS);
+    }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.examples;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * Continuation example multi-node self test.
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Disabled;
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-711")
 public class ContinuationExamplesMultiNodeSelfTest extends ContinuationExamplesSelfTest {
     /** {@inheritDoc} */
+    @Test
     @Override protected void beforeTest() throws Exception {
         startRemoteNodes();
     }

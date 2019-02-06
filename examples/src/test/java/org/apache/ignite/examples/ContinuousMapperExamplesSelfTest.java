@@ -17,8 +17,10 @@
 
 package org.apache.ignite.examples;
 
+import org.apache.ignite.examples.computegrid.ComputeContinuousMapperExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * ContinuousMapperExample self test.
@@ -31,7 +33,9 @@ public class ContinuousMapperExamplesSelfTest extends GridAbstractExamplesTest {
      *
      * @throws Exception If failed.
      */
-//    public void testContinuousMapperExample() throws Exception {
-//        ComputeContinuousMapperExample.main(EMPTY_ARGS);
-//    }
+    @Test
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-711")
+    public void testContinuousMapperExample() throws Exception {
+        ComputeContinuousMapperExample.main(EMPTY_ARGS);
+    }
 }

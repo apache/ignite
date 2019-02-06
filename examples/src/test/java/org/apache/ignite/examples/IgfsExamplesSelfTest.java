@@ -20,8 +20,11 @@ package org.apache.ignite.examples;
 //import org.apache.ignite.examples.igfs.*;
 //import org.apache.ignite.internal.util.typedef.internal.*;
 
+import org.apache.ignite.examples.igfs.IgfsExample;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * IGFS examples self test.
@@ -40,18 +43,19 @@ public class IgfsExamplesSelfTest extends GridAbstractExamplesTest {
      *
      * @throws Exception If failed.
      */
-//    public void testIgniteFsApiExample() throws Exception {
-//        String configPath = U.isWindows() ? IGFS_LOOPBACK_CFG : IGFS_SHMEM_CFG;
-//
-//        try {
-//            startGrid("test1", configPath);
-//            startGrid("test2", configPath);
-//            startGrid("test3", configPath);
-//
-//            IgfsExample.main(EMPTY_ARGS);
-//        }
-//        finally {
-//            stopAllGrids();
-//        }
-//    }
+    @Test
+    public void testIgniteFsApiExample() throws Exception {
+        String configPath = U.isWindows() ? IGFS_LOOPBACK_CFG : IGFS_SHMEM_CFG;
+
+        try {
+            startGrid("test1", configPath);
+            startGrid("test2", configPath);
+            startGrid("test3", configPath);
+
+            IgfsExample.main(EMPTY_ARGS);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
 }

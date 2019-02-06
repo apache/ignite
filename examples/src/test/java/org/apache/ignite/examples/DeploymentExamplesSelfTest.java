@@ -19,8 +19,10 @@ package org.apache.ignite.examples;
 
 //import org.apache.ignite.examples.misc.deployment.*;
 
+import org.apache.ignite.examples.misc.deployment.DeploymentExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * Deployment examples self test.
@@ -29,10 +31,11 @@ import org.junit.jupiter.api.Disabled;
 public class DeploymentExamplesSelfTest extends GridAbstractExamplesTest {
     // TODO: IGNITE-711 next example(s) should be implemented for java 8
     // or testing method(s) should be removed if example(s) does not applicable for java 8.
+    @Test
     /**
      * @throws Exception If failed.
      */
-//    public void testDeploymentExample() throws Exception {
-//        DeploymentExample.main(EMPTY_ARGS);
-//    }
+    public void testDeploymentExample() throws Exception {
+        DeploymentExample.main(EMPTY_ARGS);
+    }
 }

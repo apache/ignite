@@ -19,8 +19,10 @@ package org.apache.ignite.examples;
 
 //import org.apache.ignite.examples.computegrid.montecarlo.*;
 
+import org.apache.ignite.examples.computegrid.montecarlo.CreditRiskExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * Ignite examples self test. Excludes Ignite Spring tests.
@@ -74,7 +76,8 @@ public class MonteCarloExamplesSelfTest extends GridAbstractExamplesTest {
      *
      * @throws Exception If failed.
      */
-//    public void testCreditRiskExample() throws Exception {
-//        CreditRiskExample.main(EMPTY_ARGS);
-//    }
+    @Test
+    public void testCreditRiskExample() throws Exception {
+        CreditRiskExample.main(EMPTY_ARGS);
+    }
 }

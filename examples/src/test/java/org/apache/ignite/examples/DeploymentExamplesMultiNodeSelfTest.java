@@ -18,6 +18,7 @@
 package org.apache.ignite.examples;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * Deployment examples multi-node self test.
@@ -27,9 +28,10 @@ public class DeploymentExamplesMultiNodeSelfTest extends DeploymentExamplesSelfT
     // TODO: IGNITE-711 next example(s) should be implemented for java 8
     // or testing method(s) should be removed if example(s) does not applicable for java 8.
     /** {@inheritDoc} */
-//    @Override public void testDeploymentExample() throws Exception {
-//        startRemoteNodes();
-//
-//        super.testDeploymentExample();
-//    }
+    @Test
+    @Override public void testDeploymentExample() throws Exception {
+        startRemoteNodes();
+
+        super.testDeploymentExample();
+    }
 }

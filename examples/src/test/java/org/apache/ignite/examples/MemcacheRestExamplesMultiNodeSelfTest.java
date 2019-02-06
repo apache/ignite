@@ -19,7 +19,9 @@ package org.apache.ignite.examples;
 
 //import org.apache.ignite.examples.misc.client.memcache.*;
 
+import org.apache.ignite.examples.misc.client.memcache.MemcacheRestExampleNodeStartup;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * MemcacheRestExample multi-node self test.
@@ -29,8 +31,9 @@ public class MemcacheRestExamplesMultiNodeSelfTest extends MemcacheRestExamplesS
     // TODO: IGNITE-711 next example(s) should be implemented for java 8
     // or testing method(s) should be removed if example(s) does not applicable for java 8.
     /** {@inheritDoc} */
-//    @Override protected void beforeTest() throws Exception {
-//        for (int i = 0; i < RMT_NODES_CNT; i++)
-//            startGrid("memcache-rest-examples-" + i, MemcacheRestExampleNodeStartup.configuration());
-//    }
+    @Test
+    @Override protected void beforeTest() throws Exception {
+        for (int i = 0; i < RMT_NODES_CNT; i++)
+            startGrid("memcache-rest-examples-" + i, MemcacheRestExampleNodeStartup.configuration());
+    }
 }
