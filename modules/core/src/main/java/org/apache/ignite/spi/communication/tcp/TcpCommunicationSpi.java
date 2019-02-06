@@ -330,16 +330,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
     /** Default initial delay for connect and handshake timeout. */
-    private static final int DFLT_INITIAL_DELAY = 200;
+    private static final int DFLT_INITIAL_TIMEOUT = 200;
 
     /** Default initial delay for out of topology sleep and reconnects if case of temporary network issues. */
     private static final int DFLT_NEED_WAIT_DELAY = 200;
 
     /** Default delay between reconnects in case of temporary network issues. */
     private static final int DFLT_RECONNECT_DELAY = 50;
-
-    /** Default backoff coefficient to calculate next timeout based on backoff strategy. */
-    private static final double DLFT_BACKOFF_COEFF = 2.0;
 
     /**
      * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
@@ -3288,18 +3285,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             totalTimeout = ExponentialBackoffTimeoutStrategy.totalBackoffTimeout(
                 connTimeout,
                 maxConnTimeout,
-                reconCnt,
-                DLFT_BACKOFF_COEFF
+                reconCnt
             );
         }
 
         for (InetSocketAddress addr : addrs) {
             TimeoutStrategy connTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
                 totalTimeout,
-                failureDetectionTimeoutEnabled() ? DFLT_INITIAL_DELAY : connTimeout,
+                failureDetectionTimeoutEnabled() ? DFLT_INITIAL_TIMEOUT : connTimeout,
                 maxConnTimeout,
-                reconCnt,
-                DLFT_BACKOFF_COEFF
+                reconCnt
             );
 
             while (client == null) { // Reconnection on handshake timeout.

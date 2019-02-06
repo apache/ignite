@@ -28,6 +28,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * otherwise implements exponential backoff totalTimeout logic based on startTimeout, maxTimeout and retryCnt.
  */
 public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
+    /** Default backoff coefficient to calculate next timeout based on backoff strategy. */
+    private static final double DLFT_BACKOFF_COEFF = 2.0;
+
     /** Initial startTimeout, ms. */
     private final long startTimeout;
 
@@ -46,28 +49,23 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
     /** Current startTimeout, ms. */
     private long currTimeout;
 
-    /** Backoff coeffient to calculate next timeout.*/
-    private double backoffCoeff;
-
     /**
      * Compute expected backoffConnTimeout delay based on startTimeout, maxTimeout and reconCnt and backoff coeffient.
      *
      * @param initTimeout Initial timeout.
      * @param maxTimeout Max Timeout per retry.
      * @param reconCnt Reconnection count.
-     * @param backoffCoeff Backoff coefficient.
      * @return Calculated total backoff timeout.
      */
     public static long totalBackoffTimeout(
             long initTimeout,
             long maxTimeout,
-            long reconCnt,
-            double backoffCoeff
+            long reconCnt
     ) {
         long maxBackoffTimeout = initTimeout;
 
         for (int i = 1; i < reconCnt && maxBackoffTimeout < maxTimeout; i++)
-            maxBackoffTimeout += nextTimeout(maxBackoffTimeout, maxTimeout, backoffCoeff);
+            maxBackoffTimeout += nextTimeout(maxBackoffTimeout, maxTimeout);
 
         return maxBackoffTimeout;
     }
@@ -76,11 +74,10 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
      *
      * @param timeout Timeout.
      * @param maxTimeout Maximum startTimeout for backoff function.
-     * @param backoffCoeff Coefficient to calculate next backoff startTimeout.
      * @return Next exponetial backoff totalTimeout.
      */
-    public static long nextTimeout(long timeout, long maxTimeout, double backoffCoeff) {
-        return (long) Math.min(timeout * backoffCoeff, maxTimeout);
+    public static long nextTimeout(long timeout, long maxTimeout) {
+        return (long) Math.min(timeout * DLFT_BACKOFF_COEFF, maxTimeout);
     }
 
     /**
@@ -89,22 +86,18 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
      * @param startTimeout Initial connection timeout.
      * @param maxTimeout Max connection Timeout.
      * @param reconCnt Max number of reconnects.
-     * @param backoffCoeff Backoff coefficient.
      *
      */
     public ExponentialBackoffTimeoutStrategy(
         long totalTimeout,
         long startTimeout,
         long maxTimeout,
-        int reconCnt,
-        double backoffCoeff
+        int reconCnt
     ) {
         this.totalTimeout = totalTimeout;
 
         this.startTimeout = startTimeout;
         this.maxTimeout = maxTimeout;
-
-        this.backoffCoeff = backoffCoeff;
 
         currTimeout = startTimeout;
 
@@ -122,7 +115,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
 
         long currTimeout0 = currTimeout;
 
-        currTimeout = nextTimeout(currTimeout, maxTimeout, backoffCoeff);
+        currTimeout = nextTimeout(currTimeout, maxTimeout);
 
         return Math.min(currTimeout0, remainingTime);
     }
