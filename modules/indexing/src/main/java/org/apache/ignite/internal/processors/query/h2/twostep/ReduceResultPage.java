@@ -17,14 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.UUID;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
@@ -34,12 +26,21 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.value.Value;
 
+import javax.cache.CacheException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.UUID;
+
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray;
 
 /**
  * Page result.
  */
-public class GridResultPage {
+public class ReduceResultPage {
     /** */
     private final UUID src;
 
@@ -61,7 +62,7 @@ public class GridResultPage {
      * @param res Response.
      */
     @SuppressWarnings("unchecked")
-    public GridResultPage(final GridKernalContext ctx, UUID src, GridQueryNextPageResponse res) {
+    public ReduceResultPage(final GridKernalContext ctx, UUID src, GridQueryNextPageResponse res) {
         assert src != null;
 
         this.src = src;
@@ -158,7 +159,7 @@ public class GridResultPage {
      * @param last Last page for a source.
      * @return {@code this}.
      */
-    public GridResultPage setLast(boolean last) {
+    public ReduceResultPage setLast(boolean last) {
         this.last = last;
 
         return this;
@@ -214,6 +215,6 @@ public class GridResultPage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridResultPage.class, this);
+        return S.toString(ReduceResultPage.class, this);
     }
 }
