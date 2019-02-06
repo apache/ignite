@@ -137,10 +137,6 @@ public class IgniteCacheTestSuite3 {
         //GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedTxMultiNodeBasicTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedTxReadTest.class, ignoredTests);
 
-        // TODO GG-11141.
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheDeploymentSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheDeploymentOffHeapSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheDeploymentOffHeapValuesSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheStartupInDeploymentModesTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheConditionalDeploymentSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicEntryProcessorDeploymentSelfTest.class, ignoredTests);
