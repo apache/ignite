@@ -666,8 +666,6 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setInitBaselineAutoAdjustTimeout(in.readLong());
         if (in.readBoolean())
-            cfg.setInitBaselineAutoAdjustMaxTimeout(in.readLong());
-        if (in.readBoolean())
             cfg.setSqlQueryHistorySize(in.readInt());
 
         int sqlSchemasCnt = in.readInt();
@@ -1263,8 +1261,6 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(cfg.isInitBaselineAutoAdjustEnabled());
         w.writeBoolean(true);
         w.writeLong(cfg.getInitBaselineAutoAdjustTimeout());
-        w.writeBoolean(true);
-        w.writeLong(cfg.getInitBaselineAutoAdjustMaxTimeout());
         w.writeBoolean(true);
         w.writeInt(cfg.getSqlQueryHistorySize());
 

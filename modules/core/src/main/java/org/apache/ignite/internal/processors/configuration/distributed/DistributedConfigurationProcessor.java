@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.subscription.GridInternalSubscripti
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.ACTUALIZE;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.CLUSTER_WIDE_UPDATE;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.REGISTER;
-import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
 /**
  * Processor of distributed configuration.
@@ -253,21 +252,8 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      */
     private void doClusterWideUpdate(DistributedProperty prop) {
         prop.onReadyForUpdate(
-            (key, expectedOldValue, newValue) ->
-                distributedMetastorage.compareAndSetAsync(toMetaStorageKey(key), expectedOldValue, newValue)
+            (key, newValue) -> distributedMetastorage.writeAsync(toMetaStorageKey(key), newValue)
         );
-
-        if (isLocalNodeCoordinator(ctx.discovery())) {
-            try {
-                Serializable oldVal = distributedMetastorage.read(prop.getName());
-
-                if (oldVal == null)
-                    distributedMetastorage.compareAndSetAsync(toMetaStorageKey(prop.getName()), null, prop.value());
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Can not set init value to metastore for key='" + prop.getName() + "'", e);
-            }
-        }
     }
 
     /**

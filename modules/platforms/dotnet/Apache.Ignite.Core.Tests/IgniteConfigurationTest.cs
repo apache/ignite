@@ -265,7 +265,6 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(cfg.InitBaselineAutoAdjustEnabled, resCfg.InitBaselineAutoAdjustEnabled);
                 Assert.AreEqual(cfg.InitBaselineAutoAdjustTimeout, resCfg.InitBaselineAutoAdjustTimeout);
-                Assert.AreEqual(cfg.InitBaselineAutoAdjustMaxTimeout, resCfg.InitBaselineAutoAdjustMaxTimeout);
 
                 Assert.IsNotNull(resCfg.SqlSchemas);
                 Assert.AreEqual(2, resCfg.SqlSchemas.Count);

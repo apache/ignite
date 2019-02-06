@@ -2357,11 +2357,6 @@
                     <xs:documentation>Initial value of time which we would wait before the actual topology change since last discovery event.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="initBaselineAutoAdjustMaxTimeout" type="xs:long">
-                <xs:annotation>
-                    <xs:documentation>Initial value of time which we would wait from the first discovery event in the chain(node join/exit).</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

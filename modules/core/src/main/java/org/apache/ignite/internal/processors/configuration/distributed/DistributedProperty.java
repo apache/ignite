@@ -65,7 +65,9 @@ public class DistributedProperty<T extends Serializable> {
     public boolean propagate(T newVal) throws IgniteCheckedException {
         ensureClusterWideUpdateIsReady();
 
-        return clusterWideUpdater.update(name, val, newVal).get();
+        clusterWideUpdater.update(name, newVal).get();
+
+        return true;
     }
 
     /**
@@ -93,10 +95,10 @@ public class DistributedProperty<T extends Serializable> {
      * not active yet.
      * @throws IgniteCheckedException If failed during cluster wide update.
      */
-    public GridFutureAdapter<Boolean> propagateAsync(T newVal) throws IgniteCheckedException {
+    public GridFutureAdapter<?> propagateAsync(T newVal) throws IgniteCheckedException {
         ensureClusterWideUpdateIsReady();
 
-        return clusterWideUpdater.update(name, val, newVal);
+        return clusterWideUpdater.update(name, newVal);
     }
 
     /**

@@ -78,7 +78,6 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
         cfg.setInitBaselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
-        cfg.setInitBaselineAutoAdjustMaxTimeout(12000);
         cfg.setInitBaselineAutoAdjustEnabled(true);
 
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();

@@ -234,9 +234,6 @@ public class IgniteConfiguration {
      */
     public static final long DFLT_INIT_BASELINE_AUTO_ADJUST_TIMEOUT = 0;
 
-    /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
-    public static final long DFLT_INIT_BASELINE_AUTO_ADJUST_MAX_TIMEOUT = 0;
-
     /** Default SQL query history size. */
     public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
 
@@ -551,9 +548,6 @@ public class IgniteConfiguration {
      */
     private long initBaselineAutoAdjustTimeout = DFLT_INIT_BASELINE_AUTO_ADJUST_TIMEOUT;
 
-    /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
-    private long initBaselineAutoAdjustMaxTimeout = DFLT_INIT_BASELINE_AUTO_ADJUST_MAX_TIMEOUT;
-
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -675,7 +669,6 @@ public class IgniteConfiguration {
         warmupClos = cfg.getWarmupClosure();
         initBaselineAutoAdjustEnabled = cfg.isInitBaselineAutoAdjustEnabled();
         initBaselineAutoAdjustTimeout = cfg.getInitBaselineAutoAdjustTimeout();
-        initBaselineAutoAdjustMaxTimeout = cfg.getInitBaselineAutoAdjustMaxTimeout();
     }
 
     /**
@@ -3258,24 +3251,6 @@ public class IgniteConfiguration {
      */
     public void setInitBaselineAutoAdjustTimeout(long initBaselineAutoAdjustTimeout) {
         this.initBaselineAutoAdjustTimeout = initBaselineAutoAdjustTimeout;
-    }
-
-    /**
-     * Gets initial value of time which we would wait from the first discovery event in the chain. If we achieved it
-     * than we would change BLAT right away (no matter were another node join/exit happened or not). This value would be
-     * used only if it have not been changed earlier in real time.
-     *
-     * @return Timeout of wait the actual topology change.
-     */
-    public long getInitBaselineAutoAdjustMaxTimeout() {
-        return initBaselineAutoAdjustMaxTimeout;
-    }
-
-    /**
-     * Sets initial value of time which we would wait from the first discovery event in the chain.
-     */
-    public void setInitBaselineAutoAdjustMaxTimeout(long initBaselineAutoAdjustMaxTimeout) {
-        this.initBaselineAutoAdjustMaxTimeout = initBaselineAutoAdjustMaxTimeout;
     }
 
     /** {@inheritDoc} */

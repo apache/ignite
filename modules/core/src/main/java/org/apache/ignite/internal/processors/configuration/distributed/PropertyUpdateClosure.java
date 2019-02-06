@@ -31,11 +31,9 @@ public interface PropertyUpdateClosure {
      * Update property on cluster.
      *
      * @param key Property key.
-     * @param expectedOldValue Expected old property value.
      * @param newValue New value.
      * @return Future this boolean value.
      * @throws IgniteCheckedException if failed.
      */
-    public GridFutureAdapter<Boolean> update(String key, Serializable expectedOldValue, Serializable newValue)
-        throws IgniteCheckedException;
+    public GridFutureAdapter<?> update(String key, Serializable newValue) throws IgniteCheckedException;
 }
