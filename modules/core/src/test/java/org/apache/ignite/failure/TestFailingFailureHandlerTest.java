@@ -20,13 +20,10 @@ package org.apache.ignite.failure;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test failing failure handler test.
  */
-@RunWith(JUnit4.class)
 public class TestFailingFailureHandlerTest extends OomFailureHandlerTest {
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
@@ -37,7 +34,8 @@ public class TestFailingFailureHandlerTest extends OomFailureHandlerTest {
      * @param igniteWork Working ignite instance.
      * @param igniteFail Failed ignite instance.
      */
-    @Override protected void assertFailureState(IgniteEx igniteWork, IgniteEx igniteFail) throws IgniteInterruptedCheckedException {
+    @Override protected void assertFailureState(IgniteEx igniteWork, IgniteEx igniteFail)
+        throws IgniteInterruptedCheckedException {
         assertTrue(GridTestUtils.waitForCondition(() -> ex.get() != null, 1_000));
 
         log.info("Expected critical failure [ex=" + ex.get().getClass().getSimpleName() +
