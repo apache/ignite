@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
@@ -72,6 +73,9 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
     /** Current protocol version. */
     private ClientListenerProtocolVersion currentVer;
+
+    /** Last reported affinity topology version. */
+    private AffinityTopologyVersion lastAffinityTopologyVersion;
 
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
@@ -184,5 +188,22 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      */
     public void decrementCursors() {
         curCnt.decrementAndGet();
+    }
+
+    /**
+     * Atomicaly check whether affinity topology version has changed since the last call and sets new version as a last.
+     * @return New versoin, if it has changed since the last call.
+     */
+    public synchronized AffinityTopologyVersion checkAffinityTopologyVersion() {
+        AffinityTopologyVersion newVer = ctx.discovery().topologyVersionEx();
+        AffinityTopologyVersion oldVer = lastAffinityTopologyVersion;
+
+        if (oldVer == null || oldVer.compareTo(newVer) != 0) {
+            lastAffinityTopologyVersion = newVer;
+
+            return newVer;
+        }
+
+        return null;
     }
 }
