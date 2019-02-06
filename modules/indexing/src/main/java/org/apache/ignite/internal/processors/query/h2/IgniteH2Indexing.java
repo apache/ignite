@@ -3061,8 +3061,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * @param schemaName Schema.
-     * @param c Connection.
-     * @param p Prepared statement.
+     * @param conn Connection.
+     * @param prepared Prepared statement.
      * @param fieldsQry Initial query
      * @param cancel Query cancel.
      * @return Update result wrapped into {@link GridQueryFieldsResult}
@@ -3071,14 +3071,76 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     private List<QueryCursorImpl<List<?>>> executeUpdateDistributed(
         String schemaName,
-        Connection c,
-        Prepared p,
+        Connection conn,
+        Prepared prepared,
         SqlFieldsQuery fieldsQry,
         GridQueryCancel cancel
     ) throws IgniteCheckedException {
         if (DmlUtils.isBatched(fieldsQry)) {
-            Collection<UpdateResult> ress = executeUpdateBatched(schemaName, c, p, (SqlFieldsQueryEx)fieldsQry,
-                false, null, cancel);
+            SqlFieldsQueryEx fieldsQry0 = (SqlFieldsQueryEx)fieldsQry;
+
+            Collection<UpdateResult> ress;
+
+            List<Object[]> argss = fieldsQry0.batchedArguments();
+
+            UpdatePlan plan = updatePlan(schemaName, conn, prepared, fieldsQry0, false);
+
+            GridCacheContext<?, ?> cctx = plan.cacheContext();
+
+            // For MVCC case, let's enlist batch elements one by one.
+            if (plan.hasRows() && plan.mode() == UpdateMode.INSERT && !cctx.mvccEnabled()) {
+                CacheOperationContext opCtx = DmlUtils.setKeepBinaryContext(cctx);
+
+                try {
+                    List<List<List<?>>> cur = plan.createRows(argss);
+
+                    ress = DmlUtils.processSelectResultBatched(plan, cur, fieldsQry0.getPageSize());
+                }
+                finally {
+                    DmlUtils.restoreKeepBinaryContext(cctx, opCtx);
+                }
+            }
+            else {
+                // Fallback to previous mode.
+                ress = new ArrayList<>(argss.size());
+
+                SQLException batchException = null;
+
+                int[] cntPerRow = new int[argss.size()];
+
+                int cntr = 0;
+
+                for (Object[] args : argss) {
+                    SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)fieldsQry0.copy();
+
+                    qry0.clearBatchedArgs();
+                    qry0.setArgs(args);
+
+                    UpdateResult res;
+
+                    try {
+                        res = executeUpdate(schemaName, conn, prepared, qry0, false, null, cancel);
+
+                        cntPerRow[cntr++] = (int)res.counter();
+
+                        ress.add(res);
+                    }
+                    catch (Exception e ) {
+                        SQLException sqlEx = QueryUtils.toSqlException(e);
+
+                        batchException = DmlUtils.chainException(batchException, sqlEx);
+
+                        cntPerRow[cntr++] = Statement.EXECUTE_FAILED;
+                    }
+                }
+
+                if (batchException != null) {
+                    BatchUpdateException e = new BatchUpdateException(batchException.getMessage(),
+                        batchException.getSQLState(), batchException.getErrorCode(), cntPerRow, batchException);
+
+                    throw new IgniteCheckedException(e);
+                }
+            }
 
             ArrayList<QueryCursorImpl<List<?>>> resCurs = new ArrayList<>(ress.size());
 
@@ -3096,7 +3158,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return resCurs;
         }
         else {
-            UpdateResult res = executeUpdate(schemaName, c, p, fieldsQry, false, null, cancel);
+            UpdateResult res = executeUpdate(schemaName, conn, prepared, fieldsQry, false, null, cancel);
 
             res.throwIfError();
 
@@ -3106,86 +3168,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             resCur.fieldsMeta(UPDATE_RESULT_META);
 
             return Collections.singletonList(resCur);
-        }
-    }
-
-    /**
-     * Execute DML statement, possibly with few re-attempts in case of concurrent data modifications.
-     *
-     * @param schemaName Schema.
-     * @param conn Connection.
-     * @param prepared Prepared statement.
-     * @param fieldsQry Original query.
-     * @param loc Query locality flag.
-     * @param filters Cache name and key filter.
-     * @param cancel Cancel.
-     * @return Update result (modified items count and failed keys).
-     * @throws IgniteCheckedException if failed.
-     */
-    private Collection<UpdateResult> executeUpdateBatched(String schemaName, Connection conn, Prepared prepared,
-        SqlFieldsQueryEx fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
-        throws IgniteCheckedException {
-        List<Object[]> argss = fieldsQry.batchedArguments();
-
-        UpdatePlan plan = updatePlan(schemaName, conn, prepared, fieldsQry, loc);
-
-        GridCacheContext<?, ?> cctx = plan.cacheContext();
-
-        // For MVCC case, let's enlist batch elements one by one.
-        if (plan.hasRows() && plan.mode() == UpdateMode.INSERT && !cctx.mvccEnabled()) {
-            CacheOperationContext opCtx = DmlUtils.setKeepBinaryContext(cctx);
-
-            try {
-                List<List<List<?>>> cur = plan.createRows(argss);
-
-                return DmlUtils.processSelectResultBatched(plan, cur, fieldsQry.getPageSize());
-            }
-            finally {
-                DmlUtils.restoreKeepBinaryContext(cctx, opCtx);
-            }
-        }
-        else {
-            // Fallback to previous mode.
-            Collection<UpdateResult> ress = new ArrayList<>(argss.size());
-
-            SQLException batchException = null;
-
-            int[] cntPerRow = new int[argss.size()];
-
-            int cntr = 0;
-
-            for (Object[] args : argss) {
-                SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)fieldsQry.copy();
-
-                qry0.clearBatchedArgs();
-                qry0.setArgs(args);
-
-                UpdateResult res;
-
-                try {
-                    res = executeUpdate(schemaName, conn, prepared, qry0, loc, filters, cancel);
-
-                    cntPerRow[cntr++] = (int)res.counter();
-
-                    ress.add(res);
-                }
-                catch (Exception e ) {
-                    SQLException sqlEx = QueryUtils.toSqlException(e);
-
-                    batchException = DmlUtils.chainException(batchException, sqlEx);
-
-                    cntPerRow[cntr++] = Statement.EXECUTE_FAILED;
-                }
-            }
-
-            if (batchException != null) {
-                BatchUpdateException e = new BatchUpdateException(batchException.getMessage(),
-                    batchException.getSQLState(), batchException.getErrorCode(), cntPerRow, batchException);
-
-                throw new IgniteCheckedException(e);
-            }
-
-            return ress;
         }
     }
 
