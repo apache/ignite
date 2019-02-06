@@ -257,6 +257,13 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap8<>();
 
+    /** */
+    private static final int JOINED_NODES_HISTORY_SIZE = 50;
+
+    /** History of all node UUIDs that current node has seen. */
+    private final GridBoundedLinkedHashSet<UUID> nodesHist =
+        new GridBoundedLinkedHashSet<>(JOINED_NODES_HISTORY_SIZE);
+
     /**
      * @param adapter Adapter.
      */
@@ -1265,7 +1272,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
 
-                    synchronized (failedNodes) {
+                    synchronized (mux) {
                         for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                             if (failedNode.id().equals(res.creatorNodeId())) {
                                 if (log.isDebugEnabled())
@@ -3704,6 +3711,26 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     return;
                 }
+                else {
+                    if (!node.isClient() && !node.isDaemon()) {
+                        if (nodesHist.contains(node.id())) {
+                            try {
+                                trySendMessageDirectly(node, new TcpDiscoveryDuplicateIdMessage(locNodeId,
+                                    node));
+                            }
+                            catch (IgniteSpiException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send duplicate ID message to node " +
+                                        "[node=" + node +
+                                        ", err=" + e.getMessage() + ']');
+
+                                onException("Failed to send duplicate ID message to node: " + node, e);
+                            }
+
+                            return;
+                        }
+                    }
+                }
 
                 if (spi.nodeAuth != null) {
                     // Authenticate node first.
@@ -4295,6 +4322,13 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && !locNodeId.equals(node.id())) {
+                if (!node.isClient() && !node.isDaemon() && nodesHist.contains(node.id())) {
+                    U.warn(log, "Discarding node added message since local node has already seen " +
+                        "joining node in topology [node=" + node + ", locNode=" + locNode + ", msg=" + msg + ']');
+
+                    return;
+                }
+
                 if (node.internalOrder() <= ring.maxInternalOrder()) {
                     if (log.isDebugEnabled())
                         log.debug("Discarding node added message since new node's order is less than " +
@@ -4644,8 +4678,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                     lastMsg = msg;
                 }
 
-                if (state == CONNECTED)
+                if (state == CONNECTED) {
                     notifyDiscovery(EVT_NODE_JOINED, topVer, node);
+
+                    if (!node.isClient() && !node.isDaemon())
+                        nodesHist.add(node.id());
+                }
 
                 try {
                     if (spi.ipFinder.isShared() && locNodeCoord && !node.isClient())
