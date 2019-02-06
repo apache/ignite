@@ -52,22 +52,20 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
                 2.
         );
 
-        assertEquals(1000L, helper.currentTimeout());
+        assertEquals(1000L, helper.getAndCalculateNextTimeout());
+
+        assertEquals(2000L, helper.getAndCalculateNextTimeout());
 
         helper.getAndCalculateNextTimeout();
 
-        assertEquals(2000L, helper.currentTimeout());
-
-        helper.getAndCalculateNextTimeout();
-
-        assertEquals(3000L, helper.currentTimeout());
+        assertEquals(3000L, helper.getAndCalculateNextTimeout());
     }
 
     /** */
     @Test
-    public void maxBackoffTimeout() {
-        assertEquals(8_000, ExponentialBackoffTimeoutStrategy.maxBackoffTimeout(1000, 5000, 3, 2.0));
-        assertEquals(45_000, ExponentialBackoffTimeoutStrategy.maxBackoffTimeout(5_000, 60_000, 3, 2.0));
+    public void totalBackoffTimeout() {
+        assertEquals(8_000, ExponentialBackoffTimeoutStrategy.totalBackoffTimeout(1000, 5000, 3, 2.0));
+        assertEquals(45_000, ExponentialBackoffTimeoutStrategy.totalBackoffTimeout(5_000, 60_000, 3, 2.0));
     }
 
     /** */
@@ -84,7 +82,7 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
                 assertTrue( (System.currentTimeMillis() + 100 - start) >= timeout);
 
                 try {
-                    helper.currentTimeout();
+                    helper.getAndCalculateNextTimeout();
 
                     fail("Should fail with IOException");
                 } catch (IgniteSpiOperationTimeoutException ignored) {

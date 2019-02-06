@@ -330,10 +330,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
     /** Default initial delay for out of topology sleep and reconnects if case of temporary network issues. */
-    private static final int DLFT_INITIAL_DELAY = 200;
+    private static final int DFLT_INITIAL_DELAY = 200;
+
+    /** Default delay between reconnects in case of temporary network issues. */
+    private static final int DFLT_RECONNECT_DELAY = 50;
 
     /** Default backoff coefficient to calculate next timeout based on backoff strategy. */
-    private static final int DLFT_BACKOFF_COEFF = 2;
+    private static final double DLFT_BACKOFF_COEFF = 2.0;
 
     /**
      * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
@@ -3279,37 +3282,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (failureDetectionTimeoutEnabled())
             totalTimeout = node.isClient() ? clientFailureDetectionTimeout() : failureDetectionTimeout();
         else {
-            totalTimeout = ExponentialBackoffTimeoutStrategy.maxBackoffTimeout(
-                    connTimeout,
-                    maxConnTimeout,
-                    reconCnt,
-                    DLFT_BACKOFF_COEFF
+            totalTimeout = ExponentialBackoffTimeoutStrategy.totalBackoffTimeout(
+                connTimeout,
+                maxConnTimeout,
+                reconCnt,
+                DLFT_BACKOFF_COEFF
             );
         }
 
         for (InetSocketAddress addr : addrs) {
             TimeoutStrategy connTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
                 totalTimeout,
-                connTimeout,
+                failureDetectionTimeoutEnabled() ? DFLT_INITIAL_DELAY : connTimeout,
                 maxConnTimeout,
                 reconCnt,
                 DLFT_BACKOFF_COEFF
-            );
-
-            TimeoutStrategy outOfTopTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
-                    totalTimeout,
-                    DLFT_INITIAL_DELAY,
-                    maxConnTimeout,
-                    reconCnt,
-                    DLFT_BACKOFF_COEFF
-            );
-
-            TimeoutStrategy reconnectTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
-                    totalTimeout,
-                    DLFT_INITIAL_DELAY,
-                    maxConnTimeout,
-                    reconCnt,
-                    DLFT_BACKOFF_COEFF
             );
 
             while (client == null) { // Reconnection on handshake timeout.
@@ -3366,7 +3353,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     GridSslMeta sslMeta = null;
 
                     try {
-                        ch.socket().connect(addr, (int) connTimeoutStgy.currentTimeout());
+                        long currTimeout = connTimeoutStgy.getAndCalculateNextTimeout();
+
+                        ch.socket().connect(addr, (int) currTimeout);
 
                         if (getSpiContext().node(node.id()) == null)
                             throw new ClusterTopologyCheckedException("Failed to send message (node left topology): " + node);
@@ -3386,7 +3375,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         rcvCnt = safeTcpHandshake(ch,
                             recoveryDesc,
                             node.id(),
-                            connTimeoutStgy.currentTimeout(),
+                            currTimeout,
                             sslMeta,
                             handshakeConnIdx);
 
@@ -3397,13 +3386,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         else if (rcvCnt == UNKNOWN_NODE)
                             throw new ClusterTopologyCheckedException("Remote node doesn't observe current node in topology : " + node.id());
                         else if (rcvCnt == NEED_WAIT) {
-                            long outOfTopDelay = outOfTopTimeoutStgy.getAndCalculateNextTimeout();
-
                             //check that failure timeout will be reached after sleep(outOfTopDelay).
-                            if (outOfTopTimeoutStgy.checkTimeout(outOfTopDelay)) {
+                            if (connTimeoutStgy.checkTimeout(DFLT_INITIAL_DELAY)) {
                                 U.warn(log, "Handshake NEED_WAIT timed out (will stop attempts to perform the handshake) " +
                                     "[node=" + node.id() +
-                                    ", outOfTopTimeoutStgy=" + outOfTopTimeoutStgy +
+                                    ", connTimeoutStgy=" + connTimeoutStgy +
                                     ", addr=" + addr +
                                     ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
                                     ", totalTimeout" + totalTimeout + ']');
@@ -3417,9 +3404,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             else {
                                 if (log.isDebugEnabled())
                                     log.debug("NEED_WAIT received, handshake after delay [node = "
-                                        + node + ", outOfTopologyDelay = " + outOfTopDelay + "ms]");
+                                        + node + ", outOfTopologyDelay = " + DFLT_INITIAL_DELAY + "ms]");
 
-                                U.sleep(outOfTopDelay);
+                                U.sleep(DFLT_INITIAL_DELAY);
 
                                 continue;
                             }
@@ -3481,8 +3468,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         break;
                     }
-                    else
-                        connTimeoutStgy.getAndCalculateNextTimeout();
                 }
                 catch (ClusterTopologyCheckedException e) {
                     throw e;
@@ -3500,16 +3485,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (log.isDebugEnabled())
                         log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
 
-                    long reconnectDelay = 0;
-
-                    if (isRecoverableException(e))
-                        reconnectDelay = reconnectTimeoutStgy.getAndCalculateNextTimeout();
-
                     // check if timeout occured in case of unrecoverable exception
-                    // or will occur after sleep(reconnectDelay) in future.
-                    if (reconnectTimeoutStgy.checkTimeout(reconnectDelay)) {
+                    if (connTimeoutStgy.checkTimeout(0)) {
                         U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
-                                "[node=" + node.id() + ", timeoutHelper=" + reconnectTimeoutStgy +
+                                "[node=" + node.id() + ", connTimeoutStgy=" + connTimeoutStgy +
                                 ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
                                 ", totalTimeout" + totalTimeout +
                                 ", err=" + e.getMessage() + ", addr=" + addr + ']');
@@ -3527,15 +3506,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         break;
                     }
 
-                    if (isRecoverableException(e)) {
-                        if (log.isDebugEnabled())
-                            log.debug("Connection recoverable exception delay [node = "
-                                    + node + ", delay = " + reconnectDelay + "ms]");
-
-                        U.sleep(reconnectDelay);
-
-                        connTimeoutStgy.getAndCalculateNextTimeout();
-                    }
+                    if (isRecoverableException(e))
+                        U.sleep(DFLT_RECONNECT_DELAY);
                     else
                         break;
                 }

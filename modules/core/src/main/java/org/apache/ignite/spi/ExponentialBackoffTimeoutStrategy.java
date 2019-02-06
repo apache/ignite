@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi;
 
-import java.util.Date;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Strategy which incorporates retriable network operation, handling of totalTimeout logic.
@@ -48,14 +48,22 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
     /** Backoff coeffient to calculate next timeout.*/
     private double backoffCoeff;
 
-    /** Compute expected backoffConnTimeout delay based on startTimeout, maxTimeout and reconCnt and backoff coeffient. */
-    public static long maxBackoffTimeout(
-            long startTimeout,
+    /**
+     * Compute expected backoffConnTimeout delay based on startTimeout, maxTimeout and reconCnt and backoff coeffient.
+     *
+     * @param initTimeout Initial timeout.
+     * @param maxTimeout Max Timeout per retry.
+     * @param reconCnt Reconnection count.
+     * @param backoffCoeff Backoff coefficient.
+     * @return Calculated total backoff timeout.
+     */
+    public static long totalBackoffTimeout(
+            long initTimeout,
             long maxTimeout,
             long reconCnt,
             double backoffCoeff
     ) {
-        long maxBackoffTimeout = startTimeout;
+        long maxBackoffTimeout = initTimeout;
 
         for (int i = 1; i < reconCnt && maxBackoffTimeout < maxTimeout; i++)
             maxBackoffTimeout += nextTimeout(maxBackoffTimeout, maxTimeout, backoffCoeff);
@@ -77,9 +85,11 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
     /**
      *
      * @param totalTimeout Total startTimeout.
-     * @param startTimeout Initial connection totalTimeout, will be taken for initial connection and handshake timeouts.
+     * @param startTimeout Initial connection timeout.
      * @param maxTimeout Max connection Timeout.
      * @param reconCnt Max number of reconnects.
+     * @param backoffCoeff Backoff coefficient.
+     *
      */
     public ExponentialBackoffTimeoutStrategy(
         long totalTimeout,
@@ -102,25 +112,18 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
         start = System.currentTimeMillis();
     }
 
-    /**
-     *  @return Minimum between current timeout and time remaining to total timeout.
-     * */
-    @Override public long currentTimeout() throws IgniteSpiOperationTimeoutException {
+    /** {@inheritDoc} */
+    @Override public long getAndCalculateNextTimeout() throws IgniteSpiOperationTimeoutException {
         long remainingTime = remainingTime(System.currentTimeMillis());
 
         if (remainingTime <= 0)
             throw new IgniteSpiOperationTimeoutException("Operation timed out [startTimeout = " +this +"]");
 
-        return Math.min(currTimeout, remainingTime);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getAndCalculateNextTimeout() {
         long currTimeout0 = currTimeout;
 
         currTimeout = nextTimeout(currTimeout, maxTimeout, backoffCoeff);
 
-        return currTimeout0;
+        return Math.min(currTimeout0, remainingTime);
     }
 
     /**
@@ -136,7 +139,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
     /**
      *
      * @param timeInFut Some time in millis in future.
-     * @return True if startTimeout enabled.
+     * @return {@code True} if startTimeout enabled.
      */
     @Override public boolean checkTimeout(long timeInFut) {
         return remainingTime(System.currentTimeMillis() + timeInFut) <= 0;
@@ -144,15 +147,6 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ExponentialBackoffTimeoutStrategy{" +
-                "startTimeout=" + startTimeout +
-                ", maxTimeout=" + maxTimeout +
-                ", reconCnt=" + reconCnt +
-                ", backoffCoeff=" + backoffCoeff +
-                ", totalTimeout=" + totalTimeout +
-                ", start=" + new Date(start) +
-                ", totalTimeout=" + totalTimeout +
-                ", currTimeout=" + currTimeout +
-                '}';
+        return S.toString(ExponentialBackoffTimeoutStrategy.class, this);
     }
 }
