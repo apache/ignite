@@ -36,7 +36,6 @@ import java.util.HashSet;
  * or when direct scan over data pages is enabled.
  */
 public class H2TableScanIndex extends H2ScanIndex<GridH2IndexBase> implements IndexInformationAware {
-    /** */{
     /** */
     private static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
 
