@@ -68,14 +68,14 @@ final class ParsingResult {
     /**
      * Construct result in case of h2 parsing and two step query.
      */
-    public static ParsingResult twoStepResult(
+    public ParsingResult(
         Prepared prepared,
         SqlFieldsQuery newQry,
         String remainingSql,
         GridCacheTwoStepQuery twoStepQry,
         H2TwoStepCachedQueryKey twoStepQryKey,
         List<GridQueryFieldMetadata> meta) {
-        return new ParsingResult(prepared, newQry, remainingSql, twoStepQry, twoStepQryKey, meta, null);
+        this(prepared, newQry, remainingSql, twoStepQry, twoStepQryKey, meta, null);
     }
 
     /**
@@ -85,8 +85,8 @@ final class ParsingResult {
      * @param newCmd parsed sql command. Represents newQry.
      * @param remainingSql the rest of the original query.
      */
-    public static ParsingResult nativeResult(SqlFieldsQuery newQry, SqlCommand newCmd, String remainingSql) {
-        return new ParsingResult(null, newQry, remainingSql, null, null, null, newCmd);
+    public ParsingResult(SqlFieldsQuery newQry, SqlCommand newCmd, String remainingSql) {
+        this(null, newQry, remainingSql, null, null, null, newCmd);
     }
 
     /**
@@ -96,8 +96,8 @@ final class ParsingResult {
      * @param newQry SqlFields query that prepare represents.
      * @param remainingSql the rest of the original query.
      */
-    public static ParsingResult nonTwoStep(Prepared prepared, SqlFieldsQuery newQry, String remainingSql) {
-        return new ParsingResult(prepared, newQry, remainingSql, null, null, null, null);
+    public ParsingResult(Prepared prepared, SqlFieldsQuery newQry, String remainingSql) {
+        this(prepared, newQry, remainingSql, null, null, null, null);
     }
 
     /**

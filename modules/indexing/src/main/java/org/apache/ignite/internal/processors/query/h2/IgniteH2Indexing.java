@@ -1278,7 +1278,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.processedSql());
 
-            return ParsingResult.nativeResult(newQry, leadingCmd, parser.remainingSql());
+            return new ParsingResult(newQry, leadingCmd, parser.remainingSql());
         }
         catch (SqlStrictParseException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
@@ -1583,7 +1583,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
-            ParsingResult parseRes = ParsingResult.twoStepResult(null, qry, null, twoStepQry, cachedQryKey, meta);
+            ParsingResult parseRes = new ParsingResult(null, qry, null, twoStepQry, cachedQryKey, meta);
 
             if (!twoStepQry.explain())
                 twoStepCache.putIfAbsent(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
@@ -1851,7 +1851,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             connMgr.statementCacheForThread().remove(schemaName, qry.getSql());
 
         if (!hasTwoStep)
-            return ParsingResult.nonTwoStep(prepared, newQry, remainingSql);
+            return new ParsingResult(prepared, newQry, remainingSql);
 
         final UUID locNodeId = ctx.localNodeId();
 
@@ -1869,7 +1869,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
-            return ParsingResult.twoStepResult(prepared, newQry, remainingSql, twoStepQry, cachedQryKey, meta);
+            return new ParsingResult(prepared, newQry, remainingSql, twoStepQry, cachedQryKey, meta);
         }
 
         try {
@@ -1879,7 +1879,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             try {
                 GridCacheTwoStepQuery twoStepQry = split(prepared, newQry);
 
-                return ParsingResult.twoStepResult(prepared, newQry, remainingSql, twoStepQry,
+                return new ParsingResult(prepared, newQry, remainingSql, twoStepQry,
                     cachedQryKey, H2Utils.meta(stmt.getMetaData()));
             }
             catch (IgniteCheckedException e) {
