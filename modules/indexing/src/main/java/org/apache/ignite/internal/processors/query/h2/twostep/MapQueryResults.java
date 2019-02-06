@@ -56,10 +56,6 @@ class MapQueryResults {
     /** Query context. */
     private final QueryContext qctx;
 
-    /** Logger. */
-    // TODO: Unused
-    private final IgniteLogger log;
-
     /**
      * Constructor.
      *
@@ -70,17 +66,15 @@ class MapQueryResults {
      * @param forUpdate {@code SELECT FOR UPDATE} flag.
      * @param lazy Lazy flag.
      * @param qctx Query context.
-     * @param log Logger instance.
      */
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        boolean forUpdate, boolean lazy, QueryContext qctx, IgniteLogger log) {
+        boolean forUpdate, boolean lazy, QueryContext qctx) {
         this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
         this.lazy = lazy;
         this.qctx = qctx;
-        this.log = log;
 
         results = new AtomicReferenceArray<>(qrys);
         cancels = new GridQueryCancel[qrys];
@@ -149,9 +143,8 @@ class MapQueryResults {
             }
         }
 
-        // TODO: Comments: There is no IgniteH2Session.
-        // The closing result set is synchronized by the session.
-        // Include to synchronize block may be cause deadlock on <this> and IgniteH2Session lock.
+        // The closing result set is synchronized by themselves.
+        // Include to synchronize block may be cause deadlock on <this> and MapQueryResult#lock.
         close();
     }
 
@@ -164,8 +157,6 @@ class MapQueryResults {
      */
     void closeResult(int idx) {
         MapQueryResult res = results.get(idx);
-
-//        log.info("+++ CLOSE " + idx);
 
         if (res != null && !res.closed()) {
             try {
@@ -235,5 +226,12 @@ class MapQueryResults {
 
         if (qctx.distributedJoinContext() == null)
             qctx.clearContext(false);
+    }
+
+    /**
+     * @return Lazy flag.
+     */
+    public boolean isLazy() {
+        return lazy;
     }
 }

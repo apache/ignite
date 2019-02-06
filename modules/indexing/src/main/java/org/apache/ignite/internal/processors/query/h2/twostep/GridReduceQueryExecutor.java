@@ -1055,7 +1055,6 @@ public class GridReduceQueryExecutor {
      */
     void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
         boolean distributedJoins, MvccQueryTracker mvccTracker) {
-        // TODO: Check if this change is valid.
         boolean notFetched = false;
 
         for (ReduceIndex idx : r.indexes()) {

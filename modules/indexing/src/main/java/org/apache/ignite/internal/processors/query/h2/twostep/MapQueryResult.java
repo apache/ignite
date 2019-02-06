@@ -173,6 +173,8 @@ class MapQueryResult {
      * @return {@code true} If there are no more rows available.
      */
     boolean fetchNextPage(List<Value[]> rows, int pageSize, Boolean dataPageScanEnabled) {
+        assert lock.isHeldByCurrentThread();
+
         if (closed)
             return true;
 

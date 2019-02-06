@@ -388,9 +388,6 @@ public class GridH2Table extends TableBase {
 
         ses.addLock(this);
 
-        // TODO: Remove
-//        System.out.println(Thread.currentThread().getName() + "+++ LOCK " + getName() + " " + ses);
-
         return false;
     }
 
@@ -398,9 +395,7 @@ public class GridH2Table extends TableBase {
     @Override public void unlock(Session ses) {
         SessionLock sesLock = sessions.remove(ses);
 
-//        System.out.println(Thread.currentThread().getName() + "+++ UNLOCK " + getName() + " " + ses);
-
-        if (sesLock != null)
+        if (sesLock.locked)
             unlock(sesLock.isExclusive());
     }
 
@@ -408,27 +403,16 @@ public class GridH2Table extends TableBase {
      * @param ses H2 session.
      */
     private void readLockInternal(Session ses) {
-        if (destroyed)
-            return;
-
         SessionLock sesLock = sessions.get(ses);
 
-        // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
-        // at the destroy() method.
-        assert destroyed || sesLock != null && !sesLock.isExclusive()
-            : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + sesLock.ver + ']';
+        assert sesLock != null && !sesLock.isExclusive()
+            : "Invalid table lock [name=" + getName() + ", lock=" + sesLock.ver + ']';
 
-        // TODO: If "sessions.clear" is removed from "destroy", then sesLock == null should bever happen.
-        if (sesLock != null && !sesLock.locked) {
+        if (!sesLock.locked) {
             lock(false);
 
             sesLock.locked = true;
-
-            // TODO: Looks like we can remove "destroyed" checks as destroy operation will advance version anyway.
         }
-
-        // TODO: Remove
-//        System.out.println(Thread.currentThread().getName() + "+++ READ LOCK " + getName() + " " + ses);
     }
 
     /**
@@ -439,50 +423,14 @@ public class GridH2Table extends TableBase {
     private void unlockReadInternal(Session ses) {
         SessionLock sesLock = sessions.get(ses);
 
-        // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
-        // at the destroy() method.
-        // TODO: If "sessions.clear" is removed from "destroy", then sesLock == null should bever happen.
-        assert destroyed || sesLock != null && !sesLock.isExclusive()
-            : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + sesLock.ver + ']';
+        assert sesLock != null && !sesLock.isExclusive()
+            : "Invalid table unlock [name=" + getName() + ", lock=" + sesLock.ver + ']';
 
-        if (sesLock != null && sesLock.locked) {
+        if (sesLock.locked) {
             sesLock.locked = false;
 
             unlock(false);
         }
-    }
-
-    /**
-     * @param ses H2 session.
-     */
-    private void checkVersion(Session ses) {
-        // TODO: Remove
-        if (destroyed)
-            throw new QueryRetryException(getName());
-
-        SessionLock sesLock = sessions.get(ses);
-
-        // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
-        // at the destroy() method.
-        assert destroyed || sesLock != null && !sesLock.isExclusive()
-            : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + sesLock.version() + ']';
-
-        if (ver.longValue() != sesLock.version())
-            throw new QueryRetryException(getName());
-    }
-
-    /**
-     * @return Table identifier.
-     */
-    public QueryTable identifier() {
-        return identifier;
-    }
-
-    /**
-     * @return Table identifier as string.
-     */
-    public String identifierString() {
-        return identifierStr;
     }
 
     /**
@@ -523,15 +471,34 @@ public class GridH2Table extends TableBase {
     private void unlock(boolean exclusive) {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
-        try {
-            l.unlock();
-        }
-        // TODO: Remove?
-        catch (IllegalMonitorStateException e) {
-            // Skip invalid lock state on table unlock when the table is destroyed.
-            if (!destroyed)
-                throw e;
-        }
+        l.unlock();
+    }
+
+    /**
+     * @param ses H2 session.
+     */
+    private void checkVersion(Session ses) {
+        SessionLock sesLock = sessions.get(ses);
+
+        assert sesLock != null && !sesLock.isExclusive()
+            : "Invalid table check version  [name=" + getName() + ", lock=" + sesLock.ver + ']';
+
+        if (ver.longValue() != sesLock.version())
+            throw new QueryRetryException(getName());
+    }
+
+    /**
+     * @return Table identifier.
+     */
+    public QueryTable identifier() {
+        return identifier;
+    }
+
+    /**
+     * @return Table identifier as string.
+     */
+    public String identifierString() {
+        return identifierStr;
     }
 
     /**
@@ -595,9 +562,6 @@ public class GridH2Table extends TableBase {
             ensureNotDestroyed();
 
             destroyed = true;
-
-            // TODO: Looks like this should be remove.
-            sessions.clear();
 
             for (int i = 1, len = idxs.size(); i < len; i++)
                 if (idxs.get(i) instanceof GridH2IndexBase)
@@ -1319,15 +1283,8 @@ public class GridH2Table extends TableBase {
      */
     public static void unlockTables(Session s) {
         for (Table t : s.getLocks()) {
-            if (t instanceof GridH2Table) {
-                try {
-//                    System.out.println(Thread.currentThread().getName() + "+++ UNLOCK " + t.getName() + " "+ s);
-                    ((GridH2Table)t).unlockReadInternal(s);
-                }
-                catch (IllegalMonitorStateException e) {
-                    // Swallow illegal unlock all to guarantee unlock all tables on thread interrupt etc.
-                }
-            }
+            if (t instanceof GridH2Table)
+                ((GridH2Table)t).unlockReadInternal(s);
         }
     }
 
@@ -1372,6 +1329,7 @@ public class GridH2Table extends TableBase {
         }
 
         /**
+         * @param ver Locked table version.
          * @return Shared lock instance.
          */
         static SessionLock sharedLock(long ver) {
@@ -1386,14 +1344,14 @@ public class GridH2Table extends TableBase {
         }
 
         /**
-         * @return {@code true} if exclusive lock;
+         * @return {@code true} if exclusive lock.
          */
         boolean isExclusive() {
             return ver == EXCLUSIVE_LOCK;
         }
 
         /**
-         * @return Table version of the firts lock.
+         * @return Table version of the first lock.
          */
         long version() {
             return ver;

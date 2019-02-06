@@ -224,8 +224,6 @@ public class GridMapQueryExecutor {
      */
     private void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
         long qryReqId = msg.queryRequestId();
-        // TODO: Remove
-//        log.info("+++ CANCEL " + qryReqId);
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
@@ -428,6 +426,9 @@ public class GridMapQueryExecutor {
      * @param distributeJoins Query distributed join mode.
      * @param local Local flag.
      * @param enforceJoinOrder Enforce join order H2 flag.
+     * @param replicated Replicated only flag.
+     * @param timeout Query timeout.
+     * @param params Query parameters.
      * @param lazy Streaming flag.
      * @param mvccSnapshot MVCC snapshot.
      * @param tx Transaction.
@@ -519,7 +520,7 @@ public class GridMapQueryExecutor {
                 reserved
             );
 
-            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, inTx, lazy, qctx, log);
+            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, inTx, lazy, qctx);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
@@ -557,7 +558,6 @@ public class GridMapQueryExecutor {
 
                 MapQueryResult res = new MapQueryResult(h2, mainCctx, node.id(), qry, params, connWrp, log);
 
-//                log.info("+++ EXEC " + reqId + " " + H2Utils.session(connWrp.connection()));
                 qryResults.addResult(qryIdx, res);
 
                 try {
@@ -691,9 +691,12 @@ public class GridMapQueryExecutor {
                     qryIdx++;
                 }
                 finally {
-                    // TODO: Unsafe: unlockTables may throw an exception.
-                    res.unlockTables();
-                    res.unlock();
+                    try {
+                        res.unlockTables();
+                    }
+                    finally {
+                        res.unlock();
+                    }
                 }
             } // for map queries
 
@@ -894,9 +897,7 @@ public class GridMapQueryExecutor {
             GridQueryFailResponse msg = new GridQueryFailResponse(qryReqId, err);
 
             if (node.isLocal()) {
-                // TODO: Why not print it?
-                if (!(err instanceof QueryRetryException))
-                    U.error(log, "Failed to run map query on local node.", err);
+                U.error(log, "Failed to run map query on local node.", err);
 
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
             }
@@ -1006,18 +1007,19 @@ public class GridMapQueryExecutor {
                     if (qctxReduce != null)
                         qryCtxRegistry.setThreadLocal(qctxReduce);
 
-                    // TODO: Unsafe?
-                    res.unlockTables();
-                    res.unlock();
+                    try {
+                        res.unlockTables();
+                    }
+                    finally {
+                        res.unlock();
+                    }
                 }
             }
             catch (Exception e) {
                 QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
 
-                if (retryEx != null) {
-//                    log.info("+++ RETRY NEXT");
+                if (retryEx != null)
                     sendError(node, reqId, retryEx);
-                }
                 else {
                     JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
@@ -1071,9 +1073,9 @@ public class GridMapQueryExecutor {
             if (qr.isAllClosed()) {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
-                // Close, release reservations, recycle connection if the last page fetched in lazy mode.
-                // TODO: Re-iterate over results again?
-                qr.close();
+                // Clear context, release reservations
+                if (qr.isLazy())
+                    qr.releaseQueryContext();
             }
         }
 
