@@ -18,6 +18,7 @@
 package org.apache.ignite.spi;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
+import java.util.Date;
 
 /**
  * Strategy which incorporates retriable network operation, handling of totalTimeout logic.
@@ -150,7 +151,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
                 ", reconCnt=" + reconCnt +
                 ", backoffCoeff=" + backoffCoeff +
                 ", totalTimeout=" + totalTimeout +
-                ", start=" + start +
+                ", start=" + new Date(start) +
                 ", totalTimeout=" + totalTimeout +
                 ", currTimeout=" + currTimeout +
                 '}';
