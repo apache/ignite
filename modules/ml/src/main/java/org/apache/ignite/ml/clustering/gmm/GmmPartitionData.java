@@ -32,7 +32,7 @@ import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 class GmmPartitionData implements AutoCloseable {
     private List<LabeledVector<Double>> xs;
-    private double[][] pcxi; //P(cluster|xi) where first idx is a cluster and second is a index of point
+    private double[][] pcxi; //P(cluster|xi) where second idx is a cluster and first is a index of point
 
     public GmmPartitionData(List<LabeledVector<Double>> xs, double[][] pcxi) {
         this.xs = xs;
@@ -52,7 +52,7 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     public double pcxi(int cluster, int i) {
-        return pcxi[cluster][i];
+        return pcxi[i][cluster];
     }
 
     public int size() {
@@ -101,7 +101,7 @@ class GmmPartitionData implements AutoCloseable {
                     normalizer += components.get(c).prob(x) * clusterProbs.get(c);
 
                 for (int c = 0; c < clusterProbs.size(); c++)
-                    data.pcxi[c][i] = (components.get(c).prob(x) * clusterProbs.get(c)) / normalizer;
+                    data.pcxi[i][c] = (components.get(c).prob(x) * clusterProbs.get(c)) / normalizer;
             }
         };
     }

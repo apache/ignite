@@ -42,10 +42,20 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Serializable {
-    private final double EPS = 1e-5;
-    private final int countOfComponents = -1;
-    private final int maxCountOfIterations = -1;
-    private final long seed = System.currentTimeMillis();
+    private final double EPS = 1e-4;
+    private final int countOfComponents;
+    private final int maxCountOfIterations;
+    private final long seed;
+
+    public GmmTrainer(int countOfComponents, int maxCountOfIterations) {
+        this(countOfComponents, maxCountOfIterations, System.currentTimeMillis());
+    }
+
+    public GmmTrainer(int countOfComponents, int maxCountOfIterations, long seed) {
+        this.countOfComponents = countOfComponents;
+        this.maxCountOfIterations = maxCountOfIterations;
+        this.seed = seed;
+    }
 
     @Override
     public <K, V> GmmModel fit(DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
@@ -180,9 +190,9 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
         return (l, r) -> {
             A.ensure(l != null || r != null, "l != null || r != null");
             if (l == null)
-                return checkList(n, l);
-            if (r == null)
                 return checkList(n, r);
+            if (r == null)
+                return checkList(n, l);
 
             List<Vector> res = new ArrayList<>();
             res.addAll(l);
