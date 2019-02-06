@@ -54,7 +54,7 @@ import static java.util.Collections.emptyIterator;
 /**
  * Sorted index.
  */
-public final class GridMergeIndexSorted extends GridMergeIndex {
+public final class ReduceIndexSorted extends ReduceIndex {
     /** */
     private static final IndexType TYPE = IndexType.createNonUnique(false);
 
@@ -84,7 +84,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     private final Condition notEmpty = lock.newCondition();
 
     /** */
-    private GridResultPage failPage;
+    private ReduceResultPage failPage;
 
     /** */
     private MergeStreamIterator it;
@@ -95,9 +95,9 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
      * @param name Index name,
      * @param cols Columns.
      */
-    public GridMergeIndexSorted(
+    public ReduceIndexSorted(
         GridKernalContext ctx,
-        GridMergeTable tbl,
+        ReduceTable tbl,
         String name,
         IndexColumn[] cols
     ) {
@@ -132,7 +132,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override protected void addPage0(GridResultPage page) {
+    @Override protected void addPage0(ReduceResultPage page) {
         if (page.isFail()) {
             lock.lock();
 
@@ -295,7 +295,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     /**
      * Row stream.
      */
-    private final class RowStream implements Pollable<GridResultPage> {
+    private final class RowStream implements Pollable<ReduceResultPage> {
         /** */
         Iterator<Value[]> iter = emptyIterator();
 
@@ -303,12 +303,12 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
         Row cur;
 
         /** */
-        GridResultPage nextPage;
+        ReduceResultPage nextPage;
 
         /**
          * @param page Page.
          */
-        private void addPage(GridResultPage page) {
+        private void addPage(ReduceResultPage page) {
             assert !page.isFail();
 
             if (page.isLast() && page.rowsInPage() == 0)
@@ -330,7 +330,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
         }
 
         /** {@inheritDoc} */
-        @Override public GridResultPage poll(long timeout, TimeUnit unit) throws InterruptedException {
+        @Override public ReduceResultPage poll(long timeout, TimeUnit unit) throws InterruptedException {
             long nanos = unit.toNanos(timeout);
 
             lock.lock();
@@ -340,7 +340,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
                     if (failPage != null)
                         return failPage;
 
-                    GridResultPage page = nextPage;
+                    ReduceResultPage page = nextPage;
 
                     if (page != null) {
                         // isLast && !isDummyLast
