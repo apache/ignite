@@ -2152,6 +2152,7 @@ export class NotebookCtrl {
         this.offTransitions = $transitions.onBefore({from: 'base.sql.notebook'}, ($transition$) => {
             const options = $transition$.options();
 
+            // Skip query closing in case of auto redirection on state change.
             if (options.redirectedFrom)
                 return true;
 

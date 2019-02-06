@@ -45,6 +45,11 @@ const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
 const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
 const COLLECT_BY_CACHE_GROUPS_SINCE = '2.7.0';
 
+/**
+ * Query execution result.
+ * @typedef {{responseNodeId: String, queryId: String, columns: String[], rows: {Object[][]}, hasMore: Boolean, duration: Number}} VisorQueryResult
+ */
+
 /** Reserved cache names */
 const RESERVED_CACHE_NAMES = [
     'ignite-hadoop-mr-sys-cache',
@@ -692,7 +697,7 @@ export default class AgentManager {
      * @param {Number} pageSize
      * @param {Boolean} [lazy] query flag.
      * @param {Boolean} [collocated] Collocated query.
-     * @returns {Promise.<{{responseNodeId: String, queryId: String, columns: String[], rows: {List.<Object[]>}, hasMore: Boolean, duration: Number}}>} Query execution result.
+     * @returns {Promise.<VisorQueryResult>} Query execution result.
      */
     querySql({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy = false, collocated = false}) {
         if (this.available(IGNITE_2_0)) {
@@ -735,7 +740,7 @@ export default class AgentManager {
      * @param {String} nid Node id.
      * @param {String} queryId Query ID.
      * @param {Number} pageSize
-     * @returns {Promise.<{{responseNodeId: String, queryId: String, columns: String[], rows: {List.<Object[]>}, hasMore: Boolean, duration: Number}}>} Query execution result.
+     * @returns {Promise.<VisorQueryResult>} Query execution result.
      */
     queryFetchFistsPage(nid, queryId, pageSize) {
         return this.visorTask('queryFetchFirstPage', nid, queryId, pageSize).then(({error, result}) => {
@@ -750,7 +755,7 @@ export default class AgentManager {
      * @param {String} nid Node id.
      * @param {Number} queryId
      * @param {Number} pageSize
-     * @returns {Promise.<{{responseNodeId: String, queryId: String, columns: String[], rows: {List.<Object[]>}, hasMore: Boolean, duration: Number}}>} Query execution result.
+     * @returns {Promise.<VisorQueryResult>} Query execution result.
      */
     queryNextPage(nid, queryId, pageSize) {
         if (this.available(IGNITE_2_0))
@@ -782,7 +787,7 @@ export default class AgentManager {
      * @param {Boolean} near Scan near cache.
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {Number} pageSize Page size.
-     * @returns {Promise.<{{responseNodeId: String, queryId: String, columns: String[], rows: {List.<Object[]>}, hasMore: Boolean, duration: Number}}>} Query execution result.
+     * @returns {Promise.<VisorQueryResult>} Query execution result.
      */
     queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize}) {
         if (this.available(IGNITE_2_0)) {
