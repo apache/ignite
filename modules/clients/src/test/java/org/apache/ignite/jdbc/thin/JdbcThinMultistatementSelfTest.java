@@ -134,9 +134,8 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
                 p.setString(4, gabName);
                 p.setInt(5, delYounger);
 
-                p.executeUpdate();
+                assertFalse("Expected, that first result is an update count.", p.execute());
 
-                /*
                 assertTrue("Expected update count of the INSERT.", p.getUpdateCount() != -1);
                 assertTrue("Expected update count of the BEGIN", p.getUpdateCount() != -1);
                 assertTrue("Expected update count of the UPDATE", p.getUpdateCount() != -1);
@@ -147,7 +146,6 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
 
                 assertFalse("There should have been no results.", p.getMoreResults());
                 assertFalse("There should have been no update results.", p.getUpdateCount() != -1);
-                */
             }
 
             try (PreparedStatement sel = c.prepareStatement("SELECT * FROM TEST_TX ORDER BY ID;")) {
