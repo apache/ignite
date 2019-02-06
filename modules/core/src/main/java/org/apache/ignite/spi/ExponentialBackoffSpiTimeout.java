@@ -132,7 +132,7 @@ public class ExponentialBackoffSpiTimeout {
         if (remainingTime <= 0)
             throw new IgniteSpiOperationTimeoutException("Network operation timed out [timeout = " +this +"]");
 
-        return (int) Math.min((int) currHandshakeTimeout, remainingTime);
+        return Math.min((int) currHandshakeTimeout, remainingTime);
     }
 
     /**
