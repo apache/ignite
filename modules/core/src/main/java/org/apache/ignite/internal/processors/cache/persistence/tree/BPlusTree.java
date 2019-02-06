@@ -294,7 +294,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 // in case of cnt = 0 we end up in 'not found' branch below with idx being 0 after fix() adjustment
             }
             else {
-                idx = g.doFindInsertionPoint(lvl, io, pageAddr, cnt);
+                idx = g.findInsertionPointx(lvl, io, pageAddr, cnt);
 
                 // If this flag was not reset in the call above, then we have to retry higher.
                 if (g.gettingHigh)
@@ -1808,9 +1808,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return {@code True} if removed row.
      */
     public final boolean removex(L row) throws IgniteCheckedException {
-        Boolean res = (Boolean)doRemove(new Remove(row, false));
+        Remove r = new Remove(row, false);
 
-        return res == Boolean.TRUE;
+        doRemove(r);
+
+        return r.isRemoved();
     }
 
     /**
@@ -2914,9 +2916,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return Insertion point.
          * @throws IgniteCheckedException If failed.
          */
-        final int doFindInsertionPoint(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
+        final int findInsertionPointx(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
             return gettingHigh ?
-                doFindInsertionPointGettingHigh(lvl, io, pageAddr, cnt) :
+                findInsertionPointGettingHigh(lvl, io, pageAddr, cnt) :
                 findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
         }
 
@@ -2929,7 +2931,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param cnt Row count.
          * @return Insertion point.
          */
-        private int doFindInsertionPointGettingHigh(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
+        private int findInsertionPointGettingHigh(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
             int idx;
 
             if (cnt == 0)
@@ -4238,7 +4240,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** {@inheritDoc} */
         @Override boolean nextRow(Result res) {
-            return switchToNextRow(res, sortedRows);
+            if (!switchToNextRow(res, sortedRows))
+                return false;
+
+            // Reset state.
+            rmvd = null;
+            needReplaceInner = FALSE;
+            needMergeEmptyBranch = FALSE;
+
+            return true;
         }
 
         /** {@inheritDoc} */
@@ -4246,13 +4256,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         @Override void finish() {
             super.finish();
 
+            // Collect the result.
             T res;
 
             if (needOld)
                 res = rmvd;
             else {
-                // Dirty trick to convert boolean to T.
-                Boolean x = rmvd == Boolean.TRUE;
+                // Dirty hack to convert boolean to T.
+                Boolean x = isRemoved();
                 res = (T)x;
             }
 
@@ -4401,7 +4412,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @return {@code true} If already removed from leaf.
          */
-        private boolean isRemoved() {
+        boolean isRemoved() {
             return rmvd != null;
         }
 
