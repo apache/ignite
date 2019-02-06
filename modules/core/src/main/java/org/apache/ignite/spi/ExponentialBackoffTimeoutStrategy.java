@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
 import java.util.Date;
 
 /**
@@ -100,14 +99,14 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
 
         this.reconCnt = reconCnt;
 
-        start = U.currentTimeMillis();
+        start = System.currentTimeMillis();
     }
 
     /**
      *  @return Minimum between current timeout and time remaining to total timeout.
      * */
     @Override public long currentTimeout() throws IgniteSpiOperationTimeoutException {
-        long remainingTime = remainingTime(U.currentTimeMillis());
+        long remainingTime = remainingTime(System.currentTimeMillis());
 
         if (remainingTime <= 0)
             throw new IgniteSpiOperationTimeoutException("Operation timed out [startTimeout = " +this +"]");
@@ -140,7 +139,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
      * @return True if startTimeout enabled.
      */
     @Override public boolean checkTimeout(long timeInFut) {
-        return remainingTime(U.currentTimeMillis() + timeInFut) <= 0;
+        return remainingTime(System.currentTimeMillis() + timeInFut) <= 0;
     }
 
     /** {@inheritDoc} */
