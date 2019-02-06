@@ -15,24 +15,6 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep;
+import {Selector} from 'testcafe';
 
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-
-/**
- * Mapper fake reservation object for replicated caches.
- */
-class MapReplicatedReservation implements GridReservable {
-    /** */
-    static final MapReplicatedReservation INSTANCE = new MapReplicatedReservation();
-
-    /** {@inheritDoc} */
-    @Override public boolean reserve() {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void release() {
-        throw new IllegalStateException();
-    }
-}
+export const noDataCmp = Selector('no-data');

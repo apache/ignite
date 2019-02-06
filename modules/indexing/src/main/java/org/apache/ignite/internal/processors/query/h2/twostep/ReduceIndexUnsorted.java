@@ -42,12 +42,12 @@ import org.h2.value.Value;
 /**
  * Unsorted merge index.
  */
-public final class GridMergeIndexUnsorted extends GridMergeIndex {
+public final class ReduceIndexUnsorted extends ReduceIndex {
     /** */
     private static final IndexType TYPE = IndexType.createScan(false);
 
     /** */
-    private final PollableQueue<GridResultPage> queue = new PollableQueue<>();
+    private final PollableQueue<ReduceResultPage> queue = new PollableQueue<>();
 
     /** */
     private final AtomicInteger activeSources = new AtomicInteger(-1);
@@ -60,7 +60,7 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
      * @param tbl  Table.
      * @param name Index name.
      */
-    public GridMergeIndexUnsorted(GridKernalContext ctx, GridMergeTable tbl, String name) {
+    public ReduceIndexUnsorted(GridKernalContext ctx, ReduceTable tbl, String name) {
         super(ctx, tbl, name, TYPE, IndexColumn.wrap(tbl.getColumns()));
     }
 
@@ -68,14 +68,14 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
      * @param ctx Context.
      * @return Dummy index instance.
      */
-    public static GridMergeIndexUnsorted createDummy(GridKernalContext ctx) {
-        return new GridMergeIndexUnsorted(ctx);
+    public static ReduceIndexUnsorted createDummy(GridKernalContext ctx) {
+        return new ReduceIndexUnsorted(ctx);
     }
 
     /**
      * @param ctx Context.
      */
-    private GridMergeIndexUnsorted(GridKernalContext ctx) {
+    private ReduceIndexUnsorted(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -100,7 +100,7 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override protected void addPage0(GridResultPage page) {
+    @Override protected void addPage0(ReduceResultPage page) {
         assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
 
         // Do not add empty page to avoid premature stream termination.

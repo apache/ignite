@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2V
 /**
  * Page result.
  */
-public class GridResultPage {
+public class ReduceResultPage {
     /** */
     private final UUID src;
 
@@ -62,7 +62,7 @@ public class GridResultPage {
      * @param res Response.
      */
     @SuppressWarnings("unchecked")
-    public GridResultPage(final GridKernalContext ctx, UUID src, GridQueryNextPageResponse res) {
+    public ReduceResultPage(final GridKernalContext ctx, UUID src, GridQueryNextPageResponse res) {
         assert src != null;
 
         this.src = src;
@@ -161,7 +161,7 @@ public class GridResultPage {
      * @param last Last page for a source.
      * @return {@code this}.
      */
-    public GridResultPage setLast(boolean last) {
+    public ReduceResultPage setLast(boolean last) {
         this.last = last;
 
         return this;
@@ -217,6 +217,6 @@ public class GridResultPage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridResultPage.class, this);
+        return S.toString(ReduceResultPage.class, this);
     }
 }

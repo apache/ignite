@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtracto
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
+import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -251,6 +252,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private DdlStatementsProcessor ddlProc;
+
+    /** Partition reservation manager. */
+    private PartitionReservationManager partReservationMgr;
 
     /** Partition extractor. */
     private PartitionExtractor partExtractor;
@@ -2379,6 +2383,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         this.ctx = ctx;
 
+        partReservationMgr = new PartitionReservationManager(ctx);
+
         connMgr = new ConnectionManager(ctx);
 
         schemaMgr = new SchemaManager(ctx, connMgr);
@@ -2586,7 +2592,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String cacheName = cacheInfo.name();
 
-        mapQryExec.onCacheStop(cacheName);
+        partReservationMgr.onCacheStop(cacheName);
         dmlProc.onCacheStop(cacheName);
 
         // Drop schema (needs to be called after callback to DML processor because the latter depends on schema).
@@ -2721,6 +2727,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public PartitionExtractor partitionExtractor() {
         return partExtractor;
+    }
+
+    /**
+     * @return Partition reservation manager.
+     */
+    public PartitionReservationManager partitionReservationManager() {
+        return partReservationMgr;
     }
 
     /**
