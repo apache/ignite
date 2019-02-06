@@ -64,6 +64,13 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
     }
 
     /** */
+    @Test
+    public void maxBackoffTimeout() {
+        assertEquals(8_000, ExponentialBackoffTimeoutStrategy.maxBackoffTimeout(1000, 5000, 3, 2.0));
+        assertEquals(45_000, ExponentialBackoffTimeoutStrategy.maxBackoffTimeout(5_000, 60_000, 3, 2.0));
+    }
+
+    /** */
     private void checkTimeout(
         ExponentialBackoffTimeoutStrategy helper,
         long timeout

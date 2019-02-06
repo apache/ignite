@@ -46,7 +46,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
     /** Current startTimeout, ms. */
     private long currTimeout;
 
-    /** Backoff coeffient to calculate next startTimeout.*/
+    /** Backoff coeffient to calculate next timeout.*/
     private double backoffCoeff;
 
     /** Compute expected backoffConnTimeout delay based on startTimeout, maxTimeout and reconCnt and backoff coeffient. */
@@ -54,7 +54,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
             long startTimeout,
             long maxTimeout,
             long reconCnt,
-            long backoffCoeff
+            double backoffCoeff
     ) {
         long maxBackoffTimeout = startTimeout;
 
