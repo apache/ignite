@@ -25,7 +25,6 @@ import java.sql.Statement;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,6 +44,11 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
      */
     @Before
     public void setupTables() throws Exception {
+        execute("DROP TABLE IF EXISTS TEST_TX; " +
+            "DROP TABLE IF EXISTS public.transactions; " +
+            "DROP TABLE IF EXISTS ONE;" +
+            "DROP TABLE IF EXISTS TWO;");
+
         execute("CREATE TABLE TEST_TX " +
             "(ID INT PRIMARY KEY, AGE INT, NAME VARCHAR) " +
             "WITH \"atomicity=transactional_snapshot\";");
@@ -54,14 +58,6 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
             "(2, 43, 'Valery'), " +
             "(3, 25, 'Michel'), " +
             "(4, 19, 'Nick');");
-    }
-
-    @After
-    public void dropTables () throws Exception {
-        execute("DROP TABLE IF EXISTS TEST_TX; " +
-            "DROP TABLE IF EXISTS public.transactions; " +
-            "DROP TABLE IF EXISTS ONE;" +
-            "DROP TABLE IF EXISTS TWO;");
     }
 
 
@@ -108,9 +104,11 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
             "UPDATE ONE SET VAL = 'SOME'");
     }
 
+    /**
+     * Check multistatement sql with parameters.
+     */
     @Test
-    //Todo: test with arguments (?)
-    public void testMultiStatementTx() throws Exception {
+    public void testMultiStatementTxWithParams() throws Exception {
         int leoAge = 28;
 
         String nickolas = "Nickolas";
