@@ -67,7 +67,7 @@
         <dependency>
             <groupId>org.ow2.jotm</groupId>
             <artifactId>jotm-core</artifactId>
-            <version>2.2.3</version>
+            <version>${jotm.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -112,7 +112,7 @@
         <dependency>
             <groupId>org.jboss.spec.javax.rmi</groupId>
             <artifactId>jboss-rmi-api_1.0_spec</artifactId>
-            <version>1.0.6.Final</version>
+            <version>${jboss.rmi.version}</version>
             <scope>test</scope>
         </dependency>
 
