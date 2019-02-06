@@ -19,17 +19,17 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processor.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processor.security.cache.EntryProcessorPermissionCheckTest;
-import org.apache.ignite.internal.processor.security.cache.LoadCachePermissionCheckTest;
+import org.apache.ignite.internal.processor.security.cache.CacheLoadPermissionCheckTest;
 import org.apache.ignite.internal.processor.security.cache.ScanQueryPermissionCheckTest;
 import org.apache.ignite.internal.processor.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
-import org.apache.ignite.internal.processor.security.cache.closure.LoadCacheRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processor.security.cache.closure.CacheLoadRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processor.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processor.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processor.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processor.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processor.security.compute.closure.DistributedClosureRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processor.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
-import org.apache.ignite.internal.processor.security.datastreamer.DataStreamPermissionCheckTest;
+import org.apache.ignite.internal.processor.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processor.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processor.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.junit.runner.RunWith;
@@ -41,9 +41,9 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     CacheOperationPermissionCheckTest.class,
-    DataStreamPermissionCheckTest.class,
+    DataStreamerPermissionCheckTest.class,
     ScanQueryPermissionCheckTest.class,
-    LoadCachePermissionCheckTest.class,
+    CacheLoadPermissionCheckTest.class,
     EntryProcessorPermissionCheckTest.class,
     ComputePermissionCheckTest.class,
 
@@ -53,7 +53,7 @@ import org.junit.runners.Suite;
     ScanQueryRemoteSecurityContextCheckTest.class,
     EntryProcessorRemoteSecurityContextCheckTest.class,
     DataStreamerRemoteSecurityContextCheckTest.class,
-    LoadCacheRemoteSecurityContextCheckTest.class,
+    CacheLoadRemoteSecurityContextCheckTest.class,
     ThinClientPermissionCheckTest.class,
     MessagingRemoteSecurityContextCheckTest.class,
 })
