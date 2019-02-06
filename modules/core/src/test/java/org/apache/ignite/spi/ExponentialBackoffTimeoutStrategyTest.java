@@ -76,7 +76,7 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
         long start = System.currentTimeMillis();
 
         while (true) {
-            boolean timedOut = helper.checkTimeout(0);
+            boolean timedOut = helper.checkTimeout();
 
             if (timedOut) {
                 assertTrue( (System.currentTimeMillis() + 100 - start) >= timeout);

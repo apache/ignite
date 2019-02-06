@@ -3449,7 +3449,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 ", addr=" + addr + ", err=" + e + ']'
                         );
 
-                    if (connTimeoutStgy.checkTimeout(0)) {
+                    if (connTimeoutStgy.checkTimeout()) {
                         U.warn(log, "Handshake timed out (will stop attempts to perform the handshake) " +
                             "[node=" + node.id() + ", connTimeoutStrategy=" + connTimeoutStgy +
                             ", err=" + e.getMessage() + ", addr=" + addr +
@@ -3486,7 +3486,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
 
                     // check if timeout occured in case of unrecoverable exception
-                    if (connTimeoutStgy.checkTimeout(0)) {
+                    if (connTimeoutStgy.checkTimeout()) {
                         U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
                                 "[node=" + node.id() + ", connTimeoutStgy=" + connTimeoutStgy +
                                 ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +

@@ -36,4 +36,13 @@ public interface TimeoutStrategy {
      * @return {@code True} if total timeout reached.
      */
     public boolean checkTimeout(long timeInFut);
+
+    /**
+     * Check if total timeout will be reached by now.
+     *
+     * @return {@code True} if total timeout reached.
+     */
+    public default boolean checkTimeout() {
+        return checkTimeout(0);
+    }
 }

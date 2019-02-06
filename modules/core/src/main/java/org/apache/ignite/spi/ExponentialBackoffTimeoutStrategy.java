@@ -18,6 +18,7 @@
 package org.apache.ignite.spi;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Strategy which incorporates retriable network operation, handling of totalTimeout logic.
@@ -109,12 +110,12 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
 
         this.reconCnt = reconCnt;
 
-        start = System.currentTimeMillis();
+        start = U.currentTimeMillis();
     }
 
     /** {@inheritDoc} */
     @Override public long getAndCalculateNextTimeout() throws IgniteSpiOperationTimeoutException {
-        long remainingTime = remainingTime(System.currentTimeMillis());
+        long remainingTime = remainingTime(U.currentTimeMillis());
 
         if (remainingTime <= 0)
             throw new IgniteSpiOperationTimeoutException("Operation timed out [startTimeout = " +this +"]");
@@ -142,7 +143,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
      * @return {@code True} if startTimeout enabled.
      */
     @Override public boolean checkTimeout(long timeInFut) {
-        return remainingTime(System.currentTimeMillis() + timeInFut) <= 0;
+        return remainingTime(U.currentTimeMillis() + timeInFut) <= 0;
     }
 
     /** {@inheritDoc} */
