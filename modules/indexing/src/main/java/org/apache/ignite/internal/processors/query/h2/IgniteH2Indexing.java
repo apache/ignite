@@ -1450,29 +1450,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Long qryId = registerRunningQuery(schemaName, null, qry.getSql(), qry.isLocal(), true);
 
         try {
-            if (cmd instanceof SqlCreateIndexCommand
-                || cmd instanceof SqlDropIndexCommand
-                || cmd instanceof SqlAlterTableCommand
-                || cmd instanceof SqlCreateUserCommand
-                || cmd instanceof SqlAlterUserCommand
-                || cmd instanceof SqlDropUserCommand)
-                return Collections.singletonList(ddlProc.runDdlStatement(qry.getSql(), cmd));
-            else if (cmd instanceof SqlSetStreamingCommand) {
-                if (cliCtx == null)
-                    throw new IgniteSQLException("SET STREAMING command can only be executed from JDBC or ODBC driver.");
+            FieldsQueryCursor<List<?>> cur;
 
-                SqlSetStreamingCommand setCmd = (SqlSetStreamingCommand)cmd;
-
-                if (setCmd.isTurnOn())
-                    cliCtx.enableStreaming(setCmd.allowOverwrite(), setCmd.flushFrequency(),
-                        setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations(), setCmd.isOrdered());
-                else
-                    cliCtx.disableStreaming();
-            }
+            if (DdlStatementsProcessor.isDdlCommand(cmd))
+                cur = ddlProc.runDdlStatement(qry.getSql(), cmd);
+            else if (cmd instanceof SqlSetStreamingCommand)
+                cur = processSetStreamingCommand((SqlSetStreamingCommand)cmd, cliCtx);
             else
-                processTxCommand(cmd, qry);
+                cur = processTxCommand(cmd, qry);
 
-            return Collections.singletonList(H2Utils.zeroCursor());
+            return Collections.singletonList(cur);
         }
         catch (IgniteCheckedException e) {
             fail = true;
@@ -1486,12 +1473,38 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Process SET STREAMING command.
+     *
+     * @param cmd Command.
+     * @param cliCtx Client context.
+     * @return Cursor.
+     */
+    private FieldsQueryCursor<List<?>> processSetStreamingCommand(SqlSetStreamingCommand cmd,
+        @Nullable SqlClientContext cliCtx) {
+        if (cliCtx == null)
+            throw new IgniteSQLException("SET STREAMING command can only be executed from JDBC or ODBC driver.");
+
+        if (cmd.isTurnOn())
+            cliCtx.enableStreaming(
+                cmd.allowOverwrite(),
+                cmd.flushFrequency(),
+                cmd.perNodeBufferSize(),
+                cmd.perNodeParallelOperations(),
+                cmd.isOrdered()
+            );
+        else
+            cliCtx.disableStreaming();
+
+        return H2Utils.zeroCursor();
+    }
+
+    /**
      * Check expected statement type (when it is set by JDBC) and given statement type.
      *
      * @param qry Query.
      * @param isQry {@code true} for select queries, otherwise (DML/DDL queries) {@code false}.
      */
-    private void checkQueryType(SqlFieldsQuery qry, boolean isQry) {
+    private static void checkQueryType(SqlFieldsQuery qry, boolean isQry) {
         Boolean qryFlag = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx) qry).isQuery() : null;
 
         if (qryFlag != null && qryFlag != isQry)
@@ -1505,7 +1518,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @throws IgniteCheckedException if failed.
      */
-    private void processTxCommand(SqlCommand cmd, SqlFieldsQuery qry) throws IgniteCheckedException {
+    private FieldsQueryCursor<List<?>> processTxCommand(SqlCommand cmd, SqlFieldsQuery qry)
+        throws IgniteCheckedException {
         NestedTxMode nestedTxMode = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx)qry).getNestedTxMode() :
             NestedTxMode.DEFAULT;
 
@@ -1557,6 +1571,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (tx != null)
                 doRollback(tx);
         }
+
+        return H2Utils.zeroCursor();
     }
 
     /**
@@ -3531,7 +3547,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         try {
             if (cmd instanceof SqlBulkLoadCommand)
-                return dmlProcessBulkLoadCommand((SqlBulkLoadCommand)cmd, qryId);
+                return processBulkLoadCommand((SqlBulkLoadCommand)cmd, qryId);
             else
                 throw new IgniteSQLException("Unsupported DML operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -3557,8 +3573,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return The context (which is the result of the first request/response).
      * @throws IgniteCheckedException If something failed.
      */
-    // TODO: Move to separate processor?
-    private FieldsQueryCursor<List<?>> dmlProcessBulkLoadCommand(SqlBulkLoadCommand cmd, Long qryId)
+    private FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd, Long qryId)
         throws IgniteCheckedException {
         if (cmd.packetSize() == null)
             cmd.packetSize(BulkLoadAckClientParameters.DFLT_PACKET_SIZE);
