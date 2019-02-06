@@ -22,6 +22,9 @@ package org.apache.ignite.transactions;
  * E.g. rolledback due to some reason.
  */
 public class TransactionAlreadyCompletedException extends TransactionException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates new exception with given error message.
      *
