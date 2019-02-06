@@ -31,9 +31,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageI
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
@@ -673,9 +673,9 @@ public class MvccUtils {
      * @param tx Transaction.
      * @return Checked transaction.
      */
-    public static GridNearTxLocal checkActive(GridNearTxLocal tx) {
+    public static GridNearTxLocal checkActive(GridNearTxLocal tx) throws IgniteTxAlreadyCompletedCheckedException {
         if (tx != null && tx.state() != TransactionState.ACTIVE)
-            throw new TransactionAlreadyCompletedException("Transaction is already completed.");
+            throw new IgniteTxAlreadyCompletedCheckedException("Transaction is already completed.");
 
         return tx;
     }

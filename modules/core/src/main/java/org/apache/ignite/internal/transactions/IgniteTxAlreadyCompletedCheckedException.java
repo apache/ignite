@@ -15,23 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.transactions;
 
 /**
  * Exception thrown whenever Mvcc transaction has been finished before operation finished.
  * E.g. rollback due to some reason.
  */
-public class TransactionAlreadyCompletedException extends TransactionException {
+public class IgniteTxAlreadyCompletedCheckedException extends TransactionCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new exception with given error message and optional nested exception.
+     * Creates new exception with given error message.
      *
      * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
      */
-    public TransactionAlreadyCompletedException(String msg, Throwable cause) {
-        super(cause);
+    public IgniteTxAlreadyCompletedCheckedException(String msg) {
+        super(msg);
     }
 }
