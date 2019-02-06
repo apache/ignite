@@ -21,7 +21,7 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
+import org.apache.ignite.internal.processor.security.AbstractCacheResolveSecurityTest;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -33,7 +33,7 @@ import org.junit.runners.JUnit4;
  * Testing permissions when the filter of ScanQuery is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class ScanQueryCacheSecurityTest extends AbstractCacheSecurityTest {
+public class ScanQueryCacheResolveSecurityTest extends AbstractCacheResolveSecurityTest {
     /**
      *
      */

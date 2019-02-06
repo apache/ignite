@@ -25,7 +25,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
+import org.apache.ignite.internal.processor.security.AbstractResolveSecurityTest;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.junit.Test;
@@ -36,7 +36,7 @@ import org.junit.runners.JUnit4;
  * Testing permissions when the message listener is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class IgniteMessagingResolveSecurityContextTest extends AbstractResolveSecurityContextTest {
+public class IgniteMessagingResolveSecurityTest extends AbstractResolveSecurityTest {
     /** Barrier. */
     private static final CyclicBarrier BARRIER = new CyclicBarrier(3);
 

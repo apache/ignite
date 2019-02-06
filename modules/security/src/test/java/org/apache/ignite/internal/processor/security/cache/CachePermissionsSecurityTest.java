@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processor.security.cache;
 
 import java.util.Collections;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processor.security.AbstractCachePermissionTest;
+import org.apache.ignite.internal.processor.security.AbstractPermissionSecurityTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -33,7 +33,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
  * Test CRUD cache permissions.
  */
 @RunWith(JUnit4.class)
-public class CachePermissionsTest extends AbstractCachePermissionTest {
+public class CachePermissionsSecurityTest extends AbstractPermissionSecurityTest {
     /**
      * @throws Exception If fail.
      */

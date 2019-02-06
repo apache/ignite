@@ -38,7 +38,7 @@ import org.junit.Test;
 /**
  * Testing permissions when the compute task is executed cache operations on remote node.
  */
-public class ComputeTaskSecurityTest extends AbstractComputeTaskSecurityTest {
+public class ComputeTaskComputeResolveSecurityTest extends AbstractComputeResolveSecurityTest {
     /**
      *
      */

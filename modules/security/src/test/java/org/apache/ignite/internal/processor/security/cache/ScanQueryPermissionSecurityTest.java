@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processor.security.cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.internal.processor.security.AbstractCachePermissionTest;
+import org.apache.ignite.internal.processor.security.AbstractPermissionSecurityTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,7 +32,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
  * Test cache permission for invoking of Scan Query.
  */
 @RunWith(JUnit4.class)
-public class ScanQueryCachePermissionTest extends AbstractCachePermissionTest {
+public class ScanQueryPermissionSecurityTest extends AbstractPermissionSecurityTest {
     /**
      * @throws Exception If fail.
      */

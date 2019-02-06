@@ -21,12 +21,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
+import org.apache.ignite.internal.processor.security.AbstractResolveSecurityTest;
 
 /**
  * Abstract compute security test.
  */
-public abstract class AbstractComputeTaskSecurityTest extends AbstractResolveSecurityContextTest {
+public abstract class AbstractComputeResolveSecurityTest extends AbstractResolveSecurityTest {
     /** Client node. */
     protected IgniteEx clntTransition;
 

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processor.security;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -32,7 +34,13 @@ import static org.junit.Assert.assertThat;
 /**
  *
  */
-public abstract class AbstractPermissionTest extends AbstractSecurityTest {
+public abstract class AbstractPermissionSecurityTest extends AbstractSecurityTest {
+    /** Cache name for tests. */
+    protected static final String CACHE_NAME = "TEST_CACHE";
+
+    /** Forbidden cache. */
+    protected static final String FORBIDDEN_CACHE = "FORBIDDEN_TEST_CACHE";
+
     /** Values. */
     protected AtomicInteger values = new AtomicInteger(0);
 
@@ -41,6 +49,22 @@ public abstract class AbstractPermissionTest extends AbstractSecurityTest {
         super.beforeTestsStarted();
 
         startGrid("server", allowAllPermissionSet()).cluster().active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setCacheConfiguration(getCacheConfigurations());
+    }
+
+    /**
+     * @return Array of cache configurations.
+     */
+    protected CacheConfiguration[] getCacheConfigurations() {
+        return new CacheConfiguration[] {
+            new CacheConfiguration().setName(CACHE_NAME),
+            new CacheConfiguration().setName(FORBIDDEN_CACHE)
+        };
     }
 
     /**

@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.G;
 /**
  *
  */
-public abstract class AbstractCacheSecurityTest extends AbstractResolveSecurityContextTest {
+public abstract class AbstractCacheResolveSecurityTest extends AbstractResolveSecurityTest {
     /** Cache name for tests. */
     protected static final String CACHE_NAME = "TEST_CACHE";
 
