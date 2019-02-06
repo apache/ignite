@@ -19,6 +19,8 @@ package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -107,19 +109,36 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
     }
 
     @Test
+    //Todo: test with arguments (?)
     public void testMultiStatementTx() throws Exception {
+        int leoAge = 28;
+
+        String nickolas = "Nickolas";
+
+        int gabAge = 84;
+        String gabName = "Gab";
+
+        int delYounger = 19;
+
         String complexQuery =
-            "INSERT INTO TEST_TX VALUES (5, 28, 'Leo'); " +
+            "INSERT INTO TEST_TX VALUES (5, ?, 'Leo'); " +   // 1
                 "BEGIN; " +
-                "UPDATE TEST_TX  SET name = 'Nickolas' WHERE name = 'Nick';" +
-                "INSERT INTO TEST_TX VALUES (6, 84, 'Gab'); " +
-                "DELETE FROM TEST_TX WHERE age < 19; " +
+                "UPDATE TEST_TX  SET name = ? WHERE name = 'Nick';" +  // 2
+                "INSERT INTO TEST_TX VALUES (6, ?, ?); " +   // 3, 4
+                "DELETE FROM TEST_TX WHERE age < ?; " +   // 5
                 "COMMIT;";
 
         try (Connection c = GridTestUtils.connect(grid(0), null)) {
             try (PreparedStatement p = c.prepareStatement(complexQuery)) {
-                p.execute();
+                p.setInt(1, leoAge);
+                p.setString(2, nickolas);
+                p.setInt(3, gabAge);
+                p.setString(4, gabName);
+                p.setInt(5, delYounger);
 
+                p.executeUpdate();
+
+                /*
                 assertTrue("Expected update count of the INSERT.", p.getUpdateCount() != -1);
                 assertTrue("Expected update count of the BEGIN", p.getUpdateCount() != -1);
                 assertTrue("Expected update count of the UPDATE", p.getUpdateCount() != -1);
@@ -130,7 +149,43 @@ public class JdbcThinMultistatementSelfTest extends GridCommonAbstractTest {
 
                 assertFalse("There should have been no results.", p.getMoreResults());
                 assertFalse("There should have been no update results.", p.getUpdateCount() != -1);
+                */
+            }
+
+            try (PreparedStatement sel = c.prepareStatement("SELECT * FROM TEST_TX ORDER BY ID;")) {
+                try (ResultSet pers = sel.executeQuery()) {
+                    assertTrue(pers.next());
+                    assertEquals(43, age(pers));
+                    assertEquals("Valery", name(pers));
+
+                    assertTrue(pers.next());
+                    assertEquals(25, age(pers));
+                    assertEquals("Michel", name(pers));
+
+                    assertTrue(pers.next());
+                    assertEquals(19, age(pers));
+                    assertEquals("Nickolas", name(pers));
+
+                    assertTrue(pers.next());
+                    assertEquals(28, age(pers));
+                    assertEquals("Leo", name(pers));
+
+                    assertTrue(pers.next());
+                    assertEquals(84, age(pers));
+                    assertEquals("Gab", name(pers));
+
+                    assertFalse(pers.next());
+                }
             }
         }
     }
+
+    private static String name(ResultSet rs) throws SQLException {
+        return rs.getString("NAME");
+    }
+
+    private static int age(ResultSet rs) throws SQLException {
+        return rs.getInt("AGE");
+    }
+
 }
