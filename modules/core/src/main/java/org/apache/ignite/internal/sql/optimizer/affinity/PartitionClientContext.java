@@ -31,14 +31,8 @@ public class PartitionClientContext {
      * @return Partition or {@code null} if cannot be resolved.
      */
     @Nullable public Integer partition(Object arg, @Nullable PartitionParameterType typ, String cacheName) {
-        try {
-            Object convertedArg = PartitionUtils.convert(arg, typ);
-        }
-        catch (IgniteDataTypeConversionException e) {
-            // TODO: IGNITE-10308: Implement partition resolution logic.
-            // Skip partition awareness phase.
-            return null;
-        }
+
+        PartitionDataTypeUtils.convert(arg, typ);
 
         // TODO: IGNITE-10308: Implement partition resolution logic.
         return null;

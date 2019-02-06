@@ -20,7 +20,6 @@ package org.apache.ignite.internal.sql.optimizer.affinity;
 /**
  * Partition argument type.
  */
-// TODO: If we do not use temporal types for now, then why do we keep them here?
 public enum PartitionParameterType {
     /** Boolean. */
     BOOLEAN,
@@ -49,15 +48,6 @@ public enum PartitionParameterType {
     /** Decimal. */
     DECIMAL,
 
-    /** Date. */
-    DATE,
-
-    /** Time. */
-    TIME,
-
-    /** Timestamp. */
-    TIMESTAMP,
-
     /** UUID. */
-    UUID;
+    UUID
 }

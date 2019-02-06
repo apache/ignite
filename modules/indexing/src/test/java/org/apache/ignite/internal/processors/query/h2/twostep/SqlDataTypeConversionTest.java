@@ -18,18 +18,14 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.Collections;
-import java.util.Date;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.sql.optimizer.affinity.IgniteDataTypeConversionException;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionDataTypeUtils;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterType;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.value.Value;
 import org.junit.Test;
@@ -37,8 +33,7 @@ import org.junit.Test;
 /**
  * Data conversion tests.
  */
-// TODO: No "Ignite" prefix
-public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
+public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
     /** Map to convert <code>PartitionParameterType</code> instances to correspondig java classes. */
     private static final Map<PartitionParameterType, Class<?>> PARAMETER_TYPE_TO_JAVA_CLASS;
 
@@ -60,9 +55,6 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
         paramTypeToJavaCls.put(PartitionParameterType.DOUBLE, Double.class);
         paramTypeToJavaCls.put(PartitionParameterType.STRING, String.class);
         paramTypeToJavaCls.put(PartitionParameterType.DECIMAL, BigDecimal.class);
-        paramTypeToJavaCls.put(PartitionParameterType.DATE, Date.class);
-        paramTypeToJavaCls.put(PartitionParameterType.TIME, Time.class);
-        paramTypeToJavaCls.put(PartitionParameterType.TIMESTAMP, Timestamp.class);
         paramTypeToJavaCls.put(PartitionParameterType.UUID, UUID.class);
 
         PARAMETER_TYPE_TO_JAVA_CLASS = Collections.unmodifiableMap(paramTypeToJavaCls);
@@ -78,9 +70,6 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
         igniteParamTypeToH2ParamType.put(PartitionParameterType.DOUBLE, Value.DOUBLE);
         igniteParamTypeToH2ParamType.put(PartitionParameterType.STRING, Value.STRING);
         igniteParamTypeToH2ParamType.put(PartitionParameterType.DECIMAL, Value.DECIMAL);
-        igniteParamTypeToH2ParamType.put(PartitionParameterType.DATE, Value.DATE);
-        igniteParamTypeToH2ParamType.put(PartitionParameterType.TIME, Value.TIME);
-        igniteParamTypeToH2ParamType.put(PartitionParameterType.TIMESTAMP, Value.TIMESTAMP);
         igniteParamTypeToH2ParamType.put(PartitionParameterType.UUID, Value.UUID);
 
         IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE = Collections.unmodifiableMap(igniteParamTypeToH2ParamType);
@@ -219,8 +208,12 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
 
         checkConvertation("42.4f");
         checkConvertation("0.4d");
+        checkConvertation("12345678901234567890.123456789012345678901d");
 
         checkConvertation("04d17cf3-bc20-4e3d-9ff7-72437cdae227");
+        checkConvertation("04d17cf3bc204e3d9ff772437cdae227");
+
+        checkConvertation("a");
 
         checkConvertation("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
@@ -258,33 +251,14 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertDecimal() throws Exception {
-        checkConvertation(new BigDecimal(42.5));
-        checkConvertation(new BigDecimal(0.5));
+        checkConvertation(new BigDecimal(42.5d));
+        checkConvertation(new BigDecimal(0.5d));
         checkConvertation(new BigDecimal(0));
         checkConvertation(new BigDecimal(1.2345678E7));
+        checkConvertation(BigDecimal.valueOf(12334535345456700.12345634534534578901));
 
         checkConvertation(new BigDecimal(Double.MIN_VALUE));
         checkConvertation(new BigDecimal(Double.MAX_VALUE));
-    }
-
-    /**
-     * Test date conversion.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void convertDate() throws Exception {
-        checkConvertation(new Date());
-    }
-
-    /**
-     * Test time conversion.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void convertTime() throws Exception {
-        checkConvertation(new Time(12345));
     }
 
     /**
@@ -292,10 +266,6 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
-    public void convertTimestamp() throws Exception {
-        checkConvertation(new Timestamp(54321));
-    }
 
     /**
      * Test uuid conversion.
@@ -317,41 +287,30 @@ public class IgniteSqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     private void checkConvertation(Object arg) throws Exception {
         for (PartitionParameterType targetType : PartitionParameterType.values()) {
-            Object convertationRes;
+            Object convertationRes = PartitionDataTypeUtils.convert(arg, targetType);
 
-            try {
-                convertationRes = PartitionUtils.convert(arg, targetType);
-            }
-            catch (IgniteDataTypeConversionException convertaitionException) {
-                if (arg != null && (targetType == PartitionParameterType.TIME ||
-                    targetType == PartitionParameterType.TIMESTAMP || targetType == PartitionParameterType.DATE))
-                    assertTrue(convertaitionException.getMessage().contains("Unable to convert arg"));
-                else {
-                    try {
-                        H2Utils.convert(arg, idx, IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
+            if (PartitionDataTypeUtils.DataTypeConvertationResult.FAILURE == convertationRes) {
+                try {
+                    H2Utils.convert(arg, idx, IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
 
-                        fail("Data conversion failed in Ignite but not in H2.");
-                    }
-                    catch (org.h2.message.DbException h2Exception) {
-                        assertTrue(convertaitionException.getMessage().contains("Unable to convert arg"));
-
-                        assertTrue(h2Exception.getMessage().contains("Numeric value out of range") ||
-                            h2Exception.getMessage().contains("Data conversion error"));
-                    }
-
+                    fail("Data conversion failed in Ignite but not in H2.");
                 }
-                return;
+                catch (org.h2.message.DbException h2Exception) {
+                    assertTrue(h2Exception.getMessage().contains("Numeric value out of range") ||
+                        h2Exception.getMessage().contains("Data conversion error"));
+                }
             }
-
-            Object convertationH2Res = H2Utils.convert(arg, idx,
-                IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
-
-            if (convertationRes == null)
-                assertNull(convertationH2Res);
             else {
-                assertEquals(PARAMETER_TYPE_TO_JAVA_CLASS.get(targetType), convertationRes.getClass());
-                assertEquals(convertationH2Res.getClass(), convertationRes.getClass());
-                assertEquals(convertationH2Res, convertationRes);
+                Object convertationH2Res = H2Utils.convert(arg, idx,
+                    IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
+
+                if (convertationRes == null)
+                    assertNull(convertationH2Res);
+                else {
+                    assertEquals(PARAMETER_TYPE_TO_JAVA_CLASS.get(targetType), convertationRes.getClass());
+                    assertEquals(convertationH2Res.getClass(), convertationRes.getClass());
+                    assertEquals(convertationH2Res, convertationRes);
+                }
             }
         }
     }

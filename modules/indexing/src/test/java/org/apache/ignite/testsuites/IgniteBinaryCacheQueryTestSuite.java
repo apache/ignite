@@ -221,9 +221,9 @@ import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.AndOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.BetweenOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DmlSelectPartitionPruningSelfTest;
-import org.apache.ignite.internal.processors.query.h2.twostep.IgniteSqlDataTypeConversionTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.InOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.JoinPartitionPruningSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.SqlDataTypeConversionTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalSnapshotColumnConstraintTest;
@@ -546,7 +546,7 @@ import org.junit.runners.Suite;
     GridCacheDynamicLoadOnClientTest.class,
     GridCacheDynamicLoadOnClientPersistentTest.class,
 
-    IgniteSqlDataTypeConversionTest.class,
+    SqlDataTypeConversionTest.class,
 
         //Query history.
     SqlQueryHistorySelfTest.class,

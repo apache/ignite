@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
@@ -56,12 +61,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Partition tree extractor.
@@ -674,16 +673,6 @@ public class PartitionExtractor {
 
             case Value.DECIMAL:
                 return PartitionParameterType.DECIMAL;
-
-            // TODO: Remove temporal types
-            case Value.DATE:
-                return PartitionParameterType.DATE;
-
-            case Value.TIME:
-                return PartitionParameterType.TIME;
-
-            case Value.TIMESTAMP:
-                return PartitionParameterType.TIMESTAMP;
 
             case Value.UUID:
                 return PartitionParameterType.UUID;
