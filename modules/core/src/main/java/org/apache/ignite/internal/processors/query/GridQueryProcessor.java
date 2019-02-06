@@ -2043,6 +2043,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Execute update on DHT node (i.e. when it is possible to execute and update on all nodes independently).
      *
      * @param cctx Cache context.
      * @param cacheIds Involved cache ids.
@@ -2059,13 +2060,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Cursor over entries which are going to be changed.
      * @throws IgniteCheckedException If failed.
      */
-    public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] cacheIds,
+    public UpdateSourceIterator<?> executeUpdateSkipReducerTransactional(GridCacheContext<?, ?> cctx, int[] cacheIds,
         int[] parts, String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
         AffinityTopologyVersion topVer, MvccSnapshot mvccSnapshot,
         GridQueryCancel cancel) throws IgniteCheckedException {
         checkxEnabled();
 
-        return idx.prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry, params, flags, pageSize, timeout, topVer, mvccSnapshot, cancel);
+        return idx.executeUpdateSkipReducerTransactional(
+            cctx,
+            cacheIds,
+            parts,
+            schema,
+            qry,
+            params,
+            flags,
+            pageSize,
+            timeout,
+            topVer,
+            mvccSnapshot,
+            cancel
+        );
     }
 
     /**

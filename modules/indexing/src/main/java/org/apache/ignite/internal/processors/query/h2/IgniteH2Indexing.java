@@ -2132,17 +2132,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids,
-        int[] parts, String schema, String qry, Object[] params, int flags,
-        int pageSize, int timeout, AffinityTopologyVersion topVer,
-        MvccSnapshot mvccSnapshot, GridQueryCancel cancel) throws IgniteCheckedException {
-
+    @Override public UpdateSourceIterator<?> executeUpdateSkipReducerTransactional(
+        GridCacheContext<?, ?> cctx,
+        int[] ids,
+        int[] parts,
+        String schema,
+        String qry,
+        Object[] params,
+        int flags,
+        int pageSize,
+        int timeout,
+        AffinityTopologyVersion topVer,
+        MvccSnapshot mvccSnapshot,
+        GridQueryCancel cancel
+    ) throws IgniteCheckedException {
         SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
 
         if (params != null)
             fldsQry.setArgs(params);
 
-        fldsQry.setEnforceJoinOrder(isFlagSet(flags, GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER));
+        fldsQry.setEnforceJoinOrder(U.isFlagSet(flags, GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER));
         fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
         fldsQry.setPageSize(pageSize);
         fldsQry.setLocal(true);
@@ -2150,7 +2159,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         boolean loc = true;
 
-        final boolean replicated = isFlagSet(flags, GridH2QueryRequest.FLAG_REPLICATED);
+        final boolean replicated = U.isFlagSet(flags, GridH2QueryRequest.FLAG_REPLICATED);
 
         GridCacheContext<?, ?> cctx0;
 
@@ -2229,17 +2238,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return plan.iteratorForTransaction(connMgr, cur);
-    }
-
-    /**
-     * Check if flag set.
-     *
-     * @param flags Flags.
-     * @param flag Flag.
-     * @return {@code True} if set.
-     */
-    private boolean isFlagSet(int flags, int flag) {
-        return (flags & flag) == flag;
     }
 
     /**
@@ -2393,7 +2391,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
-    public UpdateResult executeUpdateInSkipReducerMode(
+    public UpdateResult executeUpdateSkipReducer(
         String schemaName,
         SqlFieldsQuery qry,
         IndexingQueryFilter filter,

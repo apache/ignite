@@ -236,7 +236,7 @@ public interface GridQueryIndexing {
      * @return Cursor over entries which are going to be changed.
      * @throws IgniteCheckedException If failed.
      */
-    public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
+    public UpdateSourceIterator<?> executeUpdateSkipReducerTransactional(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
         String schema, String qry, Object[] params, int flags,
         int pageSize, int timeout, AffinityTopologyVersion topVer,
         MvccSnapshot mvccSnapshot, GridQueryCancel cancel) throws IgniteCheckedException;
