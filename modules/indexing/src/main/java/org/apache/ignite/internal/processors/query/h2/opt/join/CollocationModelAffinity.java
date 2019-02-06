@@ -15,30 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.opt;
+package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 /**
- * Query type.
+ * Affinity of a table relative to previous joined tables.
  */
-public enum GridH2QueryType {
-    /**
-     * Map query. Runs over local partitions, possibly with distributed joins.
-     */
-    MAP,
+public enum CollocationModelAffinity {
+    /** */
+    NONE,
 
-    /**
-     * Reduce query. Local query on a node which initiated the original query.
-     */
-    REDUCE,
+    /** */
+    HAS_AFFINITY_CONDITION,
 
-    /**
-     * Local query. It may be also a query over replicated cache but all the data is available locally.
-     */
-    LOCAL,
-
-    /**
-     * Replicated query over a network. Such a query can be sent from a client node or node which
-     * did not load all the partitions yet.
-     */
-    REPLICATED;
+    /** */
+    COLLOCATED_JOIN
 }

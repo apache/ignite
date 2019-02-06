@@ -49,7 +49,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -5165,8 +5164,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 checkIteratorsCleared();
             }
             catch (Throwable t) {
-                // If AssertionFailedError is in the chain, assume we need to wait and retry.
-                if (!X.hasCause(t, AssertionFailedError.class))
+                // If AssertionError is in the chain, assume we need to wait and retry.
+                if (!X.hasCause(t, AssertionError.class))
                     throw t;
 
                 if (i == 9) {

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.configuration.distributed;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
  * Dispatcher of distributed properties.
  *
