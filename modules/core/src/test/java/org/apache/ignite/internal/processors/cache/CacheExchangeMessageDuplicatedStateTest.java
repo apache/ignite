@@ -41,15 +41,12 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractTest {
     /** */
     private static final String AFF1_CACHE1 = "a1c1";

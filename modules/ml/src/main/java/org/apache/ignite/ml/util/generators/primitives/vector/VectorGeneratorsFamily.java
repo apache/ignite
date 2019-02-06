@@ -70,7 +70,7 @@ public class VectorGeneratorsFamily implements VectorGenerator {
     @Override public DataStreamGenerator asDataStream() {
         VectorGeneratorsFamily gen = this;
         return new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(gen::getWithId)
                     .map(v -> new LabeledVector<>(v.vector, (double)v.distributionId));
             }

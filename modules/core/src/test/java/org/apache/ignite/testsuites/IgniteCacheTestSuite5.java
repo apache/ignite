@@ -85,8 +85,6 @@ public class IgniteCacheTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite, EntryVersionConsistencyReadThroughTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheSyncRebalanceModeSelfTest.class, ignoredTests);
 
-        suite.add(IgniteCacheReadThroughEvictionsVariationsSuite.class);
-
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxIteratorSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, ClusterStatePartitionedSelfTest.class, ignoredTests);
@@ -116,6 +114,8 @@ public class IgniteCacheTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite, NotMappedPartitionInTxTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, ConcurrentCacheStartTest.class, ignoredTests);
+
+        suite.add(IgniteCacheReadThroughEvictionsVariationsSuite.class);
 
         //GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPreloadSelfTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, IgniteCacheContainsKeyColocatedAtomicSelfTest.class, ignoredTests);
