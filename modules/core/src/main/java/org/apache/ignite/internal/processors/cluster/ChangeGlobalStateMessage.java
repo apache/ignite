@@ -70,9 +70,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @GridToStringExclude
     @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
 
-    /** Is this message created automatically by reason baseline auto adjust. */
-    private boolean isBaselineAutoAdjust;
-
     /**
      * @param reqId State change request ID.
      * @param initiatingNodeId Node initiated state change.
@@ -81,7 +78,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      * @param baselineTopology Baseline topology.
      * @param forceChangeBaselineTopology Force change baseline topology flag.
      * @param timestamp Timestamp.
-     * @param isBaselineAutoAdjust {@code true} Is this message created automatically by reason baseline auto adjust.
      */
     public ChangeGlobalStateMessage(
         UUID reqId,
@@ -90,8 +86,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         boolean activate,
         BaselineTopology baselineTopology,
         boolean forceChangeBaselineTopology,
-        long timestamp,
-        boolean isBaselineAutoAdjust) {
+        long timestamp) {
         assert reqId != null;
         assert initiatingNodeId != null;
 
@@ -102,7 +97,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         this.baselineTopology = baselineTopology;
         this.forceChangeBaselineTopology = forceChangeBaselineTopology;
         this.timestamp = timestamp;
-        this.isBaselineAutoAdjust = isBaselineAutoAdjust;
     }
 
     /**
@@ -166,13 +160,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
         return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
-    }
-
-    /**
-     * @return {@code true} Is this message created automatically by reason baseline auto adjust.
-     */
-    public boolean isBaselineAutoAdjust() {
-        return isBaselineAutoAdjust;
     }
 
     /**

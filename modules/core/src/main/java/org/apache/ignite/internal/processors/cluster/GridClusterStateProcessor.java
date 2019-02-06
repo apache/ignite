@@ -396,7 +396,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     "Switching to inactive state.");
 
                 ChangeGlobalStateFinishMessage msg =
-                    new ChangeGlobalStateFinishMessage(globalState.transitionRequestId(), false, false, false);
+                    new ChangeGlobalStateFinishMessage(globalState.transitionRequestId(), false, false);
 
                 onStateFinishMessage(msg);
 
@@ -919,8 +919,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             activate,
             blt,
             forceChangeBaselineTopology,
-            System.currentTimeMillis(),
-            isAutoAdjust
+            System.currentTimeMillis()
         );
 
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);

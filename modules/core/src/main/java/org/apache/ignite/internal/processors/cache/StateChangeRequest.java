@@ -85,13 +85,6 @@ public class StateChangeRequest {
     }
 
     /**
-     * @return {@code true} Is this message created automatically by reason baseline auto adjust.
-     */
-    public boolean isBaselineAutoAdjust() {
-        return msg.isBaselineAutoAdjust();
-    }
-
-    /**
      * @return {@code True} if active state was changed.
      */
     public boolean activeChanged() {

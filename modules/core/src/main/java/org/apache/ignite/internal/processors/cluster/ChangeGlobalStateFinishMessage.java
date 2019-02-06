@@ -45,25 +45,19 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
     /** State change error. */
     private Boolean transitionRes;
 
-    /** Is this message created automatically by reason baseline auto adjust. */
-    private boolean isBaselineAutoAdjust;
-
     /**
      * @param reqId State change request ID.
      * @param clusterActive New cluster state.
-     * @param isBaselineAutoAdjust {@code true} Is this message created automatically by reason baseline auto adjust.
      */
     public ChangeGlobalStateFinishMessage(
         UUID reqId,
         boolean clusterActive,
-        Boolean transitionRes,
-        boolean isBaselineAutoAdjust) {
+        Boolean transitionRes) {
         assert reqId != null;
 
         this.reqId = reqId;
         this.clusterActive = clusterActive;
         this.transitionRes = transitionRes;
-        this.isBaselineAutoAdjust = isBaselineAutoAdjust;
     }
 
     /**
@@ -85,13 +79,6 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
      */
     public boolean success() {
         return transitionRes == null ? clusterActive : transitionRes;
-    }
-
-    /**
-     * @return {@code true} Is this message created automatically by reason baseline auto adjust.
-     */
-    public boolean isBaselineAutoAdjust() {
-        return isBaselineAutoAdjust;
     }
 
     /** {@inheritDoc} */
