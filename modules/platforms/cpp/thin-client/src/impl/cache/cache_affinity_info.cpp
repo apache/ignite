@@ -35,7 +35,7 @@ namespace ignite
                     for (it = info.begin(); it != info.end(); ++it)
                     {
                         const std::vector<int32_t>& parts = it->GetPartitions();
-                        const std::vector<net::EndPoint>& endPoints = it->GetEndPoints();
+                        const std::vector<network::EndPoint>& endPoints = it->GetEndPoints();
 
                         for (size_t i = 0; i < parts.size(); ++i)
                         {

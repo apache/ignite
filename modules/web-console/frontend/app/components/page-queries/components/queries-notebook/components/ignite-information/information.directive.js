@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import './information.scss';
 import template from './information.pug';
 
 export default function() {

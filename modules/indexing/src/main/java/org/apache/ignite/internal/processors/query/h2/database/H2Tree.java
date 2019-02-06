@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -396,7 +397,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
             inlineSizeRecomendation(row);
 
-            org.h2.result.SearchRow rowData = getRow(io, pageAddr, idx);
+            SearchRow rowData = getRow(io, pageAddr, idx);
 
             for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
                 IndexColumn col = cols[i];
@@ -500,7 +501,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param row Grid H2 row related to given inline indexes.
      */
     @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
-    private void inlineSizeRecomendation(org.h2.result.SearchRow row) {
+    private void inlineSizeRecomendation(SearchRow row) {
         //Do the check only for put operations.
         if(!(row instanceof H2CacheRow))
             return;
