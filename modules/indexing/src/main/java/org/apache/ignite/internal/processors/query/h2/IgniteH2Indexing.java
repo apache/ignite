@@ -1396,9 +1396,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             SqlCommand cmd = parser.nextCommand();
 
-            // TODO support transaction commands in multi-statements
-            // https://issues.apache.org/jira/browse/IGNITE-10063
-
             // No support for multiple commands for now.
             if (parser.nextCommand() != null)
                 return null;
@@ -1595,9 +1592,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
-            // TODO: Why checking for rollback only?
-            //if (!tx.isRollbackOnly())
-                tx.commit();
+            tx.commit();
         }
         finally {
             closeTx(tx);
@@ -2331,26 +2326,40 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Run DML request from other node.
+     * Executes DML request on map node. Happens only for "skip reducer" mode.
      *
      * @param schemaName Schema name.
-     * @param fldsQry Query.
+     * @param qry Query.
      * @param filter Filter.
      * @param cancel Cancel state.
-     * @param local Locality flag.
+     * @param loc Locality flag.
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
-    public UpdateResult mapDistributedUpdate(String schemaName, SqlFieldsQuery fldsQry, IndexingQueryFilter filter,
-        GridQueryCancel cancel, boolean local) throws IgniteCheckedException {
+    public UpdateResult executeUpdateInSkipReducerMode(
+        String schemaName,
+        SqlFieldsQuery qry,
+        IndexingQueryFilter filter,
+        GridQueryCancel cancel,
+        boolean loc
+    ) throws IgniteCheckedException {
         Connection conn = connMgr.connectionForThread().connection(schemaName);
 
-        H2Utils.setupConnection(conn, false, fldsQry.isEnforceJoinOrder());
+        H2Utils.setupConnection(conn, false, qry.isEnforceJoinOrder());
 
-        PreparedStatement stmt = preparedStatementWithParams(conn, fldsQry.getSql(),
-            Arrays.asList(fldsQry.getArgs()), true);
+        PreparedStatement stmt = preparedStatementWithParams(conn, qry.getSql(),
+            Arrays.asList(qry.getArgs()), true);
 
-        return dmlMapDistributedUpdate(schemaName, stmt, fldsQry, filter, cancel, local);
+        Connection c;
+
+        try {
+            c = stmt.getConnection();
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException(e);
+        }
+
+        return dmlUpdateSqlFields(schemaName, c, GridSqlQueryParser.prepared(stmt), qry, loc, filter, cancel);
     }
 
     /**
@@ -2802,7 +2811,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         partReservationMgr.onCacheStop(cacheName);
 
-        // TODO: DML
+        // Remove cached DML plans.
         Iterator<Map.Entry<H2CachedStatementKey, UpdatePlan>> iter = dmlPlanCache.entrySet().iterator();
 
         while (iter.hasNext()) {
@@ -3077,6 +3086,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Update result (modified items count and failed keys).
      * @throws IgniteCheckedException if failed.
      */
+    // TODO: Rename
     private Collection<UpdateResult> dmlUpdateSqlFieldsBatched(String schemaName, Connection conn, Prepared prepared,
         SqlFieldsQueryEx fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
@@ -3482,32 +3492,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         UpdatePlan oldRes = dmlPlanCache.putIfAbsent(planKey, res);
 
         return oldRes != null ? oldRes : res;
-    }
-
-    /**
-     *
-     * @param schemaName Schema name.
-     * @param stmt Prepared statement.
-     * @param fldsQry Query.
-     * @param filter Filter.
-     * @param cancel Cancel state.
-     * @param local Locality flag.
-     * @return Update result.
-     * @throws IgniteCheckedException if failed.
-     */
-    // TODO: Merge into mapDistributedUpdate
-    private UpdateResult dmlMapDistributedUpdate(String schemaName, PreparedStatement stmt, SqlFieldsQuery fldsQry,
-        IndexingQueryFilter filter, GridQueryCancel cancel, boolean local) throws IgniteCheckedException {
-        Connection c;
-
-        try {
-            c = stmt.getConnection();
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
-        }
-
-        return dmlUpdateSqlFields(schemaName, c, GridSqlQueryParser.prepared(stmt), fldsQry, local, filter, cancel);
     }
 
     /**
