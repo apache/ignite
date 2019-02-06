@@ -329,8 +329,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
-    /** Default initial delay for out of topology sleep and reconnects if case of temporary network issues. */
+    /** Default initial delay for connect and handshake timeout. */
     private static final int DFLT_INITIAL_DELAY = 200;
+
+    /** Default initial delay for out of topology sleep and reconnects if case of temporary network issues. */
+    private static final int DFLT_NEED_WAIT_DELAY = 200;
 
     /** Default delay between reconnects in case of temporary network issues. */
     private static final int DFLT_RECONNECT_DELAY = 50;
@@ -3387,7 +3390,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             throw new ClusterTopologyCheckedException("Remote node doesn't observe current node in topology : " + node.id());
                         else if (rcvCnt == NEED_WAIT) {
                             //check that failure timeout will be reached after sleep(outOfTopDelay).
-                            if (connTimeoutStgy.checkTimeout(DFLT_INITIAL_DELAY)) {
+                            if (connTimeoutStgy.checkTimeout(DFLT_NEED_WAIT_DELAY)) {
                                 U.warn(log, "Handshake NEED_WAIT timed out (will stop attempts to perform the handshake) " +
                                     "[node=" + node.id() +
                                     ", connTimeoutStgy=" + connTimeoutStgy +
@@ -3404,9 +3407,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             else {
                                 if (log.isDebugEnabled())
                                     log.debug("NEED_WAIT received, handshake after delay [node = "
-                                        + node + ", outOfTopologyDelay = " + DFLT_INITIAL_DELAY + "ms]");
+                                        + node + ", outOfTopologyDelay = " + DFLT_NEED_WAIT_DELAY + "ms]");
 
-                                U.sleep(DFLT_INITIAL_DELAY);
+                                U.sleep(DFLT_NEED_WAIT_DELAY);
 
                                 continue;
                             }
