@@ -945,6 +945,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 notifyDiscovery(EVT_NODE_JOINED, 1, locNode);
 
+                msgWorker.nullifyDiscoData();
+
                 break;
             }
 
@@ -2671,6 +2673,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private long lastRingMsgTime;
 
+        /** */
+        private List<DiscoveryDataPacket> joiningNodesPacketsList = new ArrayList<>();
+
+        /** */
+        private DiscoveryDataPacket gridDiscoveryData;
+
         /**
          * @param log Logger.
          */
@@ -2770,6 +2778,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                         failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
+        }
+
+        /** */
+        private void nullifyDiscoData() {
+            gridDiscoveryData = null;
+            joiningNodesPacketsList = null;
         }
 
         /**
@@ -4221,12 +4235,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw ex;
         }
 
-        /** */
-        private List<DiscoveryDataPacket> joiningNodesPacketsList = new ArrayList<>();
-
-        /** */
-        private DiscoveryDataPacket gridDiscoveryData;
-
         /**
          * Processes node added message.
          *
@@ -4427,7 +4435,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (!node.isDaemon())
                                 spi.collectExchangeData(dataPacket);
                         }
-                        else
+                        else if (spiState == CONNECTING)
                             // Node joining to the cluster should postpone applying disco data of other joiners till
                             // receiving gridDiscoData (when NodeAddFinished message arrives)
                             joiningNodesPacketsList.add(dataPacket);
@@ -4699,9 +4707,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 for (DiscoveryDataPacket dataPacket : joiningNodesPacketsList)
                     spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                gridDiscoveryData = null;
-
-                joiningNodesPacketsList = null;
+                nullifyDiscoData();
 
                 // Discovery manager must create local joined event before spiStart completes.
                 notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);

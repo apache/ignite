@@ -40,7 +40,7 @@ import org.junit.Test;
 /**
  *
  */
-public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstractTest {
+public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractTest {
     /** */
     private static final String NODE_1_CONS_ID = "node01";
 
@@ -193,12 +193,12 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
     }
 
     /** */
-    private void verifyCachesAndGroups(IgniteEx ignite, Collection<String> staticCacheNames) {
+    private void verifyCachesAndGroups(IgniteEx ignite, Collection<String> cacheNames) {
         Map<String, DynamicCacheDescriptor> caches = ignite.context().cache().cacheDescriptors();
 
         assertEquals(3, caches.size());
         assertTrue(caches.keySet().contains(GridCacheUtils.UTILITY_CACHE_NAME));
-        assertTrue(caches.keySet().containsAll(staticCacheNames));
+        assertTrue(caches.keySet().containsAll(cacheNames));
 
         Map<Integer, CacheGroupDescriptor> groups = ignite.context().cache().cacheGroupDescriptors();
 
@@ -253,9 +253,7 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @After
-    @Override public void afterTest() throws Exception {
-        super.afterTest();
-
+    public void afterTest() throws Exception {
         stopAllGrids();
     }
 
