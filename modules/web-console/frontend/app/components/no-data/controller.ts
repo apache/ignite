@@ -15,12 +15,32 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import _ from 'lodash';
+import {of} from 'rxjs';
+import {distinctUntilChanged, switchMap} from 'rxjs/operators';
 
-import chartNoData from './components/chart-no-data';
-import IgniteChartCmp from './component';
-import './style.scss';
+export default class NoDataCmpCtrl {
+    static $inject = ['AgentManager', 'AgentModal'];
 
-export default angular
-    .module('ignite-console.ignite-chart', [chartNoData.name])
-    .component('igniteChart', IgniteChartCmp);
+    connectionState$ = this.AgentManager.connectionSbj.pipe(
+        switchMap((sbj) => {
+            if (!_.isNil(sbj.cluster) && sbj.cluster.active === false)
+                return of('CLUSTER_INACTIVE');
+
+            return of(sbj.state);
+        }),
+        distinctUntilChanged()
+    );
+
+    backText = 'Close';
+
+    constructor(private AgentManager, private AgentModal) {}
+
+    openAgentMissingDialog() {
+        this.AgentModal.agentDisconnected(this.backText, '.');
+    }
+
+    openNodeMissingDialog() {
+        this.AgentModal.clusterDisconnected(this.backText, '.');
+    }
+}
