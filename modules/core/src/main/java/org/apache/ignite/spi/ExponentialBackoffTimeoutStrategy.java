@@ -111,7 +111,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
         long remainingTime = remainingTime(U.currentTimeMillis());
 
         if (remainingTime <= 0)
-            throw new IgniteSpiOperationTimeoutException("Operation timed out [startTimeout = " +this +"]");
+            throw new IgniteSpiOperationTimeoutException("Operation timed out [timeoutStrategy = " +this +"]");
 
         long currTimeout0 = currTimeout;
 
