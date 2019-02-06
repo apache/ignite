@@ -212,23 +212,26 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
+    /** Client connection context */
+    private final ClientConnectionContext ctx;
+
     /** Client version */
     private final ClientListenerProtocolVersion ver;
 
     /**
      * Ctor.
      *
-     * @param ctx Kernal context.
-     * @param ver Client version.
+     * @param ctx Client connection context.
      */
-    ClientMessageParser(GridKernalContext ctx, ClientListenerProtocolVersion ver) {
+    ClientMessageParser(ClientConnectionContext ctx, ClientListenerProtocolVersion ver) {
         assert ctx != null;
         assert ver != null;
 
-        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
-        marsh = cacheObjProc.marshaller();
-
+        this.ctx = ctx;
         this.ver = ver;
+
+        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
+        marsh = cacheObjProc.marshaller();
     }
 
     /** {@inheritDoc} */
@@ -397,7 +400,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         BinaryRawWriterEx writer = marsh.writer(outStream);
 
-        ((ClientResponse)resp).encode(writer);
+        ((ClientResponse)resp).encode(ctx, writer);
 
         return outStream.arrayCopy();
     }

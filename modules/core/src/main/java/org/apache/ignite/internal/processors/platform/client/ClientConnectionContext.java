@@ -143,7 +143,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         handler = new ClientRequestHandler(this, authCtx, ver);
 
-        parser = new ClientMessageParser(kernalContext(), ver);
+        parser = new ClientMessageParser(this, ver);
     }
 
     /** {@inheritDoc} */

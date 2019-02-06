@@ -65,9 +65,10 @@ public class ClientResponse extends ClientListenerResponse {
 
     /**
      * Encodes the response data.
+     * @param ctx Connection context.
      * @param writer Writer.
      */
-    public void encode(BinaryRawWriterEx writer) {
+    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         writer.writeLong(reqId);
 
         writer.writeInt(status());
