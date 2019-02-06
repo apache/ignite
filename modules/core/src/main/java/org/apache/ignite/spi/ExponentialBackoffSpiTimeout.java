@@ -117,7 +117,7 @@ public class ExponentialBackoffSpiTimeout {
         if (remainingTime <= 0)
             throw new IOException("Connect operation timed out [timeout = " +this +"]");
 
-        return (int) Math.min((int)currConnTimeout, remainingTime);
+        return (int) Math.min(currConnTimeout, remainingTime);
     }
 
     /**
@@ -132,7 +132,7 @@ public class ExponentialBackoffSpiTimeout {
         if (remainingTime <= 0)
             throw new IgniteSpiOperationTimeoutException("Network operation timed out [timeout = " +this +"]");
 
-        return Math.min((int) currHandshakeTimeout, remainingTime);
+        return Math.min(currHandshakeTimeout, remainingTime);
     }
 
     /**
