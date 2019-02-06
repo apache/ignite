@@ -18,7 +18,11 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_3_0;
 
 /**
  * Thin client response.
@@ -71,6 +75,30 @@ public class ClientResponse extends ClientListenerResponse {
     public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         writer.writeLong(reqId);
 
+        ClientListenerProtocolVersion ver = ctx.currentVersion();
+
+        assert ver != null;
+
+        if (ver.compareTo(VER_1_3_0) >= 0) {
+            AffinityTopologyVersion affVer = ctx.checkAffinityTopologyVersion();
+
+            boolean error = status() != ClientStatus.SUCCESS;
+            boolean affTopologyChanged = affVer != null;
+
+            short flags = makeFlags(error, affTopologyChanged);
+
+            writer.writeShort(flags);
+
+            if (affTopologyChanged) {
+                writer.writeLong(affVer.topologyVersion());
+                writer.writeInt(affVer.minorTopologyVersion());
+            }
+
+            // If no return flag is set, no additional data is written to a payload.
+            if (!error)
+                return;
+        }
+
         writer.writeInt(status());
 
         if (status() != ClientStatus.SUCCESS) {
@@ -85,5 +113,22 @@ public class ClientResponse extends ClientListenerResponse {
      */
     public long requestId() {
         return reqId;
+    }
+
+    /**
+     * @return Flags for response message.
+     * @param error Error flag.
+     * @param topologyChanged Affinity topology changed flag.
+     */
+    private static short makeFlags(boolean error, boolean topologyChanged) {
+        short flags = 0;
+
+        if (error)
+            flags |= ClientFlag.ERROR;
+
+        if (topologyChanged)
+            flags |= ClientFlag.AFFINITY_TOPOLOGY_CHANGED;
+
+        return flags;
     }
 }
