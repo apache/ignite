@@ -202,6 +202,7 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
     public void convertString() throws Exception {
         checkConvertation("42");
         checkConvertation("0");
+        checkConvertation("1");
 
         checkConvertation("42.3");
         checkConvertation("0.3");
@@ -262,12 +263,6 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test timestamp conversion.
-     *
-     * @throws Exception If failed.
-     */
-
-    /**
      * Test uuid conversion.
      *
      * @throws Exception If failed.
@@ -280,6 +275,30 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test string to uuid conversion with different combinations of upper and lower case letters and with/without
+     * hyphens.
+     */
+    @Test
+    public void stringToUUIDConvertation() {
+        UUID expUuid = UUID.fromString("273ded0d-86de-432e-b252-54c06ec22927");
+
+        // Lower case and hyphens.
+        assertEquals(expUuid, PartitionDataTypeUtils.stringToUUID("273ded0d-86de-432e-b252-54c06ec22927"));
+
+        // Lower case without hyphens.
+        assertEquals(expUuid, PartitionDataTypeUtils.stringToUUID("273ded0d86de432eb25254c06ec22927"));
+
+        // Lower case without few hyphens.
+        assertEquals(expUuid, PartitionDataTypeUtils.stringToUUID("273ded0d86de432e-b25254c06ec22927"));
+
+        // Upper case and hyphens.
+        assertEquals(expUuid, PartitionDataTypeUtils.stringToUUID("273dED0D-86DE-432E-B25254C06EC22927"));
+
+        // Upper case without few hyphens.
+        assertEquals(expUuid, PartitionDataTypeUtils.stringToUUID("273dED0D86DE432Eb252-54c06ec22927"));
+    }
+
+    /**
      * Actual conversial check logic.
      *
      * @param arg Argument to convert.
@@ -289,7 +308,18 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
         for (PartitionParameterType targetType : PartitionParameterType.values()) {
             Object convertationRes = PartitionDataTypeUtils.convert(arg, targetType);
 
-            if (PartitionDataTypeUtils.DataTypeConvertationResult.FAILURE == convertationRes) {
+            if (PartitionDataTypeUtils.CONVERTATION_FAILURE == convertationRes) {
+                // Conversion rules for string-to-boolean and every-type-except-string-to-uuid differs in Ignite and H2,
+                // so that we might return CONVERTATION_FAILURE
+                // whereas H2 will convert types without exception (but not vice versa!).
+                // For example in context of string-to-boolean conversion
+                // Ignite "2" -> CONVERTATION_FAILURE whereas in H2 "2" -> true.
+                // Besides that H2 might convert byte, int, etc to UUID, which is not support
+                // sby Ignite client side conversion.
+                if ((arg instanceof String && targetType == PartitionParameterType.BOOLEAN) ||
+                    (!(arg instanceof String) && targetType == PartitionParameterType.UUID))
+                    continue;
+
                 try {
                     H2Utils.convert(arg, idx, IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
 
