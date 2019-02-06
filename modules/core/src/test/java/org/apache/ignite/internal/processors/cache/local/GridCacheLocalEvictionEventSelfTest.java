@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheEvictionEventAbstractTest;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -28,11 +30,16 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  * Tests local cache eviction event.
  */
 public class GridCacheLocalEvictionEventSelfTest extends GridCacheEvictionEventAbstractTest {
+    /** */
+    @Before
+    public void beforeGridCacheLocalEvictionEventSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+    }
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
-        super.setUp();
+        return super.getConfiguration();
     }
 
     /** {@inheritDoc} */

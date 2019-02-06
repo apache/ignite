@@ -20,9 +20,9 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc;
  * SQL dialect to use with {@link TcpDiscoveryJdbcIpFinder}.
  */
 public interface JdbcIpFinderDialect {
-	/**
-	 * Gets table name in a valid form to use as IP addresses
-	 * @return Table name.
-	 */
-	public String tableName();
+    /**
+     * Gets table name in a valid form to use as IP addresses
+     * @return Table name.
+     */
+    public String tableName();
 }

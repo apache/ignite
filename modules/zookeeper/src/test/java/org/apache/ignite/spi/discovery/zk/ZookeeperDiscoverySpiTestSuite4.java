@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePu
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -38,14 +40,14 @@ import org.junit.runners.Suite;
     ClusterNodeMetricsUpdateTest.class,
     GridCacheAtomicMultiNodeFullApiSelfTest.class,
     GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class,
-    IgniteCacheReplicatedQuerySelfTest.class
+    IgniteCacheReplicatedQuerySelfTest.class,
+    DistributedMetaStorageTest.class,
+    DistributedMetaStoragePersistentTest.class
 })
-public class ZookeeperDiscoverySpiTestSuite4 extends ZookeeperDiscoverySpiAbstractTestSuite {
+public class ZookeeperDiscoverySpiTestSuite4 {
     /** */
     @BeforeClass
     public static void init() throws Exception {
-        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
-
-        initSuite();
+        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }
 }

@@ -39,21 +39,20 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Checking that DHT and near cache evictions work correctly when both are set.
  *
  * This is a regression test for IGNITE-9315.
  */
-@RunWith(JUnit4.class)
 public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
     /** */
     public GridStringLogger strLog;
 
     /** */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setGridLogger(strLog);
@@ -67,7 +66,7 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
         super.beforeTestsStarted();
     }
@@ -99,7 +98,7 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConcurrentWritesAndReadsWithReadThrough() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         startGrid(0);
         startGrid(1);

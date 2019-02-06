@@ -68,8 +68,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -82,7 +80,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private static ConcurrentHashMap<Object, Object> storeMap;
@@ -185,7 +182,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPartitioned() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         mode = PARTITIONED;
 
@@ -218,7 +215,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = LOCAL;
 
@@ -862,7 +859,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFlushTimeout() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
         mode = PARTITIONED;
 
@@ -918,7 +915,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUpdateStore() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         storeMap = new ConcurrentHashMap<>();
 

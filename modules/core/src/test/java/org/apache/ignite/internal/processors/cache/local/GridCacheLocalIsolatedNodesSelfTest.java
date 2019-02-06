@@ -26,15 +26,12 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Isolated nodes LOCAL cache self test.
  */
-@RunWith(JUnit4.class)
 public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest {
     /**
      *
@@ -45,7 +42,7 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         startGrids(3);
     }

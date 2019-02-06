@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.composition;
 
 import java.util.Arrays;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
@@ -47,7 +48,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests stacked trainers.
@@ -167,6 +168,6 @@ public class StackingTest extends TrainerTest {
         StackedDatasetTrainer<Void, Void, Void, IgniteModel<Void, Void>, Void> trainer =
             new StackedDatasetTrainer<>();
         thrown.expect(IllegalStateException.class);
-        trainer.fit(null, null, null);
+        trainer.fit(null, (IgniteCache<Object, Object>)null, null);
     }
 }

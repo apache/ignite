@@ -28,7 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -143,7 +142,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
         PartitionHashRecordV2 record = records.get(0);
 
-        if (record.updateCounter() != 0 || record.size() != 0)
+        if (record.size() != 0)
             return true;
 
         int firstHash = record.partitionHash();
@@ -151,7 +150,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         for (int i = 1; i < records.size(); i++) {
             record = records.get(i);
 
-            if (record.partitionHash() != firstHash || record.updateCounter() != 0 || record.size() != 0)
+            if (record.partitionHash() != firstHash || record.size() != 0)
                 return true;
         }
 

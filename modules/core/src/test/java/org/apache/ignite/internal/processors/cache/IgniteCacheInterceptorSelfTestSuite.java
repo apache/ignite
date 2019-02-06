@@ -21,14 +21,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Cache interceptor suite.
  */
-@RunWith(IgniteCacheInterceptorSelfTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheInterceptorSelfTestSuite {
     /**
      * @return Cache API test suite.
@@ -44,39 +43,31 @@ public class IgniteCacheInterceptorSelfTestSuite {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorLocalSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorLocalWithStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalWithStoreSelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorLocalAtomicSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorLocalAtomicWithStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalAtomicSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalAtomicWithStoreSelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicNearEnabledSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicWithStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicNearEnabledSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicWithStoreSelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicReplicatedSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicWithStoreReplicatedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicReplicatedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicWithStoreReplicatedSelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorNearEnabledSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorWithStoreSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorReplicatedSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorReplicatedWithStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorNearEnabledSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorWithStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorReplicatedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorReplicatedWithStoreSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite,CacheInterceptorPartitionCounterRandomOperationsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,CacheInterceptorPartitionCounterLocalSanityTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicRebalanceTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorTransactionalRebalanceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicRebalanceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorTransactionalRebalanceTest.class, ignoredTests);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }
