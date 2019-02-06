@@ -809,7 +809,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
-        UpdatePlan plan = dmlGetPlanForStatement(schemaName, conn, p, null, true, null);
+        UpdatePlan plan = updatePlan(schemaName, conn, p, null, true);
 
         IgniteDataStreamer<?, ?> streamer = cliCtx.streamerForCache(plan.cacheContext().name());
 
@@ -848,7 +848,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             assert p != null;
 
-            final UpdatePlan plan = dmlGetPlanForStatement(schemaName, null, p, null, true, null);
+            final UpdatePlan plan = updatePlan(schemaName, null, p, null, true);
 
             assert plan.isLocalSubquery();
 
@@ -861,17 +861,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
+                        Object[] params = args != null ? args : X.EMPTY_OBJECT_ARRAY;
+
                         Iterator<List<?>> it;
 
                         if (!F.isEmpty(plan.selectQuery())) {
-                            GridQueryFieldsResult res = queryLocalSqlFields(schema(cctx.name()),
-                                plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
-                                null, false, false, 0, null, null);
+                            GridQueryFieldsResult res = queryLocalSqlFields(
+                                schema(cctx.name()),
+                                plan.selectQuery(),
+                                F.asList(params),
+                                null,
+                                false,
+                                false,
+                                0,
+                                null,
+                                null
+                            );
 
                             it = res.iterator();
                         }
                         else
-                            it = plan.createRows(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)).iterator();
+                            it = plan.createRows(params).iterator();
 
                         return new GridQueryCacheObjectsIterator(it, objectContext(), cctx.keepBinary());
                     }
@@ -3020,7 +3030,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         long items = 0;
 
-        UpdatePlan plan = dmlGetPlanForStatement(schemaName, conn, prepared, fieldsQry, loc, null);
+        UpdatePlan plan = updatePlan(schemaName, conn, prepared, fieldsQry, loc);
 
         GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -3072,7 +3082,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         throws IgniteCheckedException {
         List<Object[]> argss = fieldsQry.batchedArguments();
 
-        UpdatePlan plan = dmlGetPlanForStatement(schemaName, conn, prepared, fieldsQry, loc, null);
+        UpdatePlan plan = updatePlan(schemaName, conn, prepared, fieldsQry, loc);
 
         GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -3447,29 +3457,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param loc Local query flag.
      * @return Update plan.
      */
-    // TODO: Must stay in this class.
-    // TODO: errKeysPos is always null. Is it the same in master?
     @SuppressWarnings("IfMayBeConditional")
-    private UpdatePlan dmlGetPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
-        boolean loc, @Nullable Integer errKeysPos) throws IgniteCheckedException {
+    private UpdatePlan updatePlan(
+        String schema,
+        Connection conn,
+        Prepared p,
+        SqlFieldsQuery fieldsQry,
+        boolean loc
+    ) throws IgniteCheckedException {
         if (F.eq(QueryUtils.SCHEMA_SYS, schema))
             throw new IgniteSQLException("DML statements are not supported on " + schema + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         H2CachedStatementKey planKey = new H2CachedStatementKey(schema, p.getSQL(), fieldsQry, loc);
 
-        UpdatePlan res = (errKeysPos == null ? dmlPlanCache.get(planKey) : null);
+        UpdatePlan res = dmlPlanCache.get(planKey);
 
         if (res != null)
             return res;
 
-        res = UpdatePlanBuilder.planForStatement(p, loc, this, conn, fieldsQry, errKeysPos, isDmlAllowedOverride);
+        res = UpdatePlanBuilder.planForStatement(p, loc, this, conn, fieldsQry, isDmlAllowedOverride);
 
         // Don't cache re-runs
-        if (errKeysPos == null)
-            return U.firstNotNull(dmlPlanCache.putIfAbsent(planKey, res), res);
-        else
-            return res;
+        UpdatePlan oldRes = dmlPlanCache.putIfAbsent(planKey, res);
+
+        return oldRes != null ? oldRes : res;
     }
 
     /**
@@ -3518,7 +3530,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared prepared = GridSqlQueryParser.prepared(stmt);
 
-        UpdatePlan plan = dmlGetPlanForStatement(schema, conn, prepared, qry, local, null);
+        UpdatePlan plan = updatePlan(schema, conn, prepared, qry, local);
 
         GridCacheContext cctx = plan.cacheContext();
 
