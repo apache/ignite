@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
+import org.h2.result.SearchRow;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -358,7 +359,7 @@ public class GridH2RowDescriptor {
      * @param row Source row.
      * @return Result.
      */
-    public org.h2.result.SearchRow prepareProxyIndexRow(org.h2.result.SearchRow row) {
+    public SearchRow prepareProxyIndexRow(SearchRow row) {
         if (row == null)
             return null;
 
