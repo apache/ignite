@@ -39,6 +39,14 @@ public class ScanQueryCacheResolveSecurityTest extends AbstractCacheResolveSecur
      */
     @Test
     public void test() throws Exception {
+        IgniteEx srvInitiator = grid("srv_initiator");
+
+        IgniteEx clntInitiator = grid("clnt_initiator");
+
+        IgniteEx srvTransition = grid("srv_transition");
+
+        IgniteEx srvEndpoint = grid("srv_endpoint");
+
         srvInitiator.cache(CACHE_NAME).put(prmKey(srvTransition), 1);
         srvInitiator.cache(CACHE_NAME).put(prmKey(srvEndpoint), 2);
 
@@ -57,7 +65,7 @@ public class ScanQueryCacheResolveSecurityTest extends AbstractCacheResolveSecur
     private void query(IgniteEx initiator) {
         initiator.cache(CACHE_NAME).query(
             new ScanQuery<>(
-                new QueryFilter(srvTransition.name(), srvEndpoint.name())
+                new QueryFilter("srv_transition", "srv_endpoint")
             )
         ).getAll();
     }
@@ -68,7 +76,7 @@ public class ScanQueryCacheResolveSecurityTest extends AbstractCacheResolveSecur
     private void transform(IgniteEx initiator) {
         initiator.cache(CACHE_NAME).query(
             new ScanQuery<>((k, v) -> true),
-            new Transformer(srvTransition.name(), srvEndpoint.name())
+            new Transformer("srv_transition", "srv_endpoint")
         ).getAll();
     }
 

@@ -40,8 +40,8 @@ public class EntryProcessorCacheResolveSecurityTest extends AbstractCacheResolve
      */
     @Test
     public void test() {
-        execute(srvInitiator);
-        execute(clntInitiator);
+        execute(grid("srv_initiator"));
+        execute(grid("clnt_initiator"));
     }
 
     /**
@@ -52,11 +52,11 @@ public class EntryProcessorCacheResolveSecurityTest extends AbstractCacheResolve
 
         for (InvokeMethodEnum ime : InvokeMethodEnum.values()) {
             VERIFIER.start(secSubjectId)
-                .add(srvTransition.name(), 1)
-                .add(srvEndpoint.name(), 1);
+                .add("srv_transition", 1)
+                .add("srv_endpoint", 1);
 
             invoke(ime, initiator,
-                new TestEntryProcessor(ime, srvEndpoint.name()), prmKey(srvTransition));
+                new TestEntryProcessor(ime, "srv_endpoint"), prmKey(grid("srv_transition")));
 
             VERIFIER.checkResult();
         }

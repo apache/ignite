@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processor.security.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractPermissionSecurityTest;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Test;
@@ -34,20 +35,14 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
  */
 @RunWith(JUnit4.class)
 public class EntryProcessorPermissionSecurityTest extends AbstractPermissionSecurityTest {
-    /** Server node. */
-    private Ignite srvNode;
-
-    /** Client node. */
-    private Ignite clientNode;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        srvNode = startGrid("server_node",
+        startGrid("server_node",
             builder().defaultAllowAll(true)
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build());
 
-        clientNode = startGrid("client_node",
+        startGrid("client_node",
             builder().defaultAllowAll(true)
                 .appendCachePermissions(CACHE_NAME, CACHE_PUT, CACHE_READ)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), true);
@@ -60,6 +55,10 @@ public class EntryProcessorPermissionSecurityTest extends AbstractPermissionSecu
      */
     @Test
     public void test() {
+        IgniteEx srvNode = grid("server_node");
+
+        IgniteEx clientNode = grid("client_node");
+
         invoke(srvNode);
         invoke(clientNode);
 

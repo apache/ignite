@@ -81,41 +81,23 @@ public class TaskExecutePermissionTest extends AbstractSecurityTest {
         return null;
     };
 
-    /** Server allowed all task permissions. */
-    private Ignite srvAllowed;
-
-    /** Server forbidden all task permissions. */
-    private Ignite srvForbidden;
-
-    /** Server forbidden cancel task permission. */
-    private Ignite srvForbiddenCancel;
-
-    /** Client allowed all task permissions. */
-    private Ignite clntAllowed;
-
-    /** Client forbidden all task permissions. */
-    private Ignite clntForbidden;
-
-    /** Client forbidden cancel task permission. */
-    private Ignite clntForbiddenCancel;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        srvAllowed = startGrid("srv_allowed", permissions(TASK_EXECUTE, TASK_CANCEL));
+        Ignite ign = startGrid("srv_allowed", permissions(TASK_EXECUTE, TASK_CANCEL));
 
-        srvForbidden = startGrid("srv_forbidden", permissions(EMPTY_PERMS));
+        startGrid("srv_forbidden", permissions(EMPTY_PERMS));
 
-        srvForbiddenCancel = startGrid("srv_forbidden_cnl", permissions(TASK_EXECUTE));
+        startGrid("srv_forbidden_cnl", permissions(TASK_EXECUTE));
 
-        clntAllowed = startGrid("clnt_allowed", permissions(TASK_EXECUTE, TASK_CANCEL), true);
+        startGrid("clnt_allowed", permissions(TASK_EXECUTE, TASK_CANCEL), true);
 
-        clntForbidden = startGrid("srv_forbidden", permissions(EMPTY_PERMS), true);
+        startGrid("clnt_forbidden", permissions(EMPTY_PERMS), true);
 
-        clntForbiddenCancel = startGrid("clnt_forbidden_cnl", permissions(TASK_EXECUTE), true);
+        startGrid("clnt_forbidden_cnl", permissions(TASK_EXECUTE), true);
 
-        srvAllowed.cluster().active(true);
+        ign.cluster().active(true);
     }
 
     /**
@@ -123,6 +105,18 @@ public class TaskExecutePermissionTest extends AbstractSecurityTest {
      */
     @Test
     public void test() {
+        Ignite srvAllowed = grid("srv_allowed");
+
+        Ignite srvForbidden = grid("srv_forbidden");
+
+        Ignite srvForbiddenCancel = grid("srv_forbidden_cnl");
+
+        Ignite clntAllowed = grid("clnt_allowed");
+
+        Ignite clntForbidden = grid("clnt_forbidden");
+
+        Ignite clntForbiddenCancel = grid("clnt_forbidden_cnl");
+
         for (TestRunnable r : runnables(srvAllowed, clntAllowed))
             allowedRun(r);
 

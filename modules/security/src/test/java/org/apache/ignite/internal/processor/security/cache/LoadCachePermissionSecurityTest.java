@@ -50,12 +50,6 @@ public class LoadCachePermissionSecurityTest extends AbstractPermissionSecurityT
     /** Entry. */
     private static T2<String, Integer> entry;
 
-    /** Server node. */
-    private Ignite srvNode;
-
-    /** Client node. */
-    private Ignite clientNode;
-
     /** {@inheritDoc} */
     @Override protected CacheConfiguration[] getCacheConfigurations() {
         return new CacheConfiguration[] {
@@ -73,12 +67,12 @@ public class LoadCachePermissionSecurityTest extends AbstractPermissionSecurityT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        srvNode = startGrid("server_node",
+        startGrid("server_node",
             builder().defaultAllowAll(true)
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build());
 
-        clientNode = startGrid("client_node",
+        startGrid("client_node",
             builder().defaultAllowAll(true)
                 .appendCachePermissions(CACHE_NAME, CACHE_PUT)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), true);
@@ -91,22 +85,22 @@ public class LoadCachePermissionSecurityTest extends AbstractPermissionSecurityT
      */
     @Test
     public void test() {
-        load(srvNode);
-        load(clientNode);
+        load(grid("server_node"));
+        load(grid("client_node"));
 
-        loadAsync(srvNode);
-        loadAsync(clientNode);
+        loadAsync(grid("server_node"));
+        loadAsync(grid("client_node"));
 
-        localLoad(srvNode);
+        localLoad(grid("server_node"));
 
-        localLoadAsync(srvNode);
+        localLoadAsync(grid("server_node"));
     }
 
     /**
      * @param r Runnable.
      */
     private void allowed(Runnable r) {
-        assertAllowed(srvNode, CACHE_NAME,
+        assertAllowed(grid("server_node"), CACHE_NAME,
             (t) -> {
                 entry = t;
 

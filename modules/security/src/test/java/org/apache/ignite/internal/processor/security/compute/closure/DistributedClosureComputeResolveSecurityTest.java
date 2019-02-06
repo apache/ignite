@@ -39,8 +39,8 @@ public class DistributedClosureComputeResolveSecurityTest extends AbstractComput
      */
     @Test
     public void test() {
-        execute(srvInitiator);
-        execute(clntInitiator);
+        execute(grid("srv_initiator"));
+        execute(grid("clnt_initiator"));
     }
 
     /**

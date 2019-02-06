@@ -21,7 +21,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -112,7 +111,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet,
         boolean isClient) throws Exception {
         return startGrid(
-            getConfiguration(G.allGrids().size(), login, "", prmSet).setClientMode(isClient)
+            getConfiguration(login, login, "", prmSet).setClientMode(isClient)
         );
     }
 
@@ -125,7 +124,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     protected IgniteEx startGrid(String login, String pwd, SecurityPermissionSet prmSet,
         boolean isClient) throws Exception {
         return startGrid(
-            getConfiguration(G.allGrids().size(), login, pwd, prmSet).setClientMode(isClient)
+            getConfiguration(login, login, pwd, prmSet).setClientMode(isClient)
         );
     }
 

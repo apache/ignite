@@ -27,19 +27,13 @@ import org.apache.ignite.internal.processor.security.AbstractResolveSecurityTest
  * Abstract compute security test.
  */
 public abstract class AbstractComputeResolveSecurityTest extends AbstractResolveSecurityTest {
-    /** Client node. */
-    protected IgniteEx clntTransition;
-
-    /** Client node. */
-    protected IgniteEx clntEndpoint;
-
     /** {@inheritDoc} */
     @Override protected void startNodes() throws Exception{
         super.startNodes();
 
-        clntTransition = startGrid("clnt_transition", allowAllPermissionSet(), true);
+        startGrid("clnt_transition", allowAllPermissionSet(), true);
 
-        clntEndpoint = startGrid("clnt_endpoint", allowAllPermissionSet());
+        startGrid("clnt_endpoint", allowAllPermissionSet());
     }
 
     /**
@@ -50,11 +44,10 @@ public abstract class AbstractComputeResolveSecurityTest extends AbstractResolve
      */
     protected void perform(IgniteEx node, Runnable r) {
         VERIFIER.start(secSubjectId(node))
-            .add(srvTransition.name(), 1)
-            .add(clntTransition.name(), 1)
-            .add(srvEndpoint.name(), 2)
-            .add(clntEndpoint.name(), 2);
-
+            .add("srv_transition", 1)
+            .add("clnt_transition", 1)
+            .add("srv_endpoint", 2)
+            .add("clnt_endpoint", 2);
         r.run();
 
         VERIFIER.checkResult();
@@ -65,8 +58,8 @@ public abstract class AbstractComputeResolveSecurityTest extends AbstractResolve
      */
     protected Collection<UUID> transitions() {
         return Arrays.asList(
-            srvTransition.localNode().id(),
-            clntTransition.localNode().id()
+            grid("srv_transition").localNode().id(),
+            grid("clnt_transition").localNode().id()
         );
     }
 
@@ -75,8 +68,8 @@ public abstract class AbstractComputeResolveSecurityTest extends AbstractResolve
      */
     protected Collection<UUID> endpoints() {
         return Arrays.asList(
-            srvEndpoint.localNode().id(),
-            clntEndpoint.localNode().id()
+            grid("srv_endpoint").localNode().id(),
+            grid("clnt_endpoint").localNode().id()
         );
     }
 }

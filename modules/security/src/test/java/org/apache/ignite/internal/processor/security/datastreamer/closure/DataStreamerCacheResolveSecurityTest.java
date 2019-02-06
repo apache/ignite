@@ -42,6 +42,10 @@ public class DataStreamerCacheResolveSecurityTest extends AbstractCacheResolveSe
      */
     @Test
     public void testDataStreamer() {
+        IgniteEx srvInitiator = grid("srv_initiator");
+
+        IgniteEx clntInitiator = grid("clnt_initiator");
+
         perform(srvInitiator, () -> dataStreamer(srvInitiator));
         perform(clntInitiator, () -> dataStreamer(clntInitiator));
     }
@@ -51,9 +55,9 @@ public class DataStreamerCacheResolveSecurityTest extends AbstractCacheResolveSe
      */
     private void dataStreamer(Ignite initiator) {
         try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_NAME)) {
-            strm.receiver(StreamVisitor.from(new TestClosure(srvEndpoint.localNode().id())));
+            strm.receiver(StreamVisitor.from(new TestClosure(grid("srv_endpoint").localNode().id())));
 
-            strm.addData(prmKey(srvTransition), 100);
+            strm.addData(prmKey(grid("srv_transition")), 100);
         }
     }
 

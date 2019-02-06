@@ -40,19 +40,13 @@ public class IgniteMessagingResolveSecurityTest extends AbstractResolveSecurityT
     /** Barrier. */
     private static final CyclicBarrier BARRIER = new CyclicBarrier(3);
 
-    /** Client node. */
-    protected IgniteEx clntTransition;
-
-    /** Client node. */
-    protected IgniteEx clntEndpoint;
-
     /** {@inheritDoc} */
     @Override protected void startNodes() throws Exception {
         super.startNodes();
 
-        clntTransition = startGrid("clnt_transition", allowAllPermissionSet(), true);
+        startGrid("clnt_transition", allowAllPermissionSet(), true);
 
-        clntEndpoint = startGrid("clnt_endpoint", allowAllPermissionSet());
+        startGrid("clnt_endpoint", allowAllPermissionSet());
     }
 
     /**
@@ -60,11 +54,11 @@ public class IgniteMessagingResolveSecurityTest extends AbstractResolveSecurityT
      */
     @Test
     public void test() {
-        messaging(srvInitiator, srvTransition);
-        messaging(srvInitiator, clntTransition);
+        messaging(grid("srv_initiator"), grid("srv_transition"));
+        messaging(grid("srv_initiator"), grid("clnt_transition"));
 
-        messaging(clntInitiator, srvTransition);
-        messaging(clntInitiator, clntTransition);
+        messaging(grid("clnt_initiator"), grid("srv_transition"));
+        messaging(grid("clnt_initiator"), grid("clnt_transition"));
     }
 
     /**
@@ -75,13 +69,13 @@ public class IgniteMessagingResolveSecurityTest extends AbstractResolveSecurityT
      */
     private void messaging(IgniteEx lsnrNode, IgniteEx evtNode) {
         VERIFIER.start(secSubjectId(lsnrNode))
-            .add(srvEndpoint.name(), 1)
-            .add(clntEndpoint.name(), 1);
+            .add("srv_endpoint", 1)
+            .add("clnt_endpoint", 1);
 
         BARRIER.reset();
 
         IgniteMessaging messaging = lsnrNode.message(
-            lsnrNode.cluster().forNode(srvEndpoint.localNode(), clntEndpoint.localNode())
+            lsnrNode.cluster().forNode(grid("srv_endpoint").localNode(), grid("clnt_endpoint").localNode())
         );
 
         String topic = "HOT_TOPIC";

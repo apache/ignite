@@ -57,8 +57,8 @@ public abstract class AbstractCacheResolveSecurityTest extends AbstractResolveSe
      */
     protected void perform(IgniteEx node, Runnable r){
         VERIFIER.start(secSubjectId(node))
-            .add(srvTransition.name(), 1)
-            .add(srvEndpoint.name(), 1);
+            .add("srv_transition", 1)
+            .add("srv_endpoint", 1);
 
         r.run();
 

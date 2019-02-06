@@ -44,8 +44,8 @@ public class ComputeTaskComputeResolveSecurityTest extends AbstractComputeResolv
      */
     @Test
     public void test() {
-        execute(srvInitiator);
-        execute(clntInitiator);
+        execute(grid("srv_initiator"));
+        execute(grid("clnt_initiator"));
     }
 
     /**

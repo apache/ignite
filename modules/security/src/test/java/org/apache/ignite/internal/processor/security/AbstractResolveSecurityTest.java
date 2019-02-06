@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -37,43 +38,32 @@ public class AbstractResolveSecurityTest extends AbstractSecurityTest {
     /** Verifier to check results of tests. */
     protected static final Verifier VERIFIER = new Verifier();
 
-    /** Sever node. */
-    protected IgniteEx srvInitiator;
-
-    /** Client node. */
-    protected IgniteEx clntInitiator;
-
-    /** Sever node. */
-    protected IgniteEx srvTransition;
-
-    /** Sever node. */
-    protected IgniteEx srvEndpoint;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startNodes();
 
-        grid(0).cluster().active(true);
+        assert !G.allGrids().isEmpty();
+
+        G.allGrids().get(0).cluster().active(true);
     }
 
     /**
      * Starts nodes.
      */
     protected void startNodes() throws Exception {
-        srvInitiator = startGrid("srv_initiator", allowAllPermissionSet());
+        startGrid("srv_initiator", allowAllPermissionSet());
 
-        clntInitiator = startGrid("clnt_initiator", allowAllPermissionSet(), true);
+        startGrid("clnt_initiator", allowAllPermissionSet(), true);
 
-        srvTransition = startGrid("srv_transition", allowAllPermissionSet());
+        startGrid("srv_transition", allowAllPermissionSet());
 
-        srvEndpoint = startGrid("srv_endpoint", allowAllPermissionSet());
+        startGrid("srv_endpoint", allowAllPermissionSet());
     }
 
     /**
      * @param ign Node.
-     *
      * @return Security subject id of passed node.
      */
     protected UUID secSubjectId(IgniteEx ign) {
@@ -130,8 +120,7 @@ public class AbstractResolveSecurityTest extends AbstractSecurityTest {
         }
 
         /**
-         * Checks that current security context is valid and
-         * incriments invoke's counter.
+         * Checks that current security context is valid and incriments invoke's counter.
          *
          * @param ignite Local node.
          */
@@ -140,8 +129,7 @@ public class AbstractResolveSecurityTest extends AbstractSecurityTest {
         }
 
         /**
-         * Checks that current security context is valid and
-         * incriments invoke's counter.
+         * Checks that current security context is valid and incriments invoke's counter.
          *
          * @param ignite Local node.
          */

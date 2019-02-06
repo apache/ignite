@@ -40,8 +40,8 @@ public class ExecutorServiceComputeResolveSecurityTest extends AbstractComputeRe
      */
     @Test
     public void test() {
-        execute(srvInitiator);
-        execute(clntInitiator);
+        execute(grid("srv_initiator"));
+        execute(grid("clnt_initiator"));
     }
 
     /**
