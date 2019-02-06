@@ -1441,12 +1441,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private List<FieldsQueryCursor<List<?>>> queryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry,
         SqlCommand cmd, @Nullable SqlClientContext cliCtx) {
         boolean fail = false;
+        boolean unregister = true;
 
-        // Execute.
-        if (cmd instanceof SqlBulkLoadCommand)
-            return Collections.singletonList(dmlRunNativeDmlStatement(schemaName, qry.getSql(), cmd));
-
-        //Always registry new running query for native commands except COPY. Currently such operations don't support cancellation.
         Long qryId = registerRunningQuery(schemaName, null, qry.getSql(), qry.isLocal(), true);
 
         try {
@@ -1454,6 +1450,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (DdlStatementsProcessor.isDdlCommand(cmd))
                 cur = ddlProc.runDdlStatement(qry.getSql(), cmd);
+            else if (cmd instanceof SqlBulkLoadCommand) {
+                // Query will be unregistered when cursor is closed.
+                unregister = false;
+
+                cur = processBulkLoadCommand((SqlBulkLoadCommand) cmd, qryId);
+            }
             else if (cmd instanceof SqlSetStreamingCommand)
                 cur = processSetStreamingCommand((SqlSetStreamingCommand)cmd, cliCtx);
             else
@@ -1468,7 +1470,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ", err=" + e.getMessage() + ']', e);
         }
         finally {
-            runningQueryMgr.unregister(qryId, fail);
+            if (unregister || fail)
+                runningQueryMgr.unregister(qryId, fail);
         }
     }
 
@@ -1617,6 +1620,46 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             ctx.cache().context().tm().resetContext();
         }
+    }
+
+    /**
+     * Process bulk load COPY command.
+     *
+     * @param cmd The command.
+     * @param qryId Query id.
+     * @return The context (which is the result of the first request/response).
+     * @throws IgniteCheckedException If something failed.
+     */
+    private FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd, Long qryId)
+        throws IgniteCheckedException {
+        if (cmd.packetSize() == null)
+            cmd.packetSize(BulkLoadAckClientParameters.DFLT_PACKET_SIZE);
+
+        GridH2Table tbl = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName());
+
+        if (tbl == null) {
+            throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
+                IgniteQueryErrorCode.TABLE_NOT_FOUND);
+        }
+
+        H2Utils.checkAndStartNotStartedCache(ctx, tbl);
+
+        UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
+
+        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new DmlBulkLoadDataConverter(plan);
+
+        IgniteDataStreamer<Object, Object> streamer = ctx.grid().dataStreamer(tbl.cacheName());
+
+        BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
+
+        BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
+
+        BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
+            runningQueryMgr, qryId);
+
+        BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
+
+        return new BulkLoadContextCursor(processor, params);
     }
 
     /** {@inheritDoc} */
@@ -3530,78 +3573,5 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return plan.iteratorForTransaction(connMgr, cur);
-    }
-
-    /**
-     * Runs a DML statement for which we have internal command executor.
-     *
-     * @param schemaName Schema name.
-     * @param sql The SQL command text to execute.
-     * @param cmd The command to execute.
-     * @return The cursor returned by the statement.
-     * @throws IgniteSQLException If failed.
-     */
-    // TODO: Merge into queryDistributedSqlFieldsNative.
-    private FieldsQueryCursor<List<?>> dmlRunNativeDmlStatement(String schemaName, String sql, SqlCommand cmd) {
-        Long qryId = runningQueryMgr.register(sql, GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
-
-        try {
-            if (cmd instanceof SqlBulkLoadCommand)
-                return processBulkLoadCommand((SqlBulkLoadCommand)cmd, qryId);
-            else
-                throw new IgniteSQLException("Unsupported DML operation: " + sql,
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        }
-        catch (IgniteSQLException e) {
-            runningQueryMgr.unregister(qryId, true);
-
-            throw e;
-        }
-        catch (Exception e) {
-            runningQueryMgr.unregister(qryId, true);
-
-            throw new IgniteSQLException("Unexpected DML operation failure: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Process bulk load COPY command.
-     *
-     * @param cmd The command.
-     * @param qryId Query id.
-     * @return The context (which is the result of the first request/response).
-     * @throws IgniteCheckedException If something failed.
-     */
-    private FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd, Long qryId)
-        throws IgniteCheckedException {
-        if (cmd.packetSize() == null)
-            cmd.packetSize(BulkLoadAckClientParameters.DFLT_PACKET_SIZE);
-
-        GridH2Table tbl = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName());
-
-        if (tbl == null) {
-            throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
-                IgniteQueryErrorCode.TABLE_NOT_FOUND);
-        }
-
-        H2Utils.checkAndStartNotStartedCache(ctx, tbl);
-
-        UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
-
-        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new DmlBulkLoadDataConverter(plan);
-
-        IgniteDataStreamer<Object, Object> streamer = ctx.grid().dataStreamer(tbl.cacheName());
-
-        BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
-
-        BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
-
-        BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
-            runningQueryMgr, qryId);
-
-        BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
-
-        return new BulkLoadContextCursor(processor, params);
     }
 }
