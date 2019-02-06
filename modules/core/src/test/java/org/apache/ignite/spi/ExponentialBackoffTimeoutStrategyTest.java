@@ -35,7 +35,7 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
             1000L,
             3000L,
             3,
-             2.
+            2.
         );
 
         checkTimeout(helper, 5_000L);
@@ -49,7 +49,7 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
             1000L,
             3_000L,
             3,
-                2.
+            2.
         );
 
         assertEquals(1000L, helper.getAndCalculateNextTimeout());
