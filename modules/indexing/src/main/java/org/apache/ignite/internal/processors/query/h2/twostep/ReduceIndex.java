@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.util.AbstractList;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.RandomAccess;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,7 +55,7 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
 /**
  * Merge index.
  */
-public abstract class GridMergeIndex extends BaseIndex {
+public abstract class ReduceIndex extends BaseIndex {
     /** */
     private static final int MAX_FETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_MAX_SIZE, 10_000);
 
@@ -66,8 +63,8 @@ public abstract class GridMergeIndex extends BaseIndex {
     private static final int PREFETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
 
     /** */
-    private static final AtomicReferenceFieldUpdater<GridMergeIndex, ConcurrentMap> lastPagesUpdater =
-        AtomicReferenceFieldUpdater.newUpdater(GridMergeIndex.class, ConcurrentMap.class, "lastPages");
+    private static final AtomicReferenceFieldUpdater<ReduceIndex, ConcurrentMap> LAST_PAGES_UPDATER =
+        AtomicReferenceFieldUpdater.newUpdater(ReduceIndex.class, ConcurrentMap.class, "lastPages");
 
     static {
         if (!U.isPow2(PREFETCH_SIZE)) {
@@ -83,6 +80,7 @@ public abstract class GridMergeIndex extends BaseIndex {
 
     /** */
     protected final Comparator<SearchRow> firstRowCmp = new Comparator<SearchRow>() {
+        @SuppressWarnings("ComparatorMethodParameterNotUsed")
         @Override public int compare(SearchRow rowInList, SearchRow searchRow) {
             int res = compareRows(rowInList, searchRow);
 
@@ -92,6 +90,7 @@ public abstract class GridMergeIndex extends BaseIndex {
 
     /** */
     protected final Comparator<SearchRow> lastRowCmp = new Comparator<SearchRow>() {
+        @SuppressWarnings("ComparatorMethodParameterNotUsed")
         @Override public int compare(SearchRow rowInList, SearchRow searchRow) {
             int res = compareRows(rowInList, searchRow);
 
@@ -108,19 +107,17 @@ public abstract class GridMergeIndex extends BaseIndex {
     /**
      * Will be r/w from query execution thread only, does not need to be threadsafe.
      */
-    private final BlockList<Row> fetched;
+    private final ReduceBlockList<Row> fetched;
 
     /** */
     private Row lastEvictedRow;
 
     /** */
-    private volatile int fetchedCnt;
-
-    /** */
     private final GridKernalContext ctx;
 
-    /** */
-    private volatile ConcurrentMap<SourceKey, Integer> lastPages;
+    /** DO NOT change name field of this field, updated through {@link #LAST_PAGES_UPDATER} */
+    @SuppressWarnings("unused")
+    private volatile ConcurrentMap<ReduceSourceKey, Integer> lastPages;
 
     /**
      * @param ctx Context.
@@ -129,8 +126,8 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param type Type.
      * @param cols Columns.
      */
-    public GridMergeIndex(GridKernalContext ctx,
-        GridMergeTable tbl,
+    protected ReduceIndex(GridKernalContext ctx,
+        ReduceTable tbl,
         String name,
         IndexType type,
         IndexColumn[] cols
@@ -143,10 +140,10 @@ public abstract class GridMergeIndex extends BaseIndex {
     /**
      * @param ctx Context.
      */
-    protected GridMergeIndex(GridKernalContext ctx) {
+    protected ReduceIndex(GridKernalContext ctx) {
         this.ctx = ctx;
 
-        fetched = new BlockList<>(PREFETCH_SIZE);
+        fetched = new ReduceBlockList<>(PREFETCH_SIZE);
     }
 
     /**
@@ -222,8 +219,8 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param queue Queue to poll.
      * @return Next page.
      */
-    private GridResultPage takeNextPage(Pollable<GridResultPage> queue) {
-        GridResultPage page;
+    private ReduceResultPage takeNextPage(Pollable<ReduceResultPage> queue) {
+        ReduceResultPage page;
 
         for (;;) {
             try {
@@ -247,9 +244,9 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param iter Current iterator.
      * @return The same or new iterator.
      */
-    protected final Iterator<Value[]> pollNextIterator(Pollable<GridResultPage> queue, Iterator<Value[]> iter) {
+    protected final Iterator<Value[]> pollNextIterator(Pollable<ReduceResultPage> queue, Iterator<Value[]> iter) {
         if (!iter.hasNext()) {
-            GridResultPage page = takeNextPage(queue);
+            ReduceResultPage page = takeNextPage(queue);
 
             if (!page.isLast())
                 page.fetchNextPage(); // Failed will throw an exception here.
@@ -279,7 +276,7 @@ public abstract class GridMergeIndex extends BaseIndex {
         if (nodeId == null)
             nodeId = F.first(sources);
 
-        addPage0(new GridResultPage(null, nodeId, null) {
+        addPage0(new ReduceResultPage(null, nodeId, null) {
             @Override public boolean isFail() {
                 return true;
             }
@@ -307,9 +304,9 @@ public abstract class GridMergeIndex extends BaseIndex {
         if (allRows < 0 || res.page() != 0)
             return;
 
-        ConcurrentMap<SourceKey,Integer> lp = lastPages;
+        ConcurrentMap<ReduceSourceKey,Integer> lp = lastPages;
 
-        if (lp == null && !lastPagesUpdater.compareAndSet(this, null, lp = new ConcurrentHashMap<>()))
+        if (lp == null && !LAST_PAGES_UPDATER.compareAndSet(this, null, lp = new ConcurrentHashMap<>()))
             lp = lastPages;
 
         assert pageSize > 0: pageSize;
@@ -318,14 +315,14 @@ public abstract class GridMergeIndex extends BaseIndex {
 
         assert lastPage >= 0: lastPage;
 
-        if (lp.put(new SourceKey(nodeId, res.segmentId()), lastPage) != null)
+        if (lp.put(new ReduceSourceKey(nodeId, res.segmentId()), lastPage) != null)
             throw new IllegalStateException();
     }
 
     /**
      * @param page Page.
      */
-    private void markLastPage(GridResultPage page) {
+    private void markLastPage(ReduceResultPage page) {
         GridQueryNextPageResponse res = page.response();
 
         if (!res.last()) {
@@ -333,12 +330,12 @@ public abstract class GridMergeIndex extends BaseIndex {
 
             initLastPages(nodeId, res);
 
-            ConcurrentMap<SourceKey,Integer> lp = lastPages;
+            ConcurrentMap<ReduceSourceKey,Integer> lp = lastPages;
 
             if (lp == null)
                 return; // It was not initialized --> wait for last page flag.
 
-            Integer lastPage = lp.get(new SourceKey(nodeId, res.segmentId()));
+            Integer lastPage = lp.get(new ReduceSourceKey(nodeId, res.segmentId()));
 
             if (lastPage == null)
                 return; // This node may use the new protocol --> wait for last page flag.
@@ -356,7 +353,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     /**
      * @param page Page.
      */
-    public final void addPage(GridResultPage page) {
+    public final void addPage(ReduceResultPage page) {
         markLastPage(page);
         addPage0(page);
     }
@@ -365,16 +362,16 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param lastPage Real last page.
      * @return Created dummy page.
      */
-    protected final GridResultPage createDummyLastPage(GridResultPage lastPage) {
+    protected final ReduceResultPage createDummyLastPage(ReduceResultPage lastPage) {
         assert !lastPage.isDummyLast(); // It must be a real last page.
 
-        return new GridResultPage(ctx, lastPage.source(), null).setLast(true);
+        return new ReduceResultPage(ctx, lastPage.source(), null).setLast(true);
     }
 
     /**
      * @param page Page.
      */
-    protected abstract void addPage0(GridResultPage page);
+    protected abstract void addPage0(ReduceResultPage page);
 
     /** {@inheritDoc} */
     @Override public final Cursor find(Session ses, SearchRow first, SearchRow last) {
@@ -512,7 +509,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param l List.
      * @return Last element.
      */
-    private static <Z> Z last(List<Z> l) {
+    public static <Z> Z last(List<Z> l) {
         return l.get(l.size() - 1);
     }
 
@@ -637,8 +634,6 @@ public abstract class GridMergeIndex extends BaseIndex {
                     cur = Integer.MAX_VALUE; // We were not able to fetch anything. Done.
                 else {
                     // Update fetched count.
-                    fetchedCnt += rows.size() - cur;
-
                     if (haveBounds()) {
                         cur = findBounds();
 
@@ -676,88 +671,6 @@ public abstract class GridMergeIndex extends BaseIndex {
         }
     }
 
-    /** */
-    enum State {
-        UNINITIALIZED, INITIALIZED, FINISHED
-    }
-
-    /**
-     */
-    private static final class BlockList<Z> extends AbstractList<Z> implements RandomAccess {
-        /** */
-        private final List<List<Z>> blocks;
-
-        /** */
-        private int size;
-
-        /** */
-        private final int maxBlockSize;
-
-        /** */
-        private final int shift;
-
-        /** */
-        private final int mask;
-
-        /**
-         * @param maxBlockSize Max block size.
-         */
-        private BlockList(int maxBlockSize) {
-            assert U.isPow2(maxBlockSize);
-
-            this.maxBlockSize = maxBlockSize;
-
-            shift = Integer.numberOfTrailingZeros(maxBlockSize);
-            mask = maxBlockSize - 1;
-
-            blocks = new ArrayList<>();
-            blocks.add(new ArrayList<Z>());
-        }
-
-        /** {@inheritDoc} */
-        @Override public int size() {
-            return size;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean add(Z z) {
-            size++;
-
-            List<Z> lastBlock = lastBlock();
-
-            lastBlock.add(z);
-
-            if (lastBlock.size() == maxBlockSize)
-                blocks.add(new ArrayList<Z>());
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Z get(int idx) {
-            return blocks.get(idx >>> shift).get(idx & mask);
-        }
-
-        /**
-         * @return Last block.
-         */
-        private List<Z> lastBlock() {
-            return last(blocks);
-        }
-
-        /**
-         * @return Evicted block.
-         */
-        private List<Z> evictFirstBlock() {
-            // Remove head block.
-            List<Z> res = blocks.remove(0);
-
-            size -= res.size();
-
-            return res;
-        }
-    }
-
     /**
      * Pollable.
      */
@@ -771,39 +684,4 @@ public abstract class GridMergeIndex extends BaseIndex {
         E poll(long timeout, TimeUnit unit) throws InterruptedException;
     }
 
-    /**
-     */
-    private static class SourceKey {
-        final UUID nodeId;
-
-        /** */
-        final int segment;
-
-        /**
-         * @param nodeId Node ID.
-         * @param segment Segment.
-         */
-        SourceKey(UUID nodeId, int segment) {
-            this.nodeId = nodeId;
-            this.segment = segment;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            SourceKey sourceKey = (SourceKey)o;
-
-            if (segment != sourceKey.segment) return false;
-            return nodeId.equals(sourceKey.nodeId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = nodeId.hashCode();
-            result = 31 * result + segment;
-            return result;
-        }
-    }
 }
