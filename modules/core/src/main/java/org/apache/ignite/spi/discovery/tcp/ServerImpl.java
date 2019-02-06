@@ -1093,8 +1093,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return false;
 
             boolean retry = false;
-            boolean failed = false;
-
             Collection<Exception> errs = new ArrayList<>();
 
             for (InetSocketAddress addr : addrs) {
@@ -1133,14 +1131,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Join request sending succeeded, wait for response from topology.
                             return true;
 
-                        case RES_JOIN_IMPOSSIBLE:
-                            failed = true;
-
-                            throw new IgniteSpiException("Impossible to continue join, check if local discovery and communication ports " +
-                                "are not blocked with firewall [addr=" + addr +
-                                ", req=" + joinReq + ", discoLocalPort=" + spi.getLocalPort() +
-                                ", discoLocalPortRange=" + spi.getLocalPortRange() + ']');
-
                         default:
                             // Concurrent startup, try next node.
                             if (res == RES_CONTINUE_JOIN) {
@@ -1158,9 +1148,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
                 catch (IgniteSpiException e) {
-                    if (failed)
-                        throw e;
-
                     errs.add(e);
 
                     if (log.isDebugEnabled()) {
