@@ -1483,59 +1483,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
-            List<FieldsQueryCursor<List<?>>> res;
-
-            {
-                // First, let's check if we already have a two-step query for this statement...
-                H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(
-                    schemaName,
-                    qry.getSql(),
-                    qry.isCollocated(),
-                    qry.isDistributedJoins(),
-                    qry.isEnforceJoinOrder(),
-                    qry.isLocal());
-
-                H2TwoStepCachedQuery cachedQry;
-
-                if ((cachedQry = twoStepCache.get(cachedQryKey)) != null) {
-                    checkQueryType(qry, true);
-
-                    GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
-
-                    List<GridQueryFieldMetadata> meta = cachedQry.meta();
-
-                    // TODO: This is a bug (missed security check) which will go away should we encapsulate parsing logic properly
-                    res = Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
-                        startTx, tracker, cancel, registerAsNewQry));
-
-                    if (!twoStepQry.explain())
-                        twoStepCache.putIfAbsent(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
-
-                    return res;
-                }
-            }
-
-            // TODO: Looks like we can remove it without secrificing anything.
-            {
-                // Second, let's check if we already have a parsed statement...
-                PreparedStatement cachedStmt;
-
-                if ((cachedStmt = cachedStatement(connMgr.connectionForThread().connection(schemaName), qry.getSql())) != null) {
-                    Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
-
-                    // We may use this cached statement only for local queries and non queries.
-                    if (qry.isLocal() || !prepared.isQuery()) {
-                        if (GridSqlQueryParser.isExplainUpdate(prepared))
-                            throw new IgniteSQLException("Explains of update queries are not supported.",
-                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-                        return (List<FieldsQueryCursor<List<?>>>)doRunPrepared(schemaName, prepared, qry, null, null,
-                            keepBinary, startTx, tracker, cancel, registerAsNewQry);
-                    }
-                }
-            }
-
-            res = new ArrayList<>(1);
+            List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
 
             int firstArg = 0;
 
@@ -1567,24 +1515,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     res.addAll(queryDistributedSqlFieldsNative(schemaName, newQry, nativeCmd, cliCtx));
                 }
-                else {
-                    // Let's avoid second reflection getter call by returning Prepared object too
+                else  {
                     Prepared prepared = parseRes.prepared();
-
-                    GridCacheTwoStepQuery twoStepQry = parseRes.twoStepQuery();
 
                     List<GridQueryFieldMetadata> meta = parseRes.meta();
 
-                    firstArg += prepared.getParameters().size();
+                    GridCacheTwoStepQuery twoStepQry = parseRes.twoStepQuery();
 
                     res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, startTx, tracker,
                         cancel, registerAsNewQry));
 
+                    if (prepared != null)
+                        firstArg += prepared.getParameters().size();
+                    else
+                        firstArg += twoStepQry.argsCount();
+
+                    H2TwoStepCachedQueryKey twoStepKey = parseRes.twoStepQueryKey();
+
                     // We cannot cache two-step query for multiple statements query except the last statement
-                    if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
-                        !parseRes.twoStepQuery().explain() && remainingSql == null)
-                        twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
-                            twoStepQry.copy()));
+                    if (twoStepQry != null && remainingSql == null && !twoStepQry.explain() && twoStepKey != null)
+                        twoStepCache.putIfAbsent(twoStepKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
                 }
             }
 
@@ -1595,7 +1545,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (mvccEnabled && (tx = tx(ctx)) != null &&
                 (!(e instanceof IgniteSQLException) || /* Parsing errors should not rollback Tx. */
-                    ((IgniteSQLException)e).sqlState() != SqlStateCode.PARSING_EXCEPTION) ) {
+                    ((IgniteSQLException)e).sqlState() != SqlStateCode.PARSING_EXCEPTION)) {
 
                 tx.setRollbackOnly();
             }
@@ -1605,15 +1555,42 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Parses generic query. Tries to parse query natively and uses h2 parser if attempt was not succeed.
-     * Actually, only first (leading) sql statement is performed (Lazy parsing).
+     * Parses generic query. Tries : 1) Get plan of the dristributed select from the chache; 2)parse query using native
+     * parser; 3)uses h2 parser if 1 and 2 were not succeed.
+     * Actually, only first (leading) sql statement is parsed (lazy parsing).
      *
      * @param schemaName schema name.
      * @param qry query to parse.
      * @param firstArg index of the first argument of the leading query. In other words - offset in the qry args array.
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
-    private ParsingResult parse (String schemaName, SqlFieldsQuery qry, int firstArg) {
+    private ParsingResult parse(String schemaName, SqlFieldsQuery qry, int firstArg) {
+        // First, let's check if we already have a two-step query for this statement...
+        H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(
+            schemaName,
+            qry.getSql(),
+            qry.isCollocated(),
+            qry.isDistributedJoins(),
+            qry.isEnforceJoinOrder(),
+            qry.isLocal());
+
+        H2TwoStepCachedQuery cachedQry;
+
+        if ((cachedQry = twoStepCache.get(cachedQryKey)) != null) {
+            checkQueryType(qry, true);
+
+            GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
+
+            List<GridQueryFieldMetadata> meta = cachedQry.meta();
+
+            ParsingResult parseRes = ParsingResult.twoStepResult(null, qry, null, twoStepQry, cachedQryKey, meta);
+
+            if (!twoStepQry.explain())
+                twoStepCache.putIfAbsent(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
+
+            return parseRes;
+        }
+
         ParsingResult parseRes = parseNativeLeadingStatement(schemaName, qry);
 
         if (parseRes != null)
@@ -1647,7 +1624,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         IndexingQueryFilter filter = (loc ? backupFilter(null, qry.getPartitions()) : null);
 
-        if (!prepared.isQuery()) {
+        if (prepared != null && !prepared.isQuery()) {
             Long qryId = registerRunningQuery(schemaName, cancel, sqlQry, loc, registerAsNewQry);
 
             boolean fail = false;
