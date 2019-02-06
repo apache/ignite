@@ -299,7 +299,7 @@ export default class AgentManager {
 
                 this.saveToStorage(cluster);
 
-                return Promise.resolve(true);
+                return Promise.resolve();
             });
     }
 
@@ -692,7 +692,7 @@ export default class AgentManager {
      * @param {Number} pageSize
      * @param {Boolean} [lazy] query flag.
      * @param {Boolean} [collocated] Collocated query.
-     * @returns {Promise<VisorQueryResult>}
+     * @returns {Promise.<{{responseNodeId: String, queryId: String, columns: String[], rows: {List.<Object[]>}, hasMore: Boolean, duration: Number}}>} Query execution result.
      */
     querySql({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy = false, collocated = false}) {
         if (this.available(IGNITE_2_0)) {
@@ -735,7 +735,7 @@ export default class AgentManager {
      * @param {String} nid Node id.
      * @param {String} queryId Query ID.
      * @param {Number} pageSize
-     * @returns {Promise<VisorQueryResult>}
+     * @returns {Promise.<{{responseNodeId: String, queryId: String, columns: String[], rows: {List.<Object[]>}, hasMore: Boolean, duration: Number}}>} Query execution result.
      */
     queryFetchFistsPage(nid, queryId, pageSize) {
         return this.visorTask('queryFetchFirstPage', nid, queryId, pageSize).then(({error, result}) => {
@@ -750,7 +750,7 @@ export default class AgentManager {
      * @param {String} nid Node id.
      * @param {Number} queryId
      * @param {Number} pageSize
-     * @returns {Promise<VisorQueryResult>}
+     * @returns {Promise.<{{responseNodeId: String, queryId: String, columns: String[], rows: {List.<Object[]>}, hasMore: Boolean, duration: Number}}>} Query execution result.
      */
     queryNextPage(nid, queryId, pageSize) {
         if (this.available(IGNITE_2_0))
@@ -782,7 +782,7 @@ export default class AgentManager {
      * @param {Boolean} near Scan near cache.
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {Number} pageSize Page size.
-     * @returns {Promise<VisorQueryResult>}
+     * @returns {Promise.<{{responseNodeId: String, queryId: String, columns: String[], rows: {List.<Object[]>}, hasMore: Boolean, duration: Number}}>} Query execution result.
      */
     queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize}) {
         if (this.available(IGNITE_2_0)) {

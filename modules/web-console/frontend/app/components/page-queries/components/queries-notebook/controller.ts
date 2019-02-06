@@ -2149,10 +2149,10 @@ export class NotebookCtrl {
             }
         };
 
-        const offTransitions = $transitions.onBefore({from: 'base.sql.notebook'}, ($transition$) => {
+        this.offTransitions = $transitions.onBefore({from: 'base.sql.notebook'}, ($transition$) => {
             const options = $transition$.options();
 
-            if (options.custom.justIDUpdate || options.redirectedFrom)
+            if (options.redirectedFrom)
                 return true;
 
             return this.closeOpenedQueries();
@@ -2277,7 +2277,7 @@ export class NotebookCtrl {
     async removeParagraph(paragraph: Paragraph) {
         try {
             const msg = (this._hasRunningQueries([paragraph])
-                ? 'Query is being executed. Are you sure you want cancel and remove query: "'
+                ? 'Query is being executed. Are you sure you want to cancel and remove query: "'
                 : 'Are you sure you want to remove query: "') + paragraph.name + '"?';
 
             await this.Confirm.confirm(msg);
@@ -2293,6 +2293,9 @@ export class NotebookCtrl {
 
             this.$scope.notebook.paragraphs.splice(paragraph_idx, 1);
             this.$scope.rebuildScrollParagraphs();
+
+            paragraph.cancelQuerySubject.complete();
+            paragraph.cancelExportSubject.complete();
 
             await this.Notebook.save(this.$scope.notebook)
                 .catch(this.Messages.showError);
