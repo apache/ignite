@@ -70,6 +70,9 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Max cursors. */
     private final int maxCursors;
 
+    /** Current protocol version. */
+    private ClientListenerProtocolVersion currentVer;
+
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
 
@@ -105,6 +108,13 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         return DEFAULT_VER;
     }
 
+    /**
+     * @return Currently used protocol version.
+     */
+    public ClientListenerProtocolVersion currentVersion() {
+        return currentVer;
+    }
+
     /** {@inheritDoc} */
     @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
@@ -128,6 +138,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         }
 
         AuthorizationContext authCtx = authenticate(user, pwd);
+
+        currentVer = ver;
 
         handler = new ClientRequestHandler(this, authCtx, ver);
 
