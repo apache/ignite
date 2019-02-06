@@ -22,11 +22,13 @@ import java.util.Collection;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionAffinityFunctionType;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityDescriptor;
@@ -114,6 +116,11 @@ class ClientCachePartitionsMapping
     private static PartitionTableAffinityDescriptor affinityForCache(DynamicCacheDescriptor cacheDesc) {
         CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
+        // If custom affinity key mapper is used, we do not need it.
+        AffinityKeyMapper keyMapper = ccfg.getAffinityMapper();
+        if (!(keyMapper instanceof GridCacheDefaultAffinityKeyMapper))
+            return null;
+
         // Partition could be extracted only from PARTITIONED caches.
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
             return null;
@@ -134,7 +141,7 @@ class ClientCachePartitionsMapping
 
     /**
      * Writer mapping using binary writer.
-     * @param writer
+     * @param writer Writer.
      */
     public void write(BinaryRawWriter writer) {
         writer.writeInt(cacheIds.size());
