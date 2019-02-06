@@ -19,7 +19,7 @@ import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
 import {Subject, defer, from, of, merge, timer} from 'rxjs';
-import {catchError, expand, exhaustMap, filter, finalize, first, map, mergeMap, switchMap, takeUntil, take, tap} from 'rxjs/operators';
+import {catchError, distinctUntilChanged, expand, exhaustMap, filter, finalize, first, map, mergeMap, pluck, switchMap, takeUntil, take, tap} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
 
@@ -954,9 +954,6 @@ export class NotebookCtrl {
         };
 
         const _startWatch = () => {
-            const awaitClusters$ = from(
-                agentMgr.startClusterWatch('Leave Queries', 'default-state'));
-
             const finishLoading$ = defer(() => {
                 if (!$root.IgniteDemoMode)
                     Loading.finish('sqlLoading');
@@ -966,17 +963,32 @@ export class NotebookCtrl {
                 return merge(timer(0, period).pipe(exhaustMap(() => _refreshCaches())), finishLoading$);
             };
 
-            this.refresh$ = awaitClusters$.pipe(
-                mergeMap(() => agentMgr.currentCluster$),
-                tap(() => Loading.start('sqlLoading')),
-                tap(() => {
-                    _.forEach($scope.notebook.paragraphs, (paragraph) => {
-                        paragraph.reset($interval);
-                    });
-                }),
-                switchMap(() => refreshCaches(5000))
-            )
-                .subscribe();
+            const cluster$ = agentMgr.connectionSbj.pipe(
+                pluck('cluster'),
+                distinctUntilChanged(),
+                tap((cluster) => {
+                    this.clusterIsAvailable = (!!cluster && cluster.active === true) || agentMgr.isDemoMode();
+                })
+            );
+
+            this.refresh$ = cluster$.pipe(
+                switchMap((cluster) => {
+                    if (!cluster && !agentMgr.isDemoMode())
+                        return of(null);
+
+                    return of(cluster).pipe(
+                        tap(() => Loading.start('sqlLoading')),
+                        tap(() => {
+                            _.forEach($scope.notebook.paragraphs, (paragraph) => {
+                                paragraph.reset($interval);
+                            });
+                        }),
+                        switchMap(() => refreshCaches(5000))
+                    );
+                })
+            );
+
+            this.subscribers$ = merge(this.refresh$).subscribe();
         };
 
         const _newParagraph = (paragraph) => {
@@ -1528,7 +1540,8 @@ export class NotebookCtrl {
                     }
 
                     return nids[_.random(0, nids.length - 1)];
-                });
+                })
+                .catch(Messages.showError);
         };
 
         const _executeRefresh = (paragraph) => {
@@ -1687,6 +1700,8 @@ export class NotebookCtrl {
                             paragraph.setError(err);
                             paragraph.ace && paragraph.ace.focus();
                             $scope.stopRefresh(paragraph);
+
+                            Messages.showError(err);
                         }
                     );
                 }),
@@ -2301,8 +2316,8 @@ export class NotebookCtrl {
     }
 
     $onDestroy() {
-        if (this.refresh$)
-            this.refresh$.unsubscribe();
+        if (this.subscribers$)
+            this.subscribers$.unsubscribe();
 
         if (this.offTransitions)
             this.offTransitions();
