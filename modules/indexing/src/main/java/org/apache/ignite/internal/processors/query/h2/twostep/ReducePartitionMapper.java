@@ -578,7 +578,7 @@ public class ReducePartitionMapper {
     private Collection<ClusterNode> dataNodes(int grpId, AffinityTopologyVersion topVer) {
         Collection<ClusterNode> res = ctx.discovery().cacheGroupAffinityNodes(grpId, topVer);
 
-        return res != null ? res : Collections.<ClusterNode>emptySet();
+        return res != null ? res : Collections.emptySet();
     }
 
     /**
@@ -616,7 +616,7 @@ public class ReducePartitionMapper {
      * @param cacheIds Cache IDs.
      * @return The first partitioned cache context.
      */
-    private GridCacheContext<?,?> findFirstPartitioned(List<Integer> cacheIds) {
+    public GridCacheContext<?,?> findFirstPartitioned(List<Integer> cacheIds) {
         for (int i = 0; i < cacheIds.size(); i++) {
             GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(i));
 

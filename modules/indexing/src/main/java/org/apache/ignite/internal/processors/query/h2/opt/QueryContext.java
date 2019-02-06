@@ -18,17 +18,14 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Map;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 /**
  * Thread local SQL query context which is intended to be accessible from everywhere.
@@ -47,7 +44,7 @@ public class QueryContext {
     private final MvccSnapshot mvccSnapshot;
 
     /** */
-    private final List<GridReservable> reservations;
+    private final PartitionReservation reservations;
 
     /** */
     private MapQueryLazyWorker lazyWorker;
@@ -69,7 +66,7 @@ public class QueryContext {
         @Nullable IndexingQueryFilter filter,
         @Nullable DistributedJoinContext distributedJoinCtx,
         @Nullable MvccSnapshot mvccSnapshot,
-        @Nullable List<GridReservable> reservations
+        @Nullable PartitionReservation reservations
     ) {
         this.segment = segment;
         this.filter = filter;
@@ -107,12 +104,8 @@ public class QueryContext {
         if (distributedJoinCtx != null)
             distributedJoinCtx.cancel();
 
-        List<GridReservable> r = reservations;
-
-        if (!nodeStop && !F.isEmpty(r)) {
-            for (int i = 0; i < r.size(); i++)
-                r.get(i).release();
-        }
+        if (!nodeStop && reservations != null)
+            reservations.release();
     }
 
     /**
