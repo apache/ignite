@@ -47,8 +47,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.3.0. Added: Affinity Awareness support, IEP-23. */
     public static final ClientListenerProtocolVersion VER_1_3_0 = ClientListenerProtocolVersion.create(1, 3, 0);
 
-    /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_1_3_0;
+    /** Default version. */
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_3_0;
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
@@ -101,8 +101,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerProtocolVersion currentVersion() {
-        return CURRENT_VER;
+    @Override public ClientListenerProtocolVersion defaultVersion() {
+        return DEFAULT_VER;
     }
 
     /** {@inheritDoc} */
