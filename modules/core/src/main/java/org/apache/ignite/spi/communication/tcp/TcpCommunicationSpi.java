@@ -126,6 +126,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategy;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
@@ -138,7 +139,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
-import org.apache.ignite.spi.ExponentialBackoffSpiTimeout;
+import org.apache.ignite.spi.TimeoutStrategy;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
@@ -327,6 +328,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * {@code "Math.max(4, Runtime.getRuntime().availableProcessors() / 2)"}.
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
+
+    /** Default initial delay for out of topology sleep and reconnects if case of temporary network issues. */
+    private static final int DLFT_INITIAL_DELAY = 200;
+
+    /** Default backoff coefficient to calculate next timeout based on backoff strategy. */
+    private static final int DLFT_BACKOFF_COEFF = 2;
 
     /**
      * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
@@ -3267,13 +3274,42 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         GridCommunicationClient client = null;
         IgniteCheckedException errs = null;
 
+        long totalTimeout;
+
+        if (failureDetectionTimeoutEnabled())
+            totalTimeout = node.isClient() ? clientFailureDetectionTimeout() : failureDetectionTimeout();
+        else {
+            totalTimeout = ExponentialBackoffTimeoutStrategy.maxBackoffTimeout(
+                    connTimeout,
+                    maxConnTimeout,
+                    reconCnt,
+                    DLFT_BACKOFF_COEFF
+            );
+        }
+
         for (InetSocketAddress addr : addrs) {
-            ExponentialBackoffSpiTimeout timeoutHelper = new ExponentialBackoffSpiTimeout(
-                failureDetectionTimeoutEnabled(),
-                node.isClient()? clientFailureDetectionTimeout() : failureDetectionTimeout(),
+            TimeoutStrategy connTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
+                totalTimeout,
                 connTimeout,
                 maxConnTimeout,
-                reconCnt
+                reconCnt,
+                DLFT_BACKOFF_COEFF
+            );
+
+            TimeoutStrategy outOfTopTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
+                    totalTimeout,
+                    DLFT_INITIAL_DELAY,
+                    maxConnTimeout,
+                    reconCnt,
+                    DLFT_BACKOFF_COEFF
+            );
+
+            TimeoutStrategy reconnectTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
+                    totalTimeout,
+                    DLFT_INITIAL_DELAY,
+                    maxConnTimeout,
+                    reconCnt,
+                    DLFT_BACKOFF_COEFF
             );
 
             while (client == null) { // Reconnection on handshake timeout.
@@ -3330,7 +3366,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     GridSslMeta sslMeta = null;
 
                     try {
-                        ch.socket().connect(addr, timeoutHelper.connTimeout());
+                        ch.socket().connect(addr, (int) connTimeoutStgy.currentTimeout());
 
                         if (getSpiContext().node(node.id()) == null)
                             throw new ClusterTopologyCheckedException("Failed to send message (node left topology): " + node);
@@ -3350,7 +3386,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         rcvCnt = safeTcpHandshake(ch,
                             recoveryDesc,
                             node.id(),
-                            timeoutHelper.handshakeTimeout(),
+                            connTimeoutStgy.currentTimeout(),
                             sslMeta,
                             handshakeConnIdx);
 
@@ -3361,13 +3397,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         else if (rcvCnt == UNKNOWN_NODE)
                             throw new ClusterTopologyCheckedException("Remote node doesn't observe current node in topology : " + node.id());
                         else if (rcvCnt == NEED_WAIT) {
-                            long outOfTopDelay = timeoutHelper.getAndBackOffOutOfTopDelay();
+                            long outOfTopDelay = outOfTopTimeoutStgy.getAndCalculateNextTimeout();
 
                             //check that failure timeout will be reached after sleep(outOfTopDelay).
-                            if (timeoutHelper.checkTimeout(outOfTopDelay)) {
+                            if (outOfTopTimeoutStgy.checkTimeout(outOfTopDelay)) {
                                 U.warn(log, "Handshake NEED_WAIT timed out (will stop attempts to perform the handshake) " +
-                                    "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
-                                    ", addr=" + addr + ']');
+                                    "[node=" + node.id() +
+                                    ", outOfTopTimeoutStgy=" + outOfTopTimeoutStgy +
+                                    ", addr=" + addr +
+                                    ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
+                                    ", totalTimeout" + totalTimeout + ']');
 
                                 throw new ClusterTopologyCheckedException("Failed to connect to node " +
                                     "(current or target node is out of topology on target node within timeout). " +
@@ -3415,18 +3454,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         client = null;
                     }
 
-                    onException("Handshake timed out (will retry with increased timeout) [timeoutHelper=" + timeoutHelper +
+                    onException("Handshake timed out (will retry with increased timeout) [connTimeoutStrategy=" + connTimeoutStgy +
                         ", addr=" + addr + ']', e);
 
                     if (log.isDebugEnabled())
-                        log.debug("Handshake timed out (will retry with increased timeout) [timeoutHelper=" + timeoutHelper +
+                        log.debug("Handshake timed out (will retry with increased timeout) [connTimeoutStrategy=" + connTimeoutStgy +
                                 ", addr=" + addr + ", err=" + e + ']'
                         );
 
-                    if (timeoutHelper.checkTimeout(0)) {
+                    if (connTimeoutStgy.checkTimeout(0)) {
                         U.warn(log, "Handshake timed out (will stop attempts to perform the handshake) " +
-                            "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
-                            ", err=" + e.getMessage() + ", addr=" + addr + ']');
+                            "[node=" + node.id() + ", connTimeoutStrategy=" + connTimeoutStgy +
+                            ", err=" + e.getMessage() + ", addr=" + addr +
+                            ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
+                            ", totalTimeout" + totalTimeout + ']');
 
                         String msg = "Failed to connect to node (is node still alive?). " +
                             "Make sure that each ComputeTask and cache Transaction has a timeout set " +
@@ -3441,7 +3482,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         break;
                     }
                     else
-                        timeoutHelper.backoffHandshakeTimeout();
+                        connTimeoutStgy.getAndCalculateNextTimeout();
                 }
                 catch (ClusterTopologyCheckedException e) {
                     throw e;
@@ -3462,13 +3503,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     long reconnectDelay = 0;
 
                     if (isRecoverableException(e))
-                        reconnectDelay = timeoutHelper.getAndBackoffReconnectDelay();
+                        reconnectDelay = reconnectTimeoutStgy.getAndCalculateNextTimeout();
 
                     // check if timeout occured in case of unrecoverable exception
                     // or will occur after sleep(reconnectDelay) in future.
-                    if (timeoutHelper.checkTimeout(reconnectDelay)) {
+                    if (reconnectTimeoutStgy.checkTimeout(reconnectDelay)) {
                         U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
-                                "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
+                                "[node=" + node.id() + ", timeoutHelper=" + reconnectTimeoutStgy +
+                                ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
+                                ", totalTimeout" + totalTimeout +
                                 ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                         String msg = "Failed to connect to node (is node still alive?). " +
@@ -3490,6 +3533,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                     + node + ", delay = " + reconnectDelay + "ms]");
 
                         U.sleep(reconnectDelay);
+
+                        connTimeoutStgy.getAndCalculateNextTimeout();
                     }
                     else
                         break;

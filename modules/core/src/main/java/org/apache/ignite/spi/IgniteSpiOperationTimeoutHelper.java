@@ -28,9 +28,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * A new instance of the class should be created for every complex network based operations that usually consists of
  * request and response parts.
  *
- * Please use {@link ExponentialBackoffSpiTimeout}.
- *
- *
  */
 public class IgniteSpiOperationTimeoutHelper {
     // https://issues.apache.org/jira/browse/IGNITE-11221
