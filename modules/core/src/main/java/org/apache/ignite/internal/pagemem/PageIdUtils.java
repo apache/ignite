@@ -170,7 +170,8 @@ public final class PageIdUtils {
      */
     public static long pageId(int partId, int pageIdx) {
         assert partId == PageIdAllocator.INDEX_PARTITION
-            || partId >= PageIdAllocator.METASTORE_PARTITION && partId <= PageIdAllocator.MAX_PARTITION_ID :
+            || partId >= 0 /* 0 is more safe value beacuse predefined constants may be refactored similar to IGNITE-10348 */
+            && partId <= PageIdAllocator.MAX_PARTITION_ID :
             "partId = " + U.hexInt(partId);
 
         return pageId(partId, partId == PageIdAllocator.INDEX_PARTITION ? PageIdAllocator.FLAG_IDX : PageIdAllocator.FLAG_DATA, pageIdx);
