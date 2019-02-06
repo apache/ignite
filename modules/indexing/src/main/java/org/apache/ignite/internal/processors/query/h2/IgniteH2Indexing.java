@@ -504,35 +504,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param filter Cache name and key filter.
      * @param enforceJoinOrder Enforce join order of tables in the query.
      * @param startTx Start transaction flag.
-     * @param timeout Query timeout in milliseconds.
-     * @param cancel Query cancel.
-     * @param dataPageScanEnabled If data page scan is enabled.
-     * @return Query result.
-     * @throws IgniteCheckedException If failed.
-     */
-    public GridQueryFieldsResult queryLocalSqlFields(
-        String schemaName,
-        String qry,
-        @Nullable Collection<Object> params,
-        IndexingQueryFilter filter,
-        boolean enforceJoinOrder,
-        boolean startTx,
-        int timeout,
-        GridQueryCancel cancel,
-        Boolean dataPageScanEnabled
-    ) throws IgniteCheckedException {
-        return queryLocalSqlFields(schemaName, qry, params, filter, enforceJoinOrder, startTx, timeout, cancel, null, dataPageScanEnabled);
-    }
-
-    /**
-     * Queries individual fields (generally used by JDBC drivers).
-     *
-     * @param schemaName Schema name.
-     * @param qry Query.
-     * @param params Query parameters.
-     * @param filter Cache name and key filter.
-     * @param enforceJoinOrder Enforce join order of tables in the query.
-     * @param startTx Start transaction flag.
      * @param qryTimeout Query timeout in milliseconds.
      * @param cancel Query cancel.
      * @param mvccTracker Query tracker.
@@ -540,7 +511,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    GridQueryFieldsResult queryLocalSqlFields(
+    private GridQueryFieldsResult executeQueryLocal0(
         final String schemaName,
         String qry,
         @Nullable final Collection<Object> params,
@@ -884,7 +855,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         Iterator<List<?>> it;
 
                         if (!F.isEmpty(plan.selectQuery())) {
-                            GridQueryFieldsResult res = queryLocalSqlFields(
+                            GridQueryFieldsResult res = executeQueryLocal0(
                                 schema(cctx.name()),
                                 plan.selectQuery(),
                                 F.asList(params),
@@ -892,6 +863,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 false,
                                 false,
                                 0,
+                                null,
                                 null,
                                 null
                             );
@@ -1147,17 +1119,39 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
-        final boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel,
-        Long qryId) throws IgniteCheckedException {
-        String sql = qry.getSql();
-        List<Object> params = F.asList(qry.getArgs());
-        boolean enforceJoinOrder = qry.isEnforceJoinOrder(), startTx = autoStartTx(qry);
-        int timeout = qry.getTimeout();
+    /**
+     * Queries individual fields (generally used by JDBC drivers).
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @param filter Cache name and key filter.
+     * @param cancel Query cancel.
+     * @param qryId Running query id. {@code null} in case query is not registered.
+     * @return Cursor.
+     */
+    private FieldsQueryCursor<List<?>> executeQueryLocal(
+        String schemaName,
+        SqlFieldsQuery qry,
+        final boolean keepBinary,
+        IndexingQueryFilter filter,
+        GridQueryCancel cancel,
+        Long qryId
+    ) throws IgniteCheckedException {
+        boolean startTx = autoStartTx(qry);
 
-        final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, params, filter,
-            enforceJoinOrder, startTx, timeout, cancel, qry.isDataPageScanEnabled());
+        final GridQueryFieldsResult res = executeQueryLocal0(
+            schemaName,
+            qry.getSql(),
+            F.asList(qry.getArgs()),
+            filter,
+            qry.isEnforceJoinOrder(),
+            startTx,
+            qry.getTimeout(),
+            cancel,
+            null,
+            qry.isDataPageScanEnabled()
+        );
 
         Iterable<List<?>> iter = () -> {
             try {
@@ -1721,7 +1715,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
-                    res = Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
+                    res = Collections.singletonList(executeQuery(schemaName, qry, twoStepQry, meta, keepBinary,
                         startTx, tracker, cancel, registerAsNewQry));
 
 
@@ -1890,16 +1884,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (ctx.security().enabled())
                 checkSecurity(twoStepQry.cacheIds());
 
-            return Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
+            return Collections.singletonList(executeQuery(schemaName, qry, twoStepQry, meta, keepBinary,
                 startTx, tracker, cancel, registerAsNewQry));
-
         }
 
         // We've encountered a local query, let's just run it.
         Long qryId = registerRunningQuery(schemaName, cancel, sqlQry, loc, registerAsNewQry);
 
         try {
-            return Collections.singletonList(queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel, qryId));
+            return Collections.singletonList(executeQueryLocal(schemaName, qry, keepBinary, filter, cancel, qryId));
         }
         catch (IgniteCheckedException e) {
             runningQueryMgr.unregister(qryId, true);
@@ -2220,7 +2213,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 new StaticMvccQueryTracker(planCctx, mvccSnapshot), cancel, false).get(0);
         }
         else {
-            final GridQueryFieldsResult res = queryLocalSqlFields(schema, plan.selectQuery(),
+            final GridQueryFieldsResult res = executeQueryLocal0(schema, plan.selectQuery(),
                 F.asList(fldsQry.getArgs()), filter, fldsQry.isEnforceJoinOrder(), false, fldsQry.getTimeout(), cancel,
                 new StaticMvccQueryTracker(planCctx, mvccSnapshot), null);
 
@@ -2252,7 +2245,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
      * @return Cursor representing distributed query result.
      */
-    private FieldsQueryCursor<List<?>> doRunDistributedQuery(String schemaName, SqlFieldsQuery qry,
+    private FieldsQueryCursor<List<?>> executeQuery(String schemaName, SqlFieldsQuery qry,
         GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta, boolean keepBinary,
         boolean startTx, MvccQueryTracker mvccTracker, GridQueryCancel cancel, boolean registerAsNewQry) {
         if (log.isDebugEnabled())
@@ -3412,9 +3405,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else if (plan.hasRows())
             cur = plan.createRows(fieldsQry.getArgs());
         else {
-            final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, plan.selectQuery(),
+            final GridQueryFieldsResult res = executeQueryLocal0(schemaName, plan.selectQuery(),
                 F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), false, fieldsQry.getTimeout(),
-                cancel, null);
+                cancel, null, null);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
