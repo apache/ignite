@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
@@ -342,14 +340,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             Integer.class, Integer.class, Float.class, // Waiting jobs.
             Integer.class, Integer.class, Float.class, Integer.class, // Rejected jobs.
             Integer.class, Integer.class, Float.class, Integer.class, // Canceled jobs.
-            Time.class, Time.class, Time.class, // Jobs wait time.
-            Time.class, Time.class, Time.class, Time.class, // Jobs execute time.
+            Long.class, Long.class, Long.class, // Jobs wait time.
+            Long.class, Long.class, Long.class, Long.class, // Jobs execute time.
             Integer.class, Integer.class, // Executed jobs/task.
-            Time.class, Time.class, Time.class, Float.class, Float.class, // Busy/idle time.
+            Long.class, Long.class, Long.class, Float.class, Float.class, // Busy/idle time.
             Integer.class, Double.class, Double.class, Double.class, // CPU.
             Long.class, Long.class, Long.class, Long.class, Long.class, // Heap memory.
             Long.class, Long.class, Long.class, Long.class, Long.class, // Nonheap memory.
-            Time.class, Timestamp.class, Timestamp.class, Long.class, // Uptime.
+            Long.class, Timestamp.class, Timestamp.class, Long.class, // Uptime.
             Integer.class, Integer.class, Long.class, Integer.class, // Threads.
             Integer.class, Long.class, Integer.class, Long.class, // Sent/received messages.
             Integer.class); // Outbound message queue.
@@ -426,18 +424,18 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                     assertEquals(metrics.getCurrentCancelledJobs(), resMetrics.get(0).get(13));
                     assertEquals(metrics.getAverageCancelledJobs(), resMetrics.get(0).get(14));
                     assertEquals(metrics.getTotalCancelledJobs(), resMetrics.get(0).get(15));
-                    assertEquals(metrics.getMaximumJobWaitTime(), convertToMilliseconds(resMetrics.get(0).get(16)));
-                    assertEquals(metrics.getCurrentJobWaitTime(), convertToMilliseconds(resMetrics.get(0).get(17)));
-                    assertEquals((long)metrics.getAverageJobWaitTime(), convertToMilliseconds(resMetrics.get(0).get(18)));
-                    assertEquals(metrics.getMaximumJobExecuteTime(), convertToMilliseconds(resMetrics.get(0).get(19)));
-                    assertEquals(metrics.getCurrentJobExecuteTime(), convertToMilliseconds(resMetrics.get(0).get(20)));
-                    assertEquals((long)metrics.getAverageJobExecuteTime(), convertToMilliseconds(resMetrics.get(0).get(21)));
-                    assertEquals(metrics.getTotalJobsExecutionTime(), convertToMilliseconds(resMetrics.get(0).get(22)));
+                    assertEquals(metrics.getMaximumJobWaitTime(), resMetrics.get(0).get(16));
+                    assertEquals(metrics.getCurrentJobWaitTime(), resMetrics.get(0).get(17));
+                    assertEquals((long)metrics.getAverageJobWaitTime(), resMetrics.get(0).get(18));
+                    assertEquals(metrics.getMaximumJobExecuteTime(), resMetrics.get(0).get(19));
+                    assertEquals(metrics.getCurrentJobExecuteTime(), resMetrics.get(0).get(20));
+                    assertEquals((long)metrics.getAverageJobExecuteTime(), resMetrics.get(0).get(21));
+                    assertEquals(metrics.getTotalJobsExecutionTime(), resMetrics.get(0).get(22));
                     assertEquals(metrics.getTotalExecutedJobs(), resMetrics.get(0).get(23));
                     assertEquals(metrics.getTotalExecutedTasks(), resMetrics.get(0).get(24));
-                    assertEquals(metrics.getTotalBusyTime(), convertToMilliseconds(resMetrics.get(0).get(25)));
-                    assertEquals(metrics.getTotalIdleTime(), convertToMilliseconds(resMetrics.get(0).get(26)));
-                    assertEquals(metrics.getCurrentIdleTime(), convertToMilliseconds(resMetrics.get(0).get(27)));
+                    assertEquals(metrics.getTotalBusyTime(), resMetrics.get(0).get(25));
+                    assertEquals(metrics.getTotalIdleTime(), resMetrics.get(0).get(26));
+                    assertEquals(metrics.getCurrentIdleTime(), resMetrics.get(0).get(27));
                     assertEquals(metrics.getBusyTimePercentage(), resMetrics.get(0).get(28));
                     assertEquals(metrics.getIdleTimePercentage(), resMetrics.get(0).get(29));
                     assertEquals(metrics.getTotalCpus(), resMetrics.get(0).get(30));
@@ -454,7 +452,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                     assertEquals(metrics.getNonHeapMemoryCommitted(), resMetrics.get(0).get(41));
                     assertEquals(metrics.getNonHeapMemoryMaximum(), resMetrics.get(0).get(42));
                     assertEquals(metrics.getNonHeapMemoryTotal(), resMetrics.get(0).get(43));
-                    assertEquals(metrics.getUpTime(), convertToMilliseconds(resMetrics.get(0).get(44)));
+                    assertEquals(metrics.getUpTime(), resMetrics.get(0).get(44));
                     assertEquals(metrics.getStartTime(), ((Timestamp)resMetrics.get(0).get(45)).getTime());
                     assertEquals(metrics.getNodeStartTime(), ((Timestamp)resMetrics.get(0).get(46)).getTime());
                     assertEquals(metrics.getLastDataVersion(), resMetrics.get(0).get(47));
@@ -1028,20 +1026,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         cfg.setConsistentId(consistentId);
 
         return cfg;
-    }
-
-    /**
-     * Convert Time to milliseconds.
-     *
-     * Note: Returned Time values from SQL it's milliseconds since January 1, 1970, 00:00:00 GMT. To get right interval
-     * in milliseconds this value must be adjusted to current time zone.
-     *
-     * @param sqlTime Time value returned from SQL.
-     */
-    private long convertToMilliseconds(Object sqlTime) {
-        Time time0 = (Time)sqlTime;
-
-        return time0.getTime() + TimeZone.getDefault().getOffset(time0.getTime());
     }
 
     /**
