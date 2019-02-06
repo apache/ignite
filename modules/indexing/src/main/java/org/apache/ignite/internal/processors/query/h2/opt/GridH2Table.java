@@ -388,6 +388,7 @@ public class GridH2Table extends TableBase {
 
         ses.addLock(this);
 
+        // TODO: Remove
 //        System.out.println(Thread.currentThread().getName() + "+++ LOCK " + getName() + " " + ses);
 
         return false;
@@ -417,12 +418,16 @@ public class GridH2Table extends TableBase {
         assert destroyed || sesLock != null && !sesLock.isExclusive()
             : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + sesLock.ver + ']';
 
+        // TODO: If "sessions.clear" is removed from "destroy", then sesLock == null should bever happen.
         if (sesLock != null && !sesLock.locked) {
             lock(false);
 
             sesLock.locked = true;
+
+            // TODO: Looks like we can remove "destroyed" checks as destroy operation will advance version anyway.
         }
 
+        // TODO: Remove
 //        System.out.println(Thread.currentThread().getName() + "+++ READ LOCK " + getName() + " " + ses);
     }
 
@@ -436,6 +441,7 @@ public class GridH2Table extends TableBase {
 
         // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
         // at the destroy() method.
+        // TODO: If "sessions.clear" is removed from "destroy", then sesLock == null should bever happen.
         assert destroyed || sesLock != null && !sesLock.isExclusive()
             : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + sesLock.ver + ']';
 
@@ -446,11 +452,11 @@ public class GridH2Table extends TableBase {
         }
     }
 
-
     /**
      * @param ses H2 session.
      */
     private void checkVersion(Session ses) {
+        // TODO: Remove
         if (destroyed)
             throw new QueryRetryException(getName());
 
@@ -520,6 +526,7 @@ public class GridH2Table extends TableBase {
         try {
             l.unlock();
         }
+        // TODO: Remove?
         catch (IllegalMonitorStateException e) {
             // Skip invalid lock state on table unlock when the table is destroyed.
             if (!destroyed)
@@ -589,6 +596,7 @@ public class GridH2Table extends TableBase {
 
             destroyed = true;
 
+            // TODO: Looks like this should be remove.
             sessions.clear();
 
             for (int i = 1, len = idxs.size(); i < len; i++)

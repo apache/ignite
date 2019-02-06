@@ -1055,29 +1055,23 @@ public class GridReduceQueryExecutor {
      */
     void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
         boolean distributedJoins, MvccQueryTracker mvccTracker) {
+        // TODO: Check if this change is valid.
+        boolean notFetched = false;
+
+        for (ReduceIndex idx : r.indexes()) {
+            if (!idx.fetchedAll()) {
+                notFetched = true;
+
+                r.setStateOnException(ctx.localNodeId(),
+                    new CacheException("Query is canceled.", new QueryCancelledException()));
+
+                break;
+            }
+        }
+
         // For distributedJoins need always send cancel request to cleanup resources.
-        if (distributedJoins) {
+        if (distributedJoins || notFetched)
             send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
-
-            for (ReduceIndex idx : r.indexes()) {
-                if (!idx.fetchedAll()) {
-                    r.setStateOnException(ctx.localNodeId(),
-                        new CacheException("Query is canceled.", new QueryCancelledException()));
-                }
-            }
-        }
-        else {
-            for (ReduceIndex idx : r.indexes()) {
-                if (!idx.fetchedAll()) {
-                    send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
-
-                    r.setStateOnException(ctx.localNodeId(),
-                        new CacheException("Query is canceled.", new QueryCancelledException()));
-
-                    break;
-                }
-            }
-        }
 
         if (!runs.remove(qryReqId, r))
             U.warn(log, "Query run was already removed: " + qryReqId);
@@ -1366,7 +1360,6 @@ public class GridReduceQueryExecutor {
 
         return dfltQueryTimeout;
     }
-
 
     /**
      * Prepare map query based on original sql.

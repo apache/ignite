@@ -101,9 +101,7 @@ class MapQueryResult {
     /** H2 session. */
     private final Session ses;
 
-    /**
-     * Detached connection. Used for lazy execution to prevent share connection between thread from QUERY thread pool.
-     */
+    /** Detached connection. Used for lazy execution to prevent connection sharing. */
     private ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
 
     /** */

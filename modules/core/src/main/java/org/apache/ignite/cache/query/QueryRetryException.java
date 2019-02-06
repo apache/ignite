@@ -30,6 +30,7 @@ public class QueryRetryException extends IgniteException {
      * @param tableName Table name.
      */
     public QueryRetryException(String tableName) {
+        // TODO: Standard message format: "Table was modified concurrently (please retry the query): " + tableName.
         super("The query must be retried. The table version is changed [table=" + tableName + ']');
     }
 }

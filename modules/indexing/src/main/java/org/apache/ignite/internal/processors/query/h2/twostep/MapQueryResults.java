@@ -57,6 +57,7 @@ class MapQueryResults {
     private final QueryContext qctx;
 
     /** Logger. */
+    // TODO: Unused
     private final IgniteLogger log;
 
     /**
@@ -148,6 +149,7 @@ class MapQueryResults {
             }
         }
 
+        // TODO: Comments: There is no IgniteH2Session.
         // The closing result set is synchronized by the session.
         // Include to synchronize block may be cause deadlock on <this> and IgniteH2Session lock.
         close();
@@ -194,7 +196,7 @@ class MapQueryResults {
             closeResult(i);
 
         if (lazy)
-            release();
+            releaseQueryContext();
     }
 
     /**
@@ -226,8 +228,9 @@ class MapQueryResults {
     }
 
     /**
+     * Release query context.
      */
-    public void release() {
+    public void releaseQueryContext() {
         h2.queryContextRegistry().clearThreadLocal();
 
         if (qctx.distributedJoinContext() == null)

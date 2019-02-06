@@ -396,6 +396,7 @@ public class ConnectionManager {
         if (connCleanupTask != null)
             connCleanupTask.close();
 
+        // Needs to be released before SHUTDOWN.
         closeConnections();
 
         try (Connection c = connectionNoCache(QueryUtils.SCHEMA_INFORMATION); Statement s = c.createStatement()) {

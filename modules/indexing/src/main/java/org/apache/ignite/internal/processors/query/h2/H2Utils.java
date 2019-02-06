@@ -361,7 +361,8 @@ public class H2Utils {
         Connection conn,
         boolean distributedJoins,
         boolean enforceJoinOrder,
-        boolean lazy) {
+        boolean lazy
+    ) {
         Session s = session(conn);
 
         s.setForceJoinOrder(enforceJoinOrder);

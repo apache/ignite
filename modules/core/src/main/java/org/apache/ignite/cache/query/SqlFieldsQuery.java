@@ -51,11 +51,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Used to test enable lazy mode for whole suite.
-     * Must be removed when support lazy=false will be removed.
-     */
-    private static boolean DFLT_LAZY = false;
+    /** Do not remove. For tests only. */
+    @SuppressWarnings("NonConstantFieldWithUpperCaseName")
+    private static boolean DFLT_LAZY;
 
     /** SQL Query. */
     private String sql;
