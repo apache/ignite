@@ -15,12 +15,6 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import {Selector} from 'testcafe';
 
-import chartNoData from './components/chart-no-data';
-import IgniteChartCmp from './component';
-import './style.scss';
-
-export default angular
-    .module('ignite-console.ignite-chart', [chartNoData.name])
-    .component('igniteChart', IgniteChartCmp);
+export const noDataCmp = Selector('no-data');

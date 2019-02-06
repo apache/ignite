@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+no-data{
+  .data-loading-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-import chartNoData from './components/chart-no-data';
-import IgniteChartCmp from './component';
-import './style.scss';
-
-export default angular
-    .module('ignite-console.ignite-chart', [chartNoData.name])
-    .component('igniteChart', IgniteChartCmp);
+    .spinner-circle {
+      margin-right: 5px;
+    }
+  }
+}

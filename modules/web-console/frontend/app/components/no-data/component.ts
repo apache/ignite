@@ -15,12 +15,17 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import templateUrl from './template.tpl.pug';
+import controller from './controller';
 
-import chartNoData from './components/chart-no-data';
-import IgniteChartCmp from './component';
 import './style.scss';
 
-export default angular
-    .module('ignite-console.ignite-chart', [chartNoData.name])
-    .component('igniteChart', IgniteChartCmp);
+export default {
+    controller,
+    templateUrl,
+    transclude: true,
+    bindings: {
+        resultDataStatus: '<',
+        handleClusterInactive: '<'
+    }
+} as ng.IComponentOptions;
