@@ -76,8 +76,8 @@ import org.junit.runner.RunWith;
     CheckpointExamplesSelfTest.class,
     ClusterGroupExampleSelfTest.class,
     CacheContinuousQueryExamplesSelfTest.class,
-
-    // Multi-node.
+//
+//    // Multi-node.
     CacheExamplesMultiNodeSelfTest.class,
     BasicExamplesMultiNodeSelfTest.class,
     ContinuationExamplesMultiNodeSelfTest.class,
@@ -91,9 +91,9 @@ import org.junit.runner.RunWith;
     // Binary.
     CacheClientBinaryExampleTest.class,
     ComputeClientBinaryExampleTest.class,
-
-    // ML Grid.
-    IgniteExamplesMLTestSuite.class,
+//
+//    // ML Grid.
+//    IgniteExamplesMLTestSuite.class,
 
     // Encryption.
     EncryptedCacheExampleSelfTest.class,

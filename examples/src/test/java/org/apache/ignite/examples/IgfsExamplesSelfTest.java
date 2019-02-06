@@ -20,7 +20,7 @@ package org.apache.ignite.examples;
 import org.apache.ignite.examples.igfs.IgfsExample;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * IGFS examples self test.

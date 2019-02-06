@@ -19,19 +19,11 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.misc.deployment.DeploymentExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-<<<<<<< HEAD
-import org.junit.Test;
-=======
-import org.junit.jupiter.api.Disabled;
->>>>>>> migrate java.org.apache.ignite.examples
+import org.junit.jupiter.api.Test;
 
 /**
  * Deployment examples self test.
  */
-<<<<<<< HEAD
-=======
-@Disabled("https://issues.apache.org/jira/browse/IGNITE-711")
->>>>>>> migrate java.org.apache.ignite.examples
 public class DeploymentExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.

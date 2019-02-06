@@ -19,7 +19,7 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.computegrid.ComputeFibonacciContinuationExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Continuation example self test.

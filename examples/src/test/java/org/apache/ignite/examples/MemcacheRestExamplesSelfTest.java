@@ -20,7 +20,7 @@ package org.apache.ignite.examples;
 import org.apache.ignite.examples.misc.client.memcache.MemcacheRestExample;
 import org.apache.ignite.examples.misc.client.memcache.MemcacheRestExampleNodeStartup;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * MemcacheRestExample self test.
