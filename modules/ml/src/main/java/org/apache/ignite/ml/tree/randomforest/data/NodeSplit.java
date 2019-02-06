@@ -24,6 +24,9 @@ import java.util.List;
  * Class represents a split point for decision tree.
  */
 public class NodeSplit implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 1331311529596106124L;
+
     /** Feature id in feature vector. */
     private final int featureId;
 

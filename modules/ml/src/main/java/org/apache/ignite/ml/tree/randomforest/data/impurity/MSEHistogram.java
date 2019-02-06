@@ -25,10 +25,12 @@ import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.basic.BootstrappedVectorsHistogram;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.basic.CountersHistogram;
 
 /**
- * Class contains implementation of splitting point finding algorithm based on MSE metric (see https://en.wikipedia.org/wiki/Mean_squared_error)
- * and represents a set of histograms in according to this metric.
+ * Class contains implementation of splitting point finding algorithm based on MSE metric (see
+ * https://en.wikipedia.org/wiki/Mean_squared_error) and represents a set of histograms in according to this metric.
  */
 public class MSEHistogram extends ImpurityHistogram implements ImpurityComputer<BootstrappedVector, MSEHistogram> {
     /** Serial version uid. */
@@ -60,9 +62,9 @@ public class MSEHistogram extends ImpurityHistogram implements ImpurityComputer<
         this.bucketMeta = bucketMeta;
         this.sampleId = sampleId;
 
-        counters = new ObjectHistogram<>(this::bucketMap, this::counterMap);
-        sumOfLabels = new ObjectHistogram<>(this::bucketMap, this::ysMap);
-        sumOfSquaredLabels = new ObjectHistogram<>(this::bucketMap, this::y2sMap);
+        counters = new CountersHistogram(bucketIds, bucketMeta, featureId, sampleId);
+        sumOfLabels = new SumOfLabelsHistogram(bucketIds, bucketMeta, featureId, sampleId, 1);
+        sumOfSquaredLabels = new SumOfLabelsHistogram(bucketIds, bucketMeta, featureId, sampleId, 2);
     }
 
     /** {@inheritDoc} */
@@ -221,14 +223,62 @@ public class MSEHistogram extends ImpurityHistogram implements ImpurityComputer<
     @Override public boolean isEqualTo(MSEHistogram other) {
         HashSet<Integer> unionBuckets = new HashSet<>(buckets());
         unionBuckets.addAll(other.bucketIds);
-        if(unionBuckets.size() != bucketIds.size())
+        if (unionBuckets.size() != bucketIds.size())
             return false;
 
-        if(!this.counters.isEqualTo(other.counters))
+        if (!this.counters.isEqualTo(other.counters))
             return false;
-        if(!this.sumOfLabels.isEqualTo(other.sumOfLabels))
+        if (!this.sumOfLabels.isEqualTo(other.sumOfLabels))
             return false;
 
         return this.sumOfSquaredLabels.isEqualTo(other.sumOfSquaredLabels);
+    }
+
+    /**
+     * Class for label summurizing in histograms.
+     */
+    private static class SumOfLabelsHistogram extends BootstrappedVectorsHistogram {
+        /** Serial version uid. */
+        private static final long serialVersionUID = -3846156279667677800L;
+
+        /** Sample id. */
+        private final int sampleId;
+
+        /** Label power. */
+        private final double labelPower;
+
+        /**
+         * Create an instance of SumOfLabelsHistogram.
+         *
+         * @param bucketIds Bucket ids.
+         * @param bucketMeta Bucket meta.
+         * @param featureId Feature id.
+         * @param sampleId Sample id.
+         * @param labelPower Label power.
+         */
+        public SumOfLabelsHistogram(Set<Integer> bucketIds, BucketMeta bucketMeta, int featureId, int sampleId,
+            double labelPower) {
+
+            super(bucketIds, bucketMeta, featureId);
+            this.sampleId = sampleId;
+            this.labelPower = labelPower;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer mapToBucket(BootstrappedVector vec) {
+            int bucketId = bucketMeta.getBucketId(vec.features().get(featureId));
+            this.bucketIds.add(bucketId);
+            return bucketId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Double mapToCounter(BootstrappedVector vec) {
+            return vec.counters()[sampleId] * Math.pow(vec.label(), labelPower);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ObjectHistogram<BootstrappedVector> newInstance() {
+            return new SumOfLabelsHistogram(bucketIds, bucketMeta, featureId, sampleId, labelPower);
+        }
     }
 }

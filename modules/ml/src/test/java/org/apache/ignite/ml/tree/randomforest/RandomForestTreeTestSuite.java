@@ -33,7 +33,8 @@ import org.junit.runners.Suite;
     GiniFeatureHistogramTest.class,
     MSEHistogramTest.class,
     NormalDistributionStatisticsComputerTest.class,
-    RandomForestTest.class
+    RandomForestTest.class,
+    RandomForestIntegrationTest.class
 })
 public class RandomForestTreeTestSuite {
 }

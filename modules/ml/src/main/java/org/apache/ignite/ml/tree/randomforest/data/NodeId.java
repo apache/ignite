@@ -17,22 +17,22 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
-import java.io.Externalizable;
-import org.apache.ignite.lang.IgniteBiTuple;
+import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Class represents Node id in Random Forest consisting of tree id and node id in tree in according to
  * breadth-first search in tree.
  */
-public class NodeId extends IgniteBiTuple<Integer, Long> {
+public class NodeId implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 4400852013136423333L;
 
-    /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public NodeId() {
-    }
+    /** Tree id. */
+    private final Integer treeId;
+
+    /** Node id. */
+    private final Long nodeId;
 
     /**
      * Create an instance of NodeId.
@@ -41,7 +41,8 @@ public class NodeId extends IgniteBiTuple<Integer, Long> {
      * @param nodeId Node id.
      */
     public NodeId(Integer treeId, Long nodeId) {
-        super(treeId, nodeId);
+        this.treeId = treeId;
+        this.nodeId = nodeId;
     }
 
     /**
@@ -49,7 +50,7 @@ public class NodeId extends IgniteBiTuple<Integer, Long> {
      * @return Tree id.
      */
     public int treeId() {
-        return get1();
+        return treeId;
     }
 
     /**
@@ -57,6 +58,22 @@ public class NodeId extends IgniteBiTuple<Integer, Long> {
      * @return Node id.
      */
     public long nodeId() {
-        return get2();
+        return nodeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        NodeId id = (NodeId)o;
+        return Objects.equals(treeId, id.treeId) &&
+            Objects.equals(nodeId, id.nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(treeId, nodeId);
     }
 }

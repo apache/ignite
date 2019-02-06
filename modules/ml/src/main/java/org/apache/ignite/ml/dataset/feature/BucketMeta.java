@@ -23,6 +23,9 @@ import java.io.Serializable;
  * Bucket meta-information for feature histogram.
  */
 public class BucketMeta implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 7827158624437006995L;
+
     /** Feature meta. */
     private final FeatureMeta featureMeta;
 
