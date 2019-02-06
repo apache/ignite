@@ -137,7 +137,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testFloat() throws Exception {
         float val = 10.0f;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(val, marshalUnmarshal(val), 0);
     }
 
     /**
@@ -147,7 +147,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testDouble() throws Exception {
         double val = 100.0d;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(val, marshalUnmarshal(val), 0);
     }
 
     /**

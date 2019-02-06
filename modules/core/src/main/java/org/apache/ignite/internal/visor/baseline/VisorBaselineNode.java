@@ -22,9 +22,11 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import org.apache.ignite.cluster.BaselineNode;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Data transfer object for {@link BaselineNode}.
@@ -38,6 +40,9 @@ public class VisorBaselineNode extends VisorDataTransferObject {
 
     /** */
     private Map<String, Object> attrs;
+
+    /** */
+    private @Nullable Long order;
 
     /**
      * Default constructor.
@@ -54,6 +59,15 @@ public class VisorBaselineNode extends VisorDataTransferObject {
     public VisorBaselineNode(BaselineNode node) {
         consistentId = String.valueOf(node.consistentId());
         attrs = node.attributes();
+
+        //Baseline topology returns instances of DetachedClusternode
+        if (node instanceof IgniteClusterNode)
+            order = ((IgniteClusterNode)node).order();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /**
@@ -70,16 +84,27 @@ public class VisorBaselineNode extends VisorDataTransferObject {
         return attrs;
     }
 
+    /**
+     * @return Node order.
+     */
+    public @Nullable Long getOrder() {
+        return order;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, consistentId);
         U.writeMap(out, attrs);
+        out.writeObject(order);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         consistentId = U.readString(in);
         attrs = U.readMap(in);
+
+        if (protoVer >= V2)
+            order = (Long)in.readObject();
     }
 
     /** {@inheritDoc} */

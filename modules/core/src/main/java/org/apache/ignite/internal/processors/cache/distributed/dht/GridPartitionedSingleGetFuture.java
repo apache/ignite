@@ -316,7 +316,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             boolean needVer = this.needVer;
 
             BackupPostProcessingClosure postClos = CU.createBackupPostProcessingClosure(topVer, log,
-                cctx, key, expiryPlc, readThrough, skipVals);
+                cctx, key, expiryPlc, readThrough && cctx.readThroughConfigured(), skipVals);
 
             if (postClos != null) {
                 // Need version to correctly store value.

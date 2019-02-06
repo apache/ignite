@@ -72,7 +72,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
 
@@ -318,7 +318,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      */
     @Test
     public void testPutWithExpiration() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
         IgniteCache<String, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<String, String> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
