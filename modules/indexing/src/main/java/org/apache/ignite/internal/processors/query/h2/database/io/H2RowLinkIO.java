@@ -87,10 +87,6 @@ public interface H2RowLinkIO {
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
 
-        // We have to read FULL row if it is the last row on page to use it for lookup then.
-        if (idx == getCount(pageAddr) - 1)
-            usedColInfo = null;
-
         if (storeMvccInfo()) {
             long mvccCrdVer = getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = getMvccCounter(pageAddr, idx);

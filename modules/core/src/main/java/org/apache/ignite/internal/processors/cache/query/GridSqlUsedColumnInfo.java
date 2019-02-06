@@ -59,6 +59,8 @@ public class GridSqlUsedColumnInfo implements Message {
      * @param valUsed Flag indicates that value's fields are used in query.
      */
     public GridSqlUsedColumnInfo(Set<Integer> cols, boolean keyUsed, boolean valUsed) {
+        assert keyUsed || valUsed;
+
         this.cols = F.isEmpty(cols) ? null : cols.stream().mapToInt(Number::intValue).toArray();
         this.keyUsed = keyUsed;
         this.valUsed = valUsed;
@@ -83,16 +85,11 @@ public class GridSqlUsedColumnInfo implements Message {
      * @return row data mode.
      */
     public static CacheDataRowAdapter.RowData asRowData(GridSqlUsedColumnInfo colInfo) {
-        if (colInfo != null) {
-            if (colInfo.isKeyUsed() && colInfo.isValueUsed())
-                return CacheDataRowAdapter.RowData.FULL;
-            else if (colInfo.isKeyUsed() && !colInfo.isValueUsed())
-                return CacheDataRowAdapter.RowData.KEY_ONLY;
-            else if (!colInfo.isKeyUsed() && colInfo.isValueUsed())
-                return CacheDataRowAdapter.RowData.NO_KEY;
-            else
-                return CacheDataRowAdapter.RowData.LINK_ONLY;
-        }
+        // Don't use optimisation RowData.NO_KEY when keyUsed is false
+        // because the last row on page is used to lookup the next rown on the next page
+        // and the key is used to compare. The optimization have to change the ForwardCursor logic.
+        if (colInfo != null && !colInfo.isValueUsed())
+            return CacheDataRowAdapter.RowData.KEY_ONLY;
         else
             return CacheDataRowAdapter.RowData.FULL;
     }
