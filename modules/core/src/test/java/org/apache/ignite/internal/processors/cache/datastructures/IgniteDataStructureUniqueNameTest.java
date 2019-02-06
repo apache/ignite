@@ -42,8 +42,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -51,7 +49,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {

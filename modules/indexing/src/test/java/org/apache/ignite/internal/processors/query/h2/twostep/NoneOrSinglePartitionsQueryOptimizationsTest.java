@@ -47,15 +47,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertNotEquals;
 
 /**
  * Tests that check behaviour if none or only one partiton was extracted during partitioin pruning.
  */
-@RunWith(JUnit4.class)
 public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbstractTest {
     /** Result retrieval timeout. */
     private static final int RES_RETRIEVAL_TIMEOUT = 5_000;
@@ -470,7 +467,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
             if (expMergeTbl)
                 assertTrue(innerIter instanceof H2ResultSetIterator);
             else
-                assertTrue(innerIter instanceof GridMergeIndexIterator);
+                assertTrue(innerIter instanceof ReduceIndexIterator);
 
             List<List<?>> all = new ArrayList<>();
 

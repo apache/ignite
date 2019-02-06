@@ -35,13 +35,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test that checks indexes handling on H2 side.
  */
-@RunWith(JUnit4.class)
 public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
     private static final int CLIENT = 2;

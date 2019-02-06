@@ -44,25 +44,22 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinDatabaseMetadata;
+import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
-import static java.sql.Types.INTEGER;
-import static java.sql.Types.VARCHAR;
-import static java.sql.Types.DECIMAL;
 import static java.sql.Types.DATE;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.INTEGER;
 import static java.sql.Types.OTHER;
+import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Metadata tests.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
@@ -131,8 +128,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        IgniteCache<Integer, Department> departmentCache = jcache(grid(0),
-            defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class), "dep");
+        jcache(grid(0),
+            defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class),
+            "dep");
 
         try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
@@ -232,7 +230,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -241,7 +239,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -250,7 +248,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -259,7 +257,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -614,8 +612,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     '.' + rs.getString("COLUMN_NAME"));
             }
 
-            assert expectedPks.equals(actualPks) : "expectedPks=" + expectedPks +
-                ", actualPks" + actualPks;
+            assertEquals("Metadata contains unexpected primary keys info.", expectedPks, actualPks);
         }
     }
 
@@ -660,7 +657,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 schemas.add(rs.getString(1));
 
                 assertEquals("There is only one possible catalog.",
-                    JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString(2));
+                    JdbcUtils.CATALOG_NAME, rs.getString(2));
             }
 
             assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +

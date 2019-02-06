@@ -17,22 +17,10 @@
 
 import angular from 'angular';
 
-import { IgniteChartController } from './controller';
-import template from './template.pug';
+import chartNoData from './components/chart-no-data';
+import IgniteChartCmp from './component';
 import './style.scss';
 
 export default angular
-    .module('ignite-console.ignite-chart', [])
-    .component('igniteChart', {
-        controller: IgniteChartController,
-        template,
-        bindings: {
-            chartOptions: '<',
-            chartDataPoint: '<',
-            chartHistory: '<',
-            chartTitle: '<',
-            chartColors: '<',
-            chartHeaderText: '<',
-            refreshRate: '<'
-        }
-    });
+    .module('ignite-console.ignite-chart', [chartNoData.name])
+    .component('igniteChart', IgniteChartCmp);

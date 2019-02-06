@@ -30,17 +30,22 @@ import org.junit.Test;
 public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
+
     /** */
     private static final double LABEL_1 = 1.;
+
     /** */
     private static final double LABEL_2 = 2.;
 
     /** Binary data. */
     private static final Map<Integer, double[]> binarizedData = new HashMap<>();
+
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
     /** */
     private static final double[][] binarizedDatathresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+
+    /** */
     private static final double[][] thresholds = new double[][] {{4, 8}, {.5}, {.3, .4, .5}, {250, 500, 750}};
 
     static {
@@ -144,9 +149,8 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         );
 
         for (int i = 0; i < expectedPriorProbabilites.length; i++) {
-            for (int j = 0; j < expectedPriorProbabilites[i].length; j++) {
+            for (int j = 0; j < expectedPriorProbabilites[i].length; j++)
                 Assert.assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
-            }
         }
     }
 
@@ -175,9 +179,8 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
             );
 
         for (int i = 0; i < expectedPriorProbabilites.length; i++) {
-            for (int j = 0; j < expectedPriorProbabilites[i].length; j++) {
+            for (int j = 0; j < expectedPriorProbabilites[i].length; j++)
                 Assert.assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
-            }
         }
     }
 

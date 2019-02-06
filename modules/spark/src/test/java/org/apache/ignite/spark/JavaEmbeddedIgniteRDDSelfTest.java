@@ -38,14 +38,11 @@ import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import scala.Tuple2;
 
 /**
  * Tests for {@link JavaIgniteRDD} (embedded mode).
  */
-@RunWith(JUnit4.class)
 public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /** For Ignite instance names generation */
     private static AtomicInteger cntr = new AtomicInteger(1);

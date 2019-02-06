@@ -34,9 +34,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Query run.
  */
-class ReduceQueryRun {
+public class ReduceQueryRun {
     /** */
-    private final List<GridMergeIndex> idxs;
+    private final List<ReduceIndex> idxs;
 
     /** */
     private CountDownLatch latch;
@@ -72,7 +72,9 @@ class ReduceQueryRun {
         Boolean dataPageScanEnabled
     ) {
         this.conn = (JdbcConnection)conn;
-        this.idxs = new ArrayList<>(idxsCnt);
+
+        idxs = new ArrayList<>(idxsCnt);
+
         this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;
         this.selectForUpdateFut = selectForUpdateFut;
         this.dataPageScanEnabled  = dataPageScanEnabled;
@@ -130,7 +132,7 @@ class ReduceQueryRun {
         while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
             latch.countDown();
 
-        for (GridMergeIndex idx : idxs) // Fail all merge indexes.
+        for (ReduceIndex idx : idxs) // Fail all merge indexes.
             idx.fail(state.nodeId, state.ex);
     }
 
@@ -199,7 +201,7 @@ class ReduceQueryRun {
     /**
      * @return Indexes.
      */
-    List<GridMergeIndex> indexes() {
+    List<ReduceIndex> indexes() {
         return idxs;
     }
 

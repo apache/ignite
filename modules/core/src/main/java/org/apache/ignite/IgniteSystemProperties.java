@@ -261,18 +261,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT = "IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT";
 
     /**
-     * Specifies delay in milliseconds before starting deadlock detection procedure when tx encounters locked key.
-     * <p>
-     * Following values could be used:
-     * <ul>
-     *     <li>&lt; 0 disable detection;</li>
-     *     <li>0 start detection without a delay;</li>
-     *     <li>&gt; 0 start detection after a specified number of milliseconds.</li>
-     * </ul>
-     */
-    public static final String IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY = "IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY";
-
-    /**
      * System property to enable pending transaction tracker.
      * Affects impact of {@link IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING} property:
      * if this property is set, WAL anyway won't be disabled during rebalancing triggered by baseline topology change.
@@ -639,6 +627,14 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT = "IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT";
 
+    /**
+     * System property to specify consistent id of Ignite node.
+     * <p>
+     * Value of the system property will overwrite matched property
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#setConsistentId(Serializable)} in configuration.
+     */
+    public static final String IGNITE_OVERRIDE_CONSISTENT_ID = "IGNITE_OVERRIDE_CONSISTENT_ID";
+
     /** */
     public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
 
@@ -724,12 +720,6 @@ public final class IgniteSystemProperties {
 
     /** Ignite page memory concurrency level. */
     public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";
-
-    /**
-     * Start Ignite on versions of JRE 7 older than 1.7.0_71. For proper work it may require
-     * disabling JIT in some places.
-     */
-    public static final String IGNITE_FORCE_START_JAVA7 = "IGNITE_FORCE_START_JAVA7";
 
     /**
      * When set to {@code true}, Ignite switches to compatibility mode with versions that don't

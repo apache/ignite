@@ -24,13 +24,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for basic user name mapper.
  */
-@RunWith(JUnit4.class)
 public class BasicUserNameMapperSelfTest extends GridCommonAbstractTest {
     /**
      * Test null mappings.

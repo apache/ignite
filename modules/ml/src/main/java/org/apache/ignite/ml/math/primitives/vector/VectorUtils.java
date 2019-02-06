@@ -24,6 +24,7 @@ import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingNamedVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
@@ -287,5 +288,21 @@ public class VectorUtils {
             res = concat(res, v);
         }
         return res;
+    }
+
+    /**
+     * Get projector from index mapping.
+     *
+     * @param mapping Index mapping.
+     * @return Projector.
+     */
+    public static IgniteFunction<Vector, Vector> getProjector(int[] mapping) {
+        return v -> {
+            Vector res = zeroes(mapping.length);
+            for (int i = 0; i < mapping.length; i++)
+                res.set(i, v.get(mapping[i]));
+
+            return res;
+        };
     }
 }
