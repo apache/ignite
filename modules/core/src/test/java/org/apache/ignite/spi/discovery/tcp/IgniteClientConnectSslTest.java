@@ -19,8 +19,6 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * We emulate that client receive message about joining to topology earlier than some server nodes in topology.
@@ -28,7 +26,6 @@ import org.junit.runners.JUnit4;
  * To emulate this we connect client to second node in topology and pause sending message about joining finishing to
  * third node.
  */
-@RunWith(JUnit4.class)
 public class IgniteClientConnectSslTest extends IgniteClientConnectTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

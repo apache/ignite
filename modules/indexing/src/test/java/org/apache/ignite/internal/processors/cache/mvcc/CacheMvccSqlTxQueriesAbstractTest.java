@@ -43,6 +43,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -61,13 +63,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL_SUM;
@@ -80,20 +81,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests for transactional SQL.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY, "-1");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY);
-
-        super.afterTestsStopped();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        return super.getConfiguration(gridName)
+            .setTransactionConfiguration(new TransactionConfiguration().setDeadlockTimeout(0));
     }
 
     /**
@@ -1132,7 +1124,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         Ignite checkNode = grid(rnd.nextInt(4));
         Ignite updateNode = grid(rnd.nextInt(4));
 
-        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
             1, new MvccTestSqlIndexValue(1),
@@ -1157,9 +1149,9 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10764")
     @Test
     public void testQueryInsertMultithread() throws Exception {
+        // Reopen https://issues.apache.org/jira/browse/IGNITE-10764 if test starts failing with timeout
         final int THREAD_CNT = 8;
         final int BATCH_SIZE = 1000;
         final int ROUNDS = 10;
@@ -1199,11 +1191,10 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                     Ignite checkNode = grid(rnd.nextInt(4));
                     Ignite updateNode = grid(rnd.nextInt(4));
 
-                    IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+                    IgniteCache<Object, Object> cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
+                    // no tx timeout here, deadlocks should not happen because all keys are unique
                     try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TX_TIMEOUT);
-
                         SqlFieldsQuery qry = new SqlFieldsQuery(bldr.toString()).setPageSize(100);
 
                         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
@@ -1392,10 +1383,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
             }
         }, 2, "tx-thread");
 
-        IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
-
-        assertNotNull("Exception has not been thrown.", ex0);
-        assertTrue(ex0.getMessage().startsWith("Cannot serialize transaction due to write conflict"));
+        MvccFeatureChecker.assertMvccWriteConflict(ex.get());
     }
 
     /**
@@ -1605,7 +1593,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
                 return null;
             }
-        }, CacheException.class, "Duplicate key during INSERT [key=KeyCacheObjectImpl");
+        }, TransactionDuplicateKeyException.class, "Duplicate key during INSERT [key=KeyCacheObjectImpl");
     }
 
     /**

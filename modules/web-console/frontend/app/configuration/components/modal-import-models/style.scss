@@ -1,0 +1,61 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+modal-import-models {
+    .modal-content {
+        min-height: 493px;
+        display: flex;
+        flex-direction: column;
+
+        .modal-body {
+            flex: 1 1 auto;
+            overflow-y: auto;
+        }
+        .modal-footer {
+            display: flex;
+            align-items: baseline;
+
+            selected-items-amount-indicator {
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+    }
+
+    pc-items-table {
+        width: 100%;
+    }
+
+    modal-import-models-step-indicator {
+        margin-top: 15px;
+        margin-bottom: 30px;
+    }
+    .#{&}__prev-button {
+        margin-right: auto !important;
+    }
+    .#{&}__next-button {
+        margin-left: auto !important;
+    }
+
+    no-data {
+        margin: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 300px;
+    }
+}

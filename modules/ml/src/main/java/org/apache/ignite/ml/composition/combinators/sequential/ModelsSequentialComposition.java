@@ -46,16 +46,16 @@ public class ModelsSequentialComposition<I, O1, O2> implements IgniteModel<I, O2
      * @param <O> Type of output of submodel.
      * @return Sequential composition of submodels with same type.
      */
-    public static <I, O> ModelsSequentialComposition<I, I, O> ofSame(List<? extends IgniteModel<I, O>> lst,
+    public static <I, O> ModelsSequentialComposition<I, O, O> ofSame(List<? extends IgniteModel<I, O>> lst,
         IgniteFunction<O, I> output2Input) {
         assert lst.size() >= 2;
 
         if (lst.size() == 2)
-            return new ModelsSequentialComposition<>(lst.get(0).andThen(output2Input),
-                lst.get(1));
+            return new ModelsSequentialComposition<>(lst.get(0),
+                lst.get(1).andBefore(output2Input));
 
-        return new ModelsSequentialComposition<>(lst.get(0).andThen(output2Input),
-            ofSame(lst.subList(1, lst.size()), output2Input));
+        return new ModelsSequentialComposition<>(lst.get(0),
+            ofSame(lst.subList(1, lst.size()), output2Input).andBefore(output2Input));
     }
 
     /**

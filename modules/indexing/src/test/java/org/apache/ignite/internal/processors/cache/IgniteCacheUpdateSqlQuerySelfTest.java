@@ -32,14 +32,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDmlQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -128,35 +125,39 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     }
 
     /**
-     *
+     * Test that nested fields could be updated using sql UPDATE just by nested field name.
      */
     @Test
-    public void testUpdateValueAndFields() {
-        IgniteCache p = cache();
+    public void testNestedFieldsUpdate() {
+        IgniteCache<Long, AllTypes> p = ignite(0).cache("L2AT");
 
-        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set id = ?, _val = ? where _key = ?")
-            .setArgs(44, createPerson(2, "Jo", "Woo"), "FirstKey"));
+        final long ROOT_KEY = 1;
 
-        c.iterator();
+        // Create 1st level value
+        AllTypes rootVal = new AllTypes(1L);
 
-        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by _key, id"));
+        // With random inner field
+        rootVal.innerTypeCol = new AllTypes.InnerType(42L);
 
-        List<List<?>> leftovers = c.getAll();
+        p.query(new SqlFieldsQuery(
+            "INSERT INTO \"AllTypes\"(_key,_val) VALUES (?, ?)").setArgs(ROOT_KEY, rootVal)
+        ).getAll();
 
-        assertEquals(4, leftovers.size());
+        // Update inner fields just by their names
+        p.query(new SqlFieldsQuery("UPDATE \"AllTypes\" " +
+            "SET \"innerLongCol\" = ?, \"innerStrCol\" = ?, \"arrListCol\" = ?;"
+        ).setArgs(50L, "sss", new ArrayList<>(Arrays.asList(3L, 2L, 1L)))).getAll();
 
-        assertEqualsCollections(Arrays.asList("FirstKey", createPerson(44, "Jo", "Woo"), 44, "Jo", "Woo"),
-            leftovers.get(0));
+        AllTypes res = p.get(ROOT_KEY);
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
-            leftovers.get(1));
+        AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
-            leftovers.get(2));
+        resInner.innerStrCol = "sss";
+        resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
 
-        assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
-            leftovers.get(3));
+        assertEquals(resInner, res.innerTypeCol);
     }
+
 
     /**
      *
@@ -165,8 +166,9 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     public void testDefault() {
         IgniteCache p = cache();
 
-        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set id = DEFAULT, _val = ? where _key = ?")
-            .setArgs(createPerson(2, "Jo", "Woo"), "FirstKey"));
+        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery(
+            "UPDATE Person p SET id = DEFAULT, firstName = ?, secondName = ? WHERE _key = ?"
+        ).setArgs( "Jo", "Woo", "FirstKey"));
 
         c.iterator();
 
@@ -194,17 +196,35 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     public void testTypeConversions() throws ParseException {
         IgniteCache cache = ignite(0).cache("L2AT");
 
-        cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\"," +
-            "\"tsCol\") values(2, ?, '2016-11-30 12:00:00', false, DATE '2016-12-01')").setArgs(new AllTypes(2L)));
+        cache.query(new SqlFieldsQuery("INSERT INTO \"AllTypes\" (_key, _val) VALUES(2, ?)")
+            .setArgs(new AllTypes(2L))).getAll();
+
+        cache.query (new SqlFieldsQuery(
+            "UPDATE \"AllTypes\" " +
+                "SET " +
+                "\"dateCol\" = '2016-11-30 12:00:00', " +
+                "\"booleanCol\" = false, " +
+                "\"tsCol\" = DATE '2016-12-01' " +
+                "WHERE _key = 2")
+        );
 
         // Look ma, no hands: first we set value of inner object column (innerTypeCol), then update only one of its
         // fields (innerLongCol), while leaving another inner property (innerStrCol) as specified by innerTypeCol.
-        cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"innerLongCol\" = ?, \"doubleCol\" = CAST('50' as INT)," +
-            " \"booleanCol\" = 80, \"innerTypeCol\" = ?, \"strCol\" = PI(), \"shortCol\" = " +
-            "CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
-            "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', \"tsCol\"=TIMESTAMPADD('MI', 2, " +
-            "DATEADD('DAY', 2, \"tsCol\")), \"primitiveIntsCol\" = ?, \"bytesCol\" = ?")
-            .setArgs(5, new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6}));
+        cache.query(new SqlFieldsQuery(
+                "UPDATE \"AllTypes\" " +
+                    "SET " +
+                    "\"innerLongCol\" = ?, " +  // (1)
+                    "\"doubleCol\" = CAST('50' as INT), " +
+                    "\"booleanCol\" = 80, " +
+                    "\"innerTypeCol\" = ?, " + // (2)
+                    "\"strCol\" = PI(), " +
+                    "\"shortCol\" = CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
+                    "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', " +
+                    "\"tsCol\"=TIMESTAMPADD('MI', 2, DATEADD('DAY', 2, \"tsCol\")), " +
+                    "\"primitiveIntsCol\" = ?, " +  //(3)
+                    "\"bytesCol\" = ?" // (4)
+            ).setArgs(5, new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6})
+        ).getAll();
 
         AllTypes res = (AllTypes) cache.get(2L);
 
@@ -239,8 +259,16 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     public void testSingleInnerFieldUpdate() throws ParseException {
         IgniteCache cache = ignite(0).cache("L2AT");
 
-        cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\") values(2, ?," +
-            "'2016-11-30 12:00:00', false)").setArgs(new AllTypes(2L)));
+        cache.query(new SqlFieldsQuery("insert into \"AllTypes\" (_key, _val) values(2, ?)")
+            .setArgs(new AllTypes(2L))).getAll();
+
+        cache.query(new SqlFieldsQuery(
+            "UPDATE \"AllTypes\" " +
+                "SET " +
+                "\"dateCol\" = '2016-11-30 12:00:00', " +
+                "\"booleanCol\" = false " +
+                "WHERE _key = 2")
+        ).getAll();
 
         assertFalse(cache.query(new SqlFieldsQuery("select * from \"AllTypes\"")).getAll().isEmpty());
 
