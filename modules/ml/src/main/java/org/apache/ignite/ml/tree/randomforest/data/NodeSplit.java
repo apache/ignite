@@ -17,12 +17,13 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * Class represents a split point for decision tree.
  */
-public class NodeSplit {
+public class NodeSplit implements Serializable {
     /** Feature id in feature vector. */
     private final int featureId;
 

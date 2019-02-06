@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
+import java.io.Externalizable;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -26,6 +27,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
 public class NodeId extends IgniteBiTuple<Integer, Long> {
     /** Serial version uid. */
     private static final long serialVersionUID = 4400852013136423333L;
+
+    /**
+     * Empty constructor required by {@link Externalizable}.
+     */
+    public NodeId() {
+    }
 
     /**
      * Create an instance of NodeId.
