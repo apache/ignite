@@ -193,7 +193,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
         storageCfg.setWalMode(WALMode.LOG_ONLY);
-        storageCfg.setPageSize(PAGE_SIZE);
+        storageCfg.setPageSize(DataStorageConfiguration.MIN_PAGE_SIZE);
 
         DataRegionConfiguration regionCfg = new DataRegionConfiguration();
 
@@ -1049,7 +1049,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             cacheParts,
             writers,
             readers,
-            DFLT_TEST_TIME,
+            10_000,
             cfgC,
             null,
             writer,
