@@ -678,7 +678,12 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                             error("Unexpected exception in restart-worker.", e);
                         }
                     }
-                }, "restart-worker-" + i);
+                }, "restart-worker-" + i) {
+                    @Override public void interrupt() {
+                        error(getName() + " was interrupted by " + Thread.currentThread());
+                        super.interrupt();
+                    }
+                };
 
                 t.start();
 
@@ -842,7 +847,12 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                             error("Unexpected exception in restart-worker.", e);
                         }
                     }
-                }, "restart-worker-" + i);
+                }, "restart-worker-" + i) {
+                    @Override public void interrupt() {
+                        error(getName() + " was interrupted by " + Thread.currentThread());
+                        super.interrupt();
+                    }
+                };
 
                 t.start();
 
