@@ -29,7 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processor.security.AbstractPermissionSecurityTest;
+import org.apache.ignite.internal.processor.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -46,7 +46,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
  * Test cache permission for Load cache.
  */
 @RunWith(JUnit4.class)
-public class LoadCachePermissionSecurityTest extends AbstractPermissionSecurityTest {
+public class LoadCachePermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
     /** Entry. */
     private static T2<String, Integer> entry;
 

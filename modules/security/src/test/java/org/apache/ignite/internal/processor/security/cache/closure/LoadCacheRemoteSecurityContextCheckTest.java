@@ -25,7 +25,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractCacheResolveSecurityTest;
+import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -37,7 +37,7 @@ import org.junit.runners.JUnit4;
  * Testing permissions when the filter of Load cache is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class LoadCacheResolveSecurityTest extends AbstractCacheResolveSecurityTest {
+public class LoadCacheRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
     /** Transition load cache. */
     private static final String TRANSITION_LOAD_CACHE = "TRANSITION_LOAD_CACHE";
 

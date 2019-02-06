@@ -55,7 +55,7 @@ import static org.junit.Assert.assertThat;
  * Security tests for thin client.
  */
 @RunWith(JUnit4.class)
-public class ThinClientSecurityTest extends AbstractSecurityTest {
+public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     /** Client. */
     private static final String CLIENT = "client";
 

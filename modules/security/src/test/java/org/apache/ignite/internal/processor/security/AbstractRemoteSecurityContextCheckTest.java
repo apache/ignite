@@ -34,7 +34,7 @@ import static org.junit.Assert.assertThat;
 /**
  *
  */
-public class AbstractResolveSecurityTest extends AbstractSecurityTest {
+public class AbstractRemoteSecurityContextCheckTest extends AbstractSecurityTest {
     /** Verifier to check results of tests. */
     protected static final Verifier VERIFIER = new Verifier();
 

@@ -21,12 +21,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractResolveSecurityTest;
+import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
 
 /**
  * Abstract compute security test.
  */
-public abstract class AbstractComputeResolveSecurityTest extends AbstractResolveSecurityTest {
+public abstract class AbstractComputeRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
     /** {@inheritDoc} */
     @Override protected void startNodes() throws Exception{
         super.startNodes();

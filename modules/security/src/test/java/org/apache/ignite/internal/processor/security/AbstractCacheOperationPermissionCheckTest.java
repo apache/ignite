@@ -34,7 +34,7 @@ import static org.junit.Assert.assertThat;
 /**
  *
  */
-public abstract class AbstractPermissionSecurityTest extends AbstractSecurityTest {
+public abstract class AbstractCacheOperationPermissionCheckTest extends AbstractSecurityTest {
     /** Cache name for tests. */
     protected static final String CACHE_NAME = "TEST_CACHE";
 

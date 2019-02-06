@@ -33,7 +33,7 @@ import org.junit.Test;
 /**
  * Testing permissions when the compute closure is executed cache operations on remote node.
  */
-public class DistributedClosureComputeResolveSecurityTest extends AbstractComputeResolveSecurityTest {
+public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractComputeRemoteSecurityContextCheckTest {
     /**
      *
      */

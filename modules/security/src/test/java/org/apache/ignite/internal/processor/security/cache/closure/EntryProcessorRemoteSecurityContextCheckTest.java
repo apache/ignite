@@ -25,7 +25,7 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractCacheResolveSecurityTest;
+import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -34,7 +34,7 @@ import org.junit.runners.JUnit4;
  * Testing permissions when EntryProcessor closure is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class EntryProcessorCacheResolveSecurityTest extends AbstractCacheResolveSecurityTest {
+public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
     /**
      *
      */

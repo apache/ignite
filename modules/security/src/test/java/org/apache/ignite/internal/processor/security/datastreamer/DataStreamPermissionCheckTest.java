@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.internal.processor.security.AbstractPermissionSecurityTest;
+import org.apache.ignite.internal.processor.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertThat;
  * Test cache permissions for Data Streamer.
  */
 @RunWith(JUnit4.class)
-public class DataStreamePermissionSecurityTest extends AbstractPermissionSecurityTest {
+public class DataStreamPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
     /**
      * @throws Exception If fail.
      */

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processor.security.cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractPermissionSecurityTest;
+import org.apache.ignite.internal.processor.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,7 +34,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
  * Test cache permission for Entry processor.
  */
 @RunWith(JUnit4.class)
-public class EntryProcessorPermissionSecurityTest extends AbstractPermissionSecurityTest {
+public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid("server_node",

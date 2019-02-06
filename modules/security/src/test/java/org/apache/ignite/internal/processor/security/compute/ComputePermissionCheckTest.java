@@ -57,7 +57,7 @@ import static org.junit.Assert.assertThat;
  * Task execute permission tests.
  */
 @RunWith(JUnit4.class)
-public class TaskExecutePermissionTest extends AbstractSecurityTest {
+public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /** Flag that shows task was executed. */
     private static final AtomicBoolean IS_EXECUTED = new AtomicBoolean(false);
 
