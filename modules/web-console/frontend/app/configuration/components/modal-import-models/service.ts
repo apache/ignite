@@ -84,8 +84,7 @@ export default class ModalImportModels {
             show: false
         });
 
-        return this.AgentManager.startAgentWatch('Back', this.$uiRouter.globals.current.name)
-            .then(() => this._modal.$promise)
+        return this._modal.$promise
             .then(() => this._modal.show())
             .then(() => this.deferred.promise)
             .finally(() => this.deferred = null);
