@@ -6014,7 +6014,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (log.isInfoEnabled())
                 log.info("Started serving remote node connection [rmtAddr=" + rmtAddr +
-                    ", rmtPort=" + sock.getPort() + ']');
+                    ", localNodeId=" + locNodeId +
+                    ", localNodeConsistentId=" + getNode(locNodeId).consistentId() + ']');
 
             boolean srvSock;
 

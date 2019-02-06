@@ -151,6 +151,7 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -433,9 +434,30 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 else {
-                    if (log.isInfoEnabled())
+                    if (log.isInfoEnabled()) {
+                        String serverNodeId = "";
+                        String consistentId = "";
+
+                        try {
+                            Collection<ClusterNode> remoteNodes = getSpiContext().remoteNodes();
+
+                            for (ClusterNode node : remoteNodes) {
+                                if (U.toInetAddresses(node).contains(ses.remoteAddress().getAddress()) && !node.isClient()) {
+                                    serverNodeId = node.id().toString();
+                                    consistentId = node.consistentId().toString();
+
+                                    break;
+                                }
+                            }
+                        } catch (IgniteCheckedException e) {
+                            log.warning("Unable to acquire remote node ID from SpiContext: " + e, e);
+                        }
+
                         log.info("Established outgoing communication connection [locAddr=" + ses.localAddress() +
-                            ", rmtAddr=" + ses.remoteAddress() + ']');
+                                (F.isEmpty(serverNodeId) ? "" : ", serverNodeId=" + serverNodeId +
+                                        ", serverNodeConsistentId=" + consistentId) +
+                                ", rmtAddr=" + ses.remoteAddress() + ']');
+                    }
                 }
             }
 
