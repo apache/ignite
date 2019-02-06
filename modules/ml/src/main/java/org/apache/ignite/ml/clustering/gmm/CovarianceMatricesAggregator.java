@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -64,8 +66,24 @@ public class CovarianceMatricesAggregator implements Serializable {
         return weightedSum.divide(N * clusterProb);
     }
 
-    public static IgniteFunction<GmmPartitionData, List<CovarianceMatricesAggregator>> map(int countOfComponents,
-        List<Vector> means) {
+    public static List<Matrix> computeCovariances(Dataset<EmptyContext, GmmPartitionData> dataset,
+        Vector clusterProbs, List<Vector> means) {
+
+        List<CovarianceMatricesAggregator> aggregators = dataset.compute(
+            map(means),
+            CovarianceMatricesAggregator::reduce
+        );
+
+        List<Matrix> res = new ArrayList<>();
+        for (int i = 0; i < aggregators.size(); i++)
+            res.add(aggregators.get(i).covariance(clusterProbs.get(i)));
+
+        return res;
+    }
+
+    private static IgniteFunction<GmmPartitionData, List<CovarianceMatricesAggregator>> map(List<Vector> means) {
+        int countOfComponents = means.size();
+
         return data -> {
             List<CovarianceMatricesAggregator> aggregators = new ArrayList<>();
             for (int i = 0; i < countOfComponents; i++)
@@ -80,7 +98,7 @@ public class CovarianceMatricesAggregator implements Serializable {
         };
     }
 
-    public static List<CovarianceMatricesAggregator> reduce(List<CovarianceMatricesAggregator> l,
+    private static List<CovarianceMatricesAggregator> reduce(List<CovarianceMatricesAggregator> l,
         List<CovarianceMatricesAggregator> r) {
         A.ensure(l != null || r != null, "Both partitions cannot equal to null");
 

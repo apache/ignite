@@ -37,24 +37,22 @@ import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
-import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Serializable {
-    private final double EPS = 1e-4;
-    private final int countOfComponents;
-    private final int maxCountOfIterations;
-    private final long seed;
+    private double eps = 1e-3;
+    private int countOfComponents = 2;
+    private int maxCountOfIterations = 10;
+    private long seed = System.currentTimeMillis();
+    private List<Vector> initialMeans;
 
-    public GmmTrainer(int countOfComponents, int maxCountOfIterations) {
-        this(countOfComponents, maxCountOfIterations, System.currentTimeMillis());
+    public GmmTrainer() {
     }
 
-    public GmmTrainer(int countOfComponents, int maxCountOfIterations, long seed) {
+    public GmmTrainer(int countOfComponents, int maxCountOfIterations) {
         this.countOfComponents = countOfComponents;
         this.maxCountOfIterations = maxCountOfIterations;
-        this.seed = seed;
     }
 
     @Override
@@ -71,22 +69,60 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
         }
     }
 
+    public GmmTrainer withSeed(long seed) {
+        this.seed = seed;
+        return this;
+    }
+
+    public GmmTrainer withCountOfComponents(int numberOfComponents) {
+        A.ensure(numberOfComponents > 0, "Number of components in GMM cannot equal 0");
+
+        this.countOfComponents = numberOfComponents;
+        initialMeans = null;
+        return this;
+    }
+
+    public GmmTrainer withInitialMeans(List<Vector> means) {
+        A.notEmpty(means, "GMM should starts with non empty initial components list");
+
+        this.initialMeans = means;
+        this.countOfComponents = means.size();
+        return this;
+    }
+
+    public GmmTrainer withMaxCountIterations(int maxCountOfIterations) {
+        A.ensure(maxCountOfIterations > 0, "Max count iterations cannot be less or equal zero");
+
+        this.maxCountOfIterations = maxCountOfIterations;
+        return this;
+    }
+
+    public GmmTrainer withEps(double eps) {
+        A.ensure(eps > 0 && eps < 1.0, "Max divergence beween iterations should be between 0.0 and 1.0");
+
+        this.eps = eps;
+        return this;
+    }
+
     private GmmModel fit(Dataset<EmptyContext, GmmPartitionData> dataset) {
         GmmModel model = init(dataset);
         boolean isConverged = false;
         int countOfIterations = 0;
         while (!isConverged) {
-            List<MeanWithClusterProbAggregator> newMeansAndClusterProbs = updateMeans(dataset);
+            List<MeanWithClusterProbAggregator> newMeansAndClusterProbs =
+                MeanWithClusterProbAggregator.computeMeans(dataset, countOfComponents);
 
-            int N = newMeansAndClusterProbs.get(0).getN();
             Vector clusterProbs = getClusterProbs(newMeansAndClusterProbs);
             List<Vector> newMeans = getMeans(newMeansAndClusterProbs);
-            List<Matrix> newCovs = updateCovarianceMatrices(dataset, N, clusterProbs, newMeans);
+
+            A.ensure(newMeans.size() == model.countOfComponents(), "newMeans.size() == count of components");
+            A.ensure(newMeans.get(0).size() == initialMeans.get(0).size(), "newMeans[0].size() == initialMeans[0].size()");
+            List<Matrix> newCovs = CovarianceMatricesAggregator.computeCovariances(dataset, clusterProbs, newMeans);
 
             List<MultivariateGaussianDistribution> components = buildComponents(newMeans, newCovs);
             GmmModel newModel = new GmmModel(clusterProbs, components);
 
-            countOfIterations++;
+            countOfIterations += 1;
             isConverged = isConverged(model, newModel) || countOfIterations > maxCountOfIterations;
             model = newModel;
 
@@ -98,19 +134,23 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
     }
 
     private GmmModel init(Dataset<EmptyContext, GmmPartitionData> dataset) {
-        List<Vector> randomMeans = dataset.compute(
-            selectNRandomXsMapper(countOfComponents),
-            selectNRandomXsReducer(countOfComponents, seed)
-        );
-
-        int featuresCount = randomMeans.get(0).size();
-        List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
-        for (int i = 0; i < countOfComponents; i++) {
-            distributions.add(new MultivariateGaussianDistribution(
-                randomMeans.get(i),
-                MatrixUtil.identity(featuresCount)
-            ));
+        if (initialMeans == null) {
+            initialMeans = dataset.compute(
+                selectNRandomXsMapper(countOfComponents),
+                selectNRandomXsReducer(countOfComponents, seed)
+            );
         }
+
+        reestimatePcxi(initialMeans, dataset);
+
+        List<Matrix> covs = CovarianceMatricesAggregator.computeCovariances(
+            dataset,
+            VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
+            initialMeans);
+
+        List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
+        for (int i = 0; i < countOfComponents; i++)
+            distributions.add(new MultivariateGaussianDistribution(initialMeans.get(i), covs.get(i)));
 
         return new GmmModel(
             VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
@@ -118,11 +158,26 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
         );
     }
 
-    private List<MeanWithClusterProbAggregator> updateMeans(Dataset<EmptyContext, GmmPartitionData> dataset) {
-        return dataset.compute(
-            MeanWithClusterProbAggregator.map(countOfComponents),
-            MeanWithClusterProbAggregator::reduce
-        );
+    private static void reestimatePcxi(List<Vector> means, Dataset<EmptyContext, GmmPartitionData> dataset) {
+        dataset.compute(data -> {
+            for (int i = 0; i < data.size(); i++) {
+                int closestClusterId = -1;
+                double minSquaredDist = Double.MAX_VALUE;
+
+                Vector x = data.getX(i);
+                for (int c = 0; c < means.size(); c++) {
+                    data.getPcxi()[i][c] = 0.0;
+
+                    double distance = means.get(c).getDistanceSquared(x);
+                    if (distance < minSquaredDist) {
+                        closestClusterId = c;
+                        minSquaredDist = distance;
+                    }
+                }
+
+                data.getPcxi()[i][closestClusterId] = 1.0;
+            }
+        });
     }
 
     private Vector getClusterProbs(List<MeanWithClusterProbAggregator> meansAggr) {
@@ -133,22 +188,9 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
         return meansAggr.stream().map(MeanWithClusterProbAggregator::mean).collect(Collectors.toList());
     }
 
-    private List<Matrix> updateCovarianceMatrices(Dataset<EmptyContext, GmmPartitionData> dataset, int N,
-        Vector clusterProbs, List<Vector> means) {
-
-        List<CovarianceMatricesAggregator> aggregators = dataset.compute(
-            CovarianceMatricesAggregator.map(countOfComponents, means),
-            CovarianceMatricesAggregator::reduce
-        );
-
-        List<Matrix> res = new ArrayList<>();
-        for (int i = 0; i < aggregators.size(); i++)
-            res.add(aggregators.get(i).covariance(clusterProbs.get(i)));
-
-        return res;
-    }
-
     private List<MultivariateGaussianDistribution> buildComponents(List<Vector> means, List<Matrix> covs) {
+        A.ensure(means.size() == covs.size(), "means.size() == covs.size()");
+
         List<MultivariateGaussianDistribution> res = new ArrayList<>();
         for (int i = 0; i < means.size(); i++)
             res.add(new MultivariateGaussianDistribution(means.get(i), covs.get(i)));
@@ -165,7 +207,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
             MultivariateGaussianDistribution d1 = oldModel.distributions().get(i);
             MultivariateGaussianDistribution d2 = newModel.distributions().get(i);
 
-            isConverged = isConverged && Math.sqrt(d1.mean().getDistanceSquared(d2.mean())) < EPS;
+            isConverged = isConverged && Math.sqrt(d1.mean().getDistanceSquared(d2.mean())) < eps;
         }
 
         return isConverged;
@@ -182,7 +224,8 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
     }
 
     private static IgniteBiFunction<GmmPartitionData, LearningEnvironment, List<Vector>> selectNRandomXsMapper(int n) {
-        return (data, env) -> env.randomNumbersGenerator().ints(n, 0, data.size()).mapToObj(data::getX)
+        return (data, env) -> env.randomNumbersGenerator().ints(n, 0, data.size())
+            .mapToObj(data::getX)
             .collect(Collectors.toList());
     }
 

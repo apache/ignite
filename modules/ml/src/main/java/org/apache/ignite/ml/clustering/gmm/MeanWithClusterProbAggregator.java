@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -57,10 +59,6 @@ class MeanWithClusterProbAggregator implements Serializable {
         );
     }
 
-    public int getN() {
-        return N;
-    }
-
     public Vector mean() {
         return weightedXsSum.divide(pcxiSum);
     }
@@ -69,7 +67,16 @@ class MeanWithClusterProbAggregator implements Serializable {
         return pcxiSum / N;
     }
 
-    public static IgniteFunction<GmmPartitionData, List<MeanWithClusterProbAggregator>> map(int countOfComponents) {
+    public static List<MeanWithClusterProbAggregator> computeMeans(Dataset<EmptyContext, GmmPartitionData> dataset,
+        int countOfComponents) {
+
+        return dataset.compute(
+            map(countOfComponents),
+            MeanWithClusterProbAggregator::reduce
+        );
+    }
+
+    private static IgniteFunction<GmmPartitionData, List<MeanWithClusterProbAggregator>> map(int countOfComponents) {
         return data -> {
             List<MeanWithClusterProbAggregator> aggregators = new ArrayList<>();
             for (int i = 0; i < countOfComponents; i++)
@@ -84,7 +91,7 @@ class MeanWithClusterProbAggregator implements Serializable {
         };
     }
 
-    public static List<MeanWithClusterProbAggregator> reduce(List<MeanWithClusterProbAggregator> l,
+    private static List<MeanWithClusterProbAggregator> reduce(List<MeanWithClusterProbAggregator> l,
         List<MeanWithClusterProbAggregator> r) {
         A.ensure(l != null || r != null, "Both partitions cannot equal to null");
 
