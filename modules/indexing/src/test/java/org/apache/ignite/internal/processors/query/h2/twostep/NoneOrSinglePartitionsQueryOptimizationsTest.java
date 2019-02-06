@@ -467,7 +467,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
             if (expMergeTbl)
                 assertTrue(innerIter instanceof H2ResultSetIterator);
             else
-                assertTrue(innerIter instanceof GridMergeIndexIterator);
+                assertTrue(innerIter instanceof ReduceIndexIterator);
 
             List<List<?>> all = new ArrayList<>();
 

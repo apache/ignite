@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.h2.index.Cursor;
@@ -30,9 +29,9 @@ import org.h2.result.Row;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Iterator that transparently and sequentially traverses a bunch of {@link GridMergeIndex} objects.
+ * Iterator that transparently and sequentially traverses a bunch of {@link ReduceIndex} objects.
  */
-class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
+public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
     /** Reduce query executor. */
     private final GridReduceQueryExecutor rdcExec;
 
@@ -49,7 +48,7 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
     private final boolean distributedJoins;
 
     /** Iterator over indexes. */
-    private final Iterator<GridMergeIndex> idxIter;
+    private final Iterator<ReduceIndex> idxIter;
 
     /** Current cursor. */
     private Cursor cursor;
@@ -71,15 +70,14 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
      * @param run Query run.
      * @param qryReqId Query request ID.
      * @param distributedJoins Distributed joins.
-     * @throws IgniteCheckedException if failed.
      */
-    GridMergeIndexIterator(GridReduceQueryExecutor rdcExec,
+    public ReduceIndexIterator(GridReduceQueryExecutor rdcExec,
         Collection<ClusterNode> nodes,
         ReduceQueryRun run,
         long qryReqId,
         boolean distributedJoins,
-        @Nullable MvccQueryTracker mvccTracker)
-        throws IgniteCheckedException {
+        @Nullable MvccQueryTracker mvccTracker
+    ) {
         this.rdcExec = rdcExec;
         this.nodes = nodes;
         this.run = run;
@@ -87,7 +85,7 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
         this.distributedJoins = distributedJoins;
         this.mvccTracker = mvccTracker;
 
-        this.idxIter = run.indexes().iterator();
+        idxIter = run.indexes().iterator();
 
         advance();
     }
