@@ -191,14 +191,22 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         Assert.assertEquals(srvNodeIndexes.toString(), clientNodeNodeIndexes.toString());
 
+        //ToDo: As of now we can see duplicates columns within index due to https://issues.apache.org/jira/browse/IGNITE-11125
+
         String[][] expectedResults = {
-            {"DEFAULT", "CACHE_SQL", "IDX_2", "ID DESC", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
-            {"DEFAULT", "CACHE_SQL", "_key_PK", "ID", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
-            {"PUBLIC", "DFLT_CACHE", "IDX_1", "ID2 DESC, ID1, MY_VAL DESC", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
-            {"PUBLIC", "DFLT_CACHE", "IDX_3", "MY_VAL, ID1, ID2", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
-            {"PUBLIC", "DFLT_CACHE", "_key_PK", "ID1, ID2", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
-            {"TST1", "VALUECLASS", "TST1_INDEX", "KEY, _KEY", "2584860", "TST1", "2584860", "TST1", "10"},
-            {"TST1", "VALUECLASS", "_key_PK", "_KEY", "2584860", "TST1", "2584860", "TST1", "10"},
+            {"DEFAULT", "CACHE_SQL", "IDX_2", "\"ID\" DESC, \"ID\" ASC", "BTREE", "false", "false", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
+            {"DEFAULT", "CACHE_SQL", "_key_PK", "\"ID\" ASC", "BTREE", "true", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
+            {"DEFAULT", "CACHE_SQL", "_key_PK__SCAN_", "\"ID\" ASC", "SCAN", "false", "false",  "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
+            {"DEFAULT", "CACHE_SQL", "_key_PK_hash", "\"ID\" ASC", "HASH", "false", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
+            {"PUBLIC", "DFLT_CACHE", "IDX_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "IDX_3", "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "_key_PK__SCAN_", "\"ID1\" ASC, \"ID2\" ASC", "SCAN", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
+            {"PUBLIC", "DFLT_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC", "HASH", "false", "true", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
+            {"TST1", "VALUECLASS", "TST1_INDEX", "\"KEY\" ASC, \"_KEY\" ASC", "BTREE", "false", "false", "2584860", "TST1", "2584860", "TST1", "10"},
+            {"TST1", "VALUECLASS", "_key_PK", "\"_KEY\" ASC", "BTREE", "true", "true", "2584860", "TST1", "2584860", "TST1", "10"},
+            {"TST1", "VALUECLASS", "_key_PK__SCAN_", "\"_KEY\" ASC", "SCAN", "false", "false", "2584860", "TST1", "2584860", "TST1", "null"},
+            {"TST1", "VALUECLASS", "_key_PK_hash", "\"_KEY\" ASC", "HASH", "false", "true", "2584860", "TST1", "2584860", "TST1", "null"},
         };
 
         for (int i = 0; i < srvNodeIndexes.size(); i++) {
@@ -209,7 +217,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             assertEquals(expRow.length, resRow.size());
 
             for (int j = 0; j < expRow.length; j++)
-                assertEquals(expRow[j], resRow.get(j).toString());
+                assertEquals(expRow[j], String.valueOf(resRow.get(j)));
         }
     }
 

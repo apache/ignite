@@ -21,13 +21,15 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
+import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
+import org.apache.ignite.internal.processors.query.h2.database.IndexInformationAware;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
-import org.h2.index.Index;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
@@ -50,7 +52,10 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
             newColumn("SCHEMA_NAME"),
             newColumn("TABLE_NAME"),
             newColumn("INDEX_NAME"),
-            newColumn("INDEX_KEY"),
+            newColumn("COLUMNS"),
+            newColumn("INDEX_TYPE"),
+            newColumn("IS_PK", Value.BOOLEAN),
+            newColumn("IS_UNIQUE", Value.BOOLEAN),
             newColumn("CACHE_ID", Value.INT),
             newColumn("CACHE_NAME"),
             newColumn("GROUP_ID", Value.INT),
@@ -85,28 +90,28 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
             int cacheId = tbl.cacheId();
             String cacheName = tbl.cacheName();
 
-            List<Index> indexes = tbl.getIndexes();
+            List<IndexInformation> idxInfoList = tbl.getIndexes().stream()
+                .filter(i -> IndexInformationAware.class.isAssignableFrom(i.getClass()))
+                .map(IndexInformationAware.class::cast)
+                .map(IndexInformationAware::indexInformation).filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
-            for (Index idx : indexes) {
-                //We need to expose only H2TreeIndexes.
-                if (idx instanceof H2TreeIndexBase) {
-                    int inlineSize = ((H2TreeIndexBase)idx).inlineSize();
-
-                    String idxKey = ((H2TreeIndexBase)idx).indexKeySql();
-
-                    Object[] data = new Object[] {
-                        schema,
-                        tblName,
-                        idx.getName(),
-                        idxKey,
-                        cacheId,
-                        cacheName,
-                        grpId,
-                        grpName,
-                        inlineSize
-                    };
-                    rows.add(createRow(ses, data));
-                }
+            for (IndexInformation idxInfo : idxInfoList) {
+                Object[] data = new Object[] {
+                    schema,
+                    tblName,
+                    idxInfo.name(),
+                    idxInfo.keySql(),
+                    idxInfo.type(),
+                    idxInfo.pk(),
+                    idxInfo.unique(),
+                    cacheId,
+                    cacheName,
+                    grpId,
+                    grpName,
+                    idxInfo.inlineSize()
+                };
+                rows.add(createRow(ses, data));
             }
         });
 
@@ -122,7 +127,9 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
     @Override public long getRowCount() {
         return schemaMgr.dataTables().stream()
             .flatMap(t -> t.getIndexes().stream())
-            .filter(i -> H2TreeIndexBase.class.isAssignableFrom(i.getClass()))
+            .filter(i -> IndexInformationAware.class.isAssignableFrom(i.getClass()))
+            .map(IndexInformationAware.class::cast)
+            .map(IndexInformationAware::indexInformation).filter(Objects::nonNull)
             .count();
     }
 }

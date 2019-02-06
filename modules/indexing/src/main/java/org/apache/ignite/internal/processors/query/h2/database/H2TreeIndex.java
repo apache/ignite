@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
@@ -44,9 +44,9 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
@@ -68,7 +68,6 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -86,8 +85,6 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.CacheException;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
@@ -190,6 +187,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         this.idxName = idxName;
 
+        this.table = table;
         this.qryCtxRegistry = qryCtxRegistry;
 
         GridQueryTypeDescriptor typeDesc = table.rowDescriptor().type();
@@ -288,11 +286,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
         };
 
         ctx.io().addMessageListener(msgTopic, msgLsnr);
-    }
 
-    /** {@inheritDoc} */
-    @Override public int inlineSize() {
-        return segments[0].inlineSize();
+        initIndexInformation(getIndexType().isPrimaryKey(), H2IndexType.BTREE, unwrappedColsList, segments[0].inlineSize());
     }
 
     /**
@@ -320,6 +315,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override
     protected void warnCantBeInlined(IndexColumn col) {
         String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
 

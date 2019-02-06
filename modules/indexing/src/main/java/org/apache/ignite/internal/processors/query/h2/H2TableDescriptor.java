@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.database.H2PkHashBaseIndex;
+import org.apache.ignite.internal.processors.query.h2.database.H2PkHashClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -79,7 +81,7 @@ public class H2TableDescriptor {
     private GridLuceneIndex luceneIdx;
 
     /** */
-    private H2PkHashIndex pkHashIdx;
+    private H2PkHashBaseIndex pkHashIdx;
 
     /** Flag of table has been created from SQL*/
     private boolean isSql;
@@ -104,6 +106,12 @@ public class H2TableDescriptor {
         fullTblName = H2Utils.withQuotes(schemaName) + "." + H2Utils.withQuotes(type.tableName());
     }
 
+    /**
+     * @return {@code true} In case table was created from SQL.
+     */
+    public boolean sql(){
+        return isSql;
+    }
     /**
      * @return Indexing.
      */
@@ -317,18 +325,8 @@ public class H2TableDescriptor {
             keyCols = new ArrayList<>(type.fields().size() + 1);
 
             // Check if key is simple type.
-            if(QueryUtils.isSqlType(type.keyClass())) {
-                int altKeyColId = tbl.rowDescriptor().getAlternativeColumnId(KEY_COL);
-
-                //Remap simple key to alternative column.
-                IndexColumn idxKeyCol = new IndexColumn();
-
-                idxKeyCol.column = tbl.getColumn(altKeyColId);
-                idxKeyCol.columnName = idxKeyCol.column.getName();
-                idxKeyCol.sortType = keyCol.sortType;
-
-                keyCols.add(idxKeyCol);
-            }
+            if(QueryUtils.isSqlType(type.keyClass()))
+                keyCols.add(keyCol);
             else {
                 for (String propName : type.fields().keySet()) {
                     GridQueryProperty prop = type.property(propName);
@@ -391,9 +389,6 @@ public class H2TableDescriptor {
         IndexColumn keyCol = tbl.indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
 
-        if (affCol != null && H2Utils.equals(affCol, keyCol))
-            affCol = null;
-
         List<IndexColumn> cols = new ArrayList<>(idxDesc.fields().size() + 2);
 
         for (String field : idxDesc.fields()) {
@@ -438,16 +433,14 @@ public class H2TableDescriptor {
      * @return Index.
      */
     private Index createHashIndex(GridH2Table tbl, List<IndexColumn> cols) {
+        assert pkHashIdx == null : pkHashIdx;
         if (cacheInfo.affinityNode()) {
-            assert pkHashIdx == null : pkHashIdx;
-
             pkHashIdx = new H2PkHashIndex(cacheInfo.cacheContext(), tbl, PK_HASH_IDX_NAME, cols,
                 tbl.rowDescriptor().context().config().getQueryParallelism());
+        } else
+            pkHashIdx = new H2PkHashClientIndex(tbl, PK_HASH_IDX_NAME, cols);
 
-            return pkHashIdx;
-        }
-
-        return null;
+        return pkHashIdx;
     }
 
     /**

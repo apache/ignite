@@ -21,7 +21,6 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -41,9 +40,6 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
     public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
 
-    /** Index key sql. */
-    private final String indexKeySql;
-
     /**
      * Constructor.
      *
@@ -52,23 +48,7 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
      */
     protected H2TreeIndexBase(GridH2Table tbl, List<IndexColumn> unwrappedColsList) {
         super(tbl);
-
-        indexKeySql = unwrappedColsList.stream().map(IndexColumn::getSQL).collect(Collectors.joining(", "));
     }
-
-    /**
-     * Get string representation of index key.
-     *
-     * @return String representation of index key.
-     */
-    public String indexKeySql() {
-        return indexKeySql;
-    }
-
-    /**
-     * @return Inline size for the index.
-     */
-    abstract public int inlineSize();
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
