@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -49,14 +50,17 @@ public class CacheGroupAffinityMessage implements Message {
 
     /** */
     @GridDirectCollection(GridLongList.class)
+    @GridToStringInclude
     public List<GridLongList> assigns;
 
     /** */
     @GridDirectCollection(GridLongList.class)
+    @GridToStringInclude
     private List<GridLongList> idealAssigns;
 
     /** */
     @GridDirectMap(keyType = Integer.class, valueType = GridLongList.class)
+    @GridToStringInclude
     private Map<Integer, GridLongList> assignsDiff;
 
     /**

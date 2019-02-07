@@ -117,6 +117,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** */
     @GridDirectMap(keyType = Integer.class, valueType = CacheGroupAffinityMessage.class)
+    @GridToStringInclude
     private Map<Integer, CacheGroupAffinityMessage> idealAffDiff;
 
     /**

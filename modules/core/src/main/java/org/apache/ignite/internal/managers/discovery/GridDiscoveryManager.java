@@ -733,6 +733,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         topSnap + ", topVer=" + topVer + ", node=" + node + ", nextTopVer=" + nextTopVer +
                         ", evt=" + U.gridEventName(type) + ']';
 
+                    U.debug(log, "Updating disco cache [nextTopVer=" + nextTopVer +
+                        ", aliveServerNodes=" + discoCache.serverNodes() + ']');
+
                     topSnap.set(new Snapshot(nextTopVer, discoCache));
                 }
                 else

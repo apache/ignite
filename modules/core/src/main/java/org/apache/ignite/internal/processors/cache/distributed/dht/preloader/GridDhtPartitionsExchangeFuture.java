@@ -2533,7 +2533,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (log.isInfoEnabled()) {
                 log.info("finishExchangeOnCoordinator [topVer=" + initialVersion() +
-                    ", resVer=" + resTopVer + ']');
+                    ", resVer=" + resTopVer + ", hasServerLeft=" + exchCtx.events().hasServerLeft() + ']');
             }
 
             Map<Integer, CacheGroupAffinityMessage> idealAffDiff = null;

@@ -1434,6 +1434,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     {
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
+        U.debug(log, "onReassignmentEnforced [topVer=" + evts.topologyVersion() +
+            ", aliveNodes=" + evts.discoveryCache().serverNodes() + ']');
+
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
                 AffinityTopologyVersion topVer = evts.topologyVersion();
@@ -2278,6 +2281,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 log.debug("Computed new affinity after node left [topVer=" + topVer +
                     ", waitGrps=" + (info != null ? groupNames(info.waitGrps.keySet()) : null) + ']');
             }
+
+            U.debug(log, "Computed new affinity after node left [topVer=" + topVer +
+                ", waitGrps=" + (info != null ? groupNames(info.waitGrps.keySet()) : null) +
+                ", aliveNodes=" + U.nodeIds(aliveNodes) + ']');
         }
 
         return assignment;
