@@ -173,6 +173,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         srv.createCache(cacheConfiguration("TST1"));
 
+        execSql("CREATE TABLE PUBLIC.AFF_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1 DESC, ID2)) WITH \"affinity_key=ID2\"");
+
         execSql("CREATE TABLE CACHE_SQL (ID INT PRIMARY KEY, MY_VAL VARCHAR)");
 
         execSql("CREATE INDEX IDX_2 ON DEFAULT.CACHE_SQL(ID DESC) INLINE_SIZE 13");
@@ -194,6 +196,10 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         //ToDo: As of now we can see duplicates columns within index due to https://issues.apache.org/jira/browse/IGNITE-11125
 
         String[][] expectedResults = {
+            {"PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "\"ID2\" ASC, \"ID1\" ASC", "BTREE", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
+            {"PUBLIC", "AFF_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
+            {"PUBLIC", "AFF_CACHE", "_key_PK__SCAN_", "\"ID1\" ASC, \"ID2\" ASC", "SCAN", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
+            {"PUBLIC", "AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "HASH", "false", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
             {"DEFAULT", "CACHE_SQL", "IDX_2", "\"ID\" DESC, \"ID\" ASC", "BTREE", "false", "false", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
             {"DEFAULT", "CACHE_SQL", "_key_PK", "\"ID\" ASC", "BTREE", "true", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
             {"DEFAULT", "CACHE_SQL", "_key_PK__SCAN_", "\"ID\" ASC", "SCAN", "false", "false",  "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
@@ -215,6 +221,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             String[] expRow = expectedResults[i];
 
             assertEquals(expRow.length, resRow.size());
+
+            System.out.println(resRow);
 
             for (int j = 0; j < expRow.length; j++)
                 assertEquals(expRow[j], String.valueOf(resRow.get(j)));
