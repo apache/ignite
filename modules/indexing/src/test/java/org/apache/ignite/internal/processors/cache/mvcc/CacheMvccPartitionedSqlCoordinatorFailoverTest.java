@@ -138,7 +138,6 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testPutAllGetAll_ClientServer_Backups1_SinglePartition_RestartRandomSrv_SqlDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 3, 1, 1, 1,
@@ -208,7 +207,6 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     @Override public void testAccountsTxSql_SingleNode_CoordinatorFails_Persistence() throws Exception {
         super.testAccountsTxSql_SingleNode_CoordinatorFails_Persistence();
