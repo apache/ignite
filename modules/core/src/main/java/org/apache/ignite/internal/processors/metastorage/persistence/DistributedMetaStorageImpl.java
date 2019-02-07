@@ -473,7 +473,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (ctx.clientNode())
             return null;
 
-
         synchronized (innerStateLock) {
             DistributedMetaStorageVersion locVer = getActualVersion();
 
@@ -486,6 +485,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                     return new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
                 }
+                else
+                    return null;
             }
 
             if (!isPersistenceEnabled(ctx.config()))
