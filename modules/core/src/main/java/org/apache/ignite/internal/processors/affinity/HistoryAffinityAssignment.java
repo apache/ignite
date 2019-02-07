@@ -185,10 +185,6 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
             "new=" + this.idealAssignment + ", old=" + assign.idealAssignment();
     }
 
-    private void init() {
-
-    }
-
     /**
      * @param p Partion.
      * @param ideal {@code True} for ideal assignment.
