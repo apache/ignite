@@ -58,7 +58,7 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
         String tblName = createTableName();
 
         executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
-                "primary key (id, name, city))");
+            "primary key (id, name, city))");
 
         checkUsingIndexes(tblName, "1", 2);
     }
@@ -98,8 +98,8 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
             String val = entry.getValue();
 
             executeSql("CREATE TABLE " + tblName +
-                    " (id " + type + " , name varchar, age int, company varchar, city varchar," +
-                    " primary key (id))");
+                " (id " + type + " , name varchar, age int, company varchar, city varchar," +
+                " primary key (id))");
 
             checkUsingIndexes(tblName, val, 1);
         }
@@ -140,8 +140,8 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
             String val = entry.getValue();
 
             executeSql("CREATE TABLE " + tblName +
-                    " (id " + type + " , name varchar, age int, company varchar, city varchar," +
-                    " primary key (id)) WITH \"affinity_key=id\"");
+                " (id " + type + " , name varchar, age int, company varchar, city varchar," +
+                " primary key (id)) WITH \"affinity_key=id\"");
 
             checkUsingIndexes(tblName, val, 1);
         }
@@ -155,7 +155,7 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
         String tblName = createTableName();
 
         executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
-                "primary key (id)) WITH \"wrap_key=true\"");
+            "primary key (id)) WITH \"wrap_key=true\"");
 
         checkUsingIndexes(tblName, "1", 1);
     }
