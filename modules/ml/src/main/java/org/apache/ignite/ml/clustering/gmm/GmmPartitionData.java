@@ -87,6 +87,13 @@ class GmmPartitionData implements AutoCloseable {
         return pcxi.length;
     }
 
+    /**
+     * @return count of GMM components.
+     */
+    public int countOfComponents() {
+        return pcxi[0].length;
+    }
+
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
         //NOP
@@ -96,6 +103,9 @@ class GmmPartitionData implements AutoCloseable {
      * Builder for GMM partition data.
      */
     public static class Builder<K, V> implements PartitionDataBuilder<K, V, EmptyContext, GmmPartitionData> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 1847063348042022561L;
+
         /** Extractor. */
         private final FeatureLabelExtractor<K, V, Double> extractor;
 

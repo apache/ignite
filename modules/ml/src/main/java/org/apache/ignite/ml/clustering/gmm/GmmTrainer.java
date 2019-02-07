@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +39,7 @@ import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
-public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Serializable {
+public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     private double eps = 1e-3;
     private int countOfComponents = 2;
     private int maxCountOfIterations = 10;
@@ -109,11 +108,9 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
         boolean isConverged = false;
         int countOfIterations = 0;
         while (!isConverged) {
-            List<MeanWithClusterProbAggregator> newMeansAndClusterProbs =
-                MeanWithClusterProbAggregator.computeMeans(dataset, countOfComponents);
-
-            Vector clusterProbs = getClusterProbs(newMeansAndClusterProbs);
-            List<Vector> newMeans = getMeans(newMeansAndClusterProbs);
+            MeanWithClusterProbAggregator.AggregatedStats stats = MeanWithClusterProbAggregator.aggreateStats(dataset);
+            Vector clusterProbs = stats.clusterProbabilities();
+            List<Vector> newMeans = stats.means();
 
             A.ensure(newMeans.size() == model.countOfComponents(), "newMeans.size() == count of components");
             A.ensure(newMeans.get(0).size() == initialMeans.get(0).size(), "newMeans[0].size() == initialMeans[0].size()");
@@ -156,14 +153,6 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
             VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
             distributions
         );
-    }
-
-    private Vector getClusterProbs(List<MeanWithClusterProbAggregator> meansAggr) {
-        return VectorUtils.of(meansAggr.stream().mapToDouble(MeanWithClusterProbAggregator::clusterProb).toArray());
-    }
-
-    private List<Vector> getMeans(List<MeanWithClusterProbAggregator> meansAggr) {
-        return meansAggr.stream().map(MeanWithClusterProbAggregator::mean).collect(Collectors.toList());
     }
 
     private List<MultivariateGaussianDistribution> buildComponents(List<Vector> means, List<Matrix> covs) {

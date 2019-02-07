@@ -31,6 +31,9 @@ import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
  * #likelihood(Vector)}).
  */
 public class GmmModel extends DistributionMixture<MultivariateGaussianDistribution> implements IgniteModel<Vector, Double> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = -4484174539118240037L;
+
     /**
      * Creates an instance of GmmModel.
      *

@@ -20,44 +20,83 @@ package org.apache.ignite.ml.clustering.gmm;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
+/**
+ * Statistics aggregator for mean values and cluster probabilities computing.
+ */
 class MeanWithClusterProbAggregator implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 2700985110021774629L;
+
+    /** Weighted sum of vectors. */
     private Vector weightedXsSum;
+
+    /** P(C|xi) sum. */
     private double pcxiSum;
+
+    /** Aggregated partition data size. */
     private int N;
 
-    private MeanWithClusterProbAggregator() {
+    /**
+     * Create an instance of MeanWithClusterProbAggregator.
+     */
+    MeanWithClusterProbAggregator() {
     }
 
-    private MeanWithClusterProbAggregator(Vector weightedXsSum, double pcxiSum, int N) {
+    /**
+     * Create an instance of MeanWithClusterProbAggregator.
+     *
+     * @param weightedXsSum Weighted sum of vectors.
+     * @param pcxiSum P(c|xi) sum.
+     * @param N N.
+     */
+    MeanWithClusterProbAggregator(Vector weightedXsSum, double pcxiSum, int N) {
         this.weightedXsSum = weightedXsSum;
         this.pcxiSum = pcxiSum;
         this.N = N;
     }
 
+    /**
+     * @return compute mean value by aggregated data.
+     */
     public Vector mean() {
         return weightedXsSum.divide(pcxiSum);
     }
 
+    /**
+     * @return compute cluster probability by aggreated data.
+     */
     public double clusterProb() {
         return pcxiSum / N;
     }
 
-    public static List<MeanWithClusterProbAggregator> computeMeans(Dataset<EmptyContext, GmmPartitionData> dataset,
-        int countOfComponents) {
-
-        return dataset.compute(
-            map(countOfComponents),
+    /**
+     * Aggregates statistics for means and cluster probabilities computing given dataset.
+     *
+     * @param dataset Dataset.
+     */
+    public static AggregatedStats aggreateStats(Dataset<EmptyContext, GmmPartitionData> dataset) {
+        return new AggregatedStats(dataset.compute(
+            MeanWithClusterProbAggregator::map,
             MeanWithClusterProbAggregator::reduce
-        );
+        ));
     }
 
+    /**
+     * Add vector to statistics.
+     *
+     * @param x Vector.
+     * @param pcxi P(c|xi).
+     */
     void add(Vector x, double pcxi) {
+        A.ensure(pcxi >= 0 && pcxi <= 1., "pcxi >= 0 && pcxi <= 1.");
+
         Vector weightedVector = x.times(pcxi);
         if (weightedXsSum == null)
             weightedXsSum = weightedVector;
@@ -68,6 +107,10 @@ class MeanWithClusterProbAggregator implements Serializable {
         N += 1;
     }
 
+    /**
+     * @param other Other.
+     * @return Sum of aggregators.
+     */
     MeanWithClusterProbAggregator plus(MeanWithClusterProbAggregator other) {
         return new MeanWithClusterProbAggregator(
             weightedXsSum.plus(other.weightedXsSum),
@@ -76,21 +119,32 @@ class MeanWithClusterProbAggregator implements Serializable {
         );
     }
 
-    static IgniteFunction<GmmPartitionData, List<MeanWithClusterProbAggregator>> map(int countOfComponents) {
-        return data -> {
-            List<MeanWithClusterProbAggregator> aggregators = new ArrayList<>();
-            for (int i = 0; i < countOfComponents; i++)
-                aggregators.add(new MeanWithClusterProbAggregator());
+    /**
+     * Map stage for statistics aggregation.
+     *
+     * @param data Partition data.
+     * @return Aggregated statistics.
+     */
+    static List<MeanWithClusterProbAggregator> map(GmmPartitionData data) {
+        List<MeanWithClusterProbAggregator> aggregators = new ArrayList<>();
+        for (int i = 0; i < data.countOfComponents(); i++)
+            aggregators.add(new MeanWithClusterProbAggregator());
 
-            for (int i = 0; i < data.size(); i++) {
-                for (int c = 0; c < countOfComponents; c++)
-                    aggregators.get(c).add(data.getX(i), data.pcxi(c, i));
-            }
+        for (int i = 0; i < data.size(); i++) {
+            for (int c = 0; c < data.countOfComponents(); c++)
+                aggregators.get(c).add(data.getX(i), data.pcxi(c, i));
+        }
 
-            return aggregators;
-        };
+        return aggregators;
     }
 
+    /**
+     * Reduce stage for statistics aggregation.
+     *
+     * @param l Reft part.
+     * @param r Right part.
+     * @return Sum of statistics for each cluster.
+     */
     static List<MeanWithClusterProbAggregator> reduce(List<MeanWithClusterProbAggregator> l,
         List<MeanWithClusterProbAggregator> r) {
         A.ensure(l != null || r != null, "Both partitions cannot equal to null");
@@ -106,5 +160,46 @@ class MeanWithClusterProbAggregator implements Serializable {
             res.add(l.get(i).plus(r.get(i)));
 
         return res;
+    }
+
+    /**
+     * Computed cluster probabilities and means.
+     */
+    public static class AggregatedStats {
+        /** Cluster probs. */
+        private final Vector clusterProbs;
+
+        /** Means. */
+        private final List<Vector> means;
+
+        /**
+         * Creates an instance of AggregatedStats.
+         *
+         * @param stats Statistics.
+         */
+        private AggregatedStats(List<MeanWithClusterProbAggregator> stats) {
+            clusterProbs = VectorUtils.of(stats.stream()
+                .mapToDouble(MeanWithClusterProbAggregator::clusterProb)
+                .toArray()
+            );
+
+            means = stats.stream()
+                .map(MeanWithClusterProbAggregator::mean)
+                .collect(Collectors.toList());
+        }
+
+        /**
+         * @return clusters probabilities.
+         */
+        public Vector clusterProbabilities() {
+            return clusterProbs;
+        }
+
+        /**
+         * @return means.
+         */
+        public List<Vector> means() {
+            return means;
+        }
     }
 }

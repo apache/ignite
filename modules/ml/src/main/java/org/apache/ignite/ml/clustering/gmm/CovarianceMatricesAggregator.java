@@ -31,6 +31,9 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * component (cluster).
  */
 public class CovarianceMatricesAggregator implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 4163253784526780812L;
+
     /** Mean vector. */
     private final Vector mean;
 
