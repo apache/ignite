@@ -55,6 +55,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
@@ -579,7 +580,15 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 throw res.error();
         }
         catch (IgniteCheckedException e) {
-            throw new BinaryObjectException("Failed to update metadata for type: " + newMeta.typeName(), e);
+            IgniteCheckedException ex = e;
+
+            if (ctx.isStopping()) {
+                ex = new NodeStoppingException("Node is stopping.");
+
+                ex.addSuppressed(e);
+            }
+
+            throw new BinaryObjectException("Failed to update metadata for type: " + newMeta.typeName(), ex);
         }
     }
 

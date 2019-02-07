@@ -26,13 +26,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for cache iterators.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstractSelfTest {
     /** Key prefix. */
     protected static final String KEY_PREFIX = "testKey";

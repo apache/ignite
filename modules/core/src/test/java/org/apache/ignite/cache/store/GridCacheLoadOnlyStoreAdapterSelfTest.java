@@ -29,13 +29,10 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTest {
     /** Expected loadAll arguments, hardcoded on call site for convenience. */
     private static final Integer[] EXP_ARGS = {1, 2, 3};
@@ -45,7 +42,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         super.beforeTestsStarted();
 
@@ -69,6 +66,8 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings("unchecked")
     private CacheConfiguration<?, ?> cacheConfiguration() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         assertNotNull(store);

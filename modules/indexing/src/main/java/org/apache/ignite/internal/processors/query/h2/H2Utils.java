@@ -25,18 +25,19 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Types;
-import java.text.MessageFormat;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -46,12 +47,13 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
@@ -65,6 +67,7 @@ import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.Row;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.DataType;
@@ -87,10 +90,10 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.CacheException;
-
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_COL;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
@@ -108,14 +111,14 @@ public class H2Utils {
     private static final char ESC_CH = '\"';
 
     /** Empty cursor. */
-    public static final GridCursor<GridH2Row> EMPTY_CURSOR = new GridCursor<GridH2Row>() {
+    public static final GridCursor<H2Row> EMPTY_CURSOR = new GridCursor<H2Row>() {
         /** {@inheritDoc} */
         @Override public boolean next() {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2Row get() {
+        @Override public H2Row get() {
             return null;
         }
     };
@@ -221,9 +224,25 @@ public class H2Utils {
             .a(fullTblName)
             .a(" (");
 
+        sb.a(indexColumnsSql(h2Idx.getIndexColumns()));
+
+        sb.a(')');
+
+        return sb.toString();
+    }
+
+    /**
+     * Generate String represenation of given indexed columns.
+     *
+     * @param idxCols Indexed columns.
+     * @return String represenation of given indexed columns.
+     */
+    public static String indexColumnsSql(IndexColumn[] idxCols) {
+        GridStringBuilder sb = new SB();
+
         boolean first = true;
 
-        for (IndexColumn col : h2Idx.getIndexColumns()) {
+        for (IndexColumn col : idxCols) {
             if (first)
                 first = false;
             else
@@ -231,8 +250,6 @@ public class H2Utils {
 
             sb.a(withQuotes(col.columnName)).a(" ").a(col.sortType == SortOrder.ASCENDING ? "ASC" : "DESC");
         }
-
-        sb.a(')');
 
         return sb.toString();
     }
@@ -728,4 +745,79 @@ public class H2Utils {
             return prepared(s);
         }
     }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param cmp Comparator.
+     */
+    public static <Z> void bubbleUp(Z[] arr, int off, Comparator<Z> cmp) {
+        for (int i = off, last = arr.length - 1; i < last; i++) {
+            if (cmp.compare(arr[i], arr[i + 1]) <= 0)
+                break;
+
+            U.swap(arr, i, i + 1);
+        }
+    }
+
+    /**
+     * Create list of index columns. Where possible _KEY columns will be unwrapped.
+     *
+     * @param tbl GridH2Table instance
+     * @param idxCols List of index columns.
+     *
+     * @return Array of key and affinity columns. Key's, if it possible, splitted into simple components.
+     */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
+    @NotNull public static IndexColumn[] unwrapKeyColumns(GridH2Table tbl, IndexColumn[] idxCols) {
+        ArrayList<IndexColumn> keyCols = new ArrayList<>();
+
+        boolean isSql = tbl.rowDescriptor().tableDescriptor().sql();
+
+        if(!isSql)
+            return idxCols;
+
+        GridQueryTypeDescriptor type = tbl.rowDescriptor().type();
+
+        for (IndexColumn idxCol : idxCols) {
+            if(idxCol.column.getColumnId() == KEY_COL){
+                if(QueryUtils.isSqlType(type.keyClass())) {
+                    int altKeyColId = tbl.rowDescriptor().getAlternativeColumnId(QueryUtils.KEY_COL);
+
+                    //Remap simple key to alternative column.
+                    IndexColumn idxKeyCol = new IndexColumn();
+
+                    idxKeyCol.column = tbl.getColumn(altKeyColId);
+                    idxKeyCol.columnName = idxKeyCol.column.getName();
+                    idxKeyCol.sortType = idxCol.sortType;
+
+                    keyCols.add(idxKeyCol);
+                }
+                else {
+                    boolean added = false;
+
+                    for (String propName : type.fields().keySet()) {
+                        GridQueryProperty prop = type.property(propName);
+
+                        if (prop.key()) {
+                            added = true;
+
+                            Column col = tbl.getColumn(propName);
+
+                            keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
+                        }
+                    }
+
+                    // If key is object but the user has not specified any particular columns,
+                    // we have to fall back to whole-key index.
+                    if (!added)
+                        keyCols.add(idxCol);
+                }
+            } else
+                keyCols.add(idxCol);
+        }
+
+        return keyCols.toArray(new IndexColumn[0]);
+    }
+
 }

@@ -37,8 +37,6 @@ import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -46,7 +44,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  * Test cases that check transaction data integrity after transaction commit failed.
  */
-@RunWith(JUnit4.class)
 public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends AbstractTransactionIntergrityTest {
     /** Corruption enabled flag. */
     private static volatile boolean corruptionEnabled;

@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -446,9 +445,7 @@ public class SchemaManager {
 
         GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
 
-        H2RowFactory rowFactory = tbl.rowFactory(rowDesc);
-
-        GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql, rowDesc, rowFactory, tbl);
+        GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql, rowDesc, tbl);
 
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
             createInitialUserIndex(schemaName, tbl, usrIdx);

@@ -39,13 +39,10 @@ import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test that compute and service run only on server nodes by default.
  */
-@RunWith(JUnit4.class)
 public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     /** Number of grids started for tests. */
     private static final int NODES_CNT = 4;

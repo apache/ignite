@@ -19,15 +19,12 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import org.apache.zookeeper.client.ZooKeeperSaslClient;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ZookeeperDiscoverySpiSaslFailedAuthTest extends ZookeeperDiscoverySpiSaslAuthAbstractTest {
     /**
      * @throws Exception If failed.

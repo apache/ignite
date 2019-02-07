@@ -45,8 +45,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -66,7 +64,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  * Test for TRANSFORM events recording.
  */
 @SuppressWarnings("ConstantConditions")
-@RunWith(JUnit4.class)
 public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int GRID_CNT = 3;

@@ -33,13 +33,10 @@ import org.apache.ignite.internal.processors.query.h2.H2TwoStepCachedQuery;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for behavior in various cases of local and distributed queries.
  */
-@RunWith(JUnit4.class)
 public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String SELECT =

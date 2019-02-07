@@ -73,8 +73,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -87,7 +85,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests basic client behavior with multiple nodes.
  */
-@RunWith(JUnit4.class)
 public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Partitioned cache name. */
     private static final String PARTITIONED_CACHE_NAME = "partitioned";

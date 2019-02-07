@@ -46,15 +46,12 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteClusterActivateDeactivateTest {
     /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {
@@ -110,14 +107,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     @Test
     public void testActivateCachesRestore_5_Servers_WithNewCaches() throws Exception {
         activateCachesRestore(5, true);
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testReActivateSimple_5_Servers_4_Clients_FromServer() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10750", MvccFeatureChecker.forcedMvcc());
-
-        super.testReActivateSimple_5_Servers_4_Clients_FromServer();
     }
 
     /**
@@ -367,8 +356,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateDuringEvictionAndRebalance() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10786", MvccFeatureChecker.forcedMvcc());
-
         IgniteEx srv = (IgniteEx) startGrids(3);
 
         srv.cluster().active(true);

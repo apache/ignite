@@ -30,15 +30,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  * Tests for IO statistic manager.
  */
-@RunWith(JUnit4.class)
 public class IoStatisticsManagerSelfTest extends GridCommonAbstractTest {
 
     /** */

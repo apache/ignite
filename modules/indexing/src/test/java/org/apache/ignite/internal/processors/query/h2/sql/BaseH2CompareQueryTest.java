@@ -40,14 +40,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Base set of queries to compare query results from h2 database instance and mixed ignite caches (replicated and partitioned)
  * which have the same data models and data content.
  */
-@RunWith(JUnit4.class)
 public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /** Org count. */
     public static final int ORG_CNT = 30;

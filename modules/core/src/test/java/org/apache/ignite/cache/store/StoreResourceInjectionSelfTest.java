@@ -23,13 +23,10 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.configuration.*;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test resource injection.
  */
-@RunWith(JUnit4.class)
 public class StoreResourceInjectionSelfTest extends GridCommonAbstractTest {
     /** */
     private CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);

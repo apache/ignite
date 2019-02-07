@@ -32,15 +32,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  * Tests for cache IO statistics for inmemory mode.
  */
-@RunWith(JUnit4.class)
 public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final String ATOMIC_CACHE_NAME = "ATOMIC_CACHE";

@@ -89,8 +89,8 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccSnapshot
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccTreeClosure;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -540,6 +540,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
         boolean retVal,
+        boolean keepBinary,
         EntryProcessor entryProc,
         Object[] invokeArgs) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
@@ -560,7 +561,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             needHistory,
             noCreate,
             needOldVal,
-            retVal);
+            retVal,
+            keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -1909,7 +1911,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             boolean needHistory,
             boolean noCreate,
             boolean needOldVal,
-            boolean retVal) throws IgniteCheckedException {
+            boolean retVal,
+            boolean keepBinary) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || !needHistory;
 
@@ -1979,7 +1982,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (entryProc != null) {
                     entryProc = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), entryProc);
 
-                    CacheInvokeEntry.Operation op = applyEntryProcessor(cctx, key, ver, entryProc, invokeArgs, updateRow, oldRow);
+                    CacheInvokeEntry.Operation op = applyEntryProcessor(cctx, key, ver, entryProc, invokeArgs,
+                        updateRow, oldRow, keepBinary);
 
                     if (op == CacheInvokeEntry.Operation.NONE) {
                         if (res == ResultType.PREV_NOT_NULL)
@@ -2062,18 +2066,24 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param invokeArgs Entry processor invoke arguments.
          * @param updateRow Row for update.
          * @param oldRow Old row.
+         * @param keepBinary Keep binary flag.
          * @return Entry processor operation.
          */
         @SuppressWarnings("unchecked")
-        private CacheInvokeEntry.Operation applyEntryProcessor(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver,
-            EntryProcessor entryProc, Object[] invokeArgs, MvccUpdateDataRow updateRow,
-            CacheDataRow oldRow) {
+        private CacheInvokeEntry.Operation applyEntryProcessor(GridCacheContext cctx,
+            KeyCacheObject key,
+            GridCacheVersion ver,
+            EntryProcessor entryProc,
+            Object[] invokeArgs,
+            MvccUpdateDataRow updateRow,
+            CacheDataRow oldRow,
+            boolean keepBinary) {
             Object procRes = null;
             Exception err = null;
 
             CacheObject oldVal = oldRow == null ? null : oldRow.value();
 
-            CacheInvokeEntry invokeEntry = new CacheInvokeEntry<>(key, oldVal, ver, cctx.keepBinary(),
+            CacheInvokeEntry invokeEntry = new CacheInvokeEntry<>(key, oldVal, ver, keepBinary,
                 new GridDhtDetachedCacheEntry(cctx, key));
 
             try {
@@ -2975,7 +2985,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 try {
                     return isVisible(cctx, snapshot, io, dataPageAddr, itemId, pageSize);
                 }
-                catch (IgniteTxMvccVersionCheckedException e) {
+                catch (IgniteTxUnexpectedStateCheckedException e) {
                     // TODO this catch must not be needed if we switch Vacuum to data page scan
                     // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
                     // asynchronously and node hasn't received finish message yet but coordinator has already removed it from

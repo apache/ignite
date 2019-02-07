@@ -87,8 +87,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.fill;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
@@ -103,7 +101,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 /**
  * Test suite for WAL segments reader and event generator.
  */
-@RunWith(JUnit4.class)
 public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Wal segments count */
     private static final int WAL_SEGMENTS = 10;

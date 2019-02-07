@@ -33,16 +33,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for validation of inserts sql queries.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTest {
     /** Entry point for sql api. Contains table configurations too. */
     private static IgniteCache<Object, Object> cache;
@@ -120,8 +118,8 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * Check forgotten key fields.
-     * If we've forgotten to specify key fields and we don't specify _key, then default key is inserted.
+     * Check forgotten key fields. If we've forgotten to specify key fields and we don't specify _key, then default key
+     * is inserted.
      */
     @Test
     public void testIncorrectComplex() {
@@ -129,7 +127,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
 
         GridTestUtils.assertThrows(log(),
             () -> execute("INSERT INTO FORGOTTEN_KEY_FLDS(FK1, FK2, FV1, FV2) VALUES (8,9,10,11)"),
-            IgniteSQLException.class,
+            TransactionDuplicateKeyException.class,
             "Duplicate key during INSERT");
     }
 

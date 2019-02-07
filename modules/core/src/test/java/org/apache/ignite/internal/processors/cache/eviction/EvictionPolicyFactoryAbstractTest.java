@@ -45,8 +45,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -64,7 +62,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Base class for eviction tests.
  */
-@RunWith(JUnit4.class)
 public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy<?, ?>>
     extends GridCommonAbstractTest {
     /** Put entry size. */

@@ -18,13 +18,9 @@
 
 package org.apache.ignite.internal.stat;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-
 /**
  * Tests for cache IO statistics for persistence mode.
  */
-@RunWith(JUnit4.class)
 public class IoStatisticsCachePersistenceSelfTest extends IoStatisticsCacheSelfTest {
 
     /** {@inheritDoc} */

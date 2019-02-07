@@ -22,13 +22,10 @@ import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class StripedExecutorTest extends GridCommonAbstractTest {
     /** */
     private StripedExecutor stripedExecSvc;

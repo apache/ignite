@@ -37,8 +37,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -47,7 +45,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ResetLostPartitionTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String[] CACHE_NAMES = {"cacheOne", "cacheTwo", "cacheThree"};

@@ -42,10 +42,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -57,7 +56,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
@@ -220,8 +218,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                         committed = true;
                                     }
                                     catch (CacheException e) {
-                                        assertTrue(e.getMessage() != null &&
-                                            e.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                        assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                        assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                     }
                                 }
                             }
@@ -416,8 +414,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                             committed = true;
                                         }
                                         catch (CacheException e) {
-                                            assertTrue(e.getMessage() != null &&
-                                                e.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                            assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                            assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                         }
                                     }
                                 }
@@ -465,8 +463,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                         committed = true;
                                     }
                                     catch (CacheException e) {
-                                        assertTrue(e.getMessage() != null &&
-                                            e.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                        assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                        assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                     }
                                 }
                             }

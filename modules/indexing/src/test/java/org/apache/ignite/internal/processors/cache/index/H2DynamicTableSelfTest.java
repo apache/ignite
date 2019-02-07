@@ -67,14 +67,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.DataType;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for CREATE/DROP TABLE.
  */
 @SuppressWarnings("ThrowableNotThrown")
-@RunWith(JUnit4.class)
 public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
     private static final int CLIENT = 2;

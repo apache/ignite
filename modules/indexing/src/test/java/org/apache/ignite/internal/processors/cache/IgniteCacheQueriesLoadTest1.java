@@ -52,8 +52,6 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -65,7 +63,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class IgniteCacheQueriesLoadTest1 extends AbstractIndexingCommonTest {
     /** Operation. */
     private static final String OPERATION = "Operation";
@@ -134,10 +131,10 @@ public class IgniteCacheQueriesLoadTest1 extends AbstractIndexingCommonTest {
     private static final int NODES = 5;
 
     /** Distribution of partitions by nodes. */
-    private Map<UUID, List<Integer>> partitionsMap;
+    private static Map<UUID, List<Integer>> partitionsMap;
 
     /** Preload amount. */
-    private final int preloadAmount = 10_000;
+    private static final int preloadAmount = 10_000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

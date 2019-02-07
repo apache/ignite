@@ -28,13 +28,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests distributed queries over set of partitions on unstable topology.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
     IgniteCacheDistributedPartitionQueryAbstractSelfTest {
     /** {@inheritDoc} */

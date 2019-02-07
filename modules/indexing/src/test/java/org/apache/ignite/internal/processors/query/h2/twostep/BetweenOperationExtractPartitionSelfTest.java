@@ -42,14 +42,11 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test checks partition extraction for between (where x between 10 and 17) and simple range (where x > 10 and x < 17)
  * expressions.
  */
-@RunWith(JUnit4.class)
 public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODES_COUNT = 8;
