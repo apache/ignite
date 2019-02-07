@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
+import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategyTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
 import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
@@ -103,6 +104,8 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(TcpDiscoverySnapshotHistoryTest.class));
 
         suite.addTest(new JUnit4TestAdapter(GridTcpSpiForwardingSelfTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(ExponentialBackoffTimeoutStrategyTest.class));
 
         suite.addTest(new JUnit4TestAdapter(TcpClientDiscoverySpiSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(LongClientConnectToClusterTest.class));

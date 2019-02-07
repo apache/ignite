@@ -86,15 +86,10 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL,"true");
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
