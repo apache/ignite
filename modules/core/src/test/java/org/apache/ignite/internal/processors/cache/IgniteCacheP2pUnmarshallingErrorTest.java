@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -94,6 +95,22 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         }
 
         return cfg;
+    }
+
+    /**
+     *
+     */
+    @BeforeClass
+    public static void setupHandler() {
+        expectFailure(IOException.class, "Class can not be unmarshalled.");
+    }
+
+    /**
+     *
+     */
+    @BeforeClass
+    public static void clearHandler() {
+        expectNothing();
     }
 
     /**

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly on a node failed.
@@ -24,6 +26,23 @@ package org.apache.ignite.internal.processors.service;
  * {@inheritDoc}
  */
 public class ServiceDeploymentProcessingOnNodesFailTest extends ServiceDeploymentProcessingOnNodesLeftTest {
+    /**
+     *
+     */
+    @BeforeClass
+    public static void setupHandler() {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+    }
+
+    /**
+     *
+     */
+    @AfterClass
+    public static void clearHandler() {
+        expectNothing();
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean failNode() {
         return true;
