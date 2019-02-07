@@ -38,7 +38,9 @@ import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpNoDelay
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpSelfTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAckClosureSelfTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientSslTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFreezingClientTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiSkipMessageSendTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationStatisticsTest;
@@ -90,7 +92,13 @@ public class IgniteSpiCommunicationSelfTestSuite {
 
         suite.addTest(new JUnit4TestAdapter(TcpCommunicationStatisticsTest.class));
 
-        //suite.addTest(new JUnit4TestAdapter(GridCacheDhtLockBackupSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpCommunicationSpiFreezingClientTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpCommunicationSpiFaultyClientTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpCommunicationSpiFaultyClientSslTest.class));
+
+
+
+        //suite.addTest(new TestSuite(GridCacheDhtLockBackupSelfTest.class));
 
         return suite;
     }

@@ -58,7 +58,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @RunWith(JUnit4.class)
 public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTest {
-
     /** */
     private static ThreadLocal<Boolean> client = new ThreadLocal<>();
 
@@ -116,8 +115,6 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
@@ -146,7 +143,9 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
