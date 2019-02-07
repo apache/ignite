@@ -30,7 +30,7 @@
     </parent>
 
     <artifactId>ignite-ml</artifactId>
-    <version>2.5.5-SNAPSHOT</version>
+    <version>2.5.5-p1-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -47,7 +47,7 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
 	    <groupId>org.apache.ignite</groupId>
 	    <artifactId>ignite-indexing</artifactId>
@@ -60,7 +60,7 @@
 	    <artifactId>ignite-spring</artifactId>
 	    <version>${project.version}</version>
         </dependency>
-       
+
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>fastutil</artifactId>
