@@ -30,6 +30,23 @@ public class PartitionDataTypeUtils {
 
     /** Decimal representation of minimum long value. */
     private static final BigDecimal MIN_LONG_DECIMAL = BigDecimal.valueOf(Long.MIN_VALUE);
+    /** Decimal representation of maximum int value. */
+    private static final BigDecimal MAX_INTEGER_DECIMAL = new BigDecimal(Integer.MAX_VALUE);
+
+    /** Decimal representation of minimum int value. */
+    private static final BigDecimal MIN_INTEGER_DECIMAL = new BigDecimal(Integer.MIN_VALUE);
+
+    /** Decimal representation of maximum short value. */
+    private static final BigDecimal MAX_SHORT_DECIMAL = new BigDecimal(Short.MAX_VALUE);
+
+    /** Decimal representation of minimum short value. */
+    private static final BigDecimal MIN_SHORT_DECIMAL = new BigDecimal(Short.MIN_VALUE);
+
+    /** Decimal representation of maximum byte value. */
+    private static final BigDecimal MAX_BYTE_DECIMAL = new BigDecimal(Byte.MAX_VALUE);
+
+    /** Decimal representation of minimum byte value. */
+    private static final BigDecimal MIN_BYTE_DECIMAL = new BigDecimal(Byte.MIN_VALUE);
 
     /** Convertation failure marker. */
     public static final Object CONVERTATION_FAILURE = new Object();
@@ -41,7 +58,6 @@ public class PartitionDataTypeUtils {
      * @param targetType Type.
      * @return Converted argument or <code>CONVERTATION_FAILURE</code> if convertation failed.
      */
-    @SuppressWarnings("EnumSwitchStatementWhichMissesCases")
     public static Object convert(Object arg, PartitionParameterType targetType) {
         assert targetType != null;
 
@@ -62,16 +78,20 @@ public class PartitionDataTypeUtils {
                     return getBoolean(arg, argType);
 
                 case BYTE:
-                    return getByte(arg, argType);
+                    return getIntegerNumeric(arg, argType, Byte.MIN_VALUE, Byte.MAX_VALUE, MIN_BYTE_DECIMAL,
+                        MAX_BYTE_DECIMAL, PartitionParameterType.BYTE);
 
                 case SHORT:
-                    return getShort(arg, argType);
+                    return getIntegerNumeric(arg, argType, Short.MIN_VALUE, Short.MAX_VALUE, MIN_SHORT_DECIMAL,
+                        MAX_SHORT_DECIMAL, PartitionParameterType.SHORT);
 
                 case INT:
-                    return getInt(arg, argType);
+                    return getIntegerNumeric(arg, argType, Integer.MIN_VALUE, Integer.MAX_VALUE, MIN_INTEGER_DECIMAL,
+                        MAX_INTEGER_DECIMAL, PartitionParameterType.INT);
 
                 case LONG:
-                    return getLong(arg, argType);
+                    return getIntegerNumeric(arg, argType, Long.MIN_VALUE, Long.MAX_VALUE, MIN_LONG_DECIMAL,
+                        MAX_LONG_DECIMAL, PartitionParameterType.LONG);
 
                 case DECIMAL:
                     return getDecimal(arg, argType);
@@ -105,16 +125,11 @@ public class PartitionDataTypeUtils {
      * @return Converted value or <code>CONVERTATION_FAILURE</code> if convertation failed.
      */
     @NotNull private static Object getUUID(Object arg, PartitionParameterType argType) {
-        try {
-            switch (argType) {
-                case STRING:
-                    return stringToUUID((String)arg);
-                default:
-                    return CONVERTATION_FAILURE;
-            }
-        }
-        catch (IllegalArgumentException e) {
-            return CONVERTATION_FAILURE;
+        switch (argType) {
+            case STRING:
+                return stringToUUID((String)arg);
+            default:
+                return CONVERTATION_FAILURE;
         }
     }
 
@@ -242,110 +257,90 @@ public class PartitionDataTypeUtils {
     }
 
     /**
-     * Convert argument to <code>Long</code>.
+     * Convert argument to integer numeric: byte, short, int, long.
      *
      * @param arg Argument to convert.
      * @param argType Argument type.
      * @return Converted value or <code>CONVERTATION_FAILURE</code> if convertation failed.
      */
-    @NotNull private static Object getLong(Object arg, PartitionParameterType argType) {
+    @SuppressWarnings("EnumSwitchStatementWhichMissesCases")
+    @NotNull private static Object getIntegerNumeric(Object arg, PartitionParameterType argType, long minVal,
+        long maxVal, BigDecimal minValDecimal, BigDecimal maxValDecimal, PartitionParameterType targetType) {
+        assert targetType == PartitionParameterType.BYTE || targetType == PartitionParameterType.SHORT ||
+            targetType == PartitionParameterType.INT || targetType == PartitionParameterType.LONG;
+
+        long res;
+
         switch (argType) {
             case BOOLEAN:
-                return arg.equals(Boolean.TRUE) ? 1L : 0L;
+                res = arg.equals(Boolean.TRUE) ? 1L : 0L;
+
+                break;
             case BYTE:
             case SHORT:
             case INT:
-            case LONG:
-                return ((Number)arg).longValue();
+            case LONG: {
+                res = ((Number)arg).longValue();
+
+                if (res > maxVal || res < minVal)
+                    return CONVERTATION_FAILURE;
+
+                break;
+            }
             case DECIMAL: {
                 BigDecimal d = (BigDecimal)arg;
 
-                return d.compareTo(MAX_LONG_DECIMAL) > 0 || d.compareTo(MIN_LONG_DECIMAL) < 0 ?
-                    CONVERTATION_FAILURE :
-                    d.setScale(0, BigDecimal.ROUND_HALF_UP).longValue();
+                if (d.compareTo(maxValDecimal) > 0 || d.compareTo(minValDecimal) < 0)
+                    return CONVERTATION_FAILURE;
+                else
+                    res = d.setScale(0, BigDecimal.ROUND_HALF_UP).longValue();
+
+                break;
             }
             case DOUBLE: {
                 Double d = (Double)arg;
 
-                return d > Long.MAX_VALUE || d < Long.MIN_VALUE ?
-                    CONVERTATION_FAILURE :
-                    Math.round(d);
+                if (d > maxVal || d < minVal)
+                    return CONVERTATION_FAILURE;
+                else
+                    res = Math.round(d);
+
+                break;
             }
             case FLOAT: {
-                Float farg = (Float)arg;
+                Float f = (Float)arg;
 
-                return farg > Long.MAX_VALUE || farg < Long.MIN_VALUE ?
-                    CONVERTATION_FAILURE :
-                    (long)Math.round(farg);
+                if (f > maxVal || f < minVal)
+                    return CONVERTATION_FAILURE;
+                else
+                    res = Math.round(f);
+
+                break;
             }
-            case STRING:
-                return Long.parseLong(((String)arg).trim());
+            case STRING: {
+                res = Long.parseLong(((String)arg).trim());
+
+                if (res > maxVal || res < minVal)
+                    return CONVERTATION_FAILURE;
+
+                break;
+            }
             default:
                 return CONVERTATION_FAILURE;
         }
-    }
 
-    /**
-     * Convert argument to <code>Integer</code>.
-     *
-     * @param arg Argument to convert.
-     * @param argType Argument type.
-     * @return Converted value or <code>CONVERTATION_FAILURE</code> if convertation failed.
-     */
-    @NotNull private static Object getInt(Object arg, PartitionParameterType argType) {
-        Object res = getLong(arg, argType);
-
-        if (res == CONVERTATION_FAILURE)
-            return res;
-        else {
-            Long l = (Long) res;
-
-            return l > Integer.MAX_VALUE || l < Integer.MIN_VALUE ?
-                CONVERTATION_FAILURE :
-                l.intValue();
+        switch (targetType) {
+            case BYTE:
+                return (byte)res;
+            case SHORT:
+                return (short)res;
+            case INT:
+                return (int)res;
+            case LONG:
+                return res;
         }
-    }
 
-    /**
-     * Convert argument to <code>Short</code>.
-     *
-     * @param arg Argument to convert.
-     * @param argType Argument type.
-     * @return Converted value or <code>CONVERTATION_FAILURE</code> if convertation failed.
-     */
-    @NotNull private static Object getShort(Object arg, PartitionParameterType argType) {
-        Object res = getLong(arg, argType);
-
-        if (res == CONVERTATION_FAILURE)
-            return res;
-        else {
-            Long l = (Long) res;
-
-            return l > Short.MAX_VALUE || l < Short.MIN_VALUE ?
-                CONVERTATION_FAILURE :
-                l.shortValue();
-        }
-    }
-
-    /**
-     * Convert argument to <code>Byte</code>.
-     *
-     * @param arg Argument to convert.
-     * @param argType Argument type.
-     * @return Converted value or <code>CONVERTATION_FAILURE</code> if convertation failed.
-     */
-    @NotNull private static Object getByte(Object arg, PartitionParameterType argType) {
-        Object res = getLong(arg, argType);
-
-        if (res == CONVERTATION_FAILURE)
-            return res;
-        else {
-            Long l = (Long) res;
-
-            return l > Byte.MAX_VALUE || l < Byte.MIN_VALUE ?
-                CONVERTATION_FAILURE :
-                l.byteValue();
-        }
+        return CONVERTATION_FAILURE;
     }
 
     /**
@@ -438,9 +433,9 @@ public class PartitionDataTypeUtils {
      * conversion, that is not supported by mentioned above <code>UUID.fromString()</code>.
      *
      * @param s String to
-     * @return UUID.
+     * @return UUID or <code>CONVERTATION_FAILURE</code> if convertation failed.
      */
-    public static UUID stringToUUID(String s) {
+    public static Object stringToUUID(String s) {
         long low = 0, high = 0;
         for (int i = 0, j = 0, len = s.length(); i < len; i++) {
             char c = s.charAt(i);
@@ -455,7 +450,7 @@ public class PartitionDataTypeUtils {
             else if (c <= ' ')
                 continue;
             else
-                throw new IllegalArgumentException("Unable to convert arg.");
+                return CONVERTATION_FAILURE;
             if (j++ == 15) {
                 high = low;
                 low = 0;

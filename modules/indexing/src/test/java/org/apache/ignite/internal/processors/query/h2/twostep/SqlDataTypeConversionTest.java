@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -87,7 +88,7 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertNull() throws Exception {
-        checkConvertation(null);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(null);
     }
 
     /**
@@ -97,8 +98,8 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertBoolean() throws Exception {
-        checkConvertation(Boolean.TRUE);
-        checkConvertation(Boolean.FALSE);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Boolean.TRUE);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Boolean.FALSE);
     }
 
     /**
@@ -108,10 +109,13 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertByte() throws Exception {
-        checkConvertation((byte)42);
-        checkConvertation((byte)0);
-        checkConvertation(Byte.MIN_VALUE);
-        checkConvertation(Byte.MAX_VALUE);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2((byte)42, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2((byte)0, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Byte.MIN_VALUE, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Byte.MAX_VALUE, PartitionParameterType.UUID);
+
+        assertEquals(PartitionDataTypeUtils.CONVERTATION_FAILURE,
+            PartitionDataTypeUtils.convert((byte)42, PartitionParameterType.UUID));
     }
 
     /**
@@ -121,10 +125,13 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertShort() throws Exception {
-        checkConvertation((short)42);
-        checkConvertation((short)0);
-        checkConvertation(Short.MIN_VALUE);
-        checkConvertation(Short.MAX_VALUE);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2((short)42, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2((short)0, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Short.MIN_VALUE, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Short.MAX_VALUE, PartitionParameterType.UUID);
+
+        assertEquals(PartitionDataTypeUtils.CONVERTATION_FAILURE,
+            PartitionDataTypeUtils.convert((short)42, PartitionParameterType.UUID));
     }
 
     /**
@@ -134,10 +141,13 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertInteger() throws Exception {
-        checkConvertation(42);
-        checkConvertation(0);
-        checkConvertation(Integer.MIN_VALUE);
-        checkConvertation(Integer.MAX_VALUE);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(42, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(0, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Integer.MIN_VALUE, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Integer.MAX_VALUE, PartitionParameterType.UUID);
+
+        assertEquals(PartitionDataTypeUtils.CONVERTATION_FAILURE,
+            PartitionDataTypeUtils.convert(42, PartitionParameterType.UUID));
     }
 
     /**
@@ -147,10 +157,13 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertLong() throws Exception {
-        checkConvertation(42L);
-        checkConvertation(0L);
-        checkConvertation(Long.MIN_VALUE);
-        checkConvertation(Long.MAX_VALUE);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(42L, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(0L, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Long.MIN_VALUE, PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Long.MAX_VALUE, PartitionParameterType.UUID);
+
+        assertEquals(PartitionDataTypeUtils.CONVERTATION_FAILURE,
+            PartitionDataTypeUtils.convert(42L, PartitionParameterType.UUID));
     }
 
     /**
@@ -160,17 +173,17 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertFloat() throws Exception {
-        checkConvertation(42.1f);
-        checkConvertation(0.1f);
-        checkConvertation(0f);
-        checkConvertation(1.2345678E7f);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(42.1f);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(0.1f);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(0f);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(1.2345678E7f);
 
-        checkConvertation(Float.POSITIVE_INFINITY);
-        checkConvertation(Float.NEGATIVE_INFINITY);
-        checkConvertation(Float.NaN);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Float.POSITIVE_INFINITY);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Float.NEGATIVE_INFINITY);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Float.NaN);
 
-        checkConvertation(Float.MIN_VALUE);
-        checkConvertation(Float.MAX_VALUE);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Float.MIN_VALUE);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Float.MAX_VALUE);
     }
 
     /**
@@ -180,17 +193,17 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertDouble() throws Exception {
-        checkConvertation(42.2d);
-        checkConvertation(0.2d);
-        checkConvertation(0d);
-        checkConvertation(1.2345678E7d);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(42.2d);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(0.2d);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(0d);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(1.2345678E7d);
 
-        checkConvertation(Double.POSITIVE_INFINITY);
-        checkConvertation(Double.NEGATIVE_INFINITY);
-        checkConvertation(Double.NaN);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Double.POSITIVE_INFINITY);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Double.NEGATIVE_INFINITY);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Double.NaN);
 
-        checkConvertation(Double.MIN_VALUE);
-        checkConvertation(Double.MAX_VALUE);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Double.MIN_VALUE);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(Double.MAX_VALUE);
     }
 
     /**
@@ -200,49 +213,58 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertString() throws Exception {
-        checkConvertation("42");
-        checkConvertation("0");
-        checkConvertation("1");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("42", PartitionParameterType.BOOLEAN);
 
-        checkConvertation("42.3");
-        checkConvertation("0.3");
+        assertEquals(PartitionDataTypeUtils.CONVERTATION_FAILURE,
+            PartitionDataTypeUtils.convert("42", PartitionParameterType.BOOLEAN));
 
-        checkConvertation("42.4f");
-        checkConvertation("0.4d");
-        checkConvertation("12345678901234567890.123456789012345678901d");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("0");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("1");
 
-        checkConvertation("04d17cf3-bc20-4e3d-9ff7-72437cdae227");
-        checkConvertation("04d17cf3bc204e3d9ff772437cdae227");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("42.3", PartitionParameterType.BOOLEAN);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("0.3", PartitionParameterType.BOOLEAN);
 
-        checkConvertation("a");
+        assertEquals(PartitionDataTypeUtils.CONVERTATION_FAILURE,
+            PartitionDataTypeUtils.convert("0.3", PartitionParameterType.BOOLEAN));
 
-        checkConvertation("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("42.4f");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("0.4d");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("12345678901234567890.123456789012345678901d");
+
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("04d17cf3-bc20-4e3d-9ff7-72437cdae227");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("04d17cf3bc204e3d9ff772437cdae227");
+
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("a");
+
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
 
-        checkConvertation("aaa");
-        checkConvertation(" aaa ");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("aaa",
+            PartitionParameterType.BOOLEAN);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(" aaa ");
 
-        checkConvertation("true");
-        checkConvertation("t");
-        checkConvertation("yes");
-        checkConvertation("y");
-        checkConvertation("false");
-        checkConvertation("f");
-        checkConvertation("no");
-        checkConvertation("n");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("true");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("t");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("yes");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("y");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("false");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("f");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("no");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("n");
 
-        checkConvertation(" true ");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(" true ");
 
-        checkConvertation("null");
-        checkConvertation("NULL");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("null");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("NULL");
 
-        checkConvertation("2000-01-02");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("2000-01-02");
 
-        checkConvertation("10:00:00");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("10:00:00");
 
-        checkConvertation("2001-01-01 23:59:59.123456");
+        makeSureThatConvertationResultsExactTheSameAsWithinH2("2001-01-01 23:59:59.123456");
     }
 
     /**
@@ -252,14 +274,21 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertDecimal() throws Exception {
-        checkConvertation(new BigDecimal(42.5d));
-        checkConvertation(new BigDecimal(0.5d));
-        checkConvertation(new BigDecimal(0));
-        checkConvertation(new BigDecimal(1.2345678E7));
-        checkConvertation(BigDecimal.valueOf(12334535345456700.12345634534534578901));
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(new BigDecimal(42.5d), PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(new BigDecimal(0.5d), PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(new BigDecimal(0), PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(new BigDecimal(1.2345678E7),
+            PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(BigDecimal.valueOf(12334535345456700.12345634534534578901),
+            PartitionParameterType.UUID);
 
-        checkConvertation(new BigDecimal(Double.MIN_VALUE));
-        checkConvertation(new BigDecimal(Double.MAX_VALUE));
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(new BigDecimal(Double.MIN_VALUE),
+            PartitionParameterType.UUID);
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(new BigDecimal(Double.MAX_VALUE),
+            PartitionParameterType.UUID);
+
+        assertEquals(PartitionDataTypeUtils.CONVERTATION_FAILURE,
+            PartitionDataTypeUtils.convert(new BigDecimal(42.5d), PartitionParameterType.UUID));
     }
 
     /**
@@ -269,9 +298,9 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      */
     @Test
     public void convertUUID() throws Exception {
-        checkConvertation(UUID.randomUUID());
-        checkConvertation(UUID.fromString("00000000-0000-0000-0000-00000000000a"));
-        checkConvertation(new UUID(0L, 1L));
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(UUID.randomUUID());
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(UUID.fromString("00000000-0000-0000-0000-00000000000a"));
+        makeSureThatConvertationResultsExactTheSameAsWithinH2(new UUID(0L, 1L));
     }
 
     /**
@@ -302,24 +331,20 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
      * Actual conversial check logic.
      *
      * @param arg Argument to convert.
+     * @param excludedTargetTypesFromCheck <@code>PartitionParameterType</code> instances to exclude from check.
      * @throws Exception If failed.
      */
-    private void checkConvertation(Object arg) throws Exception {
-        for (PartitionParameterType targetType : PartitionParameterType.values()) {
+    private void makeSureThatConvertationResultsExactTheSameAsWithinH2(Object arg,
+        PartitionParameterType ... excludedTargetTypesFromCheck) throws Exception {
+
+        Iterable<PartitionParameterType> targetTypes = excludedTargetTypesFromCheck.length > 0 ?
+            EnumSet.complementOf(EnumSet.of(excludedTargetTypesFromCheck[0], excludedTargetTypesFromCheck)):
+            EnumSet.allOf(PartitionParameterType.class);
+
+        for (PartitionParameterType targetType : targetTypes) {
             Object convertationRes = PartitionDataTypeUtils.convert(arg, targetType);
 
             if (PartitionDataTypeUtils.CONVERTATION_FAILURE == convertationRes) {
-                // Conversion rules for string-to-boolean and every-type-except-string-to-uuid differs in Ignite and H2,
-                // so that we might return CONVERTATION_FAILURE
-                // whereas H2 will convert types without exception (but not vice versa!).
-                // For example in context of string-to-boolean conversion
-                // Ignite "2" -> CONVERTATION_FAILURE whereas in H2 "2" -> true.
-                // Besides that H2 might convert byte, int, etc to UUID, which is not support
-                // sby Ignite client side conversion.
-                if ((arg instanceof String && targetType == PartitionParameterType.BOOLEAN) ||
-                    (!(arg instanceof String) && targetType == PartitionParameterType.UUID))
-                    continue;
-
                 try {
                     H2Utils.convert(arg, idx, IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
 
