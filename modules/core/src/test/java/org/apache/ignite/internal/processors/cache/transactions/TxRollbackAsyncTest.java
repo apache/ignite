@@ -1033,53 +1033,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    @Test
-    public void testTimeoutOnChainedRelease() throws Exception {
-        IgniteEx client = (IgniteEx)startClient();
-
-        final GridFutureAdapter<Void> keyLocked = new GridFutureAdapter<>();
-
-        CountDownLatch waitCommit = new CountDownLatch(1);
-
-        // Used for passing tx instance to rollback thread.
-        IgniteInternalFuture<?> lockFut = lockInTx(client, keyLocked, waitCommit, 0);
-
-        keyLocked.get();
-
-        AtomicReference<Transaction> txRef = new AtomicReference<>();
-
-        IgniteInternalFuture<?> tryLockFut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try (Transaction tx = client.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                    txRef.set(tx);
-
-                    client.cache(CACHE_NAME).put(0, 0);
-
-                    tx.commit();
-
-                    fail();
-                }
-                catch (Exception e) {
-                    assertTrue(X.hasCause(e, TransactionRollbackException.class));
-                }
-            }
-        }, 1, "tx-wait-lock");
-
-        doSleep(1000);
-
-        waitCommit.countDown();
-
-        U.awaitQuiet(IgniteKernal.b2);
-
-        txRef.get().rollback();
-
-        lockFut.get();
-        tryLockFut.get();
-    }
-
-    /**
      * Locks entry in tx and delays commit until signalled.
      *
      * @param node Near node.

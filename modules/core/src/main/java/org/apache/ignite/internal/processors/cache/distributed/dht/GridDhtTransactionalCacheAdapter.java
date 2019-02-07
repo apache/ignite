@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -1440,14 +1439,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,
                                         req.keepBinary());
-                                }
-
-                                if (tx != null && "test".equals(tx.label())) {
-                                    U.awaitQuiet(IgniteKernal.b2);
-
-                                    U.sleep(1000);
-
-                                    U.awaitQuiet(IgniteKernal.b1);
                                 }
 
                                 assert e.lockedBy(mappedVer) ||
