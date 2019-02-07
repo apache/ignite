@@ -182,9 +182,9 @@ public class GridH2Table extends TableBase {
 
         // Add scan index at 0 which is required by H2.
         if (hasHashIndex)
-            idxs.add(0, new GridH2PrimaryScanIndex(this, index(1), index(0)));
+            idxs.add(0, new H2TableScanIndex(this, index(1), index(0)));
         else
-            idxs.add(0, new GridH2PrimaryScanIndex(this, index(0), null));
+            idxs.add(0, new H2TableScanIndex(this, index(0), null));
 
         pkIndexPos = hasHashIndex ? 2 : 1;
 
