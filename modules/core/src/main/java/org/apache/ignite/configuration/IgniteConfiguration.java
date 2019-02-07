@@ -240,6 +240,12 @@ public class IgniteConfiguration {
     /** Default SQL query history size. */
     public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
 
+    /** Default partition map exchange hard timeout in millis. */
+    public static final long DFLT_EXCHANGE_HARD_TIMEOUT = -1;
+
+    /** Default exchange timeout minimum owners. */
+    public static final int DFLT_EXCHANGE_TIMEOUT_MIN_OWNERS = 0;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -554,6 +560,12 @@ public class IgniteConfiguration {
     /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
     private long initBaselineAutoAdjustMaxTimeout = DFLT_INIT_BASELINE_AUTO_ADJUST_MAX_TIMEOUT;
 
+    /** Exchange hard timeout. */
+    private long exchangeHardTimeout = DFLT_EXCHANGE_HARD_TIMEOUT;
+
+    /** Exchange timeout minimum owners. */
+    private int exchangeTimeoutMinOwners = DFLT_EXCHANGE_TIMEOUT_MIN_OWNERS;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -611,6 +623,8 @@ public class IgniteConfiguration {
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
+        exchangeHardTimeout = cfg.getExchangeHardTimeout();
+        exchangeTimeoutMinOwners = cfg.getExchangeTimeoutMinOwners();
         execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
         hadoopCfg = cfg.getHadoopConfiguration();
@@ -3189,6 +3203,44 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setAuthenticationEnabled(boolean authEnabled) {
         this.authEnabled = authEnabled;
+
+        return this;
+    }
+
+    /**
+     * Returns hard timeout for partition map exchange process. If it doesn't finish until the specified amount of time
+     * passes, all nodes that potentially could block progress will be removed from cluster.
+     *
+     * @return Hard exchange timeout, in millis, or -1 if exchange timeout handling is disabled.
+     */
+    public long getExchangeHardTimeout() {
+        return exchangeHardTimeout;
+    }
+
+    /**
+     * Sets hard timeout for partition map exchange process.
+     *
+     * @param timeout Hard exchange timeout, in millis, or -1 to disable exchange timeout handling.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setExchangeHardTimeout(long timeout) {
+        this.exchangeHardTimeout = timeout;
+
+        return this;
+    }
+
+    /**
+     *
+     */
+    public int getExchangeTimeoutMinOwners() {
+        return exchangeTimeoutMinOwners;
+    }
+
+    /**
+     * @param minOwners Minimum owners count.
+     */
+    public IgniteConfiguration setExchangeTimeoutMinOwners(int minOwners) {
+        this.exchangeTimeoutMinOwners = minOwners;
 
         return this;
     }

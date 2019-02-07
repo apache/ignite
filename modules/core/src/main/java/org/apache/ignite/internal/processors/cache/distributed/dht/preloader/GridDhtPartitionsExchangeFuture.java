@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -54,6 +55,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
@@ -1488,6 +1490,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         changeWalModeIfNeeded();
 
+        if (cctx.gridConfig().getExchangeHardTimeout() != -1)
+            cctx.time().schedule(this::onDistributedExchangeTimeout, cctx.gridConfig().getExchangeHardTimeout(), -1);
+
         if (events().hasServerLeft())
             finalizePartitionCounters();
 
@@ -1509,6 +1514,121 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
         }
+    }
+
+    /**
+     *
+     */
+    private void onDistributedExchangeTimeout() {
+        if (!isDone()) {
+            synchronized (mux) {
+                if (crd.isLocal()) {
+                    Set<UUID> remaining0 = new HashSet<>(this.remaining);
+
+                    log.warning("Exchange timeout reached on coordinator node, kicking pending nodes: " +
+                        S.arrayToString(remaining0.toArray()));
+
+                    Set<UUID> failedNodes = new HashSet<>();
+
+                    for (UUID remainingUuid : remaining0) {
+                        if (cctx.gridConfig().getExchangeTimeoutMinOwners() <= 0
+                            || isSafeToFailNode(remainingUuid, failedNodes)) {
+                            failedNodes.add(remainingUuid);
+
+                            cctx.discovery().failNode(remainingUuid, null);
+                        }
+                    }
+                }
+                else if (cctx.gridConfig().getExchangeTimeoutMinOwners() <= 0){
+                    try {
+                        log.warning("Exchange timeout reached on non-coordinator node, " +
+                            "sending check request to coordinator");
+
+                        cctx.kernalContext().io().sendToGridTopic(
+                            crd, GridTopic.TOPIC_EXCHANGE, new PartitionsExchangeFinishedCheckRequest(), SYSTEM_POOL);
+
+                        cctx.time().schedule(() -> {
+                            if (!isDone())
+                                cctx.kernalContext().failure().process(
+                                    new FailureContext(FailureType.CRITICAL_ERROR,
+                                        new TimeoutException("Last exchange check response wasn't received.")));
+                        }, cctx.gridConfig().getExchangeHardTimeout(), -1);
+                    }
+                    catch (IgniteCheckedException ex) {
+                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+
+                        throw new IgniteException(ex);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private boolean isSafeToFailNode(UUID nodeId, Set<UUID> alreadyFailedNodes) {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (grp.isLocal())
+                continue;
+
+            for (int p = 0; p < grp.affinity().partitions(); p++) {
+                List<ClusterNode> owners = grp.topology().owners(p);
+
+                Set<UUID> ownerIds = new HashSet<>();
+
+                for (ClusterNode owner : owners) {
+                    if (!alreadyFailedNodes.contains(owner.id()))
+                        ownerIds.add(owner.id());
+                }
+
+                if (ownerIds.size() <= cctx.gridConfig().getExchangeTimeoutMinOwners() && ownerIds.contains(nodeId)) {
+                    log.warning("Kicking of pending node " + nodeId + " would reduce amount of owners for partition" +
+                        "[grp=" + grp.cacheOrGroupName() + ", partId=" + p + "] below configured minimum " +
+                        cctx.gridConfig().getExchangeTimeoutMinOwners());
+
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param lastFinishedVer Last finished topology version.
+     * @param pendingVer Pending topology version.
+     * @param receivedSingleMsg Received single message flag.
+     */
+    public void onCrdLastFinishedVersionReceived(AffinityTopologyVersion lastFinishedVer,
+        AffinityTopologyVersion pendingVer, boolean receivedSingleMsg) {
+        log.warning("Received check response from coordinator: " +
+            "[lastFinishedVer=" + lastFinishedVer + ", pendingVer=" + pendingVer +
+            ", receivedSingleMsg=" + receivedSingleMsg + ", localExchId=" + exchId + "]");
+
+        boolean failLoc;
+
+        if (lastFinishedVer.compareTo(exchId.topologyVersion()) >= 0)
+            failLoc = true;
+        else if (pendingVer.equals(exchId.topologyVersion()) && !receivedSingleMsg)
+            failLoc = true;
+        else if (pendingVer.equals(exchId.topologyVersion()) && receivedSingleMsg)
+            return; // Do nothing, this case should be resolved by coordinator.
+        else
+            failLoc = false;
+
+        if (failLoc)
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new IgniteException(
+                "Coordinator topology version is greater than local.")));
+        else
+            cctx.discovery().failNode(crd.id(), null);
+    }
+
+    /**
+     * @param nodeId Node id.
+     */
+    public boolean receivedSingleMessageFromNode(UUID nodeId) {
+        return msgs.containsKey(nodeId);
     }
 
     /**

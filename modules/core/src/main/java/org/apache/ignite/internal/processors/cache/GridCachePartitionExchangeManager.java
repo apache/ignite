@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -52,6 +53,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -84,6 +86,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeFinishedCheckRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeFinishedCheckResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
@@ -405,6 +409,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     processSinglePartitionRequest(node, msg);
                 }
             });
+
+        cctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
+            if (msg instanceof PartitionsExchangeFinishedCheckRequest)
+                processExchangeCheckRequest(nodeId, (PartitionsExchangeFinishedCheckRequest) msg);
+            else if (msg instanceof PartitionsExchangeFinishedCheckResponse)
+                processExchangeCheckResponse(nodeId, (PartitionsExchangeFinishedCheckResponse) msg);
+        });
 
         if (!cctx.kernalContext().clientNode()) {
             for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++) {
@@ -1832,6 +1843,44 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param req Request.
+     */
+    private void processExchangeCheckRequest(UUID nodeId, PartitionsExchangeFinishedCheckRequest req) {
+        log.warning("Received check request from node: " + nodeId);
+
+        GridDhtPartitionsExchangeFuture lastInitFut = lastInitializedFut;
+
+        boolean rcvdSingleMsg = lastInitFut != null && lastInitFut.receivedSingleMessageFromNode(nodeId);
+
+        GridDhtTopologyFuture lastFinishedFut = this.lastFinishedFut.get();
+
+        try {
+            cctx.kernalContext().io().sendToGridTopic(nodeId, GridTopic.TOPIC_EXCHANGE,
+                new PartitionsExchangeFinishedCheckResponse(
+                    lastFinishedFut != null ? lastFinishedFut.topologyVersion() : AffinityTopologyVersion.NONE,
+                    lastInitFut != null ? lastInitFut.topologyVersion() : AffinityTopologyVersion.NONE,
+                    rcvdSingleMsg
+                ),
+                SYSTEM_POOL);
+        }
+        catch (IgniteCheckedException ex) {
+            throw new IgniteException(ex);
+        }
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param res Response.
+     */
+    private void processExchangeCheckResponse(UUID nodeId, PartitionsExchangeFinishedCheckResponse res) {
+        GridDhtPartitionsExchangeFuture lastInitializedFut0 = this.lastInitializedFut;
+
+        lastInitializedFut0.onCrdLastFinishedVersionReceived(
+            res.lastFinishedTopVer(), res.pendingTopVer(), res.receivedSingleMessage());
     }
 
     /**

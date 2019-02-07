@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.PartitionsExchangeUnresponsiveNodeTimeoutTest;
 import org.apache.ignite.internal.processors.cache.CacheNoAffinityExchangeTest;
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalOptimisticCacheGetsDistributionTest;
@@ -128,6 +129,8 @@ public class IgniteCacheTestSuite6 {
         //GridTestUtils.addTestIfNeeded(suite, CacheClientsConcurrentStartTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingOrderingTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientMultiNodeUpdateTopologyLockTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PartitionsExchangeUnresponsiveNodeTimeoutTest.class, ignoredTests);
 
         return suite;
     }
