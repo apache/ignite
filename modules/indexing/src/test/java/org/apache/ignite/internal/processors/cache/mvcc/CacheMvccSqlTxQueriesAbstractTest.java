@@ -1777,17 +1777,19 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         Map<Integer, Integer> vals = new TreeMap<>();
 
         while (vals.size() < keysCnt) {
-            if (affinity.partition(test) != 1)
-                assertTrue("Maximum retry number exceeded", ++retryCnt < 1000);
-            else
+            int partition = affinity.partition(test);
+
+            if (partition == 1 || partition == 2)
                 vals.put(test, 0);
+            else
+                assertTrue("Maximum retry number exceeded", ++retryCnt < 1000);
 
             test++;
         }
 
         cache.putAll(vals);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=2").setPartitions(1);
+        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=2").setPartitions(1,2);
 
         List<List<?>> all = cache.query(qry).getAll();
 
@@ -1822,17 +1824,19 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         Map<Integer, Integer> vals = new TreeMap<>();
 
         while (vals.size() < keysCnt) {
-            if (affinity.partition(test) != 1)
-                assertTrue("Maximum retry number exceeded", ++retryCnt < 1000);
-            else
+            int partition = affinity.partition(test);
+
+            if (partition == 1 || partition == 2)
                 vals.put(test, 0);
+            else
+                assertTrue("Maximum retry number exceeded", ++retryCnt < 1000);
 
             test++;
         }
 
         cache.putAll(vals);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=(SELECT 2 FROM DUAL)").setPartitions(1);
+        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=(SELECT 2 FROM DUAL)").setPartitions(1,2);
 
         List<List<?>> all = cache.query(qry).getAll();
 
