@@ -19,6 +19,8 @@ package org.apache.ignite.internal.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -27,12 +29,13 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * This class implements a circular buffer for efficient data exchange.
  */
-public class GridCircularBuffer<T> {
+public class GridCircularBuffer<T> implements Iterable<T> {
     /** */
     private final long sizeMask;
 
@@ -128,6 +131,50 @@ public class GridCircularBuffer<T> {
         int idx0 = (int)(idx & sizeMask);
 
         return arr[idx0].update(idx, t, arr.length, c);
+    }
+
+    /**
+     * Returns read-only iterator over the elements.
+     * <p>
+     * The iterator can be used concurrently with adding new elements to the buffer,
+     * but the data read through iteration may be inconsistent then.
+     *
+     * @return Iterator.
+     */
+    @NotNull @Override public Iterator<T> iterator() {
+        return new Iterator<T>() {
+            int i;
+            int rest;
+
+            {
+                int tail = (int)sizeMask;
+
+                while (tail >= 0 && arr[tail].item == null)
+                    tail--;
+
+                rest = tail + 1;
+
+                i = rest <= sizeMask ? 0 : idxGen.intValue() & (int)sizeMask;
+            };
+
+            @Override public boolean hasNext() {
+                return rest > 0;
+            }
+
+            @Override public T next() {
+                if (rest <= 0)
+                    throw new NoSuchElementException();
+
+                T res = arr[i++].item;
+
+                if (i > sizeMask)
+                    i = 0;
+
+                rest--;
+
+                return res;
+            }
+        };
     }
 
     /** {@inheritDoc} */
