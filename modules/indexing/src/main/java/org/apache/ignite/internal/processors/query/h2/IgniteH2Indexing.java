@@ -1176,7 +1176,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw U.convertException(e);
         }
     }
 
