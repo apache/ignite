@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CyclicBarrier;
@@ -40,6 +41,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -1750,6 +1752,96 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
             assertEquals(6, cur.getAll().size());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUpdateExplicitPartitionsWithoutReducer() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, 10)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        Ignite ignite = startGridsMultiThreaded(4);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        Affinity<Object> affinity = internalCache0(cache).affinity();
+
+        int keysCnt = 10, retryCnt = 0;
+
+        Integer test = 0;
+
+        Map<Integer, Integer> vals = new TreeMap<>();
+
+        while (vals.size() < keysCnt) {
+            if (affinity.partition(test) != 1)
+                assertTrue("Maximum retry number exceeded", ++retryCnt < 1000);
+            else
+                vals.put(test, 0);
+
+            test++;
+        }
+
+        cache.putAll(vals);
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=2").setPartitions(1);
+
+        List<List<?>> all = cache.query(qry).getAll();
+
+        assertEquals(Long.valueOf(keysCnt), all.stream().findFirst().orElseThrow(AssertionError::new).get(0));
+
+        List<List<?>> rows = cache.query(new SqlFieldsQuery("SELECT _val FROM Integer")).getAll();
+
+        assertEquals(keysCnt, rows.size());
+        assertTrue(rows.stream().map(r -> r.get(0)).map(Integer.class::cast).allMatch(v -> v == 2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUpdateExplicitPartitionsWithReducer() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, 10)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        Ignite ignite = startGridsMultiThreaded(4);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        Affinity<Object> affinity = internalCache0(cache).affinity();
+
+        int keysCnt = 10, retryCnt = 0;
+
+        Integer test = 0;
+
+        Map<Integer, Integer> vals = new TreeMap<>();
+
+        while (vals.size() < keysCnt) {
+            if (affinity.partition(test) != 1)
+                assertTrue("Maximum retry number exceeded", ++retryCnt < 1000);
+            else
+                vals.put(test, 0);
+
+            test++;
+        }
+
+        cache.putAll(vals);
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=(SELECT 2 FROM DUAL)").setPartitions(1);
+
+        List<List<?>> all = cache.query(qry).getAll();
+
+        assertEquals(Long.valueOf(keysCnt), all.stream().findFirst().orElseThrow(AssertionError::new).get(0));
+
+        List<List<?>> rows = cache.query(new SqlFieldsQuery("SELECT _val FROM Integer")).getAll();
+
+        assertEquals(keysCnt, rows.size());
+        assertTrue(rows.stream().map(r -> r.get(0)).map(Integer.class::cast).allMatch(v -> v == 2));
     }
 
     /**
