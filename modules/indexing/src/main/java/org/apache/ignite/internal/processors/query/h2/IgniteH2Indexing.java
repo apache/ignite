@@ -2428,8 +2428,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         partExtractor = new PartitionExtractor(new H2PartitionResolver(this));
         runningQueryMgr = new RunningQueryManager(ctx);
 
-        runningQueryMgr = new RunningQueryManager(ctx);
-
         if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
 

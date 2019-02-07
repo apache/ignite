@@ -166,8 +166,10 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      * @param millis Millis.
      */
     protected static Value valueTimestampZoneFromMillis(long millis) {
-        long dateVal = DateTimeUtils.dateValueFromDate(millis);
+        // TODO: Is it ok to get offset that way? TimeZone.getTimeZone(ZoneId.systemDefault()).getRawOffset() / 60_000;
+        // TODO: Think how to avoid internal H2 timezone recalc which is expensive.
 
+        long dateVal = DateTimeUtils.dateValueFromDate(millis);
         long nanos = DateTimeUtils.nanosFromDate(millis);
 
         return DateTimeUtils.timestampTimeZoneFromLocalDateValueAndNanos(dateVal, nanos);
