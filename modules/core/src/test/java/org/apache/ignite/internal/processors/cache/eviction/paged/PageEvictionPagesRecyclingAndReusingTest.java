@@ -94,7 +94,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10448")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
     @Test
     public void testPagesRecyclingAndReusingMvccTxPartitioned() throws Exception {
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.PARTITIONED);
@@ -104,7 +104,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10448")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
     @Test
     public void testPagesRecyclingAndReusingMvccTxReplicated() throws Exception {
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);

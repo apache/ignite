@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -111,7 +113,11 @@ public class CacheGroupContext {
     /** We modify content under lock, by making defencive copy, field always contains unmodifiable list. */
     private volatile List<GridCacheContext> caches = Collections.unmodifiableList(new ArrayList<>());
 
-    private volatile List<GridCacheContext> contQryCaches;
+    /** List of caches with registered CQ listeners. */
+    private List<GridCacheContext> contQryCaches;
+
+    /** ReadWriteLock to control the continuous query setup - this is to prevent the race between cache update and listener setup */
+    private final ReentrantReadWriteLock listenerLock = new ReentrantReadWriteLock();
 
     /** */
     private final IgniteLogger log;
@@ -861,17 +867,16 @@ public class CacheGroupContext {
         assert sharedGroup() : cacheOrGroupName();
         assert cctx.group() == this : cctx.name();
         assert !cctx.isLocal() : cctx.name();
+        assert listenerLock.writeLock().isHeldByCurrentThread();
 
-        synchronized (this) {
-            List<GridCacheContext> contQryCaches = this.contQryCaches;
+        List<GridCacheContext> contQryCaches = this.contQryCaches;
 
-            if (contQryCaches == null)
-                contQryCaches = new ArrayList<>();
+        if (contQryCaches == null)
+            contQryCaches = new ArrayList<>();
 
-            contQryCaches.add(cctx);
+        contQryCaches.add(cctx);
 
-            this.contQryCaches = contQryCaches;
-        }
+        this.contQryCaches = contQryCaches;
     }
 
     /**
@@ -881,20 +886,30 @@ public class CacheGroupContext {
         assert sharedGroup() : cacheOrGroupName();
         assert cctx.group() == this : cctx.name();
         assert !cctx.isLocal() : cctx.name();
+        assert listenerLock.isWriteLockedByCurrentThread();
 
-        synchronized (this) {
-            List<GridCacheContext> contQryCaches = this.contQryCaches;
+        List<GridCacheContext> contQryCaches = this.contQryCaches;
 
-            if (contQryCaches == null)
-                return;
+        if (contQryCaches == null)
+            return;
 
-            contQryCaches.remove(cctx);
+        contQryCaches.remove(cctx);
 
-            if (contQryCaches.isEmpty())
-                contQryCaches = null;
+        if (contQryCaches.isEmpty())
+            contQryCaches = null;
 
-            this.contQryCaches = contQryCaches;
-        }
+        this.contQryCaches = contQryCaches;
+    }
+
+
+    /**
+     * Obtain the group listeners lock. Write lock should be held to register/unregister listeners. Read lock should be
+     * hel for CQ listeners notification.
+     *
+     * @return Lock for the CQ listeners.
+     */
+    public ReadWriteLock listenerLock() {
+        return listenerLock;
     }
 
     /**
@@ -913,7 +928,16 @@ public class CacheGroupContext {
         if (isLocal())
             return;
 
-        List<GridCacheContext> contQryCaches = this.contQryCaches;
+        List<GridCacheContext> contQryCaches;
+
+        listenerLock.readLock().lock();
+
+        try {
+            contQryCaches = this.contQryCaches;
+        }
+        finally {
+            listenerLock.readLock().unlock();
+        }
 
         if (contQryCaches == null)
             return;
@@ -943,7 +967,18 @@ public class CacheGroupContext {
      * @return {@code True} if there is at least one cache with registered CQ exists in this group.
      */
     public boolean hasContinuousQueryCaches() {
-        return !F.isEmpty(contQryCaches);
+        List<GridCacheContext> contQryCaches;
+
+        listenerLock.readLock().lock();
+
+        try {
+            contQryCaches = this.contQryCaches;
+
+            return !F.isEmpty(contQryCaches);
+        }
+        finally {
+            listenerLock.readLock().unlock();
+        }
     }
 
     /**

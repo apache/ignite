@@ -433,7 +433,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                     assert entryProc != null || !op.isInvoke();
 
-                    boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, key) != null;
+                    boolean needOldVal = tx.txState().useMvccCaching(cctx.cacheId());
 
                     GridCacheUpdateTxResult res;
 
