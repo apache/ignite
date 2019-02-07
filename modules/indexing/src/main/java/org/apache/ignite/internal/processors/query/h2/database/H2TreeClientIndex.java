@@ -43,7 +43,7 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
     public H2TreeClientIndex(GridH2Table table, String name, boolean pk, List<IndexColumn> colsList, int inlineSize) {
-        super(table, colsList);
+        super(table);
 
         this.table = table;
 

@@ -171,7 +171,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         int segmentsCnt,
         QueryContextRegistry qryCtxRegistry
     ) throws IgniteCheckedException {
-        super(table, unwrappedColsList);
+        super(table);
 
         assert segmentsCnt > 0 : segmentsCnt;
 

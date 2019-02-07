@@ -44,9 +44,8 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
      * Constructor.
      *
      * @param tbl Table.
-     * @param unwrappedColsList Unwrapped columns list.
      */
-    protected H2TreeIndexBase(GridH2Table tbl, List<IndexColumn> unwrappedColsList) {
+    protected H2TreeIndexBase(GridH2Table tbl) {
         super(tbl);
     }
 
