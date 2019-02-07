@@ -26,18 +26,13 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test of creating and using PK indexes for tables created through SQL.
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-@RunWith(JUnit4.class)
-public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
-
+public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest {
     /** Counter to generate unique table names. */
     private static int tblCnt = 0;
 
@@ -48,6 +43,13 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
     /**
      * Test using PK indexes for complex primary key.
      */
@@ -56,9 +58,9 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
         String tblName = createTableName();
 
         executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id, name, city))");
+                "primary key (id, name, city))");
 
-        checkUsingIndexes(tblName, "1");
+        checkUsingIndexes(tblName, "1", 2);
     }
 
     /**
@@ -96,10 +98,10 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
             String val = entry.getValue();
 
             executeSql("CREATE TABLE " + tblName +
-                " (id " + type + " , name varchar, age int, company varchar, city varchar," +
-                " primary key (id))");
+                    " (id " + type + " , name varchar, age int, company varchar, city varchar," +
+                    " primary key (id))");
 
-            checkUsingIndexes(tblName, val);
+            checkUsingIndexes(tblName, val, 1);
         }
     }
 
@@ -138,10 +140,10 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
             String val = entry.getValue();
 
             executeSql("CREATE TABLE " + tblName +
-                " (id " + type + " , name varchar, age int, company varchar, city varchar," +
-                " primary key (id)) WITH \"affinity_key=id\"");
+                    " (id " + type + " , name varchar, age int, company varchar, city varchar," +
+                    " primary key (id)) WITH \"affinity_key=id\"");
 
-            checkUsingIndexes(tblName, val);
+            checkUsingIndexes(tblName, val, 1);
         }
     }
 
@@ -153,30 +155,31 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
         String tblName = createTableName();
 
         executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id)) WITH \"wrap_key=true\"");
+                "primary key (id)) WITH \"wrap_key=true\"");
 
-        checkUsingIndexes(tblName, "1");
+        checkUsingIndexes(tblName, "1", 1);
     }
 
     /**
      * Check using PK indexes for few cases.
      *
-     * @param tblName name of table which should be checked to using PK indexes.
+     * @param tblName Name of table which should be checked to using PK indexes.
+     * @param expResCnt Expceted result count.
      */
-    private void checkUsingIndexes(String tblName, String idVal) {
+    private void checkUsingIndexes(String tblName, String idVal, int expResCnt) {
         String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
 
         List<List<?>> results = executeSql(explainSQL + "id=" + idVal);
 
-        assertUsingPkIndex(results);
+        assertUsingPkIndex(results, expResCnt);
 
         results = executeSql(explainSQL + "id=" + idVal + " and name=''");
 
-        assertUsingPkIndex(results);
+        assertUsingPkIndex(results, expResCnt);
 
         results = executeSql(explainSQL + "id=" + idVal + " and name='' and city='' and age=0");
 
-        assertUsingPkIndex(results);
+        assertUsingPkIndex(results, expResCnt);
     }
 
     /**
@@ -205,10 +208,11 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
     /**
      * Check that explain plan result shown using PK index and don't use scan.
      *
-     * @param results result of execut explain plan query.
+     * @param results Result of execut explain plan query.
+     * @param expResCnt Expceted result count.
      */
-    private void assertUsingPkIndex(List<List<?>> results) {
-        assertEquals(2, results.size());
+    private void assertUsingPkIndex(List<List<?>> results, int expResCnt) {
+        assertEquals(expResCnt, results.size());
 
         String explainPlan = (String)results.get(0).get(0);
 
