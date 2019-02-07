@@ -14,47 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Node with constant partition.
+ * Client context. Passed to partition resolver on thin clients.
  */
-public class PartitionConstantNode extends PartitionSingleNode {
-    /** Partition. */
-    private final int part;
-
+public class PartitionClientContext {
     /**
-     * Constructor.
+     * Resolve partition.
      *
-     * @param tbl Table.
-     * @param part Partition.
+     * @param arg Argument.
+     * @param typ Type.
+     * @param cacheName Cache name.
+     * @return Partition or {@code null} if cannot be resolved.
      */
-    public PartitionConstantNode(PartitionTable tbl, int part) {
-        super(tbl);
+    @Nullable public Integer partition(Object arg, @Nullable PartitionParameterType typ, String cacheName) {
+        PartitionDataTypeUtils.convert(arg, typ);
 
-        this.part = part;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Integer applySingle(PartitionClientContext cliCtx, Object... args) {
-        return part;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean constant() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int value() {
-        return part;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PartitionConstantNode.class, this);
+        // TODO: IGNITE-10308: Implement partition resolution logic.
+        return null;
     }
 }

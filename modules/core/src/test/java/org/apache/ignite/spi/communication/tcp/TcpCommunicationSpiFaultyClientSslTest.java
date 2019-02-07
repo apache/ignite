@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.sql.optimizer.affinity;
+package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
- * Partition resolver interface. Takes argument, data type and cache name, returns partition.
- * The only purpose of this methods is to allow partition pruning classes to be located in core module.
+ * Tests that faulty client will be failed if connection can't be established.
  */
-public interface PartitionResolver {
-    /**
-     * Resolve partition.
-     *
-     * @param arg Argument.
-     * @param dataType Data type.
-     * @param cacheName Cache name.
-     * @return Partition.
-     * @throws IgniteCheckedException If failed.
-     */
-    int partition(Object arg, int dataType, String cacheName) throws IgniteCheckedException;
+@RunWith(JUnit4.class)
+public class TcpCommunicationSpiFaultyClientSslTest extends TcpCommunicationSpiFaultyClientTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
+        return cfg;
+    }
 }

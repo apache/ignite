@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -28,11 +29,12 @@ public interface PartitionNode {
     /**
      * Get partitions.
      *
+     * @param cliCtx Thin client context (optional).
      * @param args Query arguments.
      * @return Partitions.
      * @throws IgniteCheckedException If failed.
      */
-    Collection<Integer> apply(Object... args) throws IgniteCheckedException;
+    Collection<Integer> apply(@Nullable PartitionClientContext cliCtx, Object... args) throws IgniteCheckedException;
 
     /**
      * @return Join group for the given node.
