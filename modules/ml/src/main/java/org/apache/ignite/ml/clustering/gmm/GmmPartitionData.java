@@ -25,7 +25,6 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -134,52 +133,48 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * Returns mapper seting P(c|xi) = 1 for closest cluster "c" for each vector in partition data using initial means
-     * as cluster centers (like in k-means).
+     * Sets P(c|xi) = 1 for closest cluster "c" for each vector in partition data using initial means as cluster centers
+     * (like in k-means).
      *
      * @param initialMeans Initial means.
      * @return Mapper.
      */
-    public static IgniteConsumer<GmmPartitionData> estimateLikelihoodClusters(List<Vector> initialMeans) {
-        return data -> {
-            for (int i = 0; i < data.size(); i++) {
-                int closestClusterId = -1;
-                double minSquaredDist = Double.MAX_VALUE;
+    public static void estimateLikelihoodClusters(GmmPartitionData data, List<Vector> initialMeans) {
+        for (int i = 0; i < data.size(); i++) {
+            int closestClusterId = -1;
+            double minSquaredDist = Double.MAX_VALUE;
 
-                Vector x = data.getX(i);
-                for (int c = 0; c < initialMeans.size(); c++) {
-                    double distance = initialMeans.get(c).getDistanceSquared(x);
-                    if (distance < minSquaredDist) {
-                        closestClusterId = c;
-                        minSquaredDist = distance;
-                    }
+            Vector x = data.getX(i);
+            for (int c = 0; c < initialMeans.size(); c++) {
+                double distance = initialMeans.get(c).getDistanceSquared(x);
+                if (distance < minSquaredDist) {
+                    closestClusterId = c;
+                    minSquaredDist = distance;
                 }
-
-                data.setPcxi(closestClusterId, i, 1.);
             }
-        };
+
+            data.setPcxi(closestClusterId, i, 1.);
+        }
     }
 
     /**
-     * Returns the mapper updating P(c|xi) values in partirions given components probabilities and components of GMM.
+     * Updates P(c|xi) values in partirions given components probabilities and components of GMM.
      *
      * @param clusterProbs Component probabilities.
      * @param components Components.
      * @return mapper.
      */
-    public static IgniteConsumer<GmmPartitionData> updatePcxiMapper(Vector clusterProbs,
+    public static void updatePcxi(GmmPartitionData data, Vector clusterProbs,
         List<MultivariateGaussianDistribution> components) {
 
-        return data -> {
-            for (int i = 0; i < data.size(); i++) {
-                Vector x = data.getX(i);
-                double normalizer = 0.0;
-                for (int c = 0; c < clusterProbs.size(); c++)
-                    normalizer += components.get(c).prob(x) * clusterProbs.get(c);
+        for (int i = 0; i < data.size(); i++) {
+            Vector x = data.getX(i);
+            double normalizer = 0.0;
+            for (int c = 0; c < clusterProbs.size(); c++)
+                normalizer += components.get(c).prob(x) * clusterProbs.get(c);
 
-                for (int c = 0; c < clusterProbs.size(); c++)
-                    data.pcxi[i][c] = (components.get(c).prob(x) * clusterProbs.get(c)) / normalizer;
-            }
-        };
+            for (int c = 0; c < clusterProbs.size(); c++)
+                data.pcxi[i][c] = (components.get(c).prob(x) * clusterProbs.get(c)) / normalizer;
+        }
     }
 }

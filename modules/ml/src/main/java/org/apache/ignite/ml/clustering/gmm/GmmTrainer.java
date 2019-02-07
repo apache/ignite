@@ -127,7 +127,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
             model = newModel;
 
             if (!isConverged)
-                dataset.compute(GmmPartitionData.updatePcxiMapper(clusterProbs, components));
+                dataset.compute(data -> GmmPartitionData.updatePcxi(data, clusterProbs, components));
         }
 
         return model;
@@ -141,7 +141,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
             );
         }
 
-        dataset.compute(GmmPartitionData.estimateLikelihoodClusters(initialMeans));
+        dataset.compute(data -> GmmPartitionData.estimateLikelihoodClusters(data, initialMeans));
 
         List<Matrix> initialCovs = CovarianceMatricesAggregator.computeCovariances(
             dataset,
