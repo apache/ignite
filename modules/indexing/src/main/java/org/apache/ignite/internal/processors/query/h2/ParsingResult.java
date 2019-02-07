@@ -50,22 +50,26 @@ final class ParsingResult {
     private final List<GridQueryFieldMetadata> meta;
 
     /** Parsed native command/ */
-    // TODO: newCmd -> nativeCommand
-    private final SqlCommand newCmd;
+    private final SqlCommand newNativeCmd;
 
-    // TODO: Styling
-    /** Simple constructor. */
+    /**
+     * Simple constructor.
+     */
     private ParsingResult(
-        Prepared prepared, SqlFieldsQuery newQry, String remainingSql,
+        Prepared prepared,
+        SqlFieldsQuery newQry,
+        String remainingSql,
         GridCacheTwoStepQuery twoStepQry,
-        H2TwoStepCachedQueryKey twoStepQryKey, List<GridQueryFieldMetadata> meta, SqlCommand newCmd) {
+        H2TwoStepCachedQueryKey twoStepQryKey,
+        List<GridQueryFieldMetadata> meta,
+        SqlCommand newNativeCmd) {
         this.prepared = prepared;
         this.newQry = newQry;
         this.remainingSql = remainingSql;
         this.twoStepQry = twoStepQry;
         this.twoStepQryKey = twoStepQryKey;
         this.meta = meta;
-        this.newCmd = newCmd;
+        this.newNativeCmd = newNativeCmd;
     }
 
     /**
@@ -77,8 +81,7 @@ final class ParsingResult {
         String remainingSql,
         GridCacheTwoStepQuery twoStepQry,
         H2TwoStepCachedQueryKey twoStepQryKey,
-        List<GridQueryFieldMetadata> meta
-    ) {
+        List<GridQueryFieldMetadata> meta) {
         this(prepared, newQry, remainingSql, twoStepQry, twoStepQryKey, meta, null);
     }
 
@@ -86,11 +89,11 @@ final class ParsingResult {
      * Construct parsing result in case of native parsing.
      *
      * @param newQry leading sql statement of the original multi-statement query.
-     * @param newCmd parsed sql command. Represents newQry.
+     * @param newNativeCmd parsed sql command. Represents newQry.
      * @param remainingSql the rest of the original query.
      */
-    public ParsingResult(SqlFieldsQuery newQry, SqlCommand newCmd, String remainingSql) {
-        this(null, newQry, remainingSql, null, null, null, newCmd);
+    public ParsingResult(SqlFieldsQuery newQry, SqlCommand newNativeCmd, String remainingSql) {
+        this(null, newQry, remainingSql, null, null, null, newNativeCmd);
     }
 
     /**
@@ -118,10 +121,11 @@ final class ParsingResult {
         return newQry;
     }
 
-    // TODO: Styling.
-    /** Parsed sql command. */
-    public SqlCommand newCmd() {
-        return newCmd;
+    /**
+     * Sql command produced by native sql parser.
+     */
+    public SqlCommand newNativeCommand() {
+        return newNativeCmd;
     }
 
     /**

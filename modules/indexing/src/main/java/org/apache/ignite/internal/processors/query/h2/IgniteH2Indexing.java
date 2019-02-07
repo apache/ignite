@@ -93,9 +93,6 @@ import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
-import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -110,6 +107,8 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
@@ -120,6 +119,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -1259,14 +1259,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Command or {@code null} if cannot parse this query.
      */
      @Nullable private ParsingResult parseNativeLeadingStatement(String schemaName, SqlFieldsQuery qry) {
-         // TODO: Remove
-         final ParsingResult NOT_YET_SUPPORTED = null;
-
          String sql = qry.getSql();
 
          // Heuristic check for fast return.
          if (!INTERNAL_CMD_RE.matcher(sql.trim()).find())
-             return NOT_YET_SUPPORTED;
+             return null;
 
         try {
             SqlParser parser = new SqlParser(schemaName, sql);
@@ -1286,7 +1283,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 || leadingCmd instanceof SqlCreateUserCommand
                 || leadingCmd instanceof SqlAlterUserCommand
                 || leadingCmd instanceof SqlDropUserCommand))
-                return NOT_YET_SUPPORTED;
+                return null;
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.processedSql());
 
@@ -1301,7 +1298,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 log.debug("Failed to parse SQL with native parser [qry=" + sql + ", err=" + e + ']');
 
             if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK))
-                return NOT_YET_SUPPORTED;
+                return null;
 
             int code = IgniteQueryErrorCode.PARSING;
 
@@ -1506,7 +1503,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 ParsingResult parseRes = parse(schemaName, remainingQry, firstArg);
 
-                SqlCommand nativeCmd = parseRes.newCmd();
+                SqlCommand nativeCmd = parseRes.newNativeCommand();
 
                 remainingSql = parseRes.remainingSql();
 
@@ -1567,7 +1564,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Parses generic query. Tries : 1) Get plan of the dristributed select from the chache; 2)parse query using native
+     * Parses generic query. Tries : 1) Get plan of the distributed select from the cache; 2)parse query using native
      * parser; 3)uses h2 parser if 1 and 2 were not succeed.
      * Actually, only first (leading) sql statement is parsed (lazy parsing).
      *
