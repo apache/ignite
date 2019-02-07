@@ -22,10 +22,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
@@ -106,20 +103,6 @@ public class JdbcThinMultiStatementSelfTest extends GridCommonAbstractTest {
             "UPDATE ONE SET VAL = 'SOME'");
     }
 
-    @Test
-    public void test () throws Exception {
-        FieldsQueryCursor<List<?>> query = grid(1).cache("SQL_PUBLIC_TEST_TX").query(new SqlFieldsQuery(";"));
-
-        System.out.println(query);
-
-        try (Connection c = GridTestUtils.connect(grid(0), null)) {
-            try (PreparedStatement p = c.prepareStatement(";")) {
-                boolean isResultSet = p.execute();
-                boolean results = p.getMoreResults();
-            }
-        }
-    }
-
     /**
      * Check multi-statement containing both h2 and native parser statements (having "?" args) works well.
      */
@@ -155,10 +138,10 @@ public class JdbcThinMultiStatementSelfTest extends GridCommonAbstractTest {
 
                 assertTrue("Expected update count of the INSERT.", p.getUpdateCount() != -1);
 
-                assertTrue("Expected update count of an empty statement.", p.getUpdateCount()!= -1);
-                assertTrue("Expected update count of an empty statement.", p.getUpdateCount()!= -1);
-                assertTrue("Expected update count of an empty statement.", p.getUpdateCount()!= -1);
-                assertTrue("Expected update count of an empty statement.", p.getUpdateCount()!= -1);
+                assertTrue("Expected update count of an empty statement.", p.getUpdateCount() != -1);
+                assertTrue("Expected update count of an empty statement.", p.getUpdateCount() != -1);
+                assertTrue("Expected update count of an empty statement.", p.getUpdateCount() != -1);
+                assertTrue("Expected update count of an empty statement.", p.getUpdateCount() != -1);
 
                 assertTrue("Expected update count of the BEGIN", p.getUpdateCount() != -1);
                 assertTrue("Expected update count of the UPDATE", p.getUpdateCount() != -1);
