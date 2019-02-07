@@ -60,7 +60,6 @@ import static org.apache.ignite.internal.jdbc2.JdbcUtils.tableRow;
 /**
  * JDBC database metadata implementation.
  */
-@SuppressWarnings("RedundantCast")
 public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite Thin JDBC Driver";

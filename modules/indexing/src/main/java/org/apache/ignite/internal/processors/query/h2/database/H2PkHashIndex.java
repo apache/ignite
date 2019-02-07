@@ -32,10 +32,10 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -54,9 +54,6 @@ import org.h2.table.TableFilter;
  *
  */
 public class H2PkHashIndex extends GridH2IndexBase {
-    /** */
-    private final GridH2Table tbl;
-
     /** */
     private final GridCacheContext cctx;
 
@@ -78,6 +75,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
         List<IndexColumn> colsList,
         int segments
     ) {
+        super(tbl);
+
         assert segments > 0: segments;
 
         this.segments = segments;
@@ -88,7 +87,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
         initBaseIndex(tbl, 0, name, cols, IndexType.createPrimaryKey(false, true));
 
-        this.tbl = tbl;
         this.cctx = cctx;
     }
 
@@ -102,7 +100,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
         IndexingQueryCacheFilter filter = null;
         MvccSnapshot mvccSnapshot = null;
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        QueryContext qctx = queryContextRegistry().getThreadLocal();
 
         int seg = 0;
 
@@ -225,7 +223,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
             this.iter = iter;
 
-            desc = tbl.rowDescriptor();
+            desc = rowDescriptor();
         }
 
         /** {@inheritDoc} */

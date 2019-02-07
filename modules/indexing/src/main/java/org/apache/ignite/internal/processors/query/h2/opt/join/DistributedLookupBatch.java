@@ -22,7 +22,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
@@ -60,6 +61,9 @@ public class DistributedLookupBatch implements IndexLookupBatch {
     /** */
     private final GridCacheContext<?,?> cctx;
 
+    /** Query context registry. */
+    private final QueryContextRegistry qryCtxRegistry;
+
     /** */
     private final boolean ucast;
 
@@ -92,9 +96,11 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      * @param ucast Unicast or broadcast query.
      * @param affColId Affinity column ID.
      */
-    public DistributedLookupBatch(H2TreeIndex idx, GridCacheContext<?, ?> cctx, boolean ucast, int affColId) {
+    public DistributedLookupBatch(H2TreeIndex idx, GridCacheContext<?, ?> cctx, QueryContextRegistry qryCtxRegistry,
+        boolean ucast, int affColId) {
         this.idx = idx;
         this.cctx = cctx;
+        this.qryCtxRegistry = qryCtxRegistry;
         this.ucast = ucast;
         this.affColId = affColId;
     }
@@ -149,7 +155,8 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             if (joinCtx == null) {
                 // It is the first call after query begin (may be after reuse),
                 // reinitialize query context and result.
-                GridH2QueryContext qctx = GridH2QueryContext.get();
+                QueryContext qctx = qryCtxRegistry.getThreadLocal();
+
                 res = new ArrayList<>();
 
                 assert qctx != null;

@@ -41,6 +41,8 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
     public H2TreeClientIndex(GridH2Table tbl, String name, boolean pk, List<IndexColumn> colsList) {
+        super(tbl);
+
         IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
 
         IndexColumn.mapColumns(cols, tbl);

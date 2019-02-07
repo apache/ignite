@@ -829,23 +829,12 @@ public class MvccUtils {
      * @return Mvcc snapshot.
      */
     public static MvccSnapshot requestSnapshot(GridCacheContext cctx,
-        GridNearTxLocal tx) throws IgniteCheckedException {
-        assert tx != null;
+        @NotNull GridNearTxLocal tx) throws IgniteCheckedException {
+        MvccSnapshot snapshot = tx.mvccSnapshot();
 
-        MvccSnapshot snapshot;
-
-        tx = checkActive(tx);
-
-        if ((snapshot = tx.mvccSnapshot()) == null) {
-            MvccProcessor prc = cctx.shared().coordinators();
-
-            snapshot = prc.requestWriteSnapshotLocal();
-
-            if (snapshot == null)
-                snapshot = prc.requestWriteSnapshotAsync().get();
-
-            tx.mvccSnapshot(snapshot);
-        }
+        if (snapshot == null)
+            // TODO IGNITE-7388
+            return tx.requestSnapshot().get();
 
         return snapshot;
     }
