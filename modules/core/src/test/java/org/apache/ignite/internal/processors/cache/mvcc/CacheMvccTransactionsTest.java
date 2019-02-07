@@ -3360,7 +3360,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                 MvccVersion cntr = ver.get2();
 
                 MvccSnapshot readVer =
-                    new MvccSnapshotWithoutTxs(cntr.coordinatorVersion(), cntr.counter(), Integer.MAX_VALUE, 0);
+                    new MvccSnapshotWithoutTxs(cntr.coordinatorVersion(), cntr.counter(), MvccUtils.MVCC_READ_OP_CNTR, 0);
 
                 row = cctx.offheap().mvccRead(cctx, key0, readVer);
 

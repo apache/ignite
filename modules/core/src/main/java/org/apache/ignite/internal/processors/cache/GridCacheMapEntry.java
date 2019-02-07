@@ -5606,6 +5606,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 updRes.invokeResult(res.invokeResult());
             }
 
+            updRes.newValue(res.newValue());
+
             if (needOldVal && compareIgnoreOpCounter(res.resultVersion(), mvccVer) != 0 &&
                 (res.resultType() == ResultType.PREV_NOT_NULL || res.resultType() == ResultType.REMOVED_NOT_NULL))
                 updRes.oldValue(res.oldValue());
