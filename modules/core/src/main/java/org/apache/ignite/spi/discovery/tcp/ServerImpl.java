@@ -2674,7 +2674,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private long lastRingMsgTime;
 
         /** */
-        private List<DiscoveryDataPacket> joiningNodesPacketsList = new ArrayList<>();
+        private List<DiscoveryDataPacket> joiningNodesDiscoDataList;
 
         /** */
         private DiscoveryDataPacket gridDiscoveryData;
@@ -2783,7 +2783,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private void nullifyDiscoData() {
             gridDiscoveryData = null;
-            joiningNodesPacketsList = null;
+            joiningNodesDiscoDataList = null;
         }
 
         /**
@@ -4438,7 +4438,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else if (spiState == CONNECTING)
                             // Node joining to the cluster should postpone applying disco data of other joiners till
                             // receiving gridDiscoData (when NodeAddFinished message arrives)
-                            joiningNodesPacketsList.add(dataPacket);
+                            joiningNodesDiscoDataList.add(dataPacket);
                     }
 
                     processMessageFailedNodes(msg);
@@ -4534,6 +4534,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 log.debug("Restored topology from node added message: " + ring);
 
                             gridDiscoveryData = msg.gridDiscoveryData();
+
+                            joiningNodesDiscoDataList = new ArrayList<>();
 
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
@@ -4704,7 +4706,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (gridDiscoveryData != null)
                     spi.onExchange(gridDiscoveryData, U.resolveClassLoader(spi.ignite().configuration()));
 
-                for (DiscoveryDataPacket dataPacket : joiningNodesPacketsList)
+                for (DiscoveryDataPacket dataPacket : joiningNodesDiscoDataList)
                     spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
                 nullifyDiscoData();
