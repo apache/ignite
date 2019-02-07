@@ -900,7 +900,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param cancel Hook for query cancellation.
      * @throws QueryCancelledException If query was cancelled during execution.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked"})
+    @SuppressWarnings({"ForLoopReplaceableByForEach"})
     private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr, GridQueryCancel cancel) throws QueryCancelledException {
         try {

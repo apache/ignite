@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -195,6 +196,11 @@ public class MarshallerContextImpl implements MarshallerContext {
         for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet()) {
             int typeId = e.getKey();
             String clsName = e.getValue().className();
+
+            MappedName mappedName = platformCache.get(typeId);
+
+            if (mappedName != null && !F.isEmpty(clsName) && clsName.equals(mappedName.className()))
+                continue;
 
             platformCache.put(typeId, new MappedName(clsName, true));
 

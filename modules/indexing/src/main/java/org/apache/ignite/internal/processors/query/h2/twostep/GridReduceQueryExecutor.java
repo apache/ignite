@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -70,7 +69,9 @@ import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedUpdateRun;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -107,13 +108,13 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkAc
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.setDataPageScanEnabled;
 
 /**
  * Reduce query executor.
  */
+@SuppressWarnings("IfMayBeConditional")
 public class GridReduceQueryExecutor {
     /** Default retry timeout. */
     public static final long DFLT_RETRY_TIMEOUT = 30_000L;
@@ -140,10 +141,10 @@ public class GridReduceQueryExecutor {
     private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap<>();
 
     /** Contexts of running DML requests. */
-    private final ConcurrentMap<Long, DistributedUpdateRun> updRuns = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, DmlDistributedUpdateRun> updRuns = new ConcurrentHashMap<>();
 
     /** */
-    private volatile List<GridThreadLocalTable> fakeTbls = Collections.emptyList();
+    private volatile List<ReduceTableWrapper> fakeTbls = Collections.emptyList();
 
     /** */
     private final Lock fakeTblsLock = new ReentrantLock();
@@ -206,7 +207,7 @@ public class GridReduceQueryExecutor {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 for (ReduceQueryRun r : runs.values()) {
-                    for (GridMergeIndex idx : r.indexes()) {
+                    for (ReduceIndex idx : r.indexes()) {
                         if (idx.hasSource(nodeId)) {
                             handleNodeLeft(r, nodeId);
 
@@ -215,7 +216,7 @@ public class GridReduceQueryExecutor {
                     }
                 }
 
-                for (DistributedUpdateRun r : updRuns.values())
+                for (DmlDistributedUpdateRun r : updRuns.values())
                     r.handleNodeLeft(nodeId);
 
             }
@@ -305,12 +306,12 @@ public class GridReduceQueryExecutor {
 
         final int pageSize = r.pageSize();
 
-        GridMergeIndex idx = r.indexes().get(msg.query());
+        ReduceIndex idx = r.indexes().get(msg.query());
 
-        GridResultPage page;
+        ReduceResultPage page;
 
         try {
-            page = new GridResultPage(ctx, node.id(), msg) {
+            page = new ReduceResultPage(ctx, node.id(), msg) {
                 @Override public void fetchNextPage() {
                     if (r.hasErrorOrRetry()) {
                         if (r.exception() != null)
@@ -387,6 +388,7 @@ public class GridReduceQueryExecutor {
      * @param dataPageScanEnabled If data page scan is enabled.
      * @return Rows iterator.
      */
+    @SuppressWarnings({"BusyWait", "IfMayBeConditional"})
     public Iterator<List<?>> query(
         String schemaName,
         final GridCacheTwoStepQuery qry,
@@ -557,17 +559,17 @@ public class GridReduceQueryExecutor {
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable() || singlePartMode;
 
             final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
-                findFirstPartitioned(cacheIds).config().getQueryParallelism();
+                mapper.findFirstPartitioned(cacheIds).config().getQueryParallelism();
 
             int replicatedQrysCnt = 0;
 
             final Collection<ClusterNode> finalNodes = nodes;
 
             for (GridCacheSqlQuery mapQry : mapQueries) {
-                GridMergeIndex idx;
+                ReduceIndex idx;
 
                 if (!skipMergeTbl) {
-                    GridMergeTable tbl;
+                    ReduceTable tbl;
 
                     try {
                         tbl = createMergeTable(r.connection(), mapQry, qry.explain());
@@ -581,7 +583,7 @@ public class GridReduceQueryExecutor {
                     fakeTable(r.connection(), tblIdx++).innerTable(tbl);
                 }
                 else
-                    idx = GridMergeIndexUnsorted.createDummy(ctx);
+                    idx = ReduceIndexUnsorted.createDummy(ctx);
 
                 // If the query has only replicated tables, we have to run it on a single node only.
                 if (!mapQry.isPartitioned()) {
@@ -743,7 +745,7 @@ public class GridReduceQueryExecutor {
 
                 if (!retry) {
                     if (skipMergeTbl) {
-                        resIter = new GridMergeIndexIterator(this,
+                        resIter = new ReduceIndexIterator(this,
                             finalNodes,
                             r,
                             qryReqId,
@@ -755,20 +757,19 @@ public class GridReduceQueryExecutor {
                     else {
                         cancel.checkCancelled();
 
-                        UUID locNodeId = ctx.localNodeId();
-
                         H2Utils.setupConnection(r.connection(), false, enforceJoinOrder);
 
-                        GridH2QueryContext qctx = new GridH2QueryContext(
-                            locNodeId,
-                            locNodeId,
-                            qryReqId,
+                        QueryContext qctx = new QueryContext(
                             0,
-                            REDUCE,
+                            null,
+                            null,
+                            null,
                             null
                         );
 
-                        GridH2QueryContext.set(qctx);
+                        QueryContextRegistry qryCtxRegistry = h2.queryContextRegistry();
+
+                        qryCtxRegistry.setThreadLocal(qctx);
 
                         try {
                             if (qry.explain())
@@ -788,7 +789,7 @@ public class GridReduceQueryExecutor {
                             mvccTracker = null; // To prevent callback inside finally block;
                         }
                         finally {
-                            GridH2QueryContext.clearThreadLocal();
+                            qryCtxRegistry.clearThreadLocal();
                         }
                     }
                 }
@@ -876,6 +877,7 @@ public class GridReduceQueryExecutor {
      * @param cancel Cancel state.
      * @return Update result, or {@code null} when some map node doesn't support distributed DML.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public UpdateResult update(
         String schemaName,
         List<Integer> cacheIds,
@@ -919,7 +921,7 @@ public class GridReduceQueryExecutor {
             }
         }
 
-        final DistributedUpdateRun r = new DistributedUpdateRun(nodes.size());
+        final DmlDistributedUpdateRun r = new DmlDistributedUpdateRun(nodes.size());
 
         int flags = enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
 
@@ -990,7 +992,7 @@ public class GridReduceQueryExecutor {
         try {
             long reqId = msg.requestId();
 
-            DistributedUpdateRun r = updRuns.get(reqId);
+            DmlDistributedUpdateRun r = updRuns.get(reqId);
 
             if (r == null) {
                 U.warn(log, "Unexpected dml response (will ignore). [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
@@ -1005,24 +1007,6 @@ public class GridReduceQueryExecutor {
             U.error(log, "Error in dml response processing. [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
                 node.id() + ", msg=" + msg.toString() + ']', e);
         }
-    }
-
-    /**
-     * @param cacheIds Cache IDs.
-     * @return The first partitioned cache context.
-     */
-    private GridCacheContext<?,?> findFirstPartitioned(List<Integer> cacheIds) {
-        for (int i = 0; i < cacheIds.size(); i++) {
-            GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(i));
-
-            if (i == 0 && cctx.isLocal())
-                throw new CacheException("Cache is LOCAL: " + cctx.name());
-
-            if (!cctx.isReplicated() && !cctx.isLocal())
-                return cctx;
-        }
-
-        throw new IllegalStateException("Failed to find partitioned cache.");
     }
 
     /**
@@ -1049,7 +1033,7 @@ public class GridReduceQueryExecutor {
         if (distributedJoins)
             send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
         else {
-            for (GridMergeIndex idx : r.indexes()) {
+            for (ReduceIndex idx : r.indexes()) {
                 if (!idx.fetchedAll()) {
                     send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
 
@@ -1095,8 +1079,8 @@ public class GridReduceQueryExecutor {
      * @param idx Index of table.
      * @return Table.
      */
-    private GridThreadLocalTable fakeTable(Connection c, int idx) {
-        List<GridThreadLocalTable> tbls = fakeTbls;
+    private ReduceTableWrapper fakeTable(Connection c, int idx) {
+        List<ReduceTableWrapper> tbls = fakeTbls;
 
         assert tbls.size() >= idx;
 
@@ -1105,18 +1089,12 @@ public class GridReduceQueryExecutor {
 
             try {
                 if ((tbls = fakeTbls).size() == idx) { // Double check inside of lock.
-                    try (Statement stmt = c.createStatement()) {
-                        stmt.executeUpdate("CREATE TABLE " + mergeTableIdentifier(idx) +
-                            "(fake BOOL) ENGINE \"" + GridThreadLocalTable.Engine.class.getName() + '"');
-                    }
-                    catch (SQLException e) {
-                        throw new IllegalStateException(e);
-                    }
+                    ReduceTableWrapper tbl = ReduceTableEngine.create(c, idx);
 
-                    List<GridThreadLocalTable> newTbls = new ArrayList<>(tbls.size() + 1);
+                    List<ReduceTableWrapper> newTbls = new ArrayList<>(tbls.size() + 1);
 
                     newTbls.addAll(tbls);
-                    newTbls.add(GridThreadLocalTable.Engine.getCreated());
+                    newTbls.add(tbl);
 
                     fakeTbls = tbls = newTbls;
                 }
@@ -1150,7 +1128,7 @@ public class GridReduceQueryExecutor {
         int tblIdx = 0;
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
-            GridMergeTable tbl = createMergeTable(c, mapQry, false);
+            ReduceTable tbl = createMergeTable(c, mapQry, false);
 
             fakeTable(c, tblIdx++).innerTable(tbl);
         }
@@ -1209,7 +1187,8 @@ public class GridReduceQueryExecutor {
             specialize,
             locNodeHnd,
             GridIoPolicy.QUERY_POOL,
-            runLocParallel);
+            runLocParallel
+        );
     }
 
     /**
@@ -1248,7 +1227,7 @@ public class GridReduceQueryExecutor {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private GridMergeTable createMergeTable(JdbcConnection conn, GridCacheSqlQuery qry, boolean explain)
+    private ReduceTable createMergeTable(JdbcConnection conn, GridCacheSqlQuery qry, boolean explain)
         throws IgniteCheckedException {
         try {
             Session ses = (Session)conn.getSession();
@@ -1284,25 +1263,25 @@ public class GridReduceQueryExecutor {
 
             boolean sortedIndex = !F.isEmpty(qry.sortColumns());
 
-            GridMergeTable tbl = new GridMergeTable(data);
+            ReduceTable tbl = new ReduceTable(data);
 
             ArrayList<Index> idxs = new ArrayList<>(2);
 
             if (explain) {
-                idxs.add(new GridMergeIndexUnsorted(ctx, tbl,
+                idxs.add(new ReduceIndexUnsorted(ctx, tbl,
                     sortedIndex ? MERGE_INDEX_SORTED : MERGE_INDEX_UNSORTED));
             }
             else if (sortedIndex) {
                 List<GridSqlSortColumn> sortCols = (List<GridSqlSortColumn>)qry.sortColumns();
 
-                GridMergeIndexSorted sortedMergeIdx = new GridMergeIndexSorted(ctx, tbl, MERGE_INDEX_SORTED,
+                ReduceIndexSorted sortedMergeIdx = new ReduceIndexSorted(ctx, tbl, MERGE_INDEX_SORTED,
                     GridSqlSortColumn.toIndexColumns(tbl, sortCols));
 
-                idxs.add(GridMergeTable.createScanIndex(sortedMergeIdx));
+                idxs.add(ReduceTable.createScanIndex(sortedMergeIdx));
                 idxs.add(sortedMergeIdx);
             }
             else
-                idxs.add(new GridMergeIndexUnsorted(ctx, tbl, MERGE_INDEX_UNSORTED));
+                idxs.add(new ReduceIndexUnsorted(ctx, tbl, MERGE_INDEX_UNSORTED));
 
             tbl.indexes(idxs);
 
@@ -1336,7 +1315,7 @@ public class GridReduceQueryExecutor {
         for (Map.Entry<Long, ReduceQueryRun> e : runs.entrySet())
             e.getValue().disconnected(err);
 
-        for (DistributedUpdateRun r: updRuns.values())
+        for (DmlDistributedUpdateRun r: updRuns.values())
             r.handleDisconnect(err);
     }
 
