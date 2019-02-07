@@ -38,6 +38,10 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
  * Tests for Zookeeper SPI discovery client reconnect.
  */
 public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpiTestBase {
+    @Override protected long getTestTimeout() {
+        return 3 * super.getTestTimeout();
+    }
+
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
