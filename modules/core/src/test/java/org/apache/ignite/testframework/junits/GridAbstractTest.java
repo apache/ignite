@@ -158,6 +158,9 @@ public abstract class GridAbstractTest extends TestCase {
         setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
     }};
 
+    /** Shared static IP finder which is used in configuration at nodes startup <b>for all test methods in class</b>. */
+    protected static TcpDiscoveryIpFinder sharedStaticIpFinder;
+
     /** */
     private static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
 
@@ -599,6 +602,8 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
+            sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
+
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if(isSafeTopology())
@@ -1664,18 +1669,13 @@ public abstract class GridAbstractTest extends TestCase {
         // Set metrics update interval to 1 second to speed up tests.
         cfg.setMetricsUpdateFrequency(1000);
 
-        String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
+        if (!isMultiJvm()) {
+            assert sharedStaticIpFinder != null : "Shared static IP finder should be initialized at this point.";
 
-        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-
-        ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + TcpDiscoverySpi.DFLT_PORT));
-
-        if (!F.isEmpty(mcastAddr)) {
-            ipFinder.setMulticastGroup(mcastAddr);
-            ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
+            discoSpi.setIpFinder(sharedStaticIpFinder);
         }
-
-        discoSpi.setIpFinder(ipFinder);
+        else
+            discoSpi.setIpFinder(LOCAL_IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
 
