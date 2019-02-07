@@ -1568,10 +1568,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         // We only care about acquired locks.
         if (owner != null) {
-            IgniteTxAdapter tx = tx(owner.version());
-
-            if (tx == null)
-                tx = nearTx(owner.version());
+            IgniteTxAdapter tx = entry.isNear() ? nearTx(owner.version()) : tx(owner.version());
 
             if (tx != null) {
                 if (!tx.local()) {
