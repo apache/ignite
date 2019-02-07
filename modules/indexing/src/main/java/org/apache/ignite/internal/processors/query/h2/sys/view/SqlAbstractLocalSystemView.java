@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
+import java.time.ZoneId;
+import java.util.TimeZone;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.engine.Session;
@@ -29,11 +31,15 @@ import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
+import org.h2.value.ValueTimestampTimeZone;
 
 /**
  * Local system view base class (which uses only local node data).
  */
 public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
+
+    public static final int MILLIS_IN_MIN = 60_000;
+
     /**
      * @param tblName Table name.
      * @param desc Description.
@@ -161,17 +167,18 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     }
 
     /**
-     * Converts millis to ValueTimestamp in default time zone.
+     * Converts millis to H2 ValueTimestamp in default time zone.
      *
      * @param millis Millis.
      */
     protected static Value valueTimestampZoneFromMillis(long millis) {
-        // TODO: Is it ok to get offset that way? TimeZone.getTimeZone(ZoneId.systemDefault()).getRawOffset() / 60_000;
-        // TODO: Think how to avoid internal H2 timezone recalc which is expensive.
-
         long dateVal = DateTimeUtils.dateValueFromDate(millis);
         long nanos = DateTimeUtils.nanosFromDate(millis);
+        int tzOff = TimeZone.getTimeZone(ZoneId.systemDefault()).getRawOffset();
 
-        return DateTimeUtils.timestampTimeZoneFromLocalDateValueAndNanos(dateVal, nanos);
+        if(tzOff % MILLIS_IN_MIN == 0)
+            return ValueTimestampTimeZone.fromDateValueAndNanos(dateVal, nanos, (short)(tzOff / MILLIS_IN_MIN));
+        else
+            return DateTimeUtils.timestampTimeZoneFromLocalDateValueAndNanos(dateVal, nanos);
     }
 }
