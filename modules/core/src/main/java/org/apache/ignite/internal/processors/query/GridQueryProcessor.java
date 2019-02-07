@@ -1537,6 +1537,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
+        if (!QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()))
+            ccfg.setAffinityMapper(null);
+
         if (affinityKey != null)
             ccfg.setKeyConfiguration(new CacheKeyConfiguration(entity.getKeyType(), affinityKey));
 
