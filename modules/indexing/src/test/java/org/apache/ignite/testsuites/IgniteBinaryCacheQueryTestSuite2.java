@@ -48,10 +48,7 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedT
 import org.apache.ignite.internal.processors.cache.query.ScanQueryOffheapExpiryPolicySelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteChangingBaselineCacheQueryNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineCacheQueryNodeRestartsSelfTest;
-import org.apache.ignite.internal.processors.query.IgniteCacheGroupsCompareQueryTest;
-import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlDistributedJoinSelfTest;
-import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest;
-import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexSelfTest;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheCauseRetryMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheWasNotFoundMessageSelfTest;
@@ -125,6 +122,7 @@ public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(TableViewSubquerySelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteCacheQueriesLoadTest1.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteSqlCreateTableTemplateTest.class));
 
         return suite;
     }

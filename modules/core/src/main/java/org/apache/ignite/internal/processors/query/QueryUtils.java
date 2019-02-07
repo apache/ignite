@@ -1370,6 +1370,18 @@ public class QueryUtils {
     }
 
     /**
+     * Checks whether affinity key mapper is custom or default.
+     *
+     * @param affinityKeyMapper Affinity key mapper.
+     * @return {@code true} if affinity key mapper is custom.
+     */
+    public static boolean isCustomAffinityMapper(AffinityKeyMapper affinityKeyMapper) {
+        return affinityKeyMapper != null &&
+                !(affinityKeyMapper instanceof CacheDefaultBinaryAffinityKeyMapper) &&
+                !(affinityKeyMapper instanceof GridCacheDefaultAffinityKeyMapper);
+    }
+
+    /**
      * Checks if given column can be removed from table using its {@link QueryEntity}.
      *
      * @param entity Query entity.
