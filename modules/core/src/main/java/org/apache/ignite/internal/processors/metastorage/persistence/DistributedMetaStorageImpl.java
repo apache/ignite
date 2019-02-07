@@ -813,7 +813,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 else
                     writeFullDataLater(nodeData);
             }
-            else if (getActualVersion().id > 0) {
+            else if (!ctx.clientNode() && getActualVersion().id > 0) {
                 throw new IgniteException("Cannot join the cluster because it doesn't support distributed metastorage" +
                     " feature and this node has not empty distributed metastorage data");
             }
