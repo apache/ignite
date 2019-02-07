@@ -336,7 +336,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private static final int DFLT_NEED_WAIT_DELAY = 200;
 
     /** Default delay between reconnects attempts in case of temporary network issues. */
-    private static final int DFLT_RECONNECT_DELAY = 200;
+    private static final int DFLT_RECONNECT_DELAY = 50;
 
     /**
      * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
