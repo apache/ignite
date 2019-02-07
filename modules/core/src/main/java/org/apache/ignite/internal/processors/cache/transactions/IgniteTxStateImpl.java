@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -75,6 +76,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** */
     @GridToStringInclude
     protected Boolean mvccEnabled;
+
+    /** Cache ids used for mvcc caching. See {@link MvccCachingManager}. */
+    private GridIntList mvccCachingCacheIds = new GridIntList();
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -261,8 +265,12 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                     ", cacheSystem=" + cacheCtx.systemTx() +
                     ", txSystem=" + tx.system() + ']');
             }
-            else
+            else {
                 activeCacheIds.add(cacheId);
+
+                if (cacheCtx.mvccEnabled() && (cacheCtx.hasContinuousQueryListeners(tx) || cacheCtx.isDrEnabled()))
+                    mvccCachingCacheIds.add(cacheId);
+            }
 
             if (activeCacheIds.size() == 1)
                 tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
@@ -488,6 +496,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public boolean mvccEnabled() {
         return Boolean.TRUE == mvccEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean useMvccCaching(int cacheId) {
+        return mvccCachingCacheIds.contains(cacheId);
     }
 
     /** {@inheritDoc} */
