@@ -30,6 +30,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
@@ -39,40 +40,59 @@ import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
+/**
+ * Traner for GMM model.
+ */
 public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
+    /** Min divergence of mean vectors beween iterations. If divergence will less then trainer stops. */
     private double eps = 1e-3;
+
+    /** Count of components. */
     private int countOfComponents = 2;
+
+    /** Max count of iterations. */
     private int maxCountOfIterations = 10;
+
+    /** Seed. */
     private long seed = System.currentTimeMillis();
+
+    /** Initial means. */
     private List<Vector> initialMeans;
 
-    public GmmTrainer() {
-    }
-
+    /**
+     * Creates an instance of GmmTrainer.
+     *
+     * @param countOfComponents Count of components.
+     * @param maxCountOfIterations Max count of iterations.
+     */
     public GmmTrainer(int countOfComponents, int maxCountOfIterations) {
         this.countOfComponents = countOfComponents;
         this.maxCountOfIterations = maxCountOfIterations;
     }
 
+    /** {@inheritDoc} */
     @Override
     public <K, V> GmmModel fit(DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
-        try (Dataset<EmptyContext, GmmPartitionData> dataset = datasetBuilder.build(
-            LearningEnvironmentBuilder.defaultBuilder(),
-            new EmptyContextBuilder<>(),
-            new GmmPartitionData.Builder<>(extractor, countOfComponents)
-        )) {
-            return fit(dataset);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return updateModel(null, datasetBuilder, extractor);
     }
 
+    /**
+     * Sets seed.
+     *
+     * @param seed Seed.
+     * @return trainer.
+     */
     public GmmTrainer withSeed(long seed) {
         this.seed = seed;
         return this;
     }
 
+    /**
+     * Sets numberOfComponents.
+     *
+     * @param numberOfComponents Number of components.
+     * @return trainer.
+     */
     public GmmTrainer withCountOfComponents(int numberOfComponents) {
         A.ensure(numberOfComponents > 0, "Number of components in GMM cannot equal 0");
 
@@ -81,6 +101,12 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         return this;
     }
 
+    /**
+     * Sets initial means.
+     *
+     * @param means Initial means for clusters.
+     * @return trainer.
+     */
     public GmmTrainer withInitialMeans(List<Vector> means) {
         A.notEmpty(means, "GMM should starts with non empty initial components list");
 
@@ -89,6 +115,12 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         return this;
     }
 
+    /**
+     * Sets max count of iterations
+     *
+     * @param maxCountOfIterations Max count of iterations.
+     * @return trainer.
+     */
     public GmmTrainer withMaxCountIterations(int maxCountOfIterations) {
         A.ensure(maxCountOfIterations > 0, "Max count iterations cannot be less or equal zero");
 
@@ -96,13 +128,25 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         return this;
     }
 
+    /**
+     * Sets min divergence beween iterations.
+     *
+     * @param eps Eps.
+     * @return trainer.
+     */
     public GmmTrainer withEps(double eps) {
-        A.ensure(eps > 0 && eps < 1.0, "Max divergence beween iterations should be between 0.0 and 1.0");
+        A.ensure(eps > 0 && eps < 1.0, "Min divergence beween iterations should be between 0.0 and 1.0");
 
         this.eps = eps;
         return this;
     }
 
+    /**
+     * Trains model based on the specified data.
+     *
+     * @param dataset Dataset.
+     * @return GMM model.
+     */
     private GmmModel fit(Dataset<EmptyContext, GmmPartitionData> dataset) {
         GmmModel model = init(dataset);
         boolean isConverged = false;
@@ -130,10 +174,16 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         return model;
     }
 
+    /**
+     * Init means and covariances.
+     *
+     * @param dataset Dataset.
+     * @return initial model.
+     */
     private GmmModel init(Dataset<EmptyContext, GmmPartitionData> dataset) {
         if (initialMeans == null) {
             initialMeans = dataset.compute(
-                selectNRandomXsMapper(countOfComponents),
+                selectNRandomXsMapper(countOfComponents, seed),
                 selectNRandomXsReducer(countOfComponents, seed)
             );
         }
@@ -155,6 +205,13 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         );
     }
 
+    /**
+     * Create new model components with provided means and covariances.
+     *
+     * @param means Means.
+     * @param covs Covariances.
+     * @return gmm components.
+     */
     private List<MultivariateGaussianDistribution> buildComponents(List<Vector> means, List<Matrix> covs) {
         A.ensure(means.size() == covs.size(), "means.size() == covs.size()");
 
@@ -165,6 +222,12 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         return res;
     }
 
+    /**
+     * Check algorithm covergency. If it's true then algorithm stops.
+     *
+     * @param oldModel Old model.
+     * @param newModel New model.
+     */
     private boolean isConverged(GmmModel oldModel, GmmModel newModel) {
         A.ensure(oldModel.countOfComponents() == newModel.countOfComponents(),
             "oldModel.countOfComponents() == newModel.countOfComponents()");
@@ -180,22 +243,53 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         return isConverged;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isUpdateable(GmmModel mdl) {
-        return false;
+        return mdl.countOfComponents() == countOfComponents;
     }
 
+    /** {@inheritDoc} */
     @Override protected <K, V> GmmModel updateModel(GmmModel mdl, DatasetBuilder<K, V> datasetBuilder,
         FeatureLabelExtractor<K, V, Double> extractor) {
 
-        return null;
+        try (Dataset<EmptyContext, GmmPartitionData> dataset = datasetBuilder.build(
+            LearningEnvironmentBuilder.defaultBuilder(),
+            new EmptyContextBuilder<>(),
+            new GmmPartitionData.Builder<>(extractor, countOfComponents)
+        )) {
+            if (mdl != null) {
+                if (initialMeans != null)
+                    environment.logger().log(MLLogger.VerboseLevel.HIGH, "Initial means will be replaced by model from update");
+                initialMeans = mdl.distributions().stream().map(x -> x.mean()).collect(Collectors.toList());
+            }
+
+            return fit(dataset);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private static IgniteBiFunction<GmmPartitionData, LearningEnvironment, List<Vector>> selectNRandomXsMapper(int n) {
-        return (data, env) -> env.randomNumbersGenerator().ints(n, 0, data.size())
+    /**
+     * Returns mapper for initial means selection.
+     *
+     * @param n Number of components.
+     * @return mapper.
+     */
+    private static IgniteBiFunction<GmmPartitionData, LearningEnvironment, List<Vector>> selectNRandomXsMapper(int n,
+        long seed) {
+        return (data, env) -> new Random(seed).ints(n, 0, data.size())
             .mapToObj(data::getX)
             .collect(Collectors.toList());
     }
 
+    /**
+     * Returns reducer for means selection.
+     *
+     * @param n Number of components.
+     * @param seed Seed.
+     * @return reducer.
+     */
     private static IgniteBinaryOperator<List<Vector>> selectNRandomXsReducer(int n, long seed) {
         return (l, r) -> {
             A.ensure(l != null || r != null, "l != null || r != null");
@@ -213,6 +307,10 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         };
     }
 
+    /**
+     * @param expectedSize Expected size.
+     * @param xs Xs.
+     */
     private static List<Vector> checkList(int expectedSize, List<Vector> xs) {
         A.ensure(xs.size() == expectedSize, "xs.size() == expectedSize");
         return xs;
