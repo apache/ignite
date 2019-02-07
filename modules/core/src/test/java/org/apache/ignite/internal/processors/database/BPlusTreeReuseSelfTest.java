@@ -360,6 +360,115 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPutAllRemoveAll_1_true() throws Exception {
+        MAX_PER_PAGE = 1;
+        CNT = 26;
+
+        doTestPutAllRemoveAll(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPutAllRemoveAll_1_false() throws Exception {
+        MAX_PER_PAGE = 1;
+        CNT = 26;
+
+        doTestPutAllRemoveAll(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPutAllRemoveAll_2_true() throws Exception {
+        MAX_PER_PAGE = 2;
+        CNT = 300;
+
+        doTestPutAllRemoveAll(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPutAllRemoveAll_2_false() throws Exception {
+        MAX_PER_PAGE = 2;
+        CNT = 300;
+
+        doTestPutAllRemoveAll(false);
+    }
+
+    /**
+     * @param canGetRow Can get row.
+     * @throws Exception If failed.
+     */
+    private void doTestPutAllRemoveAll(boolean canGetRow) throws Exception {
+        TestTree tree = createTestTree(canGetRow);
+        TreeSet<Long> set = new TreeSet<>();
+
+        for (int i = 0; i < 10_000; i++) {
+            long batchSize = 1 + randomInt(CNT);
+
+            TreeSet<Long> puts = new TreeSet<>();
+            TreeSet<Long> all = new TreeSet<>();
+
+            for (int j = 0; j < batchSize; j++) {
+                long x = randomInt(CNT);
+
+                if (randomInt(2) == 0)
+                    puts.add(x);
+
+                all.add(x);
+            }
+
+            TreeSet<Long> rmvs = new TreeSet<>(all);
+            rmvs.removeAll(puts);
+
+            List<Long> putRes = new ArrayList<>();
+            List<Boolean> putxRes = new ArrayList<>();
+
+            for (Long x : puts) {
+                boolean contains = set.contains(x);
+                putRes.add(contains ? x : null);
+                putxRes.add(contains);
+            }
+
+            List<Long> rmvRes = new ArrayList<>();
+            List<Boolean> rmvxRes = new ArrayList<>();
+
+            for (Long x : rmvs) {
+                boolean contains = set.contains(x);
+                rmvRes.add(contains ? x : null);
+                rmvxRes.add(contains);
+            }
+
+            set.addAll(puts);
+            set.removeAll(rmvs);
+
+            if (!puts.isEmpty()) {
+                if (randomInt(2) == 0)
+                    assertEquals(putRes, tree.putAll(puts.iterator()));
+                else
+                    assertEquals(putxRes, tree.putAllx(puts.iterator()));
+            }
+
+            if (!rmvs.isEmpty()) {
+                if (randomInt(2) == 0)
+                    assertEquals(rmvRes, tree.removeAll(rmvs.iterator()));
+                else
+                    assertEquals(rmvxRes, tree.removeAllx(rmvs.iterator()));
+            }
+
+            assertEqualContents(tree, set);
+        }
+    }
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
     @Test

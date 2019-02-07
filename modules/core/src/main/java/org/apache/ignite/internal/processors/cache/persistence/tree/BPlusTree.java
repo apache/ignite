@@ -397,8 +397,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                 // Need to replace inner key if now we are replacing the rightmost row and have a forward page.
                 if (canGetRowFromInner && idx + 1 == cnt && p.fwdId != 0L && p.needReplaceInner == FALSE) {
-                    // Can happen only for invoke, otherwise inner key must be replaced on the way down.
-                    assert p.invoke != null;
+                    // Can happen only for invoke, otherwise inner key must be replaced on the way down,
+                    // or it can be PutAll which may miss the inner key because it gets high from the bottom level.
+                    assert p.invoke != null || p.getClass() == PutAll.class;
 
                     // We need to restart the operation from root to perform inner replace.
                     // On the second pass we will not get here (will avoid infinite loop) because
@@ -2348,8 +2349,39 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * {@inheritDoc}
+     * @param sortedRows Sorted rows.
+     * @return List of {@code true} if the row was replaced or {@code false} otherwise.
+     * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings({"unchecked"})
+    public final List<Boolean> putAllx(Iterator<? extends T> sortedRows) throws IgniteCheckedException {
+        return (List)doPutAll(sortedRows, false);
+    }
+
+    /**
+     * @param sortedRows Sorted rows.
+     * @return List of replaced rows.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final List<T> putAll(Iterator<? extends T> sortedRows) throws IgniteCheckedException {
+        return doPutAll(sortedRows, true);
+    }
+
+    /**
+     * @param sortedRows Sorted rows.
+     * @param needOld {@code True} If need return old value.
+     * @return List of replaced rows.
+     * @throws IgniteCheckedException If failed.
+     */
+    private List<T> doPutAll(Iterator<? extends T> sortedRows, boolean needOld) throws IgniteCheckedException {
+        PutAll p = new PutAll(sortedRows, needOld);
+
+        doPut(p);
+
+        return p.oldRows;
+    }
+
+    /** {@inheritDoc} */
     @Override public final T put(T row) throws IgniteCheckedException {
         return doPut(new Put(row, true));
     }
