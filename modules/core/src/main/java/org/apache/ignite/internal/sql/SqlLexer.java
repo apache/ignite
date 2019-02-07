@@ -239,28 +239,14 @@ public class SqlLexer implements SqlLexerToken {
     /**
      * @return {@code True} if end of data is reached.
      */
-    private boolean eod() {
+    public boolean eod() {
         return pos == inputChars.length - 1;
     }
 
     /**
-     * Returns not yet seen part of the query or {@code null} if end of data is reached.
+     * Current lexer position. Points to the most left char of the sql that haven't been yet parsed.
      */
-    public String remainingSql(){
-        if (eod())
-            return null;
-
-        return sql.substring(pos);
-    }
-
-    /**
-     * Returns already processed part of the query or {@code null} if we at the start point.
-     */
-    // TODO: Incorrect semantics. Consider exposing lexer position.
-    public String processedSql() {
-        if (pos == 0)
-            return null;
-
-        return sql.substring(0, pos);
+    public int position() {
+        return pos;
     }
 }

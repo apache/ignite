@@ -1285,7 +1285,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 || leadingCmd instanceof SqlDropUserCommand))
                 return null;
 
-            SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.processedSql());
+            SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.lastSqlStatement());
 
             return new ParsingResult(newQry, leadingCmd, parser.remainingSql());
         }

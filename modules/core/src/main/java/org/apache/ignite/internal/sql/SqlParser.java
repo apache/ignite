@@ -66,6 +66,12 @@ public class SqlParser {
     /** Lexer. */
     private final SqlLexer lex;
 
+    /** Begin position of the last successfully parsed sql command. */
+    private int lastCmdBegin;
+
+    /** Position right after the end of the last successfully parsed sql command or {@code -1} if haven't parsed. */
+    private int lastCmdEnd = -1;
+
     /**
      * Constructor.
      *
@@ -101,16 +107,25 @@ public class SqlParser {
      */
     private SqlCommand nextCommand0() {
         while (true) {
-            if (!lex.shift())
+            if (!lex.shift()) {
+                lastCmdEnd = -1;
+
                 return null;
+            }
 
             switch (lex.tokenType()) {
                 case SEMICOLON:
+                    // Note: currently we don't use native parser for empty statements. But if we start, we need
+                    // NoOp sql command, because we have to send empty results for the empty statements, not just to
+                    // ignore them.
+
                     // Empty command, skip.
                     continue;
 
                 case DEFAULT:
                     SqlCommand cmd = null;
+
+                    int curCmdBegin = lex.tokenPosition();
 
                     switch (lex.token()) {
                         case BEGIN:
@@ -163,11 +178,14 @@ public class SqlParser {
                     }
 
                     if (cmd != null) {
-                        // TODO: Probably position should be read here
+                        int curCmdEnd = lex.position();
 
                         // If there is something behind the command, this is a syntax error.
                         if (lex.shift() && lex.tokenType() != SqlLexerTokenType.SEMICOLON)
                             throw errorUnexpectedToken(lex);
+
+                        lastCmdBegin = curCmdBegin;
+                        lastCmdEnd = curCmdEnd;
 
                         return cmd;
                     }
@@ -353,16 +371,22 @@ public class SqlParser {
     }
 
     /**
-     * Not yet parsed part of the sql query.
+     * Not yet parsed part of the sql query. Result is invalid if parsing error was thrown.
      */
     public String remainingSql() {
-        return lex.remainingSql();
+        if (lex.eod())
+            return null;
+
+        return lex.sql().substring(lex.position());
     }
 
     /**
-     * Already processed sql statement(s).
+     * Last successfully parsed sql statement. It corresponds to the last command returned by {@link #nextCommand()}.
      */
-    public String processedSql(){
-        return lex.processedSql();
+    public String lastSqlStatement(){
+        if (lastCmdEnd < 0)
+            return null;
+
+        return lex.sql().substring(lastCmdBegin, lastCmdEnd);
     }
 }
