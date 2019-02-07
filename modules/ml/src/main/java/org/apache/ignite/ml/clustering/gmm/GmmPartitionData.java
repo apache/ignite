@@ -20,6 +20,7 @@ package org.apache.ignite.ml.clustering.gmm;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -34,7 +35,9 @@ class GmmPartitionData implements AutoCloseable {
     private List<LabeledVector<Double>> xs;
     private double[][] pcxi; //P(cluster|xi) where second idx is a cluster and first is a index of point
 
-    public GmmPartitionData(List<LabeledVector<Double>> xs, double[][] pcxi) {
+    GmmPartitionData(List<LabeledVector<Double>> xs, double[][] pcxi) {
+        A.ensure(xs.size() == pcxi.length, "xs.size() == pcxi.length");
+
         this.xs = xs;
         this.pcxi = pcxi;
     }
@@ -91,8 +94,9 @@ class GmmPartitionData implements AutoCloseable {
         }
     }
 
-    public static IgniteConsumer<GmmPartitionData> pcxiUpdater(Vector clusterProbs,
+    public static IgniteConsumer<GmmPartitionData> updatePcxiMapper(Vector clusterProbs,
         List<MultivariateGaussianDistribution> components) {
+
         return data -> {
             for (int i = 0; i < data.size(); i++) {
                 Vector x = data.getX(i);

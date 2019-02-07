@@ -23,54 +23,57 @@ import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
+/**
+ * This class encapsulates statistics aggregation logic for feature vector covariance matrix computation of one GMM
+ * component (cluster).
+ */
 public class CovarianceMatricesAggregator implements Serializable {
+    /** Mean vector. */
     private final Vector mean;
+
+    /** Weighted by P(c|xi) sum of (xi - mean) * (xi - mean)^T values. */
     private Matrix weightedSum;
+
+    /** Count of rows. */
     private int N;
 
-    public CovarianceMatricesAggregator(Vector mean) {
+    /**
+     * Creates an instance of CovarianceMatricesAggregator.
+     *
+     * @param mean Mean vector.
+     */
+    CovarianceMatricesAggregator(Vector mean) {
         this.mean = mean;
     }
 
-    private CovarianceMatricesAggregator(Vector mean, Matrix weightedSum, int n) {
+    /**
+     * Creates an instance of CovarianceMatricesAggregator.
+     *
+     * @param mean Mean vector.
+     * @param weightedSum Weighted sums for covariace computation.
+     * @param n Count of rows.
+     */
+    CovarianceMatricesAggregator(Vector mean, Matrix weightedSum, int n) {
         this.mean = mean;
         this.weightedSum = weightedSum;
         this.N = n;
     }
 
-    public void add(Vector x, double pcxi) {
-        Matrix deltaCol = x.minus(mean).toMatrix(false);
-        Matrix weightedCovComponent = deltaCol.times(deltaCol.transpose()).times(pcxi);
-        if (weightedSum == null)
-            weightedSum = weightedCovComponent;
-        else
-            weightedSum = weightedSum.plus(weightedCovComponent);
-        N += 1;
-    }
-
-    public CovarianceMatricesAggregator plus(CovarianceMatricesAggregator other) {
-        A.ensure(this.mean == other.mean, "this.mean == other.mean");
-
-        return new CovarianceMatricesAggregator(
-            mean,
-            this.weightedSum.plus(other.weightedSum),
-            this.N + other.N
-        );
-    }
-
-    public Matrix covariance(double clusterProb) {
-        return weightedSum.divide(N * clusterProb);
-    }
-
+    /**
+     * Computes covatiation matrices for feature vector for each GMM component.
+     *
+     * @param dataset Dataset.
+     * @param clusterProbs Probabilities of each GMM component.
+     * @param means Means for each GMM component.
+     */
     public static List<Matrix> computeCovariances(Dataset<EmptyContext, GmmPartitionData> dataset,
         Vector clusterProbs, List<Vector> means) {
 
         List<CovarianceMatricesAggregator> aggregators = dataset.compute(
-            map(means),
+            data -> map(data, means),
             CovarianceMatricesAggregator::reduce
         );
 
@@ -81,25 +84,73 @@ public class CovarianceMatricesAggregator implements Serializable {
         return res;
     }
 
-    private static IgniteFunction<GmmPartitionData, List<CovarianceMatricesAggregator>> map(List<Vector> means) {
-        int countOfComponents = means.size();
-
-        return data -> {
-            List<CovarianceMatricesAggregator> aggregators = new ArrayList<>();
-            for (int i = 0; i < countOfComponents; i++)
-                aggregators.add(new CovarianceMatricesAggregator(means.get(i)));
-
-            for (int i = 0; i < data.getXs().size(); i++) {
-                for (int c = 0; c < countOfComponents; c++)
-                    aggregators.get(c).add(data.getX(i), data.pcxi(c, i));
-            }
-
-            return aggregators;
-        };
+    /**
+     * @param x Feature vector (xi).
+     * @param pcxi P(c|xi) for GMM component "c" and vector xi.
+     */
+    void add(Vector x, double pcxi) {
+        Matrix deltaCol = x.minus(mean).toMatrix(false);
+        Matrix weightedCovComponent = deltaCol.times(deltaCol.transpose()).times(pcxi);
+        if (weightedSum == null)
+            weightedSum = weightedCovComponent;
+        else
+            weightedSum = weightedSum.plus(weightedCovComponent);
+        N += 1;
     }
 
-    private static List<CovarianceMatricesAggregator> reduce(List<CovarianceMatricesAggregator> l,
+    /**
+     * @param other Other.
+     * @return sum of aggregators.
+     */
+    CovarianceMatricesAggregator plus(CovarianceMatricesAggregator other) {
+        A.ensure(this.mean == other.mean, "this.mean == other.mean");
+
+        return new CovarianceMatricesAggregator(
+            mean,
+            this.weightedSum.plus(other.weightedSum),
+            this.N + other.N
+        );
+    }
+
+    /**
+     * Map stage for covariance computation over dataset.
+     *
+     * @param data Data partition.
+     * @param means Means vector.
+     * @return Covariance aggregators.
+     */
+    static List<CovarianceMatricesAggregator> map(GmmPartitionData data, List<Vector> means) {
+        int countOfComponents = means.size();
+
+        List<CovarianceMatricesAggregator> aggregators = new ArrayList<>();
+        for (int i = 0; i < countOfComponents; i++)
+            aggregators.add(new CovarianceMatricesAggregator(means.get(i)));
+
+        for (int i = 0; i < data.getXs().size(); i++) {
+            for (int c = 0; c < countOfComponents; c++)
+                aggregators.get(c).add(data.getX(i), data.pcxi(c, i));
+        }
+
+        return aggregators;
+    }
+
+    /**
+     * @param clusterProb GMM component probability.
+     * @return computed covariance matrix.
+     */
+    private Matrix covariance(double clusterProb) {
+        return weightedSum.divide(N * clusterProb);
+    }
+
+    /**
+     * Reduce stage for covariance computation over dataset.
+     *
+     * @param l L.
+     * @param r R.
+     */
+    static List<CovarianceMatricesAggregator> reduce(List<CovarianceMatricesAggregator> l,
         List<CovarianceMatricesAggregator> r) {
+
         A.ensure(l != null || r != null, "Both partitions cannot equal to null");
 
         if (l == null)
@@ -113,5 +164,17 @@ public class CovarianceMatricesAggregator implements Serializable {
             res.add(l.get(i).plus(r.get(i)));
 
         return res;
+    }
+
+    Vector mean() {
+        return mean.copy();
+    }
+
+    Matrix weightedSum() {
+        return weightedSum.copy();
+    }
+
+    int N() {
+        return N;
     }
 }

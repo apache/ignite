@@ -31,32 +31,13 @@ class MeanWithClusterProbAggregator implements Serializable {
     private double pcxiSum;
     private int N;
 
-    public MeanWithClusterProbAggregator() {
+    private MeanWithClusterProbAggregator() {
     }
 
     private MeanWithClusterProbAggregator(Vector weightedXsSum, double pcxiSum, int N) {
         this.weightedXsSum = weightedXsSum;
         this.pcxiSum = pcxiSum;
         this.N = N;
-    }
-
-    public void add(Vector x, double pcxi) {
-        Vector weightedVector = x.times(pcxi);
-        if (weightedXsSum == null)
-            weightedXsSum = weightedVector;
-        else
-            weightedXsSum = weightedXsSum.plus(weightedVector);
-
-        pcxiSum += pcxi;
-        N += 1;
-    }
-
-    public MeanWithClusterProbAggregator plus(MeanWithClusterProbAggregator other) {
-        return new MeanWithClusterProbAggregator(
-            weightedXsSum.plus(other.weightedXsSum),
-            pcxiSum + other.pcxiSum,
-            N + other.N
-        );
     }
 
     public Vector mean() {
@@ -76,7 +57,26 @@ class MeanWithClusterProbAggregator implements Serializable {
         );
     }
 
-    private static IgniteFunction<GmmPartitionData, List<MeanWithClusterProbAggregator>> map(int countOfComponents) {
+    void add(Vector x, double pcxi) {
+        Vector weightedVector = x.times(pcxi);
+        if (weightedXsSum == null)
+            weightedXsSum = weightedVector;
+        else
+            weightedXsSum = weightedXsSum.plus(weightedVector);
+
+        pcxiSum += pcxi;
+        N += 1;
+    }
+
+    MeanWithClusterProbAggregator plus(MeanWithClusterProbAggregator other) {
+        return new MeanWithClusterProbAggregator(
+            weightedXsSum.plus(other.weightedXsSum),
+            pcxiSum + other.pcxiSum,
+            N + other.N
+        );
+    }
+
+    static IgniteFunction<GmmPartitionData, List<MeanWithClusterProbAggregator>> map(int countOfComponents) {
         return data -> {
             List<MeanWithClusterProbAggregator> aggregators = new ArrayList<>();
             for (int i = 0; i < countOfComponents; i++)
@@ -91,7 +91,7 @@ class MeanWithClusterProbAggregator implements Serializable {
         };
     }
 
-    private static List<MeanWithClusterProbAggregator> reduce(List<MeanWithClusterProbAggregator> l,
+    static List<MeanWithClusterProbAggregator> reduce(List<MeanWithClusterProbAggregator> l,
         List<MeanWithClusterProbAggregator> r) {
         A.ensure(l != null || r != null, "Both partitions cannot equal to null");
 

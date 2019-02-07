@@ -62,19 +62,6 @@ public class MatrixUtil {
     }
 
     /**
-     * Create the identity matrix.
-     *
-     * @param n Matrix size.
-     * @return Identity matrix.
-     */
-    public static Matrix identity(int n) {
-        Matrix res = new DenseMatrix(n, n);
-        for (int i = 0; i < n; i++)
-            res.setX(i, i, 1.0);
-        return res;
-    }
-
-    /**
      * Create the like matrix with specified size with read-only matrices support.
      *
      * @param matrix Matrix for like.

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.clustering;
 
+import org.apache.ignite.ml.clustering.gmm.GmmModelTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -25,8 +26,12 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    //k-means tests
     KMeansTrainerTest.class,
-    KMeansModelTest.class
+    KMeansModelTest.class,
+
+    //GMM tests
+    GmmModelTest.class
 })
 public class ClusteringTestSuite {
 }

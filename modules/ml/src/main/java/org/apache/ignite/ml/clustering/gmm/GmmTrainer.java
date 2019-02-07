@@ -127,7 +127,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
             model = newModel;
 
             if (!isConverged)
-                dataset.compute(GmmPartitionData.pcxiUpdater(clusterProbs, components));
+                dataset.compute(GmmPartitionData.updatePcxiMapper(clusterProbs, components));
         }
 
         return model;
