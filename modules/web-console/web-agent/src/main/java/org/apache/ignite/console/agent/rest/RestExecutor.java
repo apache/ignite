@@ -105,6 +105,9 @@ public class RestExecutor implements AutoCloseable {
 
         X509TrustManager trustMgr = trustManager(trustAll, trustStorePath, trustStorePwd);
 
+        if (trustAll)
+            builder.hostnameVerifier((hostname, session) -> true);
+
         SSLSocketFactory sslSocketFactory = sslSocketFactory(
             keyStorePath, keyStorePwd,
             trustMgr,
@@ -112,7 +115,10 @@ public class RestExecutor implements AutoCloseable {
         );
 
         if (sslSocketFactory != null) {
-            builder.sslSocketFactory(sslSocketFactory, trustMgr);
+            if (trustMgr != null)
+                builder.sslSocketFactory(sslSocketFactory, trustMgr);
+            else
+                builder.sslSocketFactory(sslSocketFactory);
 
             if (!F.isEmpty(cipherSuites))
                 builder.connectionSpecs(sslConnectionSpec(cipherSuites));

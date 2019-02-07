@@ -88,7 +88,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJmxPdsStatisticsEnable() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9224", MvccFeatureChecker.forcedMvcc());
 
         testJmxStatisticsEnable(true);
     }

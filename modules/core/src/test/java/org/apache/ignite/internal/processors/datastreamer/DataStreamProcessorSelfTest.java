@@ -182,7 +182,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPartitioned() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         mode = PARTITIONED;
 
@@ -215,7 +215,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = LOCAL;
 
@@ -859,7 +859,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFlushTimeout() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
         mode = PARTITIONED;
 
@@ -915,7 +915,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUpdateStore() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         storeMap = new ConcurrentHashMap<>();
 

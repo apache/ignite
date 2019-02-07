@@ -55,7 +55,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
     }
 
     /** {@inheritDoc} */

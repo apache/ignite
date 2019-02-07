@@ -24,8 +24,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Assume;
 
 /**
  * Tests the recovery after a dynamic cache start failure, with enabled persistence.
@@ -66,11 +64,6 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
         grid(0).cluster().active(true);
 
         awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
     }
 
     /** {@inheritDoc} */
