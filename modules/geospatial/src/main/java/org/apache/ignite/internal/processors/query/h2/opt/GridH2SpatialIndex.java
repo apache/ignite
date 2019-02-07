@@ -105,6 +105,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      */
     @SuppressWarnings("unchecked")
     public GridH2SpatialIndex(GridH2Table tbl, String idxName, int segmentsCnt, IndexColumn... cols) {
+        super(tbl);
+
         if (cols.length > 1)
             throw DbException.getUnsupportedException("can only do one column");
 
@@ -349,7 +351,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         long time = System.currentTimeMillis();
 
         IndexingQueryFilter qryFilter = null;
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        QueryContext qctx = queryContextRegistry().getThreadLocal();
 
         if (qctx != null)
             qryFilter = qctx.filter();

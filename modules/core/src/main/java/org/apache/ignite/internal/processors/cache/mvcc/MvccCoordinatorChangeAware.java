@@ -15,30 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.opt;
+package org.apache.ignite.internal.processors.cache.mvcc;
+
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongPredicate;
 
 /**
- * Query type.
+ *
  */
-public enum GridH2QueryType {
-    /**
-     * Map query. Runs over local partitions, possibly with distributed joins.
-     */
-    MAP,
+public interface MvccCoordinatorChangeAware {
+    /** */
+    AtomicLong ID_CNTR = new AtomicLong();
+
+    /** */
+    long MVCC_TRACKER_ID_NA = -1;
+
+    /** */
+    LongPredicate ID_FILTER = id -> id != MVCC_TRACKER_ID_NA;
 
     /**
-     * Reduce query. Local query on a node which initiated the original query.
+     * Mvcc coordinator change callback.
+     *
+     * @param newCrd New mvcc coordinator.
+     * @return Query id if exists.
      */
-    REDUCE,
-
-    /**
-     * Local query. It may be also a query over replicated cache but all the data is available locally.
-     */
-    LOCAL,
-
-    /**
-     * Replicated query over a network. Such a query can be sent from a client node or node which
-     * did not load all the partitions yet.
-     */
-    REPLICATED;
+    default long onMvccCoordinatorChange(MvccCoordinator newCrd) {
+        return MVCC_TRACKER_ID_NA;
+    }
 }
