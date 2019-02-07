@@ -157,16 +157,38 @@ fi
 # JVM_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 ${JVM_OPTS}"
 
 #
-# Final JVM_OPTS for Java 9 compatibility
+# Final JVM_OPTS for Java 9+ compatibility
 #
-${JAVA_HOME}/bin/java -version 2>&1 | grep -qE 'java version "9.*"' && {
-JVM_OPTS="--add-exports java.base/jdk.internal.misc=ALL-UNNAMED \
-          --add-exports java.base/sun.nio.ch=ALL-UNNAMED \
-          --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-          --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-          --add-modules java.xml.bind \
-      ${JVM_OPTS}"
-} || true
+javaMajorVersion "${JAVA_HOME}/bin/java"
+
+if [ $version -eq 8 ] ; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+         ${JVM_OPTS}"
+
+elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        --add-modules=java.transaction \
+        --add-modules=java.xml.bind \
+        ${JVM_OPTS}"
+
+elif [ $version -eq 11 ] ; then
+    JVM_OPTS="\
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        ${JVM_OPTS}"
+fi
 
 ERRORCODE="-1"
 
