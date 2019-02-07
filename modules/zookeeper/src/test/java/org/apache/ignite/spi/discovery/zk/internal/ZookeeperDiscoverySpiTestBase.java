@@ -198,11 +198,11 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         super.beforeTest();
 
         if (USE_TEST_CLUSTER && zkCluster == null) {
-        zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS);
 
-        zkCluster.start();
+            zkCluster.start();
 
-        waitForZkClusterReady(zkCluster);
+            waitForZkClusterReady(zkCluster);
         }
 
         reset();

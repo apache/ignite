@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -26,8 +27,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 
 /**
  * Tests for Zookeeper SPI discovery client reconnect.
@@ -95,6 +100,51 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
         waitForTopology(20);
 
         evts.clear();
+    }
+
+    /**
+     * Checks that a client will reconnect after previous cluster data was cleaned.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReconnectServersRestart_4() throws Exception {
+        startGrid(0);
+
+        helper.clientMode(true);
+
+        IgniteEx client = startGrid(1);
+
+        helper.clientMode(false);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        client.events().localListen(event -> {
+            latch.countDown();
+
+            return true;
+        }, EVT_CLIENT_NODE_DISCONNECTED);
+
+        waitForTopology(2);
+
+        stopGrid(0);
+
+        evts.clear();
+
+        // Waiting for client starts to reconnect and create join request.
+        assertTrue("Failed to wait for client node disconnected.", latch.await(10, SECONDS));
+
+        // Restart cluster twice for incrementing internal order. (alive zk-nodes having lower order and containing
+        // client join request will be removed). See {@link ZookeeperDiscoveryImpl#cleanupPreviousClusterData}.
+        startGrid(0);
+
+        stopGrid(0);
+
+        evts.clear();
+
+        startGrid(0);
+
+        waitForTopology(2);
     }
 
     /**
