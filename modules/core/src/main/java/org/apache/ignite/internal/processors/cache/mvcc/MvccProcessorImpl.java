@@ -307,10 +307,31 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
+    @Override public void onCacheStop(final GridCacheContext cctx) {
+        if (cctx.mvccEnabled() && txLog != null) {
+            assert mvccEnabled && mvccSupported;
+
+            boolean hasMvccCaches = ctx.cache().cacheDescriptors().values().stream()
+                .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
+
+            if (!hasMvccCaches)
+                stopTxLog();
+        }
+    }
+
+
+    /** {@inheritDoc} */
     @Override public void beforeStop(IgniteCacheDatabaseSharedManager mgr) {
+        stopTxLog();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stopTxLog() {
         stopVacuumWorkers();
 
         txLog = null;
+
+        mvccEnabled = false;
     }
 
     /** {@inheritDoc} */
@@ -357,7 +378,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         assert CU.isPersistenceEnabled(ctx.config());
 
         //noinspection ConstantConditions
-        ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
+        ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 0,
             TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
     }
 
@@ -595,7 +616,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public byte state(long crdVer, long cntr) {
-        assert txLog != null && mvccEnabled;
+        assert txLog != null && mvccEnabled : mvccEnabled;
 
         try {
             return txLog.get(crdVer, cntr);
@@ -614,7 +635,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void updateState(MvccVersion ver, byte state, boolean primary) {
-        assert txLog != null && mvccEnabled;
+        assert mvccEnabled;
+        assert txLog != null || waitMap.isEmpty();
+
+        // txLog may not exist if node is non-affinity for any mvcc-cache.
+        if (txLog == null)
+            return;
 
         try {
             txLog.put(new TxKey(ver.coordinatorVersion(), ver.counter()), state, primary);

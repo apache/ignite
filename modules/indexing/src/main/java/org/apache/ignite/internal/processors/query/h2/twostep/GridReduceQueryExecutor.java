@@ -70,7 +70,8 @@ import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -107,14 +108,13 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkAc
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.setDataPageScanEnabled;
 
 /**
  * Reduce query executor.
  */
+@SuppressWarnings("IfMayBeConditional")
 public class GridReduceQueryExecutor {
     /** Default retry timeout. */
     public static final long DFLT_RETRY_TIMEOUT = 30_000L;
@@ -388,6 +388,7 @@ public class GridReduceQueryExecutor {
      * @param dataPageScanEnabled If data page scan is enabled.
      * @return Rows iterator.
      */
+    @SuppressWarnings("BusyWait")
     public Iterator<List<?>> query(
         String schemaName,
         final GridCacheTwoStepQuery qry,
@@ -756,12 +757,19 @@ public class GridReduceQueryExecutor {
                     else {
                         cancel.checkCancelled();
 
-                        UUID locNodeId = ctx.localNodeId();
-
                         H2Utils.setupConnection(r.connection(), false, enforceJoinOrder);
 
-                        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
-                            .pageSize(r.pageSize()).distributedJoinMode(OFF));
+                        QueryContext qctx = new QueryContext(
+                            0,
+                            null,
+                            null,
+                            null,
+                            null
+                        );
+
+                        QueryContextRegistry qryCtxRegistry = h2.queryContextRegistry();
+
+                        qryCtxRegistry.setThreadLocal(qctx);
 
                         try {
                             if (qry.explain())
@@ -781,7 +789,7 @@ public class GridReduceQueryExecutor {
                             mvccTracker = null; // To prevent callback inside finally block;
                         }
                         finally {
-                            GridH2QueryContext.clearThreadLocal();
+                            qryCtxRegistry.clearThreadLocal();
                         }
                     }
                 }
@@ -1202,7 +1210,8 @@ public class GridReduceQueryExecutor {
             specialize,
             locNodeHnd,
             GridIoPolicy.QUERY_POOL,
-            runLocParallel);
+            runLocParallel
+        );
     }
 
     /**

@@ -2595,7 +2595,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("StatementWithEmptyBody")
         @Override protected void body() throws InterruptedException {
             long lastChk = 0;
 

@@ -57,7 +57,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -227,8 +226,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testWalDisabledDuringRebalancing() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
-
         doTestSimple();
     }
 
@@ -237,8 +234,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testWalNotDisabledIfParameterSetToFalse() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
-
         disableWalDuringRebalancing = false;
 
         doTestSimple();
@@ -378,8 +373,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testLocalAndGlobalWalStateInterdependence() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
-
         Ignite ignite = startGrids(3);
 
         ignite.cluster().active(true);
@@ -474,8 +467,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testParallelExchangeDuringRebalance() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
-
         doTestParallelExchange(supplyMessageLatch);
     }
 
@@ -484,8 +475,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testParallelExchangeDuringCheckpoint() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
-
         doTestParallelExchange(fileIOLatch);
     }
 
@@ -542,8 +531,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
-
         Ignite ignite = startGrid(0);
 
         ignite.cluster().active(true);

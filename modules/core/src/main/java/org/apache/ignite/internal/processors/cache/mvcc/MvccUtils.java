@@ -28,13 +28,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -289,7 +289,7 @@ public class MvccUtils {
      * @param opCntr Mvcc operation counter.
      * @return State exception.
      */
-    public static IgniteTxMvccVersionCheckedException unexpectedStateException(
+    public static IgniteTxUnexpectedStateCheckedException unexpectedStateException(
         CacheGroupContext grp, byte state, long crd, long cntr,
         int opCntr) {
         return unexpectedStateException(grp.shared().kernalContext(), state, crd, cntr, opCntr, null);
@@ -305,14 +305,14 @@ public class MvccUtils {
      * @param snapshot Mvcc snapshot
      * @return State exception.
      */
-    public static IgniteTxMvccVersionCheckedException unexpectedStateException(
+    public static IgniteTxUnexpectedStateCheckedException unexpectedStateException(
         GridCacheContext cctx, byte state, long crd, long cntr,
         int opCntr, MvccSnapshot snapshot) {
         return unexpectedStateException(cctx.kernalContext(), state, crd, cntr, opCntr, snapshot);
     }
 
     /** */
-    private static IgniteTxMvccVersionCheckedException unexpectedStateException(GridKernalContext ctx, byte state, long crd, long cntr,
+    private static IgniteTxUnexpectedStateCheckedException unexpectedStateException(GridKernalContext ctx, byte state, long crd, long cntr,
         int opCntr, MvccSnapshot snapshot) {
         String msg = "Unexpected state: [state=" + state + ", rowVer=" + crd + ":" + cntr + ":" + opCntr;
 
@@ -321,7 +321,7 @@ public class MvccUtils {
 
         msg += ", localNodeId=" + ctx.localNodeId()  + "]";
 
-        return new IgniteTxMvccVersionCheckedException(msg);
+        return new IgniteTxUnexpectedStateCheckedException(msg);
     }
 
     /**
@@ -685,6 +685,8 @@ public class MvccUtils {
     /**
      * @param ctx Grid kernal context.
      * @return Currently started user transaction, or {@code null} if none started.
+     * @throws UnsupportedTxModeException If transaction mode is not supported when MVCC is enabled.
+     * @throws NonMvccTransactionException If started transaction spans non MVCC caches.
      */
     @Nullable public static GridNearTxLocal tx(GridKernalContext ctx) {
         return tx(ctx, null);
@@ -694,28 +696,10 @@ public class MvccUtils {
      * @param ctx Grid kernal context.
      * @param txId Transaction ID.
      * @return Currently started user transaction, or {@code null} if none started.
-     */
-    @Nullable public static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
-        try {
-            return currentTx(ctx, txId);
-        }
-        catch (UnsupportedTxModeException e) {
-            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
-        catch (NonMvccTransactionException e) {
-            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
-        }
-    }
-
-    /**
-     * @param ctx Grid kernal context.
-     * @param txId Transaction ID.
-     * @return Currently started user transaction, or {@code null} if none started.
      * @throws UnsupportedTxModeException If transaction mode is not supported when MVCC is enabled.
      * @throws NonMvccTransactionException If started transaction spans non MVCC caches.
      */
-    @Nullable public static GridNearTxLocal currentTx(GridKernalContext ctx,
-        @Nullable GridCacheVersion txId) throws UnsupportedTxModeException, NonMvccTransactionException {
+    @Nullable public static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
         IgniteTxManager tm = ctx.cache().context().tm();
 
         IgniteInternalTx tx0 = txId == null ? tm.tx() : tm.tx(txId);
@@ -972,7 +956,7 @@ public class MvccUtils {
     }
 
     /** */
-    public static class UnsupportedTxModeException extends IgniteCheckedException {
+    public static class UnsupportedTxModeException extends TransactionException {
         /** */
         private static final long serialVersionUID = 0L;
         /** */
@@ -982,7 +966,7 @@ public class MvccUtils {
     }
 
     /** */
-    public static class NonMvccTransactionException extends IgniteCheckedException {
+    public static class NonMvccTransactionException extends TransactionException {
         /** */
         private static final long serialVersionUID = 0L;
         /** */

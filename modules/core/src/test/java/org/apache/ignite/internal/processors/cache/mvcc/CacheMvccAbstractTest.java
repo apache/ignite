@@ -61,6 +61,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
@@ -95,6 +96,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -165,6 +167,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setFailureHandler(new StopNodeFailureHandler());
+
         if (disableScheduledVacuum)
             cfg.setMvccVacuumFrequency(Integer.MAX_VALUE);
 
@@ -217,6 +221,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        ccfg = null;
+        ccfgs = null;
 
         MvccProcessorImpl.coordinatorAssignClosure(null);
 
@@ -1503,6 +1510,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         if (X.hasCause(e, IgniteTxTimeoutCheckedException.class))
             return;
 
+        if (X.hasCause(e, TransactionSerializationException.class))
+            return;
+
         if (X.hasCause(e, CacheException.class)) {
             CacheException cacheEx = X.cause(e, CacheException.class);
 
@@ -1532,9 +1542,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
             if (sqlEx != null && sqlEx.getMessage() != null) {
                 if (sqlEx.getMessage().contains("Transaction is already completed."))
-                    return;
-
-                if (sqlEx.getMessage().contains("Cannot serialize transaction due to write conflict"))
                     return;
             }
         }

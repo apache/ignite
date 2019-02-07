@@ -34,15 +34,15 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.X509TrustManager;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import io.socket.client.Ack;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 import okhttp3.OkHttpClient;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
@@ -111,36 +111,26 @@ public class AgentLauncher {
 
         ConnectException ce = X.cause(e, ConnectException.class);
 
-        if (ce != null)
-            log.error("Failed to establish connection to server (connection refused).");
+        if (ce != null) {
+            log.error("Failed to establish connection to server or missing proxy settings (connection refused).");
+            log.error("Documentation for proxy configuration can be found here: https://apacheignite-tools.readme.io/docs/getting-started#section-proxy-configuration");
+        }
         else {
-            Exception ignore = X.cause(e, SSLHandshakeException.class);
-
-            if (ignore != null) {
+            if (X.hasCause(e, SSLHandshakeException.class)) {
                 log.error("Failed to establish SSL connection to server, due to errors with SSL handshake:", e);
                 log.error("Add to environment variable JVM_OPTS parameter \"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.");
 
                 System.exit(1);
             }
 
-            ignore = X.cause(e, UnknownHostException.class);
-
-            if (ignore != null) {
+            if (X.hasCause(e, UnknownHostException.class)) {
                 log.error("Failed to establish connection to server, due to errors with DNS or missing proxy settings.", e);
-                log.error("Documentation for proxy configuration can be found here: http://apacheignite.readme.io/docs/web-agent#section-proxy-configuration");
+                log.error("Documentation for proxy configuration can be found here: https://apacheignite-tools.readme.io/docs/getting-started#section-proxy-configuration");
 
                 System.exit(1);
             }
 
-            ignore = X.cause(e, IOException.class);
-
-            if (ignore != null && "404".equals(ignore.getMessage())) {
-                log.error("Failed to receive response from server (connection refused).");
-
-                return;
-            }
-
-            if (ignore != null && "407".equals(ignore.getMessage())) {
+            if (X.hasCause(e, ProxyAuthException.class)) {
                 log.error("Failed to establish connection to server, due to proxy requires authentication.");
 
                 String userName = System.getProperty("https.proxyUsername", System.getProperty("http.proxyUsername"));
@@ -159,6 +149,14 @@ public class AgentLauncher {
                         return pwdAuth;
                     }
                 });
+
+                return;
+            }
+
+            IOException ignore = X.cause(e, IOException.class);
+
+            if (ignore != null && "404".equals(ignore.getMessage())) {
+                log.error("Failed to receive response from server (connection refused).");
 
                 return;
             }
@@ -345,18 +343,22 @@ public class AgentLauncher {
 
         List<String> cipherSuites = cfg.cipherSuites();
 
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+            .proxyAuthenticator(new ProxyAuthenticator());
+
         if (
             serverTrustAll ||
             hasServerTrustStore ||
             cfg.serverKeyStore() != null
         ) {
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
-
             X509TrustManager serverTrustMgr = trustManager(
                 serverTrustAll,
                 cfg.serverTrustStore(),
                 cfg.serverTrustStorePassword()
             );
+
+            if (serverTrustAll)
+                builder.hostnameVerifier((hostname, session) -> true);
 
             SSLSocketFactory sslSocketFactory = sslSocketFactory(
                 cfg.serverKeyStore(),
@@ -372,12 +374,13 @@ public class AgentLauncher {
                     builder.connectionSpecs(sslConnectionSpec(cipherSuites));
             }
 
-            OkHttpClient sslFactory = builder.build();
-
-            opts.callFactory = sslFactory;
-            opts.webSocketFactory = sslFactory;
             opts.secure = true;
         }
+
+        OkHttpClient okHttpClient = builder.build();
+        
+        opts.callFactory = okHttpClient;
+        opts.webSocketFactory = okHttpClient;
 
         final Socket client = IO.socket(uri, opts);
 
