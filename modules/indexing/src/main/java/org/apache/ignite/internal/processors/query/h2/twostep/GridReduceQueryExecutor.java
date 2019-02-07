@@ -1055,11 +1055,13 @@ public class GridReduceQueryExecutor {
      */
     void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
         boolean distributedJoins, MvccQueryTracker mvccTracker) {
-        boolean notFetched = false;
+        if (distributedJoins)
+            send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
 
         for (ReduceIndex idx : r.indexes()) {
             if (!idx.fetchedAll()) {
-                notFetched = true;
+                if (!distributedJoins) // cancel request has been already sent for distributed join.
+                    send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
 
                 r.setStateOnException(ctx.localNodeId(),
                     new CacheException("Query is canceled.", new QueryCancelledException()));
@@ -1067,10 +1069,6 @@ public class GridReduceQueryExecutor {
                 break;
             }
         }
-
-        // For distributedJoins need always send cancel request to cleanup resources.
-        if (distributedJoins || notFetched)
-            send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
 
         if (!runs.remove(qryReqId, r))
             U.warn(log, "Query run was already removed: " + qryReqId);

@@ -86,7 +86,9 @@ public class PartitionReservation {
         if (!releaseGuard.compareAndSet(false, true))
             return;
 
-        for (int i = 0; i < reserved.size(); i++)
-            reserved.get(i).release();
+        if (reserved != null) {
+            for (int i = 0; i < reserved.size(); i++)
+                reserved.get(i).release();
+        }
     }
 }
