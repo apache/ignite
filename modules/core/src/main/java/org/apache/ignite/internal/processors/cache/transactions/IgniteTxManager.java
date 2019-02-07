@@ -38,6 +38,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -1341,6 +1342,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (txIdMap.remove(tx.xidVersion(), tx)) {
             // 2. Unlock write resources.
             unlockMultiple(tx, tx.writeEntries());
+
+            if ("test".equals(tx.label()) && !tx.near()) {
+                U.awaitQuiet(IgniteKernal.b1);
+            }
 
             // 3. Unlock read resources if required.
             if (unlockReadEntries(tx))

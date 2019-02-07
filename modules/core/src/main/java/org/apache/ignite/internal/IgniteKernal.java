@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -302,6 +303,12 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
  * misspelling.
  */
 public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
+    /** */
+    public static CyclicBarrier b1 = new CyclicBarrier(2);
+
+    /** */
+    public static CyclicBarrier b2 = new CyclicBarrier(2);
+
     /** */
     private static final long serialVersionUID = 0L;
 
