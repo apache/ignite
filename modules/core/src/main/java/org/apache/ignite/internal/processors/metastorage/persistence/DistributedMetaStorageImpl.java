@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -87,6 +86,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** Default upper bound of history size in bytes. */
     private static final long DFLT_MAX_HISTORY_BYTES = 100 * 1024 * 1024;
+
+    /** Message indicating that clusted is in a mixed state and writing cannot be completed because of that. */
+    public static final String NOT_SUPPORTED_MSG = "Ignite cluster has nodes that don't support distributed metastorage" +
+        " feature. Writing cannot be completed.";
 
     /** Cached subscription processor instance. Exists to make code shorter. */
     private final GridInternalSubscriptionProcessor subscrProcessor;
@@ -165,12 +168,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
-     * @param nodes Collection of nodes.
      * @return {@code True} if all server nodes in the cluster support discributed metastorage feature.
      * @see IgniteFeatures#DISTRIBUTED_METASTORAGE
      */
-    private boolean isSupported(Collection<ClusterNode> nodes) {
-        return IgniteFeatures.allNodesSupports(nodes, DISTRIBUTED_METASTORAGE);
+    private boolean isSupported() {
+        return IgniteFeatures.allNodesSupports(ctx.discovery().aliveServerNodes(), DISTRIBUTED_METASTORAGE);
     }
 
     /** {@inheritDoc} */
@@ -478,7 +480,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (!discoData.hasJoiningNodeData()) {
                 // Joining node doesn't support distributed metastorage feature.
 
-                if (isSupported(ctx.discovery().aliveServerNodes()) && locVer.id > 0) {
+                if (isSupported() && locVer.id > 0) {
                     String errorMsg = "Node not supporting distributed metastorage feature" +
                         " is not allowed to join the cluster";
 
@@ -626,7 +628,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!discoData.hasJoiningNodeData())
             return;
 
-        if (!isSupported(ctx.discovery().aliveServerNodes()))
+        if (!isSupported())
             return;
 
         DistributedMetaStorageJoiningNodeData joiningData =
@@ -830,6 +832,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      *      cluster is not active.
      */
     private void startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
+        if (!isSupported())
+            throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
+
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
@@ -847,6 +852,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Basically the same as {@link #startWrite(String, byte[])} but for CAS operations.
      */
     private boolean startCas(String key, byte[] expValBytes, byte[] newValBytes) throws IgniteCheckedException {
+        if (!isSupported())
+            throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
+
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
@@ -882,9 +890,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             return;
         }
 
-        if (!isSupported(ctx.discovery().aliveServerNodes())) {
-            msg.errorMessage("Ignite cluster has nodes that don't support distributed metastorage feature." +
-                " Writing cannot be completed.");
+        if (!isSupported()) {
+            msg.errorMessage(NOT_SUPPORTED_MSG);
 
             return;
         }
