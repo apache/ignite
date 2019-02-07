@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -579,7 +580,13 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
+    @Override public void write(
+        long pageId,
+        ByteBuffer pageBuf,
+        int tag,
+        boolean calculateCrc,
+        PageStoreWriteHandler handler
+    ) throws IgniteCheckedException {
         init();
 
         boolean interrupted = false;
@@ -617,6 +624,9 @@ public class FilePageStore implements PageStore {
                         "CRC hasn't been calculated, crc=0";
 
                     assert pageBuf.position() == 0 : pageBuf.position();
+
+                    if (handler != null)
+                        handler.onPageWrite(this, pageId, 0, 0);
 
                     fileIO.writeFully(pageBuf, off);
 

@@ -276,7 +276,8 @@ public interface FileIO extends AutoCloseable {
     long getSparseSize();
 
     /**
-     * This method will transfers the content of file to the specified channel.
+     * This method will transfers the content of file to the specified channel. This is a synchronous
+     * operation, so performing it on asynchronous channels makes no sense and not provied.
      *
      * @param position The relative offset of the file where the transfer begins from.
      * @param count The number of bytes to be transferred.
@@ -289,7 +290,6 @@ public interface FileIO extends AutoCloseable {
     }
 
     /**
-     *
      * @param src The source channel.
      * @param position The position within the file at which the transfer is to begin.
      * @param count The maximum number of bytes to be transferred.
