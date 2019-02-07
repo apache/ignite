@@ -102,10 +102,12 @@ export default class {
         // ng-model-option, then it will always save. Be careful and pay extra attention to validation
         // when doing so, it's an easy way to miss invalid values this way.
 
-        // Dont close if form is invalid and allowInvalid is turned off (which is default value)
-        if (!form.$valid && !this.ngModel.$options.getOption('allowInvalid')) return;
+        // Don't close if form is invalid and allowInvalid is turned off (which is default value)
+        if (!form.$valid && !this.ngModel.$options.getOption('allowInvalid'))
+            return;
 
         delete this._cache[idx];
+
         this.save(data, idx);
     }
 }

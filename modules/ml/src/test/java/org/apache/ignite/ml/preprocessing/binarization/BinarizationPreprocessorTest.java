@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.binarization;
 
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;

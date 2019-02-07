@@ -38,7 +38,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -161,6 +161,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         grid(0).destroyCache(Organization.class.getSimpleName());
         grid(0).destroyCache(Person.class.getSimpleName());
         grid(0).destroyCache(OTHER_CACHE_NAME);
+
         super.afterTestsStopped();
     }
 

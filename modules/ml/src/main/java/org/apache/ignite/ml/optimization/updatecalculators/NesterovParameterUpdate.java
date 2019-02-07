@@ -20,8 +20,8 @@ package org.apache.ignite.ml.optimization.updatecalculators;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Data needed for Nesterov parameters updater.
@@ -41,7 +41,7 @@ public class NesterovParameterUpdate implements Serializable {
      * @param paramsCnt Count of parameters on which updateCache happens.
      */
     public NesterovParameterUpdate(int paramsCnt) {
-        prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt).assign(0);
+        prevIterationUpdates = new DenseVector(paramsCnt).assign(0);
     }
 
     /**

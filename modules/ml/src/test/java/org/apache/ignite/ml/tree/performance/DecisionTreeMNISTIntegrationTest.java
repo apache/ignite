@@ -23,14 +23,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset that require to start the whole Ignite
@@ -57,7 +58,7 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
     /**
      * {@inheritDoc}
      */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         /* Grid instance. */
         ignite = grid(NODE_COUNT);
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -65,6 +66,7 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** Tests on the MNIST dataset. For manual run. */
+    @Test
     public void testMNIST() throws IOException {
         CacheConfiguration<Integer, MnistUtils.MnistLabeledImage> trainingSetCacheCfg = new CacheConfiguration<>();
         trainingSetCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
@@ -92,7 +94,7 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
         int incorrectAnswers = 0;
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(10_000)) {
-            double res = mdl.apply(new DenseLocalOnHeapVector(e.getPixels()));
+            double res = mdl.predict(new DenseVector(e.getPixels()));
 
             if (res == e.getLabel())
                 correctAnswers++;

@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.genetic;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
@@ -43,32 +42,32 @@ public class Gene {
     private Long id;
 
     /** value used to model an individual Gene. */
-    private Object value;
+    private Object val;
 
     /**
      * object Object  parameter.
      *
-     * @param object
+     * @param obj
      */
-    public Gene(Object object) {
+    public Gene(Object obj) {
         id = ID_GEN.incrementAndGet();
-        this.value = object;
+        this.val = obj;
     }
 
     /**
      * @return value for Gene
      */
-    public Object getValue() {
-        return value;
+    public Object getVal() {
+        return val;
     }
 
     /**
      * Set the Gene value
      *
-     * @param object Value for Gene
+     * @param obj Value for Gene
      */
-    public void setValue(Object object) {
-        this.value = object;
+    public void setVal(Object obj) {
+        this.val = obj;
     }
 
     /**
@@ -80,7 +79,7 @@ public class Gene {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Gene [id=" + id + ", value=" + value + "]";
+        return "Gene [id=" + id + ", value=" + val + "]";
     }
 
 }

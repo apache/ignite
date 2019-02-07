@@ -34,15 +34,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         };
 
         /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties = {
-            "PagesRead",
-            "PagesWritten",
-            "PagesReplaced",
-            "OffHeapSize",
-            "OffheapUsedSize",
-            "UsedCheckpointBufferPages",
-            "UsedCheckpointBufferSize"
-        };
+        private static readonly string[] MissingProperties = {};
 
         /// <summary>
         /// Tests the API parity.

@@ -21,6 +21,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,6 +46,7 @@ public class IgniteCacheTxExpiryPolicyWithStoreTest extends IgniteCacheExpiryPol
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testGetReadThrough() throws Exception {
         super.testGetReadThrough();
 

@@ -46,10 +46,13 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -65,7 +68,6 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     protected static final long LATCH_TIMEOUT = 5000;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -99,6 +101,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, LOCAL);
 
@@ -109,6 +112,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, REPLICATED);
 
@@ -119,6 +123,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, PARTITIONED);
 
@@ -129,6 +134,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionLocalCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, LOCAL);
 
@@ -139,6 +145,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, REPLICATED);
 
@@ -149,8 +156,43 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionPartitionedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, PARTITIONED);
+
+        doTestWithoutEventsEntries(ccfg);
+        doTestWithEventsEntries(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
+    public void testMvccTransactionLocalCache() throws Exception {
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, LOCAL);
+
+        doTestWithoutEventsEntries(ccfg);
+        doTestWithEventsEntries(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTransactionReplicatedCache() throws Exception {
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, REPLICATED);
+
+        doTestWithoutEventsEntries(ccfg);
+        doTestWithEventsEntries(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTransactionPartitionedCache() throws Exception {
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, PARTITIONED);
 
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);

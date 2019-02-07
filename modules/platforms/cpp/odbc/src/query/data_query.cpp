@@ -157,7 +157,7 @@ namespace ignite
 
                 SqlResult::Type result = SqlResult::AI_SUCCESS;
 
-                if (!cursor->IsClosedRemotely())
+                if (!IsClosedRemotely())
                     result = MakeRequestClose();
 
                 if (result == SqlResult::AI_SUCCESS)
@@ -202,11 +202,22 @@ namespace ignite
                 return res;
             }
 
+            bool DataQuery::IsClosedRemotely() const
+            {
+                for (size_t i = 0; i < rowsAffected.size(); ++i)
+                {
+                    if (rowsAffected[i] < 0)
+                        return false;
+                }
+
+                return true;
+            }
+
             SqlResult::Type DataQuery::MakeRequestExecute()
             {
                 const std::string& schema = connection.GetSchema();
 
-                QueryExecuteRequest req(schema, sql, params, timeout);
+                QueryExecuteRequest req(schema, sql, params, timeout, connection.IsAutoCommit());
                 QueryExecuteResponse rsp;
 
                 try

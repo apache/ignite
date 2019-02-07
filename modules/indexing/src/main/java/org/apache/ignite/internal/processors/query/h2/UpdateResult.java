@@ -42,7 +42,7 @@ public final class UpdateResult {
      * @param cnt Updated rows count.
      * @param errKeys Array of erroneous keys.
      */
-    public @SuppressWarnings("ConstantConditions") UpdateResult(long cnt, Object[] errKeys) {
+    public UpdateResult(long cnt, Object[] errKeys) {
         this.cnt = cnt;
         this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
     }

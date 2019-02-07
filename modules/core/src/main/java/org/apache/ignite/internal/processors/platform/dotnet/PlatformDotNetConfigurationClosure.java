@@ -45,10 +45,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;
+
 /**
  * Closure to apply dot net configuration.
  */
-@SuppressWarnings({"UnusedDeclaration"})
 public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigurationClosure {
     /** */
     private static final long serialVersionUID = 0L;
@@ -74,7 +75,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override protected void apply0(IgniteConfiguration igniteCfg) {
         // Validate and copy Interop configuration setting environment pointer along the way.
         PlatformConfiguration interopCfg = igniteCfg.getPlatformConfiguration();
@@ -145,7 +145,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      * @param igniteCfg Ignite configuration.
      * @param interopCfg Interop configuration.
      */
-    @SuppressWarnings("ConstantConditions")
     private void prepare(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx interopCfg) {
         cfg = igniteCfg;
 
@@ -196,7 +195,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     private void processPrepareResult(BinaryReaderExImpl in) {
         assert cfg != null;
 
-        PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);
+        PlatformConfigurationUtils.readIgniteConfiguration(in, cfg, CURRENT_VER);
 
         // Process beans
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);

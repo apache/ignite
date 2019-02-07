@@ -83,8 +83,8 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         return hasNext;
     }
 
-    /** Indicates if initial query response was received. */
-    boolean hasFirstPage() {
+    /** {@inheritDoc} */
+    @Override public boolean hasFirstPage() {
         return hasFirstPage;
     }
 

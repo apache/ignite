@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -125,7 +124,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Alive check time (used by clients). */
     @GridToStringExclude
-    private transient long aliveCheckTime;
+    private transient volatile long aliveCheckTime;
 
     /** Client router node ID. */
     @GridToStringExclude
@@ -230,7 +229,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      *
      * @param consistentId Consistent globally unique node ID.
      */
-    public void setConsistentId(Serializable consistentId) {
+    @Override public void setConsistentId(Serializable consistentId) {
         this.consistentId = consistentId;
 
         final Map<String, Object> map = new HashMap<>(attrs);
@@ -241,7 +240,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T attribute(String name) {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
         if (IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(name))
@@ -292,14 +290,14 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    public void setMetrics(ClusterMetrics metrics) {
+    @Override public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
         this.metrics = metrics;
     }
 
     /** {@inheritDoc} */
-    public Map<Integer, CacheMetrics> cacheMetrics() {
+    @Override public Map<Integer, CacheMetrics> cacheMetrics() {
         if (metricsProvider != null) {
             Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
 
@@ -312,7 +310,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
+    @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
         this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
 
@@ -467,7 +465,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public boolean isClient() {
-        return clientRouterNodeId != null;
+        if (!cacheCliInit) {
+            Boolean clientModeAttr = ((ClusterNode) this).attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+
+            cacheCli = clientModeAttr != null && clientModeAttr;
+
+            cacheCliInit = true;
+        }
+
+        return cacheCli;
     }
 
     /**
@@ -490,6 +496,13 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         assert isClient() : this;
 
         this.aliveCheckTime = U.currentTimeMillis() + aliveTime;
+    }
+
+    /**
+     * @return Client alive check time.
+     */
+    public long clientAliveTime() {
+        return aliveCheckTime;
     }
 
     /**
@@ -526,17 +539,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         node.clientRouterNodeId = clientRouterNodeId;
 
         return node;
-    }
-
-    /** {@inheritDoc} */
-    public boolean isCacheClient() {
-        if (!cacheCliInit) {
-            cacheCli = CU.clientNodeDirect(this);
-
-            cacheCliInit = true;
-        }
-
-        return cacheCli;
     }
 
     /** {@inheritDoc} */
@@ -627,7 +629,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         ver = (IgniteProductVersion)in.readObject();
         clientRouterNodeId = U.readUuid(in);
 
-        if (isClient())
+        if (clientRouterNodeId() != null)
             consistentId = consistentIdAttr != null ? consistentIdAttr : id;
         else
             consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);

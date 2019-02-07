@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
  * Common code for tx prepare in optimistic and pessimistic modes.
  */
 public abstract class GridNearTxPrepareFutureAdapter extends
-    GridCacheCompoundFuture<GridNearTxPrepareResponse, IgniteInternalTx> implements GridCacheVersionedFuture<IgniteInternalTx> {
+    GridCacheCompoundFuture<Object, IgniteInternalTx> implements GridCacheVersionedFuture<IgniteInternalTx> {
     /** Logger reference. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -58,9 +58,9 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxPrepareFutureAdapter.class, Throwable.class, "err");
 
     /** */
-    private static final IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx> REDUCER =
-        new IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx>() {
-            @Override public boolean collect(GridNearTxPrepareResponse e) {
+    private static final IgniteReducer<Object, IgniteInternalTx> REDUCER =
+        new IgniteReducer<Object, IgniteInternalTx>() {
+            @Override public boolean collect(Object e) {
                 return true;
             }
 
@@ -136,6 +136,11 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     }
 
     /**
+     * Called when related {@link GridNearTxLocal} is completed asynchronously on timeout,
+     */
+    public abstract void onNearTxLocalTimeout();
+
+    /**
      * @return Transaction.
      */
     public IgniteInternalTx tx() {
@@ -160,13 +165,21 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param txMapping Transaction mapping.
      */
     final void checkOnePhase(GridDhtTxMapping txMapping) {
-        if (tx.storeWriteThrough())
+        checkOnePhase(tx.transactionNodes());
+    }
+
+    /**
+     * Checks if mapped transaction can be committed on one phase.
+     * One-phase commit can be done if transaction maps to one primary node and not more than one backup.
+     *
+     * @param txNodes Primary to backups node map.
+     */
+    final void checkOnePhase(Map<UUID, Collection<UUID>> txNodes) {
+        if (tx.storeWriteThrough() || tx.txState().mvccEnabled()) // TODO IGNITE-3479 (onePhase + mvcc)
             return;
 
-        Map<UUID, Collection<UUID>> map = txMapping.transactionNodes();
-
-        if (map.size() == 1) {
-            Map.Entry<UUID, Collection<UUID>> entry = map.entrySet().iterator().next();
+        if (txNodes.size() == 1) {
+            Map.Entry<UUID, Collection<UUID>> entry = txNodes.entrySet().iterator().next();
 
             assert entry != null;
 
@@ -182,7 +195,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param res Response.
      * @param updateMapping Update mapping flag.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     final void onPrepareResponse(GridDistributedTxMapping m,
         GridNearTxPrepareResponse res,
         boolean updateMapping) {
@@ -250,7 +262,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                 txEntry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
         }
 
-        if (!m.empty()) {
+        if (m.queryUpdate() || !m.empty()) {
             // This step is very important as near and DHT versions grow separately.
             cctx.versions().onReceived(nodeId, res.dhtVersion());
 

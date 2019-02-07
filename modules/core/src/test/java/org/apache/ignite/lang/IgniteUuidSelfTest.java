@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link org.apache.ignite.lang.IgniteUuid}.
@@ -42,6 +43,7 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
+    @Test
     public void testToString() {
         IgniteUuid id1 = IgniteUuid.randomUuid();
 
@@ -73,6 +75,7 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
+    @Test
     public void testGridUuid() {
         IgniteUuid id1 = IgniteUuid.randomUuid();
         IgniteUuid id2 = IgniteUuid.randomUuid();
@@ -95,6 +98,7 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
+    @Test
     public void testGridUuidPerformance() {
         long start = System.currentTimeMillis();
 
@@ -121,6 +125,7 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializationPerformance() throws Exception {
         UuidBean[] uids = new UuidBean[NUM];
 
@@ -218,7 +223,6 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
      * @throws ClassNotFoundException If failed.
      * @throws IOException If failed.
      */
-    @SuppressWarnings({"unchecked"})
     private <T> T read(byte[] bytes) throws ClassNotFoundException, IOException {
         ByteArrayInputStream bin = new ByteArrayInputStream(bytes);
 

@@ -20,65 +20,39 @@ import angular from 'angular';
 import DEMO_INFO from 'app/data/demo-info.json';
 import templateUrl from 'views/templates/demo-info.tpl.pug';
 
-angular
-.module('ignite-console.demo', [
-    'ignite-console.socket'
-])
-.config(['$stateProvider', ($stateProvider) => {
-    $stateProvider
-        .state('demo', {
-            abstract: true,
-            url: '/demo',
-            template: '<ui-view></ui-view>'
-        })
-        .state('demo.resume', {
-            url: '/resume',
-            permission: 'demo',
-            redirectTo: 'default-state',
-            unsaved: true,
-            tfMetaTags: {
-                title: 'Demo resume'
-            }
-        })
-        .state('demo.reset', {
-            url: '/reset',
-            permission: 'demo',
-            redirectTo: (trans) => {
-                const $http = trans.injector().get('$http');
+const DEMO_QUERY_STATE = {state: 'base.sql.notebook', params: {noteId: 'demo'}};
 
-                return $http.post('/api/v1/demo/reset')
-                    .then(() => 'default-state')
-                    .catch((err) => {
-                        trans.injector().get('IgniteMessages').showError(err);
-
-                        return 'default-state';
-                    });
-            },
-            unsaved: true,
-            tfMetaTags: {
-                title: 'Demo reset'
-            }
-        });
-}])
-.provider('Demo', ['$stateProvider', '$httpProvider', 'igniteSocketFactoryProvider', function($state, $http, socketFactory) {
+/**
+ * @param {import('@uirouter/angularjs').StateProvider} $state
+ * @param {ng.IHttpProvider} $http
+ */
+export function DemoProvider($state, $http) {
     if (/(\/demo.*)/ig.test(location.pathname))
         sessionStorage.setItem('IgniteDemoMode', 'true');
 
     const enabled = sessionStorage.getItem('IgniteDemoMode') === 'true';
 
-    if (enabled) {
-        socketFactory.set({query: 'IgniteDemoMode=true'});
-
+    if (enabled)
         $http.interceptors.push('demoInterceptor');
-    }
 
-    this.$get = ['$rootScope', ($root) => {
+    function service($root) {
         $root.IgniteDemoMode = enabled;
 
         return {enabled};
-    }];
-}])
-.factory('demoInterceptor', ['Demo', (Demo) => {
+    }
+    service.$inject = ['$rootScope'];
+
+    this.$get = service;
+    return this;
+}
+
+DemoProvider.$inject = ['$stateProvider', '$httpProvider'];
+
+/**
+ * @param {{enabled: boolean}} Demo
+ * @returns {ng.IHttpInterceptor}
+ */
+function demoInterceptor(Demo) {
     const isApiRequest = (url) => /\/api\/v1/ig.test(url);
 
     return {
@@ -89,37 +63,32 @@ angular
             return cfg;
         }
     };
-}])
-.controller('demoController', ['$scope', '$state', '$window', 'IgniteConfirm', ($scope, $state, $window, Confirm) => {
-    const _openTab = (stateName) => $window.open($state.href(stateName), '_blank');
+}
 
-    $scope.startDemo = () => {
-        if (!$scope.user.demoCreated)
-            return _openTab('demo.reset');
+demoInterceptor.$inject = ['Demo'];
 
-        Confirm.confirm('Would you like to continue with previous demo session?', true, false)
-            .then((resume) => {
-                if (resume)
-                    return _openTab('demo.resume');
 
-                _openTab('demo.reset');
-            });
-    };
 
-    $scope.closeDemo = () => {
-        $window.close();
-    };
-}])
-.provider('igniteDemoInfo', [function() {
+function igniteDemoInfoProvider() {
     const items = DEMO_INFO;
 
     this.update = (data) => items[0] = data;
 
-    this.$get = [() => {
+    this.$get = () => {
         return items;
-    }];
-}])
-.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) => {
+    };
+    return this;
+}
+
+/**
+ * @param {ng.IRootScopeService} $rootScope
+ * @param {mgcrea.ngStrap.modal.IModalScope} $modal
+ * @param {import('@uirouter/angularjs').StateService} $state
+ * @param {ng.IQService} $q
+ * @param {Array<{title: string, message: Array<string>}>} igniteDemoInfo
+ * @param {import('app/modules/agent/AgentManager.service').default} agentMgr
+ */
+function DemoInfo($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) {
     const scope = $rootScope.$new();
 
     let closePromise = null;
@@ -138,25 +107,12 @@ angular
         backdrop: 'static'
     });
 
+    scope.downloadAgentHref = '/api/v1/downloads/agent';
+
     scope.close = () => {
         dialog.hide();
 
         closePromise && closePromise.resolve();
-    };
-
-    scope.downloadAgent = () => {
-        const lnk = document.createElement('a');
-
-        lnk.setAttribute('href', '/api/v1/agent/downloads/agent');
-        lnk.setAttribute('target', '_self');
-        lnk.setAttribute('download', null);
-        lnk.style.display = 'none';
-
-        document.body.appendChild(lnk);
-
-        lnk.click();
-
-        document.body.removeChild(lnk);
     };
 
     return {
@@ -171,4 +127,56 @@ angular
                 .then(() => scope.hasAgents = true);
         }
     };
-}]);
+}
+
+DemoInfo.$inject = ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager'];
+
+/**
+ * @param {import('@uirouter/angularjs').StateProvider} $stateProvider
+ */
+function config($stateProvider) {
+    $stateProvider
+        .state('demo', {
+            abstract: true,
+            url: '/demo',
+            template: '<ui-view></ui-view>'
+        })
+        .state('demo.resume', {
+            url: '/resume',
+            permission: 'demo',
+            redirectTo: DEMO_QUERY_STATE,
+            unsaved: true,
+            tfMetaTags: {
+                title: 'Demo resume'
+            }
+        })
+        .state('demo.reset', {
+            url: '/reset',
+            permission: 'demo',
+            redirectTo: (trans) => {
+                const $http = trans.injector().get('$http');
+
+                return $http.post('/api/v1/demo/reset')
+                    .then(() => DEMO_QUERY_STATE)
+                    .catch((err) => {
+                        trans.injector().get('IgniteMessages').showError(err);
+
+                        return DEMO_QUERY_STATE;
+                    });
+            },
+            unsaved: true,
+            tfMetaTags: {
+                title: 'Demo reset'
+            }
+        });
+}
+
+config.$inject = ['$stateProvider'];
+
+angular
+    .module('ignite-console.demo', [])
+    .config(config)
+    .provider('Demo', DemoProvider)
+    .factory('demoInterceptor', demoInterceptor)
+    .provider('igniteDemoInfo', igniteDemoInfoProvider)
+    .service('DemoInfo', DemoInfo);

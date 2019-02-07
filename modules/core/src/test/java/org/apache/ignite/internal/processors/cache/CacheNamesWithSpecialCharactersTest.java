@@ -17,21 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Collection;
+import org.junit.Test;
 
 /**
  * Test that validates {@link Ignite#cacheNames()} implementation.
  */
 public class CacheNamesWithSpecialCharactersTest extends GridCommonAbstractTest {
+    /** */
+    private static final String CACHE_NAME_1 = "--№=+:(replicated)";
 
-    public static final String CACHE_NAME_1 = "--№=+:(replicated)";
-    public static final String CACHE_NAME_2 = ":_&:: (partitioned)";
+    /** */
+    private static final String CACHE_NAME_2 = ":_&:: (partitioned)";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -53,6 +55,7 @@ public class CacheNamesWithSpecialCharactersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception In case of failure.
      */
+    @Test
     public void testCacheNames() throws Exception {
         try {
             startGridsMultiThreaded(2);

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.util.VisorTaskUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -110,15 +111,17 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<VisorCach
             boolean allCaches = cacheNames.isEmpty();
 
             for (IgniteCacheProxy ca : caches) {
-                GridCacheContext ctx = ca.context();
+                String cacheName = ca.getName();
 
-                if (ctx.started() && (ctx.affinityNode() || ctx.isNear())) {
-                    String cacheName = ca.getName();
+                if (!VisorTaskUtils.isRestartingCache(ignite, cacheName)) {
+                    GridCacheContext ctx = ca.context();
 
-                    VisorCacheMetrics cm = new VisorCacheMetrics(ignite, cacheName);
+                    if (ctx.started() && (ctx.affinityNode() || ctx.isNear())) {
+                        VisorCacheMetrics cm = new VisorCacheMetrics(ignite, cacheName);
 
-                    if ((allCaches || cacheNames.contains(cacheName)) && (showSysCaches || !cm.isSystem()))
-                        res.add(cm);
+                        if ((allCaches || cacheNames.contains(cacheName)) && (showSysCaches || !cm.isSystem()))
+                            res.add(cm);
+                    }
                 }
             }
 

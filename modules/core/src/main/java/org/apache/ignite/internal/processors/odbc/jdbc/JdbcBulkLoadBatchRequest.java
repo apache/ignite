@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -47,8 +48,8 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      */
     public static final int CMD_FINISHED_EOF = 2;
 
-    /** QueryID of the original COPY command request. */
-    private long qryId;
+    /** CursorId of the original COPY command request. */
+    private long cursorId;
 
     /** Batch index starting from 0. */
     private int batchIdx;
@@ -65,7 +66,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     public JdbcBulkLoadBatchRequest() {
         super(BULK_LOAD_BATCH);
 
-        qryId = -1;
+        cursorId = -1;
         batchIdx = -1;
         cmd = CMD_UNKNOWN;
         data = null;
@@ -75,28 +76,27 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      * Creates the request with specified parameters and zero-length data.
      * Typically used with {@link #CMD_FINISHED_ERROR} and {@link #CMD_FINISHED_EOF}.
      *
-     * @param qryId The query ID from the {@link JdbcBulkLoadAckResult}.
+     * @param cursorId The cursor ID from the {@link JdbcBulkLoadAckResult}.
      * @param batchIdx Index of the current batch starting with 0.
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    public JdbcBulkLoadBatchRequest(long qryId, int batchIdx, int cmd) {
-        this(qryId, batchIdx, cmd, new byte[0]);
+    public JdbcBulkLoadBatchRequest(long cursorId, int batchIdx, int cmd) {
+        this(cursorId, batchIdx, cmd, new byte[0]);
     }
 
     /**
      * Creates the request with the specified parameters.
      *
-     * @param qryId The query ID from the {@link JdbcBulkLoadAckResult}.
+     * @param cursorId The cursor ID from the {@link JdbcBulkLoadAckResult}.
      * @param batchIdx Index of the current batch starting with 0.
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
      * @param data The data block (zero length is acceptable).
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public JdbcBulkLoadBatchRequest(long qryId, int batchIdx, int cmd, @NotNull byte[] data) {
+    public JdbcBulkLoadBatchRequest(long cursorId, int batchIdx, int cmd, @NotNull byte[] data) {
         super(BULK_LOAD_BATCH);
 
-        this.qryId = qryId;
+        this.cursorId = cursorId;
         this.batchIdx = batchIdx;
 
         assert isCmdValid(cmd) : "Invalid command value: " + cmd;
@@ -106,12 +106,12 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     }
 
     /**
-     * Returns the original query ID.
+     * Returns the original cursor ID.
      *
-     * @return The original query ID.
+     * @return The original cursor ID.
      */
-    public long queryId() {
-        return qryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /**
@@ -137,26 +137,27 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      *
      * @return data if data was not supplied
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @NotNull public byte[] data() {
         return data;
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.writeBinary(writer, ver);
 
-        writer.writeLong(qryId);
+        writer.writeLong(cursorId);
         writer.writeInt(batchIdx);
         writer.writeInt(cmd);
         writer.writeByteArray(data);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.readBinary(reader, ver);
 
-        qryId = reader.readLong();
+        cursorId = reader.readLong();
         batchIdx = reader.readInt();
 
         int c = reader.readInt();

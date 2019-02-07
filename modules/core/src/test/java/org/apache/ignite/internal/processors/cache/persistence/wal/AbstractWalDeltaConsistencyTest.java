@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -44,6 +48,22 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
     }
 
     /**
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
+    @SuppressWarnings("unchecked")
+    protected  <K,V> CacheConfiguration<K, V> cacheConfiguration(String name) {
+        return defaultCacheConfiguration().setName(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
+    /**
      * Check page memory on each checkpoint.
      */
     protected boolean checkPagesOnCheckpoint() {
@@ -52,7 +72,16 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return checkPagesOnCheckpoint() ? new StopNodeFailureHandler() : super.getFailureHandler(igniteInstanceName);
+        return checkPagesOnCheckpoint() ?
+            new StopNodeFailureHandler() {
+                @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
+                    if (failureCtx.type() == FailureType.SYSTEM_WORKER_BLOCKED)
+                        return false;
+
+                    return super.handle(ignite, failureCtx);
+                }
+            } :
+            super.getFailureHandler(igniteInstanceName);
     }
 
     /**
@@ -64,6 +93,8 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
     protected DataStorageConfiguration getDataStorageConfiguration() {
         return new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setInitialSize(256 * 1024 * 1024)
+                .setMaxSize(256 * 1024 * 1024)
                 .setPersistenceEnabled(true)
                 .setName("dflt-plc"));
     }

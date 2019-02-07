@@ -19,6 +19,7 @@ package org.apache.ignite.spi.collision.jobstealing;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 /**
  * Job stealing collision SPI config test.
@@ -28,6 +29,7 @@ public class GridJobStealingCollisionSpiConfigSelfTest extends GridSpiAbstractCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new JobStealingCollisionSpi(), "messageExpireTime", 0);
         checkNegativeSpiProperty(new JobStealingCollisionSpi(), "waitJobsThreshold", -1);

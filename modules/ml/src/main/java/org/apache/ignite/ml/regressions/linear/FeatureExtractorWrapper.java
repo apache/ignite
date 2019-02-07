@@ -18,9 +18,9 @@
 package org.apache.ignite.ml.regressions.linear;
 
 import java.util.Arrays;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Feature extractor wrapper that adds additional column filled by 1.

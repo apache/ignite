@@ -39,7 +39,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Interop data streamer wrapper.
  */
-@SuppressWarnings({"UnusedDeclaration", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class PlatformDataStreamer extends PlatformAbstractTarget {
     /** Policy: continue. */
     private static final int PLC_CONTINUE = 0;

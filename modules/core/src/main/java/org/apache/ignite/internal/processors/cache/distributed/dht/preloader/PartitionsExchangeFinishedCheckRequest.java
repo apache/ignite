@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -62,7 +61,7 @@ public class PartitionsExchangeFinishedCheckRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 136;
+        return 172;
     }
 
     /** {@inheritDoc} */

@@ -17,16 +17,16 @@
 
 package org.apache.ignite.ml.optimization;
 
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Interface for models which are smooth functions of their parameters.
  */
-public interface SmoothParametrized<M extends Parametrized<M>> extends Parametrized<M>, Model<Matrix, Matrix> {
+public interface SmoothParametrized<M extends Parametrized<M>> extends Parametrized<M>, IgniteModel<Matrix, Matrix> {
     /**
      * Compose function in the following way: feed output of this model as input to second argument to loss function.
      * After that we have a function g of three arguments: input, ground truth, parameters.
@@ -40,6 +40,6 @@ public interface SmoothParametrized<M extends Parametrized<M>> extends Parametri
      * @param truthBatch Batch of ground truths.
      * @return Gradient of h at current point in parameters space.
      */
-    Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
+    public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
         Matrix inputsBatch, Matrix truthBatch);
 }

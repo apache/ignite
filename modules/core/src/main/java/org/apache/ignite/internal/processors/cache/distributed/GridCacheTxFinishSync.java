@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -248,7 +247,7 @@ public class GridCacheTxFinishSync<K, V> {
                     log.trace("Moved transaction synchronizer to waiting state [nodeId=" + nodeId +
                         ", threadId=" + threadId + ']');
 
-                assert cnt == 0 || nodeLeft;
+                assert cnt == 0 || nodeLeft : cnt;
 
                 if (nodeLeft)
                     return;

@@ -30,6 +30,7 @@ import org.apache.hadoop.io.serializer.WritableSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopSerializationWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test of wrapper of the native serialization.
@@ -39,6 +40,7 @@ public class HadoopSerializationWrapperSelfTest extends GridCommonAbstractTest {
      * Tests read/write of IntWritable via native WritableSerialization.
      * @throws Exception If fails.
      */
+    @Test
     public void testIntWritableSerialization() throws Exception {
         HadoopSerialization ser = new HadoopSerializationWrapper(new WritableSerialization(), IntWritable.class);
 
@@ -61,6 +63,7 @@ public class HadoopSerializationWrapperSelfTest extends GridCommonAbstractTest {
      * Tests read/write of Integer via native JavaleSerialization.
      * @throws Exception If fails.
      */
+    @Test
     public void testIntJavaSerialization() throws Exception {
         HadoopSerialization ser = new HadoopSerializationWrapper(new JavaSerialization(), Integer.class);
 

@@ -57,8 +57,6 @@ import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -66,6 +64,7 @@ import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
@@ -83,12 +82,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  * Tests for {@link org.apache.ignite.Ignition}.
  * @see GridFactoryVmShutdownTest
  */
-@SuppressWarnings("UnusedDeclaration")
 @GridCommonTest(group = "NonDistributed Kernal Self")
 public class GridFactorySelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final AtomicInteger cnt = new AtomicInteger();
 
@@ -114,18 +109,10 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         cnt.set(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgnitionStartDefault() throws Exception {
         try (Ignite ignite = Ignition.start()) {
             log.info("Started1: " + ignite.name());
@@ -148,15 +135,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStartFabricDefault() throws Exception {
-        try (Ignite ignite = Ignition.start("config/fabric/default-config.xml")) {
-            log.info("Started: " + ignite.name());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testStartDefault() throws Exception {
         try (Ignite ignite = Ignition.start("config/default-config.xml")) {
             log.info("Started: " + ignite.name());
@@ -166,6 +145,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartGridWithConfigUrlString() throws Exception {
         GridEmbeddedHttpServer srv = null;
         String igniteInstanceName = "grid_with_url_config";
@@ -189,6 +169,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartGridWithConfigUrl() throws Exception {
         GridEmbeddedHttpServer srv = null;
         String igniteInstanceName = "grid_with_url_config";
@@ -212,6 +193,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * Tests default grid
      */
+    @Test
     public void testDefaultGridGetOrStart() throws Exception {
         IgniteConfiguration cfg = getConfiguration(null);
 
@@ -235,6 +217,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * Tests named grid
      */
+    @Test
     public void testNamedGridGetOrStart() throws Exception {
         IgniteConfiguration cfg = getConfiguration("test");
         try (Ignite ignite = Ignition.getOrStart(cfg)) {
@@ -258,6 +241,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * Tests concurrent grid initialization
      */
+    @Test
     public void testConcurrentGridGetOrStartCon() throws Exception {
         final IgniteConfiguration cfg = getConfiguration(null);
 
@@ -294,6 +278,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleBeansNullIgniteInstanceName() throws Exception {
         checkLifecycleBeans(null);
     }
@@ -301,6 +286,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleBeansNotNullIgniteInstanceName() throws Exception {
         checkLifecycleBeans("testGrid");
     }
@@ -373,7 +359,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
+    @Test
     public void testStartMultipleGridsFromSpring() throws Exception {
         File cfgFile =
             GridTestUtils.resolveIgnitePath(GridTestProperties.getProperty("loader.self.multipletest.config"));
@@ -428,6 +414,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartMultipleDefaultGrids() throws Exception {
         try {
             multithreaded(
@@ -465,6 +452,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartMultipleNonDefaultGrids() throws Exception {
         try {
             multithreaded(
@@ -503,6 +491,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStartStop() throws Exception {
         checkConcurrentStartStop("TEST_NAME");
     }
@@ -510,6 +499,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStartStopDefaultGrid() throws Exception {
         checkConcurrentStartStop(null);
     }
@@ -592,6 +582,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGridStartRollback() throws Exception {
         GridTestUtils.assertThrows(
             log,
@@ -668,6 +659,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartMultipleInstanceSpi() throws Exception {
         IgniteConfiguration cfg1 = getConfiguration();
         IgniteConfiguration cfg2 = getConfiguration();
@@ -703,6 +695,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadBean() throws Exception {
         final String path = "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml";
 
@@ -938,6 +931,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopCancel() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -953,6 +947,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfigInClassPath() throws Exception {
         try (Ignite ignite = Ignition.start("config/ignite-test-config.xml")) {
             assert "config-in-classpath".equals(ignite.name());
@@ -962,6 +957,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCurrentIgnite() throws Exception {
         final String LEFT = "LEFT";
         final String RIGHT = "RIGHT";
@@ -992,6 +988,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatingStart() throws Exception {
         try {
             IgniteConfiguration c = getConfiguration("1");

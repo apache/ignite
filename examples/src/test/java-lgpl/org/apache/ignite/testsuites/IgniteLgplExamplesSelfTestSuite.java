@@ -17,36 +17,38 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import org.apache.ignite.examples.ComputeScheduleExampleMultiNodeSelfTest;
+import org.apache.ignite.examples.ComputeScheduleExampleSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleSelfTest;
 import org.apache.ignite.examples.SpatialQueryExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.SpatialQueryExampleSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Examples test suite. <p> Contains only Spring ignite examples tests.
  */
-public class IgniteLgplExamplesSelfTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    HibernateL2CacheExampleSelfTest.class,
+    SpatialQueryExampleSelfTest.class,
+    ComputeScheduleExampleSelfTest.class,
+
+    // Multi-node.
+    HibernateL2CacheExampleMultiNodeSelfTest.class,
+    SpatialQueryExampleMultiNodeSelfTest.class,
+    ComputeScheduleExampleMultiNodeSelfTest.class,
+})
+public class IgniteLgplExamplesSelfTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteLgplExamplesSelfTestSuite.class));
-
-        TestSuite suite = new TestSuite("Ignite Examples Test Suite");
-
-        suite.addTest(new TestSuite(HibernateL2CacheExampleSelfTest.class));
-        suite.addTest(new TestSuite(SpatialQueryExampleSelfTest.class));
-
-        // Multi-node.
-        suite.addTest(new TestSuite(HibernateL2CacheExampleMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(SpatialQueryExampleMultiNodeSelfTest.class));
-
-        return suite;
     }
 }

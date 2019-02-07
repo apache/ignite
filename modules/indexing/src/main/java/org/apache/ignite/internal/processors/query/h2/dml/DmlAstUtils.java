@@ -24,7 +24,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
@@ -98,8 +98,6 @@ public final class DmlAstUtils {
 
             GridSqlArray[] args = new GridSqlArray[cols.length];
 
-            boolean noQry = true;
-
             for (int i = 0; i < cols.length; i++) {
                 GridSqlArray arr = new GridSqlArray(rows.size());
 
@@ -123,17 +121,9 @@ public final class DmlAstUtils {
             for (GridSqlElement[] row : rows) {
                 assert cols.length == row.length;
 
-                for (int i = 0; i < row.length; i++) {
-                    GridSqlElement el = row[i];
-
-                    noQry &= (el instanceof GridSqlConst || el instanceof GridSqlParameter);
-
+                for (int i = 0; i < row.length; i++)
                     args[i].addChild(row[i]);
-                }
             }
-
-            if (noQry)
-                return null;
 
             return sel;
         }
@@ -168,9 +158,9 @@ public final class DmlAstUtils {
 
         assert gridTbl != null : "Failed to determine target grid table for DELETE";
 
-        Column h2KeyCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.KEY_COL);
+        Column h2KeyCol = gridTbl.getColumn(QueryUtils.KEY_COL);
 
-        Column h2ValCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.VAL_COL);
+        Column h2ValCol = gridTbl.getColumn(QueryUtils.VAL_COL);
 
         GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
@@ -349,9 +339,9 @@ public final class DmlAstUtils {
 
         assert gridTbl != null : "Failed to determine target grid table for UPDATE";
 
-        Column h2KeyCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.KEY_COL);
+        Column h2KeyCol = gridTbl.getColumn(QueryUtils.KEY_COL);
 
-        Column h2ValCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.VAL_COL);
+        Column h2ValCol = gridTbl.getColumn(QueryUtils.VAL_COL);
 
         GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));

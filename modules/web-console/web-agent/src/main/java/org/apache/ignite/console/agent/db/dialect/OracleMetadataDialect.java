@@ -39,7 +39,6 @@ import org.apache.ignite.console.agent.db.DbTable;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BLOB;
-import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.CHAR;
 import static java.sql.Types.CLOB;
 import static java.sql.Types.DATE;

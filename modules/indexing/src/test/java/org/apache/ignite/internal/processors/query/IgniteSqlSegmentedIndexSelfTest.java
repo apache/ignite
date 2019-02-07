@@ -34,18 +34,13 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.junit.Test;
 
 /**
  * Tests for correct distributed queries with index consisted of many segments.
  */
-public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final String ORG_CACHE_NAME = "org";
 
@@ -73,12 +68,6 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         cfg.setCacheKeyConfiguration(keyCfg);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -118,6 +107,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSegmentedIndex() throws Exception {
         ignite(0).createCache(cacheConfig(PERSON_CAHE_NAME, true, Integer.class, Person.class));
         ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class));
@@ -135,6 +125,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      * Check correct index snapshots with segmented indices.
      * @throws Exception If failed.
      */
+    @Test
     public void testSegmentedIndexReproducableResults() throws Exception {
         ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class));
 
@@ -160,6 +151,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      * Checks correct <code>select count(*)</code> result with segmented indices.
      * @throws Exception If failed.
      */
+    @Test
     public void testSegmentedIndexSizeReproducableResults() throws Exception {
         ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class));
 
@@ -186,6 +178,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSegmentedIndexWithEvictionPolicy() throws Exception {
         final IgniteCache<Object, Object> cache = ignite(0).createCache(
             cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class)
@@ -209,6 +202,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSizeOnSegmentedIndexWithEvictionPolicy() throws Exception {
         final IgniteCache<Object, Object> cache = ignite(0).createCache(
             cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class)
@@ -232,6 +226,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSegmentedPartitionedWithReplicated() throws Exception {
         ignite(0).createCache(cacheConfig(PERSON_CAHE_NAME, true, Integer.class, Person.class));
         ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, false, Integer.class, Organization.class));

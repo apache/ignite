@@ -21,9 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.cache.Cache.Entry;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -35,8 +33,8 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Responsible for performing truncate selection.
@@ -47,10 +45,10 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     private Ignite ignite = null;
 
     /** Fittest keys. */
-    private List<Long> fittestKeys = null;
+    private List<Long> fittestKeys;
 
     /** Number of Copies. */
-    private int numOfCopies = 0;
+    private int numOfCopies;
 
     /**
      * @param fittestKeys List of long.
@@ -95,13 +93,13 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
         List<List<Long>> list = new ArrayList<List<Long>>();
 
         for (Long key : fittestKeys) {
-            Chromosome copy = getChromosome(key);
+            Chromosome cp = getChromosome(key);
             for (int i = 0; i < numOfCopies; i++) {
-                long[] thegenes = copy.getGenes();
+                long[] thegenes = cp.getGenes();
                 List<Long> geneList = new ArrayList<Long>();
-                for (int k = 0; k < copy.getGenes().length; k++) {
+                for (int k = 0; k < cp.getGenes().length; k++)
                     geneList.add(thegenes[k]);
-                }
+
                 list.add(geneList);
             }
         }

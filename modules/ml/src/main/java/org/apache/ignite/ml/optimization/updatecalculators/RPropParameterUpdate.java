@@ -21,9 +21,9 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Data needed for RProp updater.
@@ -60,10 +60,10 @@ public class RPropParameterUpdate implements Serializable {
      * @param initUpdate Initial updateCache (in original work labeled as "delta_0").
      */
     RPropParameterUpdate(int paramsCnt, double initUpdate) {
-        prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt);
-        prevIterationGradient = new DenseLocalOnHeapVector(paramsCnt);
-        deltas = new DenseLocalOnHeapVector(paramsCnt).assign(initUpdate);
-        updatesMask = new DenseLocalOnHeapVector(paramsCnt);
+        prevIterationUpdates = new DenseVector(paramsCnt);
+        prevIterationGradient = new DenseVector(paramsCnt);
+        deltas = new DenseVector(paramsCnt).assign(initUpdate);
+        updatesMask = new DenseVector(paramsCnt);
     }
 
     /**
@@ -183,7 +183,7 @@ public class RPropParameterUpdate implements Serializable {
             pu.prevIterationUpdates())).reduce(Vector::plus).orElse(null);
 
         return new RPropParameterUpdate(totalUpdate, newGradient, newDeltas,
-            new DenseLocalOnHeapVector(newDeltas.size()).assign(1.0));
+            new DenseVector(newDeltas.size()).assign(1.0));
     }
 
     /**
@@ -203,7 +203,7 @@ public class RPropParameterUpdate implements Serializable {
 
         if (totalUpdate != null)
             return new RPropParameterUpdate(totalUpdate, totalGradient, totalDelta,
-                new DenseLocalOnHeapVector(Objects.requireNonNull(totalDelta).size()).assign(1.0));
+                new DenseVector(Objects.requireNonNull(totalDelta).size()).assign(1.0));
 
         return null;
     }

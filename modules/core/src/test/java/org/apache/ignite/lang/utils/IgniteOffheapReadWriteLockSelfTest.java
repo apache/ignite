@@ -29,6 +29,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
 
 /**
  *
@@ -38,9 +39,13 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int TAG_0 = 1;
 
+    /** Number of 1-second iterations in every test. */
+    public static final int ROUNDS_PER_TEST = 5;
+
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testConcurrentUpdatesSingleLock() throws Exception {
         final int numPairs = 100;
         final Pair[] data = new Pair[numPairs];
@@ -60,7 +65,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 try {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -120,7 +125,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
             }
         }, 32, "tester");
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < ROUNDS_PER_TEST; i++) {
             Thread.sleep(1_000);
 
             info("Reads: " + reads.getAndSet(0) + ", writes=" + writes.getAndSet(0));
@@ -136,6 +141,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testConcurrentUpdatesMultipleLocks() throws Exception {
         final int numPairs = 100;
         final Pair[] data = new Pair[numPairs];
@@ -156,7 +162,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 while (!done.get()) {
@@ -206,7 +212,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
             }
         }, 32, "tester");
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < ROUNDS_PER_TEST; i++) {
             Thread.sleep(1_000);
 
             info("Reads: " + reads.getAndSet(0) + ", writes=" + writes.getAndSet(0));
@@ -222,6 +228,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLockUpgradeMultipleLocks() throws Exception {
         final int numPairs = 100;
         final Pair[] data = new Pair[numPairs];
@@ -243,7 +250,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 while (!done.get()) {
@@ -293,7 +300,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
             }
         }, 32, "tester");
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < ROUNDS_PER_TEST; i++) {
             Thread.sleep(1_000);
 
             info("Reads=" + reads.getAndSet(0) + ", writes=" + writes.getAndSet(0) + ", upgrades=" + successfulUpgrades.getAndSet(0));
@@ -309,6 +316,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testTagIdUpdateWait() throws Exception {
         checkTagIdUpdate(true);
     }
@@ -316,6 +324,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testTagIdUpdateContinuous() throws Exception {
         checkTagIdUpdate(false);
     }
@@ -339,14 +348,15 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
         final AtomicInteger reads = new AtomicInteger();
         final AtomicInteger writes = new AtomicInteger();
         final AtomicBoolean done = new AtomicBoolean(false);
+        final AtomicBoolean run = new AtomicBoolean(true);
 
         final int threadCnt = 32;
 
-        final CyclicBarrier barr = new CyclicBarrier(threadCnt);
+        final CyclicBarrier barr = new CyclicBarrier(threadCnt, () -> {if (done.get()) run.set(false);});
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 try {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -354,7 +364,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
                     long lastSwitch = System.currentTimeMillis();
 
-                    while (true) {
+                    while (run.get()) {
                         boolean write = rnd.nextInt(10) < 2;
 
                         boolean locked;
@@ -420,8 +430,10 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                             try {
                                 barr.await();
                             }
-                            catch (BrokenBarrierException ignore) {
+                            catch (BrokenBarrierException e) {
                                 // Done.
+                                e.printStackTrace();
+
                                 return null;
                             }
 
@@ -432,12 +444,6 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
                             if (waitBeforeSwitch || (!waitBeforeSwitch && tag == 1))
                                 info("Switch to a new tag: " + tag);
-
-                            if (done.get()) {
-                                barr.reset();
-
-                                return null;
-                            }
 
                             lastSwitch = System.currentTimeMillis();
                         }
@@ -451,7 +457,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
             }
         }, threadCnt, "tester");
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < ROUNDS_PER_TEST; i++) {
             Thread.sleep(1_000);
 
             info("Reads: " + reads.getAndSet(0) + ", writes=" + writes.getAndSet(0));

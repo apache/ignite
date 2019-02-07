@@ -21,6 +21,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Grid log throttle test. To verify correctness, you need to run this test
@@ -42,6 +43,7 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
      *
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testThrottle() throws Exception {
         LT.throttleTimeout(1000);
 

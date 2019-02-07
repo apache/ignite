@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -53,6 +54,7 @@ public class IgniteCacheContainsKeyAtomicTest extends GridCacheAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsPutIfAbsent() throws Exception {
         checkPutIfAbsent(false);
     }
@@ -60,6 +62,7 @@ public class IgniteCacheContainsKeyAtomicTest extends GridCacheAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsPutIfAbsentAll() throws Exception {
         checkPutIfAbsent(true);
     }

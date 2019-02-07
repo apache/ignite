@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
  */
 public class GridCacheNearOnlyMultiJvmFullApiSelfTest extends GridCacheNearOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    protected boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return true;
     }
 }

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import publicTemplate from '../../../views/public.pug';
+
 /**
  * @param {import("@uirouter/angularjs").UIRouter} $uiRouter
  */
@@ -23,7 +25,14 @@ export function registerState($uiRouter) {
     const state = {
         name: 'signup',
         url: '/signup',
-        component: 'pageSignup',
+        views: {
+            '': {
+                template: publicTemplate
+            },
+            'page@signup': {
+                component: 'pageSignup'
+            }
+        },
         unsaved: true,
         tfMetaTags: {
             title: 'Sign Up'

@@ -17,26 +17,39 @@
 
 package org.apache.ignite.ml.knn.regression;
 
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.knn.KNNUtils;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
  * kNN algorithm trainer to solve regression task.
  */
-public class KNNRegressionTrainer implements SingleLabelDatasetTrainer<KNNRegressionModel> {
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @return Model.
-     */
-    public <K, V> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        return new KNNRegressionModel(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
+public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressionModel> {
+    /** {@inheritDoc} */
+    @Override public <K, V> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+        FeatureLabelExtractor<K, V, Double> extractor) {
+
+        return updateModel(null, datasetBuilder, extractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> KNNRegressionModel updateModel(
+        KNNRegressionModel mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        FeatureLabelExtractor<K, V, Double> extractor) {
+
+        KNNRegressionModel res = new KNNRegressionModel(KNNUtils.buildDataset(envBuilder, datasetBuilder,
+            CompositionUtils.asFeatureExtractor(extractor),
+            CompositionUtils.asLabelExtractor(extractor)));
+        if (mdl != null)
+            res.copyStateFrom(mdl);
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isUpdateable(KNNRegressionModel mdl) {
+        return true;
     }
 }

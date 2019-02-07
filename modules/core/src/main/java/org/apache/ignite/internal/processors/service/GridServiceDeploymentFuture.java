@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -24,15 +25,27 @@ import org.apache.ignite.services.ServiceConfiguration;
 /**
  * Service deployment future.
  */
-public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
+public class GridServiceDeploymentFuture<T extends Serializable> extends GridFutureAdapter<Object> {
     /** */
     private final ServiceConfiguration cfg;
+
+    /** */
+    private final T srvcId;
 
     /**
      * @param cfg Configuration.
      */
     public GridServiceDeploymentFuture(ServiceConfiguration cfg) {
+        this(cfg, null);
+    }
+
+    /**
+     * @param cfg Configuration.
+     * @param srvcId Service id.
+     */
+    public GridServiceDeploymentFuture(ServiceConfiguration cfg, T srvcId) {
         this.cfg = cfg;
+        this.srvcId = srvcId;
     }
 
     /**
@@ -40,6 +53,13 @@ public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
      */
     ServiceConfiguration configuration() {
         return cfg;
+    }
+
+    /**
+     * @return Service id.
+     */
+    public T serviceId() {
+        return srvcId;
     }
 
     /** {@inheritDoc} */

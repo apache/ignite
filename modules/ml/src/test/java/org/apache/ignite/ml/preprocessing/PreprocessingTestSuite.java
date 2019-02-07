@@ -19,8 +19,9 @@ package org.apache.ignite.ml.preprocessing;
 
 import org.apache.ignite.ml.preprocessing.binarization.BinarizationPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainerTest;
+import org.apache.ignite.ml.preprocessing.encoding.OneHotEncoderPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.encoding.StringEncoderPreprocessorTest;
-import org.apache.ignite.ml.preprocessing.encoding.StringEncoderTrainerTest;
+import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainerTest;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainerTest;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPreprocessorTest;
@@ -41,7 +42,8 @@ import org.junit.runners.Suite;
     BinarizationTrainerTest.class,
     ImputerPreprocessorTest.class,
     ImputerTrainerTest.class,
-    StringEncoderTrainerTest.class,
+    EncoderTrainerTest.class,
+    OneHotEncoderPreprocessorTest.class,
     StringEncoderPreprocessorTest.class,
     NormalizationTrainerTest.class,
     NormalizationPreprocessorTest.class

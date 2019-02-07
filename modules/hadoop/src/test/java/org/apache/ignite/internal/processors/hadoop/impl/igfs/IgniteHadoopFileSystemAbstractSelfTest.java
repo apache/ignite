@@ -61,6 +61,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
@@ -85,6 +86,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -363,6 +365,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsConfiguration(igniteInstanceName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
+        cfg.setFailureHandler(new NoOpFailureHandler());
 
         return cfg;
     }
@@ -443,6 +446,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetUriIfFSIsNotInitialized() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -454,6 +458,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("NullableProblems")
+    @Test
     public void testInitializeCheckParametersNameIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -466,6 +471,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("NullableProblems")
+    @Test
     public void testInitializeCheckParametersCfgIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -477,6 +483,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testInitialize() throws Exception {
         final IgniteHadoopFileSystem fs = new IgniteHadoopFileSystem();
 
@@ -504,6 +511,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIpcCache() throws Exception {
         HadoopIgfsEx hadoop = GridTestUtils.getFieldValue(fs, "rmtClient", "delegateRef", "value", "hadoop");
 
@@ -568,6 +576,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCloseIfNotInitialized() throws Exception {
         final FileSystem fs = new IgniteHadoopFileSystem();
 
@@ -576,6 +585,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testClose() throws Exception {
         final Path path = new Path("dir");
 
@@ -664,6 +674,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateCheckParameters() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -674,6 +685,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("deprecation")
+    @Test
     public void testCreateBase() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path dir = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -700,6 +712,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("deprecation")
+    @Test
     public void testCreateCheckOverwrite() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path dir = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -728,6 +741,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteIfNoSuchPath() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path dir = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -738,6 +752,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteSuccessfulIfPathIsOpenedToRead() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "myFile");
@@ -764,6 +779,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteIfFilePathExists() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "myFile");
@@ -778,6 +794,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteIfDirectoryPathExists() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path dir = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -792,6 +809,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteFailsIfNonRecursive() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path someDir3 = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -807,6 +825,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteRecursively() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path someDir3 = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -824,6 +843,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteRecursivelyFromRoot() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path someDir3 = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -845,6 +865,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("deprecation")
+    @Test
     public void testSetPermissionCheckDefaultPermission() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "/tmp/my");
@@ -862,6 +883,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("deprecation")
+    @Test
     public void testSetPermissionCheckNonRecursiveness() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "/tmp/my");
@@ -883,6 +905,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("OctalInteger")
+    @Test
     public void testSetPermission() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "/tmp/my");
@@ -901,6 +924,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetPermissionIfOutputStreamIsNotClosed() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "myFile");
@@ -917,6 +941,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwnerCheckParametersPathIsNull() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "/tmp/my");
@@ -935,6 +960,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwnerCheckParametersUserIsNull() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "/tmp/my");
@@ -953,6 +979,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwnerCheckParametersGroupIsNull() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "/tmp/my");
@@ -971,6 +998,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwner() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "/tmp/my");
@@ -990,9 +1018,10 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetTimes() throws Exception {
         Path fsHome = new Path(primaryFsUri);
-        final Path file = new Path(fsHome, "/heartbeat");
+        final Path file = new Path(fsHome, "/heartbeatTs");
 
         fs.create(file).close();
 
@@ -1033,6 +1062,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetOwnerIfOutputStreamIsNotClosed() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "myFile");
@@ -1048,6 +1078,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwnerCheckNonRecursiveness() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "/tmp/my");
@@ -1069,6 +1100,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOpenCheckParametersPathIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1078,6 +1110,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOpenNoSuchPath() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "someFile");
@@ -1090,6 +1123,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOpenIfPathIsAlreadyOpened() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "someFile");
@@ -1106,6 +1140,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOpen() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "someFile");
@@ -1128,6 +1163,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAppendCheckParametersPathIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1137,6 +1173,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAppendIfPathPointsToDirectory() throws Exception {
         final Path fsHome = new Path(primaryFsUri);
         final Path dir = new Path(fsHome, "/tmp");
@@ -1154,6 +1191,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAppendIfFileIsAlreadyBeingOpenedToWrite() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "someFile");
@@ -1174,6 +1212,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAppend() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "someFile");
@@ -1203,6 +1242,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameCheckParametersSrcPathIsNull() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "someFile");
@@ -1215,6 +1255,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameCheckParametersDstPathIsNull() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "someFile");
@@ -1228,6 +1269,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameIfSrcPathDoesNotExist() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path srcFile = new Path(fsHome, "srcFile");
@@ -1241,6 +1283,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameIfSrcPathIsAlreadyBeingOpenedToWrite() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path srcFile = new Path(fsHome, "srcFile");
@@ -1275,6 +1318,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameFileIfDstPathExists() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path srcFile = new Path(fsHome, "srcFile");
@@ -1295,6 +1339,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameFile() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path srcFile = new Path(fsHome, "/tmp/srcFile");
@@ -1311,6 +1356,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameIfSrcPathIsAlreadyBeingOpenedToRead() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path srcFile = new Path(fsHome, "srcFile");
@@ -1343,6 +1389,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameDirectoryIfDstPathExists() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path srcDir = new Path(fsHome, "/tmp/");
@@ -1364,6 +1411,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameDirectory() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path dir = new Path(fsHome, "/tmp/");
@@ -1380,6 +1428,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testListStatusIfPathIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1389,6 +1438,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testListStatusIfPathDoesNotExist() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -1402,6 +1452,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testListStatus() throws Exception {
         Path igfsHome = new Path(PRIMARY_URI);
 
@@ -1444,6 +1495,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetWorkingDirectoryIfPathIsNull() throws Exception {
         fs.setWorkingDirectory(null);
 
@@ -1458,12 +1510,14 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetWorkingDirectoryIfPathDoesNotExist() throws Exception {
         // Should not throw any exceptions.
         fs.setWorkingDirectory(new Path("/someDir"));
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetWorkingDirectory() throws Exception {
         Path dir = new Path("/tmp/nested/dir");
         Path file = new Path("file");
@@ -1481,6 +1535,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetWorkingDirectoryIfDefault() throws Exception {
         String path = fs.getWorkingDirectory().toString();
 
@@ -1488,6 +1543,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetWorkingDirectory() throws Exception {
         Path dir = new Path("/tmp/some/dir");
 
@@ -1501,6 +1557,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMkdirsIfPathIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1510,6 +1567,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMkdirsIfPermissionIsNull() throws Exception {
         Path dir = new Path("/tmp");
 
@@ -1520,6 +1578,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("OctalInteger")
+    @Test
     public void testMkdirs() throws Exception {
         Path fsHome = new Path(PRIMARY_URI);
         final Path dir = new Path(fsHome, "/tmp/staging");
@@ -1539,6 +1598,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetFileStatusIfPathIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1548,6 +1608,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetFileStatusIfPathDoesNotExist() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1557,6 +1618,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetFileBlockLocationsIfFileStatusIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1567,6 +1629,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetFileBlockLocationsIfFileStatusReferenceNotExistingPath() throws Exception {
         Path path = new Path("someFile");
 
@@ -1582,6 +1645,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetFileBlockLocations() throws Exception {
         Path igfsHome = new Path(PRIMARY_URI);
 
@@ -1620,11 +1684,13 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("deprecation")
+    @Test
     public void testGetDefaultBlockSize() throws Exception {
         assertEquals(1L << 26, fs.getDefaultBlockSize());
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testZeroReplicationFactor() throws Exception {
         // This test doesn't make sense for any mode except of PRIMARY.
         if (mode == PRIMARY) {
@@ -1659,6 +1725,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedCreate() throws Exception {
         Path dir = new Path(new Path(PRIMARY_URI), "/dir");
 
@@ -1743,6 +1810,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedAppend() throws Exception {
         Path dir = new Path(new Path(PRIMARY_URI), "/dir");
 
@@ -1827,6 +1895,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedOpen() throws Exception {
         final byte[] dataChunk = new byte[256];
 
@@ -1898,6 +1967,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedMkdirs() throws Exception {
         final Path dir = new Path(new Path(PRIMARY_URI), "/dir");
 
@@ -1977,6 +2047,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testMultithreadedDelete() throws Exception {
         final Path dir = new Path(new Path(PRIMARY_URI), "/dir");
 
@@ -2050,6 +2121,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testConsistency() throws Exception {
         // Default buffers values
         checkConsistency(-1, 1, -1, -1, 1, -1);
@@ -2075,6 +2147,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         Path filePath = new Path(PRIMARY_URI, "file1");
 
@@ -2109,6 +2182,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testModeResolver() throws Exception {
         IgfsModeResolver mr = ((IgniteHadoopFileSystem)fs).getModeResolver();
 
@@ -2120,6 +2194,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testClientReconnectMultithreaded() throws Exception {
         final ConcurrentLinkedQueue<FileSystem> q = new ConcurrentLinkedQueue<>();
 

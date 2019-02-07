@@ -20,7 +20,9 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -63,7 +65,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests that cache data survives node restart.
         /// </summary>
         [Test]
-        public void TestCacheDataSurvivesNodeRestart()
+        public void TestCacheDataSurvivesNodeRestart(
+            [Values(true, false)] bool withCacheStore,
+            [Values(true, false)] bool withCustomAffinity)
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
@@ -99,7 +103,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                 ignite.GetCluster().SetActive(true);
 
                 // Create cache with default region (persistence enabled), add data.
-                var cache = ignite.CreateCache<int, int>(cacheName);
+                var cache = ignite.CreateCache<int, int>(new CacheConfiguration
+                {
+                    Name = cacheName,
+                    CacheStoreFactory = withCacheStore ? new CustomStoreFactory() : null,
+                    AffinityFunction = withCustomAffinity ? new CustomAffinityFunction() : null
+                });
                 cache[1] = 1;
 
                 // Check some metrics.
@@ -347,6 +356,41 @@ namespace Apache.Ignite.Core.Tests.Cache
                     }
                 }
             };
+        }
+
+        private class CustomStoreFactory : IFactory<ICacheStore>
+        {
+            public ICacheStore CreateInstance()
+            {
+                return new CustomStore();
+            }
+        }
+
+        private class CustomStore : CacheStoreAdapter<object, object>
+        {
+            public override object Load(object key)
+            {
+                return null;
+            }
+
+            public override void Write(object key, object val)
+            {
+                // No-op.
+            }
+
+            public override void Delete(object key)
+            {
+                // No-op.
+            }
+        }
+
+        private class CustomAffinityFunction : RendezvousAffinityFunction
+        {
+            public override int Partitions
+            {
+                get { return 10; }
+                set { throw new NotSupportedException(); }
+            }
         }
     }
 }

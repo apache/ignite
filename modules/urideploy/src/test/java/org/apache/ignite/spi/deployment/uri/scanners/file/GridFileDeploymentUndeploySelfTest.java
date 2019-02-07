@@ -27,6 +27,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 /**
  * Tests correct task undeployment after source file removing.
@@ -57,6 +58,7 @@ public class GridFileDeploymentUndeploySelfTest extends GridSpiAbstractTest<UriD
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUndeployGarFile() throws Exception {
         String garFilePath =
             U.resolveIgnitePath(GridTestProperties.getProperty("ant.urideployment.gar.file")).getPath();

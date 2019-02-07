@@ -163,7 +163,7 @@ public class CacheOperationContext implements Serializable {
     /**
      * Gets data center ID.
      *
-     * @return Client ID.
+     * @return Datacenter ID.
      */
     @Nullable public Byte dataCenterId() {
         return dataCenterId;

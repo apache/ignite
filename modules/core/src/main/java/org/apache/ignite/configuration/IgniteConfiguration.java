@@ -17,10 +17,6 @@
 
 package org.apache.ignite.configuration;
 
-import java.io.Serializable;
-import java.lang.management.ManagementFactory;
-import java.util.Map;
-import java.util.UUID;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
@@ -28,6 +24,11 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessor;
 import javax.management.MBeanServer;
 import javax.net.ssl.SSLContext;
+import java.io.Serializable;
+import java.lang.management.ManagementFactory;
+import java.util.Map;
+import java.util.UUID;
+import java.util.zip.Deflater;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -68,6 +69,7 @@ import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.FailoverSpi;
@@ -117,6 +119,9 @@ public class IgniteConfiguration {
 
     /** Default maximum timeout to wait for network responses in milliseconds (value is {@code 5,000ms}). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
+
+    /** Default compression level for network messages (value is Deflater.BEST_SPEED. */
+    public static final int DFLT_NETWORK_COMPRESSION = Deflater.BEST_SPEED;
 
     /** Default interval between message send retries. */
     public static final long DFLT_SEND_RETRY_DELAY = 1000;
@@ -214,6 +219,27 @@ public class IgniteConfiguration {
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
+    /** Default number of MVCC vacuum threads.. */
+    public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
+
+    /** Default time interval between MVCC vacuum runs in milliseconds. */
+    public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
+
+    /** Default of initial value of manual baseline control or auto adjusting baseline. */
+    public static final boolean DFLT_INIT_BASELINE_AUTO_ADJUST_ENABLED = false;
+
+    /**
+     * Initial value of time which we would wait before the actual topology change since last discovery event(node
+     * join/exit).
+     */
+    public static final long DFLT_INIT_BASELINE_AUTO_ADJUST_TIMEOUT = 0;
+
+    /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
+    public static final long DFLT_INIT_BASELINE_AUTO_ADJUST_MAX_TIMEOUT = 0;
+
+    /** Default SQL query history size. */
+    public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
+
     /** Default partition map exchange hard timeout in millis. */
     public static final long DFLT_EXCHANGE_HARD_TIMEOUT = -1;
 
@@ -268,6 +294,9 @@ public class IgniteConfiguration {
     /** Query pool size. */
     private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
 
+    /** SQL query history size. */
+    private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
+
     /** Ignite installation folder. */
     private String igniteHome;
 
@@ -300,6 +329,9 @@ public class IgniteConfiguration {
 
     /** Maximum network requests timeout. */
     private long netTimeout = DFLT_NETWORK_TIMEOUT;
+
+    /** Compression level for network binary messages. */
+    private int netCompressionLevel = DFLT_NETWORK_COMPRESSION;
 
     /** Interval between message send retries. */
     private long sndRetryDelay = DFLT_SEND_RETRY_DELAY;
@@ -367,6 +399,9 @@ public class IgniteConfiguration {
     /** Address resolver. */
     private AddressResolver addrRslvr;
 
+    /** Encryption SPI. */
+    private EncryptionSpi encryptionSpi;
+
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
@@ -407,6 +442,9 @@ public class IgniteConfiguration {
     /** Failure detection timeout. */
     private Long failureDetectionTimeout = DFLT_FAILURE_DETECTION_TIMEOUT;
 
+    /** Timeout for blocked system workers detection. */
+    private Long sysWorkerBlockedTimeout;
+
     /** Failure detection timeout for client nodes. */
     private Long clientFailureDetectionTimeout = DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
 
@@ -414,7 +452,6 @@ public class IgniteConfiguration {
     private String[] includeProps;
 
     /** Frequency of metrics log print out. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
     /** Local event listeners. */
@@ -493,6 +530,12 @@ public class IgniteConfiguration {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
+    /** Size of MVCC vacuum thread pool. */
+    private int mvccVacuumThreadCnt = DFLT_MVCC_VACUUM_THREAD_CNT;
+
+    /** Time interval between vacuum runs (ms). */
+    private long mvccVacuumFreq = DFLT_MVCC_VACUUM_FREQUENCY;
+
     /** User authentication enabled. */
     private boolean authEnabled;
 
@@ -501,6 +544,21 @@ public class IgniteConfiguration {
 
     /** Communication failure resolver */
     private CommunicationFailureResolver commFailureRslvr;
+
+    /** SQL schemas to be created on node start. */
+    private String[] sqlSchemas;
+
+    /** Initial value of manual baseline control or auto adjusting baseline. */
+    private boolean initBaselineAutoAdjustEnabled = DFLT_INIT_BASELINE_AUTO_ADJUST_ENABLED;
+
+    /**
+     * Initial value of time which we would wait before the actual topology change since last discovery event(node
+     * join/exit).
+     */
+    private long initBaselineAutoAdjustTimeout = DFLT_INIT_BASELINE_AUTO_ADJUST_TIMEOUT;
+
+    /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
+    private long initBaselineAutoAdjustMaxTimeout = DFLT_INIT_BASELINE_AUTO_ADJUST_MAX_TIMEOUT;
 
     /** Exchange hard timeout. */
     private long exchangeHardTimeout = DFLT_EXCHANGE_HARD_TIMEOUT;
@@ -534,6 +592,7 @@ public class IgniteConfiguration {
         failSpi = cfg.getFailoverSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
+        encryptionSpi = cfg.getEncryptionSpi();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 
@@ -544,6 +603,7 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
+        authEnabled = cfg.isAuthenticationEnabled();
         autoActivation = cfg.isAutoActivationEnabled();
         binaryCfg = cfg.getBinaryConfiguration();
         dsCfg = cfg.getDataStorageConfiguration();
@@ -589,6 +649,8 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
+        mvccVacuumThreadCnt = cfg.getMvccVacuumThreadCount();
+        mvccVacuumFreq = cfg.getMvccVacuumFrequency();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         odbcCfg = cfg.getOdbcConfiguration();
@@ -608,12 +670,15 @@ public class IgniteConfiguration {
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
+        sqlQryHistSize = cfg.getSqlQueryHistorySize();
+        sqlSchemas = cfg.getSqlSchemas();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
         svcCfgs = cfg.getServiceConfiguration();
         svcPoolSize = cfg.getServiceThreadPoolSize();
         sysPoolSize = cfg.getSystemThreadPoolSize();
+        sysWorkerBlockedTimeout = cfg.getSystemWorkerBlockedTimeout();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionConfiguration();
@@ -622,7 +687,6 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        authEnabled = cfg.isAuthenticationEnabled();
     }
 
     /**
@@ -820,13 +884,9 @@ public class IgniteConfiguration {
      * Returns striped pool size that should be used for cache requests
      * processing.
      * <p>
-     * If set to non-positive value then requests get processed in system pool.
-     * <p>
      * Striped pool is better for typical cache operations.
      *
-     * @return Positive value if striped pool should be initialized
-     *      with configured number of threads (stripes) and used for requests processing
-     *      or non-positive value to process requests in system pool.
+     * @return The number of threads (stripes) to be used for requests processing.
      *
      * @see #getPublicThreadPoolSize()
      * @see #getSystemThreadPoolSize()
@@ -839,13 +899,9 @@ public class IgniteConfiguration {
      * Sets striped pool size that should be used for cache requests
      * processing.
      * <p>
-     * If set to non-positive value then requests get processed in system pool.
-     * <p>
      * Striped pool is better for typical cache operations.
      *
-     * @param stripedPoolSize Positive value if striped pool should be initialized
-     *      with passed in number of threads (stripes) and used for requests processing
-     *      or non-positive value to process requests in system pool.
+     * @param stripedPoolSize The number of threads (stripes) to be used for requests processing.
      * @return {@code this} for chaining.
      *
      * @see #getPublicThreadPoolSize()
@@ -988,6 +1044,30 @@ public class IgniteConfiguration {
      */
     public int getQueryThreadPoolSize() {
         return qryPoolSize;
+    }
+
+    /**
+     * Number of SQL query history elements to keep in memory. If not provided, then default value {@link
+     * #DFLT_SQL_QUERY_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL query history
+     * will be switched off.
+     *
+     * @return SQL query history size.
+     */
+    public int getSqlQueryHistorySize() {
+        return sqlQryHistSize;
+    }
+
+    /**
+     * Sets number of SQL query history elements kept in memory. If not explicitly set, then default value is {@link
+     * #DFLT_SQL_QUERY_HISTORY_SIZE}.
+     *
+     * @param size Number of SQL query history elements kept in memory.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlQueryHistorySize(int size) {
+        sqlQryHistSize = size;
+
+        return this;
     }
 
     /**
@@ -1463,6 +1543,29 @@ public class IgniteConfiguration {
         this.netTimeout = netTimeout;
 
         return this;
+    }
+
+    /**
+     * Compression level of internal network messages.
+     * <p>
+     * If not provided, then default value
+     * Deflater.BEST_SPEED is used.
+     *
+     * @return Network messages default compression level.
+     */
+    public int getNetworkCompressionLevel() {
+        return netCompressionLevel;
+    }
+
+    /**
+     * Compression level for internal network messages.
+     * <p>
+     * If not provided, then default value
+     * Deflater.BEST_SPEED is used.
+     *
+     */
+    public void setNetworkCompressionLevel(int netCompressionLevel) {
+        this.netCompressionLevel = netCompressionLevel;
     }
 
     /**
@@ -1973,6 +2076,31 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Returns maximum inactivity period for system worker. When this value is exceeded, worker is considered blocked
+     * with consequent critical failure handler invocation.
+     *
+     * @see #setSystemWorkerBlockedTimeout(long)
+     * @return Maximum inactivity period for system worker in milliseconds.
+     */
+    public Long getSystemWorkerBlockedTimeout() {
+        return sysWorkerBlockedTimeout;
+    }
+
+    /**
+     * Sets maximum inactivity period for system worker. When this value is exceeded, worker is considered blocked
+     * with consequent critical failure handler invocation.
+     *
+     * @see #setFailureHandler(FailureHandler)
+     * @param sysWorkerBlockedTimeout Maximum inactivity period for system worker in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSystemWorkerBlockedTimeout(long sysWorkerBlockedTimeout) {
+        this.sysWorkerBlockedTimeout = sysWorkerBlockedTimeout;
+
+        return this;
+    }
+
+    /**
      * Should return fully configured load balancing SPI implementation. If not provided,
      * {@link RoundRobinLoadBalancingSpi} will be used.
      *
@@ -2055,6 +2183,28 @@ public class IgniteConfiguration {
      */
     public IndexingSpi getIndexingSpi() {
         return indexingSpi;
+    }
+
+    /**
+     * Sets fully configured instances of {@link EncryptionSpi}.
+     *
+     * @param encryptionSpi Fully configured instance of {@link EncryptionSpi}.
+     * @see IgniteConfiguration#getEncryptionSpi()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setEncryptionSpi(EncryptionSpi encryptionSpi) {
+        this.encryptionSpi = encryptionSpi;
+
+        return this;
+    }
+
+    /**
+     * Gets fully configured encryption SPI implementations.
+     *
+     * @return Encryption SPI implementation.
+     */
+    public EncryptionSpi getEncryptionSpi() {
+        return encryptionSpi;
     }
 
     /**
@@ -2994,6 +3144,48 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Returns number of MVCC vacuum threads.
+     *
+     * @return Number of MVCC vacuum threads.
+     */
+    public int getMvccVacuumThreadCount() {
+        return mvccVacuumThreadCnt;
+    }
+
+    /**
+     * Sets number of MVCC vacuum threads.
+     *
+     * @param mvccVacuumThreadCnt Number of MVCC vacuum threads.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setMvccVacuumThreadCount(int mvccVacuumThreadCnt) {
+        this.mvccVacuumThreadCnt = mvccVacuumThreadCnt;
+
+        return this;
+    }
+
+    /**
+     * Returns time interval between MVCC vacuum runs in milliseconds.
+     *
+     * @return Time interval between MVCC vacuum runs in milliseconds.
+     */
+    public long getMvccVacuumFrequency() {
+        return mvccVacuumFreq;
+    }
+
+    /**
+     * Sets time interval between MVCC vacuum runs in milliseconds.
+     *
+     * @param mvccVacuumFreq Time interval between MVCC vacuum runs in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setMvccVacuumFrequency(long mvccVacuumFreq) {
+        this.mvccVacuumFreq = mvccVacuumFreq;
+
+        return this;
+    }
+
+    /**
      * Returns {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
      * Default value is false; authentication is disabled.
      *
@@ -3051,6 +3243,88 @@ public class IgniteConfiguration {
         this.exchangeTimeoutMinOwners = minOwners;
 
         return this;
+    }
+
+    /**
+     * Gets SQL schemas to be created on node startup.
+     * <p>
+     * See {@link #setSqlSchemas(String...)} for more information.
+     *
+     * @return SQL schemas to be created on node startup.
+     */
+    public String[] getSqlSchemas() {
+        return sqlSchemas;
+    }
+
+    /**
+     * Sets SQL schemas to be created on node startup. Schemas are created on local node only and are not propagated
+     * to other cluster nodes. Created schemas cannot be dropped.
+     * <p>
+     * By default schema names are case-insensitive, i.e. {@code my_schema} and {@code My_Schema} represents the same
+     * object. Use quotes to enforce case sensitivity (e.g. {@code "My_Schema"}).
+     * <p>
+     * Property is ignored if {@code ignite-indexing} module is not in classpath.
+     *
+     * @param sqlSchemas SQL schemas to be created on node startup.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlSchemas(String... sqlSchemas) {
+        this.sqlSchemas = sqlSchemas;
+
+        return this;
+    }
+
+    /**
+     * Gets initial value of manual baseline control or auto adjusting baseline. This value would be used only if it
+     * have not been changed earlier in real time.
+     *
+     * @return {@code true} if auto adjusting baseline enabled.
+     */
+    public boolean isInitBaselineAutoAdjustEnabled() {
+        return initBaselineAutoAdjustEnabled;
+    }
+
+    /**
+     * Sets initial value of manual baseline control or auto adjusting baseline.
+     */
+    public void setInitBaselineAutoAdjustEnabled(boolean initBaselineAutoAdjustEnabled) {
+        this.initBaselineAutoAdjustEnabled = initBaselineAutoAdjustEnabled;
+    }
+
+    /**
+     * Gets initial value of time which we would wait before the actual topology change. But it would be reset if new
+     * discovery event happened. (node join/exit). This value would be used only if it have not been changed earlier in
+     * real time.
+     *
+     * @return Timeout of wait the actual topology change.
+     */
+    public long getInitBaselineAutoAdjustTimeout() {
+        return initBaselineAutoAdjustTimeout;
+    }
+
+    /**
+     * Sets initial value of time which we would wait before the actual topology change.
+     */
+    public void setInitBaselineAutoAdjustTimeout(long initBaselineAutoAdjustTimeout) {
+        this.initBaselineAutoAdjustTimeout = initBaselineAutoAdjustTimeout;
+    }
+
+    /**
+     * Gets initial value of time which we would wait from the first discovery event in the chain. If we achieved it
+     * than we would change BLAT right away (no matter were another node join/exit happened or not). This value would be
+     * used only if it have not been changed earlier in real time.
+     *
+     * @return Timeout of wait the actual topology change.
+     */
+    public long getInitBaselineAutoAdjustMaxTimeout() {
+        return initBaselineAutoAdjustMaxTimeout;
+    }
+
+    /**
+     * Sets initial value of time which we would wait from the first discovery event in the chain.
+     */
+    public void setInitBaselineAutoAdjustMaxTimeout(long initBaselineAutoAdjustMaxTimeout) {
+        this.initBaselineAutoAdjustMaxTimeout = initBaselineAutoAdjustMaxTimeout;
     }
 
     /** {@inheritDoc} */

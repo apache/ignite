@@ -29,10 +29,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -44,9 +40,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @return Node count.
      */
@@ -74,13 +67,14 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
         if (isLargePage())
             dbCfg.setPageSize(16 * 1024);
-        else
-            dbCfg.setPageSize(4 * 1024);
 
         dbCfg.setWalMode(WALMode.LOG_ONLY);
 
         dbCfg.setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setPersistenceEnabled(true).setName("default"));
+            new DataRegionConfiguration()
+                .setPersistenceEnabled(true)
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+        );
 
         configure(dbCfg);
 
@@ -136,11 +130,6 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         if (!client)
             cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4, ccfg5);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setMarshaller(null);
 
         configure(cfg);

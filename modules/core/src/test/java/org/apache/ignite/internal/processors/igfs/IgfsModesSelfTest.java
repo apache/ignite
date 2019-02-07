@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -92,7 +93,6 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("NullableProblems")
     private void startUp() throws Exception {
         startUpSecondary();
 
@@ -220,6 +220,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testModeDefaultIsNotSet() throws Exception {
         setSecondaryFs = true;
 
@@ -233,6 +234,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testModeDefaultIsSet() throws Exception {
         mode = DUAL_SYNC;
 
@@ -248,6 +250,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testModeSecondaryNoUri() throws Exception {
         mode = PROXY;
 
@@ -269,6 +272,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPathMode() throws Exception {
         pathModes(F.t("/dir1", PROXY), F.t("/dir2", DUAL_SYNC),
             F.t("/dir3", PRIMARY), F.t("/dir4", PRIMARY));
@@ -297,6 +301,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPathModeSwitchToPrimary() throws Exception {
         mode = DUAL_SYNC;
 
@@ -314,6 +319,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPathModeSecondaryNoCfg() throws Exception {
         pathModes(F.t("dir", PROXY));
 
@@ -335,6 +341,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPropagationPrimary() throws Exception {
         mode = PRIMARY;
 
@@ -346,6 +353,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPropagationDualSync() throws Exception {
         mode = DUAL_SYNC;
 
@@ -357,6 +365,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPropagationDualAsync() throws Exception {
         mode = DUAL_ASYNC;
 

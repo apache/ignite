@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -51,23 +52,16 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.junit.Test;
 
 /**
  *
  */
 public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Max size. */
     private static final int MAX_SIZE = 500 * 1024 * 1024;
 
@@ -92,11 +86,12 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /** Checkpoint threads. */
     private int checkpointThreads;
 
+    /** String logger. */
+    private GridStringLogger strLog;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -111,6 +106,10 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
         );
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
+
+        strLog = new GridStringLogger(false, new GridTestLog4jLogger());
+
+        cfg.setGridLogger(strLog);
 
         return cfg;
     }
@@ -140,6 +139,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testFourCheckpointThreads() throws Exception {
         checkpointThreads = 4;
 
@@ -149,6 +149,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testOneCheckpointThread() throws Exception {
         checkpointThreads = 1;
 
@@ -167,9 +168,13 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ig.context().cache().context().pageStore();
 
-        IgniteCache<Object, Object> singlePartCache = ig.getOrCreateCache(new CacheConfiguration<>()
-            .setName("single-part")
-            .setAffinity(new RendezvousAffinityFunction(false, 1)));
+        final String cacheName = "single-part";
+
+        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>()
+                .setName(cacheName)
+                .setAffinity(new RendezvousAffinityFunction(false, 1));
+
+        IgniteCache<Object, Object> singlePartCache = ig.getOrCreateCache(cacheCfg);
 
         db.enableCheckpoints(false).get();
 
@@ -191,7 +196,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         AtomicBoolean fail = new AtomicBoolean(false);
 
-        GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 int loops = 0;
 
@@ -204,7 +209,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
                     try {
                         Set<FullPageId> pickedPagesSet = new HashSet<>();
 
-                        PageStore store = pageStoreMgr.getStore(CU.cacheId("single-part"), 0);
+                        PageStore store = pageStoreMgr.getStore(CU.cacheId(cacheName), 0);
 
                         int pages = store.pages();
 
@@ -218,7 +223,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
                             long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_DATA, pageIdx);
 
-                            pickedPagesSet.add(new FullPageId(pageId, CU.cacheId("single-part")));
+                            pickedPagesSet.add(new FullPageId(pageId, CU.cacheId(cacheName)));
                         }
 
                         List<FullPageId> pickedPages = new ArrayList<>(pickedPagesSet);
@@ -233,7 +238,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
                                     return cmp;
 
                                 return Long.compare(PageIdUtils.effectivePageId(o1.pageId()),
-                                    PageIdUtils.effectivePageId(o2.pageId()));
+                                        PageIdUtils.effectivePageId(o2.pageId()));
                             }
                         });
 
@@ -253,7 +258,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
                         }
 
                         // Emulate writes to trigger throttling.
-                        for (int i = PAGES_TOUCHED_UNDER_CP_LOCK / 2; i < PAGES_TOUCHED_UNDER_CP_LOCK; i++) {
+                        for (int i = PAGES_TOUCHED_UNDER_CP_LOCK / 2; i < PAGES_TOUCHED_UNDER_CP_LOCK && !stop.get(); i++) {
                             FullPageId fpid = pickedPages.get(i);
 
                             long page = pageMem.acquirePage(fpid.groupId(), fpid.pageId());
@@ -298,6 +303,17 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
         assertFalse(fail.get());
 
         forceCheckpoint(); // Previous checkpoint should eventually finish.
+
+        stop.set(true);
+
+        fut.get();
+
+        db.enableCheckpoints(true).get();
+
+        //check that there is no problem with pinned pages
+        ig.destroyCache(cacheName);
+
+        assertFalse(strLog.toString().contains("AssertionError"));
     }
 
     /**
@@ -309,11 +325,6 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         /** Delegate factory. */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {

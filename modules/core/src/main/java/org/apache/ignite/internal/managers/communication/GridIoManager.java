@@ -67,6 +67,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -101,6 +102,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
@@ -133,7 +135,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
 
     /** Direct protocol version. */
-    public static final byte DIRECT_PROTO_VER = 2;
+    public static final byte DIRECT_PROTO_VER = 3;
 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
@@ -203,11 +205,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final AtomicLong ioTestId = new AtomicLong();
 
     /** No-op runnable. */
-    private static final IgniteRunnable NOOP = new IgniteRunnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
+    private static final IgniteRunnable NOOP = () -> {};
 
     /**
      * @param ctx Grid kernal context.
@@ -255,7 +253,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void start() throws IgniteCheckedException {
         startSpi();
 
@@ -300,7 +297,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     throws IgniteCheckedException {
 
                     return new DirectMessageReader(msgFactory,
-                        rmtNodeId != null ? U.directProtocolVersion(ctx, rmtNodeId) : GridIoManager.DIRECT_PROTO_VER);
+                        rmtNodeId != null ? U.directProtocolVersion(ctx, rmtNodeId) : DIRECT_PROTO_VER);
                 }
             };
         }
@@ -720,10 +717,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
+    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     @Override public void onKernalStart0() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
-            @SuppressWarnings({"TooBroadScope", "fallthrough"})
             @Override public void onEvent(Event evt) {
                 assert evt instanceof DiscoveryEvent : "Invalid event: " + evt;
 
@@ -918,7 +914,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msg Message bytes.
      * @param msgC Closure to call when message processing finished.
      */
-    @SuppressWarnings("fallthrough")
     private void onMessage0(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
         assert nodeId != null;
         assert msg != null;
@@ -1112,6 +1107,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             return;
         }
+        if (msg.topicOrdinal() == TOPIC_CACHE_COORDINATOR.ordinal()) {
+            MvccMessage msg0 = (MvccMessage)msg.message();
+
+            // see IGNITE-8609
+            /*if (msg0.processedFromNioThread())
+                c.run();
+            else*/
+                ctx.getStripedExecutorService().execute(-1, c);
+
+            return;
+        }
 
         if (plc == GridIoPolicy.SYSTEM_POOL && msg.partition() != GridIoMessage.STRIPE_DISABLED_PART) {
             ctx.getStripedExecutorService().execute(msg.partition(), c);
@@ -1170,7 +1176,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msg Message.
      * @param nodeId Node ID.
      */
-    @SuppressWarnings("deprecation")
     private void processRegularMessage0(GridIoMessage msg, UUID nodeId) {
         GridMessageListener lsnr = listenerGet0(msg.topic());
 
@@ -1648,6 +1653,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 if (e.getCause() instanceof ClusterTopologyCheckedException)
                     throw (ClusterTopologyCheckedException)e.getCause();
 
+                if (!ctx.discovery().alive(node))
+                    throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id(), e);
+
                 throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
                     "TCP connection cannot be established due to firewall issues) " +
                     "[node=" + node + ", topic=" + topic +
@@ -1680,7 +1688,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public void sendToGridTopic(UUID nodeId, GridTopic topic, Message msg, byte plc)
         throws IgniteCheckedException {
         ClusterNode node = ctx.discovery().node(nodeId);
@@ -1967,7 +1974,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to subscribe to.
      * @param p Message predicate.
      */
-    @SuppressWarnings("unchecked")
     public void addUserMessageListener(@Nullable final Object topic, @Nullable final IgniteBiPredicate<UUID, ?> p) {
         if (p != null) {
             try {
@@ -1989,7 +1995,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to unsubscribe from.
      * @param p Message predicate.
      */
-    @SuppressWarnings("unchecked")
     public void removeUserMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) {
         try {
             removeMessageListener(TOPIC_COMM_USER,
@@ -2004,7 +2009,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Listener's topic.
      * @param lsnr Listener to add.
      */
-    @SuppressWarnings({"TypeMayBeWeakened", "deprecation"})
     public void addMessageListener(GridTopic topic, GridMessageListener lsnr) {
         addMessageListener((Object)topic, lsnr);
     }
@@ -2027,7 +2031,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Listener's topic.
      * @param lsnr Listener to add.
      */
-    @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
     public void addMessageListener(Object topic, final GridMessageListener lsnr) {
         assert lsnr != null;
         assert topic != null;
@@ -2118,7 +2121,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener to remove.
      * @return Whether or not the lsnr was removed.
      */
-    @SuppressWarnings("deprecation")
     public boolean removeMessageListener(GridTopic topic, @Nullable GridMessageListener lsnr) {
         return removeMessageListener((Object)topic, lsnr);
     }
@@ -2128,7 +2130,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener to remove.
      * @return Whether or not the lsnr was removed.
      */
-    @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
     public boolean removeMessageListener(Object topic, @Nullable GridMessageListener lsnr) {
         assert topic != null;
 
@@ -2428,8 +2429,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
-            "OverlyStrongTypeCast"})
+        @SuppressWarnings({"ConstantConditions"
+        })
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (!(msg instanceof GridIoUserMessage)) {
                 U.error(log, "Received unknown message (potentially fatal problem): " + msg);

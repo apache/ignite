@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -26,6 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Updated handshake message.
  */
+@IgniteCodeGeneratingFail
 public class HandshakeMessage2 extends HandshakeMessage {
     /** */
     private static final long serialVersionUID = 0L;

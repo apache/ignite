@@ -58,7 +58,6 @@ public final class GridArrays {
      * @param idx Index to remove.
      * @return Smaller array.
      */
-    @SuppressWarnings("unchecked")
     public static <T> T[] remove(T[] arr, int idx) {
         int len = arr.length;
 

@@ -51,8 +51,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -67,9 +65,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  */
 public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final long RECONNECT_TIMEOUT = 10_000;
 
     /** */
@@ -81,7 +76,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
-        disco.setIpFinder(ipFinder);
+        disco.setIpFinder(sharedStaticIpFinder);
         disco.setJoinTimeout(2 * 60_000);
         disco.setSocketTimeout(1000);
         disco.setNetworkTimeout(2000);
@@ -305,26 +300,32 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
             }
         };
 
-        for (Ignite client : clients)
-            client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+        try {
+            for (Ignite client : clients)
+                client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
 
-        for (Ignite client : clients)
-            srvSpi.failNode(client.cluster().localNode().id(), null);
+            for (Ignite client : clients)
+                srvSpi.failNode(client.cluster().localNode().id(), null);
 
-        waitReconnectEvent(log, disconnectLatch);
+            waitReconnectEvent(log, disconnectLatch);
 
-        if (disconnectedC != null)
-            disconnectedC.run();
+            if (disconnectedC != null)
+                disconnectedC.run();
 
-        log.info("Allow reconnect.");
+            log.info("Allow reconnect.");
 
-        for (DiscoverySpiTestListener blockLsnr : blockLsnrs)
-            blockLsnr.stopBlockJoin();
+            for (DiscoverySpiTestListener blockLsnr : blockLsnrs)
+                blockLsnr.stopBlockJoin();
 
-        waitReconnectEvent(log, reconnectLatch);
+            waitReconnectEvent(log, reconnectLatch);
 
-        for (Ignite client : clients)
-            client.events().stopLocalListen(p);
+            for (Ignite client : clients)
+                client.events().stopLocalListen(p);
+        }
+        finally {
+            for (DiscoverySpiTestListener blockLsnr : blockLsnrs)
+                blockLsnr.stopBlockJoin();
+        }
     }
 
     /**

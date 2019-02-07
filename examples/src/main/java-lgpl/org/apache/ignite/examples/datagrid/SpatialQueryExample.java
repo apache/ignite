@@ -17,8 +17,6 @@
 
 package org.apache.ignite.examples.datagrid;
 
-import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.io.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.*;
@@ -27,6 +25,8 @@ import org.apache.ignite.configuration.*;
 import javax.cache.*;
 import java.util.*;
 import org.apache.ignite.examples.ExampleNodeStartup;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.WKTReader;
 
 /**
  * This examples shows the usage of geospatial queries and indexes in Apache Ignite.

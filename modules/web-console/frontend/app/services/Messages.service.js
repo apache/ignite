@@ -16,39 +16,18 @@
  */
 
 import {CancellationError} from 'app/errors/CancellationError';
-import isEmpty from 'lodash/isEmpty';
-import {nonEmpty} from 'app/utils/lodashMixins';
 
-// Service to show various information and error messages.
-export default ['IgniteMessages', ['$alert', ($alert) => {
+/**
+ * Service to show various information and error messages.
+ * @param {mgcrea.ngStrap.alert.IAlertService} $alert
+ * @param {import('./ErrorParser.service').default} errorParser
+ */
+export default function factory($alert, errorParser) {
     // Common instance of alert modal.
     let msgModal;
 
     const errorMessage = (prefix, err) => {
-        prefix = prefix || '';
-
-        if (err) {
-            if (err.hasOwnProperty('data'))
-                err = err.data;
-
-            if (err.hasOwnProperty('message')) {
-                const msg = err.message;
-                const lastIdx = msg.lastIndexOf(' err=');
-
-                return prefix + (lastIdx >= 0 ? msg.substring(lastIdx + 5, msg.indexOf(']', lastIdx)) : msg);
-            }
-
-            if (nonEmpty(err.className)) {
-                if (isEmpty(prefix))
-                    prefix = 'Internal cluster error: ';
-
-                return prefix + err.className;
-            }
-
-            return prefix + err;
-        }
-
-        return prefix + 'Internal error.';
+        return errorParser.extractMessage(err, prefix);
     };
 
     const hideAlert = () => {
@@ -72,6 +51,10 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
     return {
         errorMessage,
         hideAlert,
+        /**
+         * @param {string|CancellationError} message
+         * @param [err]
+         */
         showError(message, err, duration = 10) {
             if (message instanceof CancellationError)
                 return false;
@@ -80,8 +63,13 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
 
             return false;
         },
+        /**
+         * @param {string} message
+         */
         showInfo(message, duration = 5) {
             _showMessage(message, null, 'success', duration);
         }
     };
-}]];
+}
+
+factory.$inject = ['$alert', 'IgniteErrorParser'];

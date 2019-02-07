@@ -127,7 +127,6 @@ public class AffinityKey<K> implements Externalizable {
      *
      * @return Affinity key to use for affinity mapping.
      */
-    @SuppressWarnings({"unchecked"})
     public <T> T affinityKey() {
         A.notNull(key, "key");
 

@@ -25,7 +25,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests client to be able restore connection to cluster on subsequent attempts after communication problems.
@@ -41,6 +44,8 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(new TcpDiscoveryMulticastIpFinder());
+
         cfg.setNetworkTimeout(500);
         cfg.setCommunicationSpi(new TcpCommunicationSpi(gridName.contains("block")));
 
@@ -54,6 +59,7 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnects() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");
@@ -66,6 +72,7 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientThreadsSuspended() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");

@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  *
@@ -59,11 +58,4 @@ public interface IgniteClusterNode extends ClusterNode {
      * @param cacheMetrics Cache metrics.
      */
     public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics);
-
-    /**
-     * Whether this node is cache client (see {@link IgniteConfiguration#isClientMode()}).
-     *
-     * @return {@code True if client}.
-     */
-    public boolean isCacheClient();
 }

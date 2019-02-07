@@ -252,7 +252,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Collection<IgniteFileSystem> igfss() {
         return F.viewReadOnly(igfsCache.values(), CTX_TO_IGFS);
     }

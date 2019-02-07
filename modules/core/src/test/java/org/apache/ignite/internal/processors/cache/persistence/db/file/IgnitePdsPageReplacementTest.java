@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for page replacement (rotation with disk) process with enabled persistence.
@@ -105,12 +106,15 @@ public class IgnitePdsPageReplacementTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPageReplacement() throws Exception {
         final IgniteEx ig = startGrid(0);
 
@@ -199,7 +203,7 @@ public class IgnitePdsPageReplacementTest extends GridCommonAbstractTest {
             final long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
             try {
-                pageIO.initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
+                pageIO.initNewPage(pageAddr, fullId.pageId(), mem.realPageSize(fullId.groupId()));
             }
             finally {
                 mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);

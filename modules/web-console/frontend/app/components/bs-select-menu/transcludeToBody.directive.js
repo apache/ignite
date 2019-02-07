@@ -40,7 +40,7 @@ class Controller {
     }
 }
 
-export function directive() {
+export default function directive() {
     return {
         restrict: 'E',
         transclude: true,

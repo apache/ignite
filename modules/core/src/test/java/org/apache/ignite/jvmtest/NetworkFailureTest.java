@@ -26,20 +26,21 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JOptionPane;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
  */
-public class NetworkFailureTest extends TestCase {
+public class NetworkFailureTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNetworkFailure() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -141,6 +142,7 @@ public class NetworkFailureTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadTimeout() throws Exception {
         final InetAddress addr = InetAddress.getByName("192.168.3.10");
 
@@ -223,6 +225,7 @@ public class NetworkFailureTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSocketCloseOnTimeout() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -323,6 +326,7 @@ public class NetworkFailureTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionTime() throws Exception {
         X.println("Unexistent host.");
         checkConnection(InetAddress.getByName("192.168.0.222"));

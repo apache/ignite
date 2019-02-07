@@ -20,11 +20,10 @@ package org.apache.ignite.console.agent.rest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -33,6 +32,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
@@ -41,6 +42,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
@@ -49,6 +51,8 @@ import org.slf4j.LoggerFactory;
 import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
 import static com.fasterxml.jackson.core.JsonToken.END_OBJECT;
 import static com.fasterxml.jackson.core.JsonToken.START_ARRAY;
+import static org.apache.ignite.console.agent.AgentUtils.sslConnectionSpec;
+import static org.apache.ignite.console.agent.AgentUtils.sslSocketFactory;
 import static org.apache.ignite.console.agent.AgentUtils.trustManager;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
@@ -68,14 +72,30 @@ public class RestExecutor implements AutoCloseable {
     private final OkHttpClient httpClient;
 
     /** Index of alive node URI. */
-    private Map<List<String>, Integer> startIdxs = U.newHashMap(2);
+    private final Map<List<String>, Integer> startIdxs = U.newHashMap(2);
 
     /**
-     * Default constructor.
+     * Constructor.
+     *
+     * @param trustAll {@code true} If we trust to self-signed sertificates.
+     * @param keyStorePath Optional path to key store file.
+     * @param keyStorePwd Optional password for key store.
+     * @param trustStorePath Optional path to trust store file.
+     * @param trustStorePwd Optional password for trust store.
+     * @param cipherSuites Optional cipher suites.
+     * @throws GeneralSecurityException If failed to initialize SSL.
+     * @throws IOException If failed to load content of key stores.
      */
-    public RestExecutor() {
+    public RestExecutor(
+        boolean trustAll,
+        String keyStorePath,
+        String keyStorePwd,
+        String trustStorePath,
+        String trustStorePwd,
+        List<String> cipherSuites
+    ) throws GeneralSecurityException, IOException {
         Dispatcher dispatcher = new Dispatcher();
-        
+
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
         dispatcher.setMaxRequestsPerHost(Integer.MAX_VALUE);
 
@@ -83,20 +103,22 @@ public class RestExecutor implements AutoCloseable {
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .dispatcher(dispatcher);
 
-        // Workaround for use self-signed certificate
-        if (Boolean.getBoolean("trust.all")) {
-            try {
-                SSLContext ctx = SSLContext.getInstance("TLS");
+        X509TrustManager trustMgr = trustManager(trustAll, trustStorePath, trustStorePwd);
 
-                // Create an SSLContext that uses our TrustManager
-                ctx.init(null, new TrustManager[] {trustManager()}, null);
+        if (trustAll)
+            builder.hostnameVerifier((hostname, session) -> true);
 
-                builder.sslSocketFactory(ctx.getSocketFactory(), trustManager());
+        SSLSocketFactory sslSocketFactory = sslSocketFactory(
+            keyStorePath, keyStorePwd,
+            trustMgr,
+            cipherSuites
+        );
 
-                builder.hostnameVerifier((hostname, session) -> true);
-            } catch (Exception ignored) {
-                LT.warn(log, "Failed to initialize the Trust Manager for \"-Dtrust.all\" option to skip certificate validation.");
-            }
+        if (sslSocketFactory != null) {
+            builder.sslSocketFactory(sslSocketFactory, trustMgr);
+
+            if (!F.isEmpty(cipherSuites))
+                builder.connectionSpecs(sslConnectionSpec(cipherSuites));
         }
 
         httpClient = builder.build();
@@ -120,13 +142,10 @@ public class RestExecutor implements AutoCloseable {
 
             int status = holder.getSuccessStatus();
 
-            switch (status) {
-                case STATUS_SUCCESS:
-                    return RestResult.success(holder.getResponse(), holder.getSessionToken());
+            if (status == STATUS_SUCCESS)
+                return RestResult.success(holder.getResponse(), holder.getSessionToken());
 
-                default:
-                    return RestResult.fail(status, holder.getError());
-            }
+            return RestResult.fail(status, holder.getError());
         }
 
         if (res.code() == 401)
@@ -136,15 +155,16 @@ public class RestExecutor implements AutoCloseable {
         if (res.code() == 404)
             return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
 
-        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res.message());
+        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res);
     }
 
     /** */
     private RestResult sendRequest(String url, Map<String, Object> params, Map<String, Object> headers) throws IOException {
-        HttpUrl httpUrl = HttpUrl.parse(url);
-
-        HttpUrl.Builder urlBuilder = httpUrl.newBuilder()
-            .addPathSegment("ignite");
+        HttpUrl httpUrl = HttpUrl
+            .parse(url)
+            .newBuilder()
+            .addPathSegment("ignite")
+            .build();
 
         final Request.Builder reqBuilder = new Request.Builder();
 
@@ -163,25 +183,42 @@ public class RestExecutor implements AutoCloseable {
             }
         }
 
-        reqBuilder.url(urlBuilder.build())
-            .post(bodyParams.build());
+        reqBuilder.url(httpUrl).post(bodyParams.build());
 
         try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
             return parseResponse(resp);
         }
     }
 
-    /** */
-    public RestResult sendRequest(List<String> nodeURIs, Map<String, Object> params, Map<String, Object> headers) throws IOException {
+    /**
+     * Send request to cluster.
+     *
+     * @param nodeURIs List of cluster nodes URIs.
+     * @param params Map with reques params.
+     * @param headers Map with reques headers.
+     * @return Response from cluster.
+     * @throws IOException If failed to send request to cluster.
+     */
+    public RestResult sendRequest(
+        List<String> nodeURIs,
+        Map<String, Object> params,
+        Map<String, Object> headers
+    ) throws IOException {
         Integer startIdx = startIdxs.getOrDefault(nodeURIs, 0);
 
-        for (int i = 0;  i < nodeURIs.size(); i++) {
-            Integer currIdx = (startIdx + i) % nodeURIs.size();
+        int urlsCnt = nodeURIs.size();
+
+        for (int i = 0;  i < urlsCnt; i++) {
+            Integer currIdx = (startIdx + i) % urlsCnt;
 
             String nodeUrl = nodeURIs.get(currIdx);
 
             try {
                 RestResult res = sendRequest(nodeUrl, params, headers);
+
+                // If first attempt failed then throttling should be cleared.
+                if (i > 0)
+                    LT.clear();
 
                 LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
 
@@ -190,7 +227,7 @@ public class RestExecutor implements AutoCloseable {
                 return res;
             }
             catch (ConnectException ignored) {
-                // No-op.
+                LT.warn(log, "Failed connect to cluster [url=" + nodeUrl + "]");
             }
         }
 
@@ -268,10 +305,10 @@ public class RestExecutor implements AutoCloseable {
         }
 
         /**
-         * @param sesTokStr String representation of session token.
+         * @param sesTok String representation of session token.
          */
-        public void setSessionToken(String sesTokStr) {
-            this.sesTok = sesTokStr;
+        public void setSessionToken(String sesTok) {
+            this.sesTok = sesTok;
         }
     }
 

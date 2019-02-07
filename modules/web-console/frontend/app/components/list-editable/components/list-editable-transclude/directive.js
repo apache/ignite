@@ -63,7 +63,9 @@ export class ListEditableTransclude {
                 [itemName]: {
                     get: () => {
                         // Scope might get destroyed
-                        if (!this.$scope) return;
+                        if (!this.$scope)
+                            return;
+
                         return this.$scope.item;
                     },
                     set: (value) => {
@@ -80,7 +82,9 @@ export class ListEditableTransclude {
                 $form: {
                     get: () => {
                         // Scope might get destroyed
-                        if (!this.$scope) return;
+                        if (!this.$scope)
+                            return;
+
                         return this.$scope.form;
                     },
                     // Allows to delete property later
@@ -98,7 +102,9 @@ export class ListEditableTransclude {
      * @returns {number}
      */
     get $index() {
-        if (!this.$scope) return;
+        if (!this.$scope)
+            return;
+
         return this.$scope.$index;
     }
 

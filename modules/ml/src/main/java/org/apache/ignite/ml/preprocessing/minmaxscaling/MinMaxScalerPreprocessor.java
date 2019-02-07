@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Preprocessing function that makes minmaxscaling. From mathematical point of view it's the following function which
@@ -71,8 +71,16 @@ public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
         assert res.size() == min.length;
         assert res.size() == max.length;
 
-        for (int i = 0; i < res.size(); i++)
-            res.set(i, (res.get(i) - min[i]) / (max[i] - min[i]));
+        for (int i = 0; i < res.size(); i++) {
+            double num = res.get(i) - min[i];
+            double denom = max[i] - min[i];
+            double scaled = num / denom;
+
+            if (Double.isNaN(scaled))
+                res.set(i, num);
+            else
+                res.set(i, scaled);
+        }
 
         return res;
     }

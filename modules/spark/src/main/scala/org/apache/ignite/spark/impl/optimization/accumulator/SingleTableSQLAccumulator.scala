@@ -42,7 +42,7 @@ private[apache] case class SingleTableSQLAccumulator(
     orderBy: Option[Seq[SortOrder]] = None
 ) extends SelectAccumulator {
     /** @inheritdoc */
-    override def compileQuery(prettyPrint: Boolean = false): String = {
+    override def compileQuery(prettyPrint: Boolean = false, nestedQuery: Boolean = false): String = {
         val delim = if (prettyPrint) "\n" else " "
         val tab = if (prettyPrint) "  " else ""
 
@@ -61,8 +61,12 @@ private[apache] case class SingleTableSQLAccumulator(
         if (orderBy.exists(_.nonEmpty))
             sql += s"${delim}ORDER BY ${orderBy.get.map(exprToString(_)).mkString(s",$delim$tab")}"
 
-        if (limit.isDefined)
+        if (limit.isDefined) {
             sql += s" LIMIT ${limit.map(exprToString(_)).get}"
+
+            if (nestedQuery)
+                sql = s"SELECT * FROM ($sql)"
+        }
 
         sql
     }

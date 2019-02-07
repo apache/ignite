@@ -20,15 +20,14 @@ package org.apache.ignite.ml.structures;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Class for vector with label.
  *
- * @param <V> Some class extending {@link Vector}.
  * @param <L> Type of label.
  */
-public class LabeledVector<V extends Vector, L> extends DatasetRow<V> {
+public class LabeledVector<L> extends DatasetRow<Vector> {
     /** Label. */
     private L lb;
 
@@ -45,7 +44,7 @@ public class LabeledVector<V extends Vector, L> extends DatasetRow<V> {
      * @param vector Vector.
      * @param lb Label.
      */
-    public LabeledVector(V vector, L lb) {
+    public LabeledVector(Vector vector, L lb) {
         super(vector);
         this.lb = lb;
     }
@@ -97,7 +96,7 @@ public class LabeledVector<V extends Vector, L> extends DatasetRow<V> {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        vector = (V)in.readObject();
+        vector = (Vector)in.readObject();
         lb = (L)in.readObject();
     }
 }

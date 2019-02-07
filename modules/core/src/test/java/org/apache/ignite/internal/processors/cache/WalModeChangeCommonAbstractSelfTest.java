@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -39,7 +38,6 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -50,9 +48,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  */
 
 public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbstractTest {
-    /** Shared IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Node filter. */
     private static final IgnitePredicate<ClusterNode> FILTER = new CacheNodeFilter();
 
@@ -296,16 +291,16 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @param filter Whether node should be filtered out.
      * @return Node configuration.
      */
-    protected IgniteConfiguration config(String name, boolean cli, boolean filter) {
-        IgniteConfiguration cfg = new IgniteConfiguration();
+    protected IgniteConfiguration config(String name, boolean cli, boolean filter) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(name);
 
         cfg.setIgniteInstanceName(name);
         cfg.setClientMode(cli);
         cfg.setLocalHost("127.0.0.1");
 
-        cfg.setDiscoverySpi(new IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi().setIpFinder(IP_FINDER));
-
-        DataRegionConfiguration regionCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
         DataRegionConfiguration volatileRegionCfg = new DataRegionConfiguration().setName(REGION_VOLATILE)
             .setPersistenceEnabled(false);

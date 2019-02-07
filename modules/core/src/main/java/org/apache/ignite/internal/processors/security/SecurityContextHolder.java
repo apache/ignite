@@ -39,15 +39,22 @@ public class SecurityContextHolder {
      * Set security context.
      *
      * @param ctx Context.
+     * @return Old context.
      */
-    public static void set(@Nullable SecurityContext ctx) {
+    public static SecurityContext push(@Nullable SecurityContext ctx) {
+        SecurityContext oldCtx = CTX.get();
+
         CTX.set(ctx);
+
+        return oldCtx;
     }
 
     /**
-     * Clear security context.
+     * Pop security context.
+     *
+     * @param oldCtx Old context.
      */
-    public static void clear() {
-        set(null);
+    public static void pop(@Nullable SecurityContext oldCtx) {
+        CTX.set(oldCtx);
     }
 }

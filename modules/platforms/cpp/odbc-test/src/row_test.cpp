@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/impl/binary/binary_writer_impl.h>
@@ -79,7 +75,7 @@ void CheckRowData(Row& row, size_t rowIdx)
 {
     SqlLen reslen;
 
-    long longBuf;
+    SQLINTEGER longBuf;
     char strBuf[1024];
     SQLGUID guidBuf;
     char bitBuf;

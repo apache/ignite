@@ -17,6 +17,7 @@
 
 'use strict';
 
+const Util = require('util');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 const Errors = require('./Errors');
 
@@ -156,15 +157,19 @@ class EnumItem {
     /**
      * @ignore
      */
-    async _write(buffer) {
+    async _write(communicator, buffer) {
+        const type = await this._getType(communicator, this._typeId);
+        if (!type || !type._isEnum) {
+            throw Errors.IgniteClientError.enumSerializationError(
+                true, Util.format('enum type id "%d" is not registered', this._typeId));
+        }
         buffer.writeInteger(this._typeId);
         if (this._ordinal !== null) {
             buffer.writeInteger(this._ordinal);
             return;
         }
         else if (this._name !== null || this._value !== null) {
-            const type = await this._getType(this._typeId);
-            if (type._isEnum && type._enumValues) {
+            if (type._enumValues) {
                 for (let i = 0; i < type._enumValues.length; i++) {
                     if (this._name === type._enumValues[i][0] ||
                         this._value === type._enumValues[i][1]) {
@@ -181,12 +186,16 @@ class EnumItem {
     /**
      * @ignore
      */
-    async _read(buffer) {
+    async _read(communicator, buffer) {
         this._typeId = buffer.readInteger();
         this._ordinal = buffer.readInteger();
-        const type = await this._getType(this._typeId);
-        if (!type._isEnum || !type._enumValues || type._enumValues.length <= this._ordinal) {
-            throw new Errors.IgniteClientError('EnumItem can not be deserialized: type mismatch');
+        const type = await this._getType(communicator, this._typeId);
+        if (!type || !type._isEnum) {
+            throw Errors.IgniteClientError.enumSerializationError(
+                false, Util.format('enum type id "%d" is not registered', this._typeId));
+        }
+        else if (!type._enumValues || type._enumValues.length <= this._ordinal) {
+            throw Errors.IgniteClientError.enumSerializationError(false, 'type mismatch');
         }
         this._name = type._enumValues[this._ordinal][0];
         this._value = type._enumValues[this._ordinal][1];
@@ -195,9 +204,8 @@ class EnumItem {
     /**
      * @ignore
      */
-    async _getType(typeId) {
-        const BinaryTypeStorage = require('./internal/BinaryTypeStorage');
-        return await BinaryTypeStorage.getEntity().getType(typeId);
+    async _getType(communicator, typeId) {
+        return await communicator.typeStorage.getType(typeId);
     }
 }
 

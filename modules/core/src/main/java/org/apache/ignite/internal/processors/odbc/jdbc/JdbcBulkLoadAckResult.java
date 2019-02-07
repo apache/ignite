@@ -21,6 +21,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -32,8 +33,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * @see SqlBulkLoadCommand
  */
 public class JdbcBulkLoadAckResult extends JdbcResult {
-    /** Query ID for matching this command on server in further {@link JdbcBulkLoadBatchRequest} commands. */
-    private long qryId;
+    /** Cursor ID for matching this command on server in further {@link JdbcBulkLoadBatchRequest} commands. */
+    private long cursorId;
 
     /**
      * Bulk load parameters, which are parsed on the server side and sent to client to specify
@@ -45,30 +46,30 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
     public JdbcBulkLoadAckResult() {
         super(BULK_LOAD_ACK);
 
-        qryId = 0;
+        cursorId = 0;
         params = null;
     }
 
     /**
      * Constructs a request from server (in form of reply) to send files from client to server.
      *
-     * @param qryId Query ID to send in further {@link JdbcBulkLoadBatchRequest}s.
+     * @param cursorId Cursor ID to send in further {@link JdbcBulkLoadBatchRequest}s.
      * @param params Various parameters for sending batches from client side.
      */
-    public JdbcBulkLoadAckResult(long qryId, BulkLoadAckClientParameters params) {
+    public JdbcBulkLoadAckResult(long cursorId, BulkLoadAckClientParameters params) {
         super(BULK_LOAD_ACK);
 
-        this.qryId = qryId;
+        this.cursorId = cursorId;
         this.params = params;
     }
 
     /**
-     * Returns the query ID.
+     * Returns the cursor ID.
      *
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long queryId() {
-        return qryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /**
@@ -81,19 +82,21 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.writeBinary(writer, ver);
 
-        writer.writeLong(qryId);
+        writer.writeLong(cursorId);
         writer.writeString(params.localFileName());
         writer.writeInt(params.packetSize());
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.readBinary(reader, ver);
 
-        qryId = reader.readLong();
+        cursorId = reader.readLong();
 
         String locFileName = reader.readString();
         int batchSize = reader.readInt();

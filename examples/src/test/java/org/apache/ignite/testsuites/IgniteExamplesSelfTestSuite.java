@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.examples.BasicExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.BasicExamplesSelfTest;
 import org.apache.ignite.examples.CacheClientBinaryExampleTest;
@@ -33,6 +32,7 @@ import org.apache.ignite.examples.ContinuousMapperExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.ContinuousMapperExamplesSelfTest;
 import org.apache.ignite.examples.DeploymentExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.DeploymentExamplesSelfTest;
+import org.apache.ignite.examples.EncryptedCacheExampleSelfTest;
 import org.apache.ignite.examples.EventsExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.EventsExamplesSelfTest;
 import org.apache.ignite.examples.IgfsExamplesSelfTest;
@@ -47,60 +47,55 @@ import org.apache.ignite.examples.SpringDataExampleSelfTest;
 import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Examples test suite.
  * <p>
  * Contains all Ignite examples tests.</p>
  */
-public class IgniteExamplesSelfTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-//        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-//            GridTestUtils.getNextMulticastGroup(IgniteExamplesSelfTestSuite.class));
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    CacheExamplesSelfTest.class,
+    SqlExamplesSelfTest.class,
+    BasicExamplesSelfTest.class,
+    ContinuationExamplesSelfTest.class,
+    ContinuousMapperExamplesSelfTest.class,
+    DeploymentExamplesSelfTest.class,
+    EventsExamplesSelfTest.class,
+    LifecycleExamplesSelfTest.class,
+    MessagingExamplesSelfTest.class,
+    MemcacheRestExamplesSelfTest.class,
+    MonteCarloExamplesSelfTest.class,
+    TaskExamplesSelfTest.class,
+    SpringBeanExamplesSelfTest.class,
+    SpringDataExampleSelfTest.class,
+    IgfsExamplesSelfTest.class,
+    CheckpointExamplesSelfTest.class,
+    ClusterGroupExampleSelfTest.class,
+    CacheContinuousQueryExamplesSelfTest.class,
 
-        TestSuite suite = new TestSuite("Ignite Examples Test Suite");
+    // Multi-node.
+    CacheExamplesMultiNodeSelfTest.class,
+    BasicExamplesMultiNodeSelfTest.class,
+    ContinuationExamplesMultiNodeSelfTest.class,
+    ContinuousMapperExamplesMultiNodeSelfTest.class,
+    DeploymentExamplesMultiNodeSelfTest.class,
+    EventsExamplesMultiNodeSelfTest.class,
+    TaskExamplesMultiNodeSelfTest.class,
+    MemcacheRestExamplesMultiNodeSelfTest.class,
+    MonteCarloExamplesMultiNodeSelfTest.class,
 
-        suite.addTest(new TestSuite(CacheExamplesSelfTest.class));
-        suite.addTest(new TestSuite(SqlExamplesSelfTest.class));
-        suite.addTest(new TestSuite(BasicExamplesSelfTest.class));
-        suite.addTest(new TestSuite(ContinuationExamplesSelfTest.class));
-        suite.addTest(new TestSuite(ContinuousMapperExamplesSelfTest.class));
-        suite.addTest(new TestSuite(DeploymentExamplesSelfTest.class));
-        suite.addTest(new TestSuite(EventsExamplesSelfTest.class));
-        suite.addTest(new TestSuite(LifecycleExamplesSelfTest.class));
-        suite.addTest(new TestSuite(MessagingExamplesSelfTest.class));
-        suite.addTest(new TestSuite(MemcacheRestExamplesSelfTest.class));
-        suite.addTest(new TestSuite(MonteCarloExamplesSelfTest.class));
-        suite.addTest(new TestSuite(TaskExamplesSelfTest.class));
-        suite.addTest(new TestSuite(SpringBeanExamplesSelfTest.class));
-        suite.addTest(new TestSuite(SpringDataExampleSelfTest.class));
-        suite.addTest(new TestSuite(IgfsExamplesSelfTest.class));
-        suite.addTest(new TestSuite(CheckpointExamplesSelfTest.class));
-        suite.addTest(new TestSuite(ClusterGroupExampleSelfTest.class));
-        suite.addTest(new TestSuite(CacheContinuousQueryExamplesSelfTest.class));
+    // Binary.
+    CacheClientBinaryExampleTest.class,
+    ComputeClientBinaryExampleTest.class,
 
-        // Multi-node.
-        suite.addTest(new TestSuite(CacheExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(BasicExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(ContinuationExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(ContinuousMapperExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(DeploymentExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(EventsExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(TaskExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(MemcacheRestExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(MonteCarloExamplesMultiNodeSelfTest.class));
+    // ML Grid.
+    IgniteExamplesMLTestSuite.class,
 
-        // Binary.
-        suite.addTest(new TestSuite(CacheClientBinaryExampleTest.class));
-        suite.addTest(new TestSuite(ComputeClientBinaryExampleTest.class));
-
-        // ML Grid.
-        suite.addTest(IgniteExamplesMLTestSuite.suite());
-
-        return suite;
-    }
+    // Encryption.
+    EncryptedCacheExampleSelfTest.class,
+})
+public class IgniteExamplesSelfTestSuite {
 }

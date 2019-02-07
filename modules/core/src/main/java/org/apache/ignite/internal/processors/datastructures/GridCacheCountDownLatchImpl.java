@@ -28,9 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -311,7 +309,6 @@ public final class GridCacheCountDownLatchImpl extends AtomicDataStructureProxy<
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    @SuppressWarnings({"ConstantConditions"})
     private Object readResolve() throws ObjectStreamException {
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();

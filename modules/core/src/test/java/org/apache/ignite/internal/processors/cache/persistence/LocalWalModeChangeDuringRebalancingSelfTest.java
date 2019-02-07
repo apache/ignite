@@ -23,11 +23,14 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -51,8 +54,12 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -60,6 +67,12 @@ import org.junit.Assert;
 public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstractTest {
     /** */
     private static boolean disableWalDuringRebalancing = true;
+
+    /** */
+    private static boolean enablePendingTxTracker = false;
+
+    /** */
+    private static int dfltCacheBackupCnt = 0;
 
     /** */
     private static final AtomicReference<CountDownLatch> supplyMessageLatch = new AtomicReference<>();
@@ -79,8 +92,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
-                        .setMaxSize(200 * 1024 * 1024)
-                        .setInitialSize(200 * 1024 * 1024)
+                        .setInitialSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                 )
                 // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
                 .setCheckpointFrequency(999_999_999_999L)
@@ -89,10 +102,13 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 // Test checks internal state before and after rebalance, so it is configured to be triggered manually
-                .setRebalanceDelay(-1),
+                .setRebalanceDelay(-1)
+                .setBackups(dfltCacheBackupCnt),
 
             new CacheConfiguration(REPL_CACHE)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setRebalanceDelay(-1)
                 .setCacheMode(CacheMode.REPLICATED)
         );
@@ -145,6 +161,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING,
             Boolean.toString(disableWalDuringRebalancing));
 
+        System.setProperty(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED,
+            Boolean.toString(enablePendingTxTracker));
+
         return cfg;
     }
 
@@ -182,8 +201,18 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cleanPersistenceDir();
 
         disableWalDuringRebalancing = true;
+        enablePendingTxTracker = false;
+        dfltCacheBackupCnt = 0;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING);
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED);
+    }
 
     /**
      * @return Count of entries to be processed within test.
@@ -195,6 +224,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalDisabledDuringRebalancing() throws Exception {
         doTestSimple();
     }
@@ -202,6 +232,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalNotDisabledIfParameterSetToFalse() throws Exception {
         disableWalDuringRebalancing = false;
 
@@ -228,7 +259,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         final CheckpointHistory cpHist =
             ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return !cpHist.checkpoints().isEmpty();
             }
@@ -238,7 +269,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         long newIgniteStartedTimestamp = System.currentTimeMillis();
 
-        ignite.cluster().setBaselineTopology(4);
+        newIgnite.cluster().setBaselineTopology(4);
+
+        awaitExchange(newIgnite);
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
@@ -283,6 +316,62 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testWalDisabledDuringRebalancingWithPendingTxTracker() throws Exception {
+        enablePendingTxTracker = true;
+        dfltCacheBackupCnt = 2;
+
+        Ignite ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        ignite.cluster().setBaselineTopology(3);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        stopGrid(2);
+
+        awaitExchange((IgniteEx)ignite);
+
+        doLoad(cache, 4, 10_000);
+
+        IgniteEx newIgnite = startGrid(2);
+
+        awaitExchange(newIgnite);
+
+        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
+
+        assertFalse(grpCtx.walEnabled());
+
+        long rebalanceStartedTs = System.currentTimeMillis();
+
+        for (Ignite g : G.allGrids())
+            g.cache(DEFAULT_CACHE_NAME).rebalance();
+
+        awaitPartitionMapExchange();
+
+        assertTrue(grpCtx.walEnabled());
+
+        long rebalanceFinishedTs = System.currentTimeMillis();
+
+        CheckpointHistory cpHist =
+            ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
+
+        assertNotNull(cpHist);
+
+        // Ensure there was a checkpoint on WAL re-activation.
+        assertEquals(
+            1,
+            cpHist.checkpoints()
+                .stream()
+                .filter(ts -> rebalanceStartedTs <= ts && ts <= rebalanceFinishedTs)
+                .count());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testLocalAndGlobalWalStateInterdependence() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -295,7 +384,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteEx newIgnite = startGrid(3);
 
-        ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
+        newIgnite.cluster().setBaselineTopology(ignite.cluster().nodes());
+
+        awaitExchange(newIgnite);
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
@@ -320,8 +411,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWithExchangesMerge() throws Exception {
-        final int nodeCnt = 5;
+        final int nodeCnt = 4;
         final int keyCnt = getKeysCount();
 
         Ignite ignite = startGrids(nodeCnt);
@@ -335,14 +427,13 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         stopGrid(2);
         stopGrid(3);
-        stopGrid(4);
 
         // Rewrite data to trigger further rebalance.
         for (int k = 0; k < keyCnt; k++)
             cache.put(k, k * 2);
 
         // Start several grids in parallel to trigger exchanges merge.
-        startGridsMultiThreaded(2, 3);
+        startGridsMultiThreaded(2, 2);
 
         for (int nodeIdx = 2; nodeIdx < nodeCnt; nodeIdx++) {
             CacheGroupContext grpCtx = grid(nodeIdx).cachex(REPL_CACHE).context().group();
@@ -367,13 +458,14 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             IgniteCache<Integer, Integer> cache0 = grid(nodeIdx).cache(REPL_CACHE);
 
             for (int k = 0; k < keyCnt; k++)
-                Assert.assertEquals("nodeIdx=" + nodeIdx + ", key=" + k, (Integer) (2 * k), cache0.get(k));
+                Assert.assertEquals("nodeIdx=" + nodeIdx + ", key=" + k, (Integer)(2 * k), cache0.get(k));
         }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParallelExchangeDuringRebalance() throws Exception {
         doTestParallelExchange(supplyMessageLatch);
     }
@@ -381,6 +473,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParallelExchangeDuringCheckpoint() throws Exception {
         doTestParallelExchange(fileIOLatch);
     }
@@ -408,6 +501,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
 
+        // Await fully exchange complete.
+        awaitExchange(newIgnite);
+
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).rebalance();
 
@@ -427,12 +523,13 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         awaitPartitionMapExchange();
 
-        assertTrue(grpCtx.walEnabled());
+        assertTrue(waitForCondition(grpCtx::walEnabled, 2_000));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -447,7 +544,10 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteEx newIgnite = startGrid(1);
 
-        ignite.cluster().setBaselineTopology(2);
+        newIgnite.cluster().setBaselineTopology(2);
+
+        // Await fully exchange complete.
+        awaitExchange(newIgnite);
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
@@ -471,6 +571,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalNotDisabledAfterShrinkingBaselineTopology() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -493,6 +594,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         ignite.cluster().setBaselineTopology(5);
 
+        // Await fully exchange complete.
+        awaitExchange((IgniteEx)ignite);
+
         for (Ignite g : G.allGrids()) {
             CacheGroupContext grpCtx = ((IgniteEx)g).cachex(DEFAULT_CACHE_NAME).context().group();
 
@@ -512,6 +616,42 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
     /**
      *
+     * @param ig Ignite.
+     */
+    private void awaitExchange(IgniteEx ig) throws IgniteCheckedException {
+        ig.context().cache().context().exchange().lastTopologyFuture().get();
+    }
+
+    /**
+     * Put random values to cache in multiple threads until time interval given expires.
+     *
+     * @param cache Cache to modify.
+     * @param threadCnt Number ot threads to be used.
+     * @param duration Time interval in milliseconds.
+     * @throws Exception When something goes wrong.
+     */
+    private void doLoad(IgniteCache<Integer, Integer> cache, int threadCnt, long duration) throws Exception {
+        GridTestUtils.runMultiThreaded(() -> {
+            long stopTs = U.currentTimeMillis() + duration;
+
+            int keysCnt = getKeysCount();
+
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            do {
+                try {
+                    cache.put(rnd.nextInt(keysCnt), rnd.nextInt());
+                }
+                catch (Exception ex) {
+                    MvccFeatureChecker.assertMvccWriteConflict(ex);
+                }
+            }
+            while (U.currentTimeMillis() < stopTs);
+        }, threadCnt, "load-cache");
+    }
+
+    /**
+     *
      */
     private static class TestFileIOFactory implements FileIOFactory {
         /** */
@@ -522,11 +662,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
          */
         TestFileIOFactory(FileIOFactory delegate) {
             this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return new TestFileIO(delegate.create(file));
         }
 
         /** {@inheritDoc} */
@@ -547,6 +682,21 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
          */
         TestFileIO(FileIO delegate) {
             this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getFileSystemBlockSize() {
+            return delegate.getFileSystemBlockSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSparseSize() {
+            return delegate.getSparseSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int punchHole(long position, int len) {
+            return delegate.punchHole(position, len);
         }
 
         /** {@inheritDoc} */

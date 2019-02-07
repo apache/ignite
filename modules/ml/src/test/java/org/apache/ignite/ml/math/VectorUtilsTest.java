@@ -17,10 +17,15 @@
 
 package org.apache.ignite.ml.math;
 
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Tests for {@link VectorUtils }
+ */
 public class VectorUtilsTest {
     /** */
     @Test
@@ -53,14 +58,12 @@ public class VectorUtilsTest {
     /** */
     @Test(expected = NullPointerException.class)
     public void testFails1() {
-        double[] values = null;
-        VectorUtils.of(values);
+        VectorUtils.of((double[])null);
     }
 
     /** */
     @Test(expected = NullPointerException.class)
     public void testFails2() {
-        Double[] values = null;
-        VectorUtils.of(values);
+        VectorUtils.of((Double[])null);
     }
 }

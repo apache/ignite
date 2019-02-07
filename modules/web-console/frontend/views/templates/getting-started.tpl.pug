@@ -14,21 +14,26 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.modal.center(role='dialog')
+include /app/helpers/jade/mixins
+
+.modal.modal--ignite.theme--ignite.center(role='dialog')
     .modal-dialog
         .modal-content
             #errors-container.modal-header.header
-                button.close(ng-click='close()' aria-hidden='true') &times;
-                h4.modal-title 
-                    i.fa.fa-book
+                button.close(ng-click='close()' aria-hidden='true')
+                    svg(ignite-icon="cross")
+                h4.modal-title
                     | {{title}}
-            .getting-started
-                .col-xs-12(ng-bind-html='message')
+            .modal-body
+                .getting-started.row(ng-bind-html='message')
             .modal-footer
-                .checkbox
-                    label
-                        input(type='checkbox' ng-model='ui.showGettingStarted')
-                        | Show getting started on next login
-                a.btn.btn-primary(ng-disabled='isFirst()' ng-click='!isFirst() && prev()') Prev
-                a.btn.btn-primary(ng-disabled='isLast()' ng-click='!isLast() && next()') Next
-                a.btn.btn-primary(ng-click='close()') Close
+                div
+                    +form-field__checkbox({
+                        label: 'Do not show this window again',
+                        model: 'ui.dontShowGettingStarted',
+                        name: '"dontShowGettingStarted"'
+                    })
+                div
+                    a.btn-ignite.btn-ignite--link-success(ng-disabled='isFirst()' ng-click='!isFirst() && prev()') Prev
+                    a.btn-ignite.btn-ignite--link-success(ng-disabled='isLast()' ng-click='!isLast() && next()') Next
+                    a.btn-ignite.btn-ignite--success(ng-click='close()') Close

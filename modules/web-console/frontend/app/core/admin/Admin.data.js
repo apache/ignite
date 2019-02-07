@@ -15,15 +15,25 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 export default class IgniteAdminData {
     static $inject = ['$http', 'IgniteMessages', 'IgniteCountries'];
 
+    /**
+     * @param {ng.IHttpService} $http     
+     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
+     * @param {ReturnType<typeof import('app/services/Countries.service').default>} Countries
+     */
     constructor($http, Messages, Countries) {
         this.$http = $http;
         this.Messages = Messages;
         this.Countries = Countries;
     }
 
+    /**
+     * @param {string} viewedUserId
+     */
     becomeUser(viewedUserId) {
         return this.$http.get('/api/v1/admin/become', {
             params: {viewedUserId}
@@ -31,6 +41,9 @@ export default class IgniteAdminData {
         .catch(this.Messages.showError);
     }
 
+    /**
+     * @param {import('app/modules/user/User.service').User} user
+     */
     removeUser(user) {
         return this.$http.post('/api/v1/admin/remove', {
             userId: user._id
@@ -46,6 +59,9 @@ export default class IgniteAdminData {
         });
     }
 
+    /**
+     * @param {import('app/modules/user/User.service').User} user
+     */
     toggleAdmin(user) {
         const adminFlag = !user.admin;
 
@@ -59,10 +75,13 @@ export default class IgniteAdminData {
             this.Messages.showInfo(`Admin rights was successfully ${adminFlag ? 'granted' : 'revoked'} for user: "${user.userName}"`);
         })
         .catch((res) => {
-            this.Messages.showError(`Failed to ${adminFlag ? 'grant' : 'revok'} admin rights for user: "${user.userName}"`, res);
+            this.Messages.showError(`Failed to ${adminFlag ? 'grant' : 'revoke'} admin rights for user: "${user.userName}"`, res);
         });
     }
 
+    /**
+     * @param {import('app/modules/user/User.service').User} user
+     */
     prepareUsers(user) {
         const { Countries } = this;
 

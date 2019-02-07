@@ -33,4 +33,7 @@ interface QueryPager<T> extends AutoCloseable {
      * @return {@code true} if there are more pages to read; {@code false} otherwise.
      */
     public boolean hasNext();
+
+    /** Indicates if initial query response was received. */
+    public boolean hasFirstPage();
 }

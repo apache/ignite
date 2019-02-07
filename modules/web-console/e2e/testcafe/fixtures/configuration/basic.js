@@ -77,8 +77,7 @@ test('Basic editing', async(t) => {
     await t.expect(cache1.getItemViewColumn(1).textContent).eql(localMode, 'Can edit cache mode');
     await t.expect(cache1.getItemViewColumn(2).textContent).eql(atomic, 'Can edit cache atomicity');
 
-    // TODO IGNITE-8094: restore to save method call.
-    await page.saveWithoutDownload();
+    await page.save();
     await t
         .expect(successNotification.visible).ok('Shows success notifications')
         .expect(successNotification.textContent).contains(`Cluster "${clusterName}" saved.`, 'Success notification has correct text', {timeout: 500});

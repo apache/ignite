@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     +----------------+---------------+---------+----------+
  * </pre>
  */
-@SuppressWarnings({"NakedNotify", "SynchronizationOnLocalVariableOrMethodParameter", "CallToThreadYield", "WaitWhileNotSynced"})
 public class OffheapReadWriteLock {
     /**
      * TODO benchmark optimal spin count.
@@ -263,7 +262,7 @@ public class OffheapReadWriteLock {
 
             if (lockCount(state) != -1)
                 throw new IllegalMonitorStateException("Attempted to release write lock while not holding it " +
-                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state));
+                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state) + ']');
 
             updated = releaseWithTag(state, tag);
 

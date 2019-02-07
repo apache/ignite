@@ -25,10 +25,10 @@ import java.util.function.Function;
 @FunctionalInterface
 public interface IgniteTriFunction<A, B, C, R> extends Serializable {
     /** */
-    R apply(A a, B b, C c);
+    public R apply(A a, B b, C c);
 
     /** */
-    default <V> IgniteTriFunction<A, B, C, V> andThen(Function<? super R, ? extends V> after) {
+    public default <V> IgniteTriFunction<A, B, C, V> andThen(Function<? super R, ? extends V> after) {
         Objects.requireNonNull(after);
 
         return (A a, B b, C c) -> after.apply(apply(a, b, c));

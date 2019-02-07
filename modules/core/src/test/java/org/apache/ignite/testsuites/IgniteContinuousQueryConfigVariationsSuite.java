@@ -17,44 +17,106 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryVariationsTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runner.Runner;
+import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteContinuousQueryConfigVariationsSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteContinuousQueryConfigVariationsSuite.SingleNodeTest.class,
+    IgniteContinuousQueryConfigVariationsSuite.MultiNodeTest.class
+})
+public class IgniteContinuousQueryConfigVariationsSuite {
+    /** */
+    private static List<Class<?>> suiteSingleNode() {
+        return new ConfigVariationsTestSuiteBuilder(CacheContinuousQueryVariationsTest.class)
+            .withBasicCacheParams()
+            .gridsCount(1)
+            .classes();
+    }
 
-        TestSuite suite = new TestSuite("Ignite Continuous Query Config Variations Suite");
-
-        CacheContinuousQueryVariationsTest.singleNode = false;
-
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "5 nodes 1 backup",
-            CacheContinuousQueryVariationsTest.class)
+    /** */
+    private static List<Class<?>> suiteMultiNode() {
+        return new ConfigVariationsTestSuiteBuilder(CacheContinuousQueryVariationsTest.class)
             .withBasicCacheParams()
             .gridsCount(5)
             .backups(2)
-            .build());
+            .classes();
+    }
 
-        CacheContinuousQueryVariationsTest.singleNode = true;
+    /** */
+    @RunWith(IgniteContinuousQueryConfigVariationsSuite.SuiteSingleNode.class)
+    public static class SingleNodeTest {
+    }
 
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "Single node",
-            CacheContinuousQueryVariationsTest.class)
-            .withBasicCacheParams()
-            .gridsCount(1)
-            .build());
+    /** */
+    @RunWith(IgniteContinuousQueryConfigVariationsSuite.SuiteMultiNode.class)
+    public static class MultiNodeTest {
+    }
 
-        return suite;
+    /** {@inheritDoc} */
+    public static class SuiteSingleNode extends Suite {
+        /** */
+        public SuiteSingleNode(Class<?> cls) throws InitializationError {
+            super(cls, suiteSingleNode().toArray(new Class<?>[] {null}));
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void runChild(Runner runner, RunNotifier ntf) {
+            System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
+
+            CacheContinuousQueryVariationsTest.singleNode = true;
+
+            super.runChild(runner, ntf);
+        }
+    }
+
+    /** {@inheritDoc} */
+    public static class SuiteMultiNode extends Suite {
+        /** */
+        public SuiteMultiNode(Class<?> cls) throws InitializationError {
+            super(cls, suiteWithSentinel().toArray(new Class<?>[] {null}));
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void runChild(Runner runner, RunNotifier ntf) {
+            System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
+
+            CacheContinuousQueryVariationsTest.singleNode = false;
+
+            super.runChild(runner, ntf);
+        }
+
+        /** */
+        private static List<Class<?>> suiteWithSentinel() {
+            return Stream.concat(suiteMultiNode().stream(),
+                new ConfigVariationsTestSuiteBuilder(
+                    Sentinel.class).withBasicCacheParams().classes().subList(0, 1).stream())
+                .collect(Collectors.toList());
+        }
+
+        /**
+         * Sole purpose of this class is to trigger
+         * {@link IgniteCacheConfigVariationsAbstractTest#unconditionalCleanupAfterTests()}.
+         */
+        public static class Sentinel extends IgniteCacheConfigVariationsAbstractTest {
+            /** */
+            @Test
+            public void sentinel() {}
+        }
     }
 }

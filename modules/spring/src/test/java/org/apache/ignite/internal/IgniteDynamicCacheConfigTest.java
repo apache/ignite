@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for dynamic cache start from config file.
@@ -86,6 +87,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCacheStartFromConfig() throws Exception {
         IgniteCache cache = ignite(0).createCache(load(
             "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
@@ -101,6 +103,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicNearCacheStartFromConfig() throws Exception {
         testAttribute = false;
 
@@ -130,6 +133,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateNearCache() throws Exception {
         testAttribute = false;
 
@@ -162,6 +166,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateNearCache() throws Exception {
         testAttribute = false;
 
@@ -197,6 +202,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCacheStartFromNotExistConfig() throws Exception {
         try {
             ignite(0).getOrCreateCache(load("config/cache.xml"));
@@ -211,6 +217,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCachedWithConfigUrlString() throws Exception {
         GridEmbeddedHttpServer srv = null;
 

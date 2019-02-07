@@ -114,6 +114,9 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
                         try {
                             scanner.scan(UriDeploymentScannerManager.this);
                         }
+                        catch (Exception e) {
+                            log.error("Uncaught error in URI deployment scanner", e);
+                        }
                         finally {
                             // Do it in finally to avoid any hanging.
                             if (firstScan) {

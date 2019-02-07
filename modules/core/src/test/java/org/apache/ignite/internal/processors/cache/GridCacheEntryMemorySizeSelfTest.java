@@ -35,10 +35,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -49,9 +48,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  *
  */
 public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Null reference size (optimized marshaller writes one byte for null reference). */
     private static final int NULL_REF_SIZE = 1;
 
@@ -83,12 +79,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setMarshaller(createMarshaller());
 
         return cfg;
@@ -115,12 +105,26 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+        super.afterTest();
+    }
+
     /**
      * @param nearEnabled {@code True} if near cache should be enabled.
      * @param mode Cache mode.
      * @return Created cache.
      */
-    private IgniteCache<Integer, Value> testCache(boolean nearEnabled, CacheMode mode) {
+    private IgniteCache<Integer, Value> createCache(boolean nearEnabled, CacheMode mode) {
         CacheConfiguration<Integer, Value> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(mode);
@@ -176,8 +180,11 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocal() throws Exception {
-        IgniteCache<Integer, Value> cache = testCache(false, LOCAL);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        IgniteCache<Integer, Value> cache = createCache(false, LOCAL);
 
         try {
             cache.put(1, new Value(new byte[1024]));
@@ -199,8 +206,9 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicated() throws Exception {
-        IgniteCache<Integer, Value> cache = testCache(false, REPLICATED);
+        IgniteCache<Integer, Value> cache = createCache(false, REPLICATED);
 
         try {
             cache.put(1, new Value(new byte[1024]));
@@ -222,8 +230,11 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearEnabled() throws Exception {
-        IgniteCache<Integer, Value> cache = testCache(true, PARTITIONED);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        IgniteCache<Integer, Value> cache = createCache(true, PARTITIONED);
 
         try {
             int[] keys = new int[3];
@@ -274,8 +285,9 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearDisabled() throws Exception {
-        IgniteCache<Integer, Value> cache = testCache(false, PARTITIONED);
+        IgniteCache<Integer, Value> cache = createCache(false, PARTITIONED);
 
         try {
             int[] keys = new int[3];
@@ -334,7 +346,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** Value. */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Value implements Serializable {
         /** Byte array. */
         private byte[] arr;

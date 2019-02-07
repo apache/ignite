@@ -24,6 +24,17 @@ import org.apache.ignite.IgniteCheckedException;
  */
 public interface IndexStorage {
     /**
+     * Allocate page for cache index. Index name will be masked if needed.
+     *
+     * @param cacheId Cache ID.
+     * @param idxName Index name.
+     * @param segment Segment.
+     * @return Root page.
+     * @throws IgniteCheckedException If failed.
+     */
+    public RootPage allocateCacheIndex(Integer cacheId, String idxName, int segment) throws IgniteCheckedException;
+
+    /**
      * Get or allocate initial page for an index.
      *
      * @param idxName Index name.
@@ -31,7 +42,18 @@ public interface IndexStorage {
      *      was newly allocated, and rootId that is counter which increments each time new page allocated.
      * @throws IgniteCheckedException If failed.
      */
-    public RootPage getOrAllocateForTree(String idxName) throws IgniteCheckedException;
+    public RootPage allocateIndex(String idxName) throws IgniteCheckedException;
+
+    /**
+     * Deallocate index page and remove from tree.
+     *
+     * @param cacheId Cache ID.
+     * @param idxName Index name.
+     * @param segment Segment.
+     * @return Root ID or -1 if no page was removed.
+     * @throws IgniteCheckedException  If failed.
+     */
+    public RootPage dropCacheIndex(Integer cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
      * Deallocate index page and remove from tree.
@@ -40,7 +62,7 @@ public interface IndexStorage {
      * @return Root ID or -1 if no page was removed.
      * @throws IgniteCheckedException  If failed.
      */
-    public RootPage dropRootPage(String idxName) throws IgniteCheckedException;
+    public RootPage dropIndex(String idxName) throws IgniteCheckedException;
 
     /**
      * Destroy this meta store.

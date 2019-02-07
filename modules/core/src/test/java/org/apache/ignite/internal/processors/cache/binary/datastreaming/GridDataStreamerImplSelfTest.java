@@ -37,10 +37,8 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -49,9 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for {@code IgniteDataStreamerImpl}.
  */
 public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of keys to load via data streamer. */
     private static final int KEYS_COUNT = 1000;
 
@@ -61,11 +56,6 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         if (binaries) {
             BinaryMarshaller marsh = new BinaryMarshaller();
@@ -100,6 +90,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddDataFromMap() throws Exception {
         try {
             binaries = false;
@@ -148,6 +139,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddMissingBinary() throws Exception {
         try {
             binaries = true;
@@ -183,6 +175,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddBinaryDataFromMap() throws Exception {
         try {
             binaries = true;
@@ -242,6 +235,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddBinaryCreatedWithBuilder() throws Exception {
         try {
             binaries = true;
@@ -258,7 +252,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
                 BinaryObjectBuilder obj = g0.binary().builder("NoExistedClass");
 
                 obj.setField("id", i);
-                obj.setField("name", String.valueOf("name = " + i));
+                obj.setField("name", "name = " + i);
 
                 dataLdr.addData(i, obj.build());
             }

@@ -29,6 +29,7 @@ import javax.management.remote.JMXServiceURL;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Servlet loader test.
@@ -68,7 +69,7 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked"})
+    @Test
     public void testLoader() throws Exception {
         JMXConnector jmx = null;
 

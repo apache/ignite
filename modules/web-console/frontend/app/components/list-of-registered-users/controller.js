@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-import headerTemplate from 'app/primitives/ui-grid-header/index.tpl.pug';
+import _ from 'lodash';
 
 import columnDefs from './column-defs';
 import categories from './categories';
+
+import headerTemplate from 'app/primitives/ui-grid-header/index.tpl.pug';
 
 const rowTemplate = `<div
   ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.uid"
@@ -36,120 +38,80 @@ export default class IgniteListOfRegisteredUsersCtrl {
     static $inject = ['$scope', '$state', '$filter', 'User', 'uiGridGroupingConstants', 'uiGridPinningConstants', 'IgniteAdminData', 'IgniteNotebookData', 'IgniteConfirm', 'IgniteActivitiesUserDialog'];
 
     constructor($scope, $state, $filter, User, uiGridGroupingConstants, uiGridPinningConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
-        const $ctrl = this;
+        this.$state = $state;
+        this.AdminData = AdminData;
+        this.ActivitiesDialogFactory = ActivitiesUserDialog;
+        this.Confirm = Confirm;
+        this.User = User;
+        this.NotebookData = NotebookData;
 
         const dtFilter = $filter('date');
 
-        $ctrl.groupBy = 'user';
+        this.groupBy = 'user';
 
-        $ctrl.selected = [];
+        this.selected = [];
 
-        $ctrl.params = {
+        this.params = {
             startDate: new Date(),
             endDate: new Date()
         };
 
-        $ctrl.uiGridPinningConstants = uiGridPinningConstants;
-        $ctrl.uiGridGroupingConstants = uiGridGroupingConstants;
+        this.uiGridPinningConstants = uiGridPinningConstants;
+        this.uiGridGroupingConstants = uiGridGroupingConstants;
 
-        User.read().then((user) => $ctrl.user = user);
-
-        const becomeUser = () => {
-            const user = this.gridApi.selection.legacyGetSelectedRows()[0];
-
-            AdminData.becomeUser(user._id)
-                .then(() => User.load())
-                .then(() => $state.go('default-state'))
-                .then(() => NotebookData.load());
-        };
-
-        const removeUser = () => {
-            const user = this.gridApi.selection.legacyGetSelectedRows()[0];
-
-            Confirm.confirm(`Are you sure you want to remove user: "${user.userName}"?`)
-                .then(() => AdminData.removeUser(user))
-                .then(() => {
-                    const i = _.findIndex($ctrl.gridOptions.data, (u) => u._id === user._id);
-
-                    if (i >= 0) {
-                        $ctrl.gridOptions.data.splice(i, 1);
-                        $ctrl.gridApi.selection.clearSelectedRows();
-                    }
-
-                    $ctrl.adjustHeight($ctrl.gridOptions.data.length);
-
-                    return $ctrl._refreshRows();
-                });
-        };
-
-        const toggleAdmin = () => {
-            const user = this.gridApi.selection.legacyGetSelectedRows()[0];
-
-            if (user.adminChanging)
-                return;
-
-            user.adminChanging = true;
-
-            AdminData.toggleAdmin(user)
-                .finally(() => {
-                    $ctrl._updateSelected();
-
-                    user.adminChanging = false;
-                });
-        };
-
-        const showActivities = () => {
-            const user = this.gridApi.selection.legacyGetSelectedRows()[0];
-
-            return new ActivitiesUserDialog({ user });
-        };
+        User.read().then((user) => this.user = user);
 
         const companiesExcludeFilter = (renderableRows) => {
-            if (_.isNil($ctrl.params.companiesExclude))
+            if (_.isNil(this.params.companiesExclude))
                 return renderableRows;
 
             _.forEach(renderableRows, (row) => {
-                row.visible = _.isEmpty($ctrl.params.companiesExclude) ||
-                    row.entity.company.toLowerCase().indexOf($ctrl.params.companiesExclude.toLowerCase()) === -1;
+                row.visible = _.isEmpty(this.params.companiesExclude) ||
+                    row.entity.company.toLowerCase().indexOf(this.params.companiesExclude.toLowerCase()) === -1;
             });
 
             return renderableRows;
         };
 
-        $ctrl.actionOptions = [
+        this.actionOptions = [
             {
                 action: 'Become this user',
-                click: becomeUser.bind(this),
+                click: () => this.becomeUser(),
                 available: true
             },
             {
                 action: 'Revoke admin',
-                click: toggleAdmin.bind(this),
+                click: () => this.toggleAdmin(),
                 available: true
             },
             {
                 action: 'Grant admin',
-                click: toggleAdmin.bind(this),
+                click: () => this.toggleAdmin(),
                 available: false
             },
             {
+                action: 'Add user',
+                sref: '.createUser',
+                available: true
+            },
+            {
                 action: 'Remove user',
-                click: removeUser.bind(this),
+                click: () => this.removeUser(),
                 available: true
             },
             {
                 action: 'Activity detail',
-                click: showActivities.bind(this),
+                click: () => this.showActivities(),
                 available: true
             }
         ];
 
-        $ctrl._userGridOptions = {
+        this._userGridOptions = {
             columnDefs,
             categories
         };
 
-        $ctrl.gridOptions = {
+        this.gridOptions = {
             data: [],
 
             columnDefs,
@@ -176,18 +138,18 @@ export default class IgniteListOfRegisteredUsersCtrl {
             rowIdentity: (row) => row._id,
             getRowIdentity: (row) => row._id,
             onRegisterApi: (api) => {
-                $ctrl.gridApi = api;
+                this.gridApi = api;
 
-                api.selection.on.rowSelectionChanged($scope, $ctrl._updateSelected.bind($ctrl));
-                api.selection.on.rowSelectionChangedBatch($scope, $ctrl._updateSelected.bind($ctrl));
+                api.selection.on.rowSelectionChanged($scope, this._updateSelected.bind(this));
+                api.selection.on.rowSelectionChangedBatch($scope, this._updateSelected.bind(this));
 
-                api.core.on.filterChanged($scope, $ctrl._filteredRows.bind($ctrl));
-                api.core.on.rowsVisibleChanged($scope, $ctrl._filteredRows.bind($ctrl));
+                api.core.on.filterChanged($scope, this._filteredRows.bind(this));
+                api.core.on.rowsVisibleChanged($scope, this._filteredRows.bind(this));
 
                 api.grid.registerRowsProcessor(companiesExcludeFilter, 50);
 
-                $scope.$watch(() => $ctrl.gridApi.grid.getVisibleRows().length, (rows) => $ctrl.adjustHeight(rows));
-                $scope.$watch(() => $ctrl.params.companiesExclude, () => $ctrl.gridApi.grid.refreshRows());
+                $scope.$watch(() => this.gridApi.grid.getVisibleRows().length, (rows) => this.adjustHeight(rows));
+                $scope.$watch(() => this.params.companiesExclude, () => this.gridApi.grid.refreshRows());
             }
         };
 
@@ -197,20 +159,20 @@ export default class IgniteListOfRegisteredUsersCtrl {
         const reloadUsers = (params) => {
             AdminData.loadUsers(params)
                 .then((data) => {
-                    $ctrl.gridOptions.data = data;
+                    this.gridOptions.data = data;
 
-                    $ctrl.companies = _.values(_.groupBy(data, 'company'));
-                    $ctrl.countries = _.values(_.groupBy(data, 'countryCode'));
+                    this.companies = _.values(_.groupBy(data, 'company'));
+                    this.countries = _.values(_.groupBy(data, 'countryCode'));
 
-                    $ctrl._refreshRows();
+                    this._refreshRows();
                 });
         };
 
         const filterDates = _.debounce(() => {
-            const sdt = $ctrl.params.startDate;
-            const edt = $ctrl.params.endDate;
+            const sdt = this.params.startDate;
+            const edt = this.params.endDate;
 
-            $ctrl.gridOptions.exporterCsvFilename = `web_console_users_${dtFilter(sdt, 'yyyy_MM')}.csv`;
+            this.exporterCsvFilename = `web_console_users_${dtFilter(sdt, 'yyyy_MM')}.csv`;
 
             const startDate = Date.UTC(sdt.getFullYear(), sdt.getMonth(), 1);
             const endDate = Date.UTC(edt.getFullYear(), edt.getMonth() + 1, 1);
@@ -218,8 +180,9 @@ export default class IgniteListOfRegisteredUsersCtrl {
             reloadUsers({ startDate, endDate });
         }, 250);
 
-        $scope.$watch(() => $ctrl.params.startDate, filterDates);
-        $scope.$watch(() => $ctrl.params.endDate, filterDates);
+        $scope.$on('userCreated', filterDates);
+        $scope.$watch(() => this.params.startDate, filterDates);
+        $scope.$watch(() => this.params.endDate, filterDates);
     }
 
     adjustHeight(rows) {
@@ -233,34 +196,93 @@ export default class IgniteListOfRegisteredUsersCtrl {
 
     _filteredRows() {
         const filtered = _.filter(this.gridApi.grid.rows, ({ visible}) => visible);
-        const entities = _.map(filtered, 'entity');
 
-        this.filteredRows = entities;
+        this.filteredRows = _.map(filtered, 'entity');
     }
 
     _updateSelected() {
         const ids = this.gridApi.selection.legacyGetSelectedRows().map(({ _id }) => _id).sort();
 
+        if (!_.isEqual(ids, this.selected))
+            this.selected = ids;
+
         if (ids.length) {
             const user = this.gridApi.selection.legacyGetSelectedRows()[0];
             const other = this.user._id !== user._id;
 
-            this.actionOptions[1].available = other && user.admin;
-            this.actionOptions[2].available = other && !user.admin;
-
-            this.actionOptions[0].available = other;
-            this.actionOptions[3].available = other;
+            this.actionOptions[0].available = other; // Become this user.
+            this.actionOptions[1].available = other && user.admin; // Revoke admin.
+            this.actionOptions[2].available = other && !user.admin; // Grant admin.
+            this.actionOptions[4].available = other; // Remove user.
+            this.actionOptions[5].available = true; // Activity detail.
         }
-
-        if (!_.isEqual(ids, this.selected))
-            this.selected = ids;
+        else {
+            this.actionOptions[0].available = false; // Become this user.
+            this.actionOptions[1].available = false; // Revoke admin.
+            this.actionOptions[2].available = false; // Grant admin.
+            this.actionOptions[4].available = false; // Remove user.
+            this.actionOptions[5].available = false; // Activity detail.
+        }
     }
 
     _refreshRows() {
         if (this.gridApi) {
             this.gridApi.grid.refreshRows()
-                .then(() => this.selected.length && this._updateSelected());
+                .then(() => this._updateSelected());
         }
+    }
+
+    becomeUser() {
+        const user = this.gridApi.selection.legacyGetSelectedRows()[0];
+
+        this.AdminData.becomeUser(user._id)
+            .then(() => this.User.load())
+            .then(() => this.$state.go('default-state'))
+            .then(() => this.NotebookData.load());
+    }
+
+    toggleAdmin() {
+        if (!this.gridApi)
+            return;
+
+        const user = this.gridApi.selection.legacyGetSelectedRows()[0];
+
+        if (user.adminChanging)
+            return;
+
+        user.adminChanging = true;
+
+        this.AdminData.toggleAdmin(user)
+            .finally(() => {
+                this._updateSelected();
+
+                user.adminChanging = false;
+            });
+    }
+
+    removeUser() {
+        const user = this.gridApi.selection.legacyGetSelectedRows()[0];
+
+        this.Confirm.confirm(`Are you sure you want to remove user: "${user.userName}"?`)
+            .then(() => this.AdminData.removeUser(user))
+            .then(() => {
+                const i = _.findIndex(this.gridOptions.data, (u) => u._id === user._id);
+
+                if (i >= 0) {
+                    this.gridOptions.data.splice(i, 1);
+                    this.gridApi.selection.clearSelectedRows();
+                }
+
+                this.adjustHeight(this.gridOptions.data.length);
+
+                return this._refreshRows();
+            });
+    }
+
+    showActivities() {
+        const user = this.gridApi.selection.legacyGetSelectedRows()[0];
+
+        return new this.ActivitiesDialogFactory({ user });
     }
 
     groupByUser() {

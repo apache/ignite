@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.Iterator;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jsr166.ConcurrentLinkedHashMap;
-
-import java.util.Iterator;
-import java.util.Map;
 
 import static org.jsr166.ConcurrentLinkedHashMap.DFLT_INIT_CAP;
 import static org.jsr166.ConcurrentLinkedHashMap.DFLT_LOAD_FACTOR;
@@ -38,7 +37,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.DFLT_LOAD_FACTOR;
  */
 public class H2RowCache implements GridQueryRowCacheCleaner {
     /** Cached rows. */
-    private final ConcurrentLinkedHashMap<Long, GridH2KeyValueRowOnheap> rows;
+    private final ConcurrentLinkedHashMap<Long, H2CacheRow> rows;
 
     /** Cache group ID. */
     private final CacheGroupContext grpCtx;
@@ -52,7 +51,7 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
     public H2RowCache(CacheGroupContext grpCtx, int maxSize) {
         this.grpCtx = grpCtx;
 
-        rows = new ConcurrentLinkedHashMap<Long, GridH2KeyValueRowOnheap>(
+        rows = new ConcurrentLinkedHashMap<>(
             DFLT_INIT_CAP,
             DFLT_LOAD_FACTOR,
             Runtime.getRuntime().availableProcessors(),
@@ -67,8 +66,8 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
      * @return Cached on-heap row.
      * @throws IgniteCheckedException On error.
      */
-    public GridH2KeyValueRowOnheap get(long link) throws IgniteCheckedException {
-        GridH2KeyValueRowOnheap row = rows.get(link);
+    public H2CacheRow get(long link) throws IgniteCheckedException {
+        H2CacheRow row = rows.get(link);
 
         if (row != null)
             touch(link);
@@ -81,7 +80,7 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
      *
      * @param row Row.
      */
-    public void put(GridH2KeyValueRowOnheap row) {
+    public void put(H2CacheRow row) {
         rows.put(row.link(), row);
     }
 
@@ -100,13 +99,13 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
     /**
      * Cache un-registration callback.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @return {@code True} if there are no more usages for the given cache group.
      */
-    public boolean onCacheUnregistered(GridCacheContext cctx) {
+    public boolean onCacheUnregistered(GridCacheContextInfo cacheInfo) {
         boolean res = --usageCnt == 0;
 
-        clearForCache(cctx);
+        clearForCache(cacheInfo);
 
         return res;
     }
@@ -121,15 +120,15 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
     /**
      * Clear entries belonging to the given cache.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      */
-    private void clearForCache(GridCacheContext cctx) {
-        int cacheId = cctx.cacheId();
+    private void clearForCache(GridCacheContextInfo cacheInfo) {
+        int cacheId = cacheInfo.cacheId();
 
-        Iterator<Map.Entry<Long, GridH2KeyValueRowOnheap>> iter = rows.entrySet().iterator();
+        Iterator<Map.Entry<Long, H2CacheRow>> iter = rows.entrySet().iterator();
 
         while (iter.hasNext()) {
-            GridH2KeyValueRowOnheap row = iter.next().getValue();
+            H2CacheRow row = iter.next().getValue();
 
             if (F.eq(cacheId, row.cacheId()))
                 iter.remove();

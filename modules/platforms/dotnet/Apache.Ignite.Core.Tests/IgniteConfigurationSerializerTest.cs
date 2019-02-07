@@ -99,6 +99,16 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new TimeSpan(1, 2, 3), cfg.LongQueryWarningTimeout);
             Assert.IsFalse(cfg.IsActiveOnStart);
             Assert.IsTrue(cfg.AuthenticationEnabled);
+
+            Assert.AreEqual(10000, cfg.MvccVacuumFrequency);
+            Assert.AreEqual(4, cfg.MvccVacuumThreadCount);
+            Assert.AreEqual(123, cfg.SqlQueryHistorySize);
+
+            Assert.IsNotNull(cfg.SqlSchemas);
+            Assert.AreEqual(2, cfg.SqlSchemas.Count);
+            Assert.IsTrue(cfg.SqlSchemas.Contains("SCHEMA_1"));
+            Assert.IsTrue(cfg.SqlSchemas.Contains("schema_2"));
+
             Assert.AreEqual("someId012", cfg.ConsistentId);
             Assert.IsFalse(cfg.RedirectJavaConsoleOutput);
 
@@ -1011,11 +1021,12 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 SslContextFactory = new SslContextFactory(),
-                FailureHandler = new StopNodeOrHaltFailureHandler()
+                FailureHandler = new StopNodeOrHaltFailureHandler
                 {
                     TryStop = false,
                     Timeout = TimeSpan.FromSeconds(10)
-                }
+                },
+                SqlQueryHistorySize = 345
             };
         }
 

@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,29 +29,53 @@ import org.jetbrains.annotations.Nullable;
  * Cache entry transactional update result.
  */
 public class GridCacheUpdateTxResult {
-    /** Success flag.*/
+    /** Success flag. */
     private final boolean success;
 
-    /** Old value. */
-    @GridToStringInclude
-    private final CacheObject oldVal;
-
-    /** Partition idx. */
+    /** Partition update counter. */
     private long updateCntr;
 
     /** */
+    private GridFutureAdapter<GridCacheUpdateTxResult> fut;
+
+    /** */
     private WALPointer logPtr;
+
+    /** Mvcc history. */
+    private List<MvccLinkAwareSearchRow> mvccHistory;
+
+    /** Previous value. */
+    private CacheObject prevVal;
+
+    /** Invoke result. */
+    private CacheInvokeResult invokeRes;
+
+    /** New value. */
+    private CacheObject newVal;
+
+    /** Value before the current tx. */
+    private CacheObject oldVal;
+
+    /** Filtered flag. */
+    private boolean filtered;
 
     /**
      * Constructor.
      *
      * @param success Success flag.
-     * @param oldVal Old value (if any),
+     */
+    GridCacheUpdateTxResult(boolean success) {
+        this.success = success;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param success Success flag.
      * @param logPtr Logger WAL pointer for the update.
      */
-    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, WALPointer logPtr) {
+    GridCacheUpdateTxResult(boolean success, WALPointer logPtr) {
         this.success = success;
-        this.oldVal = oldVal;
         this.logPtr = logPtr;
     }
 
@@ -56,20 +83,30 @@ public class GridCacheUpdateTxResult {
      * Constructor.
      *
      * @param success Success flag.
-     * @param oldVal Old value (if any).
+     * @param fut Update future.
+     */
+    GridCacheUpdateTxResult(boolean success, GridFutureAdapter<GridCacheUpdateTxResult> fut) {
+        this.success = success;
+        this.fut = fut;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param success Success flag.
+     * @param updateCntr Update counter.
      * @param logPtr Logger WAL pointer for the update.
      */
-    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, long updateCntr, WALPointer logPtr) {
+    GridCacheUpdateTxResult(boolean success, long updateCntr, WALPointer logPtr) {
         this.success = success;
-        this.oldVal = oldVal;
         this.updateCntr = updateCntr;
         this.logPtr = logPtr;
     }
 
     /**
-     * @return Partition idx.
+     * @return Partition update counter.
      */
-    public long updatePartitionCounter() {
+    public long updateCounter() {
         return updateCntr;
     }
 
@@ -88,10 +125,94 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
+     * @return Update future.
+     */
+    @Nullable public IgniteInternalFuture<GridCacheUpdateTxResult> updateFuture() {
+        return fut;
+    }
+
+    /**
+     * @return Mvcc history rows.
+     */
+    @Nullable public List<MvccLinkAwareSearchRow> mvccHistory() {
+        return mvccHistory;
+    }
+
+    /**
+     * @param mvccHistory Mvcc history rows.
+     */
+    public void mvccHistory(List<MvccLinkAwareSearchRow> mvccHistory) {
+        this.mvccHistory = mvccHistory;
+    }
+
+    /**
+     * @return Previous value.
+     */
+    @Nullable public CacheObject prevValue() {
+        return prevVal;
+    }
+
+    /**
+     * @param prevVal Previous value.
+     */
+    public void prevValue(@Nullable CacheObject prevVal) {
+        this.prevVal = prevVal;
+    }
+
+    /**
+     * @param result Entry processor invoke result.
+     */
+    public void invokeResult(CacheInvokeResult result) {
+        invokeRes = result;
+    }
+
+    /**
+     * @return Invoke result.
+     */
+    public CacheInvokeResult invokeResult() {
+        return invokeRes;
+    }
+
+    /**
+     * @return New value.
+     */
+    public CacheObject newValue() {
+        return newVal;
+    }
+
+    /**
      * @return Old value.
      */
-    @Nullable public CacheObject oldValue() {
+    public CacheObject oldValue() {
         return oldVal;
+    }
+
+    /**
+     * @param newVal New value.
+     */
+    public void newValue(CacheObject newVal) {
+        this.newVal = newVal;
+    }
+
+    /**
+     * @param oldVal Old value.
+     */
+    public void oldValue(CacheObject oldVal) {
+        this.oldVal = oldVal;
+    }
+
+    /**
+     * @return Filtered flag.
+     */
+    public boolean filtered() {
+        return filtered;
+    }
+
+    /**
+     * @param filtered Filtered flag.
+     */
+    public void filtered(boolean filtered) {
+        this.filtered = filtered;
     }
 
     /** {@inheritDoc} */

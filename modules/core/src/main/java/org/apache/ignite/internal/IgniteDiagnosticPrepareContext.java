@@ -160,7 +160,7 @@ public class IgniteDiagnosticPrepareContext {
     /**
      *
      */
-    private final static class CompoundInfoClosure implements IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> {
+    private static final class CompoundInfoClosure implements IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> {
         /** */
         private static final long serialVersionUID = 0L;
 

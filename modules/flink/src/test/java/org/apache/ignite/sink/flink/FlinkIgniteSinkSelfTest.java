@@ -19,18 +19,11 @@ package org.apache.ignite.sink.flink;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.CacheEvent;
-import org.apache.ignite.events.EventType;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import org.junit.Test;
 
 /**
  * Tests for {@link IgniteSink}.
@@ -39,147 +32,53 @@ public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String TEST_CACHE = "testCache";
 
-    /** Cache entries count. */
-    private static final int CACHE_ENTRY_COUNT = 10000;
-
-    /** Streaming events for testing. */
-    private static final long DFLT_STREAMING_EVENT = 10000;
-
-    /** Ignite instance. */
-    private Ignite ignite;
-
     /** Ignite test configuration file. */
     private static final String GRID_CONF_FILE = "modules/flink/src/test/resources/example-ignite.xml";
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 20_000;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected void beforeTest() throws Exception {
-        IgniteConfiguration cfg = loadConfiguration(GRID_CONF_FILE);
-
-        cfg.setClientMode(false);
-
-        ignite = startGrid("igniteServerNode", cfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-    }
-
-    /**
-     * Tests for the Flink sink.
-     * Ignite started in sink based on what is specified in the configuration file.
-     *
-     * @throws Exception
-     */
-    @SuppressWarnings("unchecked")
-    public void testFlinkIgniteSink() throws Exception {
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-        env.getConfig().disableSysoutLogging();
+    @Test
+    public void testIgniteSink() throws Exception {
+        Configuration configuration = new Configuration();
 
         IgniteSink igniteSink = new IgniteSink(TEST_CACHE, GRID_CONF_FILE);
 
         igniteSink.setAllowOverwrite(true);
 
-        igniteSink.setAutoFlushFrequency(10);
+        igniteSink.setAutoFlushFrequency(1L);
 
-        igniteSink.start();
+        igniteSink.open(configuration);
 
-        CacheListener listener = subscribeToPutEvents();
+        Map<String, String> myData = new HashMap<>();
+        myData.put("testData", "testValue");
 
-        DataStream<Map> stream = env.addSource(new SourceFunction<Map>() {
+        igniteSink.invoke(myData);
 
-            private boolean running = true;
+        /** waiting for a small duration for the cache flush to complete */
+        Thread.sleep(2000);
 
-            @Override public void run(SourceContext<Map> ctx) throws Exception {
-                Map testDataMap = new HashMap<>();
-                long cnt = 0;
+        assertEquals("testValue", igniteSink.getIgnite().getOrCreateCache(TEST_CACHE).get("testData"));
+    }
 
-                while (running && (cnt < DFLT_STREAMING_EVENT))  {
-                    testDataMap.put(cnt, "ignite-" + cnt);
-                    cnt++;
-                }
+    @Test
+    public void testIgniteSinkStreamExecution() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-                ctx.collect(testDataMap);
-            }
+        IgniteSink igniteSink = new IgniteSink(TEST_CACHE, GRID_CONF_FILE);
 
-            @Override public void cancel() {
-                running = false;
-            }
-        }).setParallelism(1);
+        igniteSink.setAllowOverwrite(true);
 
-        assertEquals(0, ignite.cache(TEST_CACHE).size());
+        igniteSink.setAutoFlushFrequency(1);
 
-        // sink data into the grid.
+        Map<String, String> myData = new HashMap<>();
+        myData.put("testdata", "testValue");
+        DataStream<Map> stream = env.fromElements(myData);
+
         stream.addSink(igniteSink);
-
         try {
             env.execute();
-
-            CountDownLatch latch = listener.getLatch();
-
-            // Enough events was handled in 10 seconds. Limited by test's timeout.
-            latch.await();
-
-            unsubscribeToPutEvents(listener);
-
-            assertEquals(DFLT_STREAMING_EVENT, ignite.getOrCreateCache(TEST_CACHE).size());
-
-            for (long i = 0; i < DFLT_STREAMING_EVENT; i++)
-                assertEquals("ignite-" + i, ignite.getOrCreateCache(TEST_CACHE).get(i));
-
         }
-        finally {
-            igniteSink.stop();
-        }
-    }
-
-    /**
-     * Sets a listener for {@link EventType#EVT_CACHE_OBJECT_PUT}.
-     *
-     * @return Cache listener.
-     */
-    private CacheListener subscribeToPutEvents() {
-        // Listen to cache PUT events and expect as many as messages as test data items.
-        CacheListener listener = new CacheListener();
-
-        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).localListen(listener, EVT_CACHE_OBJECT_PUT);
-
-        return listener;
-    }
-
-    /**
-     * Removes the listener for {@link EventType#EVT_CACHE_OBJECT_PUT}.
-     *
-     * @param listener Cache listener.
-     */
-    private void unsubscribeToPutEvents(CacheListener listener) {
-        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).stopLocalListen(listener, EVT_CACHE_OBJECT_PUT);
-    }
-
-    /** Listener. */
-    private class CacheListener implements IgnitePredicate<CacheEvent> {
-        private final CountDownLatch latch = new CountDownLatch(CACHE_ENTRY_COUNT);
-
-        /** @return Latch. */
-        public CountDownLatch getLatch() {
-            return latch;
-        }
-
-        /**
-         * @param evt Cache Event.
-         * @return {@code true}.
-         */
-        @Override public boolean apply(CacheEvent evt) {
-            latch.countDown();
-
-            return true;
+        catch (Exception e) {
+            e.printStackTrace();
+            fail("Stream execution process failed.");
         }
     }
 }

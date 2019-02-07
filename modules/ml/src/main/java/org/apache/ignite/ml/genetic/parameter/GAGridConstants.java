@@ -28,8 +28,12 @@ public interface GAGridConstants {
     public static final String GENE_CACHE = "geneCache";
 
     /** Selection Method type **/
-    public static enum SELECTION_METHOD {
-        SELECTON_METHOD_ELETISM, SELECTION_METHOD_TRUNCATION
-    };
-
+    public enum SELECTION_METHOD {
+        /** Selecton method eletism. */
+        SELECTON_METHOD_ELETISM,
+        /** Selection method truncation. */
+        SELECTION_METHOD_TRUNCATION,
+        /** Selection method roulette wheel. */
+        SELECTION_METHOD_ROULETTE_WHEEL
+    }
 }

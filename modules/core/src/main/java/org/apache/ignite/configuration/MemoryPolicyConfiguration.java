@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
@@ -375,5 +376,10 @@ public final class MemoryPolicyConfiguration implements Serializable {
         this.subIntervals = subIntervals;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MemoryPolicyConfiguration.class, this);
     }
 }

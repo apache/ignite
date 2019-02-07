@@ -27,19 +27,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Tests for authenticated an non authenticated JDBC thin connection.
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
@@ -48,19 +43,16 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setAuthenticationEnabled(true);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)));
+                .setPersistenceEnabled(true)
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+            )
+        );
 
         return cfg;
     }
@@ -90,6 +82,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnection() throws Exception {
         checkConnection(URL, "ignite", "ignite");
         checkConnection(URL, "another_user", "passwd");
@@ -99,6 +92,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
 
     /**
      */
+    @Test
     public void testInvalidUserPassword() {
         String err = "Unauthenticated sessions are prohibited";
         checkInvalidUserPassword(URL, null, null, err);
@@ -116,6 +110,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     /**
      * @throws SQLException On failed.
      */
+    @Test
     public void testUserSqlOnAuthorized() throws SQLException {
         try (Connection conn = DriverManager.getConnection(URL, "ignite", "ignite")) {
             conn.createStatement().execute("CREATE USER test WITH PASSWORD 'test'");
@@ -136,6 +131,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     /**
      * @throws SQLException On error.
      */
+    @Test
     public void testUserSqlWithNotIgniteUser() throws SQLException {
         try (Connection conn = DriverManager.getConnection(URL, "another_user", "passwd")) {
             String err = "User management operations are not allowed for user";
@@ -154,6 +150,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     /**
      * @throws SQLException On error.
      */
+    @Test
     public void testQuotedUsername() throws SQLException {
         // Spaces
         checkUserPassword(" test", "    ");

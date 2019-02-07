@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test that validates {@link Ignite#cacheNames()} implementation.
@@ -57,6 +58,7 @@ public class CacheNamesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of failure.
      */
+    @Test
     public void testCacheNames() throws Exception {
         try {
             startGridsMultiThreaded(2);

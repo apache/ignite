@@ -21,7 +21,7 @@ import {CSV} from 'app/services/CSV';
 export default {
     template,
     controller: class {
-        static $inject = ['$scope', 'uiGridGroupingConstants', 'uiGridExporterService', 'uiGridExporterConstants', CSV.name];
+        static $inject = ['$scope', 'uiGridGroupingConstants', 'uiGridExporterService', 'uiGridExporterConstants', 'CSV'];
 
         /**
          * @param {CSV} CSV
@@ -58,10 +58,13 @@ export default {
 
             const csvContent = this.uiGridExporterService.formatAsCsv(exportColumnHeaders, data, this.CSV.getSeparator());
 
-            this.uiGridExporterService.downloadFile(this.gridApi.grid.options.exporterCsvFilename, csvContent, this.gridApi.grid.options.exporterOlderExcelCompatibility);
+            const csvFileName = this.fileName || 'export.csv';
+
+            this.uiGridExporterService.downloadFile(csvFileName, csvContent, this.gridApi.grid.options.exporterOlderExcelCompatibility);
         }
     },
     bindings: {
-        gridApi: '<'
+        gridApi: '<',
+        fileName: '<'
     }
 };

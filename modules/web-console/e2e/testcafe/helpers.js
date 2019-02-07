@@ -34,4 +34,6 @@ const getLocationPathname = ClientFunction(() => Promise.resolve(location.pathna
  */
 const isVisible = (node) => !!node.getBoundingClientRect().width;
 
-module.exports = { mouseenterTrigger, getLocationPathname, isVisible };
+const scrollIntoView = ClientFunction(() => el().scrollIntoView());
+
+module.exports = { mouseenterTrigger, getLocationPathname, isVisible, scrollIntoView };

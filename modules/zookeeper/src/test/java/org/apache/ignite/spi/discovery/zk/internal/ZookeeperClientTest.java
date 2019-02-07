@@ -26,12 +26,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.curator.test.TestingCluster;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiAbstractTestSuite;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.zookeeper.AsyncCallback;
@@ -39,6 +39,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+import org.junit.Test;
 
 /**
  *
@@ -69,6 +70,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSaveLargeValue() throws Exception {
         startZK(1);
 
@@ -100,6 +102,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClose() throws Exception {
         startZK(1);
 
@@ -121,6 +124,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateAll() throws Exception {
         startZK(1);
 
@@ -142,6 +146,54 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCreateAllRequestOverflow() throws Exception {
+        startZK(1);
+
+        ZookeeperClient client = createClient(SES_TIMEOUT);
+
+        client.createIfNeeded("/apacheIgnite", null, CreateMode.PERSISTENT);
+
+        int cnt = 20_000;
+
+        List<String> paths = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; i++)
+            paths.add("/apacheIgnite/" + i);
+
+        client.createAll(paths, CreateMode.PERSISTENT);
+
+        assertEquals(cnt, client.getChildren("/apacheIgnite").size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCreateAllNodeExists() throws Exception {
+        startZK(1);
+
+        ZookeeperClient client = createClient(SES_TIMEOUT);
+
+        client.createIfNeeded("/apacheIgnite", null, CreateMode.PERSISTENT);
+
+        client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
+
+        List<String> paths = new ArrayList<>();
+
+        paths.add("/apacheIgnite/1");
+        paths.add("/apacheIgnite/2");
+        paths.add("/apacheIgnite/3");
+
+        client.createAll(paths, CreateMode.PERSISTENT);
+
+        assertEquals(3, client.getChildren("/apacheIgnite").size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDeleteAll() throws Exception {
         startZK(1);
 
@@ -151,12 +203,12 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
         client.createIfNeeded("/apacheIgnite/2", null, CreateMode.PERSISTENT);
 
-        client.deleteAll("/apacheIgnite", Arrays.asList("1", "2"), -1);
+        client.deleteAll(Arrays.asList("/apacheIgnite/1", "/apacheIgnite/2"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
 
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
-        client.deleteAll("/apacheIgnite", Collections.singletonList("1"), -1);
+        client.deleteAll(Collections.singletonList("/apacheIgnite/1"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
@@ -164,6 +216,52 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDeleteAllRequestOverflow() throws Exception {
+        startZK(1);
+
+        ZookeeperClient client = createClient(SES_TIMEOUT);
+
+        client.createIfNeeded("/apacheIgnite", null, CreateMode.PERSISTENT);
+
+        int cnt = 30_000;
+
+        List<String> paths = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; i++)
+            paths.add("/apacheIgnite/" + i);
+
+        client.createAll(paths, CreateMode.PERSISTENT);
+
+        assertEquals(cnt, client.getChildren("/apacheIgnite").size());
+
+        client.deleteAll(paths, -1);
+
+        assertTrue(client.getChildren("/apacheIgnite").isEmpty());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeleteAllNoNode() throws Exception {
+        startZK(1);
+
+        ZookeeperClient client = createClient(SES_TIMEOUT);
+
+        client.createIfNeeded("/apacheIgnite", null, CreateMode.PERSISTENT);
+        client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
+        client.createIfNeeded("/apacheIgnite/2", null, CreateMode.PERSISTENT);
+
+        client.deleteAll(Arrays.asList("/apacheIgnite/1", "/apacheIgnite/2", "/apacheIgnite/3"), -1);
+
+        assertTrue(client.getChildren("/apacheIgnite").isEmpty());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testConnectionLoss1() throws Exception {
         ZookeeperClient client = new ZookeeperClient(log, "localhost:2200", 3000, null);
 
@@ -180,6 +278,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLoss2() throws Exception {
         startZK(1);
 
@@ -202,6 +301,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLoss3() throws Exception {
         startZK(1);
 
@@ -230,6 +330,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLoss4() throws Exception {
         startZK(1);
 
@@ -267,6 +368,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect1() throws Exception {
         startZK(1);
 
@@ -298,6 +400,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect1_Callback() throws Exception {
         startZK(1);
 
@@ -340,6 +443,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect1_InCallback() throws Exception {
         startZK(1);
 
@@ -386,6 +490,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect2() throws Exception {
         startZK(1);
 
@@ -401,6 +506,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect3() throws Exception {
         startZK(3);
 
@@ -424,6 +530,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect4() throws Exception {
         startZK(3);
 
@@ -463,7 +570,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     private void startZK(int instances) throws Exception {
         assert zkCluster == null;
 
-        zkCluster = ZookeeperDiscoverySpiAbstractTestSuite.createTestingCluster(instances);
+        zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(instances);
 
         zkCluster.start();
     }

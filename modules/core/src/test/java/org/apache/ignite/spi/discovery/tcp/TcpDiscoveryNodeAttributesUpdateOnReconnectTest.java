@@ -32,6 +32,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
 
@@ -85,6 +86,7 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         Ignite srv = startGrid("server");
 

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.binarization;
 
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Preprocessing function that makes binarization.
@@ -68,8 +68,8 @@ public class BinarizationPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
         return res;
     }
 
-    /** Gets the threshold parameter. */
-    public double threshold() {
+    /** Get the threshold parameter. */
+    public double getThreshold() {
         return threshold;
     }
 }

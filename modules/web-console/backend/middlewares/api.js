@@ -37,13 +37,21 @@ module.exports.factory = () => {
                 if (_.includes(['MongoError', 'MongooseError'], err.name))
                     return res.status(500).send(err.message);
 
+                if (_.isObject(err.data))
+                    return res.status(err.httpCode || err.code || 500).json(err.data);
+
                 res.status(err.httpCode || err.code || 500).send(err.message);
             },
+
             ok(data) {
                 if (_.isNil(data))
                     return res.sendStatus(404);
 
                 res.status(200).json(data);
+            },
+
+            done() {
+                res.sendStatus(200);
             }
         };
 

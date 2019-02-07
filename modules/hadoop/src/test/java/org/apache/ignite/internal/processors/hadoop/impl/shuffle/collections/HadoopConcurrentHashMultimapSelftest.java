@@ -43,12 +43,14 @@ import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
 
 /**
  *
  */
 public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest {
     /** */
+    @Test
     public void testMapSimple() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
@@ -185,6 +187,7 @@ public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 

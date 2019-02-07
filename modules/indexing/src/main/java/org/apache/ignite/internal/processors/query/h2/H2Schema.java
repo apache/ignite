@@ -34,6 +34,9 @@ public class H2Schema {
     /** */
     private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
+    /** Whether schema is predefined and cannot be dorpped. */
+    private final boolean predefined;
+
     /** Usage count. */
     private int usageCnt;
 
@@ -41,9 +44,11 @@ public class H2Schema {
      * Constructor.
      *
      * @param schemaName Schema name.
+     * @param predefined Predefined flag.
      */
-    public H2Schema(String schemaName) {
+    public H2Schema(String schemaName, boolean predefined) {
         this.schemaName = schemaName;
+        this.predefined = predefined;
     }
 
     /**
@@ -55,20 +60,19 @@ public class H2Schema {
 
     /**
      * Increments counter for number of caches having this schema.
-     *
-     * @return New value of caches counter.
      */
-    public int incrementUsageCount() {
-        return ++usageCnt;
+    public void incrementUsageCount() {
+        if (!predefined)
+            ++usageCnt;
     }
 
     /**
      * Increments counter for number of caches having this schema.
      *
-     * @return New value of caches counter.
+     * @return If schema is no longer used.
      */
-    public int decrementUsageCount() {
-        return --usageCnt;
+    public boolean decrementUsageCount() {
+        return !predefined && --usageCnt == 0;
     }
 
     /**
@@ -101,17 +105,8 @@ public class H2Schema {
         if (tbls.putIfAbsent(tbl.tableName(), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
 
-        if (typeToTbl.putIfAbsent(new H2TypeKey(tbl.cache().name(), tbl.typeName()), tbl) != null)
+        if (typeToTbl.putIfAbsent(new H2TypeKey(tbl.cacheName(), tbl.typeName()), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
-    }
-
-    /**
-     * @param tbl Table descriptor.
-     */
-    public void remove(H2TableDescriptor tbl) {
-        tbls.remove(tbl.tableName());
-
-        typeToTbl.remove(new H2TypeKey(tbl.cache().name(), tbl.typeName()));
     }
 
     /**
@@ -124,18 +119,13 @@ public class H2Schema {
 
         tbls.remove(tbl.tableName());
 
-        typeToTbl.remove(new H2TypeKey(tbl.cache().name(), tbl.typeName()));
+        typeToTbl.remove(new H2TypeKey(tbl.cacheName(), tbl.typeName()));
     }
 
     /**
-     * Called after the schema was dropped.
+     * @return {@code True} if schema is predefined.
      */
-    public void dropAll() {
-        for (H2TableDescriptor tbl : tbls.values())
-            tbl.onDrop();
-
-        tbls.clear();
-
-        typeToTbl.clear();
+    public boolean predefined() {
+        return predefined;
     }
 }

@@ -17,10 +17,10 @@
 
 import {Selector, t} from 'testcafe';
 
-const body = Selector('.modal-body');
+const body = Selector('.modal').withText('Confirmation').find('.modal-body');
 const confirmButton = Selector('#confirm-btn-ok');
 const cancelButton = Selector('#confirm-btn-cancel');
-const closeButton = Selector('.modal .close');
+const closeButton = Selector('.modal').withText('Confirmation').find('.modal .close');
 
 export const confirmation = {
     body,

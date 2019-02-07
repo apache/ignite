@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -113,6 +114,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoverySeveralRestarts() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -168,6 +170,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoveryWithDynamicCache() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -221,6 +224,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoveryWithDynamicCacheLargeObjects() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);

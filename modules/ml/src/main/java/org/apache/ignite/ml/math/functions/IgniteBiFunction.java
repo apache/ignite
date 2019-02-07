@@ -28,7 +28,7 @@ import java.util.function.BiFunction;
  */
 public interface IgniteBiFunction<T, U, R> extends BiFunction<T, U, R>, Serializable {
     /** */
-    default <V> IgniteBiFunction<T, U, V> andThen(IgniteFunction<? super R, ? extends V> after) {
+    public default <V> IgniteBiFunction<T, U, V> andThen(IgniteFunction<? super R, ? extends V> after) {
         Objects.requireNonNull(after);
         return (T t, U u) -> after.apply(apply(t, u));
     }

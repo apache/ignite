@@ -18,16 +18,11 @@
 package org.apache.ignite.tensorflow.core.nativerunning.task;
 
 import java.util.function.Supplier;
-import org.apache.ignite.tensorflow.core.nativerunning.NativeProcess;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.util.Scanner;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.tensorflow.core.util.CustomizableThreadFactory;
+import org.apache.ignite.tensorflow.core.nativerunning.NativeProcess;
+import org.apache.ignite.tensorflow.core.util.NativeProcessRunner;
 
 /**
  * Task that starts native process by its specification.
@@ -55,62 +50,26 @@ public class NativeProcessStartTask implements IgniteRunnable {
         Supplier<ProcessBuilder> procBuilderSupplier = procSpec.getProcBuilderSupplier();
         ProcessBuilder procBuilder = procBuilderSupplier.get();
 
-        Process proc;
-        try {
-            proc = procBuilder.start();
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        NativeProcessRunner procRunner = new NativeProcessRunner(
+            procBuilder,
+            procSpec.getStdin(),
+            System.out::println,
+            System.err::println
+        );
 
-        Thread shutdownHook = new Thread(proc::destroy);
-        Runtime.getRuntime().addShutdownHook(shutdownHook);
-
-        Future<?> outForward = forwardStream(proc.getInputStream(), System.out);
-        Future<?> errForward = forwardStream(proc.getErrorStream(), System.err);
+        IgniteLogger log = Ignition.ignite().log().getLogger(NativeProcessStartTask.class);
 
         try {
-            if (procSpec.getStdin() != null) {
-                PrintWriter writer = new PrintWriter(proc.getOutputStream());
-                writer.println(procSpec.getStdin());
-                writer.flush();
-            }
-
-            int status;
-            try {
-                status = proc.waitFor();
-            }
-            catch (InterruptedException e) {
-                proc.destroy();
-                status = proc.exitValue();
-            }
-
-            Runtime.getRuntime().removeShutdownHook(shutdownHook);
-
-            if (status != 0)
-                throw new IllegalStateException("Native process exit status is " + status);
+            log.debug("Starting native process");
+            procRunner.startAndWait();
+            log.debug("Native process completed");
         }
-        finally {
-            outForward.cancel(true);
-            errForward.cancel(true);
+        catch (InterruptedException e) {
+            log.debug("Native process interrupted");
         }
-    }
-
-    /**
-     * Forwards stream.
-     *
-     * @param src Source stream.
-     * @param dst Destination stream.
-     * @return Future that allows to interrupt forwarding.
-     */
-    private Future<?> forwardStream(InputStream src, PrintStream dst) {
-        return Executors
-            .newSingleThreadExecutor(new CustomizableThreadFactory("NATIVE_PROCESS_FORWARD_STREAM", true))
-            .submit(() -> {
-                Scanner scanner = new Scanner(src);
-
-                while (!Thread.currentThread().isInterrupted() && scanner.hasNextLine())
-                    dst.println(scanner.nextLine());
-            });
+        catch (Exception e) {
+            log.error("Native process failed", e);
+            throw e;
+        }
     }
 }

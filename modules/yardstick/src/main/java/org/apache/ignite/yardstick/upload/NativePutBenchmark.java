@@ -21,19 +21,18 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.yardstick.upload.model.Values10;
 
 /**
- * Benchmark that inserts single upload of number of entries using {@link IgniteCache#put(Object, Object)}.
+ * Benchmark performs single upload of number of entries using {@link IgniteCache#put(Object, Object)}.
  */
 public class NativePutBenchmark extends AbstractNativeBenchmark {
     /**
      * Uploads randomly generated data using simple put.
      *
-     * @param cacheName - name of the cache.
      * @param insertsCnt - how many entries should be uploaded.
      */
-    @Override protected void upload(String cacheName, long insertsCnt) {
-        IgniteCache<Object, Object> c = ignite().cache(cacheName);
+    @Override protected void upload(long insertsCnt) {
+        IgniteCache<Object, Object> c = ignite().cache(CACHE_NAME);
 
         for (long id = 1; id <= insertsCnt; id++)
-            c.put(id, new Values10() );
+            c.put(id, new Values10());
     }
 }

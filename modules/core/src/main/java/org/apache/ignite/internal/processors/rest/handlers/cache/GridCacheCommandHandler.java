@@ -1058,7 +1058,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         @Nullable @Override public GridRestResponse reduce(List<ComputeJobResult> results) throws IgniteException {
             Map<String, GridCacheSqlMetadata> map = new HashMap<>();
 

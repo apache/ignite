@@ -22,14 +22,15 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 import sun.misc.Unsafe;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
@@ -211,7 +212,6 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
@@ -241,7 +241,6 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert arr != null;
 
@@ -310,5 +309,10 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         }
 
         U.clearClassCache(ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OptimizedMarshaller.class, this);
     }
 }

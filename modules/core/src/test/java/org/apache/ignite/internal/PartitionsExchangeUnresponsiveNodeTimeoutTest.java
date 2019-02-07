@@ -40,6 +40,8 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Test;
 
 /**
  *
@@ -57,8 +59,9 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /** */
+    @After
+    public void afterTest() throws Exception {
         for (Ignite ig : G.allGrids()) {
             ((TestCommunicationSpi)ig.configuration().getCommunicationSpi()).blockExchangeMessages = false;
             ((TestCommunicationSpi)ig.configuration().getCommunicationSpi()).sndOutdatedCheckMessages = false;
@@ -81,6 +84,7 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testNonCoordinatorUnresponsive() throws Exception {
         final Ignite ig = startGrids(4);
 
@@ -106,6 +110,7 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCoordinatorUnresponsive() throws Exception {
         final Ignite ig = startGrids(4);
 
@@ -128,6 +133,7 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCoordinatorUnresponsiveWithCheckMessagesBlocked() throws Exception {
         final Ignite ig = startGrids(4);
 
@@ -151,6 +157,7 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCoordinatorUnresponsiveWithOutdatedCheckMessages() throws Exception {
         startGrids(4);
 

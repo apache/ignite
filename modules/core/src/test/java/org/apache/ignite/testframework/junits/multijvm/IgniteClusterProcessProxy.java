@@ -32,6 +32,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.internal.cluster.ClusterGroupEx;
+import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
@@ -161,6 +162,11 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void clearStatistics(Collection<String> caches) {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
@@ -183,6 +189,11 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     /** {@inheritDoc} */
     @Override public boolean isWalEnabled(String cacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public DistributedBaselineConfiguration baselineConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */

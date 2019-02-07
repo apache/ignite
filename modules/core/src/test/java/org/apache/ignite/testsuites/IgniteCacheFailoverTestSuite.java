@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSizeFailoverTest;
@@ -39,59 +37,44 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionDistributionTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCacheRemoveFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCacheRemoveFailoverTest;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Test suite.
  */
-public class IgniteCacheFailoverTestSuite extends TestSuite {
-    /**
-     * @return Ignite Cache Failover test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        return suite(null);
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheAtomicInvalidPartitionHandlingSelfTest.class,
+    GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class,
+    GridCacheRebalancingPartitionDistributionTest.class,
 
-    /**
-     * @param ignoredTests Tests don't include in the execution.
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
-        TestSuite suite = new TestSuite("Cache Failover Test Suite");
+    GridCacheIncrementTransformTest.class,
 
-        suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingPartitionDistributionTest.class);
+    // Failure consistency tests.
+    GridCacheAtomicRemoveFailureTest.class,
+    GridCacheAtomicClientRemoveFailureTest.class,
 
-        GridTestUtils.addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
+    GridCacheDhtAtomicRemoveFailureTest.class,
+    GridCacheDhtRemoveFailureTest.class,
+    GridCacheDhtClientRemoveFailureTest.class,
+    GridCacheNearRemoveFailureTest.class,
+    GridCacheAtomicNearRemoveFailureTest.class,
+    IgniteChangingBaselineUpCacheRemoveFailoverTest.class,
+    IgniteChangingBaselineDownCacheRemoveFailoverTest.class,
 
-        // Failure consistency tests.
-        suite.addTestSuite(GridCacheAtomicRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheAtomicClientRemoveFailureTest.class);
+    IgniteCacheAtomicNodeJoinTest.class,
+    IgniteCacheTxNodeJoinTest.class,
 
-        suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheDhtClientRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class);
-        suite.addTestSuite(IgniteChangingBaselineUpCacheRemoveFailoverTest.class);
-        suite.addTestSuite(IgniteChangingBaselineDownCacheRemoveFailoverTest.class);
+    IgniteCacheTxNearDisabledPutGetRestartTest.class,
 
-        suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
-        suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
+    IgniteCacheSizeFailoverTest.class,
 
-        suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
+    IgniteAtomicLongChangingTopologySelfTest.class,
 
-        suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
+    GridCacheTxNodeFailureSelfTest.class,
 
-        suite.addTestSuite(IgniteAtomicLongChangingTopologySelfTest.class);
-
-        suite.addTestSuite(GridCacheTxNodeFailureSelfTest.class);
-
-        suite.addTestSuite(AtomicPutAllChangingTopologyTest.class);
-
-        return suite;
-    }
+    AtomicPutAllChangingTopologyTest.class,
+})
+public class IgniteCacheFailoverTestSuite {
 }

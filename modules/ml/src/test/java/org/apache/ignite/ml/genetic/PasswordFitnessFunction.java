@@ -24,38 +24,32 @@ import java.util.List;
  * characters.
  */
 public class PasswordFitnessFunction implements IFitnessFunction {
-
     /**
      * @param genes List of Genes within an individual Chromosome
      * @return Fitness score
      */
-    @Override
-    public double evaluate(List<Gene> genes) {
+    @Override public double evaluate(List<Gene> genes) {
 
-        double specialCharCount = 0;
-        double lowerCaseCount = 0;
-        double upperCaseCount = 0;
+        double specialCCnt = 0;
+        double lowerCaseCnt = 0;
+        double upperCaseCnt = 0;
 
-        double fitness = 0;
-        double specialCharScore = 2;
+        double fitness;
+        double specialCScore = 2;
 
-        for (int i = 0; i < genes.size(); i++) {
+        for (Gene gene : genes) {
+            Character aCharacter = (Character)(gene.getVal());
+            if (Character.isUpperCase(aCharacter))
+                upperCaseCnt = upperCaseCnt + 1;
 
-            Character aCharacter = (Character)(genes.get(i).getValue());
-            if (Character.isUpperCase(aCharacter.charValue())) {
-                upperCaseCount = upperCaseCount + 1;
-            }
-
-            else if (Character.isLowerCase(aCharacter.charValue())) {
-                lowerCaseCount = lowerCaseCount + 1;
-            }
-            else {
-                specialCharCount = specialCharCount + 1;
-            }
+            else if (Character.isLowerCase(aCharacter))
+                lowerCaseCnt = lowerCaseCnt + 1;
+            else
+                specialCCnt = specialCCnt + 1;
         }
 
-        specialCharCount = specialCharScore * specialCharCount;
-        fitness = upperCaseCount + lowerCaseCount + specialCharCount;
+        specialCCnt = specialCScore * specialCCnt;
+        fitness = upperCaseCnt + lowerCaseCnt + specialCCnt;
         return fitness;
     }
 }

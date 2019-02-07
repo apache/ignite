@@ -18,8 +18,6 @@
 package org.apache.ignite.platform.plugin.cache;
 
 import org.apache.ignite.plugin.CachePluginConfiguration;
-import org.apache.ignite.plugin.CachePluginContext;
-import org.apache.ignite.plugin.CachePluginProvider;
 
 /**
  * Test plugin configuration.

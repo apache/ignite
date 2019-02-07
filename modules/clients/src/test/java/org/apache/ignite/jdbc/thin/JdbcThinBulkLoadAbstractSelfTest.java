@@ -17,22 +17,12 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvParser;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.testframework.GridTestUtils;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.UnsupportedCharsetException;
 import java.sql.BatchUpdateException;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -41,6 +31,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvParser;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -194,6 +196,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testBasicStatement() throws SQLException {
         int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT);
 
@@ -208,6 +211,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testEmptyFile() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from '" + BULKLOAD_EMPTY_CSV_FILE + "' into " + TBL_NAME +
@@ -224,6 +228,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testOneLineFile() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from '" + BULKLOAD_ONE_LINE_CSV_FILE + "' into " + TBL_NAME +
@@ -238,6 +243,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     /**
      * Verifies that error is reported for empty charset name.
      */
+    @Test
     public void testEmptyCharset() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -254,6 +260,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     /**
      * Verifies that error is reported for unsupported charset name.
      */
+    @Test
     public void testNotSupportedCharset() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -270,6 +277,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     /**
      * Verifies that error is reported for unknown charset name.
      */
+    @Test
     public void testUnknownCharset() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -288,6 +296,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testAsciiCharset() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from '" + BULKLOAD_TWO_LINES_CSV_FILE + "'" +
@@ -306,6 +315,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testUtf8Charset() throws SQLException {
         checkBulkLoadWithCharset(BULKLOAD_UTF8_CSV_FILE, "utf-8");
     }
@@ -315,6 +325,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testWin1251Charset() throws SQLException {
         checkBulkLoadWithCharset(BULKLOAD_CP1251_CSV_FILE, "windows-1251");
     }
@@ -344,6 +355,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testWrongCharset_Utf8AsWin1251() throws SQLException {
         checkBulkLoadWithWrongCharset(BULKLOAD_UTF8_CSV_FILE, "UTF-8", "windows-1251");
     }
@@ -354,6 +366,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testWrongCharset_Win1251AsUtf8() throws SQLException {
         checkBulkLoadWithWrongCharset(BULKLOAD_CP1251_CSV_FILE, "windows-1251", "UTF-8");
     }
@@ -364,6 +377,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testWrongCharset_Utf8AsAscii() throws SQLException {
         checkBulkLoadWithWrongCharset(BULKLOAD_UTF8_CSV_FILE, "UTF-8", "ascii");
     }
@@ -374,6 +388,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testWrongCharset_Win1251AsAscii() throws SQLException {
         checkBulkLoadWithWrongCharset(BULKLOAD_CP1251_CSV_FILE, "windows-1251", "ascii");
     }
@@ -384,6 +399,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testPacketSize_1() throws SQLException {
         int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT + " packet_size 1");
 
@@ -398,6 +414,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testDefaultCharset() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from '" + BULKLOAD_UTF8_CSV_FILE + "' into " + TBL_NAME +
@@ -410,12 +427,40 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
+     * Test imports CSV file into a table on not affinity node and checks the created entries using SELECT statement.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testBulkLoadToNonAffinityNode() throws Exception {
+        IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));
+
+        try (Connection con = connect(client, null)) {
+            con.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+
+            try (Statement stmt = con.createStatement()) {
+                int updatesCnt = stmt.executeUpdate(
+                    "copy from '" + BULKLOAD_UTF8_CSV_FILE + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv");
+
+                assertEquals(2, updatesCnt);
+
+                checkNationalCacheContents(TBL_NAME);
+            }
+        }
+
+        stopGrid(client.name());
+    }
+
+    /**
      * Imports two-entry CSV file with UTF-8 characters into a table using packet size of one byte
      * (thus splitting each two-byte UTF-8 character into two packets)
      * and checks the created entries using SELECT statement.
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testDefaultCharsetPacketSize1() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from '" + BULKLOAD_UTF8_CSV_FILE + "' into " + TBL_NAME +
@@ -430,6 +475,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     /**
      * Checks that error is reported for a non-existent file.
      */
+    @Test
     public void testWrongFileName() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -446,6 +492,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     /**
      * Checks that error is reported if the destination table is missing.
      */
+    @Test
     public void testMissingTable() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -462,6 +509,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     /**
      * Checks that error is reported when a non-existing column is specified in the SQL command.
      */
+    @Test
     public void testWrongColumnName() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -478,6 +526,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     /**
      * Checks that error is reported if field read from CSV file cannot be converted to the type of the column.
      */
+    @Test
     public void testWrongColumnType() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -496,6 +545,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testFieldsSubset() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from '" + BULKLOAD_TWO_LINES_CSV_FILE + "'" +
@@ -516,6 +566,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testCreateAndBulkLoadTable() throws SQLException {
         String tblName = QueryUtils.DFLT_SCHEMA + ".\"PersonTbl\"";
 
@@ -541,6 +592,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @throws SQLException If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testConfigureQueryEntityAndBulkLoad() throws SQLException {
         ignite(0).getOrCreateCache(cacheConfigWithQueryEntity());
 
@@ -556,6 +608,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testMultipleStatement() throws SQLException {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -581,6 +634,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecuteQuery() throws SQLException {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -596,6 +650,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecute() throws SQLException {
         boolean isRowSet = stmt.execute(BASIC_SQL_COPY_STMT);
 
@@ -609,6 +664,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testPreparedStatementWithExecuteUpdate() throws SQLException {
         PreparedStatement pstmt = conn.prepareStatement(BASIC_SQL_COPY_STMT);
 
@@ -624,6 +680,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testPreparedStatementWithParameter() throws SQLException {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -646,6 +703,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @Test
     public void testPreparedStatementWithExecute() throws SQLException {
         PreparedStatement pstmt = conn.prepareStatement(BASIC_SQL_COPY_STMT);
 
@@ -659,6 +717,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     /**
      * Verifies that COPY command is rejected by PreparedStatement.executeQuery().
      */
+    @Test
     public void testPreparedStatementWithExecuteQuery() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

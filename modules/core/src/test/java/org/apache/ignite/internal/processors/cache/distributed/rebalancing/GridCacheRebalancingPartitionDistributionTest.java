@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.assertions.Assertion;
 import org.apache.ignite.testframework.junits.common.GridRollingRestartAbstractTest;
-
+import org.junit.Test;
 
 /**
  * Test the behavior of the partition rebalancing during a rolling restart.
@@ -60,6 +60,7 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
      * The test performs rolling restart and checks no server drops out and the partitions are balanced during
      * redistribution.
      */
+    @Test
     public void testRollingRestart() throws InterruptedException {
         awaitPartitionMapExchange();
 

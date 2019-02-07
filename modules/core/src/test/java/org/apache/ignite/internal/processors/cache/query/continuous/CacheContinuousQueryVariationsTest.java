@@ -65,6 +65,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -91,7 +92,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     private static final int VALS = 10;
 
     /** */
-    public static boolean singleNode = false;
+    public static boolean singleNode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -102,9 +103,15 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void unconditionalCleanupAfterTests() {
+        // No-op.
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationJCacheApiKeepBinary() throws Exception {
         testRandomOperation(true, false, false, false, true);
     }
@@ -112,6 +119,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationJCacheApiAsyncCallback() throws Exception {
         testRandomOperation(true, false, false, true, false);
     }
@@ -119,6 +127,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationJCacheApiWithFilter() throws Exception {
         testRandomOperation(true, false, true, false, false);
     }
@@ -126,6 +135,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationJCacheApiWithFilterAsyncCallback() throws Exception {
         testRandomOperation(true, false, true, true, false);
     }
@@ -133,6 +143,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationJCacheApiSyncWithFilter() throws Exception {
         testRandomOperation(true, true, true, false, false);
     }
@@ -140,6 +151,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperation() throws Exception {
         testRandomOperation(true, true, false, false, false);
     }
@@ -147,6 +159,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationWithKeepBinary() throws Exception {
         testRandomOperation(true, true, false, false, true);
     }
@@ -154,6 +167,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationWithAsyncCallback() throws Exception {
         testRandomOperation(true, true, false, true, false);
     }
@@ -161,6 +175,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationWithFilter() throws Exception {
         testRandomOperation(true, true, true, false, false);
     }
@@ -168,6 +183,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationWithFilterWithKeepBinary() throws Exception {
         testRandomOperation(true, true, true, false, true);
     }
@@ -175,6 +191,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationWithFilterAsyncCallback() throws Exception {
         testRandomOperation(true, true, true, true, false);
     }
@@ -362,7 +379,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                     if (tx != null)
                         tx.commit();
 
-                    waitAndCheckEvent(evtsQueues, key, null, oldVal, keepBinary, withFilter);
+                    waitAndCheckEvent(evtsQueues, key, oldVal, oldVal, keepBinary, withFilter);
 
                     expData.remove(key);
 
@@ -375,7 +392,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                     if (tx != null)
                         tx.commit();
 
-                    waitAndCheckEvent(evtsQueues, key, null, oldVal, keepBinary, withFilter);
+                    waitAndCheckEvent(evtsQueues, key, oldVal, oldVal, keepBinary, withFilter);
 
                     expData.remove(key);
 
@@ -401,7 +418,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                     if (tx != null)
                         tx.commit();
 
-                    waitAndCheckEvent(evtsQueues, key, null, oldVal, keepBinary, withFilter);
+                    waitAndCheckEvent(evtsQueues, key, oldVal, oldVal, keepBinary, withFilter);
 
                     expData.remove(key);
 
@@ -623,6 +640,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveRemoveScenario() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -701,12 +719,12 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                         }, 5_000);
 
                         checkEvent(evts.get(0), CREATED, value(1), null);
-                        checkEvent(evts.get(1), REMOVED, null, value(1));
+                        checkEvent(evts.get(1), REMOVED, value(1), value(1));
                         checkEvent(evts.get(2), CREATED, value(2), null);
-                        checkEvent(evts.get(3), REMOVED, null, value(2));
+                        checkEvent(evts.get(3), REMOVED, value(2), value(2));
                         checkEvent(evts.get(4), CREATED, value(3), null);
                         checkEvent(evts.get(5), EventType.UPDATED, value(4), value(3));
-                        checkEvent(evts.get(6), REMOVED, null, value(4));
+                        checkEvent(evts.get(6), REMOVED, value(4), value(4));
                         checkEvent(evts.get(7), CREATED, value(5), null);
                         checkEvent(evts.get(8), EventType.UPDATED, value(6), value(5));
 
@@ -717,7 +735,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                         while (evts.size() != 10) {
                             Thread.sleep(100);
                         }
-                        
+
                         evts.clear();
 
                         log.info("Finish iteration: " + i);

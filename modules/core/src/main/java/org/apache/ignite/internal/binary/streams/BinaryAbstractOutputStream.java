@@ -29,6 +29,15 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     /** Minimal capacity when it is reasonable to start doubling resize. */
     private static final int MIN_CAP = 256;
 
+    /**
+     * The maximum size of array to allocate.
+     * Some VMs reserve some header words in an array.
+     * Attempts to allocate larger arrays may result in
+     * OutOfMemoryError: Requested array size exceeds VM limit
+     * @see java.util.ArrayList#MAX_ARRAY_SIZE
+     */
+    protected static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
     /** {@inheritDoc} */
     @Override public void writeByte(byte val) {
         ensureCapacity(pos + 1);
@@ -285,11 +294,17 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
 
         if (reqCap < MIN_CAP)
             newCap = MIN_CAP;
+        else if (reqCap > MAX_ARRAY_SIZE)
+            throw new IllegalArgumentException("Required capacity exceeds allowed. Required:" + reqCap);
         else {
-            newCap = curCap << 1;
+            newCap = Math.max(curCap, MIN_CAP);
 
-            if (newCap < reqCap)
-                newCap = reqCap;
+            while (newCap < reqCap) {
+                newCap = newCap << 1;
+
+                if (newCap < 0)
+                    newCap = MAX_ARRAY_SIZE;
+            }
         }
 
         return newCap;

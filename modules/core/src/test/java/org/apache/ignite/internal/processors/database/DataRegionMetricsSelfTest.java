@@ -17,11 +17,13 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.lang.Thread.sleep;
 
@@ -60,6 +62,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
      * Test for allocationRate metric in single-threaded mode.
      * @throws Exception if any happens during test.
      */
+    @Test
     public void testAllocationRateSingleThreaded() throws Exception {
         threadsCnt = 1;
         memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_2);
@@ -75,15 +78,15 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllThreads();
 
-        assertTrue(watcher.rateDropsCntr > 3);
-
-        assertTrue(watcher.rateDropsCntr < 6);
+        assertTrue("Expected rate drops count > 3 and < 6 but actual is " + watcher.rateDropsCntr.get(),
+            watcher.rateDropsCntr.get() > 3 && watcher.rateDropsCntr.get() < 6);
     }
 
     /**
      * Test for allocationRate metric in multi-threaded mode with short silent period in the middle of the test.
      * @throws Exception if any happens during test.
      */
+    @Test
     public void testAllocationRateMultiThreaded() throws Exception {
         threadsCnt = 4;
         memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_1);
@@ -100,7 +103,8 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllocationThreads();
 
-        assertTrue("4 or 5 rate drops must be observed: " + watcher.rateDropsCntr, watcher.rateDropsCntr == 4 || watcher.rateDropsCntr == 5);
+        assertTrue("4 or 5 rate drops must be observed: " + watcher.rateDropsCntr,
+            watcher.rateDropsCntr.get() == 4 || watcher.rateDropsCntr.get() == 5);
 
         sleep(3);
 
@@ -114,13 +118,15 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllThreads();
 
-        assertTrue(watcher.rateDropsCntr > 4);
+        assertTrue("Expected rate drops count > 4 but actual is " + watcher.rateDropsCntr.get(),
+            watcher.rateDropsCntr.get() > 4);
     }
 
     /**
      * Test verifies that allocationRate calculation algorithm survives setting new values to rateTimeInterval parameter.
      * @throws Exception if any happens during test.
      */
+    @Test
     public void testAllocationRateTimeIntervalConcurrentChange() throws Exception {
         threadsCnt = 5;
         memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_1);
@@ -143,13 +149,15 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllThreads();
 
-        assertTrue(watcher.rateDropsCntr > 4);
+        assertTrue("Expected rate drops count > 4 but actual is " + watcher.rateDropsCntr.get(),
+            watcher.rateDropsCntr.get() > 4);
     }
 
     /**
      *
      * @throws Exception if any happens during test.
      */
+    @Test
     public void testAllocationRateSubintervalsConcurrentChange() throws Exception {
         threadsCnt = 5;
         memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_1);
@@ -172,7 +180,8 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllThreads();
 
-        assertTrue(watcher.rateDropsCntr > 4);
+        assertTrue("Expected rate drops count > 4 but actual is " + watcher.rateDropsCntr.get(),
+            watcher.rateDropsCntr.get() > 4);
     }
 
     /**
@@ -280,7 +289,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
                 startLatch.await();
 
                 for (int i = 0; i < iterationsCnt; i++) {
-                    memMetrics.incrementTotalAllocatedPages();
+                    memMetrics.updateTotalAllocatedPages(1);
 
                     sleep(delay);
                 }
@@ -299,7 +308,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
      */
     private static class AllocationRateWatcher implements Runnable {
         /** */
-        private volatile int rateDropsCntr;
+        private final AtomicInteger rateDropsCntr = new AtomicInteger();
 
         /** */
         private final CountDownLatch startLatch;
@@ -330,7 +339,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
                 while (!Thread.currentThread().isInterrupted()) {
                     if (prevRate > memMetrics.getAllocationRate())
-                        rateDropsCntr++;
+                        rateDropsCntr.incrementAndGet();
 
                     prevRate = memMetrics.getAllocationRate();
 

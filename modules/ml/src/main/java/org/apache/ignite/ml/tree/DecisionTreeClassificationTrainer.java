@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasure;
@@ -46,6 +47,14 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
     }
 
     /**
+     * Constructs a new decision tree classifier with default impurity function compressor
+     * and default maxDeep = 5 and minImpurityDecrease = 0.
+     */
+    public DecisionTreeClassificationTrainer() {
+        this(5, 0, null);
+    }
+
+    /**
      * Constructs a new instance of decision tree classifier.
      *
      * @param maxDeep Max tree deep.
@@ -56,8 +65,39 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
         super(maxDeep, minImpurityDecrease, compressor, new MostCommonDecisionTreeLeafBuilder());
     }
 
+    /**
+     * Set up the max deep of decision tree.
+     * @param maxDeep The parameter value.
+     * @return Trainer with new maxDeep parameter value.
+     */
+    public DecisionTreeClassificationTrainer withMaxDeep(Double maxDeep){
+        this.maxDeep = maxDeep.intValue();
+        return this;
+    }
+
+    /**
+     * Set up the min impurity decrease of decision tree.
+     * @param minImpurityDecrease The parameter value.
+     * @return Trainer with new minImpurityDecrease parameter value.
+     */
+    public DecisionTreeClassificationTrainer withMinImpurityDecrease(Double minImpurityDecrease){
+        this.minImpurityDecrease = minImpurityDecrease;
+        return this;
+    }
+
+    /**
+     * Sets useIndex parameter and returns trainer instance.
+     *
+     * @param useIdx Use index.
+     * @return Decision tree trainer.
+     */
+    public DecisionTreeClassificationTrainer withUseIndex(boolean useIdx) {
+        this.usingIdx = useIdx;
+        return this;
+    }
+
     /** {@inheritDoc} */
-    @Override ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
+    @Override protected ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
         Dataset<EmptyContext, DecisionTreeData> dataset) {
         Set<Double> labels = dataset.compute(part -> {
 
@@ -88,6 +128,11 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
         for (Double lb : labels)
             encoder.put(lb, idx++);
 
-        return new GiniImpurityMeasureCalculator(encoder);
+        return new GiniImpurityMeasureCalculator(encoder, usingIdx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DecisionTreeClassificationTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (DecisionTreeClassificationTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 }

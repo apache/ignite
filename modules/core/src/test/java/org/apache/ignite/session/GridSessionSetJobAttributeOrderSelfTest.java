@@ -37,6 +37,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Grid session set job attribute self test.
@@ -55,6 +56,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobSetAttribute() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);

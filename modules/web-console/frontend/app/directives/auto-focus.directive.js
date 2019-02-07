@@ -15,12 +15,21 @@
  * limitations under the License.
  */
 
-// Directive to auto-focus specified element.
-export default ['igniteAutoFocus', ['$timeout', ($timeout) => {
+/**
+ * Directive to auto-focus specified element.
+ * @param {ng.ITimeoutService} $timeout
+ */
+export default function directive($timeout) {
     return {
         restrict: 'AC',
+        /**
+         * @param {ng.IScope} scope
+         * @param {JQLite} element
+         */
         link(scope, element) {
-            $timeout(() => element[0].focus());
+            $timeout(() => element[0].focus(), 100);
         }
     };
-}]];
+}
+
+directive.$inject = ['$timeout'];
