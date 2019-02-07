@@ -72,8 +72,8 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setConnectTimeout(COMMUNICATION_TIMEOUT);
-        commSpi.setMaxConnectTimeout(COMMUNICATION_TIMEOUT);
-        commSpi.setReconnectCount(1);
+        commSpi.setMaxConnectTimeout(4 * COMMUNICATION_TIMEOUT);
+        commSpi.setReconnectCount(3);
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -96,7 +96,7 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
         slowNet.set(true);
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            latch.await(2 * COMMUNICATION_TIMEOUT, TimeUnit.MILLISECONDS);
+            latch.await(expectedTimeout(), TimeUnit.MILLISECONDS);
 
             Collection<ClusterNode> nodes = ignite.context().discovery().aliveServerNodes();
 
@@ -108,6 +108,16 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
         startGrid("srv3");
 
         fut.get();
+    }
+
+    /** */
+    private long expectedTimeout() {
+        long maxBackoffTimeout = COMMUNICATION_TIMEOUT;
+
+        for (int i = 1; i < 3 && maxBackoffTimeout < 3 * COMMUNICATION_TIMEOUT; i++)
+            maxBackoffTimeout += Math.min(2 * maxBackoffTimeout, 3 * COMMUNICATION_TIMEOUT);
+
+        return maxBackoffTimeout;
     }
 
     /** {@inheritDoc} */
