@@ -22,9 +22,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -37,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This class implements a circular buffer for efficient data exchange.
  */
-public class GridCircularBuffer<T> implements Consumer<T>, Iterable<T> {
+public class GridCircularBuffer<T> implements Iterable<T> {
     /** */
     private final long sizeMask;
 
@@ -133,21 +131,6 @@ public class GridCircularBuffer<T> implements Consumer<T>, Iterable<T> {
         int idx0 = (int)(idx & sizeMask);
 
         return arr[idx0].update(idx, t, arr.length, c);
-    }
-
-    /**
-     * Adds new element to the buffer.
-     *
-     * @param t Element to add.
-     * @throws IgniteInterruptedException If interrupted.
-     */
-    @Override public void accept(T t) {
-        try {
-            add(t);
-        }
-        catch (InterruptedException e) {
-            throw new IgniteInterruptedException(e);
-        }
     }
 
     /**
