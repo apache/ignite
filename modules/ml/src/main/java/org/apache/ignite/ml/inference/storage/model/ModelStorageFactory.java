@@ -35,6 +35,10 @@ public class ModelStorageFactory {
      */
     public ModelStorage getModelStorage(Ignite ignite) {
         IgniteCache<String, FileOrDirectory> cache = ignite.cache(MODEL_STORAGE_CACHE_NAME);
+
+        if (cache == null)
+            throw new IllegalStateException("Model storage doesn't exists. Enable ML plugin to create it.");
+
         ModelStorageProvider storageProvider = new IgniteModelStorageProvider(cache);
 
         return new DefaultModelStorage(storageProvider);

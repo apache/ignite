@@ -24,7 +24,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.inference.builder.AsyncModelBuilder;
 import org.apache.ignite.ml.inference.builder.SingleModelBuilder;
@@ -49,37 +48,65 @@ public class IgniteModelStorageUtil {
     /**
      * Saved specified model with specified name.
      *
+     * @param ignite Ignite instance.
      * @param mdl Model to be saved.
      * @param name Model name to be used.
      */
-    public static void saveModel(IgniteModel<Vector, Double> mdl, String name) {
+    public static void saveModel(Ignite ignite, IgniteModel<Vector, Double> mdl, String name) {
         IgniteModel<byte[], byte[]> mdlWrapper = wrapIgniteModel(mdl);
         byte[] serializedMdl = Utils.serialize(mdlWrapper);
         UUID mdlId = UUID.randomUUID();
 
-        saveModelStorage(serializedMdl, mdlId);
-        saveModelDescriptorStorage(name, mdlId);
+        saveModelDescriptor(ignite, name, mdlId);
+
+        try {
+            saveModelEntity(ignite, serializedMdl, mdlId);
+        }
+        catch (Exception e) {
+            // Here we need to do a rollback and remove descriptor from correspondent storage.
+            removeModelEntity(ignite, mdlId);
+            throw e;
+        }
+    }
+
+    /**
+     * Removes model with specified name.
+     *
+     * @param ignite Ignite instance.
+     * @param name Mode name to be removed.
+     */
+    public static void removeModel(Ignite ignite, String name) {
+        ModelDescriptor desc = getModelDescriptor(ignite, name);
+        if (desc == null)
+            return;
+
+        UUID mdlId = UUID.fromString(desc.getName());
+        removeModel(ignite, IGNITE_MDL_FOLDER + "/" + mdlId);
+        removeModelDescriptor(ignite, name);
     }
 
     /**
      * Retrieves Ignite model by name using {@link SingleModelBuilder}.
      *
+     * @param ignite Ignite instance.
      * @param name Model name.
      * @return Synchronous model built using {@link SingleModelBuilder}.
      */
-    public static Model<Vector, Double> getModel(String name) {
-        return getSyncModel(name, new SingleModelBuilder());
+    public static Model<Vector, Double> getModel(Ignite ignite, String name) {
+        return getSyncModel(ignite, name, new SingleModelBuilder());
     }
 
     /**
      * Retrieves Ignite model by name using synchronous model builder.
      *
+     * @param ignite Ignite instance.
      * @param name Model name.
      * @param mdlBldr Synchronous model builder.
      * @return Synchronous model built using specified model builder.
      */
-    public static Model<Vector, Double> getSyncModel(String name, SyncModelBuilder mdlBldr) {
-        ModelDescriptor desc = Objects.requireNonNull(getModelDescriptor(name), "Model not found [name=" + name + "]");
+    public static Model<Vector, Double> getSyncModel(Ignite ignite, String name, SyncModelBuilder mdlBldr) {
+        ModelDescriptor desc = Objects.requireNonNull(getModelDescriptor(ignite, name),
+            "Model not found [name=" + name + "]");
 
         Model<byte[], byte[]> infMdl = mdlBldr.build(desc.getReader(), desc.getParser());
 
@@ -89,12 +116,14 @@ public class IgniteModelStorageUtil {
     /**
      * Retrieves Ignite model by name using asynchronous model builder.
      *
+     * @param ignite Ignite instance.
      * @param name Model name.
      * @param mdlBldr Asynchronous model builder.
      * @return Asynchronous model built using specified model builder.
      */
-    public static Model<Vector, Future<Double>> getAsyncModel(String name, AsyncModelBuilder mdlBldr) {
-        ModelDescriptor desc = Objects.requireNonNull(getModelDescriptor(name), "Model not found [name=" + name + "]");
+    public static Model<Vector, Future<Double>> getAsyncModel(Ignite ignite, String name, AsyncModelBuilder mdlBldr) {
+        ModelDescriptor desc = Objects.requireNonNull(getModelDescriptor(ignite, name),
+            "Model not found [name=" + name + "]");
 
         Model<byte[], Future<byte[]>> infMdl = mdlBldr.build(desc.getReader(), desc.getParser());
 
@@ -104,45 +133,71 @@ public class IgniteModelStorageUtil {
     /**
      * Saves specified serialized model into storage as a file.
      *
+     * @param ignite Ignite instance.
      * @param serializedMdl Serialized model represented as a byte array.
      * @param mdlId Model identifier.
      */
-    private static void saveModelStorage(byte[] serializedMdl, UUID mdlId) {
-        Ignite ignite = Ignition.ignite();
-
+    private static void saveModelEntity(Ignite ignite, byte[] serializedMdl, UUID mdlId) {
         ModelStorage storage = new ModelStorageFactory().getModelStorage(ignite);
         storage.mkdirs(IGNITE_MDL_FOLDER);
-        storage.putFile(IGNITE_MDL_FOLDER + "/" + mdlId, serializedMdl);
+        storage.putFile(IGNITE_MDL_FOLDER + "/" + mdlId, serializedMdl, true);
     }
 
     /**
-     * Saves model descriptor into descriptor storage.
+     * Removes model with specified identifier from model storage.
      *
+     * @param ignite Ignite instance.
+     * @param mdlId Model identifier.
+     */
+    private static void removeModelEntity(Ignite ignite, UUID mdlId) {
+        ModelStorage storage = new ModelStorageFactory().getModelStorage(ignite);
+        storage.remove(IGNITE_MDL_FOLDER + "/" + mdlId);
+    }
+
+    /**
+     * Saves model descriptor into descriptor storage if a model with given name is not saved yet, otherwise throws
+     * exception. To save model with the same name remove old model first.
+     *
+     * @param ignite Ignite instance.
      * @param name Model name.
      * @param mdlId Model identifier used to find model in model storage (only with {@link ModelStorageModelReader}).
+     * @throws IllegalArgumentException If model with given name was already saved.
      */
-    private static void saveModelDescriptorStorage(String name, UUID mdlId) {
-        Ignite ignite = Ignition.ignite();
-
+    private static void saveModelDescriptor(Ignite ignite, String name, UUID mdlId) {
         ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
-        descStorage.put(name, new ModelDescriptor(
-            name,
+
+        boolean saved = descStorage.putIfAbsent(name, new ModelDescriptor(
+            mdlId.toString(),
             null,
             new ModelSignature(null, null, null),
             new ModelStorageModelReader(IGNITE_MDL_FOLDER + "/" + mdlId),
             new IgniteModelParser<>()
         ));
+
+        if (!saved)
+            throw new IllegalArgumentException("Model descriptor with given name already exists [name=" + name + "]");
+    }
+
+    /**
+     * Removes model descriptor from descriptor storage.
+     *
+     * @param ignite Ignite instance.
+     * @param name Model name.
+     */
+    private static void removeModelDescriptor(Ignite ignite, String name) {
+        ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
+
+        descStorage.remove(name);
     }
 
     /**
      * Retirieves model descriptor.
      *
+     * @param ignite Ignite instance.
      * @param name Model name.
      * @return Model descriptor.
      */
-    private static ModelDescriptor getModelDescriptor(String name) {
-        Ignite ignite = Ignition.ignite();
-
+    private static ModelDescriptor getModelDescriptor(Ignite ignite, String name) {
         ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
 
         return descStorage.get(name);

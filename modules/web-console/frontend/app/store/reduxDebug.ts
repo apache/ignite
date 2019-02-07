@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {reducer, devTools} from '../components/page-configure/reduxDevtoolsIntegration';
+import {reducer, devTools} from './reduxDevtoolsIntegration';
 import {AppStore} from '.';
 import {filter, withLatestFrom, tap} from 'rxjs/operators';
 
