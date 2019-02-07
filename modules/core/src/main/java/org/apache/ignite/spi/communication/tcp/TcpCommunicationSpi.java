@@ -2766,7 +2766,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 while (retry);
             }
             catch (Throwable t) {
-                log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
+                if (!(t instanceof ClusterTopologyCheckedException && log.isDebugEnabled()))
+                    log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
 
                 if (t instanceof Error)
                     throw (Error)t;
