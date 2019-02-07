@@ -67,7 +67,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // we reduce fealure detection tp speedup failure detection on catch(Exception) clause in createTcpClient().
-        cfg.setFailureDetectionTimeout(3000);
+        cfg.setFailureDetectionTimeout(2000);
 
         return cfg;
     }
@@ -191,8 +191,6 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         startGridsMultiThreaded(1, CLIENTS);
 
-        Long failureDetectionTimeout = ignite(1).configuration().getFailureDetectionTimeout();
-
         waitForTopology(CLIENTS + 1);
 
         final CountDownLatch latch = new CountDownLatch(CLIENTS);
@@ -211,7 +209,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         stopGrid(getTestIgniteInstanceName(0), true, false);
 
-        assertTrue(latch.await(failureDetectionTimeout * 2, MILLISECONDS));
+        assertTrue(latch.await(10, SECONDS));
 
         evts.clear();
     }
