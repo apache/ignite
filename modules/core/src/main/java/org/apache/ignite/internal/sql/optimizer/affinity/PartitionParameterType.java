@@ -17,37 +17,37 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.Collection;
-import java.util.Collections;
-
 /**
- * Node denoting empty partition set.
+ * Partition argument type.
  */
-public class PartitionNoneNode implements PartitionNode {
-    /** Singleton. */
-    public static final PartitionNoneNode INSTANCE = new PartitionNoneNode();
+public enum PartitionParameterType {
+    /** Boolean. */
+    BOOLEAN,
 
-    /**
-     * Constructor.
-     */
-    private PartitionNoneNode() {
-        // No-op.
-    }
+    /** Byte. */
+    BYTE,
 
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(PartitionClientContext cliCtx, Object... args) {
-        return Collections.emptySet();
-    }
+    /** Short. */
+    SHORT,
 
-    /** {@inheritDoc} */
-    @Override public int joinGroup() {
-        return PartitionTableModel.GRP_NONE;
-    }
+    /** Int. */
+    INT,
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PartitionNoneNode.class, this);
-    }
+    /** Long. */
+    LONG,
+
+    /** Float. */
+    FLOAT,
+
+    /** Double. */
+    DOUBLE,
+
+    /** String. */
+    STRING,
+
+    /** Decimal. */
+    DECIMAL,
+
+    /** UUID. */
+    UUID
 }
