@@ -320,6 +320,8 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
+            cctx.topology().readUnlock(); topLocked = false;
+
             if (fut.isDone()) {
                 Throwable err = fut.validateCache(cctx, false, false, null, null);
 
@@ -336,13 +338,9 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
                 if (this.topVer == null)
                     this.topVer = topVer;
 
-                cctx.topology().readUnlock(); topLocked = false;
-
                 map(false);
             }
             else {
-                cctx.topology().readUnlock(); topLocked = false;
-
                 cctx.time().waitAsync(fut, tx.remainingTime(), (e, timedOut) -> {
                     try {
                         if (e != null || timedOut)
@@ -366,10 +364,6 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     @Override public boolean onDone(@Nullable T res, @Nullable Throwable err, boolean cancelled) {
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
-
-        // Need to unlock topology to avoid deadlock with binary descriptors registration.
-        if (cctx.topology().holdsLock())
-            cctx.topology().readUnlock();
 
         cctx.tm().txContext(tx);
 
