@@ -872,9 +872,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
-            assert cctx.kernalContext().isStopping();
+            assert cctx.kernalContext().isStopping() || cctx.kernalContext().clientDisconnected();
 
-            onDone(new IgniteCheckedException("Node stopped"));
+            if (cctx.kernalContext().isStopping())
+                onDone(new IgniteCheckedException("Node stopped."));
+            else if (cctx.kernalContext().clientDisconnected())
+                onDone(new IgniteCheckedException("Client node disconnected."));
 
             throw e;
         }
