@@ -136,7 +136,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
      */
     @Test
     public void testConcurrentNodesStartStop() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         try {
             multithreadedAsync(

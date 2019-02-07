@@ -32,6 +32,7 @@ import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.GDBTrainer;
+import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.inference.Model;
@@ -57,6 +58,7 @@ import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /** Parser of Spark models. */
 public class SparkModelParser {
@@ -87,12 +89,41 @@ public class SparkModelParser {
                 return loadRandomForestModel(ignitePathToMdl);
             case KMEANS:
                 return loadKMeansModel(ignitePathToMdl);
+            case DECISION_TREE_REGRESSION:
+                return loadDecisionTreeRegressionModel(ignitePathToMdl);
+            case RANDOM_FOREST_REGRESSION:
+                return loadRandomForestRegressionModel(ignitePathToMdl);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
     }
 
+    /**
+     * Load Random Forest Regression model.
+     *
+     * @param pathToMdl Path to model.
+     */
+    private static Model loadRandomForestRegressionModel(String pathToMdl) {
+        final List<IgniteModel<Vector, Double>> models = parseTreesForRandomForestAlgorithm(pathToMdl);
+        if (models == null)
+            return null;
+        return new ModelsComposition(models, new MeanValuePredictionsAggregator());
+    }
 
+    /**
+     * Load Decision Tree Regression model.
+     *
+     * @param pathToMdl Path to model.
+     */
+    private static Model loadDecisionTreeRegressionModel(String pathToMdl) {
+        return loadDecisionTreeModel(pathToMdl);
+    }
+
+    /**
+     * Load K-Means model.
+     *
+     * @param pathToMdl Path to model.
+     */
     private static Model loadKMeansModel(String pathToMdl) {
         Vector[] centers = null;
 
@@ -157,22 +188,50 @@ public class SparkModelParser {
         switch (parsedSparkMdl) {
             case GRADIENT_BOOSTED_TREES:
                 return loadGBTClassifierModel(ignitePathToMdl, ignitePathToMdlMetaData);
+            case GRADIENT_BOOSTED_TREES_REGRESSION:
+                return loadGBTRegressionModel(ignitePathToMdl, ignitePathToMdlMetaData);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
     }
 
     /**
-     * Load GBT model.
+     * Load GDB Regression model.
      *
      * @param pathToMdl Path to model.
-     * @param ignitePathToMdlMetaData Ignite path to model meta data.
+     * @param pathToMdlMetaData Path to model meta data.
      */
-    private static Model loadGBTClassifierModel(String pathToMdl, String ignitePathToMdlMetaData) {
+    private static Model loadGBTRegressionModel(String pathToMdl, String pathToMdlMetaData) {
+        IgniteFunction<Double, Double> lbMapper = lb -> lb;
+
+        return parseAndBuildGDBModel(pathToMdl, pathToMdlMetaData, lbMapper);
+    }
+
+    /**
+     * Load GDB Classification model.
+     *
+     * @param pathToMdl Path to model.
+     * @param pathToMdlMetaData Path to model meta data.
+     */
+    private static Model loadGBTClassifierModel(String pathToMdl, String pathToMdlMetaData) {
+        IgniteFunction<Double, Double> lbMapper = lb -> lb > 0.5 ? 1.0 : 0.0;
+
+        return parseAndBuildGDBModel(pathToMdl, pathToMdlMetaData, lbMapper);
+    }
+
+    /**
+     * Parse and build common GDB model with the custom label mapper.
+     *
+     * @param pathToMdl Path to model.
+     * @param pathToMdlMetaData Path to model meta data.
+     * @param lbMapper Label mapper.
+     */
+    @Nullable private static Model parseAndBuildGDBModel(String pathToMdl, String pathToMdlMetaData,
+        IgniteFunction<Double, Double> lbMapper) {
         double[] treeWeights = null;
         final Map<Integer, Double> treeWeightsByTreeID = new HashMap<>();
 
-        try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(ignitePathToMdlMetaData), new Configuration()))) {
+        try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdlMetaData), new Configuration()))) {
             PageReadStore pagesMetaData;
             final MessageType schema = r.getFooter().getFileMetaData().getSchema();
             final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
@@ -189,7 +248,7 @@ public class SparkModelParser {
             }
         }
         catch (IOException e) {
-            System.out.println("Error reading parquet file with MetaData by the path: " + ignitePathToMdlMetaData);
+            System.out.println("Error reading parquet file with MetaData by the path: " + pathToMdlMetaData);
             e.printStackTrace();
         }
 
@@ -225,7 +284,7 @@ public class SparkModelParser {
 
             final List<IgniteModel<Vector, Double>> models = new ArrayList<>();
             nodesByTreeId.forEach((key, nodes) -> models.add(buildDecisionTreeModel(nodes)));
-            IgniteFunction<Double, Double> lbMapper = lb -> lb > 0.5 ? 1.0 : 0.0;
+
             return new GDBTrainer.GDBModel(models, new WeightedPredictionsAggregator(treeWeights), lbMapper);
         }
         catch (IOException e) {
@@ -241,6 +300,18 @@ public class SparkModelParser {
      * @param pathToMdl Path to model.
      */
     private static Model loadRandomForestModel(String pathToMdl) {
+        final List<IgniteModel<Vector, Double>> models = parseTreesForRandomForestAlgorithm(pathToMdl);
+        if (models == null)
+            return null;
+        return new ModelsComposition(models, new OnMajorityPredictionsAggregator());
+    }
+
+    /**
+     * Parse trees from file for common Random Forest ensemble.
+     *
+     * @param pathToMdl Path to model.
+     */
+    private static List<IgniteModel<Vector, Double>> parseTreesForRandomForestAlgorithm(String pathToMdl) {
         try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdl), new Configuration()))) {
             PageReadStore pages;
 
@@ -270,11 +341,9 @@ public class SparkModelParser {
                     }
                 }
             }
-
-            final List<IgniteModel<Vector, Double>> models = new ArrayList<>();
+            List<IgniteModel<Vector, Double>> models = new ArrayList<>();
             nodesByTreeId.forEach((key, nodes) -> models.add(buildDecisionTreeModel(nodes)));
-
-            return new ModelsComposition(models, new OnMajorityPredictionsAggregator());
+            return models;
         }
         catch (IOException e) {
             System.out.println("Error reading parquet file.");
