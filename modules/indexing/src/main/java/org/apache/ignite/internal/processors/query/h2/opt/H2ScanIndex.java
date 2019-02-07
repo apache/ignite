@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+
 import org.h2.engine.Database;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
@@ -28,6 +30,7 @@ import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
 import org.h2.schema.Schema;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
@@ -35,19 +38,21 @@ import org.h2.table.Table;
 import org.h2.table.TableFilter;
 
 /**
- * Scan index base class.
+ * Scan index. Do not actually store any information, but rather delegate to some underlying index. The only reason
+ * why this index exists is H2 requirement that every table must have the very first index with
+ * {@link IndexType#isScan} set to {@code true}. See {@link #TYPE}.
  */
-public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
-    /** */
+public class H2ScanIndex<D extends BaseIndex> extends BaseIndex {
+    /** Type of this index. */
     private static final IndexType TYPE = IndexType.createScan(false);
 
-    /** */
+    /** Underlying index. */
     private final D delegate;
 
     /**
      * @param delegate Delegate.
      */
-    public GridH2ScanIndex(D delegate) {
+    public H2ScanIndex(D delegate) {
         this.delegate = delegate;
     }
 
@@ -276,5 +281,13 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
     /** {@inheritDoc} */
     @Override public void setTemporary(boolean temporary) {
         throw DbException.getUnsupportedException("temporary");
+    }
+
+    /** {@inheritDoc} */
+    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+        long rows = getRowCountApproximation();
+
+        return getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
     }
 }

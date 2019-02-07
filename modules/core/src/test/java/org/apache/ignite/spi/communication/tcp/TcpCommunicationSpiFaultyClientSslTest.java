@@ -15,32 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep;
+package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2ScanIndex;
-import org.h2.engine.Session;
-import org.h2.result.SortOrder;
-import org.h2.table.Column;
-import org.h2.table.TableFilter;
-
-import java.util.HashSet;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
- * Scan index wrapper.
+ * Tests that faulty client will be failed if connection can't be established.
  */
-public class ReduceScanIndex extends GridH2ScanIndex<ReduceIndex> {
-    /**
-     * @param delegate Delegate.
-     */
-    public ReduceScanIndex(ReduceIndex delegate) {
-        super(delegate);
-    }
-
+@RunWith(JUnit4.class)
+public class TcpCommunicationSpiFaultyClientSslTest extends TcpCommunicationSpiFaultyClientTest {
     /** {@inheritDoc} */
-    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder, HashSet<Column> allColumnsSet) {
-        long rows = getRowCountApproximation();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        return getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
+        cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
+        return cfg;
     }
 }

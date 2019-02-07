@@ -2096,8 +2096,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoForceKeysRequests() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10604", MvccFeatureChecker.forcedMvcc());
-
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
             @Override public CacheConfiguration[] apply(String s) {
                 return null;
