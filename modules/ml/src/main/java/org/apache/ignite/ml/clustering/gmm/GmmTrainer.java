@@ -141,43 +141,21 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> implements Seri
             );
         }
 
-        reestimatePcxi(initialMeans, dataset);
+        dataset.compute(GmmPartitionData.estimateLikelihoodClusters(initialMeans));
 
-        List<Matrix> covs = CovarianceMatricesAggregator.computeCovariances(
+        List<Matrix> initialCovs = CovarianceMatricesAggregator.computeCovariances(
             dataset,
             VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
             initialMeans);
 
         List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
         for (int i = 0; i < countOfComponents; i++)
-            distributions.add(new MultivariateGaussianDistribution(initialMeans.get(i), covs.get(i)));
+            distributions.add(new MultivariateGaussianDistribution(initialMeans.get(i), initialCovs.get(i)));
 
         return new GmmModel(
             VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
             distributions
         );
-    }
-
-    private static void reestimatePcxi(List<Vector> means, Dataset<EmptyContext, GmmPartitionData> dataset) {
-        dataset.compute(data -> {
-            for (int i = 0; i < data.size(); i++) {
-                int closestClusterId = -1;
-                double minSquaredDist = Double.MAX_VALUE;
-
-                Vector x = data.getX(i);
-                for (int c = 0; c < means.size(); c++) {
-                    data.getPcxi()[i][c] = 0.0;
-
-                    double distance = means.get(c).getDistanceSquared(x);
-                    if (distance < minSquaredDist) {
-                        closestClusterId = c;
-                        minSquaredDist = distance;
-                    }
-                }
-
-                data.getPcxi()[i][closestClusterId] = 1.0;
-            }
-        });
     }
 
     private Vector getClusterProbs(List<MeanWithClusterProbAggregator> meansAggr) {

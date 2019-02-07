@@ -11,6 +11,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class GmmModelTest {
+    /** */
     @Test
     public void testTrivialCasesWithOneComponent() {
         Vector mean = VectorUtils.of(1., 2.);
@@ -34,6 +35,7 @@ public class GmmModelTest {
         Assert.assertEquals(0.183, gmm.prob(mean), 0.01);
     }
 
+    /** */
     @Test
     public void testTwoComponents() {
         Vector mean1 = VectorUtils.of(1., 2.);

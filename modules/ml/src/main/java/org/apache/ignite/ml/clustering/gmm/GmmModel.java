@@ -23,11 +23,25 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.DistributionMixture;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
 
+/**
+ * Gaussian Mixture Model. This algorithm represents a soft clustering model where each cluster is gaussian distribution
+ * with own mean value and covariation matrix. Such model can predict cluster using maximum likelihood priciple (see
+ * {@link #predict(Vector)}). Also * this model can estimate probability of given vector (see {@link #prob(Vector)}) and
+ * compute likelihood vector where each component of it is a probability of cluster of mixture (see {@link
+ * #likelihood(Vector)}).
+ */
 public class GmmModel extends DistributionMixture<MultivariateGaussianDistribution> implements IgniteModel<Vector, Double> {
+    /**
+     * Creates an instance of GmmModel.
+     *
+     * @param componentProbs Probabilities of components.
+     * @param distributions Gaussian distributions for each component.
+     */
     public GmmModel(Vector componentProbs, List<MultivariateGaussianDistribution> distributions) {
         super(componentProbs, distributions);
     }
 
+    /** {@inheritDoc} */
     @Override public Double predict(Vector input) {
         Vector likelihood = likelihood(input);
         double maxLikelihood = -1.;

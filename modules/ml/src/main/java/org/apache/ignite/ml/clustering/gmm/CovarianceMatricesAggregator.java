@@ -126,7 +126,7 @@ public class CovarianceMatricesAggregator implements Serializable {
         for (int i = 0; i < countOfComponents; i++)
             aggregators.add(new CovarianceMatricesAggregator(means.get(i)));
 
-        for (int i = 0; i < data.getXs().size(); i++) {
+        for (int i = 0; i < data.size(); i++) {
             for (int c = 0; c < countOfComponents; c++)
                 aggregators.get(c).add(data.getX(i), data.pcxi(c, i));
         }
@@ -166,14 +166,23 @@ public class CovarianceMatricesAggregator implements Serializable {
         return res;
     }
 
+    /**
+     * @return mean vector.
+     */
     Vector mean() {
         return mean.copy();
     }
 
+    /**
+     * @return weighted sum.
+     */
     Matrix weightedSum() {
         return weightedSum.copy();
     }
 
+    /**
+     * @return N.
+     */
     int N() {
         return N;
     }
