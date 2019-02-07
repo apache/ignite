@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessing
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnCoordinatorLeftTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnNodesFailTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnNodesLeftTest;
+import org.apache.ignite.internal.processors.service.ServiceHotRedeploymentTest;
 import org.apache.ignite.internal.processors.service.ServiceInfoSelfTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
@@ -109,6 +110,7 @@ import org.junit.runners.Suite;
     ServiceReassignmentFunctionSelfTest.class,
     ServiceInfoSelfTest.class,
     ServiceDeploymentProcessIdSelfTest.class,
+    ServiceHotRedeploymentTest.class,
 })
 public class IgniteServiceGridTestSuite {
 }
