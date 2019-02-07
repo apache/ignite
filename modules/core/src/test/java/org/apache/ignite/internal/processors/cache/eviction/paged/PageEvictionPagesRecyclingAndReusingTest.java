@@ -30,13 +30,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstractTest {
     /** Test timeout. */
     private static final long TEST_TIMEOUT = 10 * 60 * 1000;
@@ -94,7 +91,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10448")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
     @Test
     public void testPagesRecyclingAndReusingMvccTxPartitioned() throws Exception {
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.PARTITIONED);
@@ -104,7 +101,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10448")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
     @Test
     public void testPagesRecyclingAndReusingMvccTxReplicated() throws Exception {
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);

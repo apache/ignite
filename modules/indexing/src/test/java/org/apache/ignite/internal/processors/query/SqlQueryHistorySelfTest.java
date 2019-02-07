@@ -46,15 +46,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Check query history metrics from server node.
  */
-@RunWith(JUnit4.class)
 public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
     /** */
     private static final int QUERY_HISTORY_SIZE = 3;

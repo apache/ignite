@@ -2006,11 +2006,15 @@ public class ZookeeperDiscoveryImpl {
         if (res.err != null)
             return res;
 
-        DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(node.id(), joiningNodeData.node().isClient());
+        IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
 
-        joiningNodeBag.joiningNodeData(joiningNodeData.discoveryData());
+        if (err == null) {
+            DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(node.id(), joiningNodeData.node().isClient());
 
-        IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node, joiningNodeBag);
+            joiningNodeBag.joiningNodeData(joiningNodeData.discoveryData());
+
+            err = spi.getSpiContext().validateNode(node, joiningNodeBag);
+        }
 
         if (err != null) {
             LT.warn(log, err.message());

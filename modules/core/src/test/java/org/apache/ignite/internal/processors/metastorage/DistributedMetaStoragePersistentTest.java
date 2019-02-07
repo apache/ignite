@@ -30,15 +30,12 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 
 /**
  * Test for {@link DistributedMetaStorageImpl} with enabled persistence.
  */
-@RunWith(JUnit4.class)
 public class DistributedMetaStoragePersistentTest extends DistributedMetaStorageTest {
     /** {@inheritDoc} */
     @Override protected boolean isPersistent() {
@@ -283,11 +280,11 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
                 while (!stop.get()) {
                     stopGrid(gridIdx, true);
 
-                    Thread.sleep(10L);
+                    Thread.sleep(100L);
 
                     startGrid(gridIdx);
 
-                    Thread.sleep(10L);
+                    Thread.sleep(100L);
                 }
             }
             catch (Exception e) {

@@ -20,13 +20,10 @@ package org.apache.ignite.internal.processors.affinity;
 import org.apache.ignite.IgniteSystemProperties;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link GridAffinityAssignment} without IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION.
  */
-@RunWith(JUnit4.class)
 public class GridAffinityAssignmentV2TestNoOptimizations extends GridAffinityAssignmentV2Test {
     /** */
     @BeforeClass

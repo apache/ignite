@@ -555,11 +555,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+    @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
         if (ctx.clientNode())
             return;
-
-        DiscoveryDataBag.JoiningNodeDiscoveryData discoData = dataBag.newJoinerDiscoveryData(COMPONENT_ID);
 
         if (!discoData.hasJoiningNodeData())
             return;
@@ -567,13 +565,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         DistributedMetaStorageJoiningNodeData joiningData =
             (DistributedMetaStorageJoiningNodeData)discoData.joiningNodeData();
 
-        if (joiningData == null)
-            return;
-
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
         synchronized (innerStateLock) {
-            //TODO Store it precalculated? Maybe later.
             DistributedMetaStorageVersion actualVer = getActualVersion();
 
             if (remoteVer.id > actualVer.id) {
@@ -587,21 +581,42 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                     for (long v = actualVer.id + 1; v <= remoteVer.id; v++)
                         updateLater(hist[(int)(v - remoteVer.id + hist.length - 1)]);
-
-                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(remoteVer, null, null, null);
-
-                    dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                 }
                 else
                     assert false : "Joining node is too far ahead [remoteVer=" + remoteVer + "]";
             }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        if (ctx.clientNode())
+            return;
+
+        if (dataBag.commonDataCollectedFor(COMPONENT_ID))
+            return;
+
+        DiscoveryDataBag.JoiningNodeDiscoveryData discoData = dataBag.newJoinerDiscoveryData(COMPONENT_ID);
+
+        if (!discoData.hasJoiningNodeData())
+            return;
+
+        DistributedMetaStorageJoiningNodeData joiningData =
+            (DistributedMetaStorageJoiningNodeData)discoData.joiningNodeData();
+
+        DistributedMetaStorageVersion remoteVer = joiningData.ver;
+
+        synchronized (innerStateLock) {
+            //TODO Store it precalculated? Maybe later.
+            DistributedMetaStorageVersion actualVer = getActualVersion();
+
+            if (remoteVer.id > actualVer.id) {
+                Serializable nodeData = new DistributedMetaStorageClusterNodeData(remoteVer, null, null, null);
+
+                dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+            }
             else {
-                if (dataBag.commonDataCollectedFor(COMPONENT_ID))
-                    return;
-
                 if (remoteVer.id == actualVer.id) {
-                    assert remoteVer.equals(actualVer) : actualVer + " " + remoteVer;
-
                     Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, null);
 
                     dataBag.addGridCommonData(COMPONENT_ID, nodeData);

@@ -49,8 +49,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -60,7 +58,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 @SuppressWarnings({"unchecked", "PackageVisibleField", "serial"})
-@RunWith(JUnit4.class)
 public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest {
     /** */
     private static final String PERSON_CACHE_NAME = "person";

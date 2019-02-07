@@ -36,8 +36,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -49,7 +47,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * exchange should be skipped in this case).
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractTest {
     /** Flag indicating whether to include cache to the node configuration. */
     private boolean cache;

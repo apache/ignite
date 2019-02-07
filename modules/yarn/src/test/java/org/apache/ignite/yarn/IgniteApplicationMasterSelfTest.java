@@ -52,15 +52,12 @@ import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * Application master tests.
  */
-@RunWith(JUnit4.class)
 public class IgniteApplicationMasterSelfTest {
     /** */
     private ApplicationMaster appMaster;

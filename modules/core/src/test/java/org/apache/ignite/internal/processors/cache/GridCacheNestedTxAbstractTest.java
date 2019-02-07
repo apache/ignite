@@ -31,8 +31,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -42,7 +40,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Nested transaction emulation.
  */
-@RunWith(JUnit4.class)
 public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
     /** Counter key. */
     private static final String CNTR_KEY = "CNTR_KEY";

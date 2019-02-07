@@ -57,11 +57,8 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /** */
-@RunWith(JUnit4.class)
 public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
     /** Name of client node. */
     private static String NODE_CLIENT = "client";

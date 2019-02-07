@@ -57,8 +57,6 @@ import org.hibernate.mapping.RootClass;
 import org.hibernate.stat.NaturalIdCacheStatistics;
 import org.hibernate.stat.SecondLevelCacheStatistics;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -78,7 +76,6 @@ import static org.hibernate.cfg.Environment.USE_SECOND_LEVEL_CACHE;
  *
  * Tests Hibernate L2 cache.
  */
-@RunWith(JUnit4.class)
 public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String CONNECTION_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";

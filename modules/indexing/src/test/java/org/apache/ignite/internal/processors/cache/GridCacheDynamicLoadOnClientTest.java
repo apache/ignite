@@ -40,13 +40,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test lazy cache start on client nodes with inmemory cache.
  */
-@RunWith(JUnit4.class)
 public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String PERSON_CACHE = "Person";

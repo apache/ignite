@@ -26,14 +26,11 @@ import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /** Repository. */
     private static PersonRepository repo;

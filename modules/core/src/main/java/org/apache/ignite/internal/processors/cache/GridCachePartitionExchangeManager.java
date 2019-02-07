@@ -200,9 +200,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
 
-    /** */
-    private final Object interruptLock = new Object();
-
     /**
      * Partition map futures.
      * This set also contains already completed exchange futures to address race conditions when coordinator
@@ -815,13 +812,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         busyLock.writeLock().lock();
 
         exchFuts.clear();
-    }
-
-    /**
-     * @return Interrupt lock.
-     */
-    public Object interruptLock() {
-        return interruptLock;
     }
 
     /**
@@ -2202,6 +2192,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * For testing only.
+     *
+     * @return Current version to wait for.
+     */
+    public AffinityTopologyVersion mergeExchangesTestWaitVersion() {
+        return exchMergeTestWaitVer;
+    }
+
+    /**
      * @param curFut Current exchange future.
      * @param msg Message.
      * @return {@code True} if node is stopping.
@@ -2636,13 +2635,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             break;
                     }
                 }
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            synchronized (interruptLock) {
-                super.cancel();
             }
         }
 

@@ -45,16 +45,15 @@ import org.apache.ignite.hadoop.io.TextPartiallyRawComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
 /**
  * Implements TeraSort Hadoop sample as a unit test.
  */
-@RunWith(JUnit4.class)
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9920")
 public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
     /** Copy of Hadoop constant of package-private visibility. */
     public static final String PARTITION_FILENAME = getPartitionFileNameConstant();
@@ -291,7 +290,6 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
      *
      * @return The class.
      */
-    @SuppressWarnings("unchecked")
     private Class<? extends Partitioner> getTeraSortTotalOrderPartitioner() {
         Class[] classes = TeraSort.class.getDeclaredClasses();
 
@@ -360,6 +358,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9920")
     @Test
     public void testTeraSort() throws Exception {
         checkTeraSort(false);
@@ -370,6 +369,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9920")
     @Test
     public void testTeraSortGzip() throws Exception {
         checkTeraSort(true);

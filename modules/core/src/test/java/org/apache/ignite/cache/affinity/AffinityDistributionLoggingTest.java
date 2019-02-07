@@ -36,8 +36,6 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -49,7 +47,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
  *
  * @see EvenDistributionAffinityFunction
  */
-@RunWith(JUnit4.class)
 public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /** Pattern to test. */
     private static final String LOG_MESSAGE_PREFIX = "Local node affinity assignment distribution is not ideal ";

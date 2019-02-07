@@ -28,8 +28,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestSafeThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.objectweb.jotm.Jotm;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -42,7 +40,6 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 /**
  * Abstract class for cache tests.
  */
-@RunWith(JUnit4.class)
 public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int GRID_CNT = 1;

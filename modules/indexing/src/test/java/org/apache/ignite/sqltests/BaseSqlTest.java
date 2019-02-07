@@ -59,13 +59,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test base for test for sql features.
  */
-@RunWith(JUnit4.class)
 public class BaseSqlTest extends AbstractIndexingCommonTest {
     /** Number of all employees. */
     public static final long EMP_CNT = 1000L;

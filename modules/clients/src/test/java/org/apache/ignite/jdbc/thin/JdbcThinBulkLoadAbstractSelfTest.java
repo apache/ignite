@@ -43,8 +43,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -53,7 +51,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 /**
  * COPY statement tests.
  */
-@RunWith(JUnit4.class)
 public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** Subdirectory with CSV files */
     private static final String CSV_FILE_SUBDIR = "/modules/clients/src/test/resources/";

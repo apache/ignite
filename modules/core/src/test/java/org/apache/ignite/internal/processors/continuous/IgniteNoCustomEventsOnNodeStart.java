@@ -24,13 +24,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Sanity test to verify there are no unnecessary messages on node start.
  */
-@RunWith(JUnit4.class)
 public class IgniteNoCustomEventsOnNodeStart extends GridCommonAbstractTest {
     /** */
     private boolean client;

@@ -36,13 +36,10 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests modification of values returned by query iterators with enabled copy on read.
  */
-@RunWith(JUnit4.class)
 public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS = 100;

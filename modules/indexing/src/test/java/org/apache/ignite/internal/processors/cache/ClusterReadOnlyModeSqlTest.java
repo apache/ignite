@@ -25,13 +25,10 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests SQL queries in read-only cluster mode.
  */
-@RunWith(JUnit4.class)
 public class ClusterReadOnlyModeSqlTest extends ClusterReadOnlyModeAbstractTest {
     /**
      *

@@ -40,8 +40,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_MAX_CONN_IDLE_TIME;
@@ -50,7 +48,6 @@ import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_TOP
 /**
  * Properties-based configuration self test.
  */
-@RunWith(JUnit4.class)
 public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTest {
     /**
      * Grid client spring configuration.

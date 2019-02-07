@@ -38,15 +38,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Check Tx state recovery from WAL.
  */
-@RunWith(JUnit4.class)
 public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -213,7 +209,6 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10219")
     @Test
     public void testLostRollbackOnBackup() throws Exception {
         IgniteEx node = startGrid(0);
@@ -238,7 +233,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
                     barrier.await();
                 }
                 catch (Exception e) {
-                    e.printStackTrace();
+
                     barrier.reset();
                 }
             }

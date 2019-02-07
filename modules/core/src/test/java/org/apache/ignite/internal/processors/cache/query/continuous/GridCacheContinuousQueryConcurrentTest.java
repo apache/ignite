@@ -51,8 +51,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -62,7 +60,6 @@ import static javax.cache.configuration.FactoryBuilder.factoryOf;
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 2;

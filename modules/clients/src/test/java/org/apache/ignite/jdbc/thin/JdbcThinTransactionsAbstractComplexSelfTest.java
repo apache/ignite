@@ -39,20 +39,17 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test to check various transactional scenarios.
  */
-@RunWith(JUnit4.class)
 public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcThinAbstractSelfTest {
     /** Client node index. */
     static final int CLI_IDX = 1;
@@ -189,10 +186,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(0);
-        startGrid(1);
-        startGrid(2);
-        startGrid(3);
+        startGridsMultiThreaded(4);
     }
 
     /** {@inheritDoc} */
@@ -279,6 +273,8 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             "[part=6, val=6, hasValBytes=true]]");
 
         assertTrue(e.getCause() instanceof BatchUpdateException);
+
+        assertEquals(IgniteQueryErrorCode.DUPLICATE_KEY, ((BatchUpdateException)e.getCause()).getErrorCode());
 
         assertTrue(e.getCause().getMessage().contains("Duplicate key during INSERT [key=KeyCacheObjectImpl " +
             "[part=6, val=6, hasValBytes=true]]"));

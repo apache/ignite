@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheQueryH2IndexingLea
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryIndexSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlDmlErrorSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheSqlInsertValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUnionDuplicatesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
@@ -219,8 +220,10 @@ import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistr
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.AndOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.BetweenOperationExtractPartitionSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.DmlSelectPartitionPruningSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.InOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.JoinPartitionPruningSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.SqlDataTypeConversionTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalSnapshotColumnConstraintTest;
@@ -292,7 +295,7 @@ import org.junit.runners.Suite;
     GridH2IndexingInMemSelfTest.class,
     GridH2IndexingOffheapSelfTest.class,
 
-        // Parsing
+    // Parsing
     GridQueryParsingTest.class,
     IgniteCacheSqlQueryErrorSelfTest.class,
     IgniteCacheSqlDmlErrorSelfTest.class,
@@ -366,6 +369,7 @@ import org.junit.runners.Suite;
     IgniteCacheDeleteSqlQuerySelfTest.class,
     IgniteSqlSkipReducerOnUpdateDmlSelfTest.class,
     IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest.class,
+    IgniteCacheSqlInsertValidationSelfTest.class,
 
     IgniteBinaryObjectQueryArgumentsTest.class,
     IgniteBinaryObjectLocalQueryArgumentsTest.class,
@@ -537,9 +541,12 @@ import org.junit.runners.Suite;
     AndOperationExtractPartitionSelfTest.class,
     BetweenOperationExtractPartitionSelfTest.class,
     JoinPartitionPruningSelfTest.class,
+    DmlSelectPartitionPruningSelfTest.class,
 
     GridCacheDynamicLoadOnClientTest.class,
     GridCacheDynamicLoadOnClientPersistentTest.class,
+
+    SqlDataTypeConversionTest.class,
 
         //Query history.
     SqlQueryHistorySelfTest.class,

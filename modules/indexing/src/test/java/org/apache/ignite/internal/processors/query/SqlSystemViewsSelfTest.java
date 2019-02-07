@@ -62,15 +62,12 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 
 /**
  * Tests for ignite SQL system views.
  */
-@RunWith(JUnit4.class)
 public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /** Metrics check attempts. */
     private static final int METRICS_CHECK_ATTEMPTS = 10;

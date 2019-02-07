@@ -32,8 +32,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test sql queries with parameters for all types.
@@ -42,7 +40,6 @@ import org.junit.runners.JUnit4;
  * @author Sergey Chernolyas &amp;sergey_chernolyas@gmail.com&amp;
  * @see <a href="https://issues.apache.org/jira/browse/IGNITE-6286">IGNITE-6286</a>
  */
-@RunWith(JUnit4.class)
 public class IgniteSqlParameterizedQueryTest extends AbstractIndexingCommonTest {
     /** */
     private static final String CACHE_BOOKMARK = "Bookmark";

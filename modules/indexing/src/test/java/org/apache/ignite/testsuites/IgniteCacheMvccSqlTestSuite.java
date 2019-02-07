@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlUpdateCounte
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccStreamingInsertTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxNodeMappingTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccDeadlockDetectionConfigTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadBulkOpsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadOperationsTest;
@@ -94,6 +95,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
     CacheMvccTxNodeMappingTest.class,
 
+    MvccDeadlockDetectionConfigTest.class,
     MvccDeadlockDetectionTest.class,
 
     // SQL vs CacheAPI consistency.

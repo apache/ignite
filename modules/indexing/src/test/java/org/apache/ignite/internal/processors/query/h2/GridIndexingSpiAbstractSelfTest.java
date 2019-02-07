@@ -36,13 +36,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for all SQL based indexing SPI implementations.
  */
-@RunWith(JUnit4.class)
 public abstract class GridIndexingSpiAbstractSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final LinkedHashMap<String, String> fieldsAA = new LinkedHashMap<>();

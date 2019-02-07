@@ -47,8 +47,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -57,7 +55,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test checks that grid transaction configuration doesn't influence system caches.
  */
-@RunWith(JUnit4.class)
 public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
     /** Test cache name. */
     private static final String CACHE_NAME = "cache_name";

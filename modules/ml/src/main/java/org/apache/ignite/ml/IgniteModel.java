@@ -40,7 +40,7 @@ public interface IgniteModel<T, V> extends Model<T, V>, Serializable {
      * Get a composition model of the form {@code x -> after(mdl(x))}.
      *
      * @param after Model to apply after this model.
-     * @param <V1> Type of input of function applied before this model.
+     * @param <V1> Type of output of function applied after this model.
      * @return Composition model of the form {@code x -> after(mdl(x))}.
      */
     public default <V1> IgniteModel<T, V1> andThen(IgniteModel<V, V1> after) {
@@ -72,6 +72,28 @@ public interface IgniteModel<T, V> extends Model<T, V>, Serializable {
             /** {@inheritDoc} */
             @Override public V1 predict(T input) {
                 return after.apply(self.predict(input));
+            }
+
+            /** {@inheritDoc} */
+            @Override public void close() {
+                self.close();
+            }
+        };
+    }
+
+    /**
+     * Get a composition model of the form {@code x -> mdl(before(x))}.
+     *
+     * @param before Function to apply before this model.
+     * @param <V1> Type of input of function applied before this model.
+     * @return Composition model of the form {@code x -> after(mdl(x))}.
+     */
+    public default <V1> IgniteModel<V1, V> andBefore(IgniteFunction<V1, T> before) {
+        IgniteModel<T, V> self = this;
+        return new IgniteModel<V1, V>() {
+            /** {@inheritDoc} */
+            @Override public V predict(V1 input) {
+                return self.predict(before.apply(input));
             }
 
             /** {@inheritDoc} */
