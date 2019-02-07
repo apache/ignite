@@ -41,7 +41,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-
 /**
  * Test lazy cache start on client nodes with inmemory cache.
  */
