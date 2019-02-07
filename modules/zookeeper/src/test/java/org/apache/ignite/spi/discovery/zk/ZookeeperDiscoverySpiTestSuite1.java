@@ -42,10 +42,10 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    //ZookeeperDiscoverySegmentationAndConnectionRestoreTest.class,
-    //ZookeeperDiscoveryConcurrentStartAndStartStopTest.class,
-    //ZookeeperDiscoveryTopologyChangeAndReconnectTest.class,
-    //ZookeeperDiscoveryCommunicationFailureTest.class,
+    ZookeeperDiscoverySegmentationAndConnectionRestoreTest.class,
+    ZookeeperDiscoveryConcurrentStartAndStartStopTest.class,
+    ZookeeperDiscoveryTopologyChangeAndReconnectTest.class,
+    ZookeeperDiscoveryCommunicationFailureTest.class,
     //ZookeeperDiscoveryClientDisconnectTest.class,
     ZookeeperDiscoveryClientReconnectTest.class,
     //ZookeeperDiscoverySplitBrainTest.class,
