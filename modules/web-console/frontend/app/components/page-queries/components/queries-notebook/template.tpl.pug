@@ -403,9 +403,11 @@ mixin paragraph-query
                                 tipOpts: { placement: 'top' }
                             })
                 .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
-                    label Wrong caches filter
+                    no-data
+                        label Wrong caches filter
                 .empty-caches(ng-show='caches.length == 0')
-                    label No caches
+                    no-data
+                        label No caches
         .col-sm-12.sql-controls
             div
                 +query-actions
