@@ -179,14 +179,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
             }
         };
 
-        try {
-            assert this.assignment.equals(assign.assignment()) : "new=" + this.assignment + ", old=" + assign.assignment();
-        }
-        catch (Throwable e) {
-            e.printStackTrace();
-
-            this.assignment.get(100);
-        }
+        assert this.assignment.equals(assign.assignment()) : "new=" + this.assignment + ", old=" + assign.assignment();
 
         assert this.idealAssignment.equals(assign.idealAssignment()) :
             "new=" + this.idealAssignment + ", old=" + assign.idealAssignment();

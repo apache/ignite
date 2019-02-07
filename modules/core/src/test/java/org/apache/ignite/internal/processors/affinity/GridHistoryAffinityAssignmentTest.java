@@ -76,7 +76,7 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
         HistoryAffinityAssignment idealAssign = new
             HistoryAffinityAssignment(new GridAffinityAssignmentV2(topVer, ideal, ideal), 1);
 
-        assertSame("Expecting same proxies", idealAssign.assignment(), idealAssign.idealAssignment());
+        assertSame(idealAssign.assignment(), idealAssign.idealAssignment());
 
         assertEquals("Ideal", ideal, idealAssign.idealAssignment());
     }
