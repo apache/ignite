@@ -34,6 +34,12 @@ public enum LifecycleEventType {
     BEFORE_NODE_START,
 
     /**
+     * Invoked after node has been initialized but before connecting
+     * to the cluster. At this point it can register local listeners.
+     */
+    BEFORE_CLUSTER_CONNECTION,
+
+    /**
      * Invoked after node startup is complete. Node is fully
      * initialized and fully functional.
      */

@@ -294,6 +294,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
+import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_CLUSTER_CONNECTION;
 
 /**
  * Ignite kernal.
@@ -1091,6 +1092,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Check whether physical RAM is not exceeded.
             checkPhysicalRam();
+
+            notifyLifecycleBeans(BEFORE_CLUSTER_CONNECTION);
 
             // Suggest configuration optimizations.
             suggestOptimizations(cfg);

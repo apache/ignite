@@ -39,6 +39,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_STOP;
+import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_CLUSTER_CONNECTION;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_STOP;
 
@@ -108,6 +109,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
             assertEquals(IgniteState.STARTED, G.state(getTestIgniteInstanceName()));
 
             assertEquals(1, bean.count(BEFORE_NODE_START));
+            assertEquals(1, bean.count(BEFORE_CLUSTER_CONNECTION));
             assertEquals(1, bean.count(AFTER_NODE_START));
             assertEquals(0, bean.count(BEFORE_NODE_STOP));
             assertEquals(0, bean.count(AFTER_NODE_STOP));
@@ -120,6 +122,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         assertEquals(IgniteState.STOPPED, G.state(getTestIgniteInstanceName()));
 
         assertEquals(1, bean.count(BEFORE_NODE_START));
+        assertEquals(1, bean.count(BEFORE_CLUSTER_CONNECTION));
         assertEquals(1, bean.count(AFTER_NODE_START));
         assertEquals(1, bean.count(BEFORE_NODE_STOP));
         assertEquals(1, bean.count(AFTER_NODE_STOP));
@@ -139,6 +142,22 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     @Test
     public void testOtherErrorBeforeStart() throws Exception {
         checkBeforeStart(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGridErrorBeforeConnecting() throws Exception {
+        checkBeforeClusterConnection(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOtherErrorBeforConnecting() throws Exception {
+        checkBeforeClusterConnection(false);
     }
 
     /**
@@ -179,8 +198,37 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(0, bean.count(BEFORE_NODE_START));
+        assertEquals(0, bean.count(BEFORE_CLUSTER_CONNECTION));
         assertEquals(0, bean.count(AFTER_NODE_START));
         assertEquals(0, bean.count(BEFORE_NODE_STOP));
+        assertEquals(1, bean.count(AFTER_NODE_STOP));
+    }
+
+    /**
+     * @param gridErr Grid error flag.
+     * @throws Exception If failed.
+     */
+    private void checkBeforeClusterConnection(boolean gridErr) throws Exception {
+        bean = new LifeCycleExceptionBean(BEFORE_CLUSTER_CONNECTION, gridErr);
+
+        try {
+            startGrid();
+
+            assertTrue(false); // Should never get here.
+        }
+        catch (IgniteCheckedException expected) {
+            info("Got expected exception: " + expected);
+
+            assertEquals(IgniteState.STOPPED, G.state(getTestIgniteInstanceName()));
+        }
+        finally {
+            stopAllGrids();
+        }
+
+        assertEquals(1, bean.count(BEFORE_NODE_START));
+        assertEquals(0, bean.count(BEFORE_CLUSTER_CONNECTION));
+        assertEquals(0, bean.count(AFTER_NODE_START));
+        assertEquals(1, bean.count(BEFORE_NODE_STOP));
         assertEquals(1, bean.count(AFTER_NODE_STOP));
     }
 
@@ -206,6 +254,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(1, bean.count(BEFORE_NODE_START));
+        assertEquals(1, bean.count(BEFORE_CLUSTER_CONNECTION));
         assertEquals(0, bean.count(AFTER_NODE_START));
         assertEquals(1, bean.count(BEFORE_NODE_STOP));
         assertEquals(1, bean.count(AFTER_NODE_STOP));
@@ -219,6 +268,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         checkOnStop(BEFORE_NODE_STOP, true);
 
         assertEquals(1, bean.count(BEFORE_NODE_START));
+        assertEquals(1, bean.count(BEFORE_CLUSTER_CONNECTION));
         assertEquals(1, bean.count(AFTER_NODE_START));
         assertEquals(0, bean.count(BEFORE_NODE_STOP));
         assertEquals(1, bean.count(AFTER_NODE_STOP));
@@ -232,6 +282,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         checkOnStop(BEFORE_NODE_STOP, false);
 
         assertEquals(1, bean.count(BEFORE_NODE_START));
+        assertEquals(1, bean.count(BEFORE_CLUSTER_CONNECTION));
         assertEquals(1, bean.count(AFTER_NODE_START));
         assertEquals(0, bean.count(BEFORE_NODE_STOP));
         assertEquals(1, bean.count(AFTER_NODE_STOP));
@@ -245,6 +296,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         checkOnStop(AFTER_NODE_STOP, true);
 
         assertEquals(1, bean.count(BEFORE_NODE_START));
+        assertEquals(1, bean.count(BEFORE_CLUSTER_CONNECTION));
         assertEquals(1, bean.count(AFTER_NODE_START));
         assertEquals(1, bean.count(BEFORE_NODE_STOP));
         assertEquals(0, bean.count(AFTER_NODE_STOP));
@@ -258,6 +310,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         checkOnStop(AFTER_NODE_STOP, false);
 
         assertEquals(1, bean.count(BEFORE_NODE_START));
+        assertEquals(1, bean.count(BEFORE_CLUSTER_CONNECTION));
         assertEquals(1, bean.count(AFTER_NODE_START));
         assertEquals(1, bean.count(BEFORE_NODE_STOP));
         assertEquals(0, bean.count(AFTER_NODE_STOP));
