@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFa
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -38,7 +37,6 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.testframework.MvccFeatureChecker.Feature.NEAR_CACHE;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -88,8 +86,6 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFastFinishTxNearCache() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(NEAR_CACHE);
-
         nearCache = true;
 
         fastFinishTx();
@@ -173,13 +169,13 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                     cache.get(i);
 
-                    checkNormalTxFinish(tx, commit, true);
+                    checkNormalTxFinish(tx, commit);
                 }
 
                 try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.get(i);
 
-                    checkNormalTxFinish(tx, commit, true);
+                    checkNormalTxFinish(tx, commit);
                 }
             }
 
@@ -189,7 +185,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
                         try (Transaction tx = txs.txStart(c, isolation)) {
                             cache.put(i, i);
 
-                            checkNormalTxFinish(tx, commit, false);
+                            checkNormalTxFinish(tx, commit);
                         }
                     }
                 }
@@ -209,45 +205,29 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
 
         IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
 
-        assertNull(prepareFuture(tx0));
-        assertTrue(finishFuture(tx0) instanceof GridNearTxFastFinishFuture);
+        assertNull(fieldValue(tx0, "prepFut"));
+        assertTrue(fieldValue(tx0, "finishFut") instanceof GridNearTxFastFinishFuture);
     }
 
     /**
      * @param tx Transaction.
      * @param commit Commit flag.
-     * @param readOnly {@code true} if checked tx did no writes.
      */
-    protected void checkNormalTxFinish(Transaction tx, boolean commit, boolean readOnly) {
+    protected void checkNormalTxFinish(Transaction tx, boolean commit) {
         IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
 
         if (commit) {
             tx.commit();
 
-            checkNormalCommittedTx(tx0, readOnly);
+            assertNotNull(fieldValue(tx0, "prepFut"));
+            assertNotNull(fieldValue(tx0, "finishFut"));
         }
         else {
             tx.rollback();
 
-            assertNull(prepareFuture(tx0));
-            assertNotNull(finishFuture(tx0));
+            assertNull(fieldValue(tx0, "prepFut"));
+            assertNotNull(fieldValue(tx0, "finishFut"));
         }
-    }
-
-    /** */
-    protected void checkNormalCommittedTx(IgniteInternalTx tx, boolean readOnly) {
-        assertNotNull(prepareFuture(tx));
-        assertNotNull(finishFuture(tx));
-    }
-
-    /** */
-    protected Object prepareFuture(IgniteInternalTx tx) {
-        return fieldValue(tx, "prepFut");
-    }
-
-    /** */
-    protected Object finishFuture(IgniteInternalTx tx) {
-        return fieldValue(tx, "finishFut");
     }
 
     /**
