@@ -450,15 +450,13 @@ public class GridReduceQueryExecutor {
 
             boolean mvccEnabled = mvccEnabled(ctx);
 
-            final GridNearTxLocal curTx = null;
+            final GridNearTxLocal curTx;
 
-            if (mvccEnabled) {
-                try {
-                    checkActive(tx(ctx));
-                }
-                catch (IgniteTxAlreadyCompletedCheckedException e) {
-                    throw new TransactionAlreadyCompletedException(e.getMessage(), e);
-                }
+            try {
+                curTx = mvccEnabled ? checkActive(tx(ctx)) : null;
+            }
+            catch (IgniteTxAlreadyCompletedCheckedException e) {
+                throw new TransactionAlreadyCompletedException(e.getMessage(), e);
             }
 
             final GridNearTxSelectForUpdateFuture sfuFut;
