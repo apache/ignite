@@ -50,10 +50,13 @@ final class ParsingResult {
     private final List<GridQueryFieldMetadata> meta;
 
     /** Parsed native command/ */
+    // TODO: newCmd -> nativeCommand
     private final SqlCommand newCmd;
 
+    // TODO: Styling
     /** Simple constructor. */
-    private ParsingResult(Prepared prepared, SqlFieldsQuery newQry, String remainingSql,
+    private ParsingResult(
+        Prepared prepared, SqlFieldsQuery newQry, String remainingSql,
         GridCacheTwoStepQuery twoStepQry,
         H2TwoStepCachedQueryKey twoStepQryKey, List<GridQueryFieldMetadata> meta, SqlCommand newCmd) {
         this.prepared = prepared;
@@ -74,7 +77,8 @@ final class ParsingResult {
         String remainingSql,
         GridCacheTwoStepQuery twoStepQry,
         H2TwoStepCachedQueryKey twoStepQryKey,
-        List<GridQueryFieldMetadata> meta) {
+        List<GridQueryFieldMetadata> meta
+    ) {
         this(prepared, newQry, remainingSql, twoStepQry, twoStepQryKey, meta, null);
     }
 
@@ -114,6 +118,7 @@ final class ParsingResult {
         return newQry;
     }
 
+    // TODO: Styling.
     /** Parsed sql command. */
     public SqlCommand newCmd() {
         return newCmd;

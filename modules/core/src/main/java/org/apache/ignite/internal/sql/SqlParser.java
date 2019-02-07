@@ -89,9 +89,7 @@ public class SqlParser {
         if (cmd != null) {
             if (cmd.schemaName() == null)
                 cmd.schemaName(schemaName);
-        } else
-            assert remainingSql() == null :
-                "Incorrect state: parser met EOF, but there is remaining sql:" + remainingSql() + ".";
+        }
 
         return cmd;
     }
@@ -165,6 +163,8 @@ public class SqlParser {
                     }
 
                     if (cmd != null) {
+                        // TODO: Probably position should be read here
+
                         // If there is something behind the command, this is a syntax error.
                         if (lex.shift() && lex.tokenType() != SqlLexerTokenType.SEMICOLON)
                             throw errorUnexpectedToken(lex);

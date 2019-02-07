@@ -304,8 +304,12 @@ public class GridCacheTwoStepQuery {
         this.forUpdate = forUpdate;
     }
 
-    /** Number of positional arguments in the sql. */
-    public int argsCount() {
+    /**
+     * Number of positional arguments in the sql.
+     *
+     * @return Arguments count.
+     */
+    public int argumentsCount() {
         return argsCnt;
     }
 

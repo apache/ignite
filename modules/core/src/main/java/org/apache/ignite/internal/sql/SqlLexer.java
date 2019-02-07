@@ -256,6 +256,7 @@ public class SqlLexer implements SqlLexerToken {
     /**
      * Returns already processed part of the query or {@code null} if we at the start point.
      */
+    // TODO: Incorrect semantics. Consider exposing lexer position.
     public String processedSql() {
         if (pos == 0)
             return null;

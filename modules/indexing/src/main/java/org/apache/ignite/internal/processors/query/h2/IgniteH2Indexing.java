@@ -1259,6 +1259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Command or {@code null} if cannot parse this query.
      */
      @Nullable private ParsingResult parseNativeLeadingStatement(String schemaName, SqlFieldsQuery qry) {
+         // TODO: Remove
          final ParsingResult NOT_YET_SUPPORTED = null;
 
          String sql = qry.getSql();
@@ -1539,7 +1540,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (prepared != null)
                         firstArg += prepared.getParameters().size();
                     else
-                        firstArg += twoStepQry.argsCount();
+                        firstArg += twoStepQry.argumentsCount();
 
                     H2TwoStepCachedQueryKey twoStepKey = parseRes.twoStepQueryKey();
 
@@ -1610,7 +1611,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // parse with h2 parser:
         return parseAndSplit(schemaName, qry, firstArg);
     }
-
 
     /**
      * Execute an all-ready {@link SqlFieldsQuery}.
