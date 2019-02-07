@@ -74,11 +74,11 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
 
         helper.clientMode(true);
 
-        startGridsMultiThreaded(10, 10);
+        startGridsMultiThreaded(5, 5);
 
         stopGrid(getTestIgniteInstanceName(0), true, false);
 
-        final int srvIdx = ThreadLocalRandom.current().nextInt(10);
+        final int srvIdx = ThreadLocalRandom.current().nextInt(5);
 
         final AtomicInteger idx = new AtomicInteger();
 
@@ -95,9 +95,9 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
 
                 return null;
             }
-        }, 10, "start-node");
+        }, 5, "start-node");
 
-        waitForTopology(20);
+        waitForTopology(10);
 
         evts.clear();
     }
