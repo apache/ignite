@@ -17,6 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.apache.ignite.examples.BasicExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.BasicExamplesSelfTest;
 import org.apache.ignite.examples.CacheClientBinaryExampleTest;
@@ -47,9 +50,13 @@ import org.apache.ignite.examples.SpringDataExampleSelfTest;
 import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.runner.RunWith;
+
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 /**
  * Examples test suite.
@@ -91,12 +98,23 @@ import org.junit.runner.RunWith;
     // Binary.
     CacheClientBinaryExampleTest.class,
     ComputeClientBinaryExampleTest.class,
-//
+
 //    // ML Grid.
 //    IgniteExamplesMLTestSuite.class,
 
     // Encryption.
-    EncryptedCacheExampleSelfTest.class,
+    EncryptedCacheExampleSelfTest.class
 })
 public class IgniteExamplesSelfTestSuite {
+    @TestFactory
+    Collection<DynamicTest> mlModul() throws IOException, ClassNotFoundException {
+        IgniteExamplesMLTestSuite.init();
+        Class[] classes = IgniteExamplesMLTestSuite.suite();
+        Collection<DynamicTest> classesList = new ArrayList<>();
+
+        for (Class cl : classes)
+            classesList.add(dynamicTest(cl.getSimpleName(), () -> cl.getMethod("testExample")));
+
+        return classesList;
+    }
 }
