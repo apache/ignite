@@ -475,7 +475,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
          */
         assert exchangeDone() : "Should not be called before exchange is finished";
 
-        return isDone() ? result() : exchCtx.events().topologyVersion();
+        final AffinityTopologyVersion res;
+        if(isDone())
+            res = result();
+        else {
+            if(exchCtx == null)
+                log.error("exchCtx NULL: " + this);
+
+                res =  exchCtx.events().topologyVersion();
+        }
+
+        return res;
     }
 
     /**
