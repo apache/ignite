@@ -257,7 +257,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         this.key = key;
         this.hash = key.hashCode();
         this.cctx = cctx;
-        this.listenerLock = cctx.continuousQueries().getListenerReadLock();
+        this.listenerLock = cctx.group().listenerLock().readLock();
 
         ver = cctx.shared().versions().startVersion();
     }
@@ -5159,7 +5159,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 valid = entry.valid(tx.topologyVersion());
 
-                boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, entry.key()) != null;
+                boolean needOldVal = tx.txState().useMvccCaching(cctx.cacheId());
 
                 cctx.shared().database().checkpointReadLock();
 
@@ -5605,6 +5605,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 updRes.invokeResult(res.invokeResult());
             }
+
+            updRes.newValue(res.newValue());
 
             if (needOldVal && compareIgnoreOpCounter(res.resultVersion(), mvccVer) != 0 &&
                 (res.resultType() == ResultType.PREV_NOT_NULL || res.resultType() == ResultType.REMOVED_NOT_NULL))

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -78,12 +77,16 @@ public class GridCacheTwoStepQuery {
     /** {@code FOR UPDATE} flag. */
     private boolean forUpdate;
 
+    /** Number of positional arguments in the sql. */
+    private final int paramsCnt;
+
     /**
      * @param originalSql Original query SQL.
      * @param tbls Tables in query.
      */
-    public GridCacheTwoStepQuery(String originalSql, Set<QueryTable> tbls) {
+    public GridCacheTwoStepQuery(String originalSql, int paramsCnt, Set<QueryTable> tbls) {
         this.originalSql = originalSql;
+        this.paramsCnt = paramsCnt;
         this.tbls = tbls;
     }
 
@@ -245,7 +248,7 @@ public class GridCacheTwoStepQuery {
     public GridCacheTwoStepQuery copy() {
         assert !explain;
 
-        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, tbls);
+        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, paramsCnt, tbls);
 
         cp.cacheIds = cacheIds;
         cp.rdc = rdc.copy();
@@ -303,6 +306,13 @@ public class GridCacheTwoStepQuery {
      */
     public void forUpdate(boolean forUpdate) {
         this.forUpdate = forUpdate;
+    }
+
+    /**
+     * @return Number of parameters
+     */
+    public int parametersCount() {
+        return paramsCnt;
     }
 
     /**

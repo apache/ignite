@@ -286,7 +286,9 @@ public class GridSqlQuerySplitter {
         }
 
         // Setup resulting two step query and return it.
-        GridCacheTwoStepQuery twoStepQry = new GridCacheTwoStepQuery(originalSql, splitter.tbls);
+        int paramsCnt = prepared.getParameters().size();
+
+        GridCacheTwoStepQuery twoStepQry = new GridCacheTwoStepQuery(originalSql, paramsCnt, splitter.tbls);
 
         twoStepQry.originalUsedColumns(origUsedCols);
         twoStepQry.reduceQuery(splitter.rdcSqlQry);
