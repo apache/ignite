@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
@@ -27,23 +28,62 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- *
+ * Tests services hot redeployment via {@link DeploymentSpi}.
  */
 public class ServiceHotRedeploymentTest extends GridCommonAbstractTest {
     /** */
     private static final String SERVICE_NAME = "test-service";
 
+    /** */
+    private final LocalDeploymentSpi locDepSpi = new LocalDeploymentSpi();
+
+    /** */
+    private Path srcTmpDir;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setDeploymentSpi(locDepSpi);
+
+        return cfg;
+    }
+
+    /** */
+    @BeforeClass
+    public static void check() {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
+    }
+
+    /** */
+    @Before
+    public void prepare() throws IOException {
+        srcTmpDir = Files.createTempDirectory(getClass().getSimpleName());
+    }
+
+    /** */
+    @After
+    public void cleanup() {
+        U.delete(srcTmpDir);
+    }
+
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void serviceDeploymentSpiTest() throws Exception {
+    public void serviceHotRedeploymentTest() throws Exception {
         ClassLoader clsLdr = classLoader(1);
         Class<?> cls = clsLdr.loadClass("MyRenewServiceImpl");
 
@@ -51,14 +91,8 @@ public class ServiceHotRedeploymentTest extends GridCommonAbstractTest {
 
         assertEquals(1, srvc.version());
 
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
-
-        LocalDeploymentSpi locDepSpi = new LocalDeploymentSpi();
-
-        cfg.setDeploymentSpi(locDepSpi);
-
         try {
-            Ignite ignite = startGrid(cfg);
+            Ignite ignite = startGrid(0);
 
             locDepSpi.register(clsLdr, srvc.getClass());
 
@@ -83,6 +117,9 @@ public class ServiceHotRedeploymentTest extends GridCommonAbstractTest {
 
     /** */
     public interface MyRenewService extends Service {
+        /**
+         * @return Service's version.
+         */
         public int version();
     }
 
@@ -103,7 +140,6 @@ public class ServiceHotRedeploymentTest extends GridCommonAbstractTest {
             "    @Override public void execute(ServiceContext ctx) throws Exception {}\n" +
             "}";
 
-        Path srcTmpDir = Files.createTempDirectory(getClass().getSimpleName());
         File srcFile = new File(srcTmpDir.toFile(), "MyRenewServiceImpl.java");
         Path srcFilePath = Files.write(srcFile.toPath(), source.getBytes(StandardCharsets.UTF_8));
 
