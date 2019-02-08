@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +41,10 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -63,10 +67,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.h2.api.TimestampWithTimeZone;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Tests for ignite SQL system views.
@@ -298,6 +304,105 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         qry = new SqlFieldsQuery(sql).setLocal(true);
 
         assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
+    }
+
+
+    /**
+     * Test running queries system view.
+     */
+    @Test
+    public void testRunningQueriesView() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache cache = ignite.createCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, String.class)
+        );
+
+        cache.put(100,"200");
+
+        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES";
+
+        FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql).setLocal(true));
+
+        List<?> cur = cache.query(new SqlFieldsQuery(sql).setLocal(true)).getAll();
+
+        assertEquals(2, cur.size());
+
+        List<?> res0 = (List<?>)cur.get(0);
+        List<?> res1 = (List<?>)cur.get(1);
+
+        TimestampWithTimeZone tsTz = (TimestampWithTimeZone)res0.get(4);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        int sysTZOff = TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60 / 1000;
+
+        assertEquals(sysTZOff, tsTz.getTimeZoneOffsetMins());
+
+        long diffInMinutes = Math.abs((tsTz.getNanosSinceMidnight() / 1_000_000_000 / 60) - (now.getHour() * 60 + now.getMinute()));
+
+        assertTrue(diffInMinutes < 3);
+
+        assertEquals(sql, res0.get(0));
+
+        assertEquals(sql, res1.get(0));
+
+        assertTrue((Boolean)res0.get(3));
+
+        String id0 = (String)res0.get(1);
+        String id1 = (String)res1.get(1);
+
+        assertNotEquals(id0, id1);
+
+
+        String qryPrefix = ignite.localNode().id() + "_";
+
+        String qryId1 = qryPrefix + "1";
+        String qryId2 = qryPrefix + "2";
+
+        assertTrue(id0.equals(qryId1) || id1.equals(qryId1));
+
+        assertTrue(id0.equals(qryId2) || id1.equals(qryId2));
+
+        assertEquals(2, cache.query(new SqlFieldsQuery(sql)).getAll().size());
+
+        notClosedFieldQryCursor.close();
+
+        assertEquals(1, cache.query(new SqlFieldsQuery(sql)).getAll().size());
+
+        cache.put(100,"200");
+
+        QueryCursor notClosedQryCursor = cache.query(new SqlQuery<>(String.class, "_key=100"));
+
+        String expSqlQry = "SELECT \"default\".\"STRING\"._KEY, \"default\".\"STRING\"._VAL FROM " +
+            "\"default\".\"STRING\" WHERE _key=100";
+
+        cur = cache.query(new SqlFieldsQuery(sql)).getAll();
+
+        assertEquals(2, cur.size());
+
+        res0 = (List<?>)cur.get(0);
+        res1 = (List<?>)cur.get(1);
+
+        assertTrue(expSqlQry, res0.get(0).equals(expSqlQry) || res1.get(0).equals(expSqlQry));
+
+        assertFalse((Boolean)res0.get(3));
+
+        assertFalse((Boolean)res1.get(3));
+
+        notClosedQryCursor.close();
+
+        sql = "SELECT SQL, QUERY_ID FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='" + qryPrefix + "7'";
+
+        assertEquals(qryPrefix + "7", ((List<?>)cache.query(new SqlFieldsQuery(sql)).getAll().get(0)).get(1));
+
+        sql = "SELECT SQL FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE DURATION > 100000";
+
+        assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
+
+        sql = "SELECT SQL FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='UNKNOWN'";
+
+        assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
     }
 
     /**

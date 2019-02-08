@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+import controller from './controller';
+import template from './template.pug';
+import './style.scss';
 
-/**
- * Tests for H2 indexing SPI.
- */
-public class GridH2IndexingInMemSelfTest extends GridIndexingSpiAbstractSelfTest {
-    // No-op.
-}
+export default {
+    template,
+    controller,
+    bindings: {
+        isLoading: '<'
+    }
+} as ng.IComponentOptions;

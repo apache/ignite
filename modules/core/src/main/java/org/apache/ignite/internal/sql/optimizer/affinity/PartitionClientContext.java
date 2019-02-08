@@ -14,15 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.sql.optimizer.affinity;
 
-package org.apache.ignite.internal.processors.query.h2;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Tests for H2 indexing SPI.
+ * Client context. Passed to partition resolver on thin clients.
  */
-public class GridH2IndexingOffheapSelfTest extends GridIndexingSpiAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean offheap() {
-        return true;
+public class PartitionClientContext {
+    /**
+     * Resolve partition.
+     *
+     * @param arg Argument.
+     * @param typ Type.
+     * @param cacheName Cache name.
+     * @return Partition or {@code null} if cannot be resolved.
+     */
+    @Nullable public Integer partition(Object arg, @Nullable PartitionParameterType typ, String cacheName) {
+        PartitionDataTypeUtils.convert(arg, typ);
+
+        // TODO: IGNITE-10308: Implement partition resolution logic.
+        return null;
     }
 }
