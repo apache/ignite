@@ -2199,7 +2199,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
      * <strong>FOR TEST ONLY!!!</strong>
      */
     public int clientWorkerCount() {
-        return ((ServerImpl)impl).clientMsgWorkers.size();
+        return ((ServerImpl)impl).clientWorkersCount();
     }
 
     /**
