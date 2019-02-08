@@ -33,6 +33,7 @@ import static java.util.Collections.singleton;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 
@@ -155,6 +156,17 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
 
             return null;
         };
+    }
+
+    /**
+     * @param c Consumer.
+     */
+    protected void assertAllowed(Ignite validator, String cacheName, Consumer<T2<String, Integer>> c) {
+        T2<String, Integer> entry = entry();
+
+        c.accept(entry);
+
+        assertThat(validator.cache(cacheName).get(entry.getKey()), is(entry.getValue()));
     }
 
     /**

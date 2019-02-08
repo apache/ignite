@@ -19,10 +19,9 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processor.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processor.security.cache.EntryProcessorPermissionCheckTest;
-import org.apache.ignite.internal.processor.security.cache.CacheLoadPermissionCheckTest;
 import org.apache.ignite.internal.processor.security.cache.ScanQueryPermissionCheckTest;
-import org.apache.ignite.internal.processor.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processor.security.cache.closure.CacheLoadRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processor.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processor.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processor.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processor.security.compute.ComputePermissionCheckTest;
@@ -43,7 +42,6 @@ import org.junit.runners.Suite;
     CacheOperationPermissionCheckTest.class,
     DataStreamerPermissionCheckTest.class,
     ScanQueryPermissionCheckTest.class,
-    CacheLoadPermissionCheckTest.class,
     EntryProcessorPermissionCheckTest.class,
     ComputePermissionCheckTest.class,
 

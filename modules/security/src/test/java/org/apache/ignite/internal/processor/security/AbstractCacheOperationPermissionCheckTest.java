@@ -85,17 +85,4 @@ public abstract class AbstractCacheOperationPermissionCheckTest extends Abstract
 
         return new T2<>("key_" + val, -1 * val);
     }
-
-    /**
-     * @param c Consumer.
-     */
-    protected void assertAllowed(Ignite validator, String cacheName, Consumer<T2<String, Integer>> c) {
-        T2<String, Integer> entry = entry();
-
-        c.accept(entry);
-
-        assertThat(validator.cache(cacheName).get(entry.getKey()), is(entry.getValue()));
-    }
-
-
 }
