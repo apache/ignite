@@ -65,6 +65,7 @@ public class H2TableScanIndex extends H2ScanIndex<GridH2IndexBase> implements In
 
         String keySql = H2Utils.indexColumnsSql(cols);
 
+        // TODO VO: Scan index to no have columns.
         idxInfo = new IndexInformation(false, false, getName(), H2IndexType.SCAN, keySql, null);
     }
 

@@ -39,6 +39,7 @@ import org.h2.value.Value;
 /**
  * Index base.
  */
+// TODO VO: Create ticket to use new logic for JDBC/ODBC driers.
 public abstract class GridH2IndexBase extends BaseIndex implements IndexInformationAware {
     /** Underlying table. */
     private final GridH2Table tbl;
