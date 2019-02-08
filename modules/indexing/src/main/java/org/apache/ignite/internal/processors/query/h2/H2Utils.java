@@ -836,7 +836,7 @@ public class H2Utils {
         boolean forUpdate,
         Collection<QueryTable> tbls
     ) {
-        GridCacheSharedContext sharedCtx = idx.kernalContext().cache().context();;
+        GridCacheSharedContext sharedCtx = idx.kernalContext().cache().context();
 
         // Check query parallelism.
         int expectedParallelism = 0;
