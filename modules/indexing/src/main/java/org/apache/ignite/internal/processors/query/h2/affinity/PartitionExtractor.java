@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
@@ -46,6 +51,7 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionJoinCondition;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNoneNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterType;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionSingleNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTable;
@@ -55,12 +61,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Partition tree extractor.
@@ -623,10 +623,63 @@ public class PartitionExtractor {
 
             return new PartitionConstantNode(tbl0, part);
         }
-        else if (rightParam != null)
-            return new PartitionParameterNode(tbl0, partResolver, rightParam.index(), leftCol0.getType());
+        else if (rightParam != null) {
+            int colType = leftCol0.getType();
+
+            return new PartitionParameterNode(
+                tbl0,
+                partResolver,
+                rightParam.index(),
+                leftCol0.getType(),
+                mappedType(colType)
+            );
+        }
         else
             return null;
+    }
+
+    /**
+     * Mapped Ignite type for H2 type.
+     *
+     * @param type H2 type.
+     * @return ignite type.
+     */
+    @Nullable private static PartitionParameterType mappedType(int type) {
+        // Try map if possible.
+        switch (type) {
+            case Value.BOOLEAN:
+                return PartitionParameterType.BOOLEAN;
+
+            case Value.BYTE:
+                return PartitionParameterType.BYTE;
+
+            case Value.SHORT:
+                return PartitionParameterType.SHORT;
+
+            case Value.INT:
+                return PartitionParameterType.INT;
+
+            case Value.LONG:
+                return PartitionParameterType.LONG;
+
+            case Value.FLOAT:
+                return PartitionParameterType.FLOAT;
+
+            case Value.DOUBLE:
+                return PartitionParameterType.DOUBLE;
+
+            case Value.STRING:
+                return PartitionParameterType.STRING;
+
+            case Value.DECIMAL:
+                return PartitionParameterType.DECIMAL;
+
+            case Value.UUID:
+                return PartitionParameterType.UUID;
+        }
+
+        // Otherwise we do not support it.
+        return null;
     }
 
     /**
