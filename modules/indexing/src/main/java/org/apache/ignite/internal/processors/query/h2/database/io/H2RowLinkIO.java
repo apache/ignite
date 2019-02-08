@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.database.io;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 
@@ -68,10 +67,6 @@ public interface H2RowLinkIO {
     public default boolean storeMvccInfo() {
         return false;
     }
-
-    /** */
-    public int getCount(long pageAddr);
-
 
     /**
      * Get lookup row.

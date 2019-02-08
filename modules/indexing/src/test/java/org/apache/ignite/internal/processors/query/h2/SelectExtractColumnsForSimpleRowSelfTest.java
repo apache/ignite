@@ -379,21 +379,15 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
      *
      */
     private static class UsedTableColumns {
-        /**
-         *
-         */
+        /** */
         @GridToStringInclude
         String alias;
 
-        /**
-         *
-         */
+        /** */
         @GridToStringInclude
         boolean isValUsed;
 
-        /**
-         *
-         */
+        /** */
         UsedTableColumns(String alias, boolean isValUsed) {
             this.alias = alias.toUpperCase();
             this.isValUsed = isValUsed;

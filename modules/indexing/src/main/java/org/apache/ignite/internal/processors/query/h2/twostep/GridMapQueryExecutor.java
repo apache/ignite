@@ -98,7 +98,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_USED_COLUM
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_FORCE_LAZY_RESULT_SET;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
-
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
@@ -699,7 +698,6 @@ public class GridMapQueryExecutor {
 
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
 
-                        // TODO VO: Ability to disable it from sys property.
                         if (!disableUsedColInfo)
                             qctx.usedColumnsInfo(qry.usedColumns().createValueUsedMap());
 
