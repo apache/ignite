@@ -48,7 +48,6 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -152,10 +151,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                 return;
 
             boolean first = (nodeId != null);
-
-            // Need to unlock topology to avoid deadlock with binary descriptors registration.
-            if (!topLocked && cctx.topology().holdsLock())
-                cctx.topology().readUnlock();
 
             for (Batch batch : next) {
                 ClusterNode node = batch.node();
@@ -534,13 +529,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
             topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer));
 
-            processFailure(topEx, null);
-
-            batches.remove(nodeId);
-
-            if (batches.isEmpty()) // Wait for all pending requests.
-                onDone();
-
+            onDone(topEx);
         }
 
         if (log.isDebugEnabled())
@@ -565,14 +554,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
         if (res != null)
             tx.mappings().get(nodeId).addBackups(res.newDhtNodes());
 
-        if (err != null)
-            processFailure(err, null);
-
-        if (ex != null) {
-            batches.remove(nodeId);
-
-            if (batches.isEmpty()) // Wait for all pending requests.
-                onDone();
+        if (err != null) {
+            onDone(err);
 
             return false;
         }
@@ -583,7 +566,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
         tx.hasRemoteLocks(true);
 
-        return true;
+        return !isDone();
     }
 
     /** {@inheritDoc} */
