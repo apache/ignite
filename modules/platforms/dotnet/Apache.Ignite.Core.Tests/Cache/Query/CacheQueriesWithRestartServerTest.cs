@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Ignition.Stop(_server.Name, false);
             _server = StartGrid(0);
-            WaitForReconnect(_client, 10000);
+            WaitForReconnect(_client, 5000);
 
             cache = _client.GetOrCreateCache<int, Item>("Test");
             cache.Put(1, new Item { Id = 30, Title = "test" });
