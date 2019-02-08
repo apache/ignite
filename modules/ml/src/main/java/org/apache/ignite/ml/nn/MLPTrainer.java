@@ -28,6 +28,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
@@ -377,5 +378,11 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
                 res[j * rows.length + i] = data[j * totalRows + rows[i]];
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MLPTrainer<P> withEnvironmentBuilder(
+        LearningEnvironmentBuilder envBuilder) {
+        return (MLPTrainer<P>)super.withEnvironmentBuilder(envBuilder);
     }
 }
