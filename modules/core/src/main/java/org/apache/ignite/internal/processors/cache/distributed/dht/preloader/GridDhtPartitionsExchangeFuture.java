@@ -512,7 +512,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (exchCtx == null)
                 log.error("exchCtx NULL: " + this + " queue: " + logDoneQueue);
 
-            res = exchCtx.events().topologyVersion();
+            final ExchangeContext actualExchCtx;
+
+            if(state == ExchangeLocalState.MERGED)
+                actualExchCtx = mergedWith.exchCtx;
+            else
+                actualExchCtx = exchCtx;
+
+            res = actualExchCtx.events().topologyVersion();
         }
 
         return res;
@@ -2070,10 +2077,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Finish merged future to allow GridCachePartitionExchangeManager.ExchangeFutureSet cleanup.
      */
-    public void finishMerged(AffinityTopologyVersion resVer) {
+    public void finishMerged(AffinityTopologyVersion resVer, GridDhtPartitionsExchangeFuture exchFut) {
         synchronized (mux) {
-            if (state == null)
+            if (state == null) {
                 state = ExchangeLocalState.MERGED;
+                mergedWith = exchFut;
+            }
         }
 
         Thread thread = Thread.currentThread();
