@@ -37,6 +37,7 @@ import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
@@ -48,7 +49,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  * <p>
  * Contains only ML Grid Ignite examples tests.</p>
  */
-@RunWith(IgniteExamplesMLTestSuite.DynamicSuite.class)
+//@RunWith(JUnitPlatform.class)
 public class IgniteExamplesMLTestSuite {
     /** Base package to create test classes in. */
     private static final String basePkgForTests = "org.apache.ignite.examples.ml";
@@ -103,7 +104,7 @@ public class IgniteExamplesMLTestSuite {
             ConstPool constpool = ccFile.getConstPool();
 
             AnnotationsAttribute attr = new AnnotationsAttribute(constpool, AnnotationsAttribute.visibleTag);
-            Annotation annot = new Annotation("org.junit.Test", constpool);
+            Annotation annot = new Annotation("org.junit.jupiter.api.Test", constpool);
 
             attr.addAnnotation(annot);
             mtd.getMethodInfo().addAttribute(attr);
@@ -172,13 +173,5 @@ public class IgniteExamplesMLTestSuite {
             }
 
         return classes;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError, IOException, ClassNotFoundException {
-            super(cls, suite());
-        }
     }
 }
