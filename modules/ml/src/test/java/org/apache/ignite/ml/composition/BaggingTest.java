@@ -81,7 +81,7 @@ public class BaggingTest extends TrainerTest {
 
         BaggedTrainer<Double> baggedTrainer = TrainerTransformers.makeBagged(
             trainer,
-            10,
+            7,
             0.7,
             2,
             2,
