@@ -62,30 +62,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  * Tests for Zookeeper SPI discovery.
  */
 public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySpiTestBase {
-    /** */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        // we reduce fealure detection tp speedup failure detection on catch(Exception) clause in createTcpClient().
-        cfg.setFailureDetectionTimeout(1000);
-
-        return cfg;
-    }
-
-    @Override
-    protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, "10000");
-    }
-
-    @Override
-    protected void afterTestsStopped() {
-        super.afterTestsStopped();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT);
-    }
-
     /**
      * Test reproduces failure in case of client resolution failure
      * {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi#createTcpClient} from server side, further
@@ -417,60 +393,6 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
-    @Test
-    public void testReconnectServersRestart_1() throws Exception {
-        reconnectServersRestart(1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
-    @Test
-    public void testReconnectServersRestart_2() throws Exception {
-        reconnectServersRestart(3);
-    }
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReconnectServersRestart_3() throws Exception {
-        startGrid(0);
-
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(10, 10);
-
-        stopGrid(getTestIgniteInstanceName(0), true, false);
-
-        final int srvIdx = ThreadLocalRandom.current().nextInt(10);
-
-        final AtomicInteger idx = new AtomicInteger();
-
-        info("Restart nodes.");
-
-        // Test concurrent start when there are disconnected nodes from previous cluster.
-        GridTestUtils.runMultiThreaded(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                int threadIdx = idx.getAndIncrement();
-
-                helper.clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
-
-                startGrid(threadIdx);
-
-                return null;
-            }
-        }, 10, "start-node");
-
-        waitForTopology(20);
-
-        evts.clear();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testStartNoZk() throws Exception {
         stopZkCluster();
@@ -503,59 +425,5 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
         finally {
             zkCluster.start();
         }
-    }
-
-    /**
-     * @param srvs Number of server nodes in test.
-     * @throws Exception If failed.
-     */
-    private void reconnectServersRestart(int srvs) throws Exception {
-        startGridsMultiThreaded(srvs);
-
-        helper.clientMode(true);
-
-        final int CLIENTS = 10;
-
-        startGridsMultiThreaded(srvs, CLIENTS);
-
-        helper.clientMode(false);
-
-        long stopTime = System.currentTimeMillis() + 30_000;
-
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        final int NODES = srvs + CLIENTS;
-
-        int iter = 0;
-
-        while (System.currentTimeMillis() < stopTime) {
-            int restarts = rnd.nextInt(10) + 1;
-
-            info("Test iteration [iter=" + iter++ + ", restarts=" + restarts + ']');
-
-            for (int i = 0; i < restarts; i++) {
-                GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                    @Override public void apply(Integer threadIdx) {
-                        stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
-                    }
-                }, srvs, "stop-server");
-
-                startGridsMultiThreaded(0, srvs);
-            }
-
-            final Ignite srv = ignite(0);
-
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return srv.cluster().nodes().size() == NODES;
-                }
-            }, 30_000));
-
-            waitForTopology(NODES);
-
-            awaitPartitionMapExchange();
-        }
-
-        evts.clear();
     }
 }

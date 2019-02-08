@@ -329,9 +329,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
-    /** Default initial connect/handshake timeout in case of failure detection enabled. */
-    private static final int DFLT_INITIAL_TIMEOUT = 500;
-
     /** Default initial delay in case of target node is still out of topology. */
     private static final int DFLT_NEED_WAIT_DELAY = 200;
 
@@ -3292,7 +3289,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         for (InetSocketAddress addr : addrs) {
             TimeoutStrategy connTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
                 totalTimeout,
-                failureDetectionTimeoutEnabled() ? DFLT_INITIAL_TIMEOUT : connTimeout,
+                connTimeout,
                 maxConnTimeout
             );
 
@@ -3307,6 +3304,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             ", node=" + node + ']');
                     break;
                 }
+
+                long timeout = 0;
 
                 try {
                     if (getSpiContext().node(node.id()) == null)
@@ -3350,9 +3349,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     GridSslMeta sslMeta = null;
 
                     try {
-                        long currTimeout = connTimeoutStgy.nextTimeout();
+                        timeout = connTimeoutStgy.nextTimeout();
 
-                        ch.socket().connect(addr, (int) currTimeout);
+                        ch.socket().connect(addr, (int) timeout);
 
                         if (getSpiContext().node(node.id()) == null)
                             throw new ClusterTopologyCheckedException("Failed to send message (node left topology): " + node);
@@ -3369,10 +3368,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         Integer handshakeConnIdx = connIdx;
 
+                        timeout = connTimeoutStgy.nextTimeout(timeout);
+
                         rcvCnt = safeTcpHandshake(ch,
                             recoveryDesc,
                             node.id(),
-                            connTimeoutStgy.nextTimeout(currTimeout),
+                            timeout,
                             sslMeta,
                             handshakeConnIdx);
 
@@ -3390,8 +3391,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                     "[node=" + node.id() +
                                     ", connTimeoutStgy=" + connTimeoutStgy +
                                     ", addr=" + addr +
-                                    ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
-                                    ", totalTimeout" + totalTimeout + ']');
+                                    ", failureDetectionTimeoutEnabled=" + failureDetectionTimeoutEnabled() +
+                                    ", timeout=" + timeout + ']');
 
                                 throw new ClusterTopologyCheckedException("Failed to connect to node " +
                                     "(current or target node is out of topology on target node within timeout). " +
@@ -3454,7 +3455,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             "[node=" + node.id() + ", connTimeoutStrategy=" + connTimeoutStgy +
                             ", err=" + e.getMessage() + ", addr=" + addr +
                             ", failureDetectionTimeoutEnabled=" + failureDetectionTimeoutEnabled() +
-                            ", totalTimeout=" + totalTimeout + ']');
+                            ", timeout=" + timeout + ']');
 
                         String msg = "Failed to connect to node (is node still alive?). " +
                             "Make sure that each ComputeTask and cache Transaction has a timeout set " +
@@ -3490,7 +3491,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
                                 "[node=" + node.id() + ", connTimeoutStgy=" + connTimeoutStgy +
                                 ", failureDetectionTimeoutEnabled=" + failureDetectionTimeoutEnabled() +
-                                ", totalTimeout=" + totalTimeout +
+                                ", timeout=" + timeout +
                                 ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                         String msg = "Failed to connect to node (is node still alive?). " +
