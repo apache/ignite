@@ -17,40 +17,30 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
 /**
- * State of local node {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
+ *
  */
-public enum TcpDiscoverySpiState {
-    /** */
-    DISCONNECTED,
+public abstract class FutureTask<T> extends GridFutureAdapter<T> implements Runnable {
+    /**
+     *
+     */
+    protected abstract T body();
 
-    /** */
-    CONNECTING,
+    /** {@inheritDoc} */
+    @Override public void run() {
+        try {
+            onDone(body());
+        }
+        catch (Exception e) {
+            onDone(e);
+        }
+        catch (Throwable e) {
+            onDone(U.cast(e));
 
-    /** */
-    CONNECTED,
-
-    /** */
-    DISCONNECTING,
-
-    /** */
-    STOPPING,
-
-    /** */
-    LEFT,
-
-    /** */
-    DUPLICATE_ID,
-
-    /** */
-    AUTH_FAILED,
-
-    /** */
-    CHECK_FAILED,
-
-    /** */
-    LOOPBACK_PROBLEM,
-
-    /** */
-    RING_FAILED
+            throw e;
+        }
+    }
 }
