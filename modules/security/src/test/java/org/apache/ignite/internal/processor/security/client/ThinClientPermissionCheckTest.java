@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processor.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processor.security.TestSecurityData;
 import org.apache.ignite.internal.processor.security.TestSecurityPluginConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -150,6 +151,11 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         );
 
         ignite.cluster().active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected SecurityPermissionSetBuilder builder() {
+        return super.builder().defaultAllowAll(false);
     }
 
     /**

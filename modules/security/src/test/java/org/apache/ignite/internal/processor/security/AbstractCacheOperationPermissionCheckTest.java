@@ -97,21 +97,5 @@ public abstract class AbstractCacheOperationPermissionCheckTest extends Abstract
         assertThat(validator.cache(cacheName).get(entry.getKey()), is(entry.getValue()));
     }
 
-    /**
-     * @param c Consumer.
-     */
-    protected void assertForbidden(Ignite validator, String cacheName, Consumer<T2<String, Integer>> c) {
-        T2<String, Integer> entry = entry();
 
-        try {
-            c.accept(entry);
-
-            fail("Should not happen.");
-        }
-        catch (Throwable e) {
-            assertThat(X.cause(e, SecurityException.class), notNullValue());
-        }
-
-        assertThat(validator.cache(cacheName).get(entry.getKey()), nullValue());
-    }
 }

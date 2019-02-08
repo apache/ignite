@@ -61,7 +61,7 @@ public class DataStreamerPermissionCheckTest extends AbstractCacheOperationPermi
      */
     private void testDataStreamer(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            builder().defaultAllowAll(true)
+            builder()
                 .appendCachePermissions(CACHE_NAME, SecurityPermission.CACHE_PUT)
                 .appendCachePermissions(FORBIDDEN_CACHE, SecurityPermission.CACHE_READ)
                 .build(), isClient);

@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processor.security.cache;
 
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -29,6 +32,9 @@ import org.junit.runners.JUnit4;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertThat;
 
 /**
  * Test cache permission for Entry processor.
@@ -38,12 +44,12 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid("server_node",
-            builder().defaultAllowAll(true)
+            builder()
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build());
 
         startGrid("client_node",
-            builder().defaultAllowAll(true)
+            builder()
                 .appendCachePermissions(CACHE_NAME, CACHE_PUT, CACHE_READ)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), true);
 
@@ -149,5 +155,23 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
 
             return null;
         };
+    }
+
+    /**
+     * @param c Consumer.
+     */
+    protected void assertForbidden(Ignite validator, String cacheName, Consumer<T2<String, Integer>> c) {
+        T2<String, Integer> entry = entry();
+
+        try {
+            c.accept(entry);
+
+            fail("Should not happen.");
+        }
+        catch (Throwable e) {
+            assertThat(X.cause(e, SecurityException.class), notNullValue());
+        }
+
+        assertThat(validator.cache(cacheName).get(entry.getKey()), nullValue());
     }
 }

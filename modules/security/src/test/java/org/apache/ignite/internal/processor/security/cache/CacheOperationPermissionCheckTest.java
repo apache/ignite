@@ -56,7 +56,7 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
      */
     private void testCrudCachePermissions(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            builder().defaultAllowAll(true)
+            builder()
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT, CACHE_REMOVE)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), isClient);
 

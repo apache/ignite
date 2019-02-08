@@ -57,7 +57,7 @@ public class ScanQueryPermissionCheckTest extends AbstractCacheOperationPermissi
         putTestData();
 
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            builder().defaultAllowAll(true)
+            builder()
                 .appendCachePermissions(CACHE_NAME, CACHE_READ)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), isClient);
 

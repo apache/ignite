@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
@@ -61,25 +63,54 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /** Flag that shows task was executed. */
     private static final AtomicBoolean IS_EXECUTED = new AtomicBoolean(false);
 
-    /** Allowed task. */
-    private static final AllowedTask TEST_TASK = new AllowedTask();
+    /** Reentrant lock. */
+    private static final ReentrantLock RNT_LOCK = new ReentrantLock();
+
+    /** Reentrant lock timeout. */
+    public static final int RNT_LOCK_TIMEOUT = 20_000;
+
+    /** Test compute task. */
+    private static final TestComputeTask TEST_COMPUTE_TASK = new TestComputeTask();
 
     /** Test callable. */
     private static final IgniteCallable<Object> TEST_CALLABLE = () -> {
         IS_EXECUTED.set(true);
 
+        syncForCancel();
+
         return null;
     };
 
     /** Test runnable. */
-    private static final IgniteRunnable TEST_RUNNABLE = () -> IS_EXECUTED.set(true);
+    private static final IgniteRunnable TEST_RUNNABLE = () -> {
+        IS_EXECUTED.set(true);
+
+        syncForCancel();
+    };
 
     /** Test closure. */
     private static final IgniteClosure<Object, Object> TEST_CLOSURE = a -> {
         IS_EXECUTED.set(true);
 
+        syncForCancel();
+
         return null;
     };
+
+    /** Synchronization for tests TASK_CANCEL. */
+    private static void syncForCancel() throws IgniteException {
+        boolean isLocked = false;
+        try {
+            isLocked = RNT_LOCK.tryLock(RNT_LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            if (isLocked)
+                RNT_LOCK.unlock();
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -134,9 +165,9 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
      * @param nodes Array of nodes.
      */
     private Collection<TestRunnable> runnables(Ignite... nodes) {
-        Function<Ignite, TestRunnable[]> f = (node) -> new TestRunnable[]{
-            () -> node.compute().execute(TEST_TASK, 0),
-            () -> node.compute().executeAsync(TEST_TASK, 0).get(),
+        Function<Ignite, TestRunnable[]> f = (node) -> new TestRunnable[] {
+            () -> node.compute().execute(TEST_COMPUTE_TASK, 0),
+            () -> node.compute().executeAsync(TEST_COMPUTE_TASK, 0).get(),
             () -> node.compute().broadcast(TEST_CALLABLE),
             () -> node.compute().broadcastAsync(TEST_CALLABLE).get(),
             () -> node.compute().call(TEST_CALLABLE),
@@ -164,12 +195,12 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     private List<Supplier<FutureAdapter>> suppliers(Ignite... nodes) {
         List<Supplier<FutureAdapter>> res = new ArrayList<>();
 
-        for(Ignite node : nodes) {
+        for (Ignite node : nodes) {
             res.add(() -> new FutureAdapter(node.compute().broadcastAsync(TEST_CALLABLE)));
             res.add(() -> new FutureAdapter(node.compute().callAsync(TEST_CALLABLE)));
             res.add(() -> new FutureAdapter(node.compute().runAsync(TEST_RUNNABLE)));
             res.add(() -> new FutureAdapter(node.compute().applyAsync(TEST_CLOSURE, new Object())));
-            res.add(() -> new FutureAdapter(node.compute().executeAsync(TEST_TASK, 0)));
+            res.add(() -> new FutureAdapter(node.compute().executeAsync(TEST_COMPUTE_TASK, 0)));
             res.add(() -> new FutureAdapter(node.executorService().submit(TEST_CALLABLE)));
         }
 
@@ -180,8 +211,8 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
      * @param perms Permissions.
      */
     private SecurityPermissionSet permissions(SecurityPermission... perms) {
-        return builder().defaultAllowAll(true)
-            .appendTaskPermissions(TEST_TASK.getClass().getName(), perms)
+        return builder()
+            .appendTaskPermissions(TEST_COMPUTE_TASK.getClass().getName(), perms)
             .appendTaskPermissions(TEST_CALLABLE.getClass().getName(), perms)
             .appendTaskPermissions(TEST_RUNNABLE.getClass().getName(), perms)
             .appendTaskPermissions(TEST_CLOSURE.getClass().getName(), perms)
@@ -208,20 +239,32 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
      * @param s Supplier.
      */
     private void forbiddenCancel(Supplier<FutureAdapter> s) {
-        FutureAdapter f = s.get();
+        RNT_LOCK.lock();
+        try {
+            FutureAdapter f = s.get();
 
-        forbiddenRun(f::cancel);
+            forbiddenRun(f::cancel);
+        }
+        finally {
+            RNT_LOCK.unlock();
+        }
     }
 
     /**
      * @param s Supplier.
      */
     private void allowedCancel(Supplier<FutureAdapter> s) {
-        FutureAdapter f = s.get();
+        RNT_LOCK.lock();
+        try {
+            FutureAdapter f = s.get();
 
-        f.cancel();
+            f.cancel();
 
-        assertThat(f.isCancelled(), is(true));
+            assertThat(f.isCancelled(), is(true));
+        }
+        finally {
+            RNT_LOCK.unlock();
+        }
     }
 
     /**
@@ -254,7 +297,6 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
             igniteFut = null;
         }
 
-
         /**
          *
          */
@@ -275,7 +317,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         /**
          *
          */
-        public boolean isCancelled(){
+        public boolean isCancelled() {
             return igniteFut != null ? igniteFut.isCancelled() : fut.isCancelled();
         }
     }
@@ -283,7 +325,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /**
      * Abstract test compute task.
      */
-    private static class AllowedTask implements ComputeTask<Object, Object> {
+    private static class TestComputeTask implements ComputeTask<Object, Object> {
         /** {@inheritDoc} */
         @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws IgniteException {
@@ -296,6 +338,8 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
                     }
 
                     @Override public Object execute() throws IgniteException {
+                        syncForCancel();
+
                         return null;
                     }
                 }, subgrid.stream().findFirst().get()

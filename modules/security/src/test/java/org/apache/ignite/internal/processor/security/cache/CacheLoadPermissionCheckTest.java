@@ -68,12 +68,12 @@ public class CacheLoadPermissionCheckTest extends AbstractCacheOperationPermissi
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid("server_node",
-            builder().defaultAllowAll(true)
+            builder()
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build());
 
         startGrid("client_node",
-            builder().defaultAllowAll(true)
+            builder()
                 .appendCachePermissions(CACHE_NAME, CACHE_PUT)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), true);
 
