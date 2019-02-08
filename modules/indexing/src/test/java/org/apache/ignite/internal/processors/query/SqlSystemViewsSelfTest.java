@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.lang.reflect.Field;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,7 +26,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
@@ -48,6 +51,7 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -58,6 +62,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -1010,6 +1015,161 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(4L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
             "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+    }
+
+    /**
+     * Regression test. Verifies that duration metrics is able to be longer than 24 hours.
+     */
+    @Test
+    public void testDurationMetricsCanBeLonger24Hours() throws Exception {
+        Ignite ign = startGrid("MockedMetrics", getConfiguration().setMetricsUpdateFrequency(500));
+
+        ClusterNode node = ign.cluster().localNode();
+
+        assert node instanceof TcpDiscoveryNode : "Setup failed, test is incorrect.";
+
+        // Get rid of metrics provider: current logic ignores metrics field if provider != null.
+        setField(node, "metricsProvider", null);
+
+        ClusterMetricsImpl original = getField(node, "metrics");
+        
+        setField(node, "metrics", new MockedClusterMetrics(original));;
+
+        List<?> durationMetrics = execSql(ign,
+            "SELECT " +
+                "MAX_JOBS_WAIT_TIME, " +
+                "CUR_JOBS_WAIT_TIME, " +
+                "AVG_JOBS_WAIT_TIME, " +
+
+                "MAX_JOBS_EXECUTE_TIME, " +
+                "CUR_JOBS_EXECUTE_TIME, " +
+                "AVG_JOBS_EXECUTE_TIME, " +
+                "TOTAL_JOBS_EXECUTE_TIME, " +
+
+                "TOTAL_BUSY_TIME, " +
+
+                "TOTAL_IDLE_TIME, " +
+                "CUR_IDLE_TIME, " +
+                "UPTIME " +
+
+                "FROM IGNITE.NODE_METRICS").get(0);
+
+        List<Long> elevenExpVals = LongStream
+            .generate(() -> MockedClusterMetrics.LONG_DURATION_MS)
+            .limit(11)
+            .boxed()
+            .collect(Collectors.toList());
+
+        assertEqualsCollections(elevenExpVals, durationMetrics);
+    }
+
+    /**
+     * Mock for {@link ClusterMetricsImpl} that always returns big (more than 24h) duration for all duration metrics.
+     */
+    public static class MockedClusterMetrics extends ClusterMetricsImpl {
+        /** Some long (> 24h) duration. */
+        public static final long LONG_DURATION_MS = TimeUnit.DAYS.toMillis(365);
+
+        /**
+         * Constructor.
+         *
+         * @param original - original cluster metrics object. Required to leave the original behaviour for not overriden
+         * methods.
+         */
+        public MockedClusterMetrics(ClusterMetricsImpl original) throws Exception {
+            super(
+                getField(original, "ctx"),
+                getField(original, "vmMetrics"),
+                getField(original, "nodeStartTime"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaximumJobWaitTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentJobWaitTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public double getAverageJobWaitTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaximumJobExecuteTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentJobExecuteTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public double getAverageJobExecuteTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTotalJobsExecutionTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTotalBusyTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTotalIdleTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentIdleTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getUpTime() {
+            return LONG_DURATION_MS;
+        }
+    }
+
+    /**
+     * Get field value using reflection.
+     * 
+     * @param target object containing the field. 
+     * @param fieldName name of the field.
+     */
+    private static <T> T getField(Object target, String fieldName) throws Exception {
+        Class clazz = target.getClass();
+
+        Field fld = clazz.getDeclaredField(fieldName);
+
+        fld.setAccessible(true);
+
+        return (T) fld.get(target);
+    }
+
+    /**
+     * Set field using reflection.
+     * 
+     * @param target object containing the field.
+     * @param fieldName name of the field.
+     * @param val new field value.
+     */
+    private static void setField(Object target, String fieldName, Object val) throws Exception {
+        Class clazz = target.getClass();
+
+        Field fld = clazz.getDeclaredField(fieldName);
+
+        fld.setAccessible(true);
+
+        fld.set(target, val);
     }
 
     /**
