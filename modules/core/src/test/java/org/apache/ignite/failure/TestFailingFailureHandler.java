@@ -64,9 +64,6 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
         else
             System.out.println("sout" + debug);
 
-        if (test.isMultiJvm())
-            return false;
-
         if (isFailureExpected(failureCtx))
             return false;
 

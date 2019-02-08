@@ -83,7 +83,7 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return true;
     }
 

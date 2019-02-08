@@ -62,7 +62,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     protected Ignite rmJvmInstance = null;
 
     /** {@inheritDoc} */
-    @Override public boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return true;
     }
 

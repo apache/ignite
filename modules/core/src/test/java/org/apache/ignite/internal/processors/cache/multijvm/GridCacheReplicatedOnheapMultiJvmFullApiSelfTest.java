@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 
 public class GridCacheReplicatedOnheapMultiJvmFullApiSelfTest extends GridCacheReplicatedOnheapMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override public boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return true;
     }
 

@@ -115,7 +115,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return multiJvm;
     }
 

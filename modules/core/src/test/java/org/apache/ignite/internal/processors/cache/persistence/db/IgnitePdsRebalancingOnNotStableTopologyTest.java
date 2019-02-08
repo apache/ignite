@@ -181,7 +181,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return true;
     }
 

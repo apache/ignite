@@ -168,7 +168,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     ;
 
     /** {@inheritDoc} */
-    @Override public boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return fork;
     }
 

@@ -39,7 +39,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  */
 public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override public boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return true;
     }
 

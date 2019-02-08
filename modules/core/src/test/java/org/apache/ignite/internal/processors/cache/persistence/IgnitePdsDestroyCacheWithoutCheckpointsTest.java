@@ -31,7 +31,7 @@ public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestro
      * {@inheritDoc}
      * @returns {@code true} in order to be able to kill nodes when checkpointer thread hangs.
      */
-    @Override public boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return true;
     }
 
