@@ -32,6 +32,7 @@ import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -69,6 +70,20 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
         cfg.setFailureDetectionTimeout(1000);
 
         return cfg;
+    }
+
+    @Override
+    protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, "10000");
+    }
+
+    @Override
+    protected void afterTestsStopped() {
+        super.afterTestsStopped();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT);
     }
 
     /**
