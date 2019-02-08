@@ -386,6 +386,7 @@ public class GridReduceQueryExecutor {
      * @param lazy Lazy execution flag.
      * @param mvccTracker Query tracker.
      * @param dataPageScanEnabled If data page scan is enabled.
+     * @param forUpdate For update flag.
      * @return Rows iterator.
      */
     @SuppressWarnings({"BusyWait", "IfMayBeConditional"})
@@ -400,7 +401,8 @@ public class GridReduceQueryExecutor {
         int[] parts,
         boolean lazy,
         MvccQueryTracker mvccTracker,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        boolean forUpdate
     ) {
         if (qry.isLocal() && parts != null)
             parts = null;
@@ -458,7 +460,7 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer;
 
-            if (qry.forUpdate()) {
+            if (forUpdate) {
                 // Indexing should have started TX at this point for FOR UPDATE query.
                 assert mvccEnabled && curTx != null;
 
@@ -683,7 +685,7 @@ public class GridReduceQueryExecutor {
 
                 final C2<ClusterNode, Message, Message> spec;
 
-                if (qry.forUpdate()) {
+                if (forUpdate) {
                     final AtomicInteger cnt = new AtomicInteger();
 
                     spec = new C2<ClusterNode, Message, Message>() {

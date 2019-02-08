@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -34,17 +36,17 @@ public class GridCacheTwoStepQuery {
 
     /** */
     @GridToStringInclude
-    private List<GridCacheSqlQuery> mapQrys = new ArrayList<>();
+    private final List<GridCacheSqlQuery> mapQrys;
 
     /** */
     @GridToStringInclude
-    private GridCacheSqlQuery rdc;
+    private final GridCacheSqlQuery rdc;
 
     /** */
     private int pageSize = DFLT_PAGE_SIZE;
 
     /** */
-    private boolean explain;
+    private final boolean explain;
 
     /** */
     private final String originalSql;
@@ -53,10 +55,10 @@ public class GridCacheTwoStepQuery {
     private final Set<QueryTable> tbls;
 
     /** */
-    private boolean distributedJoins;
+    private final boolean distributedJoins;
 
     /** */
-    private boolean skipMergeTbl;
+    private final boolean skipMergeTbl;
 
     /** */
     private List<Integer> cacheIds;
@@ -71,7 +73,7 @@ public class GridCacheTwoStepQuery {
     private boolean mvccEnabled;
 
     /** {@code FOR UPDATE} flag. */
-    private boolean forUpdate;
+    private final boolean forUpdate;
 
     /** Number of positional arguments in the sql. */
     private final int paramsCnt;
@@ -80,19 +82,34 @@ public class GridCacheTwoStepQuery {
      * @param originalSql Original query SQL.
      * @param tbls Tables in query.
      */
-    public GridCacheTwoStepQuery(String originalSql, int paramsCnt, Set<QueryTable> tbls) {
+    public GridCacheTwoStepQuery(
+        String originalSql,
+        int paramsCnt,
+        Set<QueryTable> tbls,
+        GridCacheSqlQuery rdc,
+        List<GridCacheSqlQuery> mapQrys,
+        boolean skipMergeTbl,
+        boolean explain,
+        boolean distributedJoins,
+        boolean forUpdate
+    ) {
         this.originalSql = originalSql;
         this.paramsCnt = paramsCnt;
         this.tbls = tbls;
-    }
-
-    /**
-     * Specify if distributed joins are enabled for this query.
-     *
-     * @param distributedJoins Distributed joins enabled.
-     */
-    public void distributedJoins(boolean distributedJoins) {
+        this.rdc = rdc;
+        this.skipMergeTbl = skipMergeTbl;
+        this.explain = explain;
         this.distributedJoins = distributedJoins;
+        this.forUpdate = forUpdate;
+
+        if (F.isEmpty(mapQrys))
+            this.mapQrys = Collections.emptyList();
+        else {
+            this.mapQrys = new ArrayList<>(mapQrys.size());
+
+            for (GridCacheSqlQuery mapQry : mapQrys)
+                this.mapQrys.add(mapQry.copy());
+        }
     }
 
     /**
@@ -104,7 +121,6 @@ public class GridCacheTwoStepQuery {
         return distributedJoins;
     }
 
-
     /**
      * @return {@code True} if reduce query can skip merge table creation and get data directly from merge index.
      */
@@ -113,24 +129,10 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param skipMergeTbl Skip merge table.
-     */
-    public void skipMergeTable(boolean skipMergeTbl) {
-        this.skipMergeTbl = skipMergeTbl;
-    }
-
-    /**
      * @return If this is explain query.
      */
     public boolean explain() {
         return explain;
-    }
-
-    /**
-     * @param explain If this is explain query.
-     */
-    public void explain(boolean explain) {
-        this.explain = explain;
     }
 
     /**
@@ -145,13 +147,6 @@ public class GridCacheTwoStepQuery {
      */
     public int pageSize() {
         return pageSize;
-    }
-
-    /**
-     * @param qry SQL Query.
-     */
-    public void addMapQuery(GridCacheSqlQuery qry) {
-        mapQrys.add(qry);
     }
 
     /**
@@ -173,13 +168,6 @@ public class GridCacheTwoStepQuery {
      */
     public GridCacheSqlQuery reduceQuery() {
         return rdc;
-    }
-
-    /**
-     * @param rdc Reduce query.
-     */
-    public void reduceQuery(GridCacheSqlQuery rdc) {
-        this.rdc = rdc;
     }
 
     /**
@@ -244,20 +232,23 @@ public class GridCacheTwoStepQuery {
     public GridCacheTwoStepQuery copy() {
         assert !explain;
 
-        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, paramsCnt, tbls);
+        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(
+            originalSql,
+            paramsCnt,
+            tbls,
+            rdc.copy(),
+            mapQrys,
+            skipMergeTbl,
+            explain,
+            distributedJoins,
+            forUpdate
+        );
 
         cp.cacheIds = cacheIds;
-        cp.rdc = rdc.copy();
-        cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
-        cp.distributedJoins = distributedJoins;
         cp.derivedPartitions = derivedPartitions;
         cp.local = local;
         cp.mvccEnabled = mvccEnabled;
-        cp.forUpdate = forUpdate;
-
-        for (int i = 0; i < mapQrys.size(); i++)
-            cp.mapQrys.add(mapQrys.get(i).copy());
 
         return cp;
     }
@@ -295,13 +286,6 @@ public class GridCacheTwoStepQuery {
      */
     public boolean forUpdate() {
         return forUpdate;
-    }
-
-    /**
-     * @param forUpdate {@code FOR UPDATE} flag.
-     */
-    public void forUpdate(boolean forUpdate) {
-        this.forUpdate = forUpdate;
     }
 
     /**

@@ -282,21 +282,20 @@ public class GridSqlQuerySplitter {
         // Setup resulting two step query and return it.
         int paramsCnt = prepared.getParameters().size();
 
-        GridCacheTwoStepQuery twoStepQry = new GridCacheTwoStepQuery(originalSql, paramsCnt, splitter.tbls);
-
-        twoStepQry.reduceQuery(splitter.rdcSqlQry);
-
-        for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys)
-            twoStepQry.addMapQuery(mapSqlQry);
-
-        twoStepQry.skipMergeTable(splitter.skipMergeTbl);
-        twoStepQry.explain(explain);
-        twoStepQry.distributedJoins(distributedJoins);
+        GridCacheTwoStepQuery twoStepQry = new GridCacheTwoStepQuery(
+            originalSql,
+            paramsCnt,
+            splitter.tbls,
+            splitter.rdcSqlQry,
+            splitter.mapSqlQrys,
+            splitter.skipMergeTbl,
+            explain,
+            distributedJoins,
+            forUpdate
+        );
 
         // all map queries must have non-empty derivedPartitions to use this feature.
         twoStepQry.derivedPartitions(splitter.extractor.mergeMapQueries(twoStepQry.mapQueries()));
-
-        twoStepQry.forUpdate(forUpdate);
 
         return twoStepQry;
     }

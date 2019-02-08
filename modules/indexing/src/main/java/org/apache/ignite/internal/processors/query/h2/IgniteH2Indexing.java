@@ -1301,11 +1301,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             GridNearTxLocal tx = tracker != null ? tx(ctx) : null;
 
-            if (qry.forUpdate()) {
-                // Locking has no meaning if SELECT FOR UPDATE is not executed in explicit transaction.
-                // So, we can can reset forUpdate flag if there is no explicit transaction.
-                qry.forUpdate(checkActive(tx) != null);
-            }
+            // Locking has no meaning if SELECT FOR UPDATE is not executed in explicit transaction.
+            // So, we can can reset forUpdate flag if there is no explicit transaction.
+            boolean forUpdate = qry.forUpdate() && checkActive(tx) != null;
 
             int opTimeout = operationTimeout(qryTimeout, tx);
 
@@ -1313,8 +1311,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, opTimeout,
-                            cancel, params, parts, lazy, tracker, dataPageScanEnabled);
+                        return rdcQryExec.query(
+                            schemaName,
+                            qry,
+                            keepCacheObj,
+                            enforceJoinOrder,
+                            opTimeout,
+                            cancel,
+                            params,
+                            parts,
+                            lazy,
+                            tracker,
+                            dataPageScanEnabled,
+                            forUpdate
+                        );
                     }
                     catch (Throwable e) {
                         if (tracker != null)
