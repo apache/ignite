@@ -172,7 +172,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @see IgniteFeatures#DISTRIBUTED_METASTORAGE
      */
     private boolean isSupported() {
-        return IgniteFeatures.allNodesSupports(ctx.discovery().aliveServerNodes(), DISTRIBUTED_METASTORAGE);
+        GridDiscoveryManager discoveryMgr = ctx.discovery();
+
+        if (discoveryMgr.discoCache() == null)
+            return true;
+
+        return IgniteFeatures.allNodesSupports(discoveryMgr.aliveServerNodes(), DISTRIBUTED_METASTORAGE);
     }
 
     /** {@inheritDoc} */
