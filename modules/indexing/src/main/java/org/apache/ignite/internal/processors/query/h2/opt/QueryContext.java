@@ -140,6 +140,7 @@ public class QueryContext {
     /**
      * @param usedCols Information about used columns (table alias -> columns info).
      */
+    // TODO VO: Please move it to constructor.
     public void usedColumnsInfo(Map<String, GridSqlUsedColumnInfo> usedCols) {
         this.usedCols = usedCols;
     }

@@ -2312,6 +2312,7 @@ public class GridSqlQueryParser {
      * @param colIds Map from table alias to columns IDs to extract.
      * @param e Query AST subtree.
      */
+    // TODO VO: Are we sure it cover all cases?
     public static void extractUsedColumnsFromAst(Map<TableAlias, Set<Integer>> colIds, GridSqlAst e) {
         if (e == null)
             return;
@@ -2321,9 +2322,9 @@ public class GridSqlQueryParser {
             Column cl = colExp.column();
 
             if (cl.getTable() instanceof GridH2Table) {
-                TableAlias al = new TableAlias(colExp.columnResolver().getTableAlias(),
-                    (GridH2Table)cl.getTable());
+                TableAlias al = new TableAlias(colExp.columnResolver().getTableAlias(), (GridH2Table)cl.getTable());
 
+                // TODO VO: Collect only boolean for now.
                 Set<Integer> set = colIds.get(al);
 
                 if (set == null) {

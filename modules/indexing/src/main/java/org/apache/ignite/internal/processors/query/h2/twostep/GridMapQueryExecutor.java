@@ -695,6 +695,7 @@ public class GridMapQueryExecutor {
 
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
 
+                        // TODO VO: Ability to disable it from sys property.
                         qctx.usedColumnsInfo(qry.usedColumns());
 
                         rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qr.queryCancel(qryIdx), dataPageScanEnabled);

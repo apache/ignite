@@ -727,6 +727,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject key() {
+        assert key != null : "Key is not ready: " + this;
+
         return key;
     }
 

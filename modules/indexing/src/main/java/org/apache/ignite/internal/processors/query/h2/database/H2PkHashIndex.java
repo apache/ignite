@@ -100,6 +100,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
+        // TODO VO: Ouch! Can we simply add Indexing to constructor instead?
         Map<String, GridSqlUsedColumnInfo> usedCols = ((IgniteH2Indexing)cctx.kernalContext().query().getIndexing())
             .queryContextRegistry().getThreadLocal().usedColumnsInfo();
 

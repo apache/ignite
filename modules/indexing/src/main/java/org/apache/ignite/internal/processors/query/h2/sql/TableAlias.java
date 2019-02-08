@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Table alias in SQL statement contains alias name and reference to real table.
  */
+// TODO VO: May be we can remove it completely.
 public class TableAlias {
     /** Alias. */
     private final String alias;
@@ -67,6 +68,8 @@ public class TableAlias {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
+        // TODO VO: Rempve tbl.
+        // TODO VO: Do not use Objects.hash
         return Objects.hash(alias, tbl);
     }
 }

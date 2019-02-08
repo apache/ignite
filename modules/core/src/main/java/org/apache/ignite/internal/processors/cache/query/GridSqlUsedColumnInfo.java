@@ -30,6 +30,14 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
+// TODO VO: Do we really need to pass "cols" at the moment? I would remove it.
+
+// TODO VO: Consider encapsulating map here to minimize message size?
+//class Info {
+//    String[] tblNames;
+//    boolean[] valUsed;
+//}
+
 public class GridSqlUsedColumnInfo implements Message {
     /** */
     private static final long serialVersionUID = 0L;
