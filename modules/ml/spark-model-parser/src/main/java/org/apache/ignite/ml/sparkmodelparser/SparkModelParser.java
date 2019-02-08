@@ -18,8 +18,6 @@
 package org.apache.ignite.ml.sparkmodelparser;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,7 +64,7 @@ import org.jetbrains.annotations.Nullable;
 /** Parser of Spark models. */
 public class SparkModelParser {
     /**
-     * Load model from parquet file.
+     * Load model from parquet (presented as a directory).
      *
      * @param pathToMdl Path to directory with saved model.
      * @param parsedSparkMdl Parsed spark model.
@@ -75,7 +73,7 @@ public class SparkModelParser {
         File mdlDir = IgniteUtils.resolveIgnitePath(pathToMdl);
 
         if (mdlDir == null)
-            throw new IllegalArgumentException("Directory not found [directory_path=" + pathToMdl + "]");
+            throw new IllegalArgumentException("Directory not found or empty [directory_path=" + pathToMdl + "]");
 
         if (!mdlDir.isDirectory())
             throw new IllegalArgumentException("Spark Model Parser supports loading from directory only. " +
@@ -92,13 +90,12 @@ public class SparkModelParser {
 
         String pathToData = pathToMdl + File.separator + "data";
         File dataDir = IgniteUtils.resolveIgnitePath(pathToData);
-        String[] dataFiles = dataDir.list();
 
-        if (Arrays.stream(dataFiles).noneMatch(e -> e.matches("^part-.*\\.snappy\\.parquet$")))
+        File[] dataParquetFiles = dataDir.listFiles((dir, name) -> name.matches("^part-.*\\.snappy\\.parquet$"));
+        if (dataParquetFiles.length == 0)
             throw new IllegalArgumentException("Directory should contain parquet file " +
                 "with model [directory_path=" + pathToData + "]");
 
-        File[] dataParquetFiles = dataDir.listFiles((dir, name) -> name.matches("^part-.*\\.snappy\\.parquet$"));
         if (dataParquetFiles.length > 1)
             throw new IllegalArgumentException("Directory should contain only one parquet file " +
                 "with model [directory_path=" + pathToData + "]");
@@ -119,13 +116,12 @@ public class SparkModelParser {
 
             String pathToTreesMetadata = pathToMdl + File.separator + "treesMetadata";
             File treesMetadataDir = IgniteUtils.resolveIgnitePath(pathToTreesMetadata);
-            String[] treesMetadataFiles = treesMetadataDir.list();
 
-            if (Arrays.stream(treesMetadataFiles).noneMatch(e -> e.matches("^part-.*\\.snappy\\.parquet$")))
+            File[] treesMetadataParquetFiles = treesMetadataDir.listFiles((dir, name) -> name.matches("^part-.*\\.snappy\\.parquet$"));
+            if (treesMetadataParquetFiles.length == 0)
                 throw new IllegalArgumentException("Directory should contain parquet file " +
                     "with model treesMetadata [directory_path=" + pathToTreesMetadata + "]");
-            // TODO: refactor repeating matching, remove stream version
-            File[] treesMetadataParquetFiles = treesMetadataDir.listFiles((dir, name) -> name.matches("^part-.*\\.snappy\\.parquet$"));
+
             if (treesMetadataParquetFiles.length > 1)
                 throw new IllegalArgumentException("Directory should contain only one parquet file " +
                     "with model [directory_path=" + pathToTreesMetadata + "]");
