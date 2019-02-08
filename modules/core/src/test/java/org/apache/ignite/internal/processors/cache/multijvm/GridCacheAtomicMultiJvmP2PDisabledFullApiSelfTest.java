@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.multijvm;
 
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicMultiNodeP2PDisabledFullApiSelfTest;
 
 /**
@@ -27,5 +29,10 @@ public class GridCacheAtomicMultiJvmP2PDisabledFullApiSelfTest extends
     /** {@inheritDoc} */
     @Override public boolean isMultiJvm() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 }
