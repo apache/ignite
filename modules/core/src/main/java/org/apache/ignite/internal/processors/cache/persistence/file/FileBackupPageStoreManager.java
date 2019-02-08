@@ -31,8 +31,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotProcessHandler;
+import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessHandler;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,8 +42,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 
 /** */
-public class FileSnapshotPageStoreManager extends GridCacheSharedManagerAdapter
-    implements SnapshotPageStoreManager<FileSnapshotDescriptor> {
+public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
+    implements IgniteBackupPageStoreManager<FileBackupDescriptor> {
     /** */
     private static final String SNAPSHOT_CP_REASON = "Wakeup for snapshot checkpoint [id=%s, grpId=%s, parts=%s]";
 
@@ -71,7 +71,7 @@ public class FileSnapshotPageStoreManager extends GridCacheSharedManagerAdapter
     private volatile SnapshotThread snapshotter;
 
     /** */
-    public FileSnapshotPageStoreManager(GridKernalContext ctx) {
+    public FileBackupPageStoreManager(GridKernalContext ctx) {
         assert CU.isPersistenceEnabled(ctx.config());
 
         log = ctx.log(getClass());
@@ -100,11 +100,11 @@ public class FileSnapshotPageStoreManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> snapshot(
+    @Override public IgniteInternalFuture<Boolean> backup(
         int idx,
         int grpId,
         Set<Integer> parts,
-        SnapshotProcessHandler<FileSnapshotDescriptor> hndlr
+        BackupProcessHandler<FileBackupDescriptor> hndlr
     ) {
         CheckpointFuture cpFut = db.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, idx, grpId, S.compact(parts)));
 
@@ -130,9 +130,9 @@ public class FileSnapshotPageStoreManager extends GridCacheSharedManagerAdapter
         // Use sync mode to execute provided task over partitons.
         // Submit to the worker.
         try {
-            hndlr.handlePartition(new FileSnapshotDescriptor(null, 0, 0, 0));
+            hndlr.handlePartition(new FileBackupDescriptor(null, 0, 0, 0));
 
-            hndlr.handleDelta(new FileSnapshotDescriptor(null, 1, 0, 0));
+            hndlr.handleDelta(new FileBackupDescriptor(null, 1, 0, 0));
         }
         catch (IgniteCheckedException e) {
             U.log(log, "An error occured while handling partition files.", e);
@@ -151,7 +151,7 @@ public class FileSnapshotPageStoreManager extends GridCacheSharedManagerAdapter
 
         /** */
         public SnapshotThread() {
-            super(cctx.igniteInstanceName(), "db-snapshot-thread", FileSnapshotPageStoreManager.this.log);
+            super(cctx.igniteInstanceName(), "db-snapshot-thread", FileBackupPageStoreManager.this.log);
 
             // Params
         }

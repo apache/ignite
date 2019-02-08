@@ -50,9 +50,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileSnapshotDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -125,7 +124,7 @@ public class GridCacheSharedContext<K, V> {
     @Nullable private IgnitePageStoreManager pageStoreMgr;
 
     /** Page file snapshot manager. Can be {@code null} if presistence is not enabled. */
-    @Nullable private SnapshotPageStoreManager storeSnapshotMgr;
+    @Nullable private IgniteBackupPageStoreManager storeBackupMgr;
 
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
@@ -217,7 +216,7 @@ public class GridCacheSharedContext<K, V> {
         @Nullable IgniteWriteAheadLogManager walMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
-        SnapshotPageStoreManager storeSnapshotMgr,
+        IgniteBackupPageStoreManager storeBackupMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -242,7 +241,7 @@ public class GridCacheSharedContext<K, V> {
             walMgr,
             walStateMgr,
             dbMgr,
-            storeSnapshotMgr,
+            storeBackupMgr,
             snpMgr,
             depMgr,
             exchMgr,
@@ -411,7 +410,7 @@ public class GridCacheSharedContext<K, V> {
             walMgr,
             walStateMgr,
             dbMgr,
-            storeSnapshotMgr,
+            storeBackupMgr,
             snpMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
@@ -459,7 +458,7 @@ public class GridCacheSharedContext<K, V> {
         IgniteWriteAheadLogManager walMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
-        SnapshotPageStoreManager storeSnapshotMgr,
+        IgniteBackupPageStoreManager storeBackupMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -476,7 +475,7 @@ public class GridCacheSharedContext<K, V> {
         this.walMgr = add(mgrs, walMgr);
         this.walStateMgr = add(mgrs, walStateMgr);
         this.dbMgr = add(mgrs, dbMgr);
-        this.storeSnapshotMgr = add(mgrs, storeSnapshotMgr);
+        this.storeBackupMgr = add(mgrs, storeBackupMgr);
         this.snpMgr = add(mgrs, snpMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
@@ -730,8 +729,8 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Page store snapshot manager.
      */
-    @Nullable public SnapshotPageStoreManager storeSnapshot() {
-        return storeSnapshotMgr;
+    @Nullable public IgniteBackupPageStoreManager storeSnapshot() {
+        return storeBackupMgr;
     }
 
     /**

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.util.Set;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /** */
-public interface SnapshotPageStoreManager<T> extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
+public interface IgniteBackupPageStoreManager<T> extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
     /**
      * @param idx Unique process identifier.
      * @param grpId Tracked cache group id.
@@ -31,10 +31,10 @@ public interface SnapshotPageStoreManager<T> extends GridCacheSharedManager, Ign
      * @param hndlr Handler for processing partitions and corresponding partition deltas.
      * @return Future with processing result.
      */
-    public IgniteInternalFuture<Boolean> snapshot(
+    public IgniteInternalFuture<Boolean> backup(
         int idx,
         int grpId,
         Set<Integer> parts,
-        SnapshotProcessHandler<T> hndlr
+        BackupProcessHandler<T> hndlr
     );
 }

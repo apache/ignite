@@ -33,9 +33,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIoUploader;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileSnapshotDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileBackupDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotProcessHandler;
+import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessHandler;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -204,22 +204,22 @@ public class GridDhtPartitionUploader {
     }
 
     /** */
-    private static class FileSnapshotHandler implements SnapshotProcessHandler<FileSnapshotDescriptor> {
+    private static class FileBackupHandler implements BackupProcessHandler<FileBackupDescriptor> {
         /** */
         private final FileIoUploader uploader;
 
         /** */
-        public FileSnapshotHandler(FileIoUploader uploader) {
+        public FileBackupHandler(FileIoUploader uploader) {
             this.uploader = uploader;
         }
 
         /** {@inheritDoc} */
-        @Override public void handlePartition(FileSnapshotDescriptor descr) throws IgniteCheckedException {
+        @Override public void handlePartition(FileBackupDescriptor descr) throws IgniteCheckedException {
             uploader.upload(descr.getFile());
         }
 
         /** {@inheritDoc} */
-        @Override public void handleDelta(FileSnapshotDescriptor descr) throws IgniteCheckedException {
+        @Override public void handleDelta(FileBackupDescriptor descr) throws IgniteCheckedException {
             uploader.upload(descr.getFile());
         }
     }

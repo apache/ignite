@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import org.apache.ignite.IgniteCheckedException;
 
 /**
  * @param <T> A type of handling operation.
  */
-public interface SnapshotProcessHandler<T> {
+public interface BackupProcessHandler<T> {
     /**
      * @param descr Processing cotext.
      * @throws IgniteCheckedException If fails.

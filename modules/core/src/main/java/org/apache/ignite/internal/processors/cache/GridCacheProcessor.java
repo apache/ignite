@@ -106,7 +106,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileSnapshotPageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -115,7 +115,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
@@ -3194,7 +3194,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheDatabaseSharedManager dbMgr;
         IgnitePageStoreManager pageStoreMgr = null;
         IgniteWriteAheadLogManager walMgr = null;
-        SnapshotPageStoreManager storeSnapshotMgr = null;
+        IgniteBackupPageStoreManager storeBackupMgr = null;
 
         if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
@@ -3209,10 +3209,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (walMgr == null)
                 walMgr = new FileWriteAheadLogManager(ctx);
 
-            storeSnapshotMgr = ctx.plugins().createComponent(SnapshotPageStoreManager.class);
+            storeBackupMgr = ctx.plugins().createComponent(IgniteBackupPageStoreManager.class);
 
-            if (storeSnapshotMgr == null)
-                storeSnapshotMgr = new FileSnapshotPageStoreManager(ctx);
+            if (storeBackupMgr == null)
+                storeBackupMgr = new FileBackupPageStoreManager(ctx);
         }
         else {
             if (CU.isPersistenceEnabled(ctx.config()) && ctx.clientNode()) {
@@ -3250,7 +3250,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             walMgr,
             walStateMgr,
             dbMgr,
-            storeSnapshotMgr,
+            storeBackupMgr,
             snpMgr,
             depMgr,
             exchMgr,

@@ -21,12 +21,12 @@ import java.io.File;
 import org.apache.ignite.IgniteException;
 
 /** */
-public class FileSnapshotDescriptor {
+public class FileBackupDescriptor {
     /** */
     private File file;
 
     /** */
-    private SnapshotFileType type;
+    private BackupFileType type;
 
     /** */
     private long offset;
@@ -40,7 +40,7 @@ public class FileSnapshotDescriptor {
      * @param offset Position to start with.
      * @param count The count of processing bits.
      */
-    public FileSnapshotDescriptor(File file, SnapshotFileType type, long offset, long count) {
+    public FileBackupDescriptor(File file, BackupFileType type, long offset, long count) {
         this.file = file;
         this.type = type;
         this.offset = offset;
@@ -53,8 +53,8 @@ public class FileSnapshotDescriptor {
      * @param offset Position to start with.
      * @param count The count of processing bits.
      */
-    public FileSnapshotDescriptor(File file, int type, long offset, long count) {
-        this(file, SnapshotFileType.get(type), offset, count);
+    public FileBackupDescriptor(File file, int type, long offset, long count) {
+        this(file, BackupFileType.get(type), offset, count);
     }
 
     /**
@@ -67,7 +67,7 @@ public class FileSnapshotDescriptor {
     /**
      * @return Corresponding file type.
      */
-    public SnapshotFileType getType() {
+    public BackupFileType getType() {
         return type;
     }
 
@@ -86,18 +86,18 @@ public class FileSnapshotDescriptor {
     }
 
     /** */
-    public enum SnapshotFileType {
+    public enum BackupFileType {
         /** */
         ORIG,
         /** */
         DELTA;
 
         /** */
-        public static SnapshotFileType get(int type) {
-            if (SnapshotFileType.values().length > type)
+        public static BackupFileType get(int type) {
+            if (BackupFileType.values().length > type)
                 throw new IgniteException("Unknown file type");
 
-            return SnapshotFileType.values()[type];
+            return BackupFileType.values()[type];
         }
     }
 }
