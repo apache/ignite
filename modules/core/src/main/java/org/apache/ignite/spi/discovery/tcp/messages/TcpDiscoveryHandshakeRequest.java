@@ -27,6 +27,9 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private UUID prevNodeId;
+
     /**
      * Constructor.
      *
@@ -47,13 +50,23 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     }
 
     /**
-     * Gets topology change flag.<br>
-     * {@code True} means node intent to fail nodes in a ring.
+     * Gets expected previous node ID to check.
      *
-     * @param changeTop Change topology flag.
+     * @return Previous node ID to check.
      */
-    public void changeTopology(boolean changeTop) {
-        setFlag(CHANGE_TOPOLOGY_FLAG_POS, changeTop);
+    public UUID checkPreviousNodeId() {
+        return prevNodeId;
+    }
+
+    /**
+     * Sets topology change flag and previous node ID to check.<br>
+     *
+     * @param prevNodeId If not {@code null}, will set topology check flag and set node ID to check.
+     */
+    public void changeTopology(UUID prevNodeId) {
+        setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeId != null);
+
+        this.prevNodeId = prevNodeId;
     }
 
     /** {@inheritDoc} */
