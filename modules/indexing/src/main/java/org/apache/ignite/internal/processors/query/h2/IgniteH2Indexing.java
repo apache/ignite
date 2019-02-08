@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -65,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -81,7 +79,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.query.RegisteredQueryCursor;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -2019,7 +2016,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             args = Arrays.copyOfRange(argsOrig, firstArg, firstArg + paramsCnt);
         }
 
-       if (prepared.isQuery()) {
+        if (prepared.isQuery()) {
             try {
                 H2Utils.bindParameters(stmt, F.asList(args));
             }
@@ -2089,7 +2086,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         try {
-            GridCacheTwoStepQuery twoStepQry = split(prepared, newQry);
+            GridCacheTwoStepQuery twoStepQry = GridSqlQuerySplitter.split(
+                connMgr.connectionForThread().connection(newQry.getSchema()),
+                prepared,
+                newQry.getArgs(),
+                newQry.isCollocated(),
+                newQry.isDistributedJoins(),
+                newQry.isEnforceJoinOrder(),
+                newQry.isLocal(),
+                this
+            );
 
             return new ParsingResult(prepared, newQry, remainingSql, twoStepQry,
                 cachedQryKey, H2Utils.meta(stmt.getMetaData()));
@@ -2113,42 +2119,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private SqlFieldsQuery cloneFieldsQuery(SqlFieldsQuery oldQry) {
         return oldQry.copy().setLocal(oldQry.isLocal()).setPageSize(oldQry.getPageSize());
-    }
-
-    /**
-     * Split query into two-step query.
-     * @param prepared JDBC prepared statement.
-     * @param qry Original fields query.
-     * @return Two-step query.
-     * @throws IgniteCheckedException in case of error inside {@link GridSqlQuerySplitter}.
-     * @throws SQLException in case of error inside {@link GridSqlQuerySplitter}.
-     */
-    private GridCacheTwoStepQuery split(Prepared prepared, SqlFieldsQuery qry) throws IgniteCheckedException,
-        SQLException {
-        GridCacheTwoStepQuery res = GridSqlQuerySplitter.split(
-            connMgr.connectionForThread().connection(qry.getSchema()),
-            prepared,
-            qry.getArgs(),
-            qry.isCollocated(),
-            qry.isDistributedJoins(),
-            qry.isEnforceJoinOrder(),
-            partExtractor);
-
-        List<Integer> cacheIds = collectCacheIds(null, res);
-
-        if (!F.isEmpty(cacheIds) && res.hasSystemViews()) {
-            throw new IgniteSQLException("Normal tables and system views cannot be used in the same query.",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
-
-        if (F.isEmpty(cacheIds))
-            res.local(true);
-        else {
-            res.cacheIds(cacheIds);
-            res.local(qry.isLocal());
-        }
-
-        return res;
     }
 
     /**
@@ -2435,60 +2405,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return executeUpdate(schemaName, c, GridSqlQueryParser.prepared(stmt), qry, loc, filter, cancel);
-    }
-
-    /**
-     * @param cacheIds Cache IDs.
-     * @param twoStepQry Query.
-     * @throws IllegalStateException if segmented indices used with non-segmented indices.
-     */
-    private void processCaches(List<Integer> cacheIds, GridCacheTwoStepQuery twoStepQry) {
-        if (cacheIds.isEmpty())
-            return; // Nothing to check
-
-        GridCacheSharedContext sharedCtx = ctx.cache().context();
-
-        int expectedParallelism = 0;
-        GridCacheContext cctx0 = null;
-
-        boolean mvccEnabled = false;
-
-        for (int i = 0; i < cacheIds.size(); i++) {
-            Integer cacheId = cacheIds.get(i);
-
-            GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
-
-            assert cctx != null;
-
-            if (i == 0) {
-                mvccEnabled = cctx.mvccEnabled();
-                cctx0 = cctx;
-            }
-            else if (cctx.mvccEnabled() != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(cctx0, cctx);
-
-            if (!cctx.isPartitioned())
-                continue;
-
-            if (expectedParallelism == 0)
-                expectedParallelism = cctx.config().getQueryParallelism();
-            else if (cctx.config().getQueryParallelism() != expectedParallelism) {
-                throw new IllegalStateException("Using indexes with different parallelism levels in same query is " +
-                    "forbidden.");
-            }
-        }
-
-        twoStepQry.mvccEnabled(mvccEnabled);
-
-        if (twoStepQry.forUpdate()) {
-            if (cacheIds.size() != 1)
-                throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
-                    "that involve single transactional cache.");
-
-            if (!mvccEnabled)
-                throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
-                    "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
     }
 
     /**
@@ -3046,47 +2962,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public PartitionReservationManager partitionReservationManager() {
         return partReservationMgr;
-    }
-
-    /**
-     * Collect cache identifiers from two-step query.
-     *
-     * @param mainCacheId Id of main cache.
-     * @param twoStepQry Two-step query.
-     * @return Result.
-     */
-    @Nullable public List<Integer> collectCacheIds(@Nullable Integer mainCacheId, GridCacheTwoStepQuery twoStepQry) {
-        LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
-
-        int tblCnt = twoStepQry.tablesCount();
-
-        if (mainCacheId != null)
-            caches0.add(mainCacheId);
-
-        if (tblCnt > 0) {
-            for (QueryTable tblKey : twoStepQry.tables()) {
-                GridH2Table tbl = schemaMgr.dataTable(tblKey.schema(), tblKey.table());
-
-                if (tbl != null) {
-                    H2Utils.checkAndStartNotStartedCache(ctx, tbl);
-
-                    int cacheId = tbl.cacheId();
-
-                    caches0.add(cacheId);
-                }
-            }
-        }
-
-        if (caches0.isEmpty())
-            return null;
-        else {
-            //Prohibit usage indices with different numbers of segments in same query.
-            List<Integer> cacheIds = new ArrayList<>(caches0);
-
-            processCaches(cacheIds, twoStepQry);
-
-            return cacheIds;
-        }
     }
 
     /**

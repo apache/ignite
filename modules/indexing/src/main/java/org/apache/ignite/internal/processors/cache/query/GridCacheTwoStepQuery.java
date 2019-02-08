@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -55,16 +54,16 @@ public class GridCacheTwoStepQuery {
     private final boolean skipMergeTbl;
 
     /** */
-    private List<Integer> cacheIds;
+    private final List<Integer> cacheIds;
 
     /** */
-    private boolean local;
+    private final boolean local;
 
     /** */
     private final PartitionResult derivedPartitions;
 
     /** */
-    private boolean mvccEnabled;
+    private final boolean mvccEnabled;
 
     /** {@code FOR UPDATE} flag. */
     private final boolean forUpdate;
@@ -86,7 +85,10 @@ public class GridCacheTwoStepQuery {
         boolean explain,
         boolean distributedJoins,
         boolean forUpdate,
-        PartitionResult derivedPartitions
+        PartitionResult derivedPartitions,
+        List<Integer> cacheIds,
+        boolean mvccEnabled,
+        boolean local
     ) {
         this.originalSql = originalSql;
         this.paramsCnt = paramsCnt;
@@ -97,6 +99,9 @@ public class GridCacheTwoStepQuery {
         this.distributedJoins = distributedJoins;
         this.forUpdate = forUpdate;
         this.derivedPartitions = derivedPartitions;
+        this.cacheIds = cacheIds;
+        this.mvccEnabled = mvccEnabled;
+        this.local = local;
 
         if (F.isEmpty(mapQrys))
             this.mapQrys = Collections.emptyList();
@@ -167,13 +172,6 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param cacheIds Cache IDs.
-     */
-    public void cacheIds(List<Integer> cacheIds) {
-        this.cacheIds = cacheIds;
-    }
-
-    /**
      * @return Original query SQL.
      */
     public String originalSql() {
@@ -188,13 +186,6 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param local Local query flag.
-     */
-    public void local(boolean local) {
-        this.local = local;
-    }
-
-    /**
      * @return Query derived partitions info.
      */
     public PartitionResult derivedPartitions() {
@@ -204,10 +195,9 @@ public class GridCacheTwoStepQuery {
     /**
      * @return Copy.
      */
+    // TODO: Remove
     public GridCacheTwoStepQuery copy() {
-        assert !explain;
-
-        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(
+        return new GridCacheTwoStepQuery(
             originalSql,
             paramsCnt,
             tbls,
@@ -217,14 +207,11 @@ public class GridCacheTwoStepQuery {
             explain,
             distributedJoins,
             forUpdate,
-            derivedPartitions
+            derivedPartitions,
+            cacheIds,
+            mvccEnabled,
+            local
         );
-
-        cp.cacheIds = cacheIds;
-        cp.local = local;
-        cp.mvccEnabled = mvccEnabled;
-
-        return cp;
     }
 
     /**
@@ -249,13 +236,6 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param mvccEnabled Mvcc flag.
-     */
-    public void mvccEnabled(boolean mvccEnabled) {
-        this.mvccEnabled = mvccEnabled;
-    }
-
-    /**
      * @return {@code FOR UPDATE} flag.
      */
     public boolean forUpdate() {
@@ -272,19 +252,5 @@ public class GridCacheTwoStepQuery {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheTwoStepQuery.class, this);
-    }
-
-    /**
-     * @return {@code True} is system views exist.
-     */
-    public boolean hasSystemViews() {
-        if (tablesCount() > 0) {
-            for (QueryTable tbl : tables()) {
-                if (QueryUtils.SCHEMA_SYS.equals(tbl.schema()))
-                    return true;
-            }
-        }
-
-        return false;
     }
 }
