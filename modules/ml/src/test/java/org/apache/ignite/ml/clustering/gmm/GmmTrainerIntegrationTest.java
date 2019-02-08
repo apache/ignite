@@ -29,6 +29,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
+/**
+ * Integration test for GmmTrainer.
+ */
 public class GmmTrainerIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -57,6 +60,7 @@ public class GmmTrainerIntegrationTest extends GridCommonAbstractTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
     }
 
+    /** */
     @Test
     public void testFit() {
         CacheConfiguration<Integer, double[]> trainingSetCacheCfg = new CacheConfiguration<>();

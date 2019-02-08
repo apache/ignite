@@ -5,7 +5,11 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
+/**
+ * Tests for {@link MultivariateGaussianDistribution}.
+ */
 public class MultivariateGaussianDistributionTest {
+    /** */
     @Test
     public void testApply() {
         MultivariateGaussianDistribution distribution = new MultivariateGaussianDistribution(

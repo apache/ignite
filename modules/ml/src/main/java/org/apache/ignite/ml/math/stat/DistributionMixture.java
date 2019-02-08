@@ -24,13 +24,31 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
+/**
+ * Mixture of distributions class where each component has own probability and probability of input vector can be
+ * computed as a sum of likelihoods of each component.
+ *
+ * @param <C> distributions mixture component class.
+ */
 public abstract class DistributionMixture<C extends Distribution> implements Distribution {
+    /** */
     private final double EPS = 1e-5;
 
+    /** Component probabilities. */
     private final Vector componentProbs;
+
+    /** Distributions. */
     private final List<C> distributions;
+
+    /** Dimension. */
     private final int dimension;
 
+    /**
+     * Creates an instance of DistributionMixture.
+     *
+     * @param componentProbs Component probabilities.
+     * @param distributions Distributions.
+     */
     public DistributionMixture(Vector componentProbs, List<C> distributions) {
         A.ensure(DoubleStream.of(componentProbs.asArray()).allMatch(v -> v > 0), "All distribution components should be greater than zero");
         A.ensure(Math.abs(componentProbs.sum() - 1.) < EPS, "Components distribution should be nomalized");
@@ -46,27 +64,42 @@ public abstract class DistributionMixture<C extends Distribution> implements Dis
         this.dimension = dimension;
     }
 
+    /** {@inheritDoc} */
     @Override public double prob(Vector x) {
         return likelihood(x).sum();
     }
 
+    /**
+     * @param x Vector.
+     * @return Vector consists of likelihoods of each mixture components.
+     */
     public Vector likelihood(Vector x) {
         return VectorUtils.of(distributions.stream().mapToDouble(f -> f.prob(x)).toArray())
             .times(componentProbs);
     }
 
+    /**
+     * @return an amount of components.
+     */
     public int countOfComponents() {
         return componentProbs.size();
     }
 
+    /**
+     * @return component probabilities.
+     */
     public Vector componentsProbs() {
         return componentProbs.copy();
     }
 
+    /**
+     * @return list of components.
+     */
     public List<C> distributions() {
         return Collections.unmodifiableList(distributions);
     }
 
+    /** {@inheritDoc} */
     @Override public int dimension() {
         return dimension;
     }
