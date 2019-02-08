@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -81,7 +80,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
-import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
 
@@ -1157,11 +1155,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
-        /** */
-        final long longOpDumpTimeout = IgniteSystemProperties.getLong(
-                IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
-                DFLT_LONG_OPERATIONS_DUMP_TIMEOUT
-        );
         /**
          * Default constructor.
          */
@@ -1171,8 +1164,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
+            long longOpsDumpTimeout = cctx.tm().longOperationsDumpTimeout();
+
             synchronized (GridDhtLockFuture.this) {
-                if (log.isDebugEnabled() || timeout >= longOpDumpTimeout) {
+                if (log.isDebugEnabled() || timeout >= longOpsDumpTimeout) {
                     String msg = dumpPendingLocks();
 
                     if (log.isDebugEnabled())
@@ -1247,9 +1242,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     }
                     catch (GridCacheEntryRemovedException e) {
                         entry = cctx.cache().entryEx(key, topVer);
-                    }
-                    finally {
-                        entry.touch();
                     }
                 }
 

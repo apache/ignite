@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -393,8 +394,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     public void testTimeOutTxLock() throws Exception {
         final int longOpDumpTimeout = 500;
 
-        System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(longOpDumpTimeout));
-
         ListeningTestLogger testLog = new ListeningTestLogger(false, log);
 
         IgniteLogger oldLog = GridTestUtils.getFieldValue(GridDhtLockFuture.class, "log");
@@ -402,7 +401,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
         GridTestUtils.setFieldValue(GridDhtLockFuture.class, "log", testLog);
 
         try {
-            Ignite grid1 = startGrid(0);
+            IgniteEx grid1 = startGrid(0);
 
             LogListener lsnr = LogListener.matches("Timed out waiting for lock response, pending locks")
                     .andMatches(Pattern.compile(".*xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=lock, " +
@@ -413,7 +412,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             this.testLog = testLog;
 
-            Ignite grid2 = startGrid(1);
+            IgniteEx grid2 = startGrid(1);
+
+            grid2.context().cache().context().tm().longOperationsDumpTimeout(longOpDumpTimeout);
 
             awaitPartitionMapExchange();
 
@@ -422,8 +423,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             assertTrue(lsnr.check());
         }
         finally {
-            System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
-
             GridTestUtils.setFieldValue(GridDhtLockFuture.class, "log", oldLog);
         }
     }
