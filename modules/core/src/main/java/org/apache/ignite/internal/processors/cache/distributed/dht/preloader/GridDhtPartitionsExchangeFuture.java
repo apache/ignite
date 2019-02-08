@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,10 +31,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -151,31 +154,40 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private static final int RELEASE_FUTURE_DUMP_THRESHOLD =
         IgniteSystemProperties.getInteger(IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD, 0);
 
-    /** */
+    /**
+     *
+     */
     private static final IgniteProductVersion FORCE_AFF_REASSIGNMENT_SINCE = IgniteProductVersion.fromString("2.4.3");
 
     /**
-     * This may be useful when per-entry (not per-cache based) partition policy is in use.
-     * See {@link IgniteSystemProperties#IGNITE_SKIP_PARTITION_SIZE_VALIDATION} for details.
-     * Default value is {@code false}.
+     * This may be useful when per-entry (not per-cache based) partition policy is in use. See {@link
+     * IgniteSystemProperties#IGNITE_SKIP_PARTITION_SIZE_VALIDATION} for details. Default value is {@code false}.
      */
     private static final boolean SKIP_PARTITION_SIZE_VALIDATION = Boolean.getBoolean(IgniteSystemProperties.IGNITE_SKIP_PARTITION_SIZE_VALIDATION);
 
-    /** */
+    /**
+     *
+     */
     private static final String DISTRIBUTED_LATCH_ID = "exchange";
 
-    /** */
+    /**
+     *
+     */
     @GridToStringExclude
     private final Object mux = new Object();
 
-    /** */
+    /**
+     *
+     */
     @GridToStringExclude
     private volatile DiscoCache firstEvtDiscoCache;
 
     /** Discovery event triggered this exchange. */
     private volatile DiscoveryEvent firstDiscoEvt;
 
-    /** */
+    /**
+     *
+     */
     @GridToStringExclude
     private final Set<UUID> remaining = new HashSet<>();
 
@@ -183,11 +195,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @GridToStringExclude
     private int pendingSingleUpdates;
 
-    /** */
+    /**
+     *
+     */
     @GridToStringExclude
     private List<ClusterNode> srvNodes;
 
-    /** */
+    /**
+     *
+     */
     private volatile ClusterNode crd;
 
     /** ExchangeFuture id. */
@@ -199,13 +215,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
     private ReadWriteLock busyLock;
 
-    /** */
+    /**
+     *
+     */
     private AtomicBoolean added = new AtomicBoolean(false);
 
     /**
-     * Discovery event receive latch. There is a race between discovery event processing and single message
-     * processing, so it is possible to create an exchange future before the actual discovery event is received.
-     * This latch is notified when the discovery event arrives.
+     * Discovery event receive latch. There is a race between discovery event processing and single message processing,
+     * so it is possible to create an exchange future before the actual discovery event is received. This latch is
+     * notified when the discovery event arrives.
      */
     @GridToStringExclude
     private final CountDownLatch evtLatch = new CountDownLatch(1);
@@ -213,33 +231,38 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Exchange future init method completes this future. */
     private GridFutureAdapter<Boolean> initFut;
 
-    /** */
+    /**
+     *
+     */
     @GridToStringExclude
     private final List<IgniteRunnable> discoEvts = new ArrayList<>();
 
-    /** */
+    /**
+     *
+     */
     private boolean init;
 
     /** Last committed cache version before next topology version use. */
     private AtomicReference<GridCacheVersion> lastVer = new AtomicReference<>();
 
     /**
-     * Message received from node joining cluster (if this is 'node join' exchange),
-     * needed if this exchange is merged with another one.
+     * Message received from node joining cluster (if this is 'node join' exchange), needed if this exchange is merged
+     * with another one.
      */
     @GridToStringExclude
     private GridDhtPartitionsSingleMessage pendingJoinMsg;
 
     /**
-     * Messages received on non-coordinator are stored in case if this node
-     * becomes coordinator.
+     * Messages received on non-coordinator are stored in case if this node becomes coordinator.
      */
     private final Map<UUID, GridDhtPartitionsSingleMessage> pendingSingleMsgs = new ConcurrentHashMap<>();
 
     /** Messages received from new coordinator. */
     private final Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap<>();
 
-    /** */
+    /**
+     *
+     */
     @GridToStringInclude
     private volatile IgniteInternalFuture<?> partReleaseFut;
 
@@ -249,10 +272,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Cache change requests. */
     private ExchangeActions exchActions;
 
-    /** */
+    /**
+     *
+     */
     private final IgniteLogger exchLog;
 
-    /** */
+    /**
+     *
+     */
     private CacheAffinityChangeMessage affChangeMsg;
 
     /** Init timestamp. Used to track the amount of time spent to complete the future. */
@@ -279,7 +306,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Used to track the fact that {@link DynamicCacheChangeFailureMessage} was sent. */
     private volatile boolean cacheChangeFailureMsgSent;
 
-    /** */
+    /**
+     *
+     */
     private ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap<>();
 
     /** Single messages from merged 'node join' exchanges. */
@@ -350,6 +379,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
+
+    public final BlockingQueue<String> logDoneQueue = new LinkedBlockingQueue<>();
 
     /**
      * @param cctx Cache context.
@@ -423,9 +454,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Sets exchange actions associated with the exchange future (such as cache start or stop).
-     * Exchange actions is created from discovery event, so the actions must be set before the event is processed,
-     * thus the setter requires that {@code evtLatch} be armed.
+     * Sets exchange actions associated with the exchange future (such as cache start or stop). Exchange actions is
+     * created from discovery event, so the actions must be set before the event is processed, thus the setter requires
+     * that {@code evtLatch} be armed.
      *
      * @param exchActions Exchange actions.
      */
@@ -437,9 +468,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Gets exchanges actions (such as cache start or stop) associated with the exchange future.
-     * Exchange actions can be {@code null} (for example, if the exchange is created for topology
-     * change event).
+     * Gets exchanges actions (such as cache start or stop) associated with the exchange future. Exchange actions can be
+     * {@code null} (for example, if the exchange is created for topology change event).
      *
      * @return Exchange actions.
      */
@@ -448,8 +478,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Sets affinity change message associated with the exchange. Affinity change message is required when
-     * centralized affinity change is performed.
+     * Sets affinity change message associated with the exchange. Affinity change message is required when centralized
+     * affinity change is performed.
      *
      * @param affChangeMsg Affinity change message.
      */
@@ -458,8 +488,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Gets the affinity topology version for which this exchange was created. If several exchanges
-     * were merged, initial version is the version of the earliest merged exchange.
+     * Gets the affinity topology version for which this exchange was created. If several exchanges were merged, initial
+     * version is the version of the earliest merged exchange.
      *
      * @return Initial exchange version.
      */
@@ -476,13 +506,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert exchangeDone() : "Should not be called before exchange is finished";
 
         final AffinityTopologyVersion res;
-        if(isDone())
+        if (isDone())
             res = result();
         else {
-            if(exchCtx == null)
-                log.error("exchCtx NULL: " + this);
+            if (exchCtx == null)
+                log.error("exchCtx NULL: " + this + " queue: " + logDoneQueue);
 
-                res =  exchCtx.events().topologyVersion();
+            res = exchCtx.events().topologyVersion();
         }
 
         return res;
@@ -566,8 +596,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return {@code True} if this exchange was triggered by DynamicCacheChangeBatch message
-     * in order to start cache(s).
+     * @return {@code True} if this exchange was triggered by DynamicCacheChangeBatch message in order to start
+     * cache(s).
      */
     private boolean dynamicCacheStartExchange() {
         return exchActions != null && !exchActions.cacheStartRequests().isEmpty()
@@ -596,7 +626,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return exchActions != null && exchActions.deactivate();
     }
 
-    /** */
+    /**
+     *
+     */
     public boolean changedBaseline() {
         return exchActions != null && exchActions.changedBaseline();
     }
@@ -620,7 +652,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @return First event discovery event.
-     *
      */
     public DiscoveryEvent firstEvent() {
         return firstDiscoEvt;
@@ -1267,8 +1298,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onAffinityChangeRequest(boolean crd) throws IgniteCheckedException {
         assert affChangeMsg != null : this;
@@ -1283,8 +1314,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onClientNodeEvent(boolean crd) throws IgniteCheckedException {
         assert firstDiscoEvt.eventNode().isClient() : this;
@@ -1304,8 +1335,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onServerNodeEvent(boolean crd) throws IgniteCheckedException {
         assert !firstDiscoEvt.eventNode().isClient() : this;
@@ -1585,16 +1616,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * The main purpose of this method is to wait for all ongoing updates (transactional and atomic), initiated on
-     * the previous topology version, to finish to prevent inconsistencies during rebalancing and to prevent two
-     * different simultaneous owners of the same lock.
-     * For the exact list of the objects being awaited for see
-     * {@link GridCacheSharedContext#partitionReleaseFuture(AffinityTopologyVersion)} javadoc.
+     * The main purpose of this method is to wait for all ongoing updates (transactional and atomic), initiated on the
+     * previous topology version, to finish to prevent inconsistencies during rebalancing and to prevent two different
+     * simultaneous owners of the same lock. For the exact list of the objects being awaited for see {@link
+     * GridCacheSharedContext#partitionReleaseFuture(AffinityTopologyVersion)} javadoc.
      *
      * @param distributed If {@code true} then node should wait for partition release completion on all other nodes.
      * @param doRollback If {@code true} tries to rollback transactions which lock partitions. Avoids unnecessary calls
-     *      of {@link org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager#rollbackOnTopologyChange}
-     *
+     * of {@link org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager#rollbackOnTopologyChange}
      * @throws IgniteCheckedException If failed.
      */
     private void waitPartitionRelease(boolean distributed, boolean doRollback) throws IgniteCheckedException {
@@ -1642,7 +1671,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 // This avoids unnessesary waiting for rollback.
                 partReleaseFut.get(curTimeout > 0 && !txRolledBack ?
-                        Math.min(curTimeout, waitTimeout) : waitTimeout, TimeUnit.MILLISECONDS);
+                    Math.min(curTimeout, waitTimeout) : waitTimeout, TimeUnit.MILLISECONDS);
 
                 break;
             }
@@ -1661,7 +1690,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
             catch (IgniteCheckedException e) {
-                U.warn(log,"Unable to await partitions release future", e);
+                U.warn(log, "Unable to await partitions release future", e);
 
                 throw e;
             }
@@ -1795,11 +1824,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void dumpPendingObjects(IgniteInternalFuture<?> partReleaseFut, boolean txTimeoutNotifyFlag) {
         U.warn(cctx.kernalContext().cluster().diagnosticLog(),
             "Failed to wait for partition release future [topVer=" + initialVersion() +
-            ", node=" + cctx.localNodeId() + "]");
+                ", node=" + cctx.localNodeId() + "]");
 
         if (txTimeoutNotifyFlag)
             U.warn(cctx.kernalContext().cluster().diagnosticLog(), "Consider changing TransactionConfiguration." +
-                    "txTimeoutOnPartitionMapExchange to non default value to avoid this message.");
+                "txTimeoutOnPartitionMapExchange to non default value to avoid this message.");
 
         U.warn(log, "Partition release future: " + partReleaseFut);
 
@@ -1971,8 +2000,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 // If exchange has merged, use merged version of exchange id.
                 GridDhtPartitionExchangeId sndExchId = mergedJoinExchMsgs != null
                     ? Optional.ofNullable(mergedJoinExchMsgs.get(node.id()))
-                        .map(GridDhtPartitionsAbstractMessage::exchangeId)
-                        .orElse(exchangeId())
+                    .map(GridDhtPartitionsAbstractMessage::exchangeId)
+                    .orElse(exchangeId())
                     : exchangeId();
 
                 if (sndExchId != null && !sndExchId.equals(exchangeId())) {
@@ -2043,8 +2072,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public void finishMerged(AffinityTopologyVersion resVer) {
         synchronized (mux) {
-            if (state == null) state = ExchangeLocalState.MERGED;
+            if (state == null)
+                state = ExchangeLocalState.MERGED;
         }
+
+        Thread thread = Thread.currentThread();
+        String uid = UUID.randomUUID().toString();
+        logDoneQueue.add("UUID:" + uid +"Future: " + this + " Thread: " + thread.getName() + " trace: " + Arrays.toString(thread.getStackTrace()));
 
         done.set(true);
 
@@ -2085,6 +2119,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
         assert res != null || err != null : "TopVer=" + res + ", err=" + err;
+
+        Thread thread = Thread.currentThread();
+        String uid = UUID.randomUUID().toString();
+        logDoneQueue.add("UUID: " + uid + "Future: " + this
+            + "Thread: " + thread.getName() + " isDone: " + isDone() + " done: "
+            + done.get() + " trace: " + Arrays.toString(thread.getStackTrace()));
+        log.info(uid);
 
         if (isDone() || !done.compareAndSet(false, true))
             return false;
@@ -2130,7 +2171,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 }
 
-                if (!grpToRefresh.isEmpty()){
+                if (!grpToRefresh.isEmpty()) {
                     if (log.isDebugEnabled())
                         log.debug("Refresh partitions due to partitions initialized when affinity ready [" +
                             grpToRefresh.stream().map(CacheGroupContext::name).collect(Collectors.toList()) + ']');
@@ -2227,7 +2268,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (log.isInfoEnabled()) {
                 log.info("Completed partition exchange [localNode=" + cctx.localNodeId() +
-                        ", exchange=" + (log.isDebugEnabled() ? this : shortInfo()) + ", topVer=" + topologyVersion() + "]");
+                    ", exchange=" + (log.isDebugEnabled() ? this : shortInfo()) + ", topVer=" + topologyVersion() + "]");
 
                 if (err == null) {
                     timeBag.finishGlobalStage("Exchange done");
@@ -2286,7 +2327,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      * @param declared Single messages that were expected to be received during exchange.
      * @param merged Single messages from nodes that were merged during exchange.
-     *
      * @return Pair with discovery lag and node id which started exchange later than others.
      */
     private T2<Long, UUID> calculateDiscoveryLag(
@@ -2342,7 +2382,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 final int timeout = Math.max(1000,
                     (int)(cctx.kernalContext().config().getFailureDetectionTimeout() / 2));
 
-                for (;;) {
+                for (; ; ) {
                     cctx.exchange().exchangerBlockingSectionBegin();
 
                     try {
@@ -2417,6 +2457,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         newCrdFut = null;
         exchangeLocE = null;
         exchangeGlobalExceptions.clear();
+    }
+
+    private void writeAccessExchCtx(ExchangeContext outExchCtx) {
+        //exchCtx =
     }
 
     /**
@@ -2510,7 +2554,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         synchronized (mux) {
             assert (!isDone() && !initFut.isDone()) || cctx.kernalContext().isStopping() : this;
-            assert (mergedWith == null && state == null) || cctx.kernalContext().isStopping()  : this;
+            assert (mergedWith == null && state == null) || cctx.kernalContext().isStopping() : this;
 
             state = ExchangeLocalState.MERGED;
 
@@ -2600,8 +2644,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Method is called on coordinator in situation when initial ExchangeFuture created on client join event was preempted
-     * from exchange history because of IGNITE_EXCHANGE_HISTORY_SIZE property.
+     * Method is called on coordinator in situation when initial ExchangeFuture created on client join event was
+     * preempted from exchange history because of IGNITE_EXCHANGE_HISTORY_SIZE property.
      *
      * @param node Client node that should try to reconnect to the cluster.
      * @param msg Single message received from the client which didn't find original ExchangeFuture.
@@ -2704,8 +2748,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Tries to fast reply with {@link GridDhtPartitionsFullMessage} on received single message
-     * in case of exchange future has already completed.
+     * Tries to fast reply with {@link GridDhtPartitionsFullMessage} on received single message in case of exchange
+     * future has already completed.
      *
      * @param node Cluster node which sent single message.
      * @param msg Single message.
@@ -3187,8 +3231,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Creates an IgniteCheckedException that is used as root cause of the exchange initialization failure.
-     * This method aggregates all the exceptions provided from all participating nodes.
+     * Creates an IgniteCheckedException that is used as root cause of the exchange initialization failure. This method
+     * aggregates all the exceptions provided from all participating nodes.
      *
      * @param globalExceptions collection exceptions from all participating nodes.
      * @return exception that represents a cause of the exchange initialization failure.
@@ -3215,8 +3259,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Sends {@link DynamicCacheChangeFailureMessage} to all participated nodes
-     * that represents a cause of exchange failure.
+     * Sends {@link DynamicCacheChangeFailureMessage} to all participated nodes that represents a cause of exchange
+     * failure.
      */
     private void sendExchangeFailureMessage() {
         assert crd != null && crd.isLocal();
@@ -3241,7 +3285,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             return;
         }
-        catch (IgniteCheckedException  e) {
+        catch (IgniteCheckedException e) {
             if (reconnectOnError(e))
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else
@@ -3342,7 +3386,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 else
                     cctx.affinity().onServerJoinWithExchangeMergeProtocol(this, true);
 
-
                 U.doInParallel(
                     parallelismLvl,
                     cctx.kernalContext().getSystemExecutorService(),
@@ -3412,7 +3455,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (activateCluster() || changedBaseline())
                     assignPartitionsStates();
 
-                DiscoveryCustomMessage discoveryCustomMessage = ((DiscoveryCustomEvent) firstDiscoEvt).customMessage();
+                DiscoveryCustomMessage discoveryCustomMessage = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
 
                 if (discoveryCustomMessage instanceof DynamicCacheChangeBatch) {
                     if (exchActions != null) {
@@ -3425,7 +3468,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
-                        && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
+                    && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
                     assignPartitionsStates();
             }
             else {
@@ -3749,7 +3792,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         Collection<Integer> affReq = msg.cacheGroupsAffinityRequest();
 
-
         if (affReq != null) {
             Map<Integer, CacheGroupAffinityMessage> cachesAff = U.newHashMap(affReq.size());
 
@@ -4065,7 +4107,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         return; // Node is stopping, no need to further process exchange.
                     }
 
-                    assert resTopVer.equals(exchCtx.events().topologyVersion()) :  "Unexpected result version [" +
+                    assert resTopVer.equals(exchCtx.events().topologyVersion()) : "Unexpected result version [" +
                         "msgVer=" + resTopVer +
                         ", locVer=" + exchCtx.events().topologyVersion() + ']';
                 }
@@ -4228,7 +4270,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             return;
 
                         try {
-                            assert msg.error() != null: msg;
+                            assert msg.error() != null : msg;
 
                             // Try to revert all the changes that were done during initialization phase
                             cctx.affinity().forceCloseCaches(
@@ -4507,7 +4549,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                                     return;
 
                                                 try {
-                                                    onBecomeCoordinator((InitNewCoordinatorFuture) fut);
+                                                    onBecomeCoordinator((InitNewCoordinatorFuture)fut);
                                                 }
                                                 finally {
                                                     lock.unlock();
@@ -4853,7 +4895,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     diagCtx.exchangeInfo(crd.id(), initialVersion(), "Exchange future waiting for coordinator " +
                         "response [crd=" + crd.id() + ", topVer=" + initialVersion() + ']');
                 }
-                else if (!remaining.isEmpty()){
+                else if (!remaining.isEmpty()) {
                     UUID nodeId = remaining.iterator().next();
 
                     diagCtx.exchangeInfo(nodeId, initialVersion(), "Exchange future on coordinator waiting for " +
@@ -4891,13 +4933,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      */
     private static class CounterWithNodes {
-        /** */
+        /**
+         *
+         */
         private final long cnt;
 
-        /** */
+        /**
+         *
+         */
         private final long size;
 
-        /** */
+        /**
+         *
+         */
         private final Set<UUID> nodes = new HashSet<>();
 
         /**
@@ -4944,13 +4992,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      */
     private static class FinishState {
-        /** */
+        /**
+         *
+         */
         private final UUID crdId;
 
-        /** */
+        /**
+         *
+         */
         private final AffinityTopologyVersion resTopVer;
 
-        /** */
+        /**
+         *
+         */
         private final GridDhtPartitionsFullMessage msg;
 
         /**
@@ -4969,13 +5023,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      */
     enum ExchangeType {
-        /** */
+        /**
+         *
+         */
         CLIENT,
 
-        /** */
+        /**
+         *
+         */
         ALL,
 
-        /** */
+        /**
+         *
+         */
         NONE
     }
 
@@ -4993,8 +5053,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         CLIENT,
 
         /**
-         * Previous coordinator failed before exchange finished and
-         * local performs initialization to become new coordinator.
+         * Previous coordinator failed before exchange finished and local performs initialization to become new
+         * coordinator.
          */
         BECOME_CRD,
 
