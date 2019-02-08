@@ -31,6 +31,7 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
+import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -152,15 +153,23 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
             A.ensure(newMeans[0].size() == initialMeans[0].size(), "newMeans[0].size() == initialMeans[0].size()");
             List<Matrix> newCovs = CovarianceMatricesAggregator.computeCovariances(dataset, clusterProbs, newMeans);
 
-            List<MultivariateGaussianDistribution> components = buildComponents(newMeans, newCovs);
-            GmmModel newModel = new GmmModel(clusterProbs, components);
+            try {
+                List<MultivariateGaussianDistribution> components = buildComponents(newMeans, newCovs);
+                GmmModel newModel = new GmmModel(clusterProbs, components);
 
-            countOfIterations += 1;
-            isConverged = isConverged(model, newModel) || countOfIterations > maxCountOfIterations;
-            model = newModel;
+                countOfIterations += 1;
+                isConverged = isConverged(model, newModel) || countOfIterations > maxCountOfIterations;
+                model = newModel;
 
-            if (!isConverged)
-                dataset.compute(data -> GmmPartitionData.updatePcxi(data, clusterProbs, components));
+                if (!isConverged)
+                    dataset.compute(data -> GmmPartitionData.updatePcxi(data, clusterProbs, components));
+            }
+            catch (SingularMatrixException | IllegalArgumentException e) {
+                String msg = "Cannot construct non-singular covariance matrix by data. " +
+                    "Try to select other initial means or other model trainer. Iterations will stop.";
+                environment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+                isConverged = true;
+            }
         }
 
         return model;
@@ -173,46 +182,54 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @return initial model.
      */
     private GmmModel init(Dataset<EmptyContext, GmmPartitionData> dataset) {
-        if (initialMeans == null) {
-            List<List<Vector>> randomMeansSets = Stream.of(dataset.compute(
-                selectNRandomXsMapper(countOfComponents),
-                GmmTrainer::selectNRandomXsReducer
-            )).map(Arrays::asList).collect(Collectors.toList());
+        try {
+            if (initialMeans == null) {
+                List<List<Vector>> randomMeansSets = Stream.of(dataset.compute(
+                    selectNRandomXsMapper(countOfComponents),
+                    GmmTrainer::selectNRandomXsReducer
+                )).map(Arrays::asList).collect(Collectors.toList());
 
-            A.ensure(
-                randomMeansSets.stream().mapToInt(List::size).sum() >= countOfComponents,
-                "There is not enough data in dataset for select N random means"
+                A.ensure(
+                    randomMeansSets.stream().mapToInt(List::size).sum() >= countOfComponents,
+                    "There is not enough data in dataset for select N random means"
+                );
+
+                initialMeans = new Vector[countOfComponents];
+                int j = 0;
+                for (int i = 0; i < countOfComponents; ) {
+                    List<Vector> randomMeansPart = randomMeansSets.get(j);
+                    if (!randomMeansPart.isEmpty()) {
+                        initialMeans[i] = randomMeansPart.remove(0);
+                        i++;
+                    }
+
+                    j = (j + 1) % randomMeansSets.size();
+                }
+            }
+
+            dataset.compute(data -> GmmPartitionData.estimateLikelihoodClusters(data, initialMeans));
+
+            List<Matrix> initialCovs = CovarianceMatricesAggregator.computeCovariances(
+                dataset,
+                VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
+                initialMeans
             );
 
-            initialMeans = new Vector[countOfComponents];
-            int j = 0;
-            for (int i = 0; i < countOfComponents; ) {
-                List<Vector> randomMeansPart = randomMeansSets.get(j);
-                if (!randomMeansPart.isEmpty()) {
-                    initialMeans[i] = randomMeansPart.remove(0);
-                    i++;
-                }
+            List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
+            for (int i = 0; i < countOfComponents; i++)
+                distributions.add(new MultivariateGaussianDistribution(initialMeans[i], initialCovs.get(i)));
 
-                j = (j + 1) % randomMeansSets.size();
-            }
+            return new GmmModel(
+                VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
+                distributions
+            );
         }
-
-        dataset.compute(data -> GmmPartitionData.estimateLikelihoodClusters(data, initialMeans));
-
-        List<Matrix> initialCovs = CovarianceMatricesAggregator.computeCovariances(
-            dataset,
-            VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
-            initialMeans
-        );
-
-        List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
-        for (int i = 0; i < countOfComponents; i++)
-            distributions.add(new MultivariateGaussianDistribution(initialMeans[i], initialCovs.get(i)));
-
-        return new GmmModel(
-            VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
-            distributions
-        );
+        catch (SingularMatrixException | IllegalArgumentException e) {
+            String msg = "Cannot construct non-singular covariance matrix by data. " +
+                "Try to select other initial means or other model trainer";
+            environment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new RuntimeException(msg, e);
+        }
     }
 
     /**
