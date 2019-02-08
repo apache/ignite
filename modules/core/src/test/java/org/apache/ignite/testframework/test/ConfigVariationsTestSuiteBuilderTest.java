@@ -72,7 +72,15 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** */
         @Test
         public void testDefaults() {
-            List<Class<?>> classes = basicBuild(NoopTest.class);
+            List<Class<?>> classes;
+
+            try {
+                classes = basicBuild(NoopTest.class);
+            } catch (Throwable t) {
+                t.printStackTrace();
+
+                throw t;
+            }
 
             assertEquals(4, classes.size());
 

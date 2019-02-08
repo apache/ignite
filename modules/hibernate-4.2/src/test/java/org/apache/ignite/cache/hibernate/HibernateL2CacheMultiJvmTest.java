@@ -88,6 +88,11 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 

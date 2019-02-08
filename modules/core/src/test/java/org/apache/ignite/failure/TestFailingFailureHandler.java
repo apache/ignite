@@ -43,7 +43,7 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
 
     /** Logger. */
     @GridToStringExclude
-    private final IgniteLogger log;
+    private final IgniteLogger log; //TODO remove before PA
 
     /**
      * @param test Test.
@@ -55,6 +55,8 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
 
     /** {@inheritDoc} */
     @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
+        log.info("asd123 handle error="+failureCtx.error().getClass()+", cause="+failureCtx.error().getCause().getClass().getSimpleName());
+
         if (isFailureExpected(failureCtx))
             return false;
 

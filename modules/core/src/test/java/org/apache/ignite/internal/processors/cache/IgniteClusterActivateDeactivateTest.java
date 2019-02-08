@@ -1154,6 +1154,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void stateChangeFailover2(boolean activate) throws Exception {
+        expectFailure(NodeStoppingException.class, "Failed to wait for local node joined event (grid is stopping).");
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         // Nodes 1 and 4 do not reply to coordinator.
         IgniteInternalFuture<?> fut = startNodesAndBlockStatusChange(4, 4, 3, !activate, 1, 4);
 
