@@ -2704,6 +2704,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         rdcQryExec.onDisconnected(reconnectFut);
     }
 
+    /**
+     * Return SQL running queries.
+     *
+     * @return SQL running queries.
+     */
+    public List<GridRunningQueryInfo> runningSqlQueries() {
+        return runningQueryMgr.runningSqlQueries();
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         return runningQueryMgr.longRunningQueries(duration);
