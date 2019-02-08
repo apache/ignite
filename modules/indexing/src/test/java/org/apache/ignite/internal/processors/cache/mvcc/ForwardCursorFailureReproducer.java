@@ -47,7 +47,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 public class ForwardCursorFailureReproducer extends GridCommonAbstractTest {
     @Parameterized.Parameters
     public static List<Object[]> p() {
-        return Arrays.asList(new Object[100][0]);
+        return Arrays.asList(new Object[1000][0]);
     }
 
     private static int dummy;
