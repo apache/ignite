@@ -15,11 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.spi.discovery.tcp.messages;
 
 /**
- * Tests for H2 indexing SPI.
+ *
  */
-public class GridH2IndexingInMemSelfTest extends GridIndexingSpiAbstractSelfTest {
-    // No-op.
+public class TcpDiscoveryDummyWakeupMessage extends TcpDiscoveryAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * @return Will throw an exception, the message must not be serialized.
+     */
+    protected Object writeReplace() {
+        throw new IllegalStateException("Dummy message must not be serialized");
+    }
 }

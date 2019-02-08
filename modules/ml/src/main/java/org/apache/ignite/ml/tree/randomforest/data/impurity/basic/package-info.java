@@ -15,42 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.internal;
-
 /**
- * State of local node {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
+ * <!-- Package description. -->
+ * Contains implementation of basic classes for impurity computers.
  */
-public enum TcpDiscoverySpiState {
-    /** */
-    DISCONNECTED,
-
-    /** */
-    CONNECTING,
-
-    /** */
-    CONNECTED,
-
-    /** */
-    DISCONNECTING,
-
-    /** */
-    STOPPING,
-
-    /** */
-    LEFT,
-
-    /** */
-    DUPLICATE_ID,
-
-    /** */
-    AUTH_FAILED,
-
-    /** */
-    CHECK_FAILED,
-
-    /** */
-    LOOPBACK_PROBLEM,
-
-    /** */
-    RING_FAILED
-}
+package org.apache.ignite.ml.tree.randomforest.data.impurity.basic;
