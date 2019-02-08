@@ -27,6 +27,7 @@ import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.junit.After;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -42,10 +43,20 @@ public class IgniteClientReconnectStopTest extends IgniteClientReconnectAbstract
     }
 
     /**
+     *
+     */
+    @After
+    public void clearHandler() {
+        expectNothing();
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test
     public void testStopWhenDisconnected() throws Exception {
+        expectFailure(InterruptedException.class);
+
         clientMode = true;
 
         Ignite client = startGrid(serverCount());
