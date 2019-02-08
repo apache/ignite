@@ -17,12 +17,17 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.channels.SocketChannel;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -30,7 +35,12 @@ import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
+import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -51,6 +61,12 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
     private volatile CountDownLatch commStartLatch;
 
     /** */
+    private volatile CountDownLatch discoWriteLatch;
+
+    /** */
+    private volatile CountDownLatch discoStartLatch;
+
+    /** */
     private volatile int commSpiBoundedPort;
 
     /** */
@@ -61,6 +77,8 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
+        cfg.setDiscoverySpi(new TestDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder()
+            .setAddresses(Collections.singleton("127.0.0.1:47500..47502"))));
 
         return cfg;
     }
@@ -74,6 +92,8 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
 
         try {
             commStartLatch = new CountDownLatch(1);
+            discoWriteLatch = new CountDownLatch(1);
+            discoStartLatch = new CountDownLatch(1);
 
             IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(() -> {
                 startGrid(0);
@@ -81,6 +101,7 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
                 return true;
             });
 
+            assertTrue(discoStartLatch.await(5_000, TimeUnit.MILLISECONDS));
             assertTrue(commStartLatch.await(5_000, TimeUnit.MILLISECONDS));
 
             SocketChannel ch = SocketChannel.open(new InetSocketAddress(commSpiSrvAddr, commSpiBoundedPort));
@@ -91,6 +112,8 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
                 () -> ses.bytesReceived() == HandshakeWaitMessage.MESSAGE_FULL_SIZE, 1000);
 
             assertTrue("Handshake not started.", wait);
+
+            discoWriteLatch.countDown();
 
             fut.get();
         }
@@ -154,6 +177,72 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
         fail("Failed to start server.");
 
         return null;
+    }
+
+    /**
+     *
+     */
+    private class TestDiscoverySpi extends TcpDiscoverySpi {
+        /** {@inheritDoc} */
+        @Override protected Socket openSocket(InetSocketAddress sockAddr, IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+            awaitLatch();
+
+            return super.openSocket(sockAddr, timeoutHelper);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Socket openSocket(Socket sock, InetSocketAddress remAddr, IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+            awaitLatch();
+
+            return super.openSocket(sock, remAddr, timeoutHelper);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
+            awaitLatch();
+
+            super.writeToSocket(sock, msg, data, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
+            awaitLatch();
+
+            super.writeToSocket(sock, msg, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(ClusterNode node, Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
+            awaitLatch();
+
+            super.writeToSocket(node, sock, out, msg, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
+            awaitLatch();
+
+            super.writeToSocket(sock, out, msg, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout) throws IOException {
+            awaitLatch();
+
+            super.writeToSocket(msg, sock, res, timeout);
+        }
+
+        /**
+         */
+        private void awaitLatch() {
+            try {
+                discoStartLatch.countDown();
+                discoWriteLatch.await();
+            }
+            catch (InterruptedException ignore) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     /** */

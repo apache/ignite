@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -2255,6 +2256,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** {@inheritDoc} */
+    @Override public boolean allNodesSupport(IgniteFeatures feature) {
+        if (impl == null)
+            return false;
+
+        return impl.allNodesSupport(feature);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean knownNode(UUID nodeId) {
         return getNode0(nodeId) != null;
     }
@@ -2278,7 +2287,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * <strong>FOR TEST ONLY!!!</strong>
      */
     public int clientWorkerCount() {
-        return ((ServerImpl)impl).clientMsgWorkers.size();
+        return ((ServerImpl)impl).clientWorkersCount();
     }
 
     /**

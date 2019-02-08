@@ -4070,9 +4070,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return {@code True} if remote nodes support {@link HandshakeWaitMessage}.
      */
     private boolean isHandshakeWaitSupported() {
-        Collection<ClusterNode> nodes = ignite().configuration().getDiscoverySpi().getRemoteNodes();
+        DiscoverySpi discoSpi = ignite().configuration().getDiscoverySpi();
 
-        return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE);
+        if (discoSpi instanceof IgniteDiscoverySpi)
+            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(IgniteFeatures.TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE);
+        else {
+            Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
+
+            return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE);
+        }
     }
 
     /** {@inheritDoc} */

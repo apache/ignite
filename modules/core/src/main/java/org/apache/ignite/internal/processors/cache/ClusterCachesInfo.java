@@ -1434,8 +1434,6 @@ class ClusterCachesInfo {
      * @param firstNode {@code True} if first node in cluster starts.
      */
     private void initStartCachesForLocalJoin(boolean firstNode, boolean reconnect) {
-        assert locJoinCachesCtx == null : locJoinCachesCtx;
-
         if (ctx.state().clusterState().transition()) {
             joinOnTransition = true;
 
