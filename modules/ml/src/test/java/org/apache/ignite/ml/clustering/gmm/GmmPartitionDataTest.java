@@ -19,6 +19,7 @@ package org.apache.ignite.ml.clustering.gmm;
 
 import java.util.Arrays;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -49,10 +50,10 @@ public class GmmPartitionDataTest {
     /** */
     @Test
     public void testEstimateLikelihoodClusters() {
-        GmmPartitionData.estimateLikelihoodClusters(data, Arrays.asList(
+        GmmPartitionData.estimateLikelihoodClusters(data, new Vector[] {
             VectorUtils.of(1.0, 0.5),
             VectorUtils.of(0.0, 0.5)
-        ));
+        });
 
         assertEquals(1.0, data.pcxi(0, 0), 1e-4);
         assertEquals(0.0, data.pcxi(1, 0), 1e-4);

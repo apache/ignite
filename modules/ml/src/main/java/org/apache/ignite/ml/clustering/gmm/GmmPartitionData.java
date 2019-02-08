@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.clustering.gmm;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -60,6 +61,13 @@ class GmmPartitionData implements AutoCloseable {
      */
     public Vector getX(int i) {
         return xs.get(i).features();
+    }
+
+    /**
+     * @return all vectors from partition.
+     */
+    public List<LabeledVector<Double>> getAllXs() {
+        return Collections.unmodifiableList(xs);
     }
 
     /**
@@ -149,14 +157,14 @@ class GmmPartitionData implements AutoCloseable {
      * @param initialMeans Initial means.
      * @return Mapper.
      */
-    public static void estimateLikelihoodClusters(GmmPartitionData data, List<Vector> initialMeans) {
+    public static void estimateLikelihoodClusters(GmmPartitionData data, Vector[] initialMeans) {
         for (int i = 0; i < data.size(); i++) {
             int closestClusterId = -1;
             double minSquaredDist = Double.MAX_VALUE;
 
             Vector x = data.getX(i);
-            for (int c = 0; c < initialMeans.size(); c++) {
-                double distance = initialMeans.get(c).getDistanceSquared(x);
+            for (int c = 0; c < initialMeans.length; c++) {
+                double distance = initialMeans[c].getDistanceSquared(x);
                 if (distance < minSquaredDist) {
                     closestClusterId = c;
                     minSquaredDist = distance;

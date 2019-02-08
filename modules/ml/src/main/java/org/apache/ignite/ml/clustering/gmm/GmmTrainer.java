@@ -18,11 +18,11 @@
 package org.apache.ignite.ml.clustering.gmm;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -32,11 +32,11 @@ import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
+import org.apache.ignite.ml.structures.DatasetRow;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
@@ -53,11 +53,14 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     /** Max count of iterations. */
     private int maxCountOfIterations = 10;
 
-    /** Seed. */
-    private long seed = System.currentTimeMillis();
-
     /** Initial means. */
-    private List<Vector> initialMeans;
+    private Vector[] initialMeans;
+
+    /**
+     * Creates an instance of GmmTrainer.
+     */
+    public GmmTrainer() {
+    }
 
     /**
      * Creates an instance of GmmTrainer.
@@ -74,17 +77,6 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     @Override
     public <K, V> GmmModel fit(DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
         return updateModel(null, datasetBuilder, extractor);
-    }
-
-    /**
-     * Sets seed.
-     *
-     * @param seed Seed.
-     * @return trainer.
-     */
-    public GmmTrainer withSeed(long seed) {
-        this.seed = seed;
-        return this;
     }
 
     /**
@@ -110,7 +102,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     public GmmTrainer withInitialMeans(List<Vector> means) {
         A.notEmpty(means, "GMM should starts with non empty initial components list");
 
-        this.initialMeans = means;
+        this.initialMeans = means.stream().toArray(Vector[]::new);
         this.countOfComponents = means.size();
         return this;
     }
@@ -154,10 +146,10 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         while (!isConverged) {
             MeanWithClusterProbAggregator.AggregatedStats stats = MeanWithClusterProbAggregator.aggreateStats(dataset);
             Vector clusterProbs = stats.clusterProbabilities();
-            List<Vector> newMeans = stats.means();
+            Vector[] newMeans = stats.means().stream().toArray(Vector[]::new);
 
-            A.ensure(newMeans.size() == model.countOfComponents(), "newMeans.size() == count of components");
-            A.ensure(newMeans.get(0).size() == initialMeans.get(0).size(), "newMeans[0].size() == initialMeans[0].size()");
+            A.ensure(newMeans.length == model.countOfComponents(), "newMeans.size() == count of components");
+            A.ensure(newMeans[0].size() == initialMeans[0].size(), "newMeans[0].size() == initialMeans[0].size()");
             List<Matrix> newCovs = CovarianceMatricesAggregator.computeCovariances(dataset, clusterProbs, newMeans);
 
             List<MultivariateGaussianDistribution> components = buildComponents(newMeans, newCovs);
@@ -182,10 +174,27 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      */
     private GmmModel init(Dataset<EmptyContext, GmmPartitionData> dataset) {
         if (initialMeans == null) {
-            initialMeans = dataset.compute(
-                selectNRandomXsMapper(countOfComponents, seed),
-                selectNRandomXsReducer(countOfComponents, seed)
+            List<List<Vector>> randomMeansSets = Stream.of(dataset.compute(
+                selectNRandomXsMapper(countOfComponents),
+                GmmTrainer::selectNRandomXsReducer
+            )).map(Arrays::asList).collect(Collectors.toList());
+
+            A.ensure(
+                randomMeansSets.stream().mapToInt(List::size).sum() >= countOfComponents,
+                "There is not enough data in dataset for select N random means"
             );
+
+            initialMeans = new Vector[countOfComponents];
+            int j = 0;
+            for (int i = 0; i < countOfComponents; ) {
+                List<Vector> randomMeansPart = randomMeansSets.get(j);
+                if (!randomMeansPart.isEmpty()) {
+                    initialMeans[i] = randomMeansPart.remove(0);
+                    i++;
+                }
+
+                j = (j + 1) % randomMeansSets.size();
+            }
         }
 
         dataset.compute(data -> GmmPartitionData.estimateLikelihoodClusters(data, initialMeans));
@@ -193,11 +202,12 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         List<Matrix> initialCovs = CovarianceMatricesAggregator.computeCovariances(
             dataset,
             VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
-            initialMeans);
+            initialMeans
+        );
 
         List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
         for (int i = 0; i < countOfComponents; i++)
-            distributions.add(new MultivariateGaussianDistribution(initialMeans.get(i), initialCovs.get(i)));
+            distributions.add(new MultivariateGaussianDistribution(initialMeans[i], initialCovs.get(i)));
 
         return new GmmModel(
             VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
@@ -212,12 +222,12 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @param covs Covariances.
      * @return gmm components.
      */
-    private List<MultivariateGaussianDistribution> buildComponents(List<Vector> means, List<Matrix> covs) {
-        A.ensure(means.size() == covs.size(), "means.size() == covs.size()");
+    private List<MultivariateGaussianDistribution> buildComponents(Vector[] means, List<Matrix> covs) {
+        A.ensure(means.length == covs.size(), "means.size() == covs.size()");
 
         List<MultivariateGaussianDistribution> res = new ArrayList<>();
-        for (int i = 0; i < means.size(); i++)
-            res.add(new MultivariateGaussianDistribution(means.get(i), covs.get(i)));
+        for (int i = 0; i < means.length; i++)
+            res.add(new MultivariateGaussianDistribution(means[i], covs.get(i)));
 
         return res;
     }
@@ -260,7 +270,9 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
             if (mdl != null) {
                 if (initialMeans != null)
                     environment.logger().log(MLLogger.VerboseLevel.HIGH, "Initial means will be replaced by model from update");
-                initialMeans = mdl.distributions().stream().map(x -> x.mean()).collect(Collectors.toList());
+                initialMeans = mdl.distributions().stream()
+                    .map(MultivariateGaussianDistribution::mean)
+                    .toArray(Vector[]::new);
             }
 
             return fit(dataset);
@@ -276,43 +288,42 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @param n Number of components.
      * @return mapper.
      */
-    private static IgniteBiFunction<GmmPartitionData, LearningEnvironment, List<Vector>> selectNRandomXsMapper(int n,
-        long seed) {
-        return (data, env) -> new Random(seed).ints(n, 0, data.size())
-            .mapToObj(data::getX)
-            .collect(Collectors.toList());
-    }
+    private static IgniteBiFunction<GmmPartitionData, LearningEnvironment, Vector[][]> selectNRandomXsMapper(int n) {
+        return (data, env) -> {
+            Vector[] result;
 
-    /**
-     * Returns reducer for means selection.
-     *
-     * @param n Number of components.
-     * @param seed Seed.
-     * @return reducer.
-     */
-    private static IgniteBinaryOperator<List<Vector>> selectNRandomXsReducer(int n, long seed) {
-        return (l, r) -> {
-            A.ensure(l != null || r != null, "l != null || r != null");
-            if (l == null)
-                return checkList(n, r);
-            if (r == null)
-                return checkList(n, l);
+            if (data.size() <= n) {
+                result = data.getAllXs().stream()
+                    .map(DatasetRow::features)
+                    .toArray(Vector[]::new);
+            }
+            else {
+                result = env.randomNumbersGenerator().ints(0, data.size())
+                    .distinct().mapToObj(data::getX).limit(n)
+                    .toArray(Vector[]::new);
+            }
 
-            List<Vector> res = new ArrayList<>();
-            res.addAll(l);
-            res.addAll(r);
-            Collections.shuffle(res, new Random(seed));
-
-            return res.stream().limit(n).collect(Collectors.toList());
+            return new Vector[][] {result};
         };
     }
 
     /**
-     * @param expectedSize Expected size.
-     * @param xs Xs.
+     * Reducer for means selection.
+     *
+     * @return reducer.
      */
-    private static List<Vector> checkList(int expectedSize, List<Vector> xs) {
-        A.ensure(xs.size() == expectedSize, "xs.size() == expectedSize");
-        return xs;
+    private static Vector[][] selectNRandomXsReducer(Vector[][] l, Vector[][] r) {
+        A.ensure(l != null || r != null, "l != null || r != null");
+
+        if (l == null)
+            return r;
+        if (r == null)
+            return l;
+
+        Vector[][] res = new Vector[l.length + r.length][];
+        System.arraycopy(l, 0, res, 0, l.length);
+        System.arraycopy(r, 0, res, l.length, r.length);
+
+        return res;
     }
 }

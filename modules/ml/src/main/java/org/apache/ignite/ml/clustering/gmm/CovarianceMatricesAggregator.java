@@ -73,7 +73,7 @@ public class CovarianceMatricesAggregator implements Serializable {
      * @param means Means for each GMM component.
      */
     public static List<Matrix> computeCovariances(Dataset<EmptyContext, GmmPartitionData> dataset,
-        Vector clusterProbs, List<Vector> means) {
+        Vector clusterProbs, Vector[] means) {
 
         List<CovarianceMatricesAggregator> aggregators = dataset.compute(
             data -> map(data, means),
@@ -106,7 +106,7 @@ public class CovarianceMatricesAggregator implements Serializable {
      * @return sum of aggregators.
      */
     CovarianceMatricesAggregator plus(CovarianceMatricesAggregator other) {
-        A.ensure(this.mean == other.mean, "this.mean == other.mean");
+        A.ensure(this.mean.equals(other.mean), "this.mean == other.mean");
 
         return new CovarianceMatricesAggregator(
             mean,
@@ -122,12 +122,12 @@ public class CovarianceMatricesAggregator implements Serializable {
      * @param means Means vector.
      * @return Covariance aggregators.
      */
-    static List<CovarianceMatricesAggregator> map(GmmPartitionData data, List<Vector> means) {
-        int countOfComponents = means.size();
+    static List<CovarianceMatricesAggregator> map(GmmPartitionData data, Vector[] means) {
+        int countOfComponents = means.length;
 
         List<CovarianceMatricesAggregator> aggregators = new ArrayList<>();
         for (int i = 0; i < countOfComponents; i++)
-            aggregators.add(new CovarianceMatricesAggregator(means.get(i)));
+            aggregators.add(new CovarianceMatricesAggregator(means[i]));
 
         for (int i = 0; i < data.size(); i++) {
             for (int c = 0; c < countOfComponents; c++)

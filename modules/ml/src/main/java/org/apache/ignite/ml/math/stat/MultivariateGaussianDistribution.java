@@ -18,9 +18,7 @@
 package org.apache.ignite.ml.math.stat;
 
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
-import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 public class MultivariateGaussianDistribution implements Distribution {
@@ -33,19 +31,10 @@ public class MultivariateGaussianDistribution implements Distribution {
         A.ensure(mean.size() == covariance.rowSize(), "Covariance matrix should be built from same space as mean vector");
 
         this.mean = mean;
-        double determinant;
-        try {
-            invCovariance = covariance.inverse();
+        invCovariance = covariance.inverse();
 
-            determinant = covariance.determinant();
-            A.ensure(determinant > 0, "Covariance matrix should be positife definite");
-        }
-        catch (SingularMatrixException | IllegalArgumentException e) {
-            invCovariance = new SparseMatrix(mean.size(), mean.size());
-            for (int i = 0; i < mean.size(); i++)
-                invCovariance.set(i, i, 1.);
-            determinant = 1.0;
-        }
+        double determinant = covariance.determinant();
+        A.ensure(determinant > 0, "Covariance matrix should be positife definite");
         normalizer = Math.pow(2 * Math.PI, ((double)invCovariance.rowSize()) / 2) * Math.sqrt(determinant);
     }
 

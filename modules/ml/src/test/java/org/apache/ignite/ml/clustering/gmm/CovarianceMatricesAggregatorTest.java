@@ -121,7 +121,7 @@ public class CovarianceMatricesAggregatorTest {
         GmmPartitionData data = new GmmPartitionData(xs, pcxi);
         Vector mean1 = VectorUtils.of(1, 1);
         Vector mean2 = VectorUtils.of(0, 1);
-        List<CovarianceMatricesAggregator> result = CovarianceMatricesAggregator.map(data, Arrays.asList(mean1, mean2));
+        List<CovarianceMatricesAggregator> result = CovarianceMatricesAggregator.map(data, new Vector[] {mean1, mean2});
 
         assertEquals(pcxi[0].length, result.size());
 
