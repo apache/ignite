@@ -1753,12 +1753,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     res.addAll(qryRes);
 
                     firstArg += parseRes.parametersCount();
-
-                    H2TwoStepCachedQueryKey twoStepKey = parseRes.twoStepQueryKey();
-
-                    // We cannot cache two-step query for multiple statements query except the last statement
-                    if (twoStepQry != null && remainingSql == null && !twoStepQry.explain() && twoStepKey != null)
-                        twoStepCache.putIfAbsent(twoStepKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
                 }
             }
 
@@ -1798,29 +1792,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             qry.isEnforceJoinOrder(),
             qry.isLocal());
 
-        H2TwoStepCachedQuery cachedQry;
+        H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
-        if ((cachedQry = twoStepCache.get(cachedQryKey)) != null) {
-            checkQueryType(qry, true);
+        if (cachedQry != null)
+            return new ParsingResult(null, qry, null, cachedQry.query(), cachedQryKey, cachedQry.meta());
 
-            GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
-
-            List<GridQueryFieldMetadata> meta = cachedQry.meta();
-
-            ParsingResult parseRes = new ParsingResult(null, qry, null, twoStepQry, cachedQryKey, meta);
-
-            if (!twoStepQry.explain())
-                twoStepCache.putIfAbsent(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
-
-            return parseRes;
-        }
-
+        // Try parting as native command.
         ParsingResult parseRes = parseNativeCommand(schemaName, qry);
 
         if (parseRes != null)
             return parseRes;
 
-        // parse with h2 parser:
+        // Parse with H2.
         return parseAndSplit(schemaName, qry, firstArg);
     }
 
@@ -2073,43 +2056,43 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, qry.getSql(),
             qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), qry.isLocal());
 
-        H2TwoStepCachedQuery cachedQry;
+        H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
-        if ((cachedQry = twoStepCache.get(cachedQryKey)) != null) {
-            checkQueryType(qry, true);
+        if (cachedQry == null) {
+            try {
+                GridCacheTwoStepQuery twoStepQry = GridSqlQuerySplitter.split(
+                    connMgr.connectionForThread().connection(newQry.getSchema()),
+                    prepared,
+                    newQry.getArgs(),
+                    newQry.isCollocated(),
+                    newQry.isDistributedJoins(),
+                    newQry.isEnforceJoinOrder(),
+                    newQry.isLocal(),
+                    this
+                );
 
-            GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
+                List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
 
-            List<GridQueryFieldMetadata> meta = cachedQry.meta();
+                cachedQry = new H2TwoStepCachedQuery(meta, twoStepQry);
 
-            return new ParsingResult(prepared, newQry, remainingSql, twoStepQry, cachedQryKey, meta);
+                if (remainingSql == null && !twoStepQry.explain())
+                    twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSQLException("Failed to bind parameters: [qry=" + newQry.getSql() + ", params=" +
+                    Arrays.deepToString(newQry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException(e);
+            }
+            finally {
+                U.close(stmt, log);
+            }
         }
 
-        try {
-            GridCacheTwoStepQuery twoStepQry = GridSqlQuerySplitter.split(
-                connMgr.connectionForThread().connection(newQry.getSchema()),
-                prepared,
-                newQry.getArgs(),
-                newQry.isCollocated(),
-                newQry.isDistributedJoins(),
-                newQry.isEnforceJoinOrder(),
-                newQry.isLocal(),
-                this
-            );
+        checkQueryType(qry, true);
 
-            return new ParsingResult(prepared, newQry, remainingSql, twoStepQry,
-                cachedQryKey, H2Utils.meta(stmt.getMetaData()));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSQLException("Failed to bind parameters: [qry=" + newQry.getSql() + ", params=" +
-                Arrays.deepToString(newQry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
-        }
-        finally {
-            U.close(stmt, log);
-        }
+        return new ParsingResult(prepared, newQry, remainingSql, cachedQry.query(), cachedQryKey, cachedQry.meta());
     }
 
     /**

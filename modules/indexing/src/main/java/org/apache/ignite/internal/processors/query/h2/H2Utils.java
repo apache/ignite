@@ -759,7 +759,6 @@ public class H2Utils {
      * @param mainCacheId Id of main cache.
      * @return Result.
      */
-    // TODO: Nullability
     @Nullable public static List<Integer> collectCacheIds(
         IgniteH2Indexing idx,
         @Nullable Integer mainCacheId,

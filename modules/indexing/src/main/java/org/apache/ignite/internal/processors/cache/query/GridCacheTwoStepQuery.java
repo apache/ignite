@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -94,6 +93,7 @@ public class GridCacheTwoStepQuery {
         this.paramsCnt = paramsCnt;
         this.tbls = tbls;
         this.rdc = rdc;
+        this.mapQrys = F.isEmpty(mapQrys) ? Collections.emptyList() : mapQrys;
         this.skipMergeTbl = skipMergeTbl;
         this.explain = explain;
         this.distributedJoins = distributedJoins;
@@ -102,15 +102,6 @@ public class GridCacheTwoStepQuery {
         this.cacheIds = cacheIds;
         this.mvccEnabled = mvccEnabled;
         this.local = local;
-
-        if (F.isEmpty(mapQrys))
-            this.mapQrys = Collections.emptyList();
-        else {
-            this.mapQrys = new ArrayList<>(mapQrys.size());
-
-            for (GridCacheSqlQuery mapQry : mapQrys)
-                this.mapQrys.add(mapQry.copy());
-        }
     }
 
     /**
@@ -190,28 +181,6 @@ public class GridCacheTwoStepQuery {
      */
     public PartitionResult derivedPartitions() {
         return derivedPartitions;
-    }
-
-    /**
-     * @return Copy.
-     */
-    // TODO: Remove
-    public GridCacheTwoStepQuery copy() {
-        return new GridCacheTwoStepQuery(
-            originalSql,
-            paramsCnt,
-            tbls,
-            rdc.copy(),
-            mapQrys,
-            skipMergeTbl,
-            explain,
-            distributedJoins,
-            forUpdate,
-            derivedPartitions,
-            cacheIds,
-            mvccEnabled,
-            local
-        );
     }
 
     /**
