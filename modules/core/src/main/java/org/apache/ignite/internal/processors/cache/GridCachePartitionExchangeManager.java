@@ -1624,8 +1624,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 skipped++;
 
-                if (skipped > 10)
+                if (skipped > 10) {
+                    // todo is done
+                    if(!fut.isDone())
+                        log.error("We trying clean up future witch isn't done: " + fut);
+
                     fut.cleanUp();
+                }
             }
         }
     }
