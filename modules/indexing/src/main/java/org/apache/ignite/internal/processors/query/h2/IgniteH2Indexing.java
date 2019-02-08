@@ -100,10 +100,6 @@ import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
-import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
@@ -117,6 +113,8 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
@@ -127,6 +125,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
@@ -149,6 +148,7 @@ import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -312,7 +312,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     };
 
     /** Cancellation runs. */
-    private ConcurrentHashMap<KillQueryRun, GridFutureAdapter> cancellationRuns = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<KillQueryRun, GridFutureAdapter<String>> cancellationRuns = new ConcurrentHashMap<>();
 
     /**
      * @param c Connection.
@@ -1374,7 +1374,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cliCtx.disableStreaming();
             }
             else if (cmd instanceof SqlKillQueryCommand)
-                processKillQueryCommand((SqlKillQueryCommand)cmd, qry);
+                processKillQueryCommand((SqlKillQueryCommand)cmd);
             else
                 processTxCommand(cmd, qry);
 
@@ -1395,67 +1395,65 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Process kill query command
      *
      * @param cmd Command.
-     * @param qry Query.
      */
-    // TODO: Why SqlFieldsQuery is passed here?
-    private void processKillQueryCommand(SqlKillQueryCommand cmd, SqlFieldsQuery qry) {
-
-        // TODO: Use discovery: ctx.discovery().node(cmd.getNodeId())
-
-        ClusterNode node = ctx.cluster().get().node(cmd.getNodeId());
+    private void processKillQueryCommand(SqlKillQueryCommand cmd) {
+        ClusterNode node = ctx.discovery().node(cmd.nodeId());
 
         if (node != null) {
-            boolean resRequired = !cmd.isAsync();
+            boolean resRequired = !cmd.async();
+            boolean sndReqRequired = true;
 
-            GridFutureAdapter fut = null;
+            GridFutureAdapter<String> fut = null;
 
             KillQueryRun run = null;
 
             if (resRequired) {
                 fut = new GridFutureAdapter<>();
 
-                run = new KillQueryRun(cmd.getNodeId(), cmd.getNodeQryId());
+                run = new KillQueryRun(cmd.nodeId(), cmd.nodeQueryId());
 
-                GridFutureAdapter prevFut = cancellationRuns.putIfAbsent(run, fut);
+                GridFutureAdapter<String> prevFut = cancellationRuns.putIfAbsent(run, fut);
 
                 if (prevFut != null) {
                     fut = prevFut;
 
-                    //We shouldn't send new response for the same cancellation request.
-                    resRequired = false;
+                    //We shouldn't send new request for the same query.
+                    sndReqRequired = false;
                 }
             }
 
-            // TODO: Do not send for "joined" future.
-            boolean snd = send(GridTopic.TOPIC_QUERY,
-                GridTopic.TOPIC_QUERY.ordinal(),
-                Collections.singleton(node),
-                new GridQueryKillRequest(cmd.getNodeQryId(), resRequired),
-                null,
-                locNodeQryHnd,
-                GridIoPolicy.MANAGEMENT_POOL, // TODO: Let's user QUERY_POOL as a short-term solution until cancel is reworked
-                false
-            );
+            if(sndReqRequired){
+                boolean snd = send(GridTopic.TOPIC_QUERY,
+                    GridTopic.TOPIC_QUERY.ordinal(),
+                    Collections.singleton(node),
+                    new GridQueryKillRequest(cmd.nodeQueryId(), resRequired),
+                    null,
+                    locNodeQryHnd,
+                    GridIoPolicy.QUERY_POOL,
+                    false
+                );
 
-            if (fut != null) {
-                // TODO: There should be consistent semantics for node leave (cannot send), generic future await
-                // TODO: error (for whatever reason) and no query on remote node (???)
-                if (!snd) {
+                if(!snd){
                     cancellationRuns.remove(run, fut);
 
                     return;
                 }
+            }
 
+            if (fut != null) {
                 try {
-                    fut.get();
+                    String err = fut.get();
+
+                    if(err != null)
+                        throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
+                            + cmd.nodeQueryId() + "err=" + err + "]");
                 }
                 catch (IgniteCheckedException e) {
-                    throw new IgniteSQLException("Failed to cancel KILL QUERY", e);
+                    throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
+                        + cmd.nodeQueryId() + "err=" + e + "]", e);
                 }
             }
         }
-        else
-            U.warn(log, "Kill query command runs on unknown node [qry=" + qry.getSql() + ", nodeId=" + cmd.getNodeId() + "]");
     }
 
     /**
@@ -2532,10 +2530,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                Iterator<Map.Entry<KillQueryRun, GridFutureAdapter>> it = cancellationRuns.entrySet().iterator();
+                Iterator<Map.Entry<KillQueryRun, GridFutureAdapter<String>>> it = cancellationRuns.entrySet().iterator();
 
                 while(it.hasNext()){
-                    Map.Entry<KillQueryRun, GridFutureAdapter> entry = it.next();
+                    Map.Entry<KillQueryRun, GridFutureAdapter<String>> entry = it.next();
 
                     if(entry.getKey().nodeId().equals(nodeId)){
                         entry.getValue().onDone();
@@ -2585,18 +2583,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param node Cluster node.
      */
     private void onQueryKillRequest(GridQueryKillRequest msg, ClusterNode node) {
-        // TODO: Handle errors from cancel: should be embedded with error text.
-        cancelQueries(singletonList(msg.nodeQryId()));
+        String err = null;
 
-        if(msg.resposeRequired()){
-            send(GridTopic.TOPIC_QUERY,
-                GridTopic.TOPIC_QUERY.ordinal(),
-                Collections.singleton(node),
-                new GridQueryKillResponse(msg.nodeQryId()),
-                null,
-                locNodeQryHnd,
-                GridIoPolicy.MANAGEMENT_POOL, // TODO: QUERY_POOL
-                false);
+        try {
+            cancelQueries(singletonList(msg.nodeQryId()));
+        }
+        catch (Exception e) {
+            err = e.toString();
+
+            throw e;
+        }
+        finally {
+            if (msg.resposeRequired()) {
+                send(GridTopic.TOPIC_QUERY,
+                    GridTopic.TOPIC_QUERY.ordinal(),
+                    Collections.singleton(node),
+                    new GridQueryKillResponse(msg.nodeQryId(), err),
+                    null,
+                    locNodeQryHnd,
+                    GridIoPolicy.QUERY_POOL,
+                    false);
+            }
         }
     }
 
@@ -2607,10 +2614,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param node Cluster node.
      */
     private void onQueryKillResponse(GridQueryKillResponse msg, ClusterNode node) {
-        GridFutureAdapter fut = cancellationRuns.remove(new KillQueryRun(node.id(), msg.nodeQryId()));
+        GridFutureAdapter<String> fut = cancellationRuns.remove(new KillQueryRun(node.id(), msg.nodeQryId()));
 
         if (fut != null)
-            fut.onDone();
+            fut.onDone(msg.error());
     }
 
     /**

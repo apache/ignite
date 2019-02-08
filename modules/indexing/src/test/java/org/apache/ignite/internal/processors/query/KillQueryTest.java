@@ -92,6 +92,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
     /** Ignite. */
     protected IgniteEx ignite;
 
+    /** Ignite instance for kill request. */
     private IgniteEx igniteForKillRequest;
 
     /** Node configration conter. */
@@ -253,7 +254,6 @@ public class KillQueryTest extends GridCommonAbstractTest {
     /**
      * @param nodeId Node id.
      * @param qryId Node query id.
-     * @return
      */
     private SqlFieldsQuery createKillQuery(UUID nodeId, long qryId, boolean async) {
         return createKillQuery(nodeId + "_" + qryId, async);
@@ -261,10 +261,9 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
     /**
      * @param globalQryId Global query id.
-     * @return
      */
     private SqlFieldsQuery createKillQuery(String globalQryId, boolean async) {
-        return new SqlFieldsQuery("KILL QUERY '" + globalQryId + "'" + (async ? " ASYNC" : ""));
+        return new SqlFieldsQuery("KILL QUERY" + (async ? " ASYNC" : "") + " '" + globalQryId + "'");
     }
 
     /**

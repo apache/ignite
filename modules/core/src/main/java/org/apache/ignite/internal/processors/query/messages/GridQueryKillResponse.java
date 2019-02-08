@@ -34,6 +34,9 @@ public class GridQueryKillResponse implements Message {
     /** Query id on a node. */
     private long nodeQryId;
 
+    /** Error text. */
+    private String errMsg;
+
 
     /**
      * Default constructor.
@@ -44,9 +47,11 @@ public class GridQueryKillResponse implements Message {
 
     /**
      * @param nodeQryId Query ID on a node.
+     * @param errMsg Error message.
      */
-    public GridQueryKillResponse(long nodeQryId) {
+    public GridQueryKillResponse(long nodeQryId, String errMsg) {
         this.nodeQryId = nodeQryId;
+        this.errMsg = errMsg;
     }
 
     /**
@@ -54,6 +59,13 @@ public class GridQueryKillResponse implements Message {
      */
     public long nodeQryId() {
         return nodeQryId;
+    }
+
+    /**
+     * @return Error text or {@code null} if no error.
+     */
+    public String error(){
+        return errMsg;
     }
 
 
@@ -79,6 +91,11 @@ public class GridQueryKillResponse implements Message {
                     return false;
 
                 writer.incrementState();
+            case 1:
+                if (!writer.writeString("errMsg", errMsg))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -99,6 +116,14 @@ public class GridQueryKillResponse implements Message {
                     return false;
 
                 reader.incrementState();
+
+            case 1:
+                errMsg = reader.readString("errMsg");
+
+                if(!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridQueryKillResponse.class);
@@ -111,7 +136,7 @@ public class GridQueryKillResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
