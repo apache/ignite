@@ -15,42 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.internal;
+package org.apache.ignite.spi.discovery.tcp.messages;
 
 /**
- * State of local node {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
+ *
  */
-public enum TcpDiscoverySpiState {
+public class TcpDiscoveryDummyWakeupMessage extends TcpDiscoveryAbstractMessage {
     /** */
-    DISCONNECTED,
+    private static final long serialVersionUID = 0L;
 
-    /** */
-    CONNECTING,
-
-    /** */
-    CONNECTED,
-
-    /** */
-    DISCONNECTING,
-
-    /** */
-    STOPPING,
-
-    /** */
-    LEFT,
-
-    /** */
-    DUPLICATE_ID,
-
-    /** */
-    AUTH_FAILED,
-
-    /** */
-    CHECK_FAILED,
-
-    /** */
-    LOOPBACK_PROBLEM,
-
-    /** */
-    RING_FAILED
+    /**
+     * @return Will throw an exception, the message must not be serialized.
+     */
+    protected Object writeReplace() {
+        throw new IllegalStateException("Dummy message must not be serialized");
+    }
 }
