@@ -291,11 +291,9 @@ public class GridSqlQuerySplitter {
             splitter.skipMergeTbl,
             explain,
             distributedJoins,
-            forUpdate
+            forUpdate,
+            splitter.extractor.mergeMapQueries(splitter.mapSqlQrys)
         );
-
-        // all map queries must have non-empty derivedPartitions to use this feature.
-        twoStepQry.derivedPartitions(splitter.extractor.mergeMapQueries(twoStepQry.mapQueries()));
 
         return twoStepQry;
     }

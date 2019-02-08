@@ -1277,6 +1277,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param lazy Lazy query execution flag.
      * @param mvccTracker Query tracker.
      * @param dataPageScanEnabled If data page scan is enabled.
+     * @param pageSize Page size.
      * @return Iterable result.
      */
     private Iterable<List<?>> runQueryTwoStep(
@@ -1291,7 +1292,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final int[] parts,
         final boolean lazy,
         MvccQueryTracker mvccTracker,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        int pageSize
     ) {
         assert !qry.mvccEnabled() || !F.isEmpty(qry.cacheIds());
 
@@ -1323,7 +1325,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             lazy,
                             tracker,
                             dataPageScanEnabled,
-                            forUpdate
+                            forUpdate,
+                            pageSize
                         );
                     }
                     catch (Throwable e) {
@@ -2145,8 +2148,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             res.local(qry.isLocal());
         }
 
-        res.pageSize(qry.getPageSize());
-
         return res;
     }
 
@@ -2277,8 +2278,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + qry.getSql() + "` into two step query: " + twoStepQry);
 
-        twoStepQry.pageSize(qry.getPageSize());
-
         if (cancel == null)
             cancel = new GridQueryCancel();
 
@@ -2326,7 +2325,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 parts,
                 qry.isLazy(),
                 mvccTracker,
-                qry.isDataPageScanEnabled()
+                qry.isDataPageScanEnabled(),
+                qry.getPageSize()
             );
 
             QueryCursorImpl<List<?>> cursor = registerAsNewQry

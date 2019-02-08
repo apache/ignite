@@ -32,18 +32,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class GridCacheTwoStepQuery {
     /** */
-    public static final int DFLT_PAGE_SIZE = 1000;
-
-    /** */
     @GridToStringInclude
     private final List<GridCacheSqlQuery> mapQrys;
 
     /** */
     @GridToStringInclude
     private final GridCacheSqlQuery rdc;
-
-    /** */
-    private int pageSize = DFLT_PAGE_SIZE;
 
     /** */
     private final boolean explain;
@@ -67,7 +61,7 @@ public class GridCacheTwoStepQuery {
     private boolean local;
 
     /** */
-    private PartitionResult derivedPartitions;
+    private final PartitionResult derivedPartitions;
 
     /** */
     private boolean mvccEnabled;
@@ -91,7 +85,8 @@ public class GridCacheTwoStepQuery {
         boolean skipMergeTbl,
         boolean explain,
         boolean distributedJoins,
-        boolean forUpdate
+        boolean forUpdate,
+        PartitionResult derivedPartitions
     ) {
         this.originalSql = originalSql;
         this.paramsCnt = paramsCnt;
@@ -101,6 +96,7 @@ public class GridCacheTwoStepQuery {
         this.explain = explain;
         this.distributedJoins = distributedJoins;
         this.forUpdate = forUpdate;
+        this.derivedPartitions = derivedPartitions;
 
         if (F.isEmpty(mapQrys))
             this.mapQrys = Collections.emptyList();
@@ -133,20 +129,6 @@ public class GridCacheTwoStepQuery {
      */
     public boolean explain() {
         return explain;
-    }
-
-    /**
-     * @param pageSize Page size.
-     */
-    public void pageSize(int pageSize) {
-        this.pageSize = pageSize;
-    }
-
-    /**
-     * @return Page size.
-     */
-    public int pageSize() {
-        return pageSize;
     }
 
     /**
@@ -220,13 +202,6 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param derivedPartitions Query derived partitions info.
-     */
-    public void derivedPartitions(PartitionResult derivedPartitions) {
-        this.derivedPartitions = derivedPartitions;
-    }
-
-    /**
      * @return Copy.
      */
     public GridCacheTwoStepQuery copy() {
@@ -241,12 +216,11 @@ public class GridCacheTwoStepQuery {
             skipMergeTbl,
             explain,
             distributedJoins,
-            forUpdate
+            forUpdate,
+            derivedPartitions
         );
 
         cp.cacheIds = cacheIds;
-        cp.pageSize = pageSize;
-        cp.derivedPartitions = derivedPartitions;
         cp.local = local;
         cp.mvccEnabled = mvccEnabled;
 

@@ -387,6 +387,7 @@ public class GridReduceQueryExecutor {
      * @param mvccTracker Query tracker.
      * @param dataPageScanEnabled If data page scan is enabled.
      * @param forUpdate For update flag.
+     * @param pageSize Page size.
      * @return Rows iterator.
      */
     @SuppressWarnings({"BusyWait", "IfMayBeConditional"})
@@ -402,7 +403,8 @@ public class GridReduceQueryExecutor {
         boolean lazy,
         MvccQueryTracker mvccTracker,
         Boolean dataPageScanEnabled,
-        boolean forUpdate
+        boolean forUpdate,
+        int pageSize
     ) {
         if (qry.isLocal() && parts != null)
             parts = null;
@@ -493,8 +495,13 @@ public class GridReduceQueryExecutor {
 
             long qryReqId = qryIdGen.incrementAndGet();
 
-            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
-                mapQueries.size(), qry.pageSize(), sfuFut, dataPageScanEnabled);
+            final ReduceQueryRun r = new ReduceQueryRun(
+                h2.connections().connectionForThread().connection(schemaName),
+                mapQueries.size(),
+                pageSize,
+                sfuFut,
+                dataPageScanEnabled
+            );
 
             Collection<ClusterNode> nodes;
 
