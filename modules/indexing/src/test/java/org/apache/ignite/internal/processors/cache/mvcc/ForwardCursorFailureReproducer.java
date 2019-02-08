@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,10 +38,18 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
+@RunWith(Parameterized.class)
 public class ForwardCursorFailureReproducer extends GridCommonAbstractTest {
+    @Parameterized.Parameters
+    public static List<Object[]> p() {
+        return Arrays.asList(new Object[100][0]);
+    }
+
     private static int dummy;
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

@@ -484,7 +484,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             long pageId = 0L;
 
             int buck = -1;
-            for (int b = false && remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS - 0; b++) {
+            for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS - 1; b++) {
                 pageId = takeEmptyPage(b, ioVersions(), statHolder);
 
                 if (pageId != 0L) {
