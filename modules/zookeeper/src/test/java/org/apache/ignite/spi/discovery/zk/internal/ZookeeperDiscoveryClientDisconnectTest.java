@@ -66,7 +66,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // we reduce fealure detection tp speedup failure detection on catch(Exception) clause in createTcpClient().
-        cfg.setFailureDetectionTimeout(2000);
+        cfg.setFailureDetectionTimeout(1000);
 
         return cfg;
     }

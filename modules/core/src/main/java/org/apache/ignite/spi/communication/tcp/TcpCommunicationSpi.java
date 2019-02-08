@@ -3453,8 +3453,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         U.warn(log, "Handshake timed out (will stop attempts to perform the handshake) " +
                             "[node=" + node.id() + ", connTimeoutStrategy=" + connTimeoutStgy +
                             ", err=" + e.getMessage() + ", addr=" + addr +
-                            ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
-                            ", totalTimeout" + totalTimeout + ']');
+                            ", failureDetectionTimeoutEnabled=" + failureDetectionTimeoutEnabled() +
+                            ", totalTimeout=" + totalTimeout + ']');
 
                         String msg = "Failed to connect to node (is node still alive?). " +
                             "Make sure that each ComputeTask and cache Transaction has a timeout set " +
@@ -3489,8 +3489,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (connTimeoutStgy.checkTimeout()) {
                         U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
                                 "[node=" + node.id() + ", connTimeoutStgy=" + connTimeoutStgy +
-                                ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
-                                ", totalTimeout" + totalTimeout +
+                                ", failureDetectionTimeoutEnabled=" + failureDetectionTimeoutEnabled() +
+                                ", totalTimeout=" + totalTimeout +
                                 ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                         String msg = "Failed to connect to node (is node still alive?). " +
