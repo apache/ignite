@@ -47,10 +47,10 @@ public class GridCacheTwoStepQuery {
     private boolean explain;
 
     /** */
-    private String originalSql;
+    private final String originalSql;
 
     /** */
-    private Set<QueryTable> tbls;
+    private final Set<QueryTable> tbls;
 
     /** */
     private boolean distributedJoins;
