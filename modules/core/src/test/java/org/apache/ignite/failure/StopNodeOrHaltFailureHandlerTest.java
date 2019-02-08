@@ -38,7 +38,7 @@ public class StopNodeOrHaltFailureHandlerTest extends GridCommonAbstractTest {
     public static final int NODES_CNT = 3;
 
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
+    @Override public boolean isMultiJvm() {
         return true;
     }
 

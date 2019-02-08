@@ -1871,7 +1871,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @see #executeOnLocalOrRemoteJvm(Ignite, TestIgniteCallable)
      * @see #executeOnLocalOrRemoteJvm(IgniteCache, TestCacheCallable)
      */
-    protected boolean isMultiJvm() {
+    public boolean isMultiJvm() {
         return false;
     }
 

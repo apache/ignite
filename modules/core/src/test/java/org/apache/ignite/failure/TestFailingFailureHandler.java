@@ -55,7 +55,17 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
 
     /** {@inheritDoc} */
     @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
-        log.info("asd123 handle error="+failureCtx.error().getClass()+", cause="+failureCtx.error().getCause().getClass().getSimpleName());
+        String debug = " asd123 handle error="+failureCtx.error().getClass()+", msg="+failureCtx.error().getMessage()+", cause="+(failureCtx.error().getCause()==null?"null":failureCtx.error().getCause().getClass().getSimpleName());
+
+        if (log != null)
+            log.info("log" + debug);
+        else if (ignite != null && ignite.log() != null)
+            ignite.log().info("ignite.log" + debug);
+        else
+            System.out.println("sout" + debug);
+
+        if (test.isMultiJvm())
+            return false;
 
         if (isFailureExpected(failureCtx))
             return false;

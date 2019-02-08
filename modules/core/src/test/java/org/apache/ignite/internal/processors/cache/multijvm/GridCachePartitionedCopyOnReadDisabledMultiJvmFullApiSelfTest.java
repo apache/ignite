@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 public class GridCachePartitionedCopyOnReadDisabledMultiJvmFullApiSelfTest extends
     GridCachePartitionedCopyOnReadDisabledMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
+    @Override public boolean isMultiJvm() {
         return true;
     }
 }

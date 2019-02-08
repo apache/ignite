@@ -39,7 +39,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
     private static Callable<Marshaller> marshFactory;
 
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
+    @Override public boolean isMultiJvm() {
         return true;
     }
 

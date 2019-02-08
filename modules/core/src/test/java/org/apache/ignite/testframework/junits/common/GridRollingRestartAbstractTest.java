@@ -104,7 +104,7 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
     protected abstract CacheConfiguration<?, ?> getCacheConfiguration();
 
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
+    @Override public boolean isMultiJvm() {
         return true;
     }
 

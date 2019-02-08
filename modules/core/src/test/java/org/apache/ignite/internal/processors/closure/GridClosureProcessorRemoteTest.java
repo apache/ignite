@@ -46,7 +46,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
 
 
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
+    @Override public boolean isMultiJvm() {
         return true;
     }
 

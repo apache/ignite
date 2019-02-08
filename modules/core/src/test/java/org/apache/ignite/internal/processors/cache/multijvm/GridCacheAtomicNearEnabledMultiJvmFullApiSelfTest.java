@@ -27,7 +27,7 @@ import org.junit.Test;
 public class GridCacheAtomicNearEnabledMultiJvmFullApiSelfTest extends
     GridCacheAtomicNearEnabledMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
+    @Override public boolean isMultiJvm() {
         return true;
     }
 
