@@ -1945,6 +1945,8 @@ public class CommandHandler {
 
         char sslTrustStorePassword[] = null;
 
+        final String pwdArgWarnFmt = "Warning: %s is insecure. Omit to use interactive prompt.";
+
         while (hasNextArg()) {
             String str = nextArg("").toLowerCase();
 
@@ -2080,6 +2082,8 @@ public class CommandHandler {
                     case CMD_KEYSTORE_PASSWORD:
                         sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
 
+                        log(String.format(pwdArgWarnFmt, CMD_KEYSTORE_PASSWORD));
+
                         break;
 
                     case CMD_KEYSTORE_TYPE:
@@ -2094,6 +2098,8 @@ public class CommandHandler {
 
                     case CMD_TRUSTSTORE_PASSWORD:
                         sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
+
+                        log(String.format(pwdArgWarnFmt, CMD_TRUSTSTORE_PASSWORD));
 
                         break;
 
