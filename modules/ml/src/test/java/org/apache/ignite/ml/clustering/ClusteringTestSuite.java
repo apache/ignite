@@ -20,6 +20,7 @@ package org.apache.ignite.ml.clustering;
 import org.apache.ignite.ml.clustering.gmm.CovarianceMatricesAggregatorTest;
 import org.apache.ignite.ml.clustering.gmm.GmmModelTest;
 import org.apache.ignite.ml.clustering.gmm.GmmPartitionDataTest;
+import org.apache.ignite.ml.clustering.gmm.GmmTrainerIntegrationTest;
 import org.apache.ignite.ml.clustering.gmm.GmmTrainerTest;
 import org.apache.ignite.ml.clustering.gmm.MeanWithClusterProbAggregatorTest;
 import org.junit.runner.RunWith;
@@ -39,7 +40,8 @@ import org.junit.runners.Suite;
     GmmModelTest.class,
     GmmPartitionDataTest.class,
     MeanWithClusterProbAggregatorTest.class,
-    GmmTrainerTest.class
+    GmmTrainerTest.class,
+    GmmTrainerIntegrationTest.class
 })
 public class ClusteringTestSuite {
 }

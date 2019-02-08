@@ -21,11 +21,25 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
+/**
+ * Distribution represents multidimentional gaussian distribution.
+ */
 public class MultivariateGaussianDistribution implements Distribution {
+    /** Mean. */
     private Vector mean;
+
+    /** Covariance^-1. */
     private Matrix invCovariance;
+
+    /** Normalizer. */
     private double normalizer;
 
+    /**
+     * Constructs an instance of MultivariateGaussianDistribution.
+     *
+     * @param mean Mean.
+     * @param covariance Covariance.
+     */
     public MultivariateGaussianDistribution(Vector mean, Matrix covariance) {
         A.ensure(covariance.columnSize() == covariance.rowSize(), "Covariance matrix should be square");
         A.ensure(mean.size() == covariance.rowSize(), "Covariance matrix should be built from same space as mean vector");
@@ -38,6 +52,7 @@ public class MultivariateGaussianDistribution implements Distribution {
         normalizer = Math.pow(2 * Math.PI, ((double)invCovariance.rowSize()) / 2) * Math.sqrt(determinant);
     }
 
+    /** {@inheritDoc} */
     @Override public double prob(Vector x) {
         Vector delta = x.minus(mean);
         Matrix ePower = delta.toMatrix(true)
@@ -49,10 +64,14 @@ public class MultivariateGaussianDistribution implements Distribution {
         return Math.pow(Math.E, ePower.get(0, 0)) / normalizer;
     }
 
+    /** {@inheritDoc} */
     @Override public int dimension() {
         return mean.size();
     }
 
+    /**
+     * @return mean vector.
+     */
     public Vector mean() {
         return mean.copy();
     }
