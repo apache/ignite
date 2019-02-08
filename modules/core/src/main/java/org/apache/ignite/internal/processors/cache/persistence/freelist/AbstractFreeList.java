@@ -483,24 +483,40 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             long pageId = 0L;
 
-            for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
+            int buck = -1;
+            for (int b = false && remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS - 0; b++) {
                 pageId = takeEmptyPage(b, ioVersions(), statHolder);
 
-                if (pageId != 0L)
+                if (pageId != 0L) {
+                    buck = b;
+
                     break;
+                }
             }
 
             AbstractDataPageIO<T> initIo = null;
+
+            String desc;
 
             if (pageId == 0L) {
                 pageId = allocateDataPage(row.partition());
 
                 initIo = ioVersions().latest();
+
+                desc = "ALLOC";
             }
-            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
+            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) {
                 pageId = initReusedPage(pageId, row.partition(), statHolder);
-            else
+
+                desc = "REUSED";
+            }
+            else {
                 pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
+
+                desc = "REUSED2";
+            }
+
+            System.err.println(desc + " " + pageId + " bucket" + buck + " "  + (remaining < MIN_SIZE_FOR_DATA_PAGE) + " " + remaining);
 
             written = write(pageId, writeRow, initIo, row, written, FAIL_I, statHolder);
 
@@ -621,6 +637,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
+        System.err.println("ADD FOR RECYCLE " + bag);
         put(bag, 0, 0, 0L, REUSE_BUCKET, IoStatisticsHolderNoOp.INSTANCE);
     }
 

@@ -3945,6 +3945,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * Remove operation.
      */
     private final class Remove extends Get implements ReuseBag {
+        @Override public String toString() {
+            return String.valueOf(freePages);
+        }
+
         /** We may need to lock part of the tree branch from the bottom to up for multiple levels. */
         Tail<L> tail;
 
@@ -5090,7 +5094,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         if (leafIos.getType() == type)
             return leafIos.forVersion(ver);
 
-        throw new IllegalStateException("Unknown page type: " + type + " pageId: " + U.hexLong(PageIO.getPageId(pageAddr)));
+        System.err.println("Page addr " + pageAddr);
+        System.err.println("Available ios:");
+        System.err.println(innerIos);
+        System.err.println(leafIos);
+        throw new IllegalStateException("Unknown page type: " + type +
+            ", pageId: " + U.hexLong(PageIO.getPageId(pageAddr)) +
+            ", class: " + getClass());
     }
 
     /**

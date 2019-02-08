@@ -289,6 +289,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
         int cnt,
         int pageSize
     ) throws IgniteCheckedException {
+        System.err.println("INIT BPLUS " + fwdId + " " + fwdPageAddr);
+
         initNewPage(fwdPageAddr, fwdId, pageSize);
 
         cnt -= mid;
