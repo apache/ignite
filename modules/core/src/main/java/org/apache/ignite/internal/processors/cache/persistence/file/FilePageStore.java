@@ -81,6 +81,9 @@ public class FilePageStore implements PageStore {
     private final AllocatedPageTracker allocatedTracker;
 
     /** */
+    private final PageStoreWriteHandler storeHandler;
+
+    /** */
     protected final int pageSize;
 
     /** */
@@ -106,8 +109,11 @@ public class FilePageStore implements PageStore {
         File file,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        AllocatedPageTracker allocatedTracker
+        AllocatedPageTracker allocatedTracker,
+        PageStoreWriteHandler storeHandler
     ) {
+        assert storeHandler != null;
+
         this.type = type;
         this.cfgFile = file;
         this.dbCfg = cfg;
@@ -115,6 +121,7 @@ public class FilePageStore implements PageStore {
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
         this.allocatedTracker = allocatedTracker;
+        this.storeHandler = storeHandler;
     }
 
     /** {@inheritDoc} */
@@ -580,13 +587,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(
-        long pageId,
-        ByteBuffer pageBuf,
-        int tag,
-        boolean calculateCrc,
-        PageStoreWriteHandler handler
-    ) throws IgniteCheckedException {
+    @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         init();
 
         boolean interrupted = false;
@@ -625,8 +626,7 @@ public class FilePageStore implements PageStore {
 
                     assert pageBuf.position() == 0 : pageBuf.position();
 
-                    if (handler != null)
-                        handler.onPageWrite(this, pageId, 0, 0);
+                    storeHandler.onPageWrite(this, pageId);
 
                     fileIO.writeFully(pageBuf, off);
 

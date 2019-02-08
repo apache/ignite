@@ -24,28 +24,24 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessHandler;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.thread.IgniteThread;
 
 /** */
 public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     implements IgniteBackupPageStoreManager<FileBackupDescriptor> {
     /** */
-    private static final String SNAPSHOT_CP_REASON = "Wakeup for snapshot checkpoint [id=%s, grpId=%s, parts=%s]";
+    private static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [id=%s, grpId=%s, parts=%s]";
 
     /**
      * Scheduled snapshot processes.
@@ -68,9 +64,6 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     private ThreadLocal<ByteBuffer> threadPageBuf;
 
     /** */
-    private volatile SnapshotThread snapshotter;
-
-    /** */
     public FileBackupPageStoreManager(GridKernalContext ctx) {
         assert CU.isPersistenceEnabled(ctx.config());
 
@@ -84,32 +77,29 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
         setThreadPageBuf(ThreadLocal.withInitial(() ->
             ByteBuffer.allocateDirect(db.pageSize()).order(ByteOrder.nativeOrder())));
-
-        snapshotter = new SnapshotThread();
     }
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        new IgniteThread(snapshotter).start();
+
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        U.cancel(snapshotter);
-        U.join(snapshotter, log);
+
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> backup(
+    @Override public void backup(
         int idx,
         int grpId,
         Set<Integer> parts,
         BackupProcessHandler<FileBackupDescriptor> hndlr
-    ) {
-        CheckpointFuture cpFut = db.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, idx, grpId, S.compact(parts)));
+    ) throws IgniteCheckedException {
+        CheckpointFuture cpFut = db.forceCheckpoint(String.format(BACKUP_CP_REASON, idx, grpId, S.compact(parts)));
 
         if (cpFut == null)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Checkpoint thread is not running."));
+            throw new IgniteCheckedException("Checkpoint thread is not running.");
 
         cpFut.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
             @Override public void apply(IgniteInternalFuture<Object> future) {
@@ -137,28 +127,31 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
         catch (IgniteCheckedException e) {
             U.log(log, "An error occured while handling partition files.", e);
         }
+    }
 
-        return null;
+    /** {@inheritDoc} */
+    @Override public void onPageWrite(GroupPartitionId pairId, PageStore store, long pageId) {
+        if (!trackList.contains(pairId))
+            return;
+
+        ByteBuffer tmpReadBuff = threadPageBuf.get();
+
+        tmpReadBuff.rewind();
+
+        try {
+            store.read(pageId, tmpReadBuff, true);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Read page for backup failed [pairId=" + pageId + ", pageId=" + pageId + ']', e);
+
+            return;
+        }
+
+        tmpReadBuff.rewind();
     }
 
     /** */
     public void setThreadPageBuf(final ThreadLocal<ByteBuffer> buf) {
         threadPageBuf = buf;
-    }
-
-    /** */
-    private class SnapshotThread extends GridWorker {
-
-        /** */
-        public SnapshotThread() {
-            super(cctx.igniteInstanceName(), "db-snapshot-thread", FileBackupPageStoreManager.this.log);
-
-            // Params
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-
-        }
     }
 }

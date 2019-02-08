@@ -75,28 +75,7 @@ public interface PageStore {
      * @param calculateCrc if {@code False} crc calculation will be forcibly skipped.
      * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
-    public default void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
-        write(pageId, pageBuf, tag, calculateCrc, null);
-    }
-
-    /**
-     * Writes a page.
-     *
-     * @param pageId Page ID.
-     * @param pageBuf Page buffer to write.
-     * @param tag Partition file version, 1-based incrementing counter. For outdated pages {@code tag} has lower value,
-     * and write does nothing.
-     * @param calculateCrc if {@code False} crc calculation will be forcibly skipped.
-     * @param hndlr Hangler to execute on write.
-     * @throws IgniteCheckedException If page writing failed (IO error occurred).
-     */
-    public void write(
-        long pageId,
-        ByteBuffer pageBuf,
-        int tag,
-        boolean calculateCrc,
-        PageStoreWriteHandler hndlr
-    ) throws IgniteCheckedException;
+    public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the store file.

@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 
 /**
@@ -42,8 +43,10 @@ public class FilePageStoreV2 extends FilePageStore {
         File file,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        AllocatedPageTracker allocatedTracker) {
-        super(type, file, factory, cfg, allocatedTracker);
+        AllocatedPageTracker allocatedTracker,
+        PageStoreWriteHandler storeHandler
+    ) {
+        super(type, file, factory, cfg, allocatedTracker, storeHandler);
 
         hdrSize = cfg.getPageSize();
     }

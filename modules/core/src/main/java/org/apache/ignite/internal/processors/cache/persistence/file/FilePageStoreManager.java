@@ -56,6 +56,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -66,8 +67,10 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.backup.BackupPageStoreHandler;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
@@ -567,8 +570,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 }
             }
 
-            // TODO handle writes.
-            store.write(pageId, pageBuf, tag, calculateCrc, null);
+            store.write(pageId, pageBuf, tag, calculateCrc);
 
             if (pageSize > compressedPageSize)
                 store.punchHole(pageId, compressedPageSize); // TODO maybe add async punch mode?
@@ -675,7 +677,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             pageStoreFactory.createPageStore(
                 PageMemory.FLAG_IDX,
                 idxFile,
-                allocatedTracker);
+                allocatedTracker,
+                PageStoreWriteHandler.NO_OP);
 
             PageStore[] partStores = new PageStore[partitions];
 
@@ -684,7 +687,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     pageStoreFactory.createPageStore(
                         PageMemory.FLAG_DATA,
                         getPartitionFile(cacheWorkDir, partId),
-                        allocatedTracker);
+                        allocatedTracker,
+                        cctx.storeBackup() == null ?
+                            PageStoreWriteHandler.NO_OP : new FileBackupHandler(grpId, partId, cctx.storeBackup())
+                    );
 
                     partStores[partId] = partStore;
                 }
@@ -1236,6 +1242,26 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /** {@inheritDoc} */
         @Override public int size() {
             return partStores.length + 1;
+        }
+    }
+
+    /** */
+    private static class FileBackupHandler implements PageStoreWriteHandler {
+        /** */
+        private final GroupPartitionId key;
+
+        /** */
+        private final BackupPageStoreHandler hndlr;
+
+        /** */
+        public FileBackupHandler(int grpId, int partId, BackupPageStoreHandler handler) {
+            key = new GroupPartitionId(grpId, partId);
+            hndlr = handler;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onPageWrite(PageStore store, long pageId) {
+            hndlr.onPageWrite(key, store, pageId);
         }
     }
 }

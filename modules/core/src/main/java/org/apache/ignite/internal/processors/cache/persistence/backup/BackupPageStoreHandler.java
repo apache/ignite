@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.store;
+package org.apache.ignite.internal.processors.cache.persistence.backup;
+
+import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 
 /** */
-public interface PageStoreWriteHandler {
-    /** Default handler. */
-    public PageStoreWriteHandler NO_OP = (store, pageId) -> {};
-
+public interface BackupPageStoreHandler {
     /**
-     * @param store Page store to performe at.
-     * @param pageId Handled page id.
+     * @param pairId Cache group, partition identifiers pair.
+     * @param store Store to handle operatwion at.
+     * @param pageId Tracked page id.
      */
-    public void onPageWrite(PageStore store, long pageId);
+    public void onPageWrite(GroupPartitionId pairId, PageStore store, long pageId);
 }
