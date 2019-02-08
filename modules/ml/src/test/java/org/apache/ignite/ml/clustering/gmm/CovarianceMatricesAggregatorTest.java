@@ -132,16 +132,16 @@ public class CovarianceMatricesAggregatorTest {
             fromArray(2, 0.4, 0., 0., 0.1).getStorage().data(),
             1e-4
         );
-        assertEquals(res1.N(), 2);
+        assertEquals(3, res1.N());
 
         CovarianceMatricesAggregator res2 = result.get(1);
         assertArrayEquals(mean2.asArray(), res2.mean().asArray(), 1e-4);
         assertArrayEquals(
             res2.weightedSum().getStorage().data(),
-            fromArray(2, 0.7, -0.1, -0.1, 0.1).getStorage().data(),
+            fromArray(2, 0.8, -0.2, -0.2, 0.2).getStorage().data(),
             1e-4
         );
-        assertEquals(res2.N(), 2);
+        assertEquals(3, res2.N());
     }
 
     /** */
