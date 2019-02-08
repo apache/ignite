@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
@@ -226,16 +226,16 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * Create row from link.
      *
      * @param link Link.
-     * @param usedColInfo column info to gather only specified columns (returns GridH2SimpleRow when columns specified).
+     * @param rowData Read row mode.
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public H2Row createRow(long link, GridSqlUsedColumnInfo usedColInfo) throws IgniteCheckedException {
+    public H2Row createRow(long link, CacheDataRowAdapter.RowData rowData) throws IgniteCheckedException {
         if (rowCache != null) {
             H2CacheRow row = rowCache.get(link);
 
             if (row == null) {
-                row = createRow0(link, usedColInfo);
+                row = createRow0(link, rowData);
 
                 rowCache.put(row);
             }
@@ -243,7 +243,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             return row;
         }
         else
-            return createRow0(link, usedColInfo);
+            return createRow0(link, rowData);
     }
 
     /**
@@ -252,20 +252,20 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * !!! from all the index pages, so that row can be safely erased from the data page.
      *
      * @param link Link.
-     * @param usedColInfo Columns info to gather only specified columns (returns GridH2SimpleRow when columns specified).
+     * @param rowData Read row mode.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    private H2CacheRow createRow0(long link, GridSqlUsedColumnInfo usedColInfo) throws IgniteCheckedException {
+    private H2CacheRow createRow0(long link, CacheDataRowAdapter.RowData rowData) throws IgniteCheckedException {
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
         row.initFromLink(
             cctx.group(),
-            GridSqlUsedColumnInfo.asRowData(usedColInfo),
+            rowData,
             true
         );
 
-        return table.rowDescriptor().createRow(row, usedColInfo);
+        return table.rowDescriptor().createRow(row);
     }
 
     /**
@@ -273,17 +273,15 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      *
      * @param link Link.
      * @param mvccOpCntr MVCC operation counter.
-     * @param usedColInfo Columns info to gather only specified columns (returns GridH2SimpleRow when columns specified).
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public H2Row createMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr,
-        GridSqlUsedColumnInfo usedColInfo) throws IgniteCheckedException {
+    public H2Row createMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
         if (rowCache != null) {
             H2CacheRow row = rowCache.get(link);
 
             if (row == null) {
-                row = createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr, usedColInfo);
+                row = createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr);
 
                 rowCache.put(row);
             }
@@ -291,7 +289,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             return row;
         }
         else
-            return createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr, usedColInfo);
+            return createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr);
     }
 
     /**
@@ -299,11 +297,9 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param mvccCrdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
      * @param mvccOpCntr Mvcc operation counter.
-     * @param usedColInfo Columns info to gather only specified columns (returns GridH2SimpleRow when columns specified).
      * @return Row.
      */
-    private H2CacheRow createMvccRow0(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr,
-        GridSqlUsedColumnInfo usedColInfo)
+    private H2CacheRow createMvccRow0(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr)
         throws IgniteCheckedException {
         int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
 
@@ -319,13 +315,13 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             true
         );
 
-        return table.rowDescriptor().createRow(row, usedColInfo);
+        return table.rowDescriptor().createRow(row);
     }
 
     /** {@inheritDoc} */
-    @Override public H2Row getRow(BPlusIO<H2Row> io, long pageAddr, int idx, Object colsToExtract)
+    @Override public H2Row getRow(BPlusIO<H2Row> io, long pageAddr, int idx, Object rowData)
         throws IgniteCheckedException {
-        return ((H2RowLinkIO)io).getLookupRow(this, pageAddr, idx, (GridSqlUsedColumnInfo)colsToExtract);
+        return ((H2RowLinkIO)io).getLookupRow(this, pageAddr, idx, (CacheDataRowAdapter.RowData)rowData);
     }
 
     /**

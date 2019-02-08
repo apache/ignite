@@ -30,7 +30,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -59,6 +60,9 @@ import org.h2.table.TableFilter;
 public class H2PkHashIndex extends GridH2IndexBase {
     /** */
     private final GridCacheContext cctx;
+
+    /** */
+    private final IgniteH2Indexing idx;
 
     /** */
     private final int segments;
@@ -91,6 +95,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols, IndexType.createPrimaryKey(false, true));
 
         this.cctx = cctx;
+        idx = (IgniteH2Indexing)cctx.kernalContext().query().getIndexing();
     }
 
     /** {@inheritDoc} */
@@ -100,27 +105,26 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
-        // TODO VO: Ouch! Can we simply add Indexing to constructor instead?
-        Map<String, GridSqlUsedColumnInfo> usedCols = ((IgniteH2Indexing)cctx.kernalContext().query().getIndexing())
-            .queryContextRegistry().getThreadLocal().usedColumnsInfo();
+        Map<String, Boolean> usedCols = idx.queryContextRegistry().getThreadLocal().usedColumnsInfo();
 
         return find(filter.getSession(), first, last,
-            usedCols != null ? usedCols.get(filter.getTableAlias()) : null);
+            usedCols != null && !usedCols.getOrDefault(filter.getTableAlias(), true) ?
+                CacheDataRowAdapter.RowData.KEY_ONLY : CacheDataRowAdapter.RowData.FULL);
     }
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, final SearchRow lower, final SearchRow upper) {
-        return find(ses, lower, upper, null);
+        return find(ses, lower, upper, CacheDataRowAdapter.RowData.FULL);
     }
 
     /**
      * @param ses The session
      * @param lower The first row, or null for no limit
      * @param upper The last row, or null for no limit
-     * @param colInfo Extract column info.
+     * @param rowData Read row mode.
      * @return The cursor to iterate over the results
      */
-    public Cursor find(Session ses, final SearchRow lower, final SearchRow upper, GridSqlUsedColumnInfo colInfo) {
+    public Cursor find(Session ses, final SearchRow lower, final SearchRow upper, CacheDataRowAdapter.RowData rowData) {
         IndexingQueryCacheFilter filter = null;
         MvccSnapshot mvccSnapshot = null;
 
@@ -153,10 +157,10 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
                 if (filter == null || filter.applyPartition(part))
                     cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj,
-                        GridSqlUsedColumnInfo.asRowData(colInfo), mvccSnapshot));
+                        rowData, mvccSnapshot));
             }
 
-            return new H2PkHashIndexCursor(cursors.iterator(), colInfo);
+            return new H2PkHashIndexCursor(cursors.iterator());
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -240,26 +244,21 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /** */
         private GridCursor<? extends CacheDataRow> curr;
 
-        /** */
-        private GridSqlUsedColumnInfo colInfo;
-
         /**
          * @param iter Cursors iterator.
          */
-        private H2PkHashIndexCursor(Iterator<GridCursor<? extends CacheDataRow>> iter, GridSqlUsedColumnInfo colInfo) {
+        private H2PkHashIndexCursor(Iterator<GridCursor<? extends CacheDataRow>> iter) {
             assert iter != null;
 
             this.iter = iter;
 
             desc = rowDescriptor();
-
-            this.colInfo = colInfo;
         }
 
         /** {@inheritDoc} */
         @Override public Row get() {
             try {
-                return desc.createRow(curr.get(), colInfo);
+                return desc.createRow(curr.get());
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);

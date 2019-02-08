@@ -18,100 +18,69 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.nio.ByteBuffer;
-import java.util.Set;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-// TODO VO: Do we really need to pass "cols" at the moment? I would remove it.
-
-// TODO VO: Consider encapsulating map here to minimize message size?
-//class Info {
-//    String[] tblNames;
-//    boolean[] valUsed;
-//}
-
-public class GridSqlUsedColumnInfo implements Message {
+public class GridSqlUsedColumnsInfo implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Columns to extract from full row. */
     @GridToStringInclude
-    private int[] cols;
-
-    /** Flag indicates that key's fields are used in query. */
-    @GridToStringInclude
-    private boolean keyUsed;
+    private String[] aliases;
 
     /** Flag indicates that value's fields are used in query. */
     @GridToStringInclude
-    private boolean valUsed;
+    private boolean[] valUsed;
 
     /**
      * Constructor.
      */
-    public GridSqlUsedColumnInfo() {
+    public GridSqlUsedColumnsInfo() {
         // No-op.
     }
 
     /**
-     * @param cols Columns to extract from full row.
-     * @param keyUsed Flag indicates that key's fields are used in query.
-     * @param valUsed Flag indicates that value's fields are used in query.
+     * @param mapValUsed Map of flags indicates that value's fields are used in query by table alias (Table alias -> flag).
      */
-    public GridSqlUsedColumnInfo(Set<Integer> cols, boolean keyUsed, boolean valUsed) {
-        assert keyUsed || valUsed;
+    public GridSqlUsedColumnsInfo(Map<String, Boolean> mapValUsed) {
+        aliases = new String[mapValUsed.size()];
+        valUsed = new boolean[mapValUsed.size()];
 
-        this.cols = F.isEmpty(cols) ? null : cols.stream().mapToInt(Number::intValue).toArray();
-        this.keyUsed = keyUsed;
-        this.valUsed = valUsed;
+        int i = 0;
+        for (Map.Entry<String, Boolean> e : mapValUsed.entrySet()) {
+            aliases[i] = e.getKey();
+            valUsed[i] = e.getValue();
+            ++i;
+        }
     }
 
-    /**
-     * @return Columns IDs to extract from full row.
-     */
-    public int[] columns() {
-        return cols;
+    /** */
+    public Map<String, Boolean> createValueUsedMap() {
+        assert aliases.length == valUsed.length : "Inconsistent arrays lenght: " +
+            "[aliases=" + S.arrayToString(aliases) + ", valUsed=" + S.arrayToString(valUsed);
+
+        Map<String, Boolean> mapValUsed = new HashMap<>(aliases.length);
+
+        for (int i = 0; i < aliases.length; ++i)
+            mapValUsed.put(aliases[i], valUsed[i]);
+
+        return mapValUsed;
     }
 
-    /**
-     * @return Flag indicates that key's fields are used in query.
-     */
-    public boolean isKeyUsed() {
-        return keyUsed;
-    }
-
-    /**
-     * @param colInfo Extracted columns info.
-     * @return row data mode.
-     */
-    public static CacheDataRowAdapter.RowData asRowData(GridSqlUsedColumnInfo colInfo) {
-        // Don't use optimisation RowData.NO_KEY when keyUsed is false
-        // because the last row on page is used to lookup the next rown on the next page
-        // and the key is used to compare. The optimization have to change the ForwardCursor logic.
-        if (colInfo != null && !colInfo.isValueUsed())
-            return CacheDataRowAdapter.RowData.KEY_ONLY;
-        else
-            return CacheDataRowAdapter.RowData.FULL;
-    }
-
-    /**
-     * @return Flag indicates that value's fields are used in query.
-     */
-    public boolean isValueUsed() {
-        return valUsed;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSqlUsedColumnInfo.class, this);
+        return S.toString(GridSqlUsedColumnsInfo.class, this);
     }
 
     /** {@inheritDoc} */
@@ -127,19 +96,13 @@ public class GridSqlUsedColumnInfo implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIntArray("cols", cols))
+                if (!writer.writeObjectArray("aliases", aliases, MessageCollectionItemType.STRING))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("keyUsed", keyUsed))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean("valUsed", valUsed))
+                if (!writer.writeBooleanArray("valUsed", valUsed))
                     return false;
 
                 writer.incrementState();
@@ -158,7 +121,7 @@ public class GridSqlUsedColumnInfo implements Message {
 
         switch (reader.state()) {
             case 0:
-                cols = reader.readIntArray("cols");
+                aliases = reader.readObjectArray("aliases", MessageCollectionItemType.STRING, String.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -166,15 +129,7 @@ public class GridSqlUsedColumnInfo implements Message {
                 reader.incrementState();
 
             case 1:
-                keyUsed = reader.readBoolean("keyUsed");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                valUsed = reader.readBoolean("valUsed");
+                valUsed = reader.readBooleanArray("valUsed");
 
                 if (!reader.isLastRead())
                     return false;
@@ -183,7 +138,7 @@ public class GridSqlUsedColumnInfo implements Message {
 
         }
 
-        return reader.afterMessageRead(GridSqlUsedColumnInfo.class);
+        return reader.afterMessageRead(GridSqlUsedColumnsInfo.class);
     }
 
     /** {@inheritDoc} */
@@ -193,7 +148,7 @@ public class GridSqlUsedColumnInfo implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 2;
     }
 
     /** {@inheritDoc} */

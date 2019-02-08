@@ -51,7 +51,7 @@ public class GridCacheTwoStepQuery {
     private String originalSql;
 
     /** */
-    private Map<String, GridSqlUsedColumnInfo> origUsedCols;
+    private GridSqlUsedColumnsInfo origUsedCols;
 
     /** */
     private Set<QueryTable> tbls;
@@ -318,14 +318,14 @@ public class GridCacheTwoStepQuery {
     /**
      * @return Used columns info for original query.
      */
-    public Map<String, GridSqlUsedColumnInfo> originalUsedColumns() {
+    public GridSqlUsedColumnsInfo originalUsedColumns() {
         return origUsedCols;
     }
 
     /**
      * @param origUsedCols Used columns info for original query.
      */
-    public void originalUsedColumns(Map<String, GridSqlUsedColumnInfo> origUsedCols) {
+    public void originalUsedColumns(GridSqlUsedColumnsInfo origUsedCols) {
         this.origUsedCols = origUsedCols;
     }
 

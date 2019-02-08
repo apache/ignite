@@ -35,7 +35,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -236,7 +236,7 @@ public class GridSqlQuerySplitter {
 
         String originalSql = prepared.getSQL();
 
-        Map<String, GridSqlUsedColumnInfo> origUsedCols = extractUsedColumns(qry);
+        GridSqlUsedColumnsInfo origUsedCols = extractUsedColumns(qry);
 
         final boolean explain = qry.explain();
 
@@ -1732,39 +1732,11 @@ public class GridSqlQuerySplitter {
      * @param select Query.
      * @return Used columns.
      */
-    private static Map<String, GridSqlUsedColumnInfo> extractUsedColumns(GridSqlAst select) {
-        Map<TableAlias, Set<Integer>> usedCols = new HashMap<>();
+    private static GridSqlUsedColumnsInfo extractUsedColumns(GridSqlAst select) {
+        Map<String, Boolean> mapValUsed = new HashMap<>();
 
-        GridSqlQueryParser.extractUsedColumnsFromAst(usedCols, select);
+        GridSqlQueryParser.extractUsedColumnsFromAst(mapValUsed, select);
 
-        return usedCols.entrySet().stream()
-            .collect(Collectors.toMap(
-                e -> e.getKey().alias(),
-                e -> {
-                    boolean keyUsed = false;
-                    boolean valUsed = false;
-
-                    GridH2RowDescriptor desc = e.getKey().table().rowDescriptor();
-
-                    for (Integer colId :  e.getValue()) {
-                        keyUsed |= desc.isKeyColumn(colId);
-                        valUsed |= desc.isValueColumn(colId);
-
-                        if (colId >= QueryUtils.DEFAULT_COLUMNS_COUNT) {
-                            if (desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT)
-                                || desc.isKeyAliasColumn(colId))
-                                keyUsed = true;
-                            else
-                                valUsed = true;
-                        }
-
-                        if (keyUsed && valUsed)
-                            break;
-                    }
-
-                    assert keyUsed || valUsed : "Used columns: " + e.getValue();
-
-                    return new GridSqlUsedColumnInfo(e.getValue(), keyUsed, valUsed);
-                }));
+        return new GridSqlUsedColumnsInfo(mapValUsed);
     }
 }

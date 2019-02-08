@@ -36,11 +36,12 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
@@ -363,12 +364,14 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
-        Map<String, GridSqlUsedColumnInfo> usedCols = qryCtxRegistry.getThreadLocal().usedColumnsInfo();
+        Map<String, Boolean> usedCols = qryCtxRegistry.getThreadLocal().usedColumnsInfo();
+
         return find(
             filter.getSession(),
             first,
             last,
-            usedCols != null ? usedCols.get(filter.getTableAlias()) : null);
+            usedCols != null && !usedCols.getOrDefault(filter.getTableAlias(), true) ?
+                CacheDataRowAdapter.RowData.KEY_ONLY : CacheDataRowAdapter.RowData.FULL);
     }
 
     /** {@inheritDoc} */
@@ -381,12 +384,12 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * result.
      *
      * @param ses the session
-     * @param colInfo Columns info to extract to simple row.
+     * @param rowData Read row mode.
      * @param lower the first row, or null for no limit
      * @param upper the last row, or null for no limit
      * @return the cursor to iterate over the results
      */
-    private Cursor find(Session ses, SearchRow lower, SearchRow upper, GridSqlUsedColumnInfo colInfo) {
+    private Cursor find(Session ses, SearchRow lower, SearchRow upper, CacheDataRowAdapter.RowData rowData) {
         assert lower == null || lower instanceof H2Row : lower;
         assert upper == null || upper instanceof H2Row : upper;
 
@@ -397,13 +400,13 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             if (!cctx.mvccEnabled() && indexType.isPrimaryKey() && lower != null && upper != null &&
                 tree.compareRows((H2Row)lower, (H2Row)upper) == 0) {
-                H2Row row = tree.findOne((H2Row)lower, filter(qryCtxRegistry.getThreadLocal()), colInfo);
+                H2Row row = tree.findOne((H2Row)lower, filter(qryCtxRegistry.getThreadLocal()), rowData);
 
                 return (row == null) ? GridH2Cursor.EMPTY : new SingleRowCursor(row);
             }
             else {
                 return new H2Cursor(tree.find((H2Row)lower,
-                    (H2Row)upper, filter(qryCtxRegistry.getThreadLocal()), colInfo));
+                    (H2Row)upper, filter(qryCtxRegistry.getThreadLocal()), rowData));
             }
         }
         catch (IgniteCheckedException e) {

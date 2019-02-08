@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservation;
@@ -50,7 +50,7 @@ public class QueryContext {
     private MapQueryLazyWorker lazyWorker;
 
     /** */
-    private Map<String, GridSqlUsedColumnInfo> usedCols;
+    private Map<String, Boolean> usedCols;
 
     /**
      * Constructor.
@@ -138,17 +138,16 @@ public class QueryContext {
     }
 
     /**
-     * @param usedCols Information about used columns (table alias -> columns info).
+     * @param usedCols Information about used columns.
      */
-    // TODO VO: Please move it to constructor.
-    public void usedColumnsInfo(Map<String, GridSqlUsedColumnInfo> usedCols) {
+    public void usedColumnsInfo(Map<String, Boolean> usedCols) {
         this.usedCols = usedCols;
     }
 
     /**
-     * @return Information about used columns (table alias -> columns info).
+     * @return Information about used columns.
      */
-    public Map<String, GridSqlUsedColumnInfo> usedColumnsInfo() {
+    public Map<String, Boolean> usedColumnsInfo() {
         return usedCols;
     }
 }

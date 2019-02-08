@@ -144,7 +144,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNei
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
-import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -1146,7 +1146,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 172:
-                msg = new GridSqlUsedColumnInfo();
+                msg = new GridSqlUsedColumnsInfo();
 
                 break;
 

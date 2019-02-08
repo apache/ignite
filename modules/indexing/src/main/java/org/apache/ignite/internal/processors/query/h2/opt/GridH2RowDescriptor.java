@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -170,18 +169,6 @@ public class GridH2RowDescriptor {
      * @throws IgniteCheckedException If failed.
      */
     public H2CacheRow createRow(CacheDataRow dataRow) throws IgniteCheckedException {
-        return createRow(dataRow, null);
-    }
-
-    /**
-     * Creates new row.
-     *
-     * @param dataRow Data row.
-     * @param colInfo column info to extract only specified columns.
-     * @return Row.
-     * @throws IgniteCheckedException If failed.
-     */
-    public H2CacheRow createRow(CacheDataRow dataRow, GridSqlUsedColumnInfo colInfo) throws IgniteCheckedException {
         H2CacheRow row;
 
         try {
@@ -233,7 +220,7 @@ public class GridH2RowDescriptor {
      * @param key Key.
      * @param val Value.
      * @param col Column index.
-     * @return Column value.
+     * @return  Column value.
      */
     public Object columnValue(Object key, Object val, int col) {
         try {

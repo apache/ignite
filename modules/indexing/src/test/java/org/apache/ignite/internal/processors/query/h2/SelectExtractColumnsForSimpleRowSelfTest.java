@@ -21,10 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -34,7 +31,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
-import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -111,67 +108,67 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
 
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, false, 0, 2));
+            new UsedTableColumns("d0", false));
 
         // only key
         res = sql("SELECT id FROM test AS d0 WHERE id < 5");
 
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, false, 2));
+            new UsedTableColumns("d0",  false));
 
         // scan and wildcard
         res = sql("SELECT * FROM test AS d0");
 
         assertEquals((long)ROWS, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 3, 4));
+            new UsedTableColumns("d0", true));
 
         // Single-partition query (use original query)
         res = sql("SELECT valStr FROM test AS d0 WHERE _key = 5");
 
         assertEquals(1, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 0, 3));
+            new UsedTableColumns("d0", true));
 
         // simple
         res = sql("SELECT valStr FROM test AS d0 WHERE id > 4 AND valLong < 6");
 
         assertEquals("val_5", res.get(0).get(0));
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 3, 4));
+            new UsedTableColumns("d0", true));
 
         // only value
         res = sql("SELECT valStr FROM test AS d0 WHERE valLong < 5");
 
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", false, true, 3, 4));
+            new UsedTableColumns("d0", true));
 
         // order by
         res = sql("SELECT valStr FROM test AS d0 WHERE valLong < 5 ORDER BY id");
 
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 3, 4));
+            new UsedTableColumns("d0", true));
 
         res = sql("SELECT valStr FROM test AS d0 WHERE valLong < 5 ORDER BY valStr");
 
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", false, true, 3, 4));
+            new UsedTableColumns("d0", true));
 
         // GROUP BY / aggregates
         res = sql("SELECT SUM(valLong) FROM test AS d0 WHERE valLong < 5 GROUP BY id");
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 4));
+            new UsedTableColumns("d0", true));
 
         // GROUP BY / having
         res = sql("SELECT id FROM test AS d0 WHERE id < 5 GROUP BY id HAVING SUM(valLong) < 5");
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 4));
+            new UsedTableColumns("d0", true));
     }
 
     /**
@@ -205,8 +202,8 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         assertEquals(res.size(), 10);
         assertEquals(1, qrys.get().size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("pers", true, true, 3, 4),
-            new UsedTableColumns("comp", true, true, 2, 3));
+            new UsedTableColumns("pers", true),
+            new UsedTableColumns("comp", true));
     }
 
     /**
@@ -237,8 +234,8 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         assertEquals(res.size(), 1);
         assertEquals(1, qrys.get().size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("pers", true, false, 2, 3),
-            new UsedTableColumns("comp", true, false, 2));
+            new UsedTableColumns("pers", false),
+            new UsedTableColumns("comp", false));
     }
 
     /**
@@ -267,9 +264,9 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
 
         assertEquals(1, qrys.get().size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 3, 4),
-            new UsedTableColumns("d1", true, true, 2, 5, 6),
-            new UsedTableColumns("d2", true, true, 2, 7, 8));
+            new UsedTableColumns("d0", true),
+            new UsedTableColumns("d1", true),
+            new UsedTableColumns("d2", true));
 
         assertEquals(res.size(), 10);
     }
@@ -293,42 +290,39 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
                 i, "val0", "val1");
         }
 
-//        res = sql(
-//            "SELECT val0 FROM test AS d0 WHERE val0 = 'val0'");
-//
-//        assertEquals(1, qrys.get().size());
-//        assertUsedColumns(qrys.get().get(0).usedColumns(),
-//            new UsedTableColumns("d0", false, true, 3));
-//
-//        assertEquals(10000, res.size());
+        res = sql(
+            "SELECT val0 FROM test AS d0 WHERE val0 = 'val0'");
+
+        assertEquals(1, qrys.get().size());
+        assertUsedColumns(qrys.get().get(0).usedColumns(),
+            new UsedTableColumns("d0", true));
+
+        assertEquals(10000, res.size());
 
         res = sql(
             "SELECT val1 FROM test AS d0 WHERE val1 = 'val1'");
 
         assertEquals(1, qrys.get().size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", false, true, 4));
+            new UsedTableColumns("d0", true));
 
         assertEquals(10000, res.size());
     }
 
     /**
-     * @param actualMap Actual map with used columns info.
+     * @param actualColInfo Actual map with used columns info.
      * @param expected expected used columns.
      */
-    protected void assertUsedColumns(Map<String, GridSqlUsedColumnInfo> actualMap, UsedTableColumns... expected) {
-        if (actualMap == null) {
+    protected void assertUsedColumns(GridSqlUsedColumnsInfo actualColInfo, UsedTableColumns... expected) {
+        if (actualColInfo == null) {
             if (!F.isEmpty(expected))
                 fail("Invalid extracted columns: [actual=null, expected=" + Arrays.toString(expected) + ']');
-        }
-        else {
-            Set<UsedTableColumns> actualSet = actualMap.entrySet().stream()
-                .map(UsedTableColumns::new)
-                .collect(Collectors.toSet());
+            else {
+                Map<String, Boolean> actualMap  = actualColInfo.createValueUsedMap();
 
-            Set<UsedTableColumns> expectedSet = Arrays.stream(expected).collect(Collectors.toSet());
-
-            assertEquals(expectedSet, actualSet);
+                for (UsedTableColumns exp : expected)
+                    assertEquals(actualMap.get(exp.alias), (Boolean)exp.isValUsed);
+            }
         }
     }
 
@@ -395,38 +389,14 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
          *
          */
         @GridToStringInclude
-        int[] usedCols;
-
-        /**
-         *
-         */
-        @GridToStringInclude
-        boolean isKeyUsed;
-
-        /**
-         *
-         */
-        @GridToStringInclude
         boolean isValUsed;
 
         /**
          *
          */
-        UsedTableColumns(Map.Entry<String, GridSqlUsedColumnInfo> entry) {
-            alias = entry.getKey().toUpperCase();
-            usedCols = entry.getValue().columns();
-            isKeyUsed = entry.getValue().isKeyUsed();
-            isValUsed = entry.getValue().isValueUsed();
-        }
-
-        /**
-         *
-         */
-        UsedTableColumns(String alias, boolean isKeyUsed, boolean isValUsed, int... usedCols) {
+        UsedTableColumns(String alias, boolean isValUsed) {
             this.alias = alias.toUpperCase();
-            this.isKeyUsed = isKeyUsed;
             this.isValUsed = isValUsed;
-            this.usedCols = usedCols;
         }
 
         /** {@inheritDoc} */
@@ -439,19 +409,15 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
 
             UsedTableColumns columns = (UsedTableColumns)o;
 
-            return isKeyUsed == columns.isKeyUsed &&
-                isValUsed == columns.isValUsed &&
+            return isValUsed == columns.isValUsed &&
                 alias.length() < columns.alias.length()
                 ? columns.alias.startsWith(alias)
-                : alias.startsWith(columns.alias) &&
-                Arrays.equals(usedCols, columns.usedCols);
+                : alias.startsWith(columns.alias);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = Objects.hash(alias.substring(0, 2), isKeyUsed, isValUsed);
-
-            result = 31 * result + Arrays.hashCode(usedCols);
+            int result = Objects.hash(alias.substring(0, 2), isValUsed);
 
             return result;
         }

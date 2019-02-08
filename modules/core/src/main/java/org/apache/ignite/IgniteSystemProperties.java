@@ -1117,6 +1117,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
 
     /**
+     * Flags to disable usage of the columns info for the query.
+     */
+    public static final String IGNITE_DISABLE_USED_COLUMNS_INFO = "IGNITE_QUERY_DISABLE_USED_COLUMNS_INFO";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

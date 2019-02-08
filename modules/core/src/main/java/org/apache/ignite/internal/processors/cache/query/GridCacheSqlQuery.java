@@ -18,19 +18,15 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -83,10 +79,9 @@ public class GridCacheSqlQuery implements Message {
     @GridDirectTransient
     private transient boolean hasSubQries;
 
-    /** Used columns info: (Table alias -> used columns). */
+    /** Used columns info. */
     @GridToStringInclude
-    @GridDirectMap(keyType = String.class, valueType = GridSqlUsedColumnInfo.class)
-    private Map<String, GridSqlUsedColumnInfo> usedCols;
+    private GridSqlUsedColumnsInfo usedCols;
 
     /**
      * For {@link Message}.
@@ -108,7 +103,7 @@ public class GridCacheSqlQuery implements Message {
      * @param qry Query.
      * @param usedCols Used columns info.
      */
-    public GridCacheSqlQuery(String qry, Map<String, GridSqlUsedColumnInfo> usedCols) {
+    public GridCacheSqlQuery(String qry, GridSqlUsedColumnsInfo usedCols) {
         A.ensure(!F.isEmpty(qry), "qry must not be empty");
 
         this.qry = qry;
@@ -167,9 +162,9 @@ public class GridCacheSqlQuery implements Message {
     }
 
     /**
-     * @return Used columns info (Table alias -> used columns).
+     * @return Used columns info.
      */
-    public Map<String, GridSqlUsedColumnInfo> usedColumns() {
+    public GridSqlUsedColumnsInfo usedColumns() {
         return usedCols;
     }
 
@@ -220,7 +215,7 @@ public class GridCacheSqlQuery implements Message {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("usedCols", usedCols, MessageCollectionItemType.STRING, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("usedCols", usedCols))
                     return false;
 
                 writer.incrementState();
@@ -271,7 +266,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 4:
-                usedCols = reader.readMap("usedCols", MessageCollectionItemType.STRING, MessageCollectionItemType.MSG, false);
+                usedCols = reader.readMessage("usedCols");
 
                 if (!reader.isLastRead())
                     return false;
@@ -306,7 +301,7 @@ public class GridCacheSqlQuery implements Message {
         cp.partitioned = partitioned;
         cp.derivedPartitions = derivedPartitions;
         cp.hasSubQries = hasSubQries;
-        cp.usedCols = usedCols == null ? null : new HashMap<>(usedCols);
+        cp.usedCols = usedCols;
 
         return cp;
     }

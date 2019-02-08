@@ -94,6 +94,7 @@ import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_USED_COLUMNS_INFO;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_FORCE_LAZY_RESULT_SET;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
@@ -135,6 +136,9 @@ public class GridMapQueryExecutor {
 
     /** Lazy worker stop guard. */
     private final AtomicBoolean lazyWorkerStopGuard = new AtomicBoolean();
+
+    /** Disable used column info. */
+    private final boolean disableUsedColInfo = IgniteSystemProperties.getBoolean(IGNITE_DISABLE_USED_COLUMNS_INFO, false);
 
     /**
      * @param busyLock Busy lock.
@@ -696,7 +700,8 @@ public class GridMapQueryExecutor {
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
 
                         // TODO VO: Ability to disable it from sys property.
-                        qctx.usedColumnsInfo(qry.usedColumns());
+                        if (!disableUsedColInfo)
+                            qctx.usedColumnsInfo(qry.usedColumns().createValueUsedMap());
 
                         rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qr.queryCancel(qryIdx), dataPageScanEnabled);
 

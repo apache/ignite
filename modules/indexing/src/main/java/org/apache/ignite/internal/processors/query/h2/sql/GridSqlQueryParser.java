@@ -2309,11 +2309,11 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * @param colIds Map from table alias to columns IDs to extract.
+     * @param mapValUsed Map from table alias to value used flag.
      * @param e Query AST subtree.
      */
     // TODO VO: Are we sure it cover all cases?
-    public static void extractUsedColumnsFromAst(Map<TableAlias, Set<Integer>> colIds, GridSqlAst e) {
+    public static void extractUsedColumnsFromAst(Map<String, Boolean> mapValUsed, GridSqlAst e) {
         if (e == null)
             return;
         else if (e instanceof GridSqlColumnExpression) {
@@ -2322,23 +2322,26 @@ public class GridSqlQueryParser {
             Column cl = colExp.column();
 
             if (cl.getTable() instanceof GridH2Table) {
-                TableAlias al = new TableAlias(colExp.columnResolver().getTableAlias(), (GridH2Table)cl.getTable());
+                GridH2Table tbl = (GridH2Table)cl.getTable();
+                GridH2RowDescriptor desc = tbl.rowDescriptor();
+                int colId = colExp.column().getColumnId();
+                String tblAlias = colExp.columnResolver().getTableAlias();
 
-                // TODO VO: Collect only boolean for now.
-                Set<Integer> set = colIds.get(al);
+                boolean valUsed = mapValUsed.getOrDefault(tblAlias, false);
 
-                if (set == null) {
-                    set = new HashSet<>();
+                if (valUsed)
+                    return;
 
-                    colIds.put(al, set);
-                }
+                valUsed = colId >= QueryUtils.DEFAULT_COLUMNS_COUNT
+                    && !desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT)
+                    && !desc.isKeyAliasColumn(colId);
 
-                set.add(colExp.column().getColumnId());
+                mapValUsed.put(tblAlias, valUsed);
             }
         }
         else {
             for (int i = 0; i < e.size(); ++i)
-                extractUsedColumnsFromAst(colIds, e.child(i));
+                extractUsedColumnsFromAst(mapValUsed, e.child(i));
         }
     }
 
