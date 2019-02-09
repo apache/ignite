@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 
@@ -55,5 +56,6 @@ public class IgnitePdsCompressionTestSuite {
      */
     static void enableCompressionByDefault() {
         System.setProperty(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, ZSTD.name());
+        System.setProperty(IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, String.valueOf(8 * 1024));
     }
 }
