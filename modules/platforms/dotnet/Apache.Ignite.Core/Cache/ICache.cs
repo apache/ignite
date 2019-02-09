@@ -930,5 +930,48 @@ namespace Apache.Ignite.Core.Cache
         /// Reset query metrics.
         /// </summary>
         void ResetQueryMetrics();
+
+        /// <summary>
+        /// Efficiently preloads cache partition into page memory.
+        /// <para/>
+        /// This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+        /// <para/>
+        /// Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+        /// replacement.
+        /// <para/>
+        /// This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+        /// exception.
+        /// </summary>
+        /// <param name="partition">Partition number.</param>
+        void PreloadPartition(int partition);
+        
+        /// <summary>
+        /// Efficiently preloads cache partition into page memory asynchronously.
+        /// <para/>
+        /// This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+        /// <para/>
+        /// Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+        /// replacement.
+        /// <para/>
+        /// This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+        /// exception.
+        /// </summary>
+        /// <param name="partition">Partition number.</param>
+        /// <returns>Task.</returns>
+        Task PreloadPartitionAsync(int partition);
+        
+        /// <summary>
+        /// Efficiently preloads cache partition into page memory if it exists on the local node.
+        /// <para/>
+        /// This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+        /// <para/>
+        /// Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+        /// replacement.
+        /// <para/>
+        /// This method is irrelevant for in-memory caches.
+        /// </summary>
+        /// <param name="partition">Partition number.</param>
+        /// <returns><code>True</code>if partition was preloaded, <code>False</code> if it doesn't belong to local node.</returns>
+        bool LocalPreloadPartition(int partition);
     }
 }
