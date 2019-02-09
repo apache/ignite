@@ -24,9 +24,10 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
+
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.jdbc.JdbcConnection;
 import org.jetbrains.annotations.Nullable;
@@ -75,7 +76,7 @@ public class ReduceQueryRun {
 
         idxs = new ArrayList<>(idxsCnt);
 
-        this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;
+        this.pageSize = pageSize > 0 ? pageSize : Query.DFLT_PAGE_SIZE;
         this.selectForUpdateFut = selectForUpdateFut;
         this.dataPageScanEnabled  = dataPageScanEnabled;
     }
