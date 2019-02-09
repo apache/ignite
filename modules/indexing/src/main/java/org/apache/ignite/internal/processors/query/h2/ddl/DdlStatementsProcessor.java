@@ -124,6 +124,19 @@ public class DdlStatementsProcessor {
     }
 
     /**
+     * @param cmd Command.
+     * @return {@code True} if this is supported DDL command.
+     */
+    public static boolean isDdlCommand(SqlCommand cmd) {
+        return cmd instanceof SqlCreateIndexCommand
+            || cmd instanceof SqlDropIndexCommand
+            || cmd instanceof SqlAlterTableCommand
+            || cmd instanceof SqlCreateUserCommand
+            || cmd instanceof SqlAlterUserCommand
+            || cmd instanceof SqlDropUserCommand;
+    }
+
+    /**
      * Run DDL statement.
      *
      * @param sql Original SQL.
