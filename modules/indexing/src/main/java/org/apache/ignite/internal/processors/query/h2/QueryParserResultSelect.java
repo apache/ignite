@@ -30,9 +30,6 @@ public class QueryParserResultSelect {
     /** Two-step query, or {@code} null if this result is for local query. */
     private final GridCacheTwoStepQuery twoStepQry;
 
-    /** Two-step query key. */
-    private final QueryParserCacheKey twoStepQryKey;
-
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> twoStepQryMeta;
 
@@ -41,12 +38,10 @@ public class QueryParserResultSelect {
 
     public QueryParserResultSelect(
         GridCacheTwoStepQuery twoStepQry,
-        QueryParserCacheKey twoStepQryKey,
         List<GridQueryFieldMetadata> twoStepQryMeta,
         Prepared locPrepared
     ) {
         this.twoStepQry = twoStepQry;
-        this.twoStepQryKey = twoStepQryKey;
         this.twoStepQryMeta = twoStepQryMeta;
         this.locPrepared = locPrepared;
     }
@@ -56,14 +51,6 @@ public class QueryParserResultSelect {
      */
     GridCacheTwoStepQuery twoStepQuery() {
         return twoStepQry;
-    }
-
-    /**
-     * @return Two-step query key to cache {@link #twoStepQry}, or {@code null} if there's no need to worry about
-     * two-step caching.
-     */
-    QueryParserCacheKey twoStepQueryKey() {
-        return twoStepQryKey;
     }
 
     /**

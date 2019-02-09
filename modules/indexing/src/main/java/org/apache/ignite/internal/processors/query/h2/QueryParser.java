@@ -121,7 +121,6 @@ public class QueryParser {
         if (cachedQry != null) {
             QueryParserResultSelect select = new QueryParserResultSelect(
                 cachedQry.query(),
-                cachedQryKey,
                 cachedQry.meta(),
                 null
             );
@@ -354,7 +353,7 @@ public class QueryParser {
 
         // No two-step for local query for now.
         if (loc) {
-            QueryParserResultSelect select = new QueryParserResultSelect(null, null, null, prepared);
+            QueryParserResultSelect select = new QueryParserResultSelect(null, null, prepared);
 
             return new QueryParserResult(newQry, remainingQry, select, null, null);
         }
@@ -405,7 +404,6 @@ public class QueryParser {
 
         QueryParserResultSelect select = new QueryParserResultSelect(
             cachedQry.query(),
-            cachedQryKey,
             cachedQry.meta(),
             prepared
         );
