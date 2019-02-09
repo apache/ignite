@@ -24,7 +24,6 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -149,7 +148,6 @@ import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 import org.apache.ignite.spi.communication.tcp.internal.HandshakeException;
-import org.apache.ignite.spi.communication.tcp.internal.HandshakeTimeoutException;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationNodeConnectionCheckFuture;
 import org.apache.ignite.spi.communication.tcp.messages.ChannelCreateRequestMessage;
@@ -3387,7 +3385,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * </p>
      * <p>
      *     <em>Note.</em> The {@link HandshakeTimeoutObject} is created to control execution timeout during the
-     *     whole handshaking process. The {@link HandshakeTimeoutException} will be thrown if timout reached.
+     *     whole handshaking process.
      * </p>
      *
      * @param node Remote node identifier to connect with.
@@ -3562,7 +3560,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         }
                     }
                 }
-                catch (IgniteSpiOperationTimeoutException e) {
+                catch (IgniteSpiOperationTimeoutException e) { // Handshake is timed out.
                     if (session != null) {
                         session.close();
 
@@ -3806,7 +3804,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             ByteBuffer buf;
 
-            // Step 1. Get remote node respose with remote nodeId.
+            // Step 1. Get remote node response with the remote nodeId value.
             if (isSslEnabled()) {
                 assert sslMeta != null;
 
@@ -3882,7 +3880,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             else
                 U.writeFully(ch, ByteBuffer.wrap(U.IGNITE_HEADER));
 
-            // Step 2. Prepare Handshake message to send remote node.
+            // Step 2. Prepare Handshake message to send to the remote node.
             if (log.isDebugEnabled())
                 log.debug("Writing handshake message [rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
 
@@ -3907,8 +3905,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (log.isDebugEnabled())
                 log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
 
-
-            // Step 3. Waiting the response from remote node with their receive count.
+            // Step 3. Waiting for response from the remote node with their receive count message.
             if (isSslEnabled()) {
                 assert sslHnd != null;
 
@@ -4207,32 +4204,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpCommunicationSpi.class, this);
-    }
-
-    /** Internal exception class for proper timeout handling. */
-    private static class HandshakeException extends IgniteCheckedException {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param msg Error message.
-         */
-        HandshakeException(String msg) {
-            super(msg);
-        }
-    }
-
-    /** Internal exception class for proper timeout handling. */
-    private static class HandshakeTimeoutException extends IgniteCheckedException {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param cause Exception cause
-         */
-        HandshakeTimeoutException(IgniteSpiOperationTimeoutException cause) {
-            super(cause);
-        }
     }
 
     /**
