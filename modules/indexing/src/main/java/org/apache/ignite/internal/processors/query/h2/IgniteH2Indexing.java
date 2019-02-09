@@ -1905,6 +1905,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (cctx != null && cctx.config().getQueryParallelism() > 1) {
                     loc = false;
 
+                    // TODO: Bug!
                     qry.setDistributedJoins(true);
                 }
             }
@@ -1945,8 +1946,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         // Only distirbuted SELECT are possible at this point.
-        H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, qry.getSql(),
-            qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), qry.isLocal());
+        H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(
+            schemaName,
+            qry.getSql(),
+            qry.isCollocated(),
+            qry.isDistributedJoins(),
+            qry.isEnforceJoinOrder(),
+            qry.isLocal()
+        );
 
         H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
