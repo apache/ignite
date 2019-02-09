@@ -26,12 +26,12 @@ import java.util.List;
 /**
  * Parsing result for SELECT.
  */
-public class ParsingResultSelect {
+public class QueryParserResultSelect {
     /** Two-step query, or {@code} null if this result is for local query. */
     private final GridCacheTwoStepQuery twoStepQry;
 
     /** Two-step query key. */
-    private final H2TwoStepCachedQueryKey twoStepQryKey;
+    private final QueryParserCacheKey twoStepQryKey;
 
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> twoStepQryMeta;
@@ -39,9 +39,9 @@ public class ParsingResultSelect {
     /** Prepared statement for local query. */
     private final Prepared locPrepared;
 
-    public ParsingResultSelect(
+    public QueryParserResultSelect(
         GridCacheTwoStepQuery twoStepQry,
-        H2TwoStepCachedQueryKey twoStepQryKey,
+        QueryParserCacheKey twoStepQryKey,
         List<GridQueryFieldMetadata> twoStepQryMeta,
         Prepared locPrepared
     ) {
@@ -62,7 +62,7 @@ public class ParsingResultSelect {
      * @return Two-step query key to cache {@link #twoStepQry}, or {@code null} if there's no need to worry about
      * two-step caching.
      */
-    H2TwoStepCachedQueryKey twoStepQueryKey() {
+    QueryParserCacheKey twoStepQueryKey() {
         return twoStepQryKey;
     }
 

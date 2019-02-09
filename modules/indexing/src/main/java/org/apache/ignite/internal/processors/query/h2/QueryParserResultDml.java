@@ -22,7 +22,7 @@ import org.h2.command.Prepared;
 /**
  * Parsing result for DML statement.
  */
-public class ParsingResultDml {
+public class QueryParserResultDml {
     /** Command. */
     private final Prepared prepared;
 
@@ -31,7 +31,7 @@ public class ParsingResultDml {
      *
      * @param prepared Command.
      */
-    public ParsingResultDml(Prepared prepared) {
+    public QueryParserResultDml(Prepared prepared) {
         this.prepared = prepared;
     }
 

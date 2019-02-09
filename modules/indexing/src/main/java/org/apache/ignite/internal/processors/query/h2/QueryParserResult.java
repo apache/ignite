@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Result of parsing and splitting SQL from {@link SqlFieldsQuery}.
  */
-final class ParsingResult {
+public class QueryParserResult {
     /** New fields query that may be executed right away. */
     private final SqlFieldsQuery qry;
 
@@ -31,13 +31,13 @@ final class ParsingResult {
     private final SqlFieldsQuery remainingQry;
 
     /** Select. */
-    private final ParsingResultSelect select;
+    private final QueryParserResultSelect select;
 
     /** DML. */
-    private final ParsingResultDml dml;
+    private final QueryParserResultDml dml;
 
     /** Command. */
-    private final ParsingResultCommand cmd;
+    private final QueryParserResultCommand cmd;
 
     /**
      * Constructor.
@@ -48,12 +48,12 @@ final class ParsingResult {
      * @param dml DML.
      * @param cmd Command.
      */
-    public ParsingResult(
+    public QueryParserResult(
         SqlFieldsQuery qry,
         SqlFieldsQuery remainingQry,
-        @Nullable ParsingResultSelect select,
-        @Nullable ParsingResultDml dml,
-        @Nullable ParsingResultCommand cmd
+        @Nullable QueryParserResultSelect select,
+        @Nullable QueryParserResultDml dml,
+        @Nullable QueryParserResultCommand cmd
     ) {
         this.qry = qry;
         this.remainingQry = remainingQry;
@@ -79,21 +79,21 @@ final class ParsingResult {
     /**
      * @return SELECT.
      */
-    @Nullable public ParsingResultSelect select() {
+    @Nullable public QueryParserResultSelect select() {
         return select;
     }
 
     /**
      * @return DML.
      */
-    @Nullable public ParsingResultDml dml() {
+    @Nullable public QueryParserResultDml dml() {
         return dml;
     }
 
     /**
      * @return Command.
      */
-    @Nullable public ParsingResultCommand command() {
+    @Nullable public QueryParserResultCommand command() {
         return cmd;
     }
 

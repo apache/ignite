@@ -1378,7 +1378,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String schemaName,
         SqlFieldsQuery qry,
         @Nullable SqlClientContext cliCtx,
-        ParsingResultCommand cmd
+        QueryParserResultCommand cmd
     ) {
         if (cmd.noOp())
             return H2Utils.zeroCursor();
@@ -1419,7 +1419,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param parseRes Parsing result.
      */
-    private void checkClusterState(ParsingResult parseRes) {
+    private void checkClusterState(QueryParserResult parseRes) {
         if (!ctx.state().publicApiActiveState(true)) {
             if (parseRes.isCommand()) {
                 SqlCommand cmd = parseRes.command().commandNative();
@@ -1447,7 +1447,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SqlFieldsQuery remainingQry = qry;
 
             while (remainingQry != null) {
-                ParsingResult parseRes = parser.parse(schemaName, remainingQry);
+                QueryParserResult parseRes = parser.parse(schemaName, remainingQry);
 
                 remainingQry = parseRes.remainingQuery();
 
@@ -1521,8 +1521,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private List<? extends FieldsQueryCursor<List<?>>> executeSelectOrDml(
         String schemaName,
         SqlFieldsQuery qry,
-        @Nullable ParsingResultSelect select,
-        @Nullable ParsingResultDml dml,
+        @Nullable QueryParserResultSelect select,
+        @Nullable QueryParserResultDml dml,
         boolean keepBinary,
         boolean startTx,
         MvccQueryTracker mvccTracker,

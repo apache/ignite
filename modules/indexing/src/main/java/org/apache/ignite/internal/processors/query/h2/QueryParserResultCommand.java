@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Parsing result: command.
  */
-public class ParsingResultCommand {
+public class QueryParserResultCommand {
     /** Command (native). */
     private final SqlCommand cmdNative;
 
@@ -41,7 +41,7 @@ public class ParsingResultCommand {
      * @param cmdH2 Command (H2).
      * @param noOp Whether this is a no-op command.
      */
-    public ParsingResultCommand(@Nullable SqlCommand cmdNative, @Nullable GridSqlStatement cmdH2, boolean noOp) {
+    public QueryParserResultCommand(@Nullable SqlCommand cmdNative, @Nullable GridSqlStatement cmdH2, boolean noOp) {
         this.cmdNative = cmdNative;
         this.cmdH2 = cmdH2;
         this.noOp = noOp;
