@@ -179,7 +179,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
-import org.h2.command.dml.NoOperation;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.table.IndexColumn;
@@ -1408,27 +1407,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             SqlParser parser = new SqlParser(schemaName, sql);
 
-            SqlCommand leadingCmd = parser.nextCommand();
+            SqlCommand nativeCmd = parser.nextCommand();
 
-            assert leadingCmd != null : "Empty query. Parser met end of data";
+            assert nativeCmd != null : "Empty query. Parser met end of data";
 
-            if (!(leadingCmd instanceof SqlCreateIndexCommand
-                || leadingCmd instanceof SqlDropIndexCommand
-                || leadingCmd instanceof SqlBeginTransactionCommand
-                || leadingCmd instanceof SqlCommitTransactionCommand
-                || leadingCmd instanceof SqlRollbackTransactionCommand
-                || leadingCmd instanceof SqlBulkLoadCommand
-                || leadingCmd instanceof SqlAlterTableCommand
-                || leadingCmd instanceof SqlSetStreamingCommand
-                || leadingCmd instanceof SqlCreateUserCommand
-                || leadingCmd instanceof SqlAlterUserCommand
-                || leadingCmd instanceof SqlDropUserCommand)
+            if (!(nativeCmd instanceof SqlCreateIndexCommand
+                || nativeCmd instanceof SqlDropIndexCommand
+                || nativeCmd instanceof SqlBeginTransactionCommand
+                || nativeCmd instanceof SqlCommitTransactionCommand
+                || nativeCmd instanceof SqlRollbackTransactionCommand
+                || nativeCmd instanceof SqlBulkLoadCommand
+                || nativeCmd instanceof SqlAlterTableCommand
+                || nativeCmd instanceof SqlSetStreamingCommand
+                || nativeCmd instanceof SqlCreateUserCommand
+                || nativeCmd instanceof SqlAlterUserCommand
+                || nativeCmd instanceof SqlDropUserCommand)
             )
                 return null;
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.lastCommandSql());
 
-            return new ParsingResult(newQry, leadingCmd, null, parser.remainingSql());
+            ParsingResultCommand cmd = new ParsingResultCommand(nativeCmd, null, false);
+
+            return new ParsingResult(newQry, cmd, parser.remainingSql());
         }
         catch (SqlStrictParseException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
@@ -1457,17 +1458,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param schemaName Schema name.
      * @param qry Query.
      * @param cliCtx CLient context.
-     * @param cmdNative Command (native).
-     * @param cmdH2 Command (H2).
+     * @param cmd Command (native).
      * @return Result.
      */
     public FieldsQueryCursor<List<?>> executeCommand(
         String schemaName,
         SqlFieldsQuery qry,
         @Nullable SqlClientContext cliCtx,
-        SqlCommand cmdNative,
-        GridSqlStatement cmdH2
+        ParsingResultCommand cmd
     ) {
+        if (cmd.noOp())
+            return H2Utils.zeroCursor();
+
+        SqlCommand cmdNative = cmd.commandNative();
+        GridSqlStatement cmdH2 = cmd.commandH2();
+
         if (qry.isLocal()) {
             throw new IgniteSQLException("DDL statements are not supported for LOCAL caches",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -1510,6 +1515,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
     }
 
+    /**
+     * Check whether command could be executed with the given cluster state.
+     *
+     * @param parseRes Parsing result.
+     */
+    private void checkClusterState(ParsingResult parseRes) {
+        if (!ctx.state().publicApiActiveState(true)) {
+            if (parseRes.isCommand()) {
+                SqlCommand cmd = parseRes.command().commandNative();
+
+                if (cmd instanceof SqlCommitTransactionCommand || cmd instanceof SqlRollbackTransactionCommand)
+                    return;
+            }
+
+            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, " +
+                "that the cluster is considered inactive by default if Ignite Persistent Store is used to " +
+                "let all the nodes join the cluster. To activate the cluster call Ignite.active(true).");
+        }
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"StringEquality", "unchecked"})
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
@@ -1538,15 +1563,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 assert newQry.getSql() != null;
 
-                // Check if operation is performed on an active cluster.
-                SqlCommand nativeCmd = parseRes.commandNative();
-
-                if (!(nativeCmd instanceof SqlCommitTransactionCommand || nativeCmd instanceof SqlRollbackTransactionCommand)
-                    && !ctx.state().publicApiActiveState(true)) {
-                    throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, " +
-                        "that the cluster is considered inactive by default if Ignite Persistent Store is used to " +
-                        "let all the nodes join the cluster. To activate the cluster call Ignite.active(true).");
-                }
+                checkClusterState(parseRes);
 
                 if (parseRes.isCommand()) {
                     // Execute command.
@@ -1554,8 +1571,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         schemaName,
                         newQry,
                         cliCtx,
-                        parseRes.commandNative(),
-                        parseRes.commandH2()
+                        parseRes.command()
                     );
 
                     res.add(cmdRes);
@@ -1689,9 +1705,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
                     }
                 }
-
-                if (prepared instanceof NoOperation)
-                    return Collections.singletonList(H2Utils.zeroCursor());
 
                 fail = true;
 
@@ -1862,7 +1875,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (CommandProcessor.isCommand(prepared)) {
             GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
 
-            return new ParsingResult(newQry, null, cmdH2, remainingSql);
+            ParsingResultCommand cmd = new ParsingResultCommand(null, cmdH2, false);
+
+            return new ParsingResult(newQry, cmd, remainingSql);
+        }
+        else if (CommandProcessor.isCommandNoOp(prepared)) {
+            ParsingResultCommand cmd = new ParsingResultCommand(null, null, true);
+
+            return new ParsingResult(newQry, cmd, remainingSql);
         }
 
         boolean hasTwoStep = !loc && prepared.isQuery();
