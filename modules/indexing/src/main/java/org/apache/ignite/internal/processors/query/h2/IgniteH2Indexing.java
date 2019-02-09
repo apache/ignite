@@ -1446,16 +1446,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             int firstArg = 0;
 
-            String remainingSql = qry.getSql();
+            SqlFieldsQuery remainingQry = qry;
 
-            while (remainingSql != null) {
-                SqlFieldsQuery remainingQry = remainingSql != qry.getSql() ? cloneFieldsQuery(qry).setSql(remainingSql) : qry;
-
+            while (remainingQry != null) {
                 ParsingResult parseRes = parser.parse(schemaName, remainingQry, firstArg);
 
-                remainingSql = parseRes.remainingSql();
+                remainingQry = parseRes.remainingQuery();
 
-                if (remainingSql != null && failOnMultipleStmts)
+                if (remainingQry != null && failOnMultipleStmts)
                     throw new IgniteSQLException("Multiple statements queries are not supported");
 
                 SqlFieldsQuery newQry = parseRes.query();
@@ -1664,16 +1662,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (desc != null)
                 ctx.security().authorize(desc.cacheName(), SecurityPermission.CACHE_READ, null);
         }
-    }
-
-    /**
-     * Make a copy of {@link SqlFieldsQuery} with all flags and preserving type.
-     * @param oldQry Query to copy.
-     * @return Query copy.
-     */
-    // TODO: Remove
-    private SqlFieldsQuery cloneFieldsQuery(SqlFieldsQuery oldQry) {
-        return oldQry.copy().setLocal(oldQry.isLocal()).setPageSize(oldQry.getPageSize());
     }
 
     /**

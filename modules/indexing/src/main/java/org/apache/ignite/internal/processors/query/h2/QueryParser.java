@@ -148,6 +148,7 @@ public class QueryParser {
      * @param qry which sql text to parse.
      * @return Command or {@code null} if cannot parse this query.
      */
+    @SuppressWarnings("IfMayBeConditional")
     @Nullable
     private ParsingResult parseNative(String schemaName, SqlFieldsQuery qry) {
         String sql = qry.getSql();
@@ -179,9 +180,16 @@ public class QueryParser {
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.lastCommandSql());
 
+            SqlFieldsQuery remainingQry;
+
+            if (F.isEmpty(parser.remainingSql()))
+                remainingQry = null;
+            else
+                remainingQry = cloneFieldsQuery(qry).setSql(parser.remainingSql()).setArgs(qry.getArgs());
+
             ParsingResultCommand cmd = new ParsingResultCommand(nativeCmd, null, false);
 
-            return new ParsingResult(newQry, parser.remainingSql(), null, null, cmd);
+            return new ParsingResult(newQry, remainingQry, null, null, cmd);
         }
         catch (SqlStrictParseException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
@@ -196,8 +204,7 @@ public class QueryParser {
 
             int code = IgniteQueryErrorCode.PARSING;
 
-            if (e instanceof SqlParseException)
-                code = ((SqlParseException)e).code();
+            if (e instanceof SqlParseException)                code = ((SqlParseException)e).code();
 
             throw new IgniteSQLException("Failed to parse DDL statement: " + sql + ": " + e.getMessage(),
                 code, e);
@@ -213,6 +220,7 @@ public class QueryParser {
      * @return Result: prepared statement, H2 command, two-step query (if needed),
      *     metadata for two-step query (if needed), evaluated query local execution flag.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private ParsingResult parseH2(String schemaName, SqlFieldsQuery qry, int firstArg) {
         Connection c = connMgr.connectionForThread().connection(schemaName);
 
@@ -250,7 +258,13 @@ public class QueryParser {
 
         checkQueryType(qry, prepared.isQuery());
 
-        String remainingSql = prep.remainingSql();
+        SqlFieldsQuery remainingQry;
+
+        // TODO: Params handling!
+        if (F.isEmpty(prep.remainingSql()))
+            remainingQry = null;
+        else
+            remainingQry = cloneFieldsQuery(qry).setSql(prep.remainingSql()).setArgs(qry.getArgs());
 
         int paramsCnt = prepared.getParameters().size();
 
@@ -316,15 +330,15 @@ public class QueryParser {
 
             ParsingResultCommand cmd = new ParsingResultCommand(null, cmdH2, false);
 
-            return new ParsingResult(newQry, remainingSql, null, null, cmd);
+            return new ParsingResult(newQry, remainingQry, null, null, cmd);
         }
         else if (CommandProcessor.isCommandNoOp(prepared)) {
             ParsingResultCommand cmd = new ParsingResultCommand(null, null, true);
 
-            return new ParsingResult(newQry, remainingSql, null, null, cmd);
+            return new ParsingResult(newQry, remainingQry, null, null, cmd);
         }
         else if (GridSqlQueryParser.isDml(prepared))
-            return new ParsingResult(newQry, remainingSql, null ,new ParsingResultDml(prepared), null);
+            return new ParsingResult(newQry, remainingQry, null ,new ParsingResultDml(prepared), null);
         else if (!prepared.isQuery()) {
             throw new IgniteSQLException("Unsupported statement: " + newQry.getSql(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -333,14 +347,14 @@ public class QueryParser {
         // At this point only SELECT is possible.
 
         // Let's not cache multiple statements and distributed queries as whole two step query will be cached later on.
-        if (remainingSql != null || !loc)
+        if (remainingQry != null || !loc)
             connMgr.statementCacheForThread().remove(schemaName, qry.getSql());
 
         // No two-step for local query for now.
         if (loc) {
             ParsingResultSelect select = new ParsingResultSelect(null, null, null, prepared);
 
-            return new ParsingResult(newQry, remainingSql, select, null, null);
+            return new ParsingResult(newQry, remainingQry, select, null, null);
         }
 
         // Only distirbuted SELECT are possible at this point.
@@ -372,7 +386,7 @@ public class QueryParser {
 
                 cachedQry = new H2TwoStepCachedQuery(meta, twoStepQry);
 
-                if (remainingSql == null && !twoStepQry.explain())
+                if (remainingQry == null && !twoStepQry.explain())
                     twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
             }
             catch (IgniteCheckedException e) {
@@ -394,7 +408,7 @@ public class QueryParser {
             prepared
         );
 
-        return new ParsingResult(newQry, remainingSql, select, null, null);
+        return new ParsingResult(newQry, remainingQry, select, null, null);
     }
 
     /**

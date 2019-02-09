@@ -27,8 +27,8 @@ final class ParsingResult {
     /** New fields query that may be executed right away. */
     private final SqlFieldsQuery qry;
 
-    /** Remaining SQL statements. */
-    private final String remainingSql;
+    /** Remaining query. */
+    private final SqlFieldsQuery remainingQry;
 
     /** Select. */
     private final ParsingResultSelect select;
@@ -43,20 +43,20 @@ final class ParsingResult {
      * Constructor.
      *
      * @param qry New query.
-     * @param remainingSql Remaining SQL.
+     * @param remainingQry Remaining query.
      * @param select Select.
      * @param dml DML.
      * @param cmd Command.
      */
     public ParsingResult(
         SqlFieldsQuery qry,
-        String remainingSql,
+        SqlFieldsQuery remainingQry,
         @Nullable ParsingResultSelect select,
         @Nullable ParsingResultDml dml,
         @Nullable ParsingResultCommand cmd
     ) {
         this.qry = qry;
-        this.remainingSql = remainingSql;
+        this.remainingQry = remainingQry;
         this.select = select;
         this.dml = dml;
         this.cmd = cmd;
@@ -70,10 +70,10 @@ final class ParsingResult {
     }
 
     /**
-     * @return Remaining SQL statements.
+     * @return Remaining query.
      */
-    public String remainingSql() {
-        return remainingSql;
+    @Nullable public SqlFieldsQuery remainingQuery() {
+        return remainingQry;
     }
 
     /**
