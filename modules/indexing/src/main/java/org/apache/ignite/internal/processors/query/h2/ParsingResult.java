@@ -17,149 +17,98 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.h2.command.Prepared;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Result of parsing and splitting SQL from {@link SqlFieldsQuery}.
  */
 final class ParsingResult {
-    /** H2 command. */
-    private final Prepared prepared;
-
     /** New fields query that may be executed right away. */
-    private final SqlFieldsQuery newQry;
+    private final SqlFieldsQuery qry;
 
     /** Remaining SQL statements. */
     private final String remainingSql;
 
-    /** Two-step query, or {@code} null if this result is for local query. */
-    private final GridCacheTwoStepQuery twoStepQry;
+    /** Select. */
+    private final ParsingResultSelect select;
 
-    /** Two-step query key. */
-    private final H2TwoStepCachedQueryKey twoStepQryKey;
-
-    /** Metadata for two-step query, or {@code} null if this result is for local query. */
-    private final List<GridQueryFieldMetadata> meta;
+    /** DML. */
+    private final ParsingResultDml dml;
 
     /** Command. */
     private final ParsingResultCommand cmd;
 
     /**
-     * Simple constructor.
-     */
-    private ParsingResult(
-        Prepared prepared,
-        SqlFieldsQuery newQry,
-        String remainingSql,
-        GridCacheTwoStepQuery twoStepQry,
-        H2TwoStepCachedQueryKey twoStepQryKey,
-        List<GridQueryFieldMetadata> meta,
-        ParsingResultCommand cmd
-    ) {
-        this.prepared = prepared;
-        this.newQry = newQry;
-        this.remainingSql = remainingSql;
-        this.twoStepQry = twoStepQry;
-        this.twoStepQryKey = twoStepQryKey;
-        this.meta = meta;
-        this.cmd = cmd;
-    }
-
-    /**
-     * Construct result in case of h2 parsing and two step query.
+     * Constructor.
+     *
+     * @param qry New query.
+     * @param remainingSql Remaining SQL.
+     * @param select Select.
+     * @param dml DML.
+     * @param cmd Command.
      */
     public ParsingResult(
-        Prepared prepared,
-        SqlFieldsQuery newQry,
+        SqlFieldsQuery qry,
         String remainingSql,
-        GridCacheTwoStepQuery twoStepQry,
-        H2TwoStepCachedQueryKey twoStepQryKey,
-        List<GridQueryFieldMetadata> meta
+        @Nullable ParsingResultSelect select,
+        @Nullable ParsingResultDml dml,
+        @Nullable ParsingResultCommand cmd
     ) {
-        this(prepared, newQry, remainingSql, twoStepQry, twoStepQryKey, meta, null);
-    }
-
-    /**
-     * Construct parsing result in case of native parsing.
-     *
-     * @param newQry leading sql statement of the original multi-statement query.
-     * @param cmd Command.
-     * @param remainingSql the rest of the original query.
-     */
-    public ParsingResult(SqlFieldsQuery newQry, ParsingResultCommand cmd, String remainingSql) {
-        this(null, newQry, remainingSql, null, null, null, cmd);
-    }
-
-    /**
-     * Result in case we use h2 but don't have two step query.
-     *
-     * @param prepared h2's parsed prepared statement. The leading statement of the original multi-statement query.
-     * @param newQry SqlFields query that prepare represents.
-     * @param remainingSql the rest of the original query.
-     */
-    public ParsingResult(Prepared prepared, SqlFieldsQuery newQry, String remainingSql) {
-        this(prepared, newQry, remainingSql, null, null, null, null);
-    }
-
-    /**
-     * @return Metadata for two-step query, or {@code} null if this result is for local query.
-     */
-    List<GridQueryFieldMetadata> meta() {
-        return meta;
+        this.qry = qry;
+        this.remainingSql = remainingSql;
+        this.select = select;
+        this.dml = dml;
+        this.cmd = cmd;
     }
 
     /**
      * @return New fields query that may be executed right away.
      */
-    SqlFieldsQuery newQuery() {
-        return newQry;
-    }
-
-    /**
-     * @return Command (H2).
-     */
-    public ParsingResultCommand command() {
-        return cmd;
-    }
-
-    /**
-     * @return H2 command.
-     */
-    Prepared prepared() {
-        return prepared;
+    public SqlFieldsQuery query() {
+        return qry;
     }
 
     /**
      * @return Remaining SQL statements.
      */
-    String remainingSql() {
+    public String remainingSql() {
         return remainingSql;
     }
 
     /**
-     * @return Two-step query, or {@code} null if this result is for local query.
+     * @return SELECT.
      */
-    GridCacheTwoStepQuery twoStepQuery() {
-        return twoStepQry;
+    @Nullable public ParsingResultSelect select() {
+        return select;
     }
 
     /**
-     * @return Two-step query key to cache {@link #twoStepQry}, or {@code null} if there's no need to worry about
-     * two-step caching.
+     * @return DML.
      */
-    H2TwoStepCachedQueryKey twoStepQueryKey() {
-        return twoStepQryKey;
+    @Nullable public ParsingResultDml dml() {
+        return dml;
     }
 
     /**
-     * @return Number of parameters.
+     * @return Command.
      */
-    public int parametersCount() {
-        return prepared != null ? prepared.getParameters().size() : twoStepQry.parametersCount();
+    @Nullable public ParsingResultCommand command() {
+        return cmd;
+    }
+
+    /**
+     * @return Check whether this is SELECT.
+     */
+    public boolean isSelect() {
+        return select != null;
+    }
+
+    /**
+     * @return Check whether this is DML.
+     */
+    public boolean isDml() {
+        return dml != null;
     }
 
     /**
@@ -167,5 +116,12 @@ final class ParsingResult {
      */
     public boolean isCommand() {
         return cmd != null;
+    }
+
+    /**
+     * @return Number of parameters.
+     */
+    public int parametersCount() {
+        return select != null ? select.parametersCount() : dml != null ? dml.parametersCount() : null;
     }
 }
