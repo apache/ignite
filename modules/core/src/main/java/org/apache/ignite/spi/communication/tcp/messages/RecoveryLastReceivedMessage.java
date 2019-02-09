@@ -42,6 +42,9 @@ public class RecoveryLastReceivedMessage implements Message {
     /** Need wait. */
     public static final long NEED_WAIT = -3;
 
+    /** Initiator node is not in current topogy. */
+    public static final long UNKNOWN_NODE = -4;
+
     /** Message body size in bytes. */
     private static final int MESSAGE_SIZE = 8;
 
