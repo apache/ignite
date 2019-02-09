@@ -104,10 +104,9 @@ public class QueryParser {
      *
      * @param schemaName schema name.
      * @param qry query to parse.
-     * @param firstArg index of the first argument of the leading query. In other words - offset in the qry args array.
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
-    public ParsingResult parse(String schemaName, SqlFieldsQuery qry, int firstArg) {
+    public ParsingResult parse(String schemaName, SqlFieldsQuery qry) {
         // First, let's check if we already have a two-step query for this statement...
         H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(
             schemaName,
@@ -137,7 +136,7 @@ public class QueryParser {
             return parseRes;
 
         // Parse with H2.
-        return parseH2(schemaName, qry, firstArg);
+        return parseH2(schemaName, qry);
     }
 
     /**
@@ -216,12 +215,10 @@ public class QueryParser {
      *
      * @param schemaName Schema name.
      * @param qry Query.
-     * @param firstArg Position of the first argument of the following {@code Prepared}.
-     * @return Result: prepared statement, H2 command, two-step query (if needed),
-     *     metadata for two-step query (if needed), evaluated query local execution flag.
+     * @return Parsing result.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private ParsingResult parseH2(String schemaName, SqlFieldsQuery qry, int firstArg) {
+    private ParsingResult parseH2(String schemaName, SqlFieldsQuery qry) {
         Connection c = connMgr.connectionForThread().connection(schemaName);
 
         // For queries that are explicitly local, we rely on the flag specified in the query
@@ -258,27 +255,35 @@ public class QueryParser {
 
         checkQueryType(qry, prepared.isQuery());
 
-        SqlFieldsQuery remainingQry;
-
-        // TODO: Params handling!
-        if (F.isEmpty(prep.remainingSql()))
-            remainingQry = null;
-        else
-            remainingQry = cloneFieldsQuery(qry).setSql(prep.remainingSql()).setArgs(qry.getArgs());
-
         int paramsCnt = prepared.getParameters().size();
 
         Object[] argsOrig = qry.getArgs();
+
         Object[] args = null;
+        Object[] remainingArgs = null;
 
         if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
-            if (argsOrig == null || argsOrig.length < firstArg + paramsCnt) {
+            if (argsOrig == null || argsOrig.length < paramsCnt) {
                 throw new IgniteException("Invalid number of query parameters. " +
-                    "Cannot find " + (argsOrig != null ? argsOrig.length + 1 - firstArg : 1) + " parameter.");
+                    "Cannot find " + (argsOrig != null ? argsOrig.length + 1 : 1) + " parameter.");
             }
 
-            args = Arrays.copyOfRange(argsOrig, firstArg, firstArg + paramsCnt);
+            args = Arrays.copyOfRange(argsOrig, 0, paramsCnt);
+
+            if (paramsCnt != argsOrig.length)
+                remainingArgs = Arrays.copyOfRange(argsOrig, paramsCnt, argsOrig.length);
         }
+        else
+            remainingArgs = argsOrig;
+
+        SqlFieldsQuery remainingQry;
+
+        if (F.isEmpty(prep.remainingSql()))
+            remainingQry = null;
+        else
+            remainingQry = cloneFieldsQuery(qry).setSql(prep.remainingSql()).setArgs(remainingArgs);
+
+        SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args);
 
         // TODO: WTF is that? Modifies global query flag (distr joins), invokes additional parsing.
         if (prepared.isQuery()) {
@@ -317,13 +322,10 @@ public class QueryParser {
                 if (cctx != null && cctx.config().getQueryParallelism() > 1) {
                     loc = false;
 
-                    // TODO: Bug!
-                    qry.setDistributedJoins(true);
+                    newQry.setDistributedJoins(true);
                 }
             }
         }
-
-        SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args);
 
         if (CommandProcessor.isCommand(prepared)) {
             GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);

@@ -41,11 +41,4 @@ public class ParsingResultDml {
     public Prepared prepared() {
         return prepared;
     }
-
-    /**
-     * @return Number of parameters.
-     */
-    public int parametersCount() {
-        return prepared.getParameters().size();
-    }
 }

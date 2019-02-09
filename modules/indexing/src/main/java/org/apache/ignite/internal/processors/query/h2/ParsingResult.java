@@ -117,11 +117,4 @@ final class ParsingResult {
     public boolean isCommand() {
         return cmd != null;
     }
-
-    /**
-     * @return Number of parameters.
-     */
-    public int parametersCount() {
-        return select != null ? select.parametersCount() : dml != null ? dml.parametersCount() : null;
-    }
 }

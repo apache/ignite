@@ -79,11 +79,4 @@ public class ParsingResultSelect {
     public Prepared localPrepared() {
         return locPrepared;
     }
-
-    /**
-     * @return Number of parameters.
-     */
-    public int parametersCount() {
-        return locPrepared != null ? locPrepared.getParameters().size() : twoStepQry.parametersCount();
-    }
 }

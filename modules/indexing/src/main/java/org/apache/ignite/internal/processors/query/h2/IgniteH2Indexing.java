@@ -1444,12 +1444,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
 
-            int firstArg = 0;
-
             SqlFieldsQuery remainingQry = qry;
 
             while (remainingQry != null) {
-                ParsingResult parseRes = parser.parse(schemaName, remainingQry, firstArg);
+                ParsingResult parseRes = parser.parse(schemaName, remainingQry);
 
                 remainingQry = parseRes.remainingQuery();
 
@@ -1488,8 +1486,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     );
 
                     res.addAll(qryRes);
-
-                    firstArg += parseRes.parametersCount();
                 }
             }
 
