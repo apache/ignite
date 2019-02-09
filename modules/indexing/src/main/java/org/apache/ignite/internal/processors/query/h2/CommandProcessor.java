@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.ddl;
+package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,28 +28,41 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.SchemaManager;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
+import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlBulkLoadDataConverter;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableAddColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableDropColumn;
@@ -58,20 +71,26 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
+import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
+import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
@@ -82,20 +101,29 @@ import org.h2.command.ddl.DropTable;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 import org.h2.value.Value;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
 
 /**
- * DDL statements processor.<p>
- * Contains higher level logic to handle operations as a whole and communicate with the client.
+ * Processor responsible for execution of all non-SELECT and non-DML commands.
  */
-public class DdlStatementsProcessor {
+public class CommandProcessor {
     /** Kernal context. */
-    private GridKernalContext ctx;
+    private final GridKernalContext ctx;
 
-    /** Indexing. */
-    private SchemaManager schemaMgr;
+    /** Schema manager. */
+    private final SchemaManager schemaMgr;
+
+    /** Running query manager. */
+    private final RunningQueryManager runningQryMgr;
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /** Is backward compatible handling of UUID through DDL enabled. */
     private static final boolean handleUuidAsByte =
@@ -107,27 +135,19 @@ public class DdlStatementsProcessor {
      * @param ctx Kernal context.
      * @param schemaMgr Schema manager.
      */
-    public DdlStatementsProcessor(GridKernalContext ctx, SchemaManager schemaMgr) {
+    public CommandProcessor(GridKernalContext ctx, SchemaManager schemaMgr, RunningQueryManager runningQryMgr) {
         this.ctx = ctx;
         this.schemaMgr = schemaMgr;
-    }
+        this.runningQryMgr = runningQryMgr;
 
-    /**
-     * Initialize message handlers and this' fields needed for further operation.
-     *
-     * @param ctx Kernal context.
-     * @param schemaMgr Schema manager.
-     */
-    public void start(final GridKernalContext ctx, SchemaManager schemaMgr) {
-        this.ctx = ctx;
-        this.schemaMgr = schemaMgr;
+        log = ctx.log(CommandProcessor.class);
     }
 
     /**
      * @param cmd Command.
      * @return {@code True} if this is supported DDL command.
      */
-    public static boolean isDdlCommand(SqlCommand cmd) {
+    private static boolean isDdl(SqlCommand cmd) {
         return cmd instanceof SqlCreateIndexCommand
             || cmd instanceof SqlDropIndexCommand
             || cmd instanceof SqlAlterTableCommand
@@ -137,13 +157,54 @@ public class DdlStatementsProcessor {
     }
 
     /**
+     * Execute command.
+     *
+     * @param qry Query.
+     * @param cmdNative Native command (if any).
+     * @param cmdH2 H2 command (if any).
+     * @param cliCtx Client context.
+     * @param qryId Running query ID.
+     * @return Result.
+     */
+    public CommandResult runCommand(SqlFieldsQuery qry, SqlCommand cmdNative, GridSqlStatement cmdH2,
+        @Nullable SqlClientContext cliCtx, Long qryId) throws IgniteCheckedException {
+        assert cmdNative != null || cmdH2 != null;
+
+        // Do execute.
+        FieldsQueryCursor<List<?>> res = H2Utils.zeroCursor();
+        boolean unregister = true;
+
+        if (cmdNative != null) {
+            assert cmdH2 == null;
+
+            if (isDdl(cmdNative))
+                runCommandNativeDdl(qry.getSql(), cmdNative);
+            else if (cmdNative instanceof SqlBulkLoadCommand) {
+                res = processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);
+
+                unregister = false;
+            }
+            else if (cmdNative instanceof SqlSetStreamingCommand)
+                processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
+            else
+                processTxCommand(cmdNative, qry);
+        }
+        else {
+            assert cmdH2 != null;
+
+            runCommandH2(qry.getSql(), cmdH2);
+        }
+
+        return new CommandResult(res, unregister);
+    }
+
+    /**
      * Run DDL statement.
      *
      * @param sql Original SQL.
      * @param cmd Command.
-     * @return Result.
      */
-    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) {
+    private void runCommandNativeDdl(String sql, SqlCommand cmd) {
         IgniteInternalFuture fut = null;
 
         try {
@@ -260,8 +321,6 @@ public class DdlStatementsProcessor {
 
             if (fut != null)
                 fut.get();
-
-            return H2Utils.zeroCursor();
         }
         catch (SchemaOperationException e) {
             throw convert(e);
@@ -278,20 +337,17 @@ public class DdlStatementsProcessor {
      * Execute DDL statement.
      *
      * @param sql SQL.
-     * @param prepared Prepared.
-     * @return Cursor on query results.
+     * @param cmdH2 Command.
      */
     @SuppressWarnings({"unchecked"})
-    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared) {
+    private void runCommandH2(String sql, GridSqlStatement cmdH2) {
         IgniteInternalFuture fut = null;
 
         try {
             finishActiveTxIfNecessary();
 
-            GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(prepared);
-
-            if (stmt0 instanceof GridSqlCreateIndex) {
-                GridSqlCreateIndex cmd = (GridSqlCreateIndex)stmt0;
+            if (cmdH2 instanceof GridSqlCreateIndex) {
+                GridSqlCreateIndex cmd = (GridSqlCreateIndex)cmdH2;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -329,8 +385,8 @@ public class DdlStatementsProcessor {
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
                     newIdx, cmd.ifNotExists(), 0);
             }
-            else if (stmt0 instanceof GridSqlDropIndex) {
-                GridSqlDropIndex cmd = (GridSqlDropIndex) stmt0;
+            else if (cmdH2 instanceof GridSqlDropIndex) {
+                GridSqlDropIndex cmd = (GridSqlDropIndex) cmdH2;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -350,10 +406,10 @@ public class DdlStatementsProcessor {
                             cmd.indexName());
                 }
             }
-            else if (stmt0 instanceof GridSqlCreateTable) {
+            else if (cmdH2 instanceof GridSqlCreateTable) {
                 ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, null);
 
-                GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
+                GridSqlCreateTable cmd = (GridSqlCreateTable)cmdH2;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -383,10 +439,10 @@ public class DdlStatementsProcessor {
                         cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists(), cmd.encrypted());
                 }
             }
-            else if (stmt0 instanceof GridSqlDropTable) {
+            else if (cmdH2 instanceof GridSqlDropTable) {
                 ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, null);
 
-                GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
+                GridSqlDropTable cmd = (GridSqlDropTable)cmdH2;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -400,8 +456,8 @@ public class DdlStatementsProcessor {
                 else
                     ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
             }
-            else if (stmt0 instanceof GridSqlAlterTableAddColumn) {
-                GridSqlAlterTableAddColumn cmd = (GridSqlAlterTableAddColumn)stmt0;
+            else if (cmdH2 instanceof GridSqlAlterTableAddColumn) {
+                GridSqlAlterTableAddColumn cmd = (GridSqlAlterTableAddColumn)cmdH2;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -455,8 +511,8 @@ public class DdlStatementsProcessor {
                     }
                 }
             }
-            else if (stmt0 instanceof GridSqlAlterTableDropColumn) {
-                GridSqlAlterTableDropColumn cmd = (GridSqlAlterTableDropColumn)stmt0;
+            else if (cmdH2 instanceof GridSqlAlterTableDropColumn) {
+                GridSqlAlterTableDropColumn cmd = (GridSqlAlterTableDropColumn)cmdH2;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -519,13 +575,6 @@ public class DdlStatementsProcessor {
 
             if (fut != null)
                 fut.get();
-
-            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                (Collections.singletonList(0L)), null, false);
-
-            resCur.fieldsMeta(UPDATE_RESULT_META);
-
-            return resCur;
         }
         catch (SchemaOperationException e) {
             U.error(null, "DDL operation failure", e);
@@ -742,7 +791,7 @@ public class DdlStatementsProcessor {
      * @param cmd Statement.
      * @return Whether {@code cmd} is a DDL statement we're able to handle.
      */
-    public static boolean isDdlStatement(Prepared cmd) {
+    public static boolean isCommand(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
             cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
     }
@@ -764,5 +813,171 @@ public class DdlStatementsProcessor {
             default:
                 return DataType.getTypeClassName(type);
         }
+    }
+
+    /**
+     * Process transactional command.
+     * @param cmd Command.
+     * @param qry Query.
+     * @throws IgniteCheckedException if failed.
+     */
+    private void processTxCommand(SqlCommand cmd, SqlFieldsQuery qry)
+        throws IgniteCheckedException {
+        NestedTxMode nestedTxMode = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx)qry).getNestedTxMode() :
+            NestedTxMode.DEFAULT;
+
+        GridNearTxLocal tx = tx(ctx);
+
+        if (cmd instanceof SqlBeginTransactionCommand) {
+            if (!mvccEnabled(ctx))
+                throw new IgniteSQLException("MVCC must be enabled in order to start transaction.",
+                    IgniteQueryErrorCode.MVCC_DISABLED);
+
+            if (tx != null) {
+                if (nestedTxMode == null)
+                    nestedTxMode = NestedTxMode.DEFAULT;
+
+                switch (nestedTxMode) {
+                    case COMMIT:
+                        doCommit(tx);
+
+                        txStart(ctx, qry.getTimeout());
+
+                        break;
+
+                    case IGNORE:
+                        log.warning("Transaction has already been started, ignoring BEGIN command.");
+
+                        break;
+
+                    case ERROR:
+                        throw new IgniteSQLException("Transaction has already been started.",
+                            IgniteQueryErrorCode.TRANSACTION_EXISTS);
+
+                    default:
+                        throw new IgniteSQLException("Unexpected nested transaction handling mode: " +
+                            nestedTxMode.name());
+                }
+            }
+            else
+                txStart(ctx, qry.getTimeout());
+        }
+        else if (cmd instanceof SqlCommitTransactionCommand) {
+            // Do nothing if there's no transaction.
+            if (tx != null)
+                doCommit(tx);
+        }
+        else {
+            assert cmd instanceof SqlRollbackTransactionCommand;
+
+            // Do nothing if there's no transaction.
+            if (tx != null)
+                doRollback(tx);
+        }
+    }
+
+    /**
+     * Commit and properly close transaction.
+     * @param tx Transaction.
+     * @throws IgniteCheckedException if failed.
+     */
+    private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
+        try {
+            tx.commit();
+        }
+        finally {
+            closeTx(tx);
+        }
+    }
+
+    /**
+     * Rollback and properly close transaction.
+     * @param tx Transaction.
+     * @throws IgniteCheckedException if failed.
+     */
+    public void doRollback(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
+        try {
+            tx.rollback();
+        }
+        finally {
+            closeTx(tx);
+        }
+    }
+
+    /**
+     * Properly close transaction.
+     * @param tx Transaction.
+     * @throws IgniteCheckedException if failed.
+     */
+    private void closeTx(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
+        try {
+            tx.close();
+        }
+        finally {
+            ctx.cache().context().tm().resetContext();
+        }
+    }
+
+    /**
+     * Process SET STREAMING command.
+     *
+     * @param cmd Command.
+     * @param cliCtx Client context.
+     */
+    private void processSetStreamingCommand(SqlSetStreamingCommand cmd,
+        @Nullable SqlClientContext cliCtx) {
+        if (cliCtx == null)
+            throw new IgniteSQLException("SET STREAMING command can only be executed from JDBC or ODBC driver.");
+
+        if (cmd.isTurnOn())
+            cliCtx.enableStreaming(
+                cmd.allowOverwrite(),
+                cmd.flushFrequency(),
+                cmd.perNodeBufferSize(),
+                cmd.perNodeParallelOperations(),
+                cmd.isOrdered()
+            );
+        else
+            cliCtx.disableStreaming();
+    }
+
+    /**
+     * Process bulk load COPY command.
+     *
+     * @param cmd The command.
+     * @param qryId Query id.
+     * @return The context (which is the result of the first request/response).
+     * @throws IgniteCheckedException If something failed.
+     */
+    private FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd, Long qryId)
+        throws IgniteCheckedException {
+        if (cmd.packetSize() == null)
+            cmd.packetSize(BulkLoadAckClientParameters.DFLT_PACKET_SIZE);
+
+        GridH2Table tbl = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName());
+
+        if (tbl == null) {
+            throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
+                IgniteQueryErrorCode.TABLE_NOT_FOUND);
+        }
+
+        H2Utils.checkAndStartNotStartedCache(ctx, tbl);
+
+        UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
+
+        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new DmlBulkLoadDataConverter(plan);
+
+        IgniteDataStreamer<Object, Object> streamer = ctx.grid().dataStreamer(tbl.cacheName());
+
+        BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
+
+        BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
+
+        BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
+            runningQryMgr, qryId);
+
+        BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
+
+        return new BulkLoadContextCursor(processor, params);
     }
 }
