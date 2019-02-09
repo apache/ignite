@@ -975,7 +975,7 @@ public final class GridCacheMvcc {
      * as system invalidate and marks these candidates as owned and used.
      *
      * @param ver Version to salvage.
-     * @param near {@code True} if remove near cache candidate.
+     * @param near {@code True} If salvage near cache candidate.
      */
     public void salvageRemote(GridCacheVersion ver, boolean near) {
         assert ver != null;
