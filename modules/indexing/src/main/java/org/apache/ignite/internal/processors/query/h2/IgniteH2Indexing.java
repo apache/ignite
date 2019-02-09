@@ -1680,7 +1680,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                 }
 
-                // TODO: Move to H2
+                // TODO: IGNITE-11275: Remove from here. To parsing result?
                 if (prepared instanceof NoOperation)
                     return Collections.singletonList(H2Utils.zeroCursor());
 
