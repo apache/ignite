@@ -319,7 +319,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     private GridCacheTwoStepQuery cachedTwoStepQuery() {
         GridQueryIndexing idx = grid(0).context().query().getIndexing();
 
-        Map<?, QueryParserCacheEntry> m = U.field(idx, "twoStepCache");
+        Map<?, QueryParserCacheEntry> m = U.field((Object)U.field(idx, "parser"), "cache");
 
         if (m.isEmpty())
             return null;

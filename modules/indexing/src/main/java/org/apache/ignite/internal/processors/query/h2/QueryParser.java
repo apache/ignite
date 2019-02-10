@@ -66,7 +66,7 @@ import java.util.regex.Pattern;
  */
 public class QueryParser {
     /** */
-    private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
+    private static final int CACHE_SIZE = 1024;
 
     /** A pattern for commands having internal implementation in Ignite. */
     public static final Pattern INTERNAL_CMD_RE = Pattern.compile(
@@ -83,8 +83,8 @@ public class QueryParser {
     private final IgniteLogger log;
 
     /** */
-    private volatile GridBoundedConcurrentLinkedHashMap<QueryParserCacheKey, QueryParserCacheEntry> twoStepCache =
-        new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
+    private volatile GridBoundedConcurrentLinkedHashMap<QueryParserCacheKey, QueryParserCacheEntry> cache =
+        new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
 
     /**
      * Constructor.
@@ -116,7 +116,7 @@ public class QueryParser {
             qry.isEnforceJoinOrder(),
             qry.isLocal());
 
-        QueryParserCacheEntry cachedQry = twoStepCache.get(cachedQryKey);
+        QueryParserCacheEntry cachedQry = cache.get(cachedQryKey);
 
         if (cachedQry != null) {
             QueryParserResultSelect select = new QueryParserResultSelect(
@@ -368,7 +368,7 @@ public class QueryParser {
             qry.isLocal()
         );
 
-        QueryParserCacheEntry cachedQry = twoStepCache.get(cachedQryKey);
+        QueryParserCacheEntry cachedQry = cache.get(cachedQryKey);
 
         if (cachedQry == null) {
             try {
@@ -388,7 +388,7 @@ public class QueryParser {
                 cachedQry = new QueryParserCacheEntry(meta, twoStepQry);
 
                 if (remainingQry == null && !twoStepQry.explain())
-                    twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
+                    cache.putIfAbsent(cachedQryKey, cachedQry);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSQLException("Failed to bind parameters: [qry=" + newQry.getSql() + ", params=" +
@@ -415,7 +415,7 @@ public class QueryParser {
      * Clear cached plans.
      */
     public void clearCache() {
-        twoStepCache = new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
+        cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
     }
 
     /**
