@@ -24,7 +24,7 @@ public class CompoundNaiveBayesModelTest {
 
     @Test /** */
     public void testPredictOnlyGaus() {
-
+        CompoundNaiveBayesModel model = CompoundNaiveBayesModel.builder();
     }
 
     @Test /** */

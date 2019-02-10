@@ -27,9 +27,9 @@ import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 
 /** Created by Ravil on 04/02/2019. */
-public class CompoundNaiveBayesModel<K, V> implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable {
+public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable {
 
-    DiscreteNaiveBayesModel discreteNaiveBayesModel;
+    DiscreteNaiveBayesModel discreteModel;
     int discreteFeatureFrom;
     int discreteFeatureTo;
     private double[][][] probabilities;
@@ -39,9 +39,18 @@ public class CompoundNaiveBayesModel<K, V> implements IgniteModel<Vector, Double
     private double[] labels;
     private double[][] bucketThresholds;
 
-    GaussianNaiveBayesModel gaussianNaiveBayesModel;
-    int continiousFeatureFrom;
-    int continiousFeatureTo;
+    GaussianNaiveBayesModel gaussianModel;
+    int gaussianFeatureFrom;
+    int gaussianFeatureTo;
+
+    public CompoundNaiveBayesModel(Builder builder) {
+        gaussianModel = builder.gaussianModel;
+        gaussianFeatureFrom = builder.gaussianFeatureFrom;
+        gaussianFeatureTo = builder.gaussianFeatureTo;
+        discreteModel = builder.discreteModel;
+        discreteFeatureFrom = builder.discreteFeatureFrom;
+        discreteFeatureTo = builder.discreteFeatureTo;
+    }
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<CompoundNaiveBayesModel, P> exporter, P path) {
@@ -62,9 +71,9 @@ public class CompoundNaiveBayesModel<K, V> implements IgniteModel<Vector, Double
                 probapilityPowers[i] += (p > 0 ? Math.log(p) : .0);
             }
 
-            for (int j = continiousFeatureFrom; j < continiousFeatureTo; j++) {
+            for (int j = gaussianFeatureFrom; j < gaussianFeatureTo; j++) {
                 double x = vector.get(j);
-                double g = gauss(x, gaussianNaiveBayesModel.getMeans()[i][j], gaussianNaiveBayesModel.getVariances()[i][j]);
+                double g = gauss(x, gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][j]);
                 probapilityPowers[i] += (g > 0 ? Math.log(g) : .0);
             }
         }
@@ -90,5 +99,48 @@ public class CompoundNaiveBayesModel<K, V> implements IgniteModel<Vector, Double
     /** Gauss distribution */
     private double gauss(double x, double mean, double variance) {
         return Math.exp(-1. * Math.pow(x - mean, 2) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
+    }
+
+    public static CompoundNaiveBayesModel.Builder builder() {
+        return new Builder();
+    }
+    
+    static class Builder {
+
+        DiscreteNaiveBayesModel discreteModel;
+        int discreteFeatureFrom = -1;
+        int discreteFeatureTo = -1;
+
+        GaussianNaiveBayesModel gaussianModel;
+        int gaussianFeatureFrom = -1;
+        int gaussianFeatureTo = -1;
+
+        Builder withGaussianModel(GaussianNaiveBayesModel gaussianModel) {
+            this.gaussianModel = gaussianModel;
+            return this;
+        }
+
+        Builder withGaussianModelRange(int from, int to) {
+            assert from > to;
+            gaussianFeatureFrom = from;
+            gaussianFeatureTo = to;
+            return this;
+        }
+
+        Builder withDiscreteModel(DiscreteNaiveBayesModel discreteModel) {
+            this.discreteModel = discreteModel;
+            return this;
+        }
+
+        CompoundNaiveBayesModel build() {
+            if (discreteModel != null && (discreteFeatureFrom < 0 || discreteFeatureTo < 0)) {
+                throw new IllegalArgumentException();
+            }
+            if (gaussianModel != null && (gaussianFeatureFrom < 0 || gaussianFeatureTo < 0)) {
+                throw new IllegalArgumentException();
+            }
+
+            return new CompoundNaiveBayesModel(this);
+        }
     }
 }
