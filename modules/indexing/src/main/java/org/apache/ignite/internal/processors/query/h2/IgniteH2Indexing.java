@@ -90,8 +90,6 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.QueryHistoryMetrics;
-import org.apache.ignite.internal.processors.query.QueryHistoryMetricsKey;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
@@ -2429,22 +2427,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         return runningQryMgr.longRunningQueries(duration);
-    }
-
-    /**
-     * Gets query history metrics.
-     *
-     * @return Queries history metrics.
-     */
-    public Map<QueryHistoryMetricsKey, QueryHistoryMetrics> queryHistoryMetrics() {
-        return runningQryMgr.queryHistoryMetrics();
-    }
-
-    /**
-     * Reset query history metrics.
-     */
-    public void resetQueryHistoryMetrics() {
-        runningQryMgr.resetQueryHistoryMetrics();
     }
 
     /** {@inheritDoc} */
