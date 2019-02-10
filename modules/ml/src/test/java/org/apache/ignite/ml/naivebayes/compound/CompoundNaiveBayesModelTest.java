@@ -17,6 +17,23 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
-/** Created by Ravil on 10/02/2019. */
+import org.junit.Test;
+
+/** Tests for {@link CompoundNaiveBayesModel} */
 public class CompoundNaiveBayesModelTest {
+
+    @Test /** */
+    public void testPredictOnlyGaus() {
+
+    }
+
+    @Test /** */
+    public void testPredictOnlyDiscrete() {
+
+    }
+
+    @Test /** */
+    public void testPredictGausAndDiscrete() {
+
+    }
 }
