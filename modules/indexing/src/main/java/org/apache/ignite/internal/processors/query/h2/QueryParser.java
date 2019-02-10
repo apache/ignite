@@ -326,6 +326,10 @@ public class QueryParser {
             }
         }
 
+        // Do not cache multiple statements and distributed queries as whole two step query will be cached later on.
+        if (remainingQry != null || !loc)
+            connMgr.statementCacheForThread().remove(schemaName, qry.getSql());
+
         if (CommandProcessor.isCommand(prepared)) {
             GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
 
@@ -346,13 +350,8 @@ public class QueryParser {
         }
 
         // At this point only SELECT is possible.
-
-        // Let's not cache multiple statements and distributed queries as whole two step query will be cached later on.
-        if (remainingQry != null || !loc)
-            connMgr.statementCacheForThread().remove(schemaName, qry.getSql());
-
-        // No two-step for local query for now.
         if (loc) {
+            // No two-step for local query for now.
             QueryParserResultSelect select = new QueryParserResultSelect(null, null, prepared);
 
             return new QueryParserResult(newQry, remainingQry, select, null, null);
