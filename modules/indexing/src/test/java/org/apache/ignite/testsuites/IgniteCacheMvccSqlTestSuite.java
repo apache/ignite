@@ -78,7 +78,12 @@ import org.junit.runners.Suite;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /** */
-@RunWith(Suite.class)
+@RunWith(DebugSuite.class)
+@DebugSuite.Config(
+    testClass = CacheMvccDmlSimpleTest.class,
+    method = "testMerge",
+    times = 10
+)
 @Suite.SuiteClasses({
     // Simple tests.
     MvccEmptyTransactionSelfTest.class,
