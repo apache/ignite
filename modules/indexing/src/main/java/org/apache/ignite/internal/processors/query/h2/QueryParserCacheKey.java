@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 /**
  * Key for cached two-step query.
  */
-public class H2TwoStepCachedQueryKey {
+public class QueryParserCacheKey {
     /** */
     private final String schemaName;
 
@@ -47,7 +47,7 @@ public class H2TwoStepCachedQueryKey {
      * @param enforceJoinOrder Enforce join order of tables.
      * @param isLocal Query is local flag.
      */
-    H2TwoStepCachedQueryKey(String schemaName,
+    QueryParserCacheKey(String schemaName,
         String sql,
         boolean grpByCollocated,
         boolean distributedJoins,
@@ -70,7 +70,7 @@ public class H2TwoStepCachedQueryKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        H2TwoStepCachedQueryKey that = (H2TwoStepCachedQueryKey)o;
+        QueryParserCacheKey that = (QueryParserCacheKey)o;
 
         if (grpByCollocated != that.grpByCollocated)
             return false;

@@ -66,7 +66,7 @@ public class JdbcThinLocalQueriesSelfTest extends JdbcThinAbstractSelfTest {
 
             assertEqualsCollections(F.asList(2, "John", "Apple"), res.get(0));
 
-            Map twoStepCache = U.field(grid(0).context().query().getIndexing(), "twoStepCache");
+            Map twoStepCache = U.field((Object)U.field(grid(0).context().query().getIndexing(), "parser"), "cache");
 
             // No two step queries cached => local select.
             assertEquals(0, twoStepCache.size());

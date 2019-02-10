@@ -364,7 +364,7 @@ public class ConnectionManager {
     /**
      * Clear statement cache when cache is unregistered..
      */
-    public void onCacheUnregistered() {
+    public void onCacheDestroyed() {
         threadConns.values().forEach(set -> set.keySet().forEach(H2ConnectionWrapper::clearStatementCache));
     }
 
