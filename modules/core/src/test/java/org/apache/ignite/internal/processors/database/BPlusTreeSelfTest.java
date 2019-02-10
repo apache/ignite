@@ -2581,7 +2581,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, Runtime.getRuntime().availableProcessors(), "put-remove");
+        }, 16, "put-remove");
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
