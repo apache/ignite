@@ -98,6 +98,7 @@ import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
+import org.h2.command.dml.NoOperation;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -794,6 +795,14 @@ public class CommandProcessor {
     public static boolean isCommand(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
             cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
+    }
+
+    /**
+     * @param cmd Statement.
+     * @return Whether {@code cmd} is a no-op.
+     */
+    public static boolean isCommandNoOp(Prepared cmd) {
+        return cmd instanceof NoOperation;
     }
 
     /**
