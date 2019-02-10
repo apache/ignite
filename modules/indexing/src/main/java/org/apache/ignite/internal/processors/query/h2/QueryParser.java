@@ -107,6 +107,21 @@ public class QueryParser {
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
     public QueryParserResult parse(String schemaName, SqlFieldsQuery qry) {
+        QueryParserResult res = parse0(schemaName, qry);
+
+        checkQueryType(qry, res.isSelect());
+
+        return res;
+    }
+
+    /**
+     * Parse the query.
+     *
+     * @param schemaName schema name.
+     * @param qry query to parse.
+     * @return Parsing result that contains Parsed leading query and remaining sql script.
+     */
+    private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry) {
         // First, let's check if we already have a two-step query for this statement...
         QueryParserCacheKey cachedQryKey = new QueryParserCacheKey(
             schemaName,
@@ -251,8 +266,6 @@ public class QueryParser {
         if (GridSqlQueryParser.isExplainUpdate(prepared))
             throw new IgniteSQLException("Explains of update queries are not supported.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        checkQueryType(qry, prepared.isQuery());
 
         int paramsCnt = prepared.getParameters().size();
 
