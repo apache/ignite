@@ -64,12 +64,10 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /** Returns a number of class to which the input belongs. */
     @Override public Double predict(Vector vector) {
-        int k = classProbabilities.length;
-
         double maxProbability = .0;
         int max = 0;
 
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < classProbabilities.length; i++) {
             double p = classProbabilities[i];
             for (int j = 0; j < vector.size(); j++) {
                 double x = vector.get(j);

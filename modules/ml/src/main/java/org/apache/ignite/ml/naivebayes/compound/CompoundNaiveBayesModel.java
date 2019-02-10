@@ -34,7 +34,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     private final int discreteFeatureTo;
     private double[][][] probabilities;
     /** Prior probabilities of each class */
-    private double[] clsProbabilities;
+    private double[] classsProbabilities;
     /** Labels. */
     private double[] labels;
     private double[][] bucketThresholds;
@@ -50,6 +50,10 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         discreteModel = builder.discreteModel;
         discreteFeatureFrom = builder.discreteFeatureFrom;
         discreteFeatureTo = builder.discreteFeatureTo;
+
+        classsProbabilities = builder.classProbabilities;
+        labels = builder.labels;
+
     }
 
     /** {@inheritDoc} */
@@ -59,12 +63,12 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     @Override public Double predict(Vector vector) {
         double maxProbapilityPower = -Double.MAX_VALUE;
-        double[] probapilityPowers = new double[vector.size()];
+        double[] probapilityPowers = new double[classsProbabilities.length];
         Arrays.fill(probapilityPowers, Double.MAX_VALUE);
         int maxLabelIndex = 0;
 
-        for (int i = 0; i < clsProbabilities.length; i++) {
-            probapilityPowers[i] = Math.log(clsProbabilities[i]);
+        for (int i = 0; i < classsProbabilities.length; i++) {
+            probapilityPowers[i] = Math.log(classsProbabilities[i]);
             for (int j = discreteFeatureFrom; j < discreteFeatureTo; j++) {
                 int x = toBucketNumber(vector.get(j), bucketThresholds[j]);
                 double p = probabilities[i][j][x];
@@ -107,13 +111,26 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     static class Builder {
 
-        private DiscreteNaiveBayesModel discreteModel;
-        private int discreteFeatureFrom = -1;
-        private int discreteFeatureTo = -1;
+        private double[] classProbabilities;
+        private double[] labels;
 
         private GaussianNaiveBayesModel gaussianModel;
         private int gaussianFeatureFrom = -1;
         private int gaussianFeatureTo = -1;
+
+        private DiscreteNaiveBayesModel discreteModel;
+        private int discreteFeatureFrom = -1;
+        private int discreteFeatureTo = -1;
+
+        Builder wirhClassProbabilities(double[] classProbabilities) {
+            this.classProbabilities = classProbabilities;
+            return this;
+        }
+
+        Builder withLabels(double[] labels) {
+            this.labels = labels;
+            return this;
+        }
 
         Builder withGaussianModel(GaussianNaiveBayesModel gaussianModel) {
             this.gaussianModel = gaussianModel;
@@ -121,7 +138,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         }
 
         Builder withGaussianModelRange(int from, int to) {
-            assert from > to;
+            assert from < to;
             gaussianFeatureFrom = from;
             gaussianFeatureTo = to;
             return this;

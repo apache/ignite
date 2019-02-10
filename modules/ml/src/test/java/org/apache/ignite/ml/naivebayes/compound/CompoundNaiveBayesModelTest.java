@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
+import org.junit.Assert;
 import org.junit.Test;
 
 /** Tests for {@link CompoundNaiveBayesModel} */
@@ -24,7 +28,30 @@ public class CompoundNaiveBayesModelTest {
 
     @Test /** */
     public void testPredictOnlyGaus() {
-        CompoundNaiveBayesModel model = CompoundNaiveBayesModel.builder().build();
+        double first = 1;
+        double second = 2;
+        double[][] means = new double[][] {
+            {5.855, 176.25, 11.25},
+            {5.4175, 132.5, 7.5},
+        };
+        double[][] variances = new double[][] {
+            {3.5033E-2, 1.2292E2, 9.1667E-1},
+            {9.7225E-2, 5.5833E2, 1.6667},
+        };
+        double[] probabilities = new double[] {.5, .5};
+        double[] labels = {first, second};
+        GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities, labels, null);
+        Vector observation = VectorUtils.of(6, 130, 8);
+
+        CompoundNaiveBayesModel model = CompoundNaiveBayesModel.builder()
+            .wirhClassProbabilities(probabilities)
+            .withLabels(labels)
+            .withGaussianModel(mdl)
+            .withGaussianModelRange(0,2)
+            .build();
+
+        Assert.assertEquals(second, model.predict(observation), 0.0001);
+
     }
 
     @Test /** */
