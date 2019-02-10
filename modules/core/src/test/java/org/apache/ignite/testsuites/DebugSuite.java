@@ -21,6 +21,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.jetbrains.annotations.NotNull;
 import org.junit.runner.Runner;
@@ -52,17 +53,25 @@ public class DebugSuite extends Suite {
         Config cfg = debugConfig(suiteClass);
 
         return new RunnerBuilder() {
+            private final AtomicInteger idGen = new AtomicInteger();
+
             @Override public Runner runnerForClass(Class<?> testClass) throws Throwable {
                 Runner dfltRunner = builder.runnerForClass(testClass);
                 if (!(dfltRunner instanceof BlockJUnit4ClassRunner))
                     throw new IllegalStateException();
 
                 return new BlockJUnit4ClassRunner(testClass) {
+                    private final int id = idGen.getAndIncrement();
+
                     @Override protected void runChild(FrameworkMethod method, RunNotifier notifier) {
                         if (cfg.method().equals("*") || cfg.method().equals(method.getName()))
                             super.runChild(method, notifier);
                         else
                             notifier.fireTestIgnored(describeChild(method));
+                    }
+
+                    @Override protected String testName(FrameworkMethod method) {
+                        return super.testName(method) + '[' + id + ']';
                     }
                 };
             }
