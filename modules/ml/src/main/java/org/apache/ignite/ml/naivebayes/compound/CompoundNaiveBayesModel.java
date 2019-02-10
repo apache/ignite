@@ -29,9 +29,9 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 /** Created by Ravil on 04/02/2019. */
 public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable {
 
-    DiscreteNaiveBayesModel discreteModel;
-    int discreteFeatureFrom;
-    int discreteFeatureTo;
+    private final DiscreteNaiveBayesModel discreteModel;
+    private final int discreteFeatureFrom;
+    private final int discreteFeatureTo;
     private double[][][] probabilities;
     /** Prior probabilities of each class */
     private double[] clsProbabilities;
@@ -39,9 +39,9 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     private double[] labels;
     private double[][] bucketThresholds;
 
-    GaussianNaiveBayesModel gaussianModel;
-    int gaussianFeatureFrom;
-    int gaussianFeatureTo;
+    private final GaussianNaiveBayesModel gaussianModel;
+    private final int gaussianFeatureFrom;
+    private final int gaussianFeatureTo;
 
     public CompoundNaiveBayesModel(Builder builder) {
         gaussianModel = builder.gaussianModel;
@@ -104,16 +104,16 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     public static CompoundNaiveBayesModel.Builder builder() {
         return new Builder();
     }
-    
+
     static class Builder {
 
-        DiscreteNaiveBayesModel discreteModel;
-        int discreteFeatureFrom = -1;
-        int discreteFeatureTo = -1;
+        private DiscreteNaiveBayesModel discreteModel;
+        private int discreteFeatureFrom = -1;
+        private int discreteFeatureTo = -1;
 
-        GaussianNaiveBayesModel gaussianModel;
-        int gaussianFeatureFrom = -1;
-        int gaussianFeatureTo = -1;
+        private GaussianNaiveBayesModel gaussianModel;
+        private int gaussianFeatureFrom = -1;
+        private int gaussianFeatureTo = -1;
 
         Builder withGaussianModel(GaussianNaiveBayesModel gaussianModel) {
             this.gaussianModel = gaussianModel;
