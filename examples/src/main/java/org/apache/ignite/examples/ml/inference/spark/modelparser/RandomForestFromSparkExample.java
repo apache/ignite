@@ -39,8 +39,7 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  */
 public class RandomForestFromSparkExample {
     /** Path to Spark Random Forest model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/rf/data" +
-        "/part-00000-290bdb9d-bc1b-411c-8811-c3205434f5fc-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/rf";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
