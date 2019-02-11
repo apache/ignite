@@ -21,18 +21,30 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.UpstreamTransformer;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDataset;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -40,6 +52,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.util.generators.primitives.scalar.GaussRandomProducer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -159,6 +172,39 @@ public class DataStreamGeneratorTest {
     }
 
     /** */
+    @Test
+    public void testCacheFilling() {
+        IgniteConfiguration configuration = new IgniteConfiguration().setPeerClassLoadingEnabled(true);
+        String cacheName = "TEST_CACHE";
+        CacheConfiguration<UUID, LabeledVector<Double>> cacheConfiguration =
+            new CacheConfiguration<UUID, LabeledVector<Double>>(cacheName)
+                .setAffinity(new RendezvousAffinityFunction(false, 10));
+        int datasetSize = 5000;
+
+        try (Ignite ignite = Ignition.start(configuration)) {
+            IgniteCache<UUID, LabeledVector<Double>> cache = ignite.getOrCreateCache(cacheConfiguration);
+            DataStreamGenerator generator = new GaussRandomProducer(0).vectorize(1).asDataStream();
+            generator.fillCacheWithVecUUIDAsKey(datasetSize, cache);
+
+            CacheBasedDatasetBuilder<UUID, LabeledVector<Double>> datasetBuilder = new CacheBasedDatasetBuilder<>(ignite, cache);
+            try (CacheBasedDataset<UUID, LabeledVector<Double>, EmptyContext, SimpleDatasetData> dataset =
+                     datasetBuilder.build(LearningEnvironmentBuilder.defaultBuilder(),
+                         new EmptyContextBuilder<>(), new SimpleDatasetDataBuilder<>((k, v) -> v.features()))) {
+
+                StatPair result = dataset.compute(
+                    data -> new StatPair(DoubleStream.of(data.getFeatures()).sum(), data.getRows()),
+                    StatPair::sum
+                );
+
+                assertEquals(datasetSize, result.countOfRows);
+                assertEquals(0.0, result.elementsSum / result.countOfRows, 1e-2);
+            }
+
+            ignite.destroyCache(cacheName);
+        }
+    }
+
+    /** */
     private void checkDataset(int sampleSize, DatasetBuilder<Vector, Double> datasetBuilder,
         Predicate<LabeledVector> labelCheck) throws Exception {
 
@@ -205,6 +251,36 @@ public class DataStreamGeneratorTest {
         @Override public Stream<UpstreamEntry> transform(
             Stream<UpstreamEntry> upstream) {
             return upstream.map(entry -> new UpstreamEntry<>(entry.getKey(), -((double)entry.getValue())));
+        }
+    }
+
+    /** */
+    static class StatPair {
+        /** */
+        private double elementsSum;
+
+        /** */
+        private int countOfRows;
+
+        /** */
+        public StatPair(double elementsSum, int countOfRows) {
+            this.elementsSum = elementsSum;
+            this.countOfRows = countOfRows;
+        }
+
+        /** */
+        static StatPair sum(StatPair left, StatPair right) {
+            if (left == null && right == null)
+                return new StatPair(0, 0);
+            else if (left == null)
+                return right;
+            else if (right == null)
+                return left;
+            else
+                return new StatPair(
+                    right.elementsSum + left.elementsSum,
+                    right.countOfRows + left.countOfRows
+                );
         }
     }
 }
