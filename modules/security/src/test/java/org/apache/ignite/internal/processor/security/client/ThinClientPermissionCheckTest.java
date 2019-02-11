@@ -48,8 +48,6 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -192,18 +190,13 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     @Test
     public void testSysOperation() throws Exception {
         try (IgniteClient sysPrmClnt = startClient(CLIENT_SYS_PERM)) {
-            assertThat(sysPrmClnt.createCache(DYNAMIC_CACHE), notNullValue());
+            sysPrmClnt.createCache(DYNAMIC_CACHE);
+
+            assertThat(sysPrmClnt.cacheNames().contains(DYNAMIC_CACHE), is(true));
 
             sysPrmClnt.destroyCache(DYNAMIC_CACHE);
 
-            try {
-                sysPrmClnt.cache(DYNAMIC_CACHE).put("key", "any value");
-
-                fail();
-            }
-            catch (Exception e) {
-                assertThat(e.getMessage(), containsString("Cache does not exist"));
-            }
+            assertThat(sysPrmClnt.cacheNames().contains(DYNAMIC_CACHE), is(false));
         }
 
         executeForbiddenOperation(c -> c.createCache(DYNAMIC_CACHE));
