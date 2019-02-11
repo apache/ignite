@@ -1272,6 +1272,34 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
+     * @param sortedRows Iterator over search rows sorted according to this tree sort order.
+     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+     * @return Found result or {@code null}.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final List<T> findAll(Iterator<? extends L> sortedRows, TreeRowClosure<L, T> c, Object x)
+        throws IgniteCheckedException {
+        checkDestroyed();
+
+        GetAll g = new GetAll(sortedRows, c, x);
+
+        try {
+            doFind(g);
+
+            return g.foundRows;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on lookup row: " + g.row, e);
+        }
+        catch (RuntimeException | AssertionError e) {
+            throw new CorruptedTreeException("Runtime failure on lookup row: " + g.row, e);
+        }
+        finally {
+            checkDestroyed();
+        }
+    }
+
+    /**
      * @param row Lookup row for exact match.
      * @return Found row.
      * @throws IgniteCheckedException If failed.
@@ -3114,6 +3142,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * Finish the operation.
          */
         void finish() {
+            assert row != null; // Must be called only once.
+
             row = null;
         }
 
@@ -3180,6 +3210,48 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 foundRow = getRow(io, pageAddr, idx, x);
 
             return true;
+        }
+    }
+
+    /**
+     * Get all operation.
+     */
+    final class GetAll extends GetOne {
+        /** */
+        Iterator<? extends L> sortedRows;
+
+        /** */
+        List<T> foundRows;
+
+        /**
+         * @param sortedRows Sorted rows.
+         * @param c Closure filter.
+         * @param x Implementation specific argument.
+         */
+        GetAll(Iterator<? extends L> sortedRows, TreeRowClosure<L,T> c, Object x) {
+            super(sortedRows.next(), c, x, false);
+
+            this.sortedRows = sortedRows;
+            foundRows = new ArrayList<>();
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean nextRow(Result res) {
+            if (!doNextRow(res, sortedRows))
+                return false;
+
+            // Reset state.
+            foundRow = null;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override void finish() {
+            super.finish();
+
+            // Collect result.
+            foundRows.add(foundRow);
         }
     }
 
@@ -4333,7 +4405,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         Iterator<? extends L> sortedRows;
 
         /**
-         * @param row Row.
+         * @param sortedRows Sorted rows.
          * @param needOld {@code True} If need return old value.
          */
         RemoveAll(Iterator<? extends L> sortedRows, boolean needOld) {
