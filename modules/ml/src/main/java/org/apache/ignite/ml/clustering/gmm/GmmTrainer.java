@@ -72,11 +72,9 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * Creates an instance of GmmTrainer.
      *
      * @param countOfComponents Count of components.
-     * @param maxCountOfIterations Max count of iterations.
      */
-    public GmmTrainer(int countOfComponents, int maxCountOfIterations) {
+    public GmmTrainer(int countOfComponents) {
         this.countOfComponents = countOfComponents;
-        this.maxCountOfIterations = maxCountOfIterations;
     }
 
     /** {@inheritDoc} */

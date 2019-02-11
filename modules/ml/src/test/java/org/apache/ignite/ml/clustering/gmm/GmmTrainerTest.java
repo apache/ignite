@@ -49,7 +49,7 @@ public class GmmTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testFit() {
-        GmmTrainer trainer = new GmmTrainer(2, 1)
+        GmmTrainer trainer = new GmmTrainer(2)
             .withInitialMeans(Arrays.asList(
                 VectorUtils.of(1.0, 2.0),
                 VectorUtils.of(-1.0, -2.0)));
@@ -68,7 +68,7 @@ public class GmmTrainerTest extends TrainerTest {
     /** */
     @Test(expected = IllegalArgumentException.class)
     public void testOnEmptyPartition() throws Throwable {
-        GmmTrainer trainer = new GmmTrainer(2, 1)
+        GmmTrainer trainer = new GmmTrainer(2)
             .withInitialMeans(Arrays.asList(VectorUtils.of(1.0, 2.0), VectorUtils.of(-1.0, -2.0)));
 
         try {
@@ -86,7 +86,7 @@ public class GmmTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testUpdateOnEmptyDataset() {
-        GmmTrainer trainer = new GmmTrainer(2, 1)
+        GmmTrainer trainer = new GmmTrainer(2)
             .withInitialMeans(Arrays.asList(
                 VectorUtils.of(1.0, 2.0),
                 VectorUtils.of(-1.0, -2.0)));
