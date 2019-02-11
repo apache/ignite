@@ -1,4 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o pipefail
+set -o errtrace
+set -o functrace
+
 #
 #                   GridGain Community Edition Licensing
 #                   Copyright 2019 GridGain Systems, Inc.
@@ -113,7 +119,7 @@ setIgniteHome() {
     #
     # Set IGNITE_HOME, if needed.
     #
-    if [ "${IGNITE_HOME}" = "" ]; then
+    if [ "${IGNITE_HOME:-}" = "" ]; then
         export IGNITE_HOME=${IGNITE_HOME_TMP}
     fi
 

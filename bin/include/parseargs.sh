@@ -1,4 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o pipefail
+set -o errtrace
+set -o functrace
+
 #
 #                   GridGain Community Edition Licensing
 #                   Copyright 2019 GridGain Systems, Inc.
@@ -68,3 +74,13 @@ do
     esac
     shift
 done
+
+#
+# Set 'file.encoding' to UTF-8 default if not specified otherwise
+#
+case "${JVM_OPTS:-}" in
+    *-Dfile.encoding=*)
+        ;;
+    *)
+        JVM_OPTS="${JVM_OPTS:-} -Dfile.encoding=UTF-8";;
+esac
