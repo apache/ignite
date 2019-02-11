@@ -18,7 +18,7 @@ package org.apache.ignite.internal.util;
 
 /**
  * Class extracted for fields from GridUnsafe to be absolutely independent with current and future static block
- * initialization prohect.
+ * initialization effects.
  */
 public class FeatureChecker {
     /** Required Options to Run un Java 9, 10, 11. */
