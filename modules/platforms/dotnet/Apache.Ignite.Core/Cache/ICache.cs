@@ -706,6 +706,51 @@ namespace Apache.Ignite.Core.Cache
         Task<int> GetSizeAsync(params CachePeekMode[] modes);
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="modes"></param>
+        /// <returns></returns>
+        long GetSizeLong(params CachePeekMode[] modes);
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="partition"></param>
+        /// <param name="modes"></param>
+        /// <returns></returns>
+        long GetSizeLong(int partition, params CachePeekMode[] modes);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="modes"></param>
+        /// <returns></returns>
+        Task<long> GetSizeLongAsync(params CachePeekMode[] modes);
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="partition"></param>
+        /// <param name="modes"></param>
+        /// <returns></returns>
+        Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="modes"></param>
+        /// <returns></returns>
+        long GetLocalSizeLong(params CachePeekMode[] modes);
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="partition"></param>
+        /// <param name="modes"></param>
+        /// <returns></returns>
+        long GetLocalSizeLong(int partition, params CachePeekMode[] modes);
+        
+        /// <summary>
         /// Queries cache.
         /// </summary>
         /// <param name="qry">Query.</param>

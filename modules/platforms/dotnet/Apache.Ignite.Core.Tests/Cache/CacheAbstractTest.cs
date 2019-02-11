@@ -1243,10 +1243,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
             Assert.AreEqual(localSize, cache.GetLocalSize(CachePeekMode.All));
+            Assert.AreEqual(0, cache.GetLocalSizeLong(CachePeekMode.Onheap));
+            Assert.AreEqual(localSize, cache.GetLocalSizeLong(CachePeekMode.All));
 
             cache.Put(keys[2], 3);
 
             Assert.AreEqual(localSize + 1, cache.GetLocalSize(CachePeekMode.All));
+            Assert.AreEqual(localSize + 1, cache.GetLocalSizeLong(CachePeekMode.All));
 
             cache.RemoveAll(keys.Take(2).ToArray());
         }

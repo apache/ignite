@@ -817,36 +817,125 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public int GetLocalSize(params CachePeekMode[] modes)
         {
-            return Size0(true, modes);
+            return Size0<int>(true, null, modes);
         }
 
         /** <inheritDoc /> */
         public int GetSize(params CachePeekMode[] modes)
         {
-            return Size0(false, modes);
+            return Size0<int>(false, null, modes);
         }
 
         /** <inheritDoc /> */
         public Task<int> GetSizeAsync(params CachePeekMode[] modes)
         {
-            var modes0 = IgniteUtils.EncodePeekModes(modes);
+            return SizeAsync0<int>(null, modes);
+        }
 
-            return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0));
+        /** <inheritDoc /> */
+        public long GetSizeLong(params CachePeekMode[] modes)
+        {   
+            return Size0<long>(false, null, modes);
+        }
+
+        /** <inheritDoc /> */
+        public long GetSizeLong(int partition, params CachePeekMode[] modes)
+        {
+            return Size0<long>(false, partition, modes);
+        }
+
+        /** <inheritDoc /> */
+        public Task<long> GetSizeLongAsync(params CachePeekMode[] modes)
+        {
+            return SizeAsync0<long>(null, modes);
+        }
+
+        /** <inheritDoc /> */
+        public Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes)
+        {
+            return SizeAsync0<long>(partition, modes);
+        }
+
+        /** <inheritDoc /> */
+        public long GetLocalSizeLong(params CachePeekMode[] modes)
+        {
+            return Size0<long>(true, null, modes);
+        }
+
+        /** <inheritDoc /> */
+        public long GetLocalSizeLong(int partition, params CachePeekMode[] modes)
+        {
+            return Size0<long>(true, partition, modes);
         }
 
         /// <summary>
         /// Internal size routine.
         /// </summary>
         /// <param name="loc">Local flag.</param>
+        /// <param name="part">Partition number</param>
         /// <param name="modes">peek modes</param>
         /// <returns>Size.</returns>
-        private int Size0(bool loc, params CachePeekMode[] modes)
+        private T Size0<T>(bool loc, int? part, params CachePeekMode[] modes)
         {
             var modes0 = IgniteUtils.EncodePeekModes(modes);
 
-            var op = loc ? CacheOp.SizeLoc : CacheOp.Size;
+            var op = loc ? 
+                (typeof(T) == typeof(long) ? CacheOp.SizeLongLoc : CacheOp.SizeLoc) : 
+                (typeof(T) == typeof(long) ? CacheOp.SizeLong : CacheOp.Size);
+ 
+            return DoOutInOp((int) op, writer =>
+            {
+                writer.WriteInt(modes0);
 
-            return (int) DoOutInOp((int) op, modes0);
+                if (typeof(T) == typeof(long))
+                {
+                    if (part != null)
+                    {
+                        writer.WriteBoolean(true);
+                        writer.WriteInt((int)part);
+                    }
+                    else
+                    {
+                        writer.WriteBoolean(false);   
+                    }
+                }             
+            }, s =>
+            {
+                var ret = typeof(T) == typeof(long) ? s.ReadLong() : s.ReadInt();
+                
+                return (T) Convert.ChangeType(ret, typeof(T));
+            });
+        }
+        
+        /// <summary>
+        /// Internal size routine.
+        /// </summary>
+        /// <param name="part">Partition number</param>
+        /// <param name="modes">peek modes</param>
+        /// <returns>Size.</returns>
+        private Task<T> SizeAsync0<T>(int? part, params CachePeekMode[] modes)
+        {
+            var modes0 = IgniteUtils.EncodePeekModes(modes);
+
+            var op = typeof(T) == typeof(long) ? CacheOp.SizeLongAsync : CacheOp.SizeAsync;
+
+            return DoOutOpAsync<T>((int) op, writer =>
+            {
+                writer.WriteInt(modes0);
+                
+                if (typeof(T) == typeof(long))
+                {
+                    if (part != null)
+                    {
+                        writer.WriteBoolean(true);
+                        writer.WriteInt((int)part);
+                    }
+                    else
+                    {
+                        writer.WriteBoolean(false);   
+                    }
+                }              
+            });
         }
 
         /** <inheritdoc /> */
