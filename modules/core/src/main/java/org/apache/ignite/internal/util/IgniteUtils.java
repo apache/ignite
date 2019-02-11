@@ -11227,4 +11227,15 @@ public abstract class IgniteUtils {
 
         return Math.abs((Math.abs(grpId) + partId)) % stripes;
     }
+
+    /**
+     * Check if flag set.
+     *
+     * @param flags Flags.
+     * @param flag Flag.
+     * @return {@code True} if set.
+     */
+    public static boolean isFlagSet(int flags, int flag) {
+        return (flags & flag) == flag;
+    }
 }

@@ -72,8 +72,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccDeadlockDetectionTes
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadBulkOpsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadOperationsTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildWithMvccEnabledSelfTest;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -198,13 +196,6 @@ public class IgniteCacheMvccSqlTestSuite {
         /** {@inheritDoc} */
         @Override protected CacheAtomicityMode atomicityMode() {
             return TRANSACTIONAL_SNAPSHOT;
-        }
-
-        /** {@inheritDoc} */
-        @Ignore("https://issues.apache.org/jira/browse/IGNITE-10765")
-        @Test
-        @Override public void testManyKeysRollback() throws Exception {
-            super.testManyKeysRollback();
         }
     }
 }

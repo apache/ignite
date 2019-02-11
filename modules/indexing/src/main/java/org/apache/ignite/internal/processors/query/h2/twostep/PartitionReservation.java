@@ -46,21 +46,12 @@ public class PartitionReservation {
     }
 
     /**
-     * Constructor for failed reservation.
-     *
-     * @param err Error message.
-     */
-    public PartitionReservation(String err) {
-        this(null, err);
-    }
-
-    /**
      * Base constructor.
      *
      * @param reserved Reserved partitions.
      * @param err Error message.
      */
-    private PartitionReservation(@Nullable List<GridReservable> reserved, @Nullable String err) {
+    public  PartitionReservation(@Nullable List<GridReservable> reserved, @Nullable String err) {
         this.reserved = reserved;
         this.err = err;
     }

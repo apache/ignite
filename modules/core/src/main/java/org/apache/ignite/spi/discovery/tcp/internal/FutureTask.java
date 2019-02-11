@@ -15,14 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.spi.discovery.tcp.internal;
+
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Tests for H2 indexing SPI.
+ *
  */
-public class GridH2IndexingOffheapSelfTest extends GridIndexingSpiAbstractSelfTest {
+public abstract class FutureTask<T> extends GridFutureAdapter<T> implements Runnable {
+    /**
+     *
+     */
+    protected abstract T body();
+
     /** {@inheritDoc} */
-    @Override protected boolean offheap() {
-        return true;
+    @Override public void run() {
+        try {
+            onDone(body());
+        }
+        catch (Exception e) {
+            onDone(e);
+        }
+        catch (Throwable e) {
+            onDone(U.cast(e));
+
+            throw e;
+        }
     }
 }

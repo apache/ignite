@@ -17,9 +17,28 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.h2.command.Prepared;
+
 /**
- * Tests for H2 indexing SPI.
+ * Parsing result for DML statement.
  */
-public class GridH2IndexingInMemSelfTest extends GridIndexingSpiAbstractSelfTest {
-    // No-op.
+public class QueryParserResultDml {
+    /** Command. */
+    private final Prepared prepared;
+
+    /**
+     * Constructor.
+     *
+     * @param prepared Command.
+     */
+    public QueryParserResultDml(Prepared prepared) {
+        this.prepared = prepared;
+    }
+
+    /**
+     * @return Command.
+     */
+    public Prepared prepared() {
+        return prepared;
+    }
 }
