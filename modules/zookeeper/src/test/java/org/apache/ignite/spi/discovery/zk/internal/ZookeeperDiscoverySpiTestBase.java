@@ -41,6 +41,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -174,6 +175,8 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         System.setProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT, "1000");
+
+        System.setProperty(IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, "30000");
     }
 
     /** {@inheritDoc} */
@@ -181,6 +184,8 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         stopZkCluster();
 
         System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT);
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT);
     }
 
     /** {@inheritDoc} */
@@ -188,11 +193,11 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         super.beforeTest();
 
         if (USE_TEST_CLUSTER && zkCluster == null) {
-            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS);
+        zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS);
 
-            zkCluster.start();
+        zkCluster.start();
 
-            waitForZkClusterReady(zkCluster);
+        waitForZkClusterReady(zkCluster);
         }
 
         reset();
