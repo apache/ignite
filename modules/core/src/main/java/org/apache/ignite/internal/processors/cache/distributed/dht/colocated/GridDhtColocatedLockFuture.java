@@ -807,11 +807,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     this.topVer = topVer;
             }
 
-            map(keys, false, true);
-
             // Todo Lost here
             trackable = true;
             cctx.mvcc().addFuture(this);
+
+            map(keys, false, true);
 
             markInitialized();
 
