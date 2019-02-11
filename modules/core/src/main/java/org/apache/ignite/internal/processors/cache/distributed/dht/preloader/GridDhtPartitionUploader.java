@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIoUploader;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileBackupDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessHandler;
+import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -204,12 +204,12 @@ public class GridDhtPartitionUploader {
     }
 
     /** */
-    private static class FileBackupHandler implements BackupProcessHandler<FileBackupDescriptor> {
+    private static class FileBackupTask implements BackupProcessTask<FileBackupDescriptor> {
         /** */
         private final FileIoUploader uploader;
 
         /** */
-        public FileBackupHandler(FileIoUploader uploader) {
+        public FileBackupTask(FileIoUploader uploader) {
             this.uploader = uploader;
         }
 

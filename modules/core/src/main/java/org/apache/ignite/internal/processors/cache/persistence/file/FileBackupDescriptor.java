@@ -94,8 +94,8 @@ public class FileBackupDescriptor {
 
         /** */
         public static BackupFileType get(int type) {
-            if (BackupFileType.values().length > type)
-                throw new IgniteException("Unknown file type");
+            if (BackupFileType.values().length < type)
+                throw new IgniteException("Unknown file type: " + type);
 
             return BackupFileType.values()[type];
         }

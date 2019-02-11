@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.backup.BackupPageStoreHandler;
+import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -964,14 +964,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return storeWorkDir;
     }
 
+    // public File cacheWorkDir(CacheConfiguration ccfg)
+    // public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName)
+
     /**
      * @param ccfg Cache configuration.
      * @return Store dir for given cache.
      */
     public File cacheWorkDir(CacheConfiguration ccfg) {
-        boolean isSharedGrp = ccfg.getGroupName() != null;
-
-        return cacheWorkDir(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
+        return cacheWorkDir(storeWorkDir, ccfg);
     }
 
     /**
@@ -988,11 +989,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Cache directory.
      */
     public static File cacheWorkDir(File storeWorkDir, boolean isSharedGroup, String cacheOrGroupName) {
-        return new File(
-            storeWorkDir,
-            isSharedGroup ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
-                : CACHE_DIR_PREFIX + cacheOrGroupName
-        );
+        return new File(storeWorkDir, cacheDirName(isSharedGroup, cacheOrGroupName));
     }
 
     /**
@@ -1000,9 +997,27 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Store directory for given cache.
      */
     public static File cacheWorkDir(File storeWorkDir, CacheConfiguration ccfg) {
+        return new File(storeWorkDir, cacheDirName(ccfg));
+    }
+
+    /**
+     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
+     * @param cacheOrGroupName Cache name.
+     * @return The full cache directory name.
+     */
+    public static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
+        return isSharedGroup ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
+            : CACHE_DIR_PREFIX + cacheOrGroupName;
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return The full cache directory name.
+     */
+    public static String cacheDirName(CacheConfiguration ccfg) {
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
-        return cacheWorkDir(storeWorkDir, isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
+        return cacheDirName(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
     }
 
     /**
@@ -1251,17 +1266,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         private final GroupPartitionId key;
 
         /** */
-        private final BackupPageStoreHandler hndlr;
+        private final IgniteBackupPageStoreManager storeBackup;
 
         /** */
-        public FileBackupHandler(int grpId, int partId, BackupPageStoreHandler handler) {
+        public FileBackupHandler(int grpId, int partId, IgniteBackupPageStoreManager storeBackup) {
+            assert storeBackup != null;
+
             key = new GroupPartitionId(grpId, partId);
-            hndlr = handler;
+            this.storeBackup = storeBackup;
         }
 
         /** {@inheritDoc} */
         @Override public void onPageWrite(PageStore store, long pageId) {
-            hndlr.onPageWrite(key, store, pageId);
+            storeBackup.handleWritePageStore(key, store, pageId);
         }
     }
 }

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
-import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessHandler;
 
 /**
  *

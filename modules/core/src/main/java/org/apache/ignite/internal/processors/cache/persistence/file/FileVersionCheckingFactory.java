@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
-import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessHandler;
 
 /**
  * Checks version in files if it's present on the disk, creates store with latest version otherwise.

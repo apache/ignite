@@ -17,15 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
-import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.IgniteCheckedException;
 
-/** */
-public interface BackupPageStoreHandler {
+/**
+ * @param <T> A type of handling operation.
+ */
+public interface BackupProcessTask<T> {
     /**
-     * @param pairId Cache group, partition identifiers pair.
-     * @param store Store to handle operatwion at.
-     * @param pageId Tracked page id.
+     * @param descr Processing cotext.
+     * @throws IgniteCheckedException If fails.
      */
-    public void onPageWrite(GroupPartitionId pairId, PageStore store, long pageId);
+    public void handlePartition(T descr) throws IgniteCheckedException;
+
+    /**
+     * @param descr Processing cotext.
+     * @throws IgniteCheckedException If fails.
+     */
+    public void handleDelta(T descr) throws IgniteCheckedException;
 }

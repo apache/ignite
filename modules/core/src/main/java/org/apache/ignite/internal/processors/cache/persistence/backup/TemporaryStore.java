@@ -17,21 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * @param <T> A type of handling operation.
+ * Backup store of pages for particular cache partition file.
  */
-public interface BackupProcessHandler<T> {
+public interface TemporaryStore extends AutoCloseable {
     /**
-     * @param descr Processing cotext.
-     * @throws IgniteCheckedException If fails.
+     * @param pageBuf Page buffer to read into.
+     * @throws IgniteCheckedException If failed (IO error occurred).
      */
-    public void handlePartition(T descr) throws IgniteCheckedException;
+    public void read(ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
-     * @param descr Processing cotext.
-     * @throws IgniteCheckedException If fails.
+     * Write a page to store.
+     *
+     * @param pageId Page ID.
+     * @param pageBuf Page buffer to write.
+     * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
-    public void handleDelta(T descr) throws IgniteCheckedException;
+    public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void truncate() throws IgniteCheckedException;
 }
