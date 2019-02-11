@@ -18,19 +18,24 @@
 package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-
-import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedProperty;
-import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedProperty;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  * Distributed baseline configuration.
  */
 public class DistributedBaselineConfiguration {
+    /** Default auto-adjust timeout for persistence grid. */
+    private static final int DEFAULT_PERSISTENCE_TIMEOUT = 5 * 60_000;
+    /** Default auto-adjust timeout for in-memory grid. */
+    private static final int DEFAULT_IN_MEMORY_TIMEOUT = 0;
+    /** Message of baseline auto-adjust configuration. */
+    private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%s' ms";
     /** Value of manual baseline control or auto adjusting baseline. */
     private DistributedBooleanProperty baselineAutoAdjustEnabled;
 
@@ -43,14 +48,24 @@ public class DistributedBaselineConfiguration {
      * @param cfg Static config.
      * @param isp Subscription processor.
      */
-    public DistributedBaselineConfiguration(IgniteConfiguration cfg, GridInternalSubscriptionProcessor isp) {
-        baselineAutoAdjustEnabled = detachedProperty("baselineAutoAdjustEnabled", cfg.isInitBaselineAutoAdjustEnabled());
-        baselineAutoAdjustTimeout = detachedProperty("baselineAutoAdjustTimeout", cfg.getInitBaselineAutoAdjustTimeout());
-
+    public DistributedBaselineConfiguration(
+        IgniteConfiguration cfg,
+        GridInternalSubscriptionProcessor isp,
+        IgniteLogger log) {
         isp.registerDistributedConfigurationListener(
             dispatcher -> {
-                dispatcher.registerProperty(baselineAutoAdjustEnabled);
-                dispatcher.registerProperty(baselineAutoAdjustTimeout);
+                boolean persistenceEnabled = cfg != null && CU.isPersistenceEnabled(cfg);
+
+                long timeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
+
+                baselineAutoAdjustEnabled = dispatcher.registerBoolean("baselineAutoAdjustEnabled", true);
+                baselineAutoAdjustTimeout = dispatcher.registerLong("baselineAutoAdjustTimeout", timeout);
+
+                log.info(
+                    String.format(AUTO_ADJUST_CONFIGURED_MESSAGE,
+                        (baselineAutoAdjustEnabled.value() ? "enabled" : "disabled"),
+                        baselineAutoAdjustTimeout.value()
+                    ));
             }
         );
     }

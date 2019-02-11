@@ -136,7 +136,7 @@ public class DistributedProperty<T extends Serializable> {
      *
      * @param newVal New value.
      */
-    void localUpdate(Serializable newVal) {
+    public void localUpdate(Serializable newVal) {
         val = (T)newVal;
     }
 

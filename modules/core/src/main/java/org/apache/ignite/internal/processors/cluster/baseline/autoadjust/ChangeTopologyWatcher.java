@@ -99,35 +99,19 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
                     .listen((IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>)future -> {
 
                         if (exchangeManager.lastFinishedFuture().hasLostPartitions()) {
-                            disableBaselineAutoAdjust("lost partitions was detected");
+                            log.warning("Baseline won't be changed cause lost partitions was detected");
 
                             return;
                         }
 
                         long timeout = baselineConfiguration.getBaselineAutoAdjustTimeout();
 
-                        log.info("Baseline will be changed in '" + timeout + "' ms - ");
+                        log.warning("Baseline will be changed in '" + timeout + "' ms");
 
                         baselineAutoAdjustScheduler.schedule(lastBaselineData, timeout);
                     });
 
             }
-        }
-    }
-
-    /**
-     * Disable baseline auto adjust property in cluster.
-     *
-     * @param reason Reason of disable.
-     */
-    private void disableBaselineAutoAdjust(String reason) {
-        log.warning("Baseline auto-adjust will be disable due to " + reason);
-
-        try {
-            baselineConfiguration.updateBaselineAutoAdjustEnabledAsync(false);
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Error during disable baseline auto-adjust", e);
         }
     }
 

@@ -263,9 +263,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.MvccVacuumThreadCount, resCfg.MvccVacuumThreadCount);
                 Assert.AreEqual(cfg.SqlQueryHistorySize, resCfg.SqlQueryHistorySize);
 
-                Assert.AreEqual(cfg.InitBaselineAutoAdjustEnabled, resCfg.InitBaselineAutoAdjustEnabled);
-                Assert.AreEqual(cfg.InitBaselineAutoAdjustTimeout, resCfg.InitBaselineAutoAdjustTimeout);
-
                 Assert.IsNotNull(resCfg.SqlSchemas);
                 Assert.AreEqual(2, resCfg.SqlSchemas.Count);
                 Assert.IsTrue(resCfg.SqlSchemas.Contains("SCHEMA_3"));

@@ -113,7 +113,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
-        distributedBaselineConfiguration = new DistributedBaselineConfiguration(cfg, ctx.internalSubscriptionProcessor());
+        distributedBaselineConfiguration = new DistributedBaselineConfiguration(
+            cfg, ctx.internalSubscriptionProcessor(), ctx.log(DistributedBaselineConfiguration.class)
+        );
     }
 
     /** {@inheritDoc} */

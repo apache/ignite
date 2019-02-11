@@ -216,12 +216,6 @@ namespace Apache.Ignite.Core
         /** MVCC vacuum thread count. */
         private int? _mvccVacuumThreadCnt;
 
-        /** */
-        private bool? _initBaselineAutoAdjustEnabled;
-
-        /** Initial value of time which we would wait before the actual topology change since last discovery event. */
-        private long? _initBaselineAutoAdjustTimeout;
-
         /** SQL query history size. */
         private int? _sqlQueryHistorySize;
 
@@ -259,16 +253,6 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="MvccVacuumThreadCount"/> property.
         /// </summary>
         public const int DefaultMvccVacuumThreadCount = 2;
-
-        /// <summary>
-        /// Default value for <see cref="InitBaselineAutoAdjustEnabled"/> property.
-        /// </summary>
-        public const bool DefaultInitBaselineAutoAdjustEnabled = false;
-
-        /// <summary>
-        /// Default value for <see cref="InitBaselineAutoAdjustTimeout"/> property.
-        /// </summary>
-        public const long DefaultInitBaselineAutoAdjustTimeout = 0;
 
         /// <summary>
         /// Default value for <see cref="SqlQueryHistorySize"/> property.
@@ -357,8 +341,6 @@ namespace Apache.Ignite.Core
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
-            writer.WriteBooleanNullable(_initBaselineAutoAdjustEnabled);
-            writer.WriteLongNullable(_initBaselineAutoAdjustTimeout);
             writer.WriteIntNullable(_sqlQueryHistorySize);
 
             if (SqlSchemas == null)
@@ -750,8 +732,6 @@ namespace Apache.Ignite.Core
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
-            _initBaselineAutoAdjustEnabled = r.ReadBooleanNullable();
-            _initBaselineAutoAdjustTimeout = r.ReadLongNullable();
             _sqlQueryHistorySize = r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
@@ -1698,25 +1678,5 @@ namespace Apache.Ignite.Core
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> SqlSchemas { get; set; }
-
-        /// <summary>
-        /// Initial value of manual baseline control or auto adjusting baseline.
-        /// </summary>
-        [DefaultValue(DefaultInitBaselineAutoAdjustEnabled)]
-        public bool InitBaselineAutoAdjustEnabled
-        {
-            get { return _initBaselineAutoAdjustEnabled ?? DefaultInitBaselineAutoAdjustEnabled; }
-            set { _initBaselineAutoAdjustEnabled = value; }
-        }
-
-        /// <summary>
-        /// Initial value of time which we would wait before the actual topology change since last discovery event.
-        /// </summary>
-        [DefaultValue(DefaultInitBaselineAutoAdjustTimeout)]
-        public long InitBaselineAutoAdjustTimeout
-        {
-            get { return _initBaselineAutoAdjustTimeout ?? DefaultInitBaselineAutoAdjustTimeout; }
-            set { _initBaselineAutoAdjustTimeout = value; }
-        }
     }
 }
