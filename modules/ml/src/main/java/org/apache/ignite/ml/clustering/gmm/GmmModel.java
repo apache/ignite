@@ -46,18 +46,6 @@ public class GmmModel extends DistributionMixture<MultivariateGaussianDistributi
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector input) {
-        Vector likelihood = likelihood(input);
-        double maxLikelihood = -1.;
-        int idxOfMax = -1;
-
-        for (int i = 0; i < likelihood.size(); i++) {
-            double prob = likelihood.get(i);
-            if (prob > maxLikelihood) {
-                maxLikelihood = prob;
-                idxOfMax = i;
-            }
-        }
-
-        return (double)idxOfMax;
+        return (double)likelihood(input).maxElement().index();
     }
 }

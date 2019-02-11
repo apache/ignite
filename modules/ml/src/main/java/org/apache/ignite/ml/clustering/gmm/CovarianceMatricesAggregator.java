@@ -19,6 +19,7 @@ package org.apache.ignite.ml.clustering.gmm;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -41,7 +42,7 @@ public class CovarianceMatricesAggregator implements Serializable {
     private Matrix weightedSum;
 
     /** Count of rows. */
-    private int N;
+    private int rowCount;
 
     /**
      * Creates an instance of CovarianceMatricesAggregator.
@@ -57,12 +58,12 @@ public class CovarianceMatricesAggregator implements Serializable {
      *
      * @param mean Mean vector.
      * @param weightedSum Weighted sums for covariace computation.
-     * @param n Count of rows.
+     * @param rowCount Count of rows.
      */
-    CovarianceMatricesAggregator(Vector mean, Matrix weightedSum, int n) {
+    CovarianceMatricesAggregator(Vector mean, Matrix weightedSum, int rowCount) {
         this.mean = mean;
         this.weightedSum = weightedSum;
-        this.N = n;
+        this.rowCount = rowCount;
     }
 
     /**
@@ -72,13 +73,16 @@ public class CovarianceMatricesAggregator implements Serializable {
      * @param clusterProbs Probabilities of each GMM component.
      * @param means Means for each GMM component.
      */
-    public static List<Matrix> computeCovariances(Dataset<EmptyContext, GmmPartitionData> dataset,
+    static List<Matrix> computeCovariances(Dataset<EmptyContext, GmmPartitionData> dataset,
         Vector clusterProbs, Vector[] means) {
 
         List<CovarianceMatricesAggregator> aggregators = dataset.compute(
             data -> map(data, means),
             CovarianceMatricesAggregator::reduce
         );
+
+        if (aggregators == null)
+            return Collections.emptyList();
 
         List<Matrix> res = new ArrayList<>();
         for (int i = 0; i < aggregators.size(); i++)
@@ -98,7 +102,7 @@ public class CovarianceMatricesAggregator implements Serializable {
             weightedSum = weightedCovComponent;
         else
             weightedSum = weightedSum.plus(weightedCovComponent);
-        N += 1;
+        rowCount += 1;
     }
 
     /**
@@ -111,7 +115,7 @@ public class CovarianceMatricesAggregator implements Serializable {
         return new CovarianceMatricesAggregator(
             mean,
             this.weightedSum.plus(other.weightedSum),
-            this.N + other.N
+            this.rowCount + other.rowCount
         );
     }
 
@@ -142,23 +146,23 @@ public class CovarianceMatricesAggregator implements Serializable {
      * @return computed covariance matrix.
      */
     private Matrix covariance(double clusterProb) {
-        return weightedSum.divide(N * clusterProb);
+        return weightedSum.divide(rowCount * clusterProb);
     }
 
     /**
      * Reduce stage for covariance computation over dataset.
      *
-     * @param l L.
-     * @param r R.
+     * @param l first partition.
+     * @param r second partition.
      */
     static List<CovarianceMatricesAggregator> reduce(List<CovarianceMatricesAggregator> l,
         List<CovarianceMatricesAggregator> r) {
 
         A.ensure(l != null || r != null, "Both partitions cannot equal to null");
 
-        if (l == null)
+        if (l == null || l.isEmpty())
             return r;
-        if (r == null)
+        if (r == null || r.isEmpty())
             return l;
 
         A.ensure(l.size() == r.size(), "l.size() == r.size()");
@@ -184,9 +188,9 @@ public class CovarianceMatricesAggregator implements Serializable {
     }
 
     /**
-     * @return N.
+     * @return rows count.
      */
-    int N() {
-        return N;
+    public int rowCount() {
+        return rowCount;
     }
 }

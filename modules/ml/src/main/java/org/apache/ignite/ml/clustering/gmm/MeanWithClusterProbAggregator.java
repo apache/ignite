@@ -41,7 +41,7 @@ class MeanWithClusterProbAggregator implements Serializable {
     private double pcxiSum;
 
     /** Aggregated partition data size. */
-    private int N;
+    private int rowCount;
 
     /**
      * Create an instance of MeanWithClusterProbAggregator.
@@ -54,12 +54,12 @@ class MeanWithClusterProbAggregator implements Serializable {
      *
      * @param weightedXsSum Weighted sum of vectors.
      * @param pcxiSum P(c|xi) sum.
-     * @param N N.
+     * @param rowCount Count of rows.
      */
-    MeanWithClusterProbAggregator(Vector weightedXsSum, double pcxiSum, int N) {
+    MeanWithClusterProbAggregator(Vector weightedXsSum, double pcxiSum, int rowCount) {
         this.weightedXsSum = weightedXsSum;
         this.pcxiSum = pcxiSum;
-        this.N = N;
+        this.rowCount = rowCount;
     }
 
     /**
@@ -73,7 +73,7 @@ class MeanWithClusterProbAggregator implements Serializable {
      * @return compute cluster probability by aggreated data.
      */
     public double clusterProb() {
-        return pcxiSum / N;
+        return pcxiSum / rowCount;
     }
 
     /**
@@ -104,7 +104,7 @@ class MeanWithClusterProbAggregator implements Serializable {
             weightedXsSum = weightedXsSum.plus(weightedVector);
 
         pcxiSum += pcxi;
-        N += 1;
+        rowCount += 1;
     }
 
     /**
@@ -115,7 +115,7 @@ class MeanWithClusterProbAggregator implements Serializable {
         return new MeanWithClusterProbAggregator(
             weightedXsSum.plus(other.weightedXsSum),
             pcxiSum + other.pcxiSum,
-            N + other.N
+            rowCount + other.rowCount
         );
     }
 
@@ -149,9 +149,9 @@ class MeanWithClusterProbAggregator implements Serializable {
         List<MeanWithClusterProbAggregator> r) {
         A.ensure(l != null || r != null, "Both partitions cannot equal to null");
 
-        if (l == null)
+        if (l == null || l.isEmpty())
             return r;
-        if (r == null)
+        if (r == null || r.isEmpty())
             return l;
 
         A.ensure(l.size() == r.size(), "l.size() == r.size()");

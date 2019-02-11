@@ -922,10 +922,9 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public double determinant() {
         //TODO: IGNITE-11192, use nd4j
-        LUDecomposition dec = new LUDecomposition(this);
-        double res = dec.determinant();
-        dec.destroy();
-        return res;
+        try (LUDecomposition dec = new LUDecomposition(this)) {
+            return dec.determinant();
+        }
     }
 
     /** {@inheritDoc} */
@@ -934,12 +933,9 @@ public abstract class AbstractMatrix implements Matrix {
             throw new CardinalityException(rowSize(), columnSize());
 
         //TODO: IGNITE-11192, use nd4j
-        LUDecomposition dec = new LUDecomposition(this);
-
-        Matrix res = dec.solve(likeIdentity());
-        dec.destroy();
-
-        return res;
+        try (LUDecomposition dec = new LUDecomposition(this)) {
+            return dec.solve(likeIdentity());
+        }
     }
 
     /** */

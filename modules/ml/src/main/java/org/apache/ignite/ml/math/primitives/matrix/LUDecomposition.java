@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.math.primitives.matrix;
 
-import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -36,7 +35,7 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.likeVector;
  *
  * <p>TODO: IGNITE-11192, remove after resolve this issue.</p>
  */
-public class LUDecomposition implements Destroyable {
+public class LUDecomposition implements AutoCloseable {
     /** Default bound to determine effective singularity in LU decomposition. */
     private static final double DEFAULT_TOO_SMALL = 1e-11;
 
@@ -176,7 +175,7 @@ public class LUDecomposition implements Destroyable {
     /**
      * Destroys decomposition components and other internal components of decomposition.
      */
-    @Override public void destroy() {
+    @Override public void close() {
         if (cachedL != null)
             cachedL.destroy();
         if (cachedU != null)

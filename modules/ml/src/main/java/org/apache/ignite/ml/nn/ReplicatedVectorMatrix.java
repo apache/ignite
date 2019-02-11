@@ -558,7 +558,7 @@ class ReplicatedVectorMatrix implements Matrix {
         checkCardinality(vector.size(), replicationCnt);
 
         // If matrix is 1x1 then determinant is its single element otherwise there are linear dependence and determinant is 0.
-        return vector.size() > 0 ? 0 : vector.get(1);
+        return vector.size() > 1 ? 0 : vector.get(1);
     }
 
     /** {@inheritDoc} */

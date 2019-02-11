@@ -32,7 +32,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  */
 public abstract class DistributionMixture<C extends Distribution> implements Distribution {
     /** */
-    private final double EPS = 1e-5;
+    private static final double EPS = 1e-5;
 
     /** Component probabilities. */
     private final Vector componentProbs;

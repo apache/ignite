@@ -99,7 +99,7 @@ class GmmPartitionData implements AutoCloseable {
      * @return count of GMM components.
      */
     public int countOfComponents() {
-        return pcxi[0].length;
+        return size() != 0 ? pcxi[0].length : 0;
     }
 
     /** {@inheritDoc} */
@@ -135,15 +135,14 @@ class GmmPartitionData implements AutoCloseable {
         @Override public GmmPartitionData build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData,
             long upstreamDataSize, EmptyContext ctx) {
 
-            List<LabeledVector<Double>> xs = new ArrayList<>((int)upstreamDataSize);
-            double[][] pcxi = new double[(int)upstreamDataSize][];
-            int counter = 0;
+            int rowsCount = Math.toIntExact(upstreamDataSize);
+            List<LabeledVector<Double>> xs = new ArrayList<>(rowsCount);
+            double[][] pcxi = new double[rowsCount][countOfComponents];
+
             while (upstreamData.hasNext()) {
                 UpstreamEntry<K, V> entry = upstreamData.next();
                 LabeledVector<Double> x = extractor.extract(entry.getKey(), entry.getValue());
                 xs.add(x);
-                pcxi[counter] = new double[countOfComponents];
-                counter++;
             }
 
             return new GmmPartitionData(xs, pcxi);
@@ -154,17 +153,16 @@ class GmmPartitionData implements AutoCloseable {
      * Sets P(c|xi) = 1 for closest cluster "c" for each vector in partition data using initial means as cluster centers
      * (like in k-means).
      *
-     * @param initialMeans Initial means.
-     * @return Mapper.
+     * @param initMeans Initial means.
      */
-    public static void estimateLikelihoodClusters(GmmPartitionData data, Vector[] initialMeans) {
+    static void estimateLikelihoodClusters(GmmPartitionData data, Vector[] initMeans) {
         for (int i = 0; i < data.size(); i++) {
             int closestClusterId = -1;
             double minSquaredDist = Double.MAX_VALUE;
 
             Vector x = data.getX(i);
-            for (int c = 0; c < initialMeans.length; c++) {
-                double distance = initialMeans[c].getDistanceSquared(x);
+            for (int c = 0; c < initMeans.length; c++) {
+                double distance = initMeans[c].getDistanceSquared(x);
                 if (distance < minSquaredDist) {
                     closestClusterId = c;
                     minSquaredDist = distance;
@@ -176,13 +174,12 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * Updates P(c|xi) values in partirions given components probabilities and components of GMM.
+     * Updates P(c|xi) values in partitions given components probabilities and components of GMM.
      *
      * @param clusterProbs Component probabilities.
      * @param components Components.
-     * @return mapper.
      */
-    public static void updatePcxi(GmmPartitionData data, Vector clusterProbs,
+    static void updatePcxi(GmmPartitionData data, Vector clusterProbs,
         List<MultivariateGaussianDistribution> components) {
 
         for (int i = 0; i < data.size(); i++) {

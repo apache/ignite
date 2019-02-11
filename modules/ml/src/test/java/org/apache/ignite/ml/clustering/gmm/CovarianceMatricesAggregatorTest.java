@@ -38,7 +38,7 @@ public class CovarianceMatricesAggregatorTest {
     @Test
     public void testAdd() {
         CovarianceMatricesAggregator agg = new CovarianceMatricesAggregator(VectorUtils.of(1., 0.));
-        assertEquals(0, agg.N());
+        assertEquals(0, agg.rowCount());
 
         agg.add(VectorUtils.of(1., 0.), 100.);
         assertArrayEquals(VectorUtils.of(1., 0.).asArray(), agg.mean().asArray(), 1e-4);
@@ -47,7 +47,7 @@ public class CovarianceMatricesAggregatorTest {
             fromArray(2, 0., 0., 0., 0.).getStorage().data(),
             1e-4
         );
-        assertEquals(1, agg.N());
+        assertEquals(1, agg.rowCount());
 
         agg.add(VectorUtils.of(0., 1.), 10.);
         assertArrayEquals(VectorUtils.of(1., 0.).asArray(), agg.mean().asArray(), 1e-4);
@@ -56,7 +56,7 @@ public class CovarianceMatricesAggregatorTest {
             fromArray(2, 10., -10., -10., 10.).getStorage().data(),
             1e-4
         );
-        assertEquals(2, agg.N());
+        assertEquals(2, agg.rowCount());
     }
 
     /** */
@@ -70,7 +70,7 @@ public class CovarianceMatricesAggregatorTest {
 
         assertArrayEquals(mean.asArray(), res.mean().asArray(), 1e-4);
         assertArrayEquals(identity(2).times(3).getStorage().data(), res.weightedSum().getStorage().data(), 1e-4);
-        assertEquals(4, res.N());
+        assertEquals(4, res.rowCount());
     }
 
     /** */
@@ -96,11 +96,11 @@ public class CovarianceMatricesAggregatorTest {
 
         assertArrayEquals(mean1.asArray(), res1.mean().asArray(), 1e-4);
         assertArrayEquals(identity(2).times(2).getStorage().data(), res1.weightedSum().getStorage().data(), 1e-4);
-        assertEquals(2, res1.N());
+        assertEquals(2, res1.rowCount());
 
         assertArrayEquals(mean2.asArray(), res2.mean().asArray(), 1e-4);
         assertArrayEquals(identity(2).times(2).getStorage().data(), res2.weightedSum().getStorage().data(), 1e-4);
-        assertEquals(4, res2.N());
+        assertEquals(4, res2.rowCount());
     }
 
     /** */
@@ -132,7 +132,7 @@ public class CovarianceMatricesAggregatorTest {
             fromArray(2, 0.4, 0., 0., 0.1).getStorage().data(),
             1e-4
         );
-        assertEquals(3, res1.N());
+        assertEquals(3, res1.rowCount());
 
         CovarianceMatricesAggregator res2 = result.get(1);
         assertArrayEquals(mean2.asArray(), res2.mean().asArray(), 1e-4);
@@ -141,7 +141,7 @@ public class CovarianceMatricesAggregatorTest {
             fromArray(2, 0.8, -0.2, -0.2, 0.2).getStorage().data(),
             1e-4
         );
-        assertEquals(3, res2.N());
+        assertEquals(3, res2.rowCount());
     }
 
     /** */

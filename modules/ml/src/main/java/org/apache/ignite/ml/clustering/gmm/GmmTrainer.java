@@ -18,8 +18,9 @@
 package org.apache.ignite.ml.clustering.gmm;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
@@ -40,6 +41,7 @@ import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
 import org.apache.ignite.ml.structures.DatasetRow;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Traner for GMM model.
@@ -103,7 +105,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     public GmmTrainer withInitialMeans(List<Vector> means) {
         A.notEmpty(means, "GMM should starts with non empty initial components list");
 
-        this.initialMeans = means.stream().toArray(Vector[]::new);
+        this.initialMeans = means.toArray(new Vector[means.size()]);
         this.countOfComponents = means.size();
         return this;
     }
@@ -115,7 +117,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @return trainer.
      */
     public GmmTrainer withMaxCountIterations(int maxCountOfIterations) {
-        A.ensure(maxCountOfIterations > 0, "Max count iterations cannot be less or equal zero");
+        A.ensure(maxCountOfIterations > 0, "Max count iterations cannot be less or equal zero or negative");
 
         this.maxCountOfIterations = maxCountOfIterations;
         return this;
@@ -140,14 +142,24 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @param dataset Dataset.
      * @return GMM model.
      */
-    private GmmModel fit(Dataset<EmptyContext, GmmPartitionData> dataset) {
-        GmmModel model = init(dataset);
+    private Optional<GmmModel> fit(Dataset<EmptyContext, GmmPartitionData> dataset) {
+        return init(dataset).map(model -> updateModel(dataset, model));
+    }
+
+    /**
+     * Gets older model and returns updated model on given data.
+     *
+     * @param dataset Dataset.
+     * @param model Model.
+     * @return updated model.
+     */
+    @NotNull private GmmModel updateModel(Dataset<EmptyContext, GmmPartitionData> dataset, GmmModel model) {
         boolean isConverged = false;
         int countOfIterations = 0;
         while (!isConverged) {
             MeanWithClusterProbAggregator.AggregatedStats stats = MeanWithClusterProbAggregator.aggreateStats(dataset);
             Vector clusterProbs = stats.clusterProbabilities();
-            Vector[] newMeans = stats.means().stream().toArray(Vector[]::new);
+            Vector[] newMeans = stats.means().toArray(new Vector[countOfComponents]);
 
             A.ensure(newMeans.length == model.countOfComponents(), "newMeans.size() == count of components");
             A.ensure(newMeans[0].size() == initialMeans[0].size(), "newMeans[0].size() == initialMeans[0].size()");
@@ -181,13 +193,13 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @param dataset Dataset.
      * @return initial model.
      */
-    private GmmModel init(Dataset<EmptyContext, GmmPartitionData> dataset) {
+    private Optional<GmmModel> init(Dataset<EmptyContext, GmmPartitionData> dataset) {
         try {
             if (initialMeans == null) {
                 List<List<Vector>> randomMeansSets = Stream.of(dataset.compute(
                     selectNRandomXsMapper(countOfComponents),
                     GmmTrainer::selectNRandomXsReducer
-                )).map(Arrays::asList).collect(Collectors.toList());
+                )).map(this::asList).collect(Collectors.toList());
 
                 A.ensure(
                     randomMeansSets.stream().mapToInt(List::size).sum() >= countOfComponents,
@@ -211,18 +223,21 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
 
             List<Matrix> initialCovs = CovarianceMatricesAggregator.computeCovariances(
                 dataset,
-                VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
+                VectorUtils.fill(1. / countOfComponents, countOfComponents),
                 initialMeans
             );
+
+            if (initialCovs.isEmpty())
+                return Optional.empty();
 
             List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
             for (int i = 0; i < countOfComponents; i++)
                 distributions.add(new MultivariateGaussianDistribution(initialMeans[i], initialCovs.get(i)));
 
-            return new GmmModel(
+            return Optional.of(new GmmModel(
                 VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
                 distributions
-            );
+            ));
         }
         catch (SingularMatrixException | IllegalArgumentException e) {
             String msg = "Cannot construct non-singular covariance matrix by data. " +
@@ -230,6 +245,17 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
             environment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
             throw new RuntimeException(msg, e);
         }
+    }
+
+    /**
+     * @param vectors Array of vectors.
+     * @return list of vectors.
+     */
+    private LinkedList<Vector> asList(Vector... vectors) {
+        LinkedList<Vector> res = new LinkedList<>();
+        for (Vector v : vectors)
+            res.addFirst(v);
+        return res;
     }
 
     /**
@@ -254,20 +280,21 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      *
      * @param oldModel Old model.
      * @param newModel New model.
+     * @return true if algorithm gonverged.
      */
     private boolean isConverged(GmmModel oldModel, GmmModel newModel) {
         A.ensure(oldModel.countOfComponents() == newModel.countOfComponents(),
             "oldModel.countOfComponents() == newModel.countOfComponents()");
 
-        boolean isConverged = true;
         for (int i = 0; i < oldModel.countOfComponents(); i++) {
             MultivariateGaussianDistribution d1 = oldModel.distributions().get(i);
             MultivariateGaussianDistribution d2 = newModel.distributions().get(i);
 
-            isConverged = isConverged && Math.sqrt(d1.mean().getDistanceSquared(d2.mean())) < eps;
+            if (Math.sqrt(d1.mean().getDistanceSquared(d2.mean())) >= eps)
+                return false;
         }
 
-        return isConverged;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -292,7 +319,13 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
                     .toArray(Vector[]::new);
             }
 
-            return fit(dataset);
+            Optional<GmmModel> model = fit(dataset);
+            if (model.isPresent())
+                return model.get();
+            else if (mdl != null)
+                return mdl;
+            else
+                throw new IllegalArgumentException("Cannot learn model on empty dataset.");
         }
         catch (Exception e) {
             throw new RuntimeException(e);
