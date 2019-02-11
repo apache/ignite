@@ -325,6 +325,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         expectFailure(IgniteException.class, "Test exception.");
         expectFailure(IgniteTxHeuristicCheckedException.class);
         expectFailure(NodeStoppingException.class);
+        expectFailure(IllegalStateException.class);
         expectFailure(InterruptedException.class);
 
         final long timeOut = U.currentTimeMillis() + 5 * 60 * 1000;

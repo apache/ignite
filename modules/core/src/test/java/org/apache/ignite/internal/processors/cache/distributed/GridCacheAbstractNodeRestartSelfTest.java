@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
@@ -40,12 +41,15 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -158,6 +162,16 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         stopAllGrids();
     }
 
+    /**
+     *
+     */
+    @BeforeClass
+    public static void setupHandler() {
+        expectFailure(NodeStoppingException.class);
+        expectFailure(IgniteCheckedException.class, "Node is stopping: ");
+        expectFailure(InterruptedException.class);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         backups = DFLT_BACKUPS;
@@ -169,6 +183,14 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = DFLT_KEY_CNT;
         retries = DFLT_RETRIES;
         idx = -1;
+    }
+
+    /**
+     *
+     */
+    @AfterClass
+    public static void clearHandler() {
+        expectNothing();
     }
 
     /**

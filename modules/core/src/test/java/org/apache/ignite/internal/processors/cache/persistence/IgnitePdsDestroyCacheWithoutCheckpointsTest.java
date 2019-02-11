@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
@@ -33,6 +35,11 @@ public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestro
      */
     @Override protected boolean isMultiJvm() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**

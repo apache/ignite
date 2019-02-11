@@ -20,6 +20,8 @@ package org.apache.ignite.testframework.junits.common;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.assertions.AlwaysAssertion;
@@ -106,6 +108,11 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /** {@inheritDoc} */

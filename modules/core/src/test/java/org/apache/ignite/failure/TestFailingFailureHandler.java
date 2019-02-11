@@ -64,6 +64,9 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
         else
             System.out.println("sout" + debug);
 
+        // if (test.isMultiJVM())
+        // TODO send compute by IgniteProcessProxy or find another way to change err list in other JVMs
+
         if (isFailureExpected(failureCtx))
             return false;
 
