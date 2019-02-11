@@ -121,8 +121,20 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
     @Override protected UpdateSourceIterator<?> createIterator() throws IgniteCheckedException {
         checkPartitions(parts);
 
-        return cctx.kernalContext().query().prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry,
-                params, flags, pageSize, 0, tx.topologyVersionSnapshot(), mvccSnapshot, new GridQueryCancel());
+        return cctx.kernalContext().query().executeUpdateOnDataNodeTransactional(
+            cctx,
+            cacheIds,
+            parts,
+            schema,
+            qry,
+            params,
+            flags,
+            pageSize,
+            0,
+            tx.topologyVersionSnapshot(),
+            mvccSnapshot,
+            new GridQueryCancel()
+        );
     }
 
     /**

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.ArrayList;
 
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2ScanIndex;
+import org.apache.ignite.internal.processors.query.h2.opt.H2ScanIndex;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -51,6 +51,7 @@ public class ReduceTable extends TableBase {
     /**
      * @param idxs Indexes.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public void indexes(ArrayList<Index> idxs) {
         assert !F.isEmpty(idxs);
 
@@ -68,8 +69,8 @@ public class ReduceTable extends TableBase {
      * @param idx Index.
      * @return Scan index.
      */
-    public static GridH2ScanIndex<ReduceIndex> createScanIndex(ReduceIndex idx) {
-        return new ReduceScanIndex(idx);
+    public static H2ScanIndex<ReduceIndex> createScanIndex(ReduceIndex idx) {
+        return new H2ScanIndex<>(idx);
     }
 
     /** {@inheritDoc} */
@@ -129,6 +130,7 @@ public class ReduceTable extends TableBase {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public ArrayList<Index> getIndexes() {
         return idxs;
     }
