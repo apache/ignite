@@ -1288,16 +1288,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         for (;;) { // Go down with retries.
             g.init();
 
-            switch (findDown(g, g.rootId, 0L, g.rootLvl)) {
-                case RETRY:
-                case RETRY_ROOT:
-                    checkInterrupted();
+            Result res = findDown(g, g.rootId, 0L, g.rootLvl);
 
-                    continue;
+            if (!res.retry && !g.nextRow(res))
+                return;
 
-                default:
-                    return;
-            }
+            checkInterrupted();
         }
     }
 
@@ -1332,24 +1328,27 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         // Go down recursively.
                         res = findDown(g, g.pageId, g.fwdId, lvl - 1);
 
-                        switch (res) {
-                            case RETRY:
-                                checkInterrupted();
+                        if (res == RETRY) {
+                            checkInterrupted();
 
-                                continue; // The child page got split, need to reread our page.
-
-                            default:
-                                return res;
+                            continue; // The child page got split, need to reread our page.
                         }
+
+                        if (g.nextRow(res))
+                            continue;
+
+                        return res;
 
                     case NOT_FOUND:
                         assert lvl == 0 : lvl;
 
                         g.row = null; // Mark not found result.
 
-                        return res;
-
+                        // Intentional fallthrough.
                     default:
+                        if (g.nextRow(res))
+                            continue;
+
                         return res;
                 }
             }
@@ -2882,7 +2881,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param findLast find last row.
          */
         Get(L row, boolean findLast) {
-            assert findLast ^ row != null;
+            assert findLast ^ row != null: row;
 
             this.row = row;
             this.findLast = findLast;
