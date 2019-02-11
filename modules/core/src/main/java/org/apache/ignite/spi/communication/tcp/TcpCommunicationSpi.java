@@ -329,6 +329,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
+    /** Default initial connect/handshake timeout in case of failure detection enabled. */
+    private static final int DFLT_INITIAL_TIMEOUT = 500;
+
     /** Default initial delay in case of target node is still out of topology. */
     private static final int DFLT_NEED_WAIT_DELAY = 200;
 
@@ -3289,7 +3292,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         for (InetSocketAddress addr : addrs) {
             TimeoutStrategy connTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
                 totalTimeout,
-                connTimeout,
+                failureDetectionTimeoutEnabled() ? DFLT_INITIAL_TIMEOUT : connTimeout,
                 maxConnTimeout
             );
 
