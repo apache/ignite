@@ -158,7 +158,7 @@ public interface DataStreamGenerator {
             batch.put(keyMapper.apply(vec), vec);
             if (batch.size() == FILL_CACHE_BATCH_SIZE) {
                 cache.putAll(batch);
-                cache.clear();
+                batch.clear();
             }
         });
 
