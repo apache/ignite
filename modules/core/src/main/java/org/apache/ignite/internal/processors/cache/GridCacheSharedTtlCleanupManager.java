@@ -164,7 +164,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                 }
             }
             catch (Throwable t) {
-                if (!(X.hasCause(t, IgniteInterruptedCheckedException.class)))
+                if (!(X.hasCause(t, IgniteInterruptedCheckedException.class, InterruptedException.class)))
                     err = t;
 
                 throw t;
