@@ -105,10 +105,10 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
         assert idealAssignment != null;
 
         this.topVer = topVer;
-        this.assignment = Collections.unmodifiableList(assignment);
-        this.idealAssignment = Collections.unmodifiableList(
-            idealAssignment.equals(assignment) ? assignment : idealAssignment
-        );
+        this.assignment = Collections.unmodifiableList(assignment); // It's important to keep equal references.
+        this.idealAssignment =
+            idealAssignment.equals(assignment) ? this.assignment : Collections.unmodifiableList(idealAssignment);
+
         clientEvtChange = false;
 
         // Temporary mirrors with modifiable partition's collections.

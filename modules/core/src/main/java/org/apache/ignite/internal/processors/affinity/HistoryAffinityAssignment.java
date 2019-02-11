@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.BitSetIntSet;
@@ -46,14 +51,143 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final boolean clientEvtChange;
 
+    /** */
+    private final ClusterNode[] nodes;
+
+    /** Ideal assignments are stored as sequences of indexes in nodes array. */
+    private final char[] idealParts;
+
+    /** Diff with ideal. */
+    private final Map<Integer, char[]> assignmentDiff;
+
     /**
      * @param assign Assignment.
+     * @param backups Backups.
      */
-    HistoryAffinityAssignment(AffinityAssignment assign) {
+    public HistoryAffinityAssignment(AffinityAssignment assign, int backups) {
         topVer = assign.topologyVersion();
-        assignment = assign.assignment();
-        idealAssignment = assign.idealAssignment();
         clientEvtChange = assign.clientEventChange();
+
+        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION || backups > IGNITE_AFFINITY_BACKUPS_THRESHOLD) {
+            assignment = assign.assignment();
+
+            idealAssignment = assign.idealAssignment();
+
+            nodes = null;
+
+            idealParts = null;
+
+            assignmentDiff = null;
+
+            return;
+        }
+
+        List<List<ClusterNode>> assignment = assign.assignment();
+        List<List<ClusterNode>> idealAssignment = assign.idealAssignment();
+
+        int min = Integer.MAX_VALUE;
+        int max = 0;
+
+        for (List<ClusterNode> nodes : idealAssignment) { // Estimate required size.
+            int size = nodes.size();
+
+            if (size > max)
+                max = size;
+
+            if (size < min)
+                min = size;
+        }
+
+        if (max != min) {
+            this.assignment = assign.assignment();
+
+            this.idealAssignment = assign.idealAssignment();
+
+            nodes = null;
+
+            idealParts = null;
+
+            assignmentDiff = null;
+
+            return;
+        }
+
+        int cpys = max;
+
+        boolean same = assignment == idealAssignment;
+
+        int partsCnt = assignment.size();
+
+        idealParts = new char[partsCnt * cpys];
+
+        Map<ClusterNode, Character> orderMap = new HashMap<>();
+
+        char order = 1; // Char type is used as unsigned short to avoid conversions.
+
+        assignmentDiff = new HashMap<>();
+
+        for (int p = 0; p < assignment.size(); p++) {
+            List<ClusterNode> curr = assignment.get(p);
+            List<ClusterNode> ideal = idealAssignment.get(p);
+
+            for (int i = 0; i < ideal.size(); i++) {
+                ClusterNode node = ideal.get(i);
+
+                Character nodeOrder = orderMap.get(node);
+
+                if (nodeOrder == null)
+                    orderMap.put(node, (nodeOrder = order++));
+
+                idealParts[p * cpys + i] = nodeOrder;
+            }
+
+            if (!same && !curr.equals(ideal)) {
+                char[] idx = new char[curr.size()];
+
+                assignmentDiff.put(p, idx);
+
+                for (int i = 0; i < curr.size(); i++) {
+                    ClusterNode node = curr.get(i);
+
+                    Character nodeOrder = orderMap.get(node);
+
+                    if (nodeOrder == null)
+                        orderMap.put(node, (nodeOrder = order++));
+
+                    idx[i] = nodeOrder;
+                }
+            }
+        }
+
+        // Fill array according to assigned order.
+        nodes = orderMap.keySet().stream().toArray(ClusterNode[]::new);
+
+        Arrays.sort(nodes, (o1, o2) -> orderMap.get(o1).compareTo(orderMap.get(o2)));
+
+        this.idealAssignment = new AbstractList<List<ClusterNode>>() {
+            @Override public List<ClusterNode> get(int idx) {
+                return partitionNodes(idx, true, cpys);
+            }
+
+            @Override public int size() {
+                return partsCnt;
+            }
+        };
+
+        this.assignment = same ? this.idealAssignment : new AbstractList<List<ClusterNode>>() {
+            @Override public List<ClusterNode> get(int idx) {
+                return partitionNodes(idx, false, cpys);
+            }
+
+            @Override public int size() {
+                return partsCnt;
+            }
+        };
+
+        assert this.assignment.equals(assign.assignment()) : "new=" + this.assignment + ", old=" + assign.assignment();
+
+        assert this.idealAssignment.equals(assign.idealAssignment()) :
+            "new=" + this.idealAssignment + ", old=" + assign.idealAssignment();
     }
 
     /** {@inheritDoc} */
@@ -61,14 +195,46 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         return clientEvtChange;
     }
 
+    /**
+     * @param p Partion.
+     * @param ideal {@code True} for ideal assignment.
+     * @param cpys Copies.
+     */
+    private List<ClusterNode> partitionNodes(int p, boolean ideal, int cpys) {
+        char[] order;
+
+        if (!ideal && (order = assignmentDiff.get(p)) != null) {
+            List<ClusterNode> ret = new ArrayList<>(order.length);
+
+            for (int i = 0; i < order.length; i++)
+                ret.add(nodes[order[i] - 1]);
+
+            return ret;
+        }
+
+        List<ClusterNode> ret = new ArrayList<>(cpys);
+
+        for (int i = 0; i < cpys; i++) {
+            char ord = idealParts[p * cpys + i];
+
+            if (ord == 0) // Zero
+                break;
+
+            ret.add(nodes[ord - 1]);
+        }
+
+        return ret;
+    }
+
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public List<List<ClusterNode>> idealAssignment() {
-        return Collections.unmodifiableList(idealAssignment);
+        return idealAssignment;
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignment() {
-        return Collections.unmodifiableList(assignment);
+        return assignment;
     }
 
     /** {@inheritDoc} */
