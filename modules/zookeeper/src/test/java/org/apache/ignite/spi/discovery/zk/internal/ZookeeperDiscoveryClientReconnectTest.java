@@ -33,6 +33,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests for Zookeeper SPI discovery client reconnect.
  */
 public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpiTestBase {
+    /** */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setFailureDetectionTimeout(2000);
+        cfg.setClientFailureDetectionTimeout(2000);
+
+        return cfg;
+    }
+
     /**
      * @throws Exception If failed.
      */
