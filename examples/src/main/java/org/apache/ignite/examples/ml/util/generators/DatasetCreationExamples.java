@@ -54,6 +54,7 @@ public class DatasetCreationExamples {
      * @param args Command line arguments.
      */
     public static void main(String[] args) throws Exception {
+        // Creates a simple generator based on 1-dimension vector uniformly distributed between [-1, 1] having mean = 0.0 .
         DataStreamGenerator generator = new UniformRandomProducer(-1, 1., 0)
             .vectorize(1)
             .asDataStream();
