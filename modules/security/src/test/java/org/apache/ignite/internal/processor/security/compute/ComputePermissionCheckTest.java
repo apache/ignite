@@ -67,7 +67,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     private static final ReentrantLock RNT_LOCK = new ReentrantLock();
 
     /** Reentrant lock timeout. */
-    public static final int RNT_LOCK_TIMEOUT = 20_000;
+    private static final int RNT_LOCK_TIMEOUT = 20_000;
 
     /** Test compute task. */
     private static final TestComputeTask TEST_COMPUTE_TASK = new TestComputeTask();
@@ -100,6 +100,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /** Synchronization for tests TASK_CANCEL. */
     private static void syncForCancel() throws IgniteException {
         boolean isLocked = false;
+
         try {
             isLocked = RNT_LOCK.tryLock(RNT_LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
         }
@@ -112,41 +113,24 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        Ignite ign = startGrid("srv_allowed", permissions(TASK_EXECUTE, TASK_CANCEL));
-
-        startGrid("srv_forbidden", permissions(EMPTY_PERMS));
-
-        startGrid("srv_forbidden_cnl", permissions(TASK_EXECUTE));
-
-        startGrid("clnt_allowed", permissions(TASK_EXECUTE, TASK_CANCEL), true);
-
-        startGrid("clnt_forbidden", permissions(EMPTY_PERMS), true);
-
-        startGrid("clnt_forbidden_cnl", permissions(TASK_EXECUTE), true);
-
-        ign.cluster().active(true);
-    }
-
     /**
      *
      */
     @Test
-    public void test() {
-        Ignite srvAllowed = grid("srv_allowed");
+    public void test() throws Exception {
+        Ignite srvAllowed = startGrid("srv_allowed", permissions(TASK_EXECUTE, TASK_CANCEL));
 
-        Ignite srvForbidden = grid("srv_forbidden");
+        Ignite srvForbidden = startGrid("srv_forbidden", permissions(EMPTY_PERMS));
 
-        Ignite srvForbiddenCancel = grid("srv_forbidden_cnl");
+        Ignite srvForbiddenCancel = startGrid("srv_forbidden_cnl", permissions(TASK_EXECUTE));
 
-        Ignite clntAllowed = grid("clnt_allowed");
+        Ignite clntAllowed = startGrid("clnt_allowed", permissions(TASK_EXECUTE, TASK_CANCEL), true);
 
-        Ignite clntForbidden = grid("clnt_forbidden");
+        Ignite clntForbidden = startGrid("clnt_forbidden", permissions(EMPTY_PERMS), true);
 
-        Ignite clntForbiddenCancel = grid("clnt_forbidden_cnl");
+        Ignite clntForbiddenCancel = startGrid("clnt_forbidden_cnl", permissions(TASK_EXECUTE), true);
+
+        srvAllowed.cluster().active(true);
 
         for (TestRunnable r : runnables(srvAllowed, clntAllowed))
             allowedRun(r);
@@ -240,6 +224,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
      */
     private void forbiddenCancel(Supplier<FutureAdapter> s) {
         RNT_LOCK.lock();
+
         try {
             FutureAdapter f = s.get();
 
@@ -255,6 +240,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
      */
     private void allowedCancel(Supplier<FutureAdapter> s) {
         RNT_LOCK.lock();
+
         try {
             FutureAdapter f = s.get();
 

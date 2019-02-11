@@ -42,29 +42,22 @@ import static org.junit.Assert.assertThat;
  */
 @RunWith(JUnit4.class)
 public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrid("server_node",
-            builder()
-                .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build());
-
-        startGrid("client_node",
-            builder()
-                .appendCachePermissions(CACHE_NAME, CACHE_PUT, CACHE_READ)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), true);
-
-        super.beforeTestsStarted();
-    }
-
     /**
      *
      */
     @Test
-    public void test() {
-        IgniteEx srvNode = grid("server_node");
+    public void test() throws Exception {
+        IgniteEx srvNode = startGrid("server_node",
+            builder()
+                .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT)
+                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build());
 
-        IgniteEx clientNode = grid("client_node");
+        IgniteEx clientNode = startGrid("client_node",
+            builder()
+                .appendCachePermissions(CACHE_NAME, CACHE_PUT, CACHE_READ)
+                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), true);
+
+        srvNode.cluster().active(true);
 
         invoke(srvNode);
         invoke(clientNode);

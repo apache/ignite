@@ -171,8 +171,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     }
 
     /**
-     * That test shows wrong case when client has permission for a remove operation but a removeAll operation is
-     * forbidden for it.
+     * That test shows the wrong case when a client has permission for a remove operation
+     * but a removeAll operation is forbidden for it. To have permission for the removeAll (clear) operation
+     * a client need to have the permission to execute {@link #REMOVE_ALL_TASK} ({@link #CLEAR_TASK}) task.
      *
      * @throws Exception If error occurs.
      */
