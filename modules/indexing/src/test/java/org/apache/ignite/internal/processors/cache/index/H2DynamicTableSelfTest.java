@@ -57,9 +57,9 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -715,10 +715,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Negative test that is trying to set incorrect query_parallelism value: negative or zero.
+     * Negative test that is trying to set incorrect query_parallelism value: empty, negative, zero or non-integer.
      */
     @Test
-    public void testZeroOrNegariveQueryParallelism () {
+    public void testQueryParallelismNegative() {
         assertCreateTableWithParamsThrows("QUERY_parallelism = 0",
             "\"QUERY_PARALLELISM\" cannot be less or equal to zero: 0");
 
