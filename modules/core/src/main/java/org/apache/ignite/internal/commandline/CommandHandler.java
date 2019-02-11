@@ -2057,6 +2057,8 @@ public class CommandHandler {
                     case CMD_PASSWORD:
                         pwd = nextArg("Expected password");
 
+                        log(String.format(pwdArgWarnFmt, CMD_PASSWORD));
+
                         break;
 
                     case CMD_SSL_PROTOCOL:
