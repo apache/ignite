@@ -106,7 +106,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @return trainer.
      */
     public GmmTrainer withInitialMeans(List<Vector> means) {
-        A.notEmpty(means, "GMM should starts with non empty initial components list");
+        A.notEmpty(means, "GMM should start with non empty initial components list");
 
         this.initialMeans = means.toArray(new Vector[means.size()]);
         this.countOfComponents = means.size();
