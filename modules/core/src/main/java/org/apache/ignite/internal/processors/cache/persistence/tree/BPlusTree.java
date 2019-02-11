@@ -162,7 +162,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         return null;
 
                     try {
-                        BPlusIO io = io(pageAddr);
+                        BPlusIO<L> io = io(pageAddr);
 
                         if (io.isLeaf())
                             return emptyList();
@@ -184,7 +184,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         else {
                             long left = inner(io).getLeft(pageAddr, 0);
 
-                            res = left == 0 ? Collections.<Long>emptyList() : Collections.singletonList(left);
+                            res = left == 0 ? Collections.emptyList() : Collections.singletonList(left);
                         }
 
                         return res;
@@ -370,6 +370,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     public class Replace extends GetPageHandler<Put> {
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
             throws IgniteCheckedException  {
             // Check the triangle invariant.
@@ -605,8 +606,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private class LockTailForward extends GetPageHandler<Remove> {
         /** {@inheritDoc} */
-        @Override protected Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Remove r, int lvl)
-            throws IgniteCheckedException {
+        @Override protected Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Remove r, int lvl) {
             r.addTail(pageId, page, pageAddr, io, lvl, Tail.FORWARD);
 
             return FOUND;
@@ -751,7 +751,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
      * @param failureProcessor if the tree is corrupted.
-     * @throws IgniteCheckedException If failed.
      */
     protected BPlusTree(
         String name,
@@ -764,7 +763,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos,
         @Nullable FailureProcessor failureProcessor
-    ) throws IgniteCheckedException {
+    ) {
         this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
         setIos(innerIos, leafIos);
     }
@@ -778,8 +777,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
      * @param failureProcessor if the tree is corrupted.
-     * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     protected BPlusTree(
         String name,
         int cacheId,
@@ -789,7 +788,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long metaPageId,
         ReuseList reuseList,
         @Nullable FailureProcessor failureProcessor
-    ) throws IgniteCheckedException {
+    ) {
         super(cacheId, pageMem, wal);
 
         assert !F.isEmpty(name);
@@ -1211,6 +1210,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     public T findLast(final TreeRowClosure<L, T> c) throws IgniteCheckedException {
         checkDestroyed();
 
@@ -1250,6 +1250,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Found result or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     public final <R> R findOne(L row, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
@@ -1317,7 +1318,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 g.pageId = pageId;
                 g.fwdId = fwdId;
 
-                Result res = read(pageId, page, search, g, lvl, RETRY);
+                Result res = read(pageId, page, search, g, lvl);
 
                 switch (res) {
                     case GO_DOWN:
@@ -1913,7 +1914,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 x.fwdId(fwdId);
                 x.backId(backId);
 
-                res = read(pageId, page, search, x, lvl, RETRY);
+                res = read(pageId, page, search, x, lvl);
 
                 switch (res) {
                     case GO_DOWN_X:
@@ -2082,7 +2083,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 r.fwdId = fwdId;
                 r.backId = backId;
 
-                Result res = read(pageId, page, search, r, lvl, RETRY);
+                Result res = read(pageId, page, search, r, lvl);
 
                 switch (res) {
                     case GO_DOWN_X:
@@ -2657,7 +2658,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 p.pageId = pageId;
                 p.fwdId = fwdId;
 
-                Result res = read(pageId, page, search, p, lvl, RETRY);
+                Result res = read(pageId, page, search, p, lvl);
 
                 switch (res) {
                     case GO_DOWN:
@@ -2756,7 +2757,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 v.pageId = pageId;
                 v.fwdId = fwdId;
 
-                Result res = read(pageId, page, search, v, lvl, RETRY);
+                Result res = read(pageId, page, search, v, lvl);
 
                 switch (res) {
                     case GO_DOWN:
@@ -3193,7 +3194,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean found(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean found(BPlusIO<L> io, long pageAddr, int idx, int lvl) {
             throw new IllegalStateException(); // Must never be called because we always have a shift.
         }
 
@@ -3239,7 +3240,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean found(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean found(BPlusIO<L> io, long pageAddr, int idx, int lvl) {
             throw new IllegalStateException(); // Must never be called because we always have a shift.
         }
 
@@ -4653,7 +4654,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private void removeDataRowFromLeafTail(Tail<L> t) throws IgniteCheckedException {
             assert !isRemoved();
 
-            Tail<L> leaf = getTail(t, 0);
+            Tail<L> leaf = getTail(t);
 
             removeDataRowFromLeaf(leaf.pageId, leaf.page, leaf.buf, leaf.walPlc, leaf.io, leaf.getCount(), insertionPoint(leaf));
         }
@@ -4775,6 +4776,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param idx Index to remove.
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("unchecked")
         private void removeDataRowFromLeaf(long pageId, long page, long pageAddr, Boolean walPlc, BPlusIO<L> io, int cnt,
             int idx)
             throws IgniteCheckedException {
@@ -5030,7 +5032,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 inner = inner.down;
             }
 
-            Tail<L> leaf = getTail(inner, 0);
+            Tail<L> leaf = getTail(inner);
 
             int leafCnt = leaf.getCount();
 
@@ -5201,16 +5203,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /**
          * @param tail Tail to start with.
-         * @param lvl Level.
          * @return Tail of {@link Tail#EXACT} type at the given level.
          */
-        private Tail<L> getTail(Tail<L> tail, int lvl) {
+        private Tail<L> getTail(Tail<L> tail) {
             assert tail != null;
-            assert lvl >= 0 && lvl <= tail.lvl : lvl;
 
             Tail<L> t = tail;
 
-            while (t.lvl != lvl)
+            while (t.lvl != 0)
                 t = t.down;
 
             assert t.type == Tail.EXACT : t.type; // All the down links must be of EXACT type.
@@ -5223,6 +5223,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return Tail as a String.
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("SameParameterValue")
         private String printTail(boolean keys) throws IgniteCheckedException {
             SB sb = new SB("");
 
@@ -5500,6 +5501,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unused")
     protected int compare(int lvl, BPlusIO<L> io, long pageAddr, int idx, L row) throws IgniteCheckedException {
         return compare(io, pageAddr, idx, row);
     }
@@ -5819,7 +5821,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean reinitialize0() throws IgniteCheckedException {
+        @Override boolean reinitialize0() {
             return true;
         }
 
@@ -5858,6 +5860,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         final Object x;
 
         /** */
+        @SuppressWarnings("unchecked")
         private T[] rows = (T[])EMPTY;
 
         /** */
@@ -5880,6 +5883,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override boolean fillFromBuffer0(long pageAddr, BPlusIO<L> io, int startIdx, int cnt) throws IgniteCheckedException {
             if (startIdx == -1) {
                 if (lowerBound != null)
@@ -5992,6 +5996,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private abstract class GetPageHandler<G extends Get> extends PageHandler<G, Result> {
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public Result run(int cacheId, long pageId, long page, long pageAddr, PageIO iox, Boolean walPlc,
             G g, int lvl, IoStatisticsHolder statHolder) throws IgniteCheckedException {
             assert PageIO.getPageId(pageAddr) == pageId;
@@ -6196,18 +6201,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param h Handler.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
-     * @param lockFailed Result in case of lock failure due to page recycling.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    protected final <X, R> R read(
+    protected final <X> Result read(
         long pageId,
         long page,
-        PageHandler<X, R> h,
+        PageHandler<X, Result> h,
         X arg,
-        int intArg,
-        R lockFailed) throws IgniteCheckedException {
-        return read(pageId, page, h, arg, intArg, lockFailed, statisticsHolder());
+        int intArg
+    ) throws IgniteCheckedException {
+        return read(pageId, page, h, arg, intArg, RETRY, statisticsHolder());
     }
 
     /**
