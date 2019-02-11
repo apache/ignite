@@ -2821,10 +2821,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param reuseBag Reuse bag.
+     * @param minSize Reuse only if the bag size is greater than the min size.
      * @throws IgniteCheckedException If failed.
      */
-    final void reuseFreePagesFromBag(ReuseBag reuseBag) throws IgniteCheckedException {
-        if (reuseBag != null && !reuseBag.isEmpty() && reuseList != null)
+    final void reuseFreePagesFromBag(ReuseBag reuseBag, int minSize) throws IgniteCheckedException {
+        if (reuseBag != null && reuseBag.size() > minSize && reuseList != null)
             reuseList.addForRecycle(reuseBag);
     }
 
@@ -2921,9 +2922,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 assert reuseBag.size() == 2;
             }
 
-            if (reuseBag.size() >= 128)
-                reuseFreePagesFromBag(reuseBag);
-
             return reuseBag;
         }
 
@@ -2934,7 +2932,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param sortedRows Sorted rows.
          * @return {@code true} If was successfully switched to the next row.
          */
-        protected final boolean switchToNextRow(Result res, Iterator<? extends L> sortedRows) {
+        protected final boolean doNextRow(Result res, Iterator<? extends L> sortedRows) {
             if (res.retry || !isFinished() || !sortedRows.hasNext())
                 return false;
 
@@ -2957,7 +2955,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param res Last result.
          * @return {@code true} If we have switched to the next row to process it.
          */
-        boolean nextRow(Result res) {
+        boolean nextRow(Result res) throws IgniteCheckedException {
             return false;
         }
 
@@ -3587,7 +3585,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** {@inheritDoc} */
         @Override boolean nextRow(Result res) {
-            if (!switchToNextRow(res, sortedRows))
+            if (!doNextRow(res, sortedRows))
                 return false;
 
             // Reset state.
@@ -3987,9 +3985,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean nextRow(Result res) {
-            if (!switchToNextRow(res, sortedRows))
+        @Override boolean nextRow(Result res) throws IgniteCheckedException {
+            if (!doNextRow(res, sortedRows))
                 return false;
+
+            reuseFreePagesFromBag(reuseBag, 15);
 
             // Create a new closure for the switched row.
             clo = closures.apply(row);
@@ -4013,7 +4013,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         @Override void releaseAll() throws IgniteCheckedException {
             super.releaseAll();
 
-            reuseFreePagesFromBag(reuseBag);
+            reuseFreePagesFromBag(reuseBag, 0);
         }
     }
 
@@ -4338,9 +4338,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean nextRow(Result res) {
-            if (!switchToNextRow(res, sortedRows))
+        @Override boolean nextRow(Result res) throws IgniteCheckedException {
+            if (!doNextRow(res, sortedRows))
                 return false;
+
+            reuseFreePagesFromBag(reuseBag, 15);
 
             // Reset state.
             rmvdRow = null;
@@ -5004,13 +5006,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @throws IgniteCheckedException If failed.
          */
-        private void reuseFreePages() throws IgniteCheckedException {
-            reuseFreePagesFromBag(reuseBag);
-        }
-
-        /**
-         * @throws IgniteCheckedException If failed.
-         */
         private void replaceInner() throws IgniteCheckedException {
             assert needReplaceInner == READY : needReplaceInner;
 
@@ -5264,7 +5259,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         private void releaseAll() throws IgniteCheckedException {
             releaseTail();
-            reuseFreePages();
+            reuseFreePagesFromBag(reuseBag, 0);
         }
 
         /**
