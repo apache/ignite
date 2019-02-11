@@ -298,12 +298,6 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"--select-command"})
     private SelectCommand selectCommand = SelectCommand.BY_PRIMARY_KEY;
 
-    /** */
-    @Parameter(names = {"--lazy"},
-        arity = 1,
-        description = "Lazy mode for SQL query execution (default true).")
-    private boolean lazy = true;
-
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
      */

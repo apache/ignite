@@ -17,7 +17,6 @@
 
 package org.apache.ignite.yardstick.jdbc;
 
-import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
@@ -35,56 +34,40 @@ public class JdbcUtils {
      * @param cfg Benchmark configuration.
      * @param ignite Ignite node.
      * @param range Data key range.
-     * @param atomicMode Cache atomic mode.
      */
     public static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range, CacheAtomicityMode atomicMode) {
-        IgniteSemaphore sem = ignite.semaphore("jdbc-setup", 1, true, true);
+        println(cfg, "Create table...");
 
-        try {
-            if (sem.tryAcquire()) {
-                println(cfg, "Create table...");
+        StringBuilder qry = new StringBuilder("CREATE TABLE test_long (id LONG PRIMARY KEY, val LONG)" +
+            " WITH \"wrap_value=true");
 
-                StringBuilder qry = new StringBuilder("CREATE TABLE test_long (id LONG PRIMARY KEY, val LONG)" +
-                    " WITH \"wrap_value=true");
+        if (atomicMode != null)
+            qry.append(", atomicity=").append(atomicMode.name());
 
-                if (atomicMode != null)
-                    qry.append(", atomicity=").append(atomicMode.name());
+        qry.append("\";");
 
-                qry.append("\";");
+        String qryStr = qry.toString();
 
-                String qryStr = qry.toString();
+        println(cfg, "Creating table with schema: " + qryStr);
 
-                println(cfg, "Creating table with schema: " + qryStr);
+        GridQueryProcessor qProc = ignite.context().query();
 
-                GridQueryProcessor qProc = ignite.context().query();
+        qProc.querySqlFields(
+            new SqlFieldsQuery(qryStr), true);
 
-                qProc.querySqlFields(
-                    new SqlFieldsQuery(qryStr), true);
+        println(cfg, "Populate data...");
 
-                println(cfg, "Populate data...");
+        for (long l = 1; l <= range; ++l) {
+            qProc.querySqlFields(
+                new SqlFieldsQuery("INSERT INTO test_long (id, val) VALUES (?, ?)")
+                    .setArgs(l, l + 1), true);
 
-                for (long l = 1; l <= range; ++l) {
-                    qProc.querySqlFields(
-                        new SqlFieldsQuery("INSERT INTO test_long (id, val) VALUES (?, ?)")
-                            .setArgs(l, l + 1), true);
-
-                    if (l % 10000 == 0)
-                        println(cfg, "Populate " + l);
-                }
-
-                qProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX val_idx ON test_long (val)"), true);
-
-                println(cfg, "Finished populating data");
-            }
-            else {
-                // Acquire (wait setup by other client) and immediately release/
-                println(cfg, "Waits for setup...");
-
-                sem.acquire();
-            }
+            if (l % 10000 == 0)
+                println(cfg, "Populate " + l);
         }
-        finally {
-            sem.release();
-        }
+
+        qProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX val_idx ON test_long (val)"), true);
+
+        println(cfg, "Finished populating data");
     }
 }
