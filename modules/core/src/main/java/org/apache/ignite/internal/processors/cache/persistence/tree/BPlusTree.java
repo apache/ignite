@@ -1210,16 +1210,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public T findLast(final TreeRowClosure<L, T> c) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
             if (c == null) {
                 GetOne g = new GetOne(null, null, null, true);
+
                 doFind(g);
 
-                return (T)g.row;
+                return g.foundRow;
             } else
                 return new GetLast(c).find();
         }
@@ -1237,10 +1237,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @param row Lookup row for exact match.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
-     * @return Found result or {@code null}
+     * @return Found result or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
-    public final <R> R findOne(L row, Object x) throws IgniteCheckedException {
+    public final T findOne(L row, Object x) throws IgniteCheckedException {
         return findOne(row, null, x);
     }
 
@@ -1250,8 +1250,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Found result or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    public final <R> R findOne(L row, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
+    public final T findOne(L row, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
@@ -1259,7 +1258,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             doFind(g);
 
-            return (R)g.row;
+            return g.foundRow;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on lookup row: " + row, e);
@@ -1335,21 +1334,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             continue; // The child page got split, need to reread our page.
                         }
 
-                        if (g.nextRow(res))
-                            continue;
-
                         return res;
 
                     case NOT_FOUND:
                         assert lvl == 0 : lvl;
 
-                        g.row = null; // Mark not found result.
-
                         // Intentional fallthrough.
-                    default:
+                    case FOUND:
+                        g.finish();
+
                         if (g.nextRow(res))
                             continue;
 
+                        // Intentional fallthrough.
+                    default:
                         return res;
                 }
             }
@@ -2882,10 +2880,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param row Row.
          * @param findLast find last row.
          */
+        @SuppressWarnings("unchecked")
         Get(L row, boolean findLast) {
             assert findLast ^ row != null: row;
 
-            this.row = row;
+            // Need to always have non-null search row to correctly handle finish().
+            this.row = findLast ? (L)Boolean.FALSE : row;
             this.findLast = findLast;
         }
 
@@ -3107,7 +3107,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return {@code true} If the operation is finished.
          */
         boolean isFinished() {
-            throw new IllegalStateException();
+            return row == null;
+        }
+
+        /**
+         * Finish the operation.
+         */
+        void finish() {
+            row = null;
         }
 
         /**
@@ -3140,12 +3147,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Get a single entry.
      */
-    private final class GetOne extends Get {
+    class GetOne extends Get {
         /** */
         Object x;
 
         /** */
         TreeRowClosure<L, T> c;
+
+        /** */
+        T foundRow;
 
         /**
          * @param row Row.
@@ -3153,7 +3163,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param x Implementation specific argument.
          * @param findLast Ignore row passed, find last row
          */
-        private GetOne(L row, TreeRowClosure<L,T> c, Object x, boolean findLast) {
+        GetOne(L row, TreeRowClosure<L,T> c, Object x, boolean findLast) {
             super(row, findLast);
 
             this.x = x;
@@ -3166,7 +3176,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (lvl != 0 && !canGetRowFromInner)
                 return false;
 
-            row = c == null || c.apply(BPlusTree.this, io,pageAddr, idx) ? getRow(io, pageAddr, idx, x) : null;
+            if (c == null || c.apply(BPlusTree.this, io, pageAddr, idx))
+                foundRow = getRow(io, pageAddr, idx, x);
 
             return true;
         }
@@ -3707,19 +3718,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             return pageId != NULL_PAGE_ID && tailId != pageId;
         }
 
-        /**
-         * Finish put.
-         */
-        void finish() {
-            row = null;
+        /** {@inheritDoc} */
+        @Override void finish() {
+            super.finish();
+
             rightId = 0;
 
             tail(NULL_PAGE_ID, NULL_PAGE, NULL_PAGE_ADDRESS);
-        }
-
-        /** {@inheritDoc} */
-        @Override boolean isFinished() {
-            return row == null;
         }
 
         /**
@@ -4224,7 +4229,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (isRemove()) {
                 assert lvl == 0;
 
-                ((Remove)op).finish();
+                op.finish();
 
                 return NOT_FOUND;
             }
@@ -4415,13 +4420,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             return false;
         }
 
-        /**
-         * Finish the operation.
-         */
-        void finish() {
+        /** {@inheritDoc} */
+        @Override void finish() {
             assert tail == null;
 
-            row = null;
+            super.finish();
         }
 
         /**
@@ -5093,11 +5096,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             }
 
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override boolean isFinished() {
-            return row == null;
         }
 
         /**
@@ -6149,14 +6147,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param io Th tree IO object.
          * @param pageAddr The page address.
          * @param idx The item index.
-         * @return state bitset.
+         * @return State bits.
          * @throws IgniteCheckedException If failed.
          */
         public int visit(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx, IgniteWriteAheadLogManager wal)
             throws IgniteCheckedException;
 
         /**
-         * @return state bitset.
+         * @return State bits.
          */
         public int state();
     }
