@@ -465,6 +465,21 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             }
 
             assertEqualContents(tree, set);
+
+            TreeSet<Long> gets = new TreeSet<>();
+
+            for (int j = 0; j < batchSize; j++) {
+                long x = randomInt(CNT);
+
+                gets.add(x);
+            }
+
+            List<Long> foundRows = tree.findAll(gets.iterator(), null, null);
+
+            int ix = 0;
+
+            for (Long x : gets)
+                assertTrue(set.contains(x) ? x.equals(foundRows.get(ix++)) : foundRows.get(ix++) == null);
         }
     }
 
