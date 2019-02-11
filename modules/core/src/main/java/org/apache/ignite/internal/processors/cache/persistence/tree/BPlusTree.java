@@ -242,7 +242,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private class AskNeighbor extends GetPageHandler<Get> {
+    final class AskNeighbor extends GetPageHandler<Get> {
         /** {@inheritDoc} */
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Get g, int isBack) {
             assert !io.isLeaf(); // Inner page.
@@ -273,7 +273,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    public class Search extends GetPageHandler<Get> {
+    public final class Search extends GetPageHandler<Get> {
         /** {@inheritDoc} */
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Get g, int lvl)
             throws IgniteCheckedException {
@@ -368,7 +368,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    public class Replace extends GetPageHandler<Put> {
+    final class Replace extends GetPageHandler<Put> {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
@@ -431,7 +431,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    public class Insert extends GetPageHandler<Put> {
+    final class Insert extends GetPageHandler<Put> {
         /** {@inheritDoc} */
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
             throws IgniteCheckedException {
@@ -480,7 +480,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private class RemoveFromLeaf extends GetPageHandler<Remove> {
+    final class RemoveFromLeaf extends GetPageHandler<Remove> {
         /** {@inheritDoc} */
         @Override public Result run0(long leafId, long leafPage, long leafAddr, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
@@ -555,7 +555,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private class LockBackAndRmvFromLeaf extends GetPageHandler<Remove> {
+    final class LockBackAndRmvFromLeaf extends GetPageHandler<Remove> {
         /** {@inheritDoc} */
         @Override protected Result run0(long backId, long backPage, long backAddr, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
@@ -580,7 +580,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private class LockBackAndTail extends GetPageHandler<Remove> {
+    final class LockBackAndTail extends GetPageHandler<Remove> {
         /** {@inheritDoc} */
         @Override public Result run0(long backId, long backPage, long backAddr, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
@@ -604,7 +604,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private class LockTailForward extends GetPageHandler<Remove> {
+    final class LockTailForward extends GetPageHandler<Remove> {
         /** {@inheritDoc} */
         @Override protected Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Remove r, int lvl) {
             r.addTail(pageId, page, pageAddr, io, lvl, Tail.FORWARD);
@@ -619,7 +619,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private class LockTail extends GetPageHandler<Remove> {
+    final class LockTail extends GetPageHandler<Remove> {
         /** {@inheritDoc} */
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
@@ -649,7 +649,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private class CutRoot extends PageHandler<Void, Bool> {
+    final class CutRoot extends PageHandler<Void, Bool> {
         /** {@inheritDoc} */
         @Override public Bool run(int cacheId, long metaId, long metaPage, long metaAddr, PageIO iox, Boolean walPlc,
             Void ignore, int lvl,
@@ -681,7 +681,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private class AddRoot extends PageHandler<Long, Bool> {
+    final class AddRoot extends PageHandler<Long, Bool> {
         /** {@inheritDoc} */
         @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc,
             Long rootPageId, int lvl,
@@ -714,7 +714,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private class InitRoot extends PageHandler<Long, Bool> {
+    final class InitRoot extends PageHandler<Long, Bool> {
         /** {@inheritDoc} */
         @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc,
             Long rootId, int inlineSize,
@@ -2884,7 +2884,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         Get(L row, boolean findLast) {
             assert findLast ^ row != null: row;
 
-            // Need to always have non-null search row to correctly handle finish().
+            // Need to have non-null search row here to correctly handle finish() and isFinished().
             this.row = findLast ? (L)Boolean.FALSE : row;
             this.findLast = findLast;
         }
@@ -3186,7 +3186,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Get a cursor for range.
      */
-    private final class GetCursor extends Get {
+    final class GetCursor extends Get {
         /** */
         AbstractForwardCursor cursor;
 
@@ -3223,7 +3223,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Get a cursor for range.
      */
-    private final class TreeVisitor extends Get {
+    final class TreeVisitor extends Get {
         /** */
         long nextPageId;
 
@@ -3472,7 +3472,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Get the last item in the tree which matches the passed filter.
      */
-    private final class GetLast extends Get {
+    final class GetLast extends Get {
         private final TreeRowClosure<L, T> c;
         private boolean retry = true;
         private long lastPageId;
@@ -3577,7 +3577,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Put all operation.
      */
-    class PutAll extends Put {
+    final class PutAll extends Put {
         /** */
         List<T> oldRows;
 
@@ -3623,7 +3623,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Put operation.
      */
-    public class Put extends Get {
+    class Put extends Get {
         /** Mark of NULL value of page id. It means valid value can't be equal this value. */
         private static final long NULL_PAGE_ID = 0L;
 
@@ -4026,7 +4026,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Invoke operation.
      */
-    public class Invoke extends Get {
+    class Invoke extends Get {
         /** */
         Object x;
 
@@ -5306,7 +5306,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Tail for remove.
      */
-    private static final class Tail<L> {
+    static final class Tail<L> {
         /** */
         static final byte BACK = 0;
 
@@ -5532,7 +5532,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private abstract class AbstractForwardCursor {
+    abstract class AbstractForwardCursor {
         /** */
         long nextPageId;
 
@@ -5758,7 +5758,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Closure cursor.
      */
-    private final class ClosureCursor extends AbstractForwardCursor {
+    final class ClosureCursor extends AbstractForwardCursor {
         /** */
         private final TreeRowClosure<L, T> p;
 
@@ -5992,7 +5992,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Page handler for basic {@link Get} operation.
      */
-    private abstract class GetPageHandler<G extends Get> extends PageHandler<G, Result> {
+    abstract class GetPageHandler<G extends Get> extends PageHandler<G, Result> {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Result run(int cacheId, long pageId, long page, long pageAddr, PageIO iox, Boolean walPlc,
@@ -6032,7 +6032,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    private static class TreeMetaData {
+    static final class TreeMetaData {
         /** */
         final int rootLvl;
 
