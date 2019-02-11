@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -407,7 +408,8 @@ public class GridMapQueryExecutor {
                     txReq,
                     lockFut,
                     runCntr,
-                    dataPageScanEnabled);
+                    dataPageScanEnabled,
+                    req.usedColumns());
             }
             else {
                 ctx.closure().callLocal(
@@ -435,7 +437,8 @@ public class GridMapQueryExecutor {
                                 txReq,
                                 lockFut,
                                 runCntr,
-                                dataPageScanEnabled);
+                                dataPageScanEnabled,
+                                req.usedColumns());
 
                             return null;
                         }
@@ -466,7 +469,8 @@ public class GridMapQueryExecutor {
             txReq,
             lockFut,
             runCntr,
-            dataPageScanEnabled);
+            dataPageScanEnabled,
+            req.usedColumns());
     }
 
     /**
@@ -513,7 +517,8 @@ public class GridMapQueryExecutor {
         @Nullable final GridH2SelectForUpdateTxDetails txDetails,
         @Nullable final CompoundLockFuture lockFut,
         @Nullable final AtomicInteger runCntr,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        GridSqlUsedColumnsInfo columnsInfo
     ) {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
@@ -552,7 +557,8 @@ public class GridMapQueryExecutor {
                         txDetails,
                         lockFut,
                         runCntr,
-                        dataPageScanEnabled);
+                        dataPageScanEnabled,
+                        columnsInfo);
                 }
             });
 
@@ -638,7 +644,8 @@ public class GridMapQueryExecutor {
                 h2.backupFilter(topVer, parts),
                 distributedJoinCtx,
                 mvccSnapshot,
-                reserved
+                reserved,
+                !disableUsedColInfo && columnsInfo != null ? columnsInfo.createValueUsedMap() : null
             );
 
             qctx.lazyWorker(worker);
@@ -697,9 +704,6 @@ public class GridMapQueryExecutor {
                         H2Utils.bindParameters(stmt, params0);
 
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
-
-                        if (!disableUsedColInfo)
-                            qctx.usedColumnsInfo(qry.usedColumns().createValueUsedMap());
 
                         rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qr.queryCancel(qryIdx), dataPageScanEnabled);
 

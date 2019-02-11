@@ -54,6 +54,9 @@ public class GridCacheTwoStepQuery {
     private GridSqlUsedColumnsInfo origUsedCols;
 
     /** */
+    private GridSqlUsedColumnsInfo mapUsedCols;
+
+    /** */
     private Set<QueryTable> tbls;
 
     /** */
@@ -327,6 +330,22 @@ public class GridCacheTwoStepQuery {
      */
     public void originalUsedColumns(GridSqlUsedColumnsInfo origUsedCols) {
         this.origUsedCols = origUsedCols;
+    }
+
+    /**
+     * @return Used columns info for all map queries.
+     *      We use one map because all aliases are unique in one distributed query.
+     */
+    public GridSqlUsedColumnsInfo mapUsedColumns() {
+        return mapUsedCols;
+    }
+
+    /**
+     * @param origUsedCols Used columns info for original query.
+     *      We use one map because all aliases are unique in one distributed query.
+     */
+    public void mapUsedColumns(GridSqlUsedColumnsInfo origUsedCols) {
+        this.mapUsedCols = origUsedCols;
     }
 
     /** {@inheritDoc} */

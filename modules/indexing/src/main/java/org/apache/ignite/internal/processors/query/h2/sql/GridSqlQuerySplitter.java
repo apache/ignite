@@ -124,6 +124,9 @@ public class GridSqlQuerySplitter {
     /** Partition extractor. */
     private final PartitionExtractor extractor;
 
+    /** Used values map (table alias -> used value flag). */
+    private final Map<String, Boolean> usedValues = new HashMap<>();
+
     /**
      * @param params Query parameters.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
@@ -296,6 +299,7 @@ public class GridSqlQuerySplitter {
         twoStepQry.skipMergeTable(splitter.skipMergeTbl);
         twoStepQry.explain(explain);
         twoStepQry.distributedJoins(distributedJoins);
+        twoStepQry.mapUsedColumns(new GridSqlUsedColumnsInfo(splitter.usedValues));
 
         // all map queries must have non-empty derivedPartitions to use this feature.
         twoStepQry.derivedPartitions(splitter.extractor.mergeMapQueries(twoStepQry.mapQueries()));
@@ -1245,7 +1249,9 @@ public class GridSqlQuerySplitter {
         parent.child(childIdx, rdcQry);
 
         // Setup resulting map query.
-        GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL(), extractUsedColumns(mapQry));
+        GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL());
+
+        GridSqlQueryParser.extractUsedColumnsFromAst(usedValues, mapQry);
 
         setupParameters(map, mapQry, params);
 

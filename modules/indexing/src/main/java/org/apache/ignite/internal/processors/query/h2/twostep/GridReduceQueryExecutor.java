@@ -671,7 +671,8 @@ public class GridReduceQueryExecutor {
                     .parameters(params)
                     .flags(flags)
                     .timeout(timeoutMillis)
-                    .schemaName(schemaName);
+                    .schemaName(schemaName)
+                    .usedColumns(singlePartMode ? qry.originalUsedColumns() : qry.mapUsedColumns());
 
                 if (curTx != null && curTx.mvccSnapshot() != null)
                     req.mvccSnapshot(curTx.mvccSnapshot());
@@ -761,6 +762,7 @@ public class GridReduceQueryExecutor {
 
                         QueryContext qctx = new QueryContext(
                             0,
+                            null,
                             null,
                             null,
                             null,
@@ -1348,7 +1350,7 @@ public class GridReduceQueryExecutor {
             }
         }
 
-        GridCacheSqlQuery originalQry = new GridCacheSqlQuery(qry.originalSql(), qry.originalUsedColumns());
+        GridCacheSqlQuery originalQry = new GridCacheSqlQuery(qry.originalSql());
 
         if (!F.isEmpty(params)) {
             int[] paramIdxs = new int[params.length];

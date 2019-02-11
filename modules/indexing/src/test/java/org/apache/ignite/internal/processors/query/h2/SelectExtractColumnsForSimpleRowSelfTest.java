@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -52,7 +51,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCommonTest {
     /** Tracked map queries. */
-    private static final AtomicReference<List<GridCacheSqlQuery>> qrys = new AtomicReference<>();
+    private static final AtomicReference<GridSqlUsedColumnsInfo> usedCols = new AtomicReference<>();
 
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder().setShared(true);
@@ -107,67 +106,67 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         res = sql("SELECT id FROM test AS d0 WHERE _key < 5");
 
         assertEquals(5, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", false));
 
         // only key
         res = sql("SELECT id FROM test AS d0 WHERE id < 5");
 
         assertEquals(5, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0",  false));
 
         // scan and wildcard
         res = sql("SELECT * FROM test AS d0");
 
         assertEquals((long)ROWS, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true));
 
         // Single-partition query (use original query)
         res = sql("SELECT valStr FROM test AS d0 WHERE _key = 5");
 
         assertEquals(1, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true));
 
         // simple
         res = sql("SELECT valStr FROM test AS d0 WHERE id > 4 AND valLong < 6");
 
         assertEquals("val_5", res.get(0).get(0));
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true));
 
         // only value
         res = sql("SELECT valStr FROM test AS d0 WHERE valLong < 5");
 
         assertEquals(5, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true));
 
         // order by
         res = sql("SELECT valStr FROM test AS d0 WHERE valLong < 5 ORDER BY id");
 
         assertEquals(5, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true));
 
         res = sql("SELECT valStr FROM test AS d0 WHERE valLong < 5 ORDER BY valStr");
 
         assertEquals(5, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true));
 
         // GROUP BY / aggregates
         res = sql("SELECT SUM(valLong) FROM test AS d0 WHERE valLong < 5 GROUP BY id");
         assertEquals(5, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true));
 
         // GROUP BY / having
         res = sql("SELECT id FROM test AS d0 WHERE id < 5 GROUP BY id HAVING SUM(valLong) < 5");
         assertEquals(5, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true));
     }
 
@@ -200,8 +199,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
                 "WHERE comp.name='company_1'");
 
         assertEquals(res.size(), 10);
-        assertEquals(1, qrys.get().size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("pers", true),
             new UsedTableColumns("comp", true));
     }
@@ -232,8 +230,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
                 "WHERE comp.id IN (SELECT MAX(COUNT(pers.id)) FROM person AS pers WHERE pers.compId = comp.id)");
 
         assertEquals(res.size(), 1);
-        assertEquals(1, qrys.get().size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("pers", false),
             new UsedTableColumns("comp", false));
     }
@@ -262,8 +259,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
                 "LEFT JOIN " +
                 "(SELECT id AS id, val4, val5 FROM test AS d2) AS t2 ON t1.id = t2.id");
 
-        assertEquals(1, qrys.get().size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true),
             new UsedTableColumns("d1", true),
             new UsedTableColumns("d2", true));
@@ -293,8 +289,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         res = sql(
             "SELECT val0 FROM test AS d0 WHERE val0 = 'val0'");
 
-        assertEquals(1, qrys.get().size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true));
 
         assertEquals(10000, res.size());
@@ -302,8 +297,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         res = sql(
             "SELECT val1 FROM test AS d0 WHERE val1 = 'val1'");
 
-        assertEquals(1, qrys.get().size());
-        assertUsedColumns(qrys.get().get(0).usedColumns(),
+        assertUsedColumns(usedCols.get(),
             new UsedTableColumns("d0", true));
 
         assertEquals(10000, res.size());
@@ -351,7 +345,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
      * @return Result.
      */
     private List<List<?>> executeSqlFieldsQuery(SqlFieldsQuery qry) {
-        qrys.set(null);
+        usedCols.set(null);
 
         return client().context().query().querySqlFields(qry, false).getAll();
     }
@@ -367,7 +361,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
                 if (msg0.message() instanceof GridH2QueryRequest) {
                     GridH2QueryRequest req = (GridH2QueryRequest)msg0.message();
 
-                    qrys.set(req.queries());
+                    usedCols.set(req.usedColumns());
                 }
             }
 

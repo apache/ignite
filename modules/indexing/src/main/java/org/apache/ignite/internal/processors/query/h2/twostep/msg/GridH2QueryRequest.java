@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnsInfo;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -159,6 +160,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable. */
     private GridH2SelectForUpdateTxDetails txReq;
 
+    @GridToStringInclude
+    private GridSqlUsedColumnsInfo usedCols;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -185,6 +189,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         schemaName = req.schemaName;
         mvccSnapshot = req.mvccSnapshot;
         txReq = req.txReq;
+        usedCols = req.usedCols;
     }
 
     /**
@@ -474,6 +479,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         return null;
     }
 
+    /**
+     * @return Information about used columns.
+     */
+    public GridSqlUsedColumnsInfo usedColumns() {
+        return usedCols;
+    }
+
+    /**
+     * @param usedCols Information about used columns.
+     * @return This for chains.
+     */
+    public GridH2QueryRequest usedColumns(GridSqlUsedColumnsInfo usedCols) {
+        this.usedCols = usedCols;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public void marshall(Marshaller m) {
         if (paramsBytes != null)
@@ -607,6 +629,11 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 writer.incrementState();
 
+            case 14:
+                if (!writer.writeMessage("usedCols", usedCols))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -732,6 +759,13 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
+            case 14:
+                usedCols = reader.readMessage("usedCols");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridH2QueryRequest.class);
@@ -744,7 +778,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 15;
     }
 
     /** {@inheritDoc} */

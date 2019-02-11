@@ -46,10 +46,10 @@ public class QueryContext {
     private final PartitionReservation reservations;
 
     /** */
-    private MapQueryLazyWorker lazyWorker;
+    private final Map<String, Boolean> usedCols;
 
     /** */
-    private Map<String, Boolean> usedCols;
+    private MapQueryLazyWorker lazyWorker;
 
     /**
      * Constructor.
@@ -65,13 +65,15 @@ public class QueryContext {
         @Nullable IndexingQueryFilter filter,
         @Nullable DistributedJoinContext distributedJoinCtx,
         @Nullable MvccSnapshot mvccSnapshot,
-        @Nullable PartitionReservation reservations
+        @Nullable PartitionReservation reservations,
+        @Nullable Map<String, Boolean> usedCols
     ) {
         this.segment = segment;
         this.filter = filter;
         this.distributedJoinCtx = distributedJoinCtx;
         this.mvccSnapshot = mvccSnapshot;
         this.reservations = reservations;
+        this.usedCols = usedCols;
     }
 
     /**
@@ -134,13 +136,6 @@ public class QueryContext {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(QueryContext.class, this);
-    }
-
-    /**
-     * @param usedCols Information about used columns.
-     */
-    public void usedColumnsInfo(Map<String, Boolean> usedCols) {
-        this.usedCols = usedCols;
     }
 
     /**

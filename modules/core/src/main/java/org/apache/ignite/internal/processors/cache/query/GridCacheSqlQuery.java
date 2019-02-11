@@ -79,10 +79,6 @@ public class GridCacheSqlQuery implements Message {
     @GridDirectTransient
     private transient boolean hasSubQries;
 
-    /** Used columns info. */
-    @GridToStringInclude
-    private GridSqlUsedColumnsInfo usedCols;
-
     /**
      * For {@link Message}.
      */
@@ -97,17 +93,6 @@ public class GridCacheSqlQuery implements Message {
         A.ensure(!F.isEmpty(qry), "qry must not be empty");
 
         this.qry = qry;
-    }
-
-    /**
-     * @param qry Query.
-     * @param usedCols Used columns info.
-     */
-    public GridCacheSqlQuery(String qry, GridSqlUsedColumnsInfo usedCols) {
-        A.ensure(!F.isEmpty(qry), "qry must not be empty");
-
-        this.qry = qry;
-        this.usedCols = usedCols;
     }
 
     /**
@@ -161,13 +146,6 @@ public class GridCacheSqlQuery implements Message {
         return this;
     }
 
-    /**
-     * @return Used columns info.
-     */
-    public GridSqlUsedColumnsInfo usedColumns() {
-        return usedCols;
-    }
-
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
@@ -210,12 +188,6 @@ public class GridCacheSqlQuery implements Message {
 
             case 3:
                 if (!writer.writeString("qry", qry))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeMessage("usedCols", usedCols))
                     return false;
 
                 writer.incrementState();
@@ -265,14 +237,6 @@ public class GridCacheSqlQuery implements Message {
 
                 reader.incrementState();
 
-            case 4:
-                usedCols = reader.readMessage("usedCols");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridCacheSqlQuery.class);
@@ -285,7 +249,7 @@ public class GridCacheSqlQuery implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 4;
     }
 
     /**
@@ -301,7 +265,6 @@ public class GridCacheSqlQuery implements Message {
         cp.partitioned = partitioned;
         cp.derivedPartitions = derivedPartitions;
         cp.hasSubQries = hasSubQries;
-        cp.usedCols = usedCols;
 
         return cp;
     }

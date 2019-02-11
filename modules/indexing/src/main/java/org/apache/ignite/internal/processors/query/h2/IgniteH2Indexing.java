@@ -638,6 +638,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 filter,
                 null,
                 mvccSnapshot,
+                null,
                 null
             );
 
