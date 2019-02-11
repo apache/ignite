@@ -198,12 +198,12 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 return txRecordSerializer.readMvccTx(in);
 
             case ROLLBACK_TX_RECORD:
-                int cacheId = in.readInt();
+                int grpId = in.readInt();
                 int partId = in.readInt();
                 long start = in.readLong();
                 long range = in.readLong();
 
-                return new RollbackRecord(cacheId, partId, start, range);
+                return new RollbackRecord(grpId, partId, start, range);
 
             default:
                 return super.readPlainRecord(type, in, encrypted);
@@ -290,7 +290,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             case ROLLBACK_TX_RECORD:
                 RollbackRecord rb = (RollbackRecord)rec;
 
-                buf.putInt(rb.cacheId());
+                buf.putInt(rb.groupId());
                 buf.putInt(rb.partitionId());
                 buf.putLong(rb.start());
                 buf.putLong(rb.range());

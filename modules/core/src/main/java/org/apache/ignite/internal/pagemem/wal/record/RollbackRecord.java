@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class RollbackRecord extends WALRecord {
     /** Cache ID. */
     @GridToStringInclude
-    protected int cacheId;
+    protected int grpId;
 
     /** Partition ID. */
     @GridToStringInclude
@@ -41,13 +41,13 @@ public class RollbackRecord extends WALRecord {
     protected long range;
 
     /**
-     * @param cacheId Cache id.
+     * @param grpId Group id.
      * @param partId Partition id.
      * @param start Start.
      * @param range Range.
      */
-    public RollbackRecord(int cacheId, int partId, long start, long range) {
-        this.cacheId = cacheId;
+    public RollbackRecord(int grpId, int partId, long start, long range) {
+        this.grpId = grpId;
         this.partId = partId;
         this.start = start;
         this.range = range;
@@ -56,8 +56,8 @@ public class RollbackRecord extends WALRecord {
     /**
      * @return Cache ID.
      */
-    public int cacheId() {
-        return cacheId;
+    public int groupId() {
+        return grpId;
     }
 
     /**

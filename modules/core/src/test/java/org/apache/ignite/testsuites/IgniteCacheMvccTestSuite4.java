@@ -98,7 +98,9 @@ import org.junit.runners.model.InitializationError;
 /**
  *
  */
-@RunWith(IgniteCacheMvccTestSuite4.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({})
+//@RunWith(IgniteCacheMvccTestSuite4.DynamicSuite.class)
 public class IgniteCacheMvccTestSuite4 {
     /**
      * @return IgniteCache test suite.

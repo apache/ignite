@@ -1297,7 +1297,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     else if (rec.get2() instanceof RollbackRecord) {
                         RollbackRecord rbRec = (RollbackRecord)rec.get2();
 
-                        if (cacheIds.contains(rbRec.cacheId())) {
+                        if (cacheIds.contains(rbRec.groupId())) {
                             int idx = partMap.partitionIndex(rbRec.partitionId());
 
                             if (idx >= 0 && !missingParts.contains(idx)) {

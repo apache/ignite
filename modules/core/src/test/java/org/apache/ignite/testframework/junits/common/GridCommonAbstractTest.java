@@ -40,6 +40,7 @@ import javax.cache.integration.CompletionListener;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
+import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -2270,5 +2271,43 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             internalCache(grid(gridName).cache(cacheName)).context().topology().localPartition(partId);
 
         return locPart == null ? null : locPart.dataStore().partUpdateCounter();
+    }
+
+    /**
+     * @param res Response.
+     */
+    protected void assertPartitionsSame(IdleVerifyResultV2 res) throws AssertionFailedError {
+        if (res.hasConflicts()) {
+            StringBuilder b = new StringBuilder();
+
+            res.print(b::append);
+
+            fail(b.toString());
+        }
+    }
+
+    /**
+     *
+     * @param partId
+     * @param withReserveCntr {@code True} to compare reserve counters. Counters must be same after rebalance.
+     */
+    protected void assertCountersSame(int partId, boolean withReserveCntr) throws AssertionFailedError {
+        PartitionUpdateCounter cntr0 = null;
+
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.configuration().isClientMode())
+                continue;
+
+            PartitionUpdateCounter cntr = counter(partId, ignite.name());
+
+            if (cntr0 != null) {
+                assertEquals("Expecting same counters", cntr0, cntr);
+
+                if (withReserveCntr)
+                    assertEquals("Expecting same reservation counters", cntr0.reserved(), cntr.reserved());
+            }
+
+            cntr0 = cntr;
+        }
     }
 }
