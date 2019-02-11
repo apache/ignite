@@ -516,6 +516,9 @@ public class GridSqlQueryParser {
     private static final String PARAM_ENCRYPTED = "ENCRYPTED";
 
     /** */
+    private static final String PARAM_QUERY_PARALLELISM = "QUERY_PARALLELISM";
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -1485,6 +1488,19 @@ public class GridSqlQueryParser {
                         IgniteQueryErrorCode.PARSING);
 
                 res.backups(backups);
+
+                break;
+
+            case PARAM_QUERY_PARALLELISM:
+                ensureNotEmpty(name, val);
+
+                int qryPar = parseIntParam(PARAM_QUERY_PARALLELISM, val);
+
+                if (qryPar <= 0)
+                    throw new IgniteSQLException("\"" + PARAM_QUERY_PARALLELISM + "\" cannot be less or equal to zero: " +
+                        qryPar, IgniteQueryErrorCode.PARSING);
+
+                res.queryParallelism(qryPar);
 
                 break;
 

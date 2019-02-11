@@ -380,7 +380,7 @@ public class DdlStatementsProcessor {
 
                     ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheName(),
                         cmd.cacheGroup(), cmd.dataRegionName(), cmd.affinityKey(), cmd.atomicityMode(),
-                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists(), cmd.encrypted());
+                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists(), cmd.encrypted(), cmd.queryParallelism());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
