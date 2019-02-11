@@ -18,8 +18,10 @@
 package org.apache.ignite.ml.util.generators;
 
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
@@ -30,8 +32,8 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
 
 /**
- * Provides general interface for generation of pseudorandom vectors according to shape defined
- * by logic of specific data stream generator.
+ * Provides general interface for generation of pseudorandom vectors according to shape defined by logic of specific
+ * data stream generator.
  */
 public interface DataStreamGenerator {
     /**
@@ -70,8 +72,8 @@ public interface DataStreamGenerator {
     }
 
     /**
-     * Apply pseudorandom noize to vectors without labels mapping. Such method can be useful in cases
-     * when vectors with different labels should be mixed between them on class bounds.
+     * Apply pseudorandom noize to vectors without labels mapping. Such method can be useful in cases when vectors with
+     * different labels should be mixed between them on class bounds.
      *
      * @param rnd Generator of pseudorandom scalars modifying vector components with label saving.
      * @return Stream of blurred vectors with same labels.
@@ -110,7 +112,8 @@ public interface DataStreamGenerator {
      * @param partitions Partitions count.
      * @return Dataset builder.
      */
-    public default DatasetBuilder<Vector, Double> asDatasetBuilder(int datasetSize, IgniteBiPredicate<Vector, Double> filter,
+    public default DatasetBuilder<Vector, Double> asDatasetBuilder(int datasetSize,
+        IgniteBiPredicate<Vector, Double> filter,
         int partitions) {
 
         return new DatasetBuilderAdapter(this, datasetSize, filter, partitions);
@@ -125,10 +128,22 @@ public interface DataStreamGenerator {
      * @param upstreamTransformerBuilder Upstream transformer builder.
      * @return Dataset builder.
      */
-    public default DatasetBuilder<Vector, Double> asDatasetBuilder(int datasetSize, IgniteBiPredicate<Vector, Double> filter,
+    public default DatasetBuilder<Vector, Double> asDatasetBuilder(int datasetSize,
+        IgniteBiPredicate<Vector, Double> filter,
         int partitions, UpstreamTransformerBuilder upstreamTransformerBuilder) {
 
         return new DatasetBuilderAdapter(this, datasetSize, filter, partitions, upstreamTransformerBuilder);
     }
 
+    public default <K> void fillCacheWithCustomKey(int countOfRows, IgniteCache<K, LabeledVector<Double>> cache,
+        Function<LabeledVector<Double>, K> keyMapper) {
+
+        labeled().limit(countOfRows).forEach(vec -> {
+            cache.put(keyMapper.apply(vec), vec);
+        });
+    }
+
+    public default void fillCacheWithVecHashAsKey(int countOfRows, IgniteCache<Integer, LabeledVector<Double>> cache) {
+        fillCacheWithCustomKey(countOfRows, cache, v -> v.features().hashCode() ^ v.label().hashCode());
+    }
 }
