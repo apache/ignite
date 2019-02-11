@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.configuration.distributed;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -184,7 +182,7 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
      */
     @Test(expected = DetachedPropertyException.class)
     public void testNotAttachedProperty() throws Exception {
-        DistributedLongProperty long0 = DistributedLongProperty.detachedProperty(TEST_PROP, 0L);
+        DistributedLongProperty long0 = DistributedLongProperty.detachedLongProperty(TEST_PROP, 0L);
         assertEquals(0, long0.value().longValue());
 
         long0.propagate(1L);

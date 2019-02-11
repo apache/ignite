@@ -26,6 +26,9 @@ import org.apache.ignite.internal.processors.subscription.GridInternalSubscripti
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
+
 /**
  * Distributed baseline configuration.
  */
@@ -37,12 +40,14 @@ public class DistributedBaselineConfiguration {
     /** Message of baseline auto-adjust configuration. */
     private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%s' ms";
     /** Value of manual baseline control or auto adjusting baseline. */
-    private DistributedBooleanProperty baselineAutoAdjustEnabled;
+    private volatile DistributedBooleanProperty baselineAutoAdjustEnabled =
+        detachedBooleanProperty("baselineAutoAdjustEnabled", false);
 
     /**
      * Value of time which we would wait before the actual topology change since last discovery event(node join/exit).
      */
-    private DistributedLongProperty baselineAutoAdjustTimeout;
+    private volatile DistributedLongProperty baselineAutoAdjustTimeout =
+        detachedLongProperty("baselineAutoAdjustTimeout", -1L);
 
     /**
      * @param cfg Static config.
@@ -58,8 +63,12 @@ public class DistributedBaselineConfiguration {
 
                 long timeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
 
-                baselineAutoAdjustEnabled = dispatcher.registerBoolean("baselineAutoAdjustEnabled", true);
-                baselineAutoAdjustTimeout = dispatcher.registerLong("baselineAutoAdjustTimeout", timeout);
+                //set default value.
+                baselineAutoAdjustEnabled.localUpdate(true);
+                baselineAutoAdjustTimeout.localUpdate(timeout);
+
+                dispatcher.registerProperty(baselineAutoAdjustEnabled);
+                dispatcher.registerProperty(baselineAutoAdjustTimeout);
 
                 log.info(
                     String.format(AUTO_ADJUST_CONFIGURED_MESSAGE,
