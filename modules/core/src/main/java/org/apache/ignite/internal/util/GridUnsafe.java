@@ -137,7 +137,8 @@ public abstract class GridUnsafe {
             return buf;
         }
         catch (ReflectiveOperationException e) {
-            throw new RuntimeException("JavaNioAccess#newDirectByteBuffer() method is unavailable.", e);
+            throw new RuntimeException("JavaNioAccess#newDirectByteBuffer() method is unavailable."
+                + FeatureChecker.JAVA_VER_SPECIFIC_WARN, e);
         }
     }
 
@@ -1450,7 +1451,8 @@ public abstract class GridUnsafe {
             return mth.invoke(null);
         }
         catch (ReflectiveOperationException e) {
-            throw new RuntimeException(pkgName + ".misc.JavaNioAccess class is unavailable.", e);
+            throw new RuntimeException(pkgName + ".misc.JavaNioAccess class is unavailable."
+                + FeatureChecker.JAVA_VER_SPECIFIC_WARN, e);
         }
     }
 
@@ -1473,7 +1475,8 @@ public abstract class GridUnsafe {
             return mtd;
         }
         catch (ReflectiveOperationException e) {
-            throw new RuntimeException(miscPackage() + ".JavaNioAccess#newDirectByteBuffer() method is unavailable.", e);
+            throw new RuntimeException(miscPackage() + ".JavaNioAccess#newDirectByteBuffer() method is unavailable."
+                + FeatureChecker.JAVA_VER_SPECIFIC_WARN, e);
         }
     }
 
