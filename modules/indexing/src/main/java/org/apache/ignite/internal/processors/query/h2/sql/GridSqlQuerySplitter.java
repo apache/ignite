@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -170,7 +171,7 @@ public class GridSqlQuerySplitter {
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
      * @param enforceJoinOrder Enforce join order.
-     * @param partExtractor Partition extractor.
+     * @param idx Indexing.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
@@ -182,7 +183,8 @@ public class GridSqlQuerySplitter {
         boolean collocatedGrpBy,
         boolean distributedJoins,
         boolean enforceJoinOrder,
-        PartitionExtractor partExtractor
+        boolean local,
+        IgniteH2Indexing idx
     ) throws SQLException, IgniteCheckedException {
         SplitterContext.set(distributedJoins);
 
@@ -194,7 +196,8 @@ public class GridSqlQuerySplitter {
                 collocatedGrpBy,
                 distributedJoins,
                 enforceJoinOrder,
-                partExtractor
+                local,
+                idx
             );
         }
         finally {
@@ -209,7 +212,7 @@ public class GridSqlQuerySplitter {
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
      * @param enforceJoinOrder Enforce join order.
-     * @param partExtractor Partition extractor.
+     * @param idx Indexing.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
@@ -221,7 +224,8 @@ public class GridSqlQuerySplitter {
         boolean collocatedGrpBy,
         boolean distributedJoins,
         boolean enforceJoinOrder,
-        PartitionExtractor partExtractor
+        boolean local,
+        IgniteH2Indexing idx
     ) throws SQLException, IgniteCheckedException {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
@@ -236,8 +240,12 @@ public class GridSqlQuerySplitter {
 
         qry.explain(false);
 
-        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, distributedJoins,
-            partExtractor);
+        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(
+            params,
+            collocatedGrpBy,
+            distributedJoins,
+            idx.partitionExtractor()
+        );
 
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
@@ -279,26 +287,27 @@ public class GridSqlQuerySplitter {
                 distributedJoins = false;
         }
 
+        List<Integer> cacheIds = H2Utils.collectCacheIds(idx, null, splitter.tbls);
+        boolean mvccEnabled = H2Utils.collectMvccEnabled(idx, cacheIds);
+
+        H2Utils.checkQuery(idx, cacheIds, mvccEnabled, forUpdate, splitter.tbls);
+
         // Setup resulting two step query and return it.
-        int paramsCnt = prepared.getParameters().size();
-
-        GridCacheTwoStepQuery twoStepQry = new GridCacheTwoStepQuery(originalSql, paramsCnt, splitter.tbls);
-
-        twoStepQry.reduceQuery(splitter.rdcSqlQry);
-
-        for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys)
-            twoStepQry.addMapQuery(mapSqlQry);
-
-        twoStepQry.skipMergeTable(splitter.skipMergeTbl);
-        twoStepQry.explain(explain);
-        twoStepQry.distributedJoins(distributedJoins);
-
-        // all map queries must have non-empty derivedPartitions to use this feature.
-        twoStepQry.derivedPartitions(splitter.extractor.mergeMapQueries(twoStepQry.mapQueries()));
-
-        twoStepQry.forUpdate(forUpdate);
-
-        return twoStepQry;
+        return new GridCacheTwoStepQuery(
+            originalSql,
+            prepared.getParameters().size(),
+            splitter.tbls,
+            splitter.rdcSqlQry,
+            splitter.mapSqlQrys,
+            splitter.skipMergeTbl,
+            explain,
+            distributedJoins,
+            forUpdate,
+            splitter.extractor.mergeMapQueries(splitter.mapSqlQrys),
+            cacheIds,
+            mvccEnabled,
+            local || F.isEmpty(cacheIds)
+        );
     }
 
     /**
