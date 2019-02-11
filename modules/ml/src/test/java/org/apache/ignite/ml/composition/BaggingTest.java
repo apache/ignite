@@ -18,12 +18,14 @@
 package org.apache.ignite.ml.composition;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.bagging.BaggedModel;
 import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
+import org.apache.ignite.ml.composition.combinators.parallel.ModelsParallelComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -38,6 +40,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
+import org.apache.ignite.ml.trainers.AdaptableDatasetModel;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
@@ -47,6 +50,23 @@ import org.junit.Test;
  * Tests for bagging algorithm.
  */
 public class BaggingTest extends TrainerTest {
+    /**
+     * Dependency of weights of first model in ensemble after training in
+     * {@link BaggingTest#testNaiveBaggingLogRegression()}. This dependency is tested to ensure that it is
+     * fully determined by provided seeds.
+     */
+    private static Map<Integer, Vector> firstModelWeights;
+
+    static {
+        firstModelWeights = new HashMap<>();
+
+        firstModelWeights.put(1, VectorUtils.of(-0.14721735583126058, 4.366377931980097));
+        firstModelWeights.put(2, VectorUtils.of(-1.0092940937477968, 1.2950461550870134));
+        firstModelWeights.put(3, VectorUtils.of(-5.5345231104301655, -0.7554216668724918));
+        firstModelWeights.put(4, VectorUtils.of(0.136489632011201, 1.0937407007786915));
+        firstModelWeights.put(13, VectorUtils.of(-0.27321382073998685, 1.1199411864901687));
+    }
+
     /**
      * Test that count of entries in context is equal to initial dataset size * subsampleRatio.
      */
@@ -95,6 +115,10 @@ public class BaggingTest extends TrainerTest {
             (k, v) -> v[0]
         );
 
+        Vector weights = ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)((AdaptableDatasetModel)mdl
+            .model()).innerModel()).submodels().get(0)).innerModel()).weights();
+
+        TestUtils.assertEquals(firstModelWeights.get(parts), weights);
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }

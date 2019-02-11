@@ -41,7 +41,7 @@ public class BaggedModel implements IgniteModel<Vector, Double> {
      *
      * @return Wrapped model.
      */
-    IgniteModel<Vector, Double> model() {
+    public IgniteModel<Vector, Double> model() {
         return mdl;
     }
 

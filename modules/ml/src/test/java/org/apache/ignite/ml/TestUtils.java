@@ -171,6 +171,32 @@ public class TestUtils {
     }
 
     /**
+     * Verifies that two vectors are equal.
+     *
+     * @param exp Expected vector.
+     * @param observed Actual vector.
+     */
+    public static void assertEquals(Vector exp, Vector observed) {
+        Assert.assertNotNull("Observed should not be null", observed);
+
+        if (exp.size() != observed.size()) {
+            String msgBuff = "Observed has incorrect dimensions." +
+                "\nobserved is " + observed.size() +
+                " x " + observed.size();
+
+            Assert.fail(msgBuff);
+        }
+
+        for (int i = 0; i < exp.size(); ++i) {
+            double eij = exp.getX(i);
+            double aij = observed.getX(i);
+
+            // TODO: IGNITE-5824, Check precision here.
+            Assert.assertEquals(eij, aij, 0.0);
+        }
+    }
+
+    /**
      * Verifies that two double arrays are close (sup norm).
      *
      * @param msg The identifying message for the assertion error.
