@@ -478,8 +478,14 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
 
             int ix = 0;
 
-            for (Long x : gets)
-                assertTrue(set.contains(x) ? x.equals(foundRows.get(ix++)) : foundRows.get(ix++) == null);
+            for (Long x : gets) {
+                Long y = foundRows.get(ix++);
+
+                if (set.contains(x))
+                    assertEquals(x, y);
+                else
+                    assertNull(y);
+            }
         }
     }
 

@@ -2491,7 +2491,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         final int loops = reuseList == null ? 20_000 : 60_000;
 
-        final GridStripedLock lock = new GridStripedLock(256);
+        final GridStripedLock lock = new GridStripedLock(CNT);
 
         final String[] ops = {"put", "rmv", "inv_put", "inv_rmv"};
 
