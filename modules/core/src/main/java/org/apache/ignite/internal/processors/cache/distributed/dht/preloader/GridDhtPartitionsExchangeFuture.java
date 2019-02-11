@@ -478,7 +478,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isDone())
             return result();
 
-        ExchangeContext exchCtx0 = state == ExchangeLocalState.MERGED ? mergedWith.exchCtx : exchCtx;
+        final ExchangeContext exchCtx0;
+
+        synchronized (mux) {
+            if (state == ExchangeLocalState.MERGED) {
+                assert mergedWith != null;
+
+                exchCtx0 = mergedWith.exchCtx;
+            }
+            else
+                exchCtx0 = exchCtx;
+        }
 
         return exchCtx0.events().topologyVersion();
     }
