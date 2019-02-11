@@ -737,13 +737,6 @@ public class IgniteBenchmarkArguments {
         return selectCommand;
     }
 
-    /**
-     * @return Lazy query execution mode.
-     */
-    public boolean isLazy() {
-        return lazy;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteBenchmarkArguments.class, this);
