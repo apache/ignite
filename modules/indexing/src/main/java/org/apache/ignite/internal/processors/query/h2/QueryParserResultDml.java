@@ -15,42 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.internal;
+package org.apache.ignite.internal.processors.query.h2;
+
+import org.h2.command.Prepared;
 
 /**
- * State of local node {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
+ * Parsing result for DML statement.
  */
-public enum TcpDiscoverySpiState {
-    /** */
-    DISCONNECTED,
+public class QueryParserResultDml {
+    /** Command. */
+    private final Prepared prepared;
 
-    /** */
-    CONNECTING,
+    /**
+     * Constructor.
+     *
+     * @param prepared Command.
+     */
+    public QueryParserResultDml(Prepared prepared) {
+        this.prepared = prepared;
+    }
 
-    /** */
-    CONNECTED,
-
-    /** */
-    DISCONNECTING,
-
-    /** */
-    STOPPING,
-
-    /** */
-    LEFT,
-
-    /** */
-    DUPLICATE_ID,
-
-    /** */
-    AUTH_FAILED,
-
-    /** */
-    CHECK_FAILED,
-
-    /** */
-    LOOPBACK_PROBLEM,
-
-    /** */
-    RING_FAILED
+    /**
+     * @return Command.
+     */
+    public Prepared prepared() {
+        return prepared;
+    }
 }

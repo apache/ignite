@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Cached two-step query.
  */
-public class H2TwoStepCachedQuery {
+public class QueryParserCacheEntry {
     /** */
     private final List<GridQueryFieldMetadata> meta;
 
@@ -37,7 +37,7 @@ public class H2TwoStepCachedQuery {
      * @param meta Fields metadata.
      * @param twoStepQry Query.
      */
-    public H2TwoStepCachedQuery(List<GridQueryFieldMetadata> meta, GridCacheTwoStepQuery twoStepQry) {
+    public QueryParserCacheEntry(List<GridQueryFieldMetadata> meta, GridCacheTwoStepQuery twoStepQry) {
         this.meta = meta;
         this.twoStepQry = twoStepQry;
     }
@@ -58,6 +58,6 @@ public class H2TwoStepCachedQuery {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(H2TwoStepCachedQuery.class, this);
+        return S.toString(QueryParserCacheEntry.class, this);
     }
 }
