@@ -59,6 +59,9 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     /** Initial means. */
     private Vector[] initialMeans;
 
+    /** Maximum initialization tries count. */
+    private int maxCountOfInitTries = 3;
+
     /**
      * Creates an instance of GmmTrainer.
      */
@@ -137,6 +140,20 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     }
 
     /**
+     * Sets MaxCountOfInitTries parameter. If means initialization were unsuccessfull then algorithm try to reinitialize
+     * means randomly MaxCountOfInitTries times.
+     *
+     * @param maxCountOfInitTries Max count of init tries.
+     * @return trainer.
+     */
+    public GmmTrainer withMaxCountOfInitTries(int maxCountOfInitTries) {
+        A.ensure(maxCountOfInitTries > 0, "Max initialization count should be great than zero.");
+
+        this.maxCountOfInitTries = maxCountOfInitTries;
+        return this;
+    }
+
+    /**
      * Trains model based on the specified data.
      *
      * @param dataset Dataset.
@@ -194,56 +211,63 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @return initial model.
      */
     private Optional<GmmModel> init(Dataset<EmptyContext, GmmPartitionData> dataset) {
-        try {
-            if (initialMeans == null) {
-                List<List<Vector>> randomMeansSets = Stream.of(dataset.compute(
-                    selectNRandomXsMapper(countOfComponents),
-                    GmmTrainer::selectNRandomXsReducer
-                )).map(this::asList).collect(Collectors.toList());
+        int countOfTries = 0;
 
-                A.ensure(
-                    randomMeansSets.stream().mapToInt(List::size).sum() >= countOfComponents,
-                    "There is not enough data in dataset for select N random means"
+        while (true) {
+            try {
+                if (initialMeans == null) {
+                    List<List<Vector>> randomMeansSets = Stream.of(dataset.compute(
+                        selectNRandomXsMapper(countOfComponents),
+                        GmmTrainer::selectNRandomXsReducer
+                    )).map(this::asList).collect(Collectors.toList());
+
+                    A.ensure(
+                        randomMeansSets.stream().mapToInt(List::size).sum() >= countOfComponents,
+                        "There is not enough data in dataset for select N random means"
+                    );
+
+                    initialMeans = new Vector[countOfComponents];
+                    int j = 0;
+                    for (int i = 0; i < countOfComponents; ) {
+                        List<Vector> randomMeansPart = randomMeansSets.get(j);
+                        if (!randomMeansPart.isEmpty()) {
+                            initialMeans[i] = randomMeansPart.remove(0);
+                            i++;
+                        }
+
+                        j = (j + 1) % randomMeansSets.size();
+                    }
+                }
+
+                dataset.compute(data -> GmmPartitionData.estimateLikelihoodClusters(data, initialMeans));
+
+                List<Matrix> initialCovs = CovarianceMatricesAggregator.computeCovariances(
+                    dataset,
+                    VectorUtils.fill(1. / countOfComponents, countOfComponents),
+                    initialMeans
                 );
 
-                initialMeans = new Vector[countOfComponents];
-                int j = 0;
-                for (int i = 0; i < countOfComponents; ) {
-                    List<Vector> randomMeansPart = randomMeansSets.get(j);
-                    if (!randomMeansPart.isEmpty()) {
-                        initialMeans[i] = randomMeansPart.remove(0);
-                        i++;
-                    }
+                if (initialCovs.isEmpty())
+                    return Optional.empty();
 
-                    j = (j + 1) % randomMeansSets.size();
-                }
+                List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
+                for (int i = 0; i < countOfComponents; i++)
+                    distributions.add(new MultivariateGaussianDistribution(initialMeans[i], initialCovs.get(i)));
+
+                return Optional.of(new GmmModel(
+                    VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
+                    distributions
+                ));
             }
-
-            dataset.compute(data -> GmmPartitionData.estimateLikelihoodClusters(data, initialMeans));
-
-            List<Matrix> initialCovs = CovarianceMatricesAggregator.computeCovariances(
-                dataset,
-                VectorUtils.fill(1. / countOfComponents, countOfComponents),
-                initialMeans
-            );
-
-            if (initialCovs.isEmpty())
-                return Optional.empty();
-
-            List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
-            for (int i = 0; i < countOfComponents; i++)
-                distributions.add(new MultivariateGaussianDistribution(initialMeans[i], initialCovs.get(i)));
-
-            return Optional.of(new GmmModel(
-                VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),
-                distributions
-            ));
-        }
-        catch (SingularMatrixException | IllegalArgumentException e) {
-            String msg = "Cannot construct non-singular covariance matrix by data. " +
-                "Try to select other initial means or other model trainer";
-            environment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
-            throw new RuntimeException(msg, e);
+            catch (SingularMatrixException | IllegalArgumentException e) {
+                String msg = "Cannot construct non-singular covariance matrix by data. " +
+                    "Try to select other initial means or other model trainer [number of tries = " + countOfTries + "]";
+                environment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+                countOfTries += 1;
+                initialMeans = null;
+                if (countOfTries >= maxCountOfInitTries)
+                    throw new RuntimeException(msg, e);
+            }
         }
     }
 
