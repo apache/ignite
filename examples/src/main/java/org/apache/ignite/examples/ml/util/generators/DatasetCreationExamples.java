@@ -64,8 +64,8 @@ public class DatasetCreationExamples {
         // DataStreamGenerator can fill map of vectors as keys and labels as values.
         double meanFromMap = computeMean(generator.asMap(DATASET_SIZE).keySet().stream());
 
-        double meanFromLocDataset = 0.0;
         // DataStreamGenerator can prepare local DatasetBuilder with data from gemerator.
+        double meanFromLocDataset;
         try (Dataset<EmptyContext, SimpleDatasetData> dataset = generator.asDatasetBuilder(DATASET_SIZE, 10)
             .build(LearningEnvironmentBuilder.defaultBuilder(), new EmptyContextBuilder<>(),
                 new SimpleDatasetDataBuilder<>((k, v) -> k))) {
