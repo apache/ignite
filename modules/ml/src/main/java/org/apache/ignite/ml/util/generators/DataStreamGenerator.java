@@ -17,7 +17,9 @@
 
 package org.apache.ignite.ml.util.generators;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,6 +38,11 @@ import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
  * data stream generator.
  */
 public interface DataStreamGenerator {
+    /**
+     * Size of batch for {@link IgniteCache#putAll(Map)}.
+     */
+    public static final int FILL_CACHE_BATCH_SIZE = 1000;
+
     /**
      * @return Stream of {@link LabeledVector} in according to dataset shape.
      */
@@ -135,15 +142,47 @@ public interface DataStreamGenerator {
         return new DatasetBuilderAdapter(this, datasetSize, filter, partitions, upstreamTransformerBuilder);
     }
 
-    public default <K> void fillCacheWithCustomKey(int countOfRows, IgniteCache<K, LabeledVector<Double>> cache,
+    /**
+     * Fills given cache with labeled vectors from this generator and user defined mapper from vectors to keys.
+     *
+     * @param datasetSize Rows count to put.
+     * @param cache Cache.
+     * @param keyMapper Mapping from vectors to keys.
+     * @param <K> Key type.
+     */
+    public default <K> void fillCacheWithCustomKey(int datasetSize, IgniteCache<K, LabeledVector<Double>> cache,
         Function<LabeledVector<Double>, K> keyMapper) {
 
-        labeled().limit(countOfRows).forEach(vec -> {
-            cache.put(keyMapper.apply(vec), vec);
+        Map<K, LabeledVector<Double>> batch = new HashMap<>();
+        labeled().limit(datasetSize).forEach(vec -> {
+            batch.put(keyMapper.apply(vec), vec);
+            if (batch.size() == FILL_CACHE_BATCH_SIZE) {
+                cache.putAll(batch);
+                cache.clear();
+            }
         });
+
+        if (!batch.isEmpty())
+            cache.putAll(batch);
     }
 
-    public default void fillCacheWithVecHashAsKey(int countOfRows, IgniteCache<Integer, LabeledVector<Double>> cache) {
-        fillCacheWithCustomKey(countOfRows, cache, v -> v.features().hashCode() ^ v.label().hashCode());
+    /**
+     * Fills given cache with labeled vectors from this generator as values and their hashcodes as keys.
+     *
+     * @param datasetSize Rows count to put.
+     * @param cache Cache.
+     */
+    public default void fillCacheWithVecHashAsKey(int datasetSize, IgniteCache<Integer, LabeledVector<Double>> cache) {
+        fillCacheWithCustomKey(datasetSize, cache, LabeledVector::hashCode);
+    }
+
+    /**
+     * Fills given cache with labeled vectors from this generator as values and random UUIDs as keys
+     *
+     * @param datasetSize Rows count to put.
+     * @param cache Cache.
+     */
+    public default void fillCacheWithVecUUIDAsKey(int datasetSize, IgniteCache<UUID, LabeledVector<Double>> cache) {
+        fillCacheWithCustomKey(datasetSize, cache, v -> UUID.randomUUID());
     }
 }
