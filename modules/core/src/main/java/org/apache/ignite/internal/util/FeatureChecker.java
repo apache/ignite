@@ -30,7 +30,9 @@ public class FeatureChecker {
         "--illegal-access=permit";
 
     /** Java version specific warning to be added in case access failed */
-    public static final String JAVA_VER_SPECIFIC_WARN = "\nPlease make sure options: " + JAVA_9_10_11_OPTIONS +
-        "\nwere provided at JVM startup." +
-        "\nSee https://apacheignite.readme.io/docs/getting-started#section-running-ignite-with-java-9-10-11 for more info";
+    public static final String JAVA_VER_SPECIFIC_WARN =
+        "\nPlease add the following parameters to JVM startup settings and restart the application: {parameters: " +
+            JAVA_9_10_11_OPTIONS +
+            "\n}" +
+            "\nSee https://apacheignite.readme.io/docs/getting-started#section-running-ignite-with-java-9-10-11 for more information.";
 }
