@@ -270,11 +270,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     private IgniteFuture<?> lastCustomEvtLsnrFut;
 
     /** */
-    private static final int JOINED_NODES_HISTORY_SIZE = 50;
+    private static final int JOINED_NODE_IDS_HISTORY_SIZE = 50;
 
     /** History of all node UUIDs that current node has seen. */
-    private final GridBoundedLinkedHashSet<UUID> nodesHist =
-        new GridBoundedLinkedHashSet<>(JOINED_NODES_HISTORY_SIZE);
+    private final GridBoundedLinkedHashSet<UUID> nodesIdsHist =
+        new GridBoundedLinkedHashSet<>(JOINED_NODE_IDS_HISTORY_SIZE);
 
     /**
      * @param adapter Adapter.
@@ -3664,7 +3664,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         try {
                             trySendMessageDirectly(node, new TcpDiscoveryDuplicateIdMessage(locNodeId,
-                                existingNode));
+                                existingNode, false));
                         }
                         catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
@@ -3724,10 +3724,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
                 else {
                     if (!node.isClient() && !node.isDaemon()) {
-                        if (nodesHist.contains(node.id())) {
+                        if (nodesIdsHist.contains(node.id())) {
                             try {
                                 trySendMessageDirectly(node, new TcpDiscoveryDuplicateIdMessage(locNodeId,
-                                    node));
+                                    node, true));
                             }
                             catch (IgniteSpiException e) {
                                 if (log.isDebugEnabled())
@@ -4332,7 +4332,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && !locNodeId.equals(node.id())) {
-                if (!node.isClient() && !node.isDaemon() && nodesHist.contains(node.id())) {
+                if (!node.isClient() && !node.isDaemon() && nodesIdsHist.contains(node.id())) {
                     U.warn(log, "Discarding node added message since local node has already seen " +
                         "joining node in topology [node=" + node + ", locNode=" + locNode + ", msg=" + msg + ']');
 
@@ -4691,7 +4691,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     notifyDiscovery(EVT_NODE_JOINED, topVer, node);
 
                     if (!node.isClient() && !node.isDaemon())
-                        nodesHist.add(node.id());
+                        nodesIdsHist.add(node.id());
                 }
 
                 try {
