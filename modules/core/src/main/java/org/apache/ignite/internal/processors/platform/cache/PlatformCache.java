@@ -970,36 +970,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
-        switch (type) {
-            case OP_SIZE:
-            case OP_SIZE_LOC:
-            case OP_SIZE_LONG:
-            case OP_SIZE_LONG_LOC: {
-                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
-
-                if (type == OP_SIZE || type == OP_SIZE_LOC)
-                    writer.writeInt(type == OP_SIZE ? cache.size(modes) : cache.localSize(modes));
-                else if (type == OP_SIZE_LONG || type == OP_SIZE_LONG_LOC) {
-                    Integer part = reader.readBoolean() ? reader.readInt() : null;
-
-                    if (type == OP_SIZE_LONG)
-                        writer.writeLong(part != null ? cache.sizeLong(part, modes) : cache.sizeLong(modes));
-                    else
-                        writer.writeLong(part != null ? cache.localSizeLong(part, modes) : cache.localSizeLong(modes));
-                }
-
-                break;
-            }
-
-            default:
-                super.processInStreamOutStream(type, reader, writer);
-
-                break;
-        }
-    }
-
     /**
      * Read arguments for SQL query.
      *
@@ -1120,8 +1090,41 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_SIZE_LONG:
+            case OP_SIZE_LONG_LOC: {
+                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
+
+                Integer part = reader.readBoolean() ? reader.readInt() : null;
+
+                if (type == OP_SIZE_LONG)
+                    return part != null ? cache.sizeLong(part, modes) : cache.sizeLong(modes);
+                else
+                    return part != null ? cache.localSizeLong(part, modes) : cache.localSizeLong(modes);
+
+            }
+
+            default:
+                return super.processInStreamOutLong(type, reader);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
+            case OP_SIZE: {
+                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes((int)val);
+
+                return cache.size(modes);
+            }
+
+            case OP_SIZE_LOC: {
+                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes((int)val);
+
+                return cache.localSize(modes);
+            }
+
             case OP_ENTER_LOCK: {
                 try {
                     lock(val).lockInterruptibly();

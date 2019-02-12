@@ -882,29 +882,33 @@ namespace Apache.Ignite.Core.Impl.Cache
             var op = loc ? 
                 (typeof(T) == typeof(long) ? CacheOp.SizeLongLoc : CacheOp.SizeLoc) : 
                 (typeof(T) == typeof(long) ? CacheOp.SizeLong : CacheOp.Size);
- 
-            return DoOutInOp((int) op, writer =>
-            {
-                writer.WriteInt(modes0);
 
-                if (typeof(T) == typeof(long))
+            long ret;
+            
+            if (typeof(T) == typeof(long))
+            {
+                ret = DoOutOp((int) op, writer =>
                 {
+                    writer.WriteInt(modes0);
+
                     if (part != null)
                     {
                         writer.WriteBoolean(true);
-                        writer.WriteInt((int)part);
+                        writer.WriteInt((int) part);
                     }
                     else
                     {
                         writer.WriteBoolean(false);   
                     }
-                }             
-            }, s =>
+                                 
+                });  
+            }
+            else
             {
-                var ret = typeof(T) == typeof(long) ? s.ReadLong() : s.ReadInt();
-                
-                return (T) Convert.ChangeType(ret, typeof(T));
-            });
+                ret = DoOutInOp((int) op, modes0);
+            }
+                 
+            return (T) Convert.ChangeType(ret, typeof(T));
         }
         
         /// <summary>
@@ -928,7 +932,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                     if (part != null)
                     {
                         writer.WriteBoolean(true);
-                        writer.WriteInt((int)part);
+                        writer.WriteInt((int) part);
                     }
                     else
                     {
