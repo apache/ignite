@@ -16,9 +16,7 @@ Running Ignite Benchmarks Locally
 The simplest way to start with benchmarking is to use one of the executable scripts available under `benchmarks\bin`
 directory:
 
-modules/yardstick/target
 ./bin/benchmark-run-all.sh config/benchmark-sample.properties
-modules/yardstick/target/assembly/bin/benchmark-run-all.sh modules/yardstick/target/assembly/config/benchmark-ml.properties
 
 The command above will benchmark the cache put operation for a distributed atomic cache. The results of the
 benchmark will be added to an auto-generated `output/results-{DATE-TIME}` directory.
