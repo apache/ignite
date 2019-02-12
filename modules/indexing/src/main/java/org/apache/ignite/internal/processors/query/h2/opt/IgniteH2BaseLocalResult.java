@@ -39,8 +39,6 @@ import org.h2.value.ValueRow;
  * H2 local result.
  */
 public class IgniteH2BaseLocalResult implements LocalResult {
-
-    private int maxMemoryRows;
     private Session session;
     private int visibleColumnCount;
     private Expression[] expressions;
@@ -54,7 +52,6 @@ public class IgniteH2BaseLocalResult implements LocalResult {
     private boolean fetchPercent;
     private SortOrder withTiesSortOrder;
     private boolean limitsWereApplied;
-    private ResultExternal external;
     private boolean distinct;
     private int[] distinctIndexes;
     private boolean closed;
@@ -78,18 +75,6 @@ public class IgniteH2BaseLocalResult implements LocalResult {
     public IgniteH2BaseLocalResult(Session session, Expression[] expressions,
         int visibleColumnCount) {
         this.session = session;
-        if (session == null) {
-            this.maxMemoryRows = Integer.MAX_VALUE;
-        }
-        else {
-            Database db = session.getDatabase();
-            if (db.isPersistent() && !db.isReadOnly()) {
-                this.maxMemoryRows = session.getDatabase().getMaxMemoryRows();
-            }
-            else {
-                this.maxMemoryRows = Integer.MAX_VALUE;
-            }
-        }
         rows = Utils.newSmallArrayList();
         this.visibleColumnCount = visibleColumnCount;
         rowId = -1;
@@ -103,7 +88,7 @@ public class IgniteH2BaseLocalResult implements LocalResult {
 
     @Override
     public void setMaxMemoryRows(int maxValue) {
-        this.maxMemoryRows = maxValue;
+        // No-op.
     }
 
     /**
@@ -114,21 +99,11 @@ public class IgniteH2BaseLocalResult implements LocalResult {
      */
     @Override
     public IgniteH2BaseLocalResult createShallowCopy(SessionInterface targetSession) {
-        if (external == null && (rows == null || rows.size() < rowCount)) {
-            return null;
-        }
         if (containsLobs) {
             return null;
         }
         ResultExternal e2 = null;
-        if (external != null) {
-            e2 = external.createShallowCopy();
-            if (e2 == null) {
-                return null;
-            }
-        }
         IgniteH2BaseLocalResult copy = new IgniteH2BaseLocalResult();
-        copy.maxMemoryRows = this.maxMemoryRows;
         copy.session = (Session)targetSession;
         copy.visibleColumnCount = this.visibleColumnCount;
         copy.expressions = this.expressions;
@@ -142,7 +117,6 @@ public class IgniteH2BaseLocalResult implements LocalResult {
         copy.currentRow = null;
         copy.offset = 0;
         copy.limit = -1;
-        copy.external = e2;
         copy.containsNull = containsNull;
         return copy;
     }
@@ -197,9 +171,6 @@ public class IgniteH2BaseLocalResult implements LocalResult {
             distinctRows.remove(array);
             rowCount = distinctRows.size();
         }
-        else {
-            rowCount = external.removeRow(values);
-        }
     }
 
     /**
@@ -211,9 +182,6 @@ public class IgniteH2BaseLocalResult implements LocalResult {
     @Override
     public boolean containsDistinct(Value[] values) {
         assert values.length == visibleColumnCount;
-        if (external != null) {
-            return external.contains(values);
-        }
         if (distinctRows == null) {
             distinctRows = new TreeMap<>(session.getDatabase().getCompareMode());
             for (Value[] row : rows) {
@@ -251,9 +219,6 @@ public class IgniteH2BaseLocalResult implements LocalResult {
     public void reset() {
         rowId = -1;
         currentRow = null;
-        if (external != null) {
-            external.reset();
-        }
     }
 
     @Override
@@ -266,12 +231,8 @@ public class IgniteH2BaseLocalResult implements LocalResult {
         if (!closed && rowId < rowCount) {
             rowId++;
             if (rowId < rowCount) {
-                if (external != null) {
-                    currentRow = external.next();
-                }
-                else {
-                    currentRow = rows.get(rowId);
-                }
+                currentRow = rows.get(rowId);
+
                 return true;
             }
             currentRow = null;
@@ -323,11 +284,6 @@ public class IgniteH2BaseLocalResult implements LocalResult {
         return ValueRow.get(values);
     }
 
-    private void createExternalResult() {
-        external = MVTempResult.of(session.getDatabase(), expressions, distinct, distinctIndexes, visibleColumnCount,
-            sort);
-    }
-
     /**
      * Add a row to this object.
      *
@@ -338,36 +294,24 @@ public class IgniteH2BaseLocalResult implements LocalResult {
         cloneLobs(values);
         if (isAnyDistinct()) {
             if (distinctRows != null) {
+                int prevSize = distinctRows.size();
                 ValueRow array = getDistinctRow(values);
-                if (!distinctRows.containsKey(array)) {
+
+                if (!distinctRows.containsKey(array))
                     distinctRows.put(array, values);
-                }
                 rowCount = distinctRows.size();
-                if (rowCount > maxMemoryRows) {
-                    createExternalResult();
-                    rowCount = external.addRows(distinctRows.values());
-                    distinctRows = null;
+
+                if (rowCount > prevSize) {
+                    checkAvailableMemory(array);
+                    checkAvailableMemory(values);
                 }
-            }
-            else {
-                rowCount = external.addRow(values);
             }
         }
         else {
+            checkAvailableMemory(values);
             rows.add(values);
             rowCount++;
-            if (rows.size() > maxMemoryRows) {
-                addRowsToDisk();
-            }
         }
-    }
-
-    private void addRowsToDisk() {
-        if (external == null) {
-            createExternalResult();
-        }
-        rowCount = external.addRows(rows);
-        rows.clear();
     }
 
     @Override
@@ -380,23 +324,19 @@ public class IgniteH2BaseLocalResult implements LocalResult {
      */
     @Override
     public void done() {
-        if (external != null) {
-            addRowsToDisk();
+        if (isAnyDistinct()) {
+            rows = new ArrayList<>(distinctRows.values());
         }
-        else {
-            if (isAnyDistinct()) {
-                rows = new ArrayList<>(distinctRows.values());
+        if (sort != null && limit != 0 && !limitsWereApplied) {
+            boolean withLimit = limit > 0 && withTiesSortOrder == null;
+            if (offset > 0 || withLimit) {
+                sort.sort(rows, offset, withLimit ? limit : rows.size());
             }
-            if (sort != null && limit != 0 && !limitsWereApplied) {
-                boolean withLimit = limit > 0 && withTiesSortOrder == null;
-                if (offset > 0 || withLimit) {
-                    sort.sort(rows, offset, withLimit ? limit : rows.size());
-                }
-                else {
-                    sort.sort(rows);
-                }
+            else {
+                sort.sort(rows);
             }
         }
+
         applyOffsetAndLimit();
         reset();
     }
@@ -430,63 +370,23 @@ public class IgniteH2BaseLocalResult implements LocalResult {
         }
         distinctRows = null;
         rowCount = limit;
-        if (external == null) {
-            if (clearAll) {
-                rows.clear();
-                return;
-            }
-            int to = offset + limit;
-            if (withTiesSortOrder != null) {
-                Value[] expected = rows.get(to - 1);
-                while (to < rows.size() && withTiesSortOrder.compare(expected, rows.get(to)) == 0) {
-                    to++;
-                    rowCount++;
-                }
-            }
-            if (offset != 0 || to != rows.size()) {
-                // avoid copying the whole array for each row
-                rows = new ArrayList<>(rows.subList(offset, to));
-            }
-        }
-        else {
-            if (clearAll) {
-                external.close();
-                external = null;
-                return;
-            }
-            trimExternal(offset, limit);
-        }
-    }
 
-    private void trimExternal(int offset, int limit) {
-        ResultExternal temp = external;
-        external = null;
-        temp.reset();
-        while (--offset >= 0) {
-            temp.next();
+        if (clearAll) {
+            rows.clear();
+            return;
         }
-        Value[] row = null;
-        while (--limit >= 0) {
-            row = temp.next();
-            rows.add(row);
-            if (rows.size() > maxMemoryRows) {
-                addRowsToDisk();
-            }
-        }
-        if (withTiesSortOrder != null && row != null) {
-            Value[] expected = row;
-            while ((row = temp.next()) != null && withTiesSortOrder.compare(expected, row) == 0) {
-                rows.add(row);
+        int to = offset + limit;
+        if (withTiesSortOrder != null) {
+            Value[] expected = rows.get(to - 1);
+            while (to < rows.size() && withTiesSortOrder.compare(expected, rows.get(to)) == 0) {
+                to++;
                 rowCount++;
-                if (rows.size() > maxMemoryRows) {
-                    addRowsToDisk();
-                }
             }
         }
-        if (external != null) {
-            addRowsToDisk();
+        if (offset != 0 || to != rows.size()) {
+            // avoid copying the whole array for each row
+            rows = new ArrayList<>(rows.subList(offset, to));
         }
-        temp.close();
     }
 
     @Override
@@ -530,16 +430,11 @@ public class IgniteH2BaseLocalResult implements LocalResult {
 
     @Override
     public boolean needToClose() {
-        return external != null;
+        return false;
     }
 
     @Override
     public void close() {
-        if (external != null) {
-            external.close();
-            external = null;
-            closed = true;
-        }
     }
 
     @Override

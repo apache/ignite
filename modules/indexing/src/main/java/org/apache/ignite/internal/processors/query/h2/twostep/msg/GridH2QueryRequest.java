@@ -159,6 +159,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable. */
     private GridH2SelectForUpdateTxDetails txReq;
 
+    /** Max memory available for query local results. */
+    private long maxMem;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -185,6 +188,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         schemaName = req.schemaName;
         mvccSnapshot = req.mvccSnapshot;
         txReq = req.txReq;
+        maxMem = req.maxMem;
     }
 
     /**
@@ -474,6 +478,26 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         return null;
     }
 
+    /**
+     * Maximum memory available for query local results per node.
+     *
+     * @return Maximum memory size.
+     */
+    public long maxMemory() {
+        return maxMem;
+    }
+
+    /**
+     * @param maxMemory Maximum memory available for query local results per node.
+     *
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest maxMemory(long maxMemory) {
+        this.maxMem = maxMemory;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public void marshall(Marshaller m) {
         if (paramsBytes != null)
@@ -536,72 +560,78 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("pageSize", pageSize))
+                if (!writer.writeLong("maxMem", maxMem))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("paramsBytes", paramsBytes))
+                if (!writer.writeInt("pageSize", pageSize))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("parts", parts, MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR))
+                if (!writer.writeByteArray("paramsBytes", paramsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("qrys", qrys, MessageCollectionItemType.MSG))
+                if (!writer.writeMap("parts", parts, MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeCollection("qrys", qrys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.MSG))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeInt("timeout", timeout))
+                if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeInt("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeIntArray("qryParts", qryParts))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeString("schemaName", schemaName))
+                if (!writer.writeIntArray("qryParts", qryParts))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                if (!writer.writeString("schemaName", schemaName))
                     return false;
 
                 writer.incrementState();
 
             case 13:
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
                 if (!writer.writeMessage("txReq", txReq))
                     return false;
 
@@ -637,7 +667,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 2:
-                pageSize = reader.readInt("pageSize");
+                maxMem = reader.readLong("maxMem");
 
                 if (!reader.isLastRead())
                     return false;
@@ -645,7 +675,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 3:
-                paramsBytes = reader.readByteArray("paramsBytes");
+                pageSize = reader.readInt("pageSize");
 
                 if (!reader.isLastRead())
                     return false;
@@ -653,7 +683,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 4:
-                parts = reader.readMap("parts", MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR, false);
+                paramsBytes = reader.readByteArray("paramsBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -661,7 +691,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 5:
-                qrys = reader.readCollection("qrys", MessageCollectionItemType.MSG);
+                parts = reader.readMap("parts", MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -669,7 +699,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 6:
-                reqId = reader.readLong("reqId");
+                qrys = reader.readCollection("qrys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -677,7 +707,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 7:
-                tbls = reader.readCollection("tbls", MessageCollectionItemType.MSG);
+                reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -685,7 +715,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 8:
-                timeout = reader.readInt("timeout");
+                tbls = reader.readCollection("tbls", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -693,7 +723,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 9:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                timeout = reader.readInt("timeout");
 
                 if (!reader.isLastRead())
                     return false;
@@ -701,7 +731,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 10:
-                qryParts = reader.readIntArray("qryParts");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -709,7 +739,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 11:
-                schemaName = reader.readString("schemaName");
+                qryParts = reader.readIntArray("qryParts");
 
                 if (!reader.isLastRead())
                     return false;
@@ -717,7 +747,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 12:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
+                schemaName = reader.readString("schemaName");
 
                 if (!reader.isLastRead())
                     return false;
@@ -725,6 +755,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 13:
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
                 txReq = reader.readMessage("txReq");
 
                 if (!reader.isLastRead())
@@ -744,7 +782,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 15;
     }
 
     /** {@inheritDoc} */

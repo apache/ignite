@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class QueryContextRegistry {
     /** Current local context. */
-    private final ThreadLocal<QueryContext> locCtx = new ThreadLocal<>();
+    private static final ThreadLocal<QueryContext> locCtx = new ThreadLocal<>();
 
     /** Shared contexts. */
     private final ConcurrentMap<QueryContextKey, QueryContext> sharedCtxs = new ConcurrentHashMap<>();
@@ -38,7 +38,7 @@ public class QueryContextRegistry {
      *
      * @return Current thread local query context or {@code null} if the query runs outside of Ignite context.
      */
-    @Nullable public QueryContext getThreadLocal() {
+    @Nullable public static QueryContext getThreadLocal() {
         return locCtx.get();
     }
 

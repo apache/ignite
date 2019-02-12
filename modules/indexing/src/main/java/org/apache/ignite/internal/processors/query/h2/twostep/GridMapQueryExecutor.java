@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.opt.IgniteH2QueryMemoryManager;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
@@ -404,7 +405,8 @@ public class GridMapQueryExecutor {
                     txReq,
                     lockFut,
                     runCntr,
-                    dataPageScanEnabled);
+                    dataPageScanEnabled,
+                    req.maxMemory());
             }
             else {
                 ctx.closure().callLocal(
@@ -432,7 +434,8 @@ public class GridMapQueryExecutor {
                                 txReq,
                                 lockFut,
                                 runCntr,
-                                dataPageScanEnabled);
+                                dataPageScanEnabled,
+                                req.maxMemory());
 
                             return null;
                         }
@@ -463,7 +466,8 @@ public class GridMapQueryExecutor {
             txReq,
             lockFut,
             runCntr,
-            dataPageScanEnabled);
+            dataPageScanEnabled,
+            req.maxMemory());
     }
 
     /**
@@ -510,7 +514,8 @@ public class GridMapQueryExecutor {
         @Nullable final GridH2SelectForUpdateTxDetails txDetails,
         @Nullable final CompoundLockFuture lockFut,
         @Nullable final AtomicInteger runCntr,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        final long maxMem
     ) {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
@@ -549,7 +554,8 @@ public class GridMapQueryExecutor {
                         txDetails,
                         lockFut,
                         runCntr,
-                        dataPageScanEnabled);
+                        dataPageScanEnabled,
+                        maxMem);
                 }
             });
 
@@ -637,6 +643,9 @@ public class GridMapQueryExecutor {
                 mvccSnapshot,
                 reserved
             );
+
+            if (maxMem > 0)
+                qctx.queryMemoryManager(new IgniteH2QueryMemoryManager(maxMem));
 
             qctx.lazyWorker(worker);
 

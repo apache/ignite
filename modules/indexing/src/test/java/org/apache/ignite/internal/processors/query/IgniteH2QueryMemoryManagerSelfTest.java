@@ -30,7 +30,6 @@ import org.junit.runners.JUnit4;
 /**
  * Tests for query memory manager.
  */
-@RunWith(JUnit4.class)
 public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
     /** Row count. */
     private static final int ROW_CNT = 1000;

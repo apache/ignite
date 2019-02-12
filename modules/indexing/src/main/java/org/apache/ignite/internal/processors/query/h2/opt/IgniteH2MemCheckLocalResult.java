@@ -70,6 +70,11 @@ public class IgniteH2MemCheckLocalResult extends IgniteH2BaseLocalResult {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean needToClose() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {
         super.close();
 

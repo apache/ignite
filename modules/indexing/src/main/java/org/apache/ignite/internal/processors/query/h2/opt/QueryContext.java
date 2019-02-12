@@ -47,6 +47,9 @@ public class QueryContext {
     /** */
     private MapQueryLazyWorker lazyWorker;
 
+    /** SQL query memory manager. */
+    private IgniteH2QueryMemoryManager qryMemMngr;
+
     /**
      * Constructor.
      *
@@ -130,5 +133,19 @@ public class QueryContext {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(QueryContext.class, this);
+    }
+
+    /**
+     * @param memMngr SQL query memory manager.
+     */
+    public void queryMemoryManager(IgniteH2QueryMemoryManager memMngr) {
+        this.qryMemMngr = memMngr;
+    }
+
+    /**
+     * @return SQL query memory manager.
+     */
+    public IgniteH2QueryMemoryManager queryMemoryManager() {
+        return qryMemMngr;
     }
 }

@@ -405,7 +405,8 @@ public class GridReduceQueryExecutor {
         MvccQueryTracker mvccTracker,
         Boolean dataPageScanEnabled,
         boolean forUpdate,
-        int pageSize
+        int pageSize,
+        long maxMem
     ) {
         if (qry.isLocal() && parts != null)
             parts = null;
@@ -689,7 +690,8 @@ public class GridReduceQueryExecutor {
                     .parameters(params)
                     .flags(flags)
                     .timeout(timeoutMillis)
-                    .schemaName(schemaName);
+                    .schemaName(schemaName)
+                    .maxMemory(maxMem);
 
                 if (curTx != null && curTx.mvccSnapshot() != null)
                     req.mvccSnapshot(curTx.mvccSnapshot());

@@ -1252,7 +1252,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final boolean lazy,
         MvccQueryTracker mvccTracker,
         Boolean dataPageScanEnabled,
-        int pageSize
+        int pageSize,
+        final long maxMem
     ) {
         assert !qry.mvccEnabled() || !F.isEmpty(qry.cacheIds());
 
@@ -1285,7 +1286,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             tracker,
                             dataPageScanEnabled,
                             forUpdate,
-                            pageSize
+                            pageSize,
+                            maxMem
                         );
                     }
                     catch (Throwable e) {
@@ -1820,6 +1822,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 });
             }
 
+            long maxMem = Long.MAX_VALUE;
+
+            if (qry instanceof SqlFieldsQueryEx)
+                maxMem = ((SqlFieldsQueryEx)qry).maxMemory();
+
             Iterable<List<?>> iter = runQueryTwoStep(
                 schemaName,
                 twoStepQry,
@@ -1833,7 +1840,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 qry.isLazy(),
                 mvccTracker,
                 qry.isDataPageScanEnabled(),
-                qry.getPageSize()
+                qry.getPageSize(),
+                maxMem
             );
 
             QueryCursorImpl<List<?>> cursor = registerAsNewQry
