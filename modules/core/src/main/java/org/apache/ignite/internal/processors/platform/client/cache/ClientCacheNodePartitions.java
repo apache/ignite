@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryRawWriter;
 
@@ -28,13 +29,13 @@ public class ClientCacheNodePartitions {
     private final UUID nodeUuid;
 
     /** Cache partitions. */
-    private final int[] parts;
+    private final Collection<Integer> parts;
 
     /**
      * @param nodeUuid Node UUID.
      * @param parts Partitions.
      */
-    public ClientCacheNodePartitions(UUID nodeUuid, int[] parts) {
+    public ClientCacheNodePartitions(UUID nodeUuid, Collection<Integer> parts) {
         this.nodeUuid = nodeUuid;
         this.parts = parts;
     }
@@ -49,7 +50,7 @@ public class ClientCacheNodePartitions {
     /**
      * @return Cache partitions mapped to the node.
      */
-    public int[] getPartitions() {
+    public Collection<Integer> getPartitions() {
         return parts;
     }
 
@@ -60,7 +61,7 @@ public class ClientCacheNodePartitions {
     public void write(BinaryRawWriter writer) {
         writer.writeUuid(nodeUuid);
 
-        writer.writeInt(parts.length);
+        writer.writeInt(parts.size());
         for (int part : parts)
             writer.writeInt(part);
     }

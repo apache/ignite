@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -75,7 +76,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     private ClientListenerProtocolVersion currentVer;
 
     /** Last reported affinity topology version. */
-    private AffinityTopologyVersion lastAffinityTopologyVersion;
+    private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion;
 
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
@@ -191,19 +192,24 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     }
 
     /**
-     * Atomicaly check whether affinity topology version has changed since the last call and sets new version as a last.
-     * @return New versoin, if it has changed since the last call.
+     * Atomically check whether affinity topology version has changed since the last call and sets new version as a last.
+     * @return New version, if it has changed since the last call.
      */
-    public synchronized AffinityTopologyVersion checkAffinityTopologyVersion() {
-        AffinityTopologyVersion newVer = ctx.discovery().topologyVersionEx();
-        AffinityTopologyVersion oldVer = lastAffinityTopologyVersion;
+    public ClientAffinityTopologyVersion checkAffinityTopologyVersion() {
+        while (true) {
+            AffinityTopologyVersion oldVer = lastAffinityTopologyVersion.get();
+            AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-        if (oldVer == null || oldVer.compareTo(newVer) != 0) {
-            lastAffinityTopologyVersion = newVer;
+            boolean changed = oldVer == null || oldVer.compareTo(newVer) > 0;
 
-            return newVer;
+            if (changed) {
+                boolean success = lastAffinityTopologyVersion.compareAndSet(oldVer, newVer);
+
+                if (!success)
+                    continue;
+            }
+
+            return new ClientAffinityTopologyVersion(newVer, changed);
         }
-
-        return null;
     }
 }

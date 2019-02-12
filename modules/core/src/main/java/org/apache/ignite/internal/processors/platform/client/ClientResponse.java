@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
@@ -68,11 +67,13 @@ public class ClientResponse extends ClientListenerResponse {
     }
 
     /**
-     * Encodes the response data.
+     * Encodes the response data. Used when response result depends on the specific affinity version.
      * @param ctx Connection context.
      * @param writer Writer.
+     * @param affinityVer Affinity version.
      */
-    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer,
+        ClientAffinityTopologyVersion affinityVer) {
         writer.writeLong(reqId);
 
         ClientListenerProtocolVersion ver = ctx.currentVersion();
@@ -80,19 +81,14 @@ public class ClientResponse extends ClientListenerResponse {
         assert ver != null;
 
         if (ver.compareTo(VER_1_3_0) >= 0) {
-            AffinityTopologyVersion affVer = ctx.checkAffinityTopologyVersion();
-
             boolean error = status() != ClientStatus.SUCCESS;
-            boolean affTopologyChanged = affVer != null;
 
-            short flags = makeFlags(error, affTopologyChanged);
+            short flags = makeFlags(error, affinityVer.isChanged());
 
             writer.writeShort(flags);
 
-            if (affTopologyChanged) {
-                writer.writeLong(affVer.topologyVersion());
-                writer.writeInt(affVer.minorTopologyVersion());
-            }
+            if (affinityVer.isChanged())
+                affinityVer.write(writer);
 
             // If no return flag is set, no additional data is written to a payload.
             if (!error)
@@ -104,6 +100,15 @@ public class ClientResponse extends ClientListenerResponse {
         if (status() != ClientStatus.SUCCESS) {
             writer.writeString(error());
         }
+    }
+
+    /**
+     * Encodes the response data.
+     * @param ctx Connection context.
+     * @param writer Writer.
+     */
+    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        encode(ctx, writer, ctx.checkAffinityTopologyVersion());
     }
 
     /**
