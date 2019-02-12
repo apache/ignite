@@ -937,6 +937,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 if (!first && rnd.nextBoolean()) {
                                     Map<Integer, Integer> res = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
 
+                                    if (!res.isEmpty())
                                     for (Integer k : keys)
                                         assertEquals("res=" + res, v - 1, (Object)res.get(k));
                                 }
@@ -953,6 +954,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                             if (rnd.nextBoolean()) {
                                 Map<Integer, Integer> res = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
 
+                                if (!res.isEmpty())
                                 for (Integer k : keys)
                                     assertEquals("key=" + k, v - 1, (Object)res.get(k));
                             }
@@ -1926,6 +1928,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                         .collect(Collectors.toMap(v -> ((IgniteBiTuple)v).getKey(), v -> ((IgniteBiTuple)v).getValue()));
 
                     assertTrue("res.size()=" + res.size() + ", keys.size()=" + keys.size(), res.size() <= keys.size());
+                }
+                catch (IllegalStateException swallowed) {
+                    return Collections.emptyMap();
                 }
                 catch (Error err) {
                     error("Error on " + ((Ignite)cache.unwrap(Ignite.class)).name() + " " + err.getMessage());

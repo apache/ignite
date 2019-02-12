@@ -5096,6 +5096,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
+     * @param pageAddr Page address.
+     * @return IO.
+     */
+    private BPlusIO<L> ioFailed(long pageAddr) {
+        assert pageAddr != 0;
+
+        int type = PageIO.getType(pageAddr);
+        int ver = PageIO.getVersion(pageAddr);
+
+        throw new IllegalStateException("Unknown page type: " + type +
+            ", pageId: " + U.hexLong(PageIO.getPageId(pageAddr)) +
+            ", class: " + getClass());
+    }
+
+    /**
      * @param io IO.
      * @return Inner page IO.
      */
