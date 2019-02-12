@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -125,6 +126,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testValueNotStored() throws Exception {
         cpyOnRead = true;
 
@@ -296,6 +298,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testValueStored() throws Exception {
         cpyOnRead = false;
 
@@ -504,7 +507,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return "TestValue [val=" + val + ']';
         }
     }

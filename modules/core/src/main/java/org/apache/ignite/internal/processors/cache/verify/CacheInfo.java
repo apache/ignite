@@ -20,7 +20,8 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -238,7 +239,7 @@ public class CacheInfo extends VisorDataTransferObject {
     }
 
     /**
-     * @param atomicityMode
+     * @param atomicityMode Atomicity mode.
      */
     public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
@@ -273,31 +274,73 @@ public class CacheInfo extends VisorDataTransferObject {
     }
 
     /**
+     * Gets name of info for multi line output depending on cache command.
+     *
+     * @param cmd Cache command.
+     * @return Header.
+     */
+    public Object name(VisorViewCacheCmd cmd) {
+        switch (cmd) {
+            case CACHES:
+                return getCacheName();
+
+            case GROUPS:
+                return getGrpName();
+
+            case SEQ:
+                return getSeqName();
+
+            default:
+                throw new IllegalArgumentException("Unknown cache subcommand " + cmd);
+        }
+    }
+
+    /**
      * @param cmd Command.
      */
-    public void print(VisorViewCacheCmd cmd) {
-        if (cmd == null)
-            cmd = VisorViewCacheCmd.CACHES;
+    public Map<String, Object> toMap(VisorViewCacheCmd cmd) {
+        Map<String, Object> map;
 
         switch (cmd) {
             case SEQ:
-                System.out.println("[seqName=" + getSeqName() + ", curVal=" + seqVal + ']');
+                map = new LinkedHashMap<>(2);
+
+                map.put("seqName", getSeqName());
+                map.put("curVal", seqVal);
 
                 break;
 
             case GROUPS:
-                System.out.println("[grpName=" + getGrpName() + ", grpId=" + getGrpId() + ", cachesCnt=" + getCachesCnt() +
-                    ", prim=" + getPartitions() + ", mapped=" + getMapped() + ", mode=" + getMode() +
-                    ", atomicity=" + getAtomicityMode() + ", backups=" + getBackupsCnt() + ", affCls=" + getAffinityClsName() + ']');
+                map = new LinkedHashMap<>(10);
+
+                map.put("grpName", getGrpName());
+                map.put("grpId", getGrpId());
+                map.put("cachesCnt", getCachesCnt());
+                map.put("prim", getPartitions());
+                map.put("mapped", getMapped());
+                map.put("mode", getMode());
+                map.put("atomicity", getAtomicityMode());
+                map.put("backups", getBackupsCnt());
+                map.put("affCls", getAffinityClsName());
 
                 break;
 
             default:
-                System.out.println("[cacheName=" + getCacheName() + ", cacheId=" + getCacheId() +
-                    ", grpName=" + getGrpName() + ", grpId=" + getGrpId() + ", prim=" + getPartitions() +
-                    ", mapped=" + getMapped() + ", mode=" + getMode() + ", atomicity=" + getAtomicityMode() +
-                    ", backups=" + getBackupsCnt() + ", affCls=" + getAffinityClsName() + ']');
+                map = new LinkedHashMap<>(10);
+
+                map.put("cacheName", getCacheName());
+                map.put("cacheId", getCacheId());
+                map.put("grpName", getGrpName());
+                map.put("grpId", getGrpId());
+                map.put("prim", getPartitions());
+                map.put("mapped", getMapped());
+                map.put("mode", getMode());
+                map.put("atomicity", getAtomicityMode());
+                map.put("backups", getBackupsCnt());
+                map.put("affCls", getAffinityClsName());
         }
+
+        return map;
     }
 
     /** {@inheritDoc} */

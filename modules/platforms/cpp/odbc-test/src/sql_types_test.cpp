@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "sql_test_suite_fixture.h"
@@ -54,7 +50,7 @@ BOOST_AUTO_TEST_CASE(TestGuidEqualsToColumn)
     testCache.Put(1, in1);
     testCache.Put(2, in2);
 
-    CheckSingleResult<int32_t>(
+    CheckSingleResult<SQLINTEGER>(
         "SELECT i32Field FROM TestType WHERE guidField = {guid '04cc382a-0b82-f520-08d0-07a0620c0004'}", in2.i32Field);
 }
 
@@ -197,7 +193,7 @@ BOOST_AUTO_TEST_CASE(TestTimestampSelect)
 
     testCache.Put(1, in1);
 
-    CheckSingleResult<int32_t>(
+    CheckSingleResult<SQLINTEGER>(
         "SELECT i32Field FROM TestType WHERE timestampField = '2017-01-13 19:54:01.987654321'", in1.i32Field);
 
     CheckSingleResult<Timestamp>(
@@ -259,7 +255,7 @@ BOOST_AUTO_TEST_CASE(TestTimeSelect)
 
     testCache.Put(1, in1);
 
-    CheckSingleResult<int32_t>("SELECT i32Field FROM TestType WHERE timeField = '19:54:01'", in1.i32Field);
+    CheckSingleResult<SQLINTEGER>("SELECT i32Field FROM TestType WHERE timeField = '19:54:01'", in1.i32Field);
 
     CheckSingleResult<Time>("SELECT timeField FROM TestType WHERE i32Field = 1", in1.timeField);
 }

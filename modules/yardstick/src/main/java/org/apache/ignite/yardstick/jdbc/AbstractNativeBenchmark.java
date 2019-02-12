@@ -32,6 +32,6 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        fillData(cfg, (IgniteEx)ignite(), args.range());
+        fillData(cfg, (IgniteEx)ignite(), args.range(), args.atomicMode());
     }
 }

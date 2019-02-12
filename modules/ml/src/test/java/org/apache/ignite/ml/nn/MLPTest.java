@@ -44,7 +44,7 @@ public class MLPTest {
 
         int input = 2;
 
-        Matrix predict = mlp.apply(new DenseMatrix(new double[][] {{input}}));
+        Matrix predict = mlp.predict(new DenseMatrix(new double[][] {{input}}));
 
         Assert.assertEquals(predict, new DenseMatrix(new double[][] {{Activators.SIGMOID.apply(input)}}));
     }
@@ -68,7 +68,7 @@ public class MLPTest {
 
         Matrix input = new DenseMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}});
 
-        Matrix predict = mlp.apply(input);
+        Matrix predict = mlp.predict(input);
         Matrix truth = new DenseMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}});
 
         TestUtils.checkIsInEpsilonNeighbourhood(predict.getRow(0), truth.getRow(0), 1E-4);
@@ -99,8 +99,8 @@ public class MLPTest {
 
         MultilayerPerceptron stackedMLP = mlp1.add(mlp2);
 
-        Matrix predict = mlp.apply(new DenseMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
-        Matrix stackedPredict = stackedMLP.apply(new DenseMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
+        Matrix predict = mlp.predict(new DenseMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
+        Matrix stackedPredict = stackedMLP.predict(new DenseMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
 
         Assert.assertEquals(predict, stackedPredict);
     }
@@ -230,7 +230,7 @@ public class MLPTest {
         Vector weightsVec = mlp.weights(1).getRow(0);
         Tracer.showAscii(weightsVec);
 
-        Vector trueGrad = partialDer.apply(ytt, weightsVec, inputs.getCol(0));
+        Vector trueGrad = partialDer.andThen(x -> x).apply(ytt, weightsVec, inputs.getCol(0));
 
         Tracer.showAscii(trueGrad);
         Tracer.showAscii(grad);

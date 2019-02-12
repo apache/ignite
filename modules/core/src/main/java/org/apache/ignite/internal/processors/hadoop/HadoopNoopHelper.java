@@ -32,7 +32,6 @@ public class HadoopNoopHelper implements HadoopHelper {
      *
      * @param ctx Kernal context.
      */
-    @SuppressWarnings("UnusedParameters")
     public HadoopNoopHelper(GridKernalContext ctx) {
         // No-op.
     }
@@ -60,6 +59,11 @@ public class HadoopNoopHelper implements HadoopHelper {
     /** {@inheritDoc} */
     @Override public String workDirectory() {
         throw unsupported();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // No-op.
     }
 
     /**

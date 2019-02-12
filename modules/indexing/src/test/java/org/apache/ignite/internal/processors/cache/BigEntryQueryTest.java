@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * This is a specific test for IGNITE-8900.
@@ -55,6 +56,7 @@ public class BigEntryQueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testBigEntriesSelect() throws Exception {
         startGrids(2);
 

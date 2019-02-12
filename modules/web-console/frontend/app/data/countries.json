@@ -65,25 +65,82 @@
     "code": "CHN"
   },
   {
-    "label": "India",
-    "value": "India",
-    "code": "IND"
-  },
-  {
     "label": "Japan",
     "value": "Japan",
     "code": "JPN"
   },
   {
-    "label": "Other Asia",
-    "value": "Other Asia",
-    "code": "Other Asia"
+    "label": "South Korea",
+    "value": "South Korea",
+    "code": "KR"
+  },
+  {
+    "label": "Hong Kong",
+    "value": "Hong Kong",
+    "code": "HK"
+  },
+  {
+    "label": "Taiwan",
+    "value": "Taiwan",
+    "code": "TW"
   },
   {
     "label": "Australia",
     "value": "Australia",
     "code": "AUS"
   },
+  {
+    "label": "Thailand",
+    "value": "Thailand",
+    "code": "TH"
+  },
+  {
+    "label": "Singapore",
+    "value": "Singapore",
+    "code": "SG"
+  },
+  {
+    "label": "Malaysia",
+    "value": "Malaysia",
+    "code": "MY"
+  },
+  {
+    "label": "Philippines",
+    "value": "Philippines",
+    "code": "PH"
+  },
+  {
+    "label": "Indonesia",
+    "value": "Indonesia",
+    "code": "ID"
+  },
+  {
+    "label": "Vietnam",
+    "value": "Vietnam",
+    "code": "VN"
+  },
+  {
+    "label": "Macau",
+    "value": "Macau",
+    "code": "MO"
+  },
+  {
+    "label": "New Zealand",
+    "value": "New Zealand",
+    "code": "NZ"
+  },
+  {
+    "label": "India",
+    "value": "India",
+    "code": "IND"
+  },
+
+  {
+    "label": "Other Asia",
+    "value": "Other Asia",
+    "code": "Other Asia"
+  },
+
   {
     "label": "Brazil",
     "value": "Brazil",

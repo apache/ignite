@@ -17,18 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -46,9 +46,6 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_COUNT = 2;
 
-    /** Grid instances. */
-    private static final List<Ignite> IGNITEs = new ArrayList<>();
-
     /** Transaction timeout. */
     private static final long TIMEOUT = 50;
 
@@ -56,15 +53,25 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Override protected void beforeTestsStarted() throws Exception {
-        for (int i = 0; i < GRID_COUNT; i++)
-            IGNITEs.add(startGrid(i));
+        startGridsMultiThreaded(GRID_COUNT);
     }
 
     /**
      * @throws Exception If failed.
      */
     @Override protected void afterTestsStopped() throws Exception {
-        IGNITEs.clear();
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+
+        TransactionConfiguration txCfg = c.getTransactionConfiguration();
+
+        txCfg.setDefaultTxTimeout(TIMEOUT);
+
+        return c;
     }
 
     /**
@@ -72,12 +79,13 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache(int i) {
-        return IGNITEs.get(i).cache(DEFAULT_CACHE_NAME);
+        return grid(i).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticReadCommitted() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, READ_COMMITTED);
     }
@@ -85,6 +93,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -92,6 +101,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticSerializable() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, SERIALIZABLE);
     }
@@ -99,6 +109,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticReadCommitted() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, READ_COMMITTED);
     }
@@ -106,6 +117,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -113,6 +125,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticSerializable() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, SERIALIZABLE);
     }
@@ -124,7 +137,6 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      */
     private void checkTransactionTimeout(TransactionConcurrency concurrency,
         TransactionIsolation isolation) throws Exception {
-
         int idx = RAND.nextInt(GRID_COUNT);
 
         IgniteCache<Integer, String> cache = jcache(idx);

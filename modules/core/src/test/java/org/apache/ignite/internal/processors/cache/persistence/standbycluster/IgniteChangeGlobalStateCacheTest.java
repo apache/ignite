@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 /**
  *
@@ -31,6 +32,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
     /**
      *
      */
+    @Test
     public void testCheckValueAfterActivation(){
         String cacheName = "my-cache";
 
@@ -64,6 +66,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMoreKeyValueAfterActivate() throws Exception {
         String cacheName = "my-cache";
 
@@ -117,6 +120,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testDeActivateAndActivateCacheValue() throws Exception {
         String chName = "myCache";
 

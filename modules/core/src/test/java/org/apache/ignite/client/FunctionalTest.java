@@ -40,7 +40,10 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -54,6 +57,10 @@ import static org.junit.Assert.fail;
  * Thin client functional tests.
  */
 public class FunctionalTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /**
      * Tested API:
      * <ul>
@@ -162,7 +169,10 @@ public class FunctionalTest {
                             SimpleEntry::getKey, SimpleEntry::getValue, (a, b) -> a, LinkedHashMap::new
                         ))
                     )
-                    .setKeyFields(Collections.singleton("id"))
+                    // During query normalization null keyFields become empty set.
+                    // Set empty collection for comparator.
+                    .setKeyFields(Collections.emptySet())
+                    .setKeyFieldName("id")
                     .setNotNullFields(Collections.singleton("id"))
                     .setDefaultFieldValues(Collections.singletonMap("id", 0))
                     .setIndexes(Collections.singletonList(new QueryIndex("id", true, "IDX_EMPLOYEE_ID")))

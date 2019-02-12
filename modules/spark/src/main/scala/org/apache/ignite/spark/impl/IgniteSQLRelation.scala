@@ -18,7 +18,7 @@
 package org.apache.ignite.spark.impl
 
 import org.apache.ignite.IgniteException
-import org.apache.ignite.cache.QueryEntity
+import org.apache.ignite.internal.processors.query.{GridQueryTypeDescriptor, QueryTypeDescriptorImpl}
 import org.apache.ignite.spark.{IgniteContext, IgniteRDD, impl}
 import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
@@ -34,14 +34,15 @@ import scala.collection.JavaConversions._
   */
 class IgniteSQLRelation[K, V](
     private[apache] val ic: IgniteContext,
-    private[apache] val tableName: String)
+    private[apache] val tableName: String,
+    private[apache] val schemaName: Option[String])
     (@transient val sqlContext: SQLContext) extends BaseRelation with PrunedFilteredScan with Logging {
 
     /**
       * @return Schema of Ignite SQL table.
       */
     override def schema: StructType =
-        igniteSQLTable(ic.ignite(), tableName)
+        sqlTableInfo(ic.ignite(), tableName, schemaName)
             .map(IgniteSQLRelation.schema)
             .getOrElse(throw new IgniteException(s"Unknown table $tableName"))
 
@@ -101,7 +102,7 @@ class IgniteSQLRelation[K, V](
       * Cache name for a table name.
       */
     private lazy val cacheName: String =
-        sqlCacheName(ic.ignite(), tableName)
+        sqlCacheName(ic.ignite(), tableName, schemaName)
             .getOrElse(throw new IgniteException(s"Unknown table $tableName"))
 }
 
@@ -112,20 +113,21 @@ object IgniteSQLRelation {
       * @param table Ignite table descirption.
       * @return Spark table descirption
       */
-    def schema(table: QueryEntity): StructType = {
+    def schema(table: GridQueryTypeDescriptor): StructType = {
         //Partition columns has to be in the end of list.
         //See `org.apache.spark.sql.catalyst.catalog.CatalogTable#partitionSchema`
-        val columns = table.getFields.toList.sortBy(c ⇒ isKeyColumn(table, c._1))
+        val columns = table.fields.toList.sortBy(c ⇒ isKeyColumn(table, c._1))
 
         StructType(columns.map { case (name, dataType) ⇒
             StructField(
-                name = name,
-                dataType = IgniteRDD.dataType(dataType, name),
+                name = table.asInstanceOf[QueryTypeDescriptorImpl].aliases.getOrDefault(name, name),
+                dataType = IgniteRDD.dataType(dataType.getName, name),
                 nullable = !isKeyColumn(table, name),
                 metadata = Metadata.empty)
         })
     }
 
-    def apply[K, V](ic: IgniteContext, tableName: String, sqlContext: SQLContext): IgniteSQLRelation[K, V] =
-        new IgniteSQLRelation[K, V](ic,tableName)(sqlContext)
+    def apply[K, V](ic: IgniteContext, tableName: String, schemaName: Option[String],
+        sqlContext: SQLContext): IgniteSQLRelation[K, V] =
+        new IgniteSQLRelation[K, V](ic, tableName, schemaName)(sqlContext)
 }

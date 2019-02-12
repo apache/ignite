@@ -21,9 +21,7 @@ const CacheClient = require('./CacheClient');
 const IgniteClientConfiguration = require('./IgniteClientConfiguration');
 const CacheConfiguration = require('./CacheConfiguration');
 const BinaryUtils = require('./internal/BinaryUtils');
-const BinaryWriter = require('./internal/BinaryWriter');
-const BinaryReader = require('./internal/BinaryReader');
-const BinaryTypeStorage = require('./internal/BinaryTypeStorage');
+const BinaryCommunicator = require('./internal/BinaryCommunicator');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 const Logger = require('./internal/Logger');
 
@@ -70,7 +68,7 @@ class IgniteClient {
     constructor(onStateChanged = null) {
         const ClientFailoverSocket = require('./internal/ClientFailoverSocket');
         this._socket = new ClientFailoverSocket(onStateChanged);
-        BinaryTypeStorage.createEntity(this._socket);
+        this._communicator = new BinaryCommunicator(this._socket);
     }
 
     static get STATE() {
@@ -133,7 +131,7 @@ class IgniteClient {
         ArgumentChecker.notEmpty(name, 'name');
         ArgumentChecker.hasType(cacheConfig, 'cacheConfig', false, CacheConfiguration);
 
-        await this._socket.send(
+        await this._communicator.send(
             cacheConfig ?
                 BinaryUtils.OPERATION.CACHE_CREATE_WITH_CONFIGURATION :
                 BinaryUtils.OPERATION.CACHE_CREATE_WITH_NAME,
@@ -161,7 +159,7 @@ class IgniteClient {
     async getOrCreateCache(name, cacheConfig = null) {
         ArgumentChecker.notEmpty(name, 'name');
         ArgumentChecker.hasType(cacheConfig, 'cacheConfig', false, CacheConfiguration);
-        await this._socket.send(
+        await this._communicator.send(
             cacheConfig ?
                 BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_CONFIGURATION :
                 BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_NAME,
@@ -199,7 +197,7 @@ class IgniteClient {
      */
     async destroyCache(name) {
         ArgumentChecker.notEmpty(name, 'name');
-        await this._socket.send(
+        await this._communicator.send(
             BinaryUtils.OPERATION.CACHE_DESTROY,
             async (payload) => {
                 payload.writeInteger(CacheClient._calculateId(name));
@@ -222,7 +220,7 @@ class IgniteClient {
     async getCacheConfiguration(name) {
         ArgumentChecker.notEmpty(name, 'name');
         let config;
-        await this._socket.send(
+        await this._communicator.send(
             BinaryUtils.OPERATION.CACHE_GET_CONFIGURATION,
             async (payload) => {
                 payload.writeInteger(CacheClient._calculateId(name));
@@ -230,7 +228,7 @@ class IgniteClient {
             },
             async (payload) => {
                 config = new CacheConfiguration();
-                await config._read(payload);
+                await config._read(this._communicator, payload);
             });
         return config;
     }
@@ -248,11 +246,11 @@ class IgniteClient {
      */
     async cacheNames() {
         let names;
-        await this._socket.send(
+        await this._communicator.send(
             BinaryUtils.OPERATION.CACHE_GET_NAMES,
             null,
             async (payload) => {
-                names = await BinaryReader.readStringArray(payload);
+                names = await this._communicator.readStringArray(payload);
             });
         return names;
     }
@@ -273,7 +271,7 @@ class IgniteClient {
      * @ignore
      */
     _getCache(name, cacheConfig = null) {
-        return new CacheClient(name, cacheConfig, this._socket);
+        return new CacheClient(name, cacheConfig, this._communicator);
     }
 
     /**
@@ -281,10 +279,10 @@ class IgniteClient {
      */
     async _writeCacheNameOrConfig(buffer, name, cacheConfig) {
         if (cacheConfig) {
-            await cacheConfig._write(buffer, name);
+            await cacheConfig._write(this._communicator, buffer, name);
         }
         else {
-            await BinaryWriter.writeString(buffer, name);
+            BinaryCommunicator.writeString(buffer, name);
         }
     }
 }

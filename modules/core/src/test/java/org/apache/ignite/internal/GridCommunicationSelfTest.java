@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Grid basic communication test.
@@ -46,9 +47,17 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
         ignite = G.ignite(getTestIgniteInstanceName());
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessageToEmptyNodes() throws Exception {
         Collection<ClusterNode> empty = Collections.emptyList();
 

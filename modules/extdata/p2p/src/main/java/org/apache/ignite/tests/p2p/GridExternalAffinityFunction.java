@@ -63,7 +63,6 @@ public class GridExternalAffinityFunction implements AffinityFunction {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext ctx) {
         List<List<ClusterNode>> res = new ArrayList<>(partitions());
 

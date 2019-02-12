@@ -611,59 +611,65 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private void executeRandomOperation(Map<Object, Object> map, IgniteCache<Object, Object> cache) throws Exception {
         Operation op = nextRandomOperation();
 
-        switch (op) {
-            case PUT:
-                doPut(cache);
-                break;
+        try {
+            switch (op) {
+                case PUT:
+                    doPut(cache);
+                    break;
 
-            case PUT_ALL:
-                doPutAll(cache);
-                break;
+                case PUT_ALL:
+                    doPutAll(cache);
+                    break;
 
-            case GET:
-                doGet(cache);
-                break;
+                case GET:
+                    doGet(cache);
+                    break;
 
-            case GET_ALL:
-                doGetAll(cache);
-                break;
+                case GET_ALL:
+                    doGetAll(cache);
+                    break;
 
-            case INVOKE:
-                doInvoke(cache);
-                break;
+                case INVOKE:
+                    doInvoke(cache);
+                    break;
 
-            case INVOKE_ALL:
-                doInvokeAll(cache);
-                break;
+                case INVOKE_ALL:
+                    doInvokeAll(cache);
+                    break;
 
-            case REMOVE:
-                doRemove(cache);
-                break;
+                case REMOVE:
+                    doRemove(cache);
+                    break;
 
-            case REMOVE_ALL:
-                doRemoveAll(cache);
-                break;
+                case REMOVE_ALL:
+                    doRemoveAll(cache);
+                    break;
 
-            case PUT_IF_ABSENT:
-                doPutIfAbsent(cache);
-                break;
+                case PUT_IF_ABSENT:
+                    doPutIfAbsent(cache);
+                    break;
 
-            case REPLACE:
-                doReplace(cache);
-                break;
+                case REPLACE:
+                    doReplace(cache);
+                    break;
 
-            case SCAN_QUERY:
-                doScanQuery(cache);
-                break;
+                case SCAN_QUERY:
+                    doScanQuery(cache);
+                    break;
 
-            case SQL_QUERY:
-                doSqlQuery(cache);
-                break;
+                case SQL_QUERY:
+                    doSqlQuery(cache);
+                    break;
 
-            case CONTINUOUS_QUERY:
-                doContinuousQuery(cache, map);
+                case CONTINUOUS_QUERY:
+                    doContinuousQuery(cache, map);
+            }
+
+            storeStatistics(cache.getName(), map, op);
         }
-        storeStatistics(cache.getName(), map, op);
+        catch (Exception e){
+            BenchmarkUtils.error(String.format("Failed to perform operation %s.", op), e);
+        }
     }
 
     /**

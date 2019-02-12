@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.environment.logging;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -40,7 +40,7 @@ public class NoOpLogger implements MLLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
+    @Override public <K, V> IgniteModel<K, V> log(VerboseLevel verboseLevel, IgniteModel<K, V> mdl) {
         return mdl;
     }
 
@@ -54,7 +54,7 @@ public class NoOpLogger implements MLLogger {
      */
     private static class Factory implements MLLogger.Factory {
         /** NoOpLogger instance. */
-        private final static NoOpLogger NO_OP_LOGGER = new NoOpLogger();
+        private static final NoOpLogger NO_OP_LOGGER = new NoOpLogger();
 
         /** {@inheritDoc} */
         @Override public <T> MLLogger create(Class<T> targetCls) {

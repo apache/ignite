@@ -41,6 +41,12 @@ public abstract class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     /** All {@link Connection}s associated with threads. */
     private final List<Connection> threadConnections = new ArrayList<>();
 
+    /**
+     * If JDBC thin driver url starts with this string means that benchmark code should find node to connect.
+     * See {@link #findThinAddress()}.
+     */
+    public static final String JDBC_THIN_AUTO_FIND_PREFIX = JdbcThinUtils.URL_PREFIX + "auto.find";
+
     /** JDBC URL. */
     protected String url;
 
@@ -70,8 +76,9 @@ public abstract class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
         ignite().cluster().active(true);
 
         if (url == null) {
-            if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX)) {
+            if (args.jdbcUrl().startsWith(JDBC_THIN_AUTO_FIND_PREFIX)) {
                 String addr = findThinAddress();
+
                 url = JdbcThinUtils.URL_PREFIX + addr + '/';
             }
             else
@@ -92,7 +99,7 @@ public abstract class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
      * @throws Exception On error.
      */
     protected void setupData() throws Exception {
-        fillData(cfg, (IgniteEx)ignite(), args.range());
+        fillData(cfg, (IgniteEx)ignite(), args.range(), args.atomicMode());
     }
 
     /**

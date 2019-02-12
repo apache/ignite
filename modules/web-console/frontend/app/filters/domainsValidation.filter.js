@@ -15,19 +15,37 @@
  * limitations under the License.
  */
 
-// Filter domain models with key fields configuration.
-export default ['IgniteLegacyUtils', (LegacyUtils) => (domains, valid, invalid) => {
-    if (valid && invalid)
-        return domains;
+import _ from 'lodash';
 
-    const out = [];
+/**
+ * @param {ReturnType<typeof import('../services/LegacyUtils.service').default>} LegacyUtils [description]
+ */
+export default function factory(LegacyUtils) {
+    /**
+     * Filter domain models with key fields configuration.
+     * @template T
+     * @param {Array<T>} domains
+     * @param {boolean} valid
+     * @param {boolean} invalid
+     */
+    const filter = (domains, valid, invalid) => {
+        if (valid && invalid)
+            return domains;
 
-    _.forEach(domains, function(domain) {
-        const _valid = !LegacyUtils.domainForStoreConfigured(domain) || LegacyUtils.isJavaBuiltInClass(domain.keyType) || !_.isEmpty(domain.keyFields);
+        /** @type {Array<T>} */
+        const out = [];
 
-        if (valid && _valid || invalid && !_valid)
-            out.push(domain);
-    });
+        _.forEach(domains, function(domain) {
+            const _valid = !LegacyUtils.domainForStoreConfigured(domain) || LegacyUtils.isJavaBuiltInClass(domain.keyType) || !_.isEmpty(domain.keyFields);
 
-    return out;
-}];
+            if (valid && _valid || invalid && !_valid)
+                out.push(domain);
+        });
+
+        return out;
+    };
+
+    return filter;
+}
+
+factory.$inject = ['IgniteLegacyUtils'];

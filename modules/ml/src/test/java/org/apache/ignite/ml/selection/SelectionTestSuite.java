@@ -21,8 +21,11 @@ import org.apache.ignite.ml.selection.cv.CrossValidationTest;
 import org.apache.ignite.ml.selection.paramgrid.ParameterSetGeneratorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursorTest;
+import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluatorTest;
 import org.apache.ignite.ml.selection.scoring.evaluator.EvaluatorTest;
 import org.apache.ignite.ml.selection.scoring.metric.AccuracyTest;
+import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricsTest;
+import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricsValuesTest;
 import org.apache.ignite.ml.selection.scoring.metric.FmeasureTest;
 import org.apache.ignite.ml.selection.scoring.metric.PrecisionTest;
 import org.apache.ignite.ml.selection.scoring.metric.RecallTest;
@@ -37,17 +40,19 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     CrossValidationTest.class,
-    EvaluatorTest.class,
     ParameterSetGeneratorTest.class,
-    CacheBasedLabelPairCursorTest.class,
     LocalLabelPairCursorTest.class,
     AccuracyTest.class,
     PrecisionTest.class,
     RecallTest.class,
     FmeasureTest.class,
     SHA256UniformMapperTest.class,
-    TrainTestDatasetSplitterTest.class
+    TrainTestDatasetSplitterTest.class,
+    EvaluatorTest.class,
+    CacheBasedLabelPairCursorTest.class,
+    BinaryClassificationMetricsTest.class,
+    BinaryClassificationMetricsValuesTest.class,
+    BinaryClassificationEvaluatorTest.class,
 })
 public class SelectionTestSuite {
-    // No-op.
 }

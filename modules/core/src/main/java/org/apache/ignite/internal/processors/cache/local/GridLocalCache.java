@@ -182,7 +182,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             if (entry != null && ctx.isAll(entry, CU.empty0())) {
                 entry.releaseLocal();
 
-                ctx.evicts().touch(entry, topVer);
+                entry.touch();
             }
         }
     }
@@ -231,5 +231,28 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public long localSizeLong(int part, CachePeekMode[] peekModes) throws IgniteCheckedException {
         return localSizeLong(peekModes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int part) throws IgniteCheckedException {
+        ctx.offheap().preloadPartition(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
+        return ctx.closures().callLocalSafe(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                preloadPartition(part);
+
+                return null;
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int part) throws IgniteCheckedException {
+        ctx.offheap().preloadPartition(part);
+
+        return true;
     }
 }

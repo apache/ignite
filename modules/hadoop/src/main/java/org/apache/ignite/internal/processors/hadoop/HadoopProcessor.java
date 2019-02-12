@@ -199,9 +199,6 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void validateEnvironment() throws IgniteCheckedException {
-        if (U.majorJavaVersion(U.jdkVersion()) > 8)
-            throw new IgniteCheckedException("Java version 9 and above is not supported.");
-
         // Perform some static checks as early as possible, so that any recoverable exceptions are thrown here.
         try {
             HadoopLocations loc = HadoopClasspathUtils.locations();

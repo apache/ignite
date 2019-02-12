@@ -95,62 +95,58 @@ public class TensorFlowClusterMaintainer implements Service {
 
     /** {@inheritDoc} */
     @Override public void execute(ServiceContext ctx) {
-        while (!ctx.isCancelled()) {
+        while (!ctx.isCancelled() && !hasUserScriptCompletedSuccessfully()) {
             LockSupport.parkNanos(1_000_000);
 
-            boolean completed = clusterMgr.isUserScriptCompleted(clusterId);
-            if (completed)
-                break;
-
-            boolean restartRequired = hasAffinityChanged();
-
-            if (restartRequired)
-                log.debug("Affinity mapping changed, cluster will be restarted [clusterId=" + clusterId + "]");
-
-            if (!restartRequired) {
-                try {
-                    TensorFlowCluster cluster = clusterMgr.getCluster(clusterId);
-                    Map<UUID, List<LongRunningProcessStatus>> statuses = clusterMgr.getSrvProcMgr()
-                        .ping(cluster.getProcesses());
-
-                    for (UUID nodeId : statuses.keySet()) {
-                        for (LongRunningProcessStatus status : statuses.get(nodeId)) {
-                            if (status.getState().equals(LongRunningProcessState.DONE)) {
-                                restartRequired = true;
-                                break;
-                            }
-                        }
-                    }
-
-                }
-                catch (Exception e) {
-                    log.error("Failed to check process statuses", e);
-                    restartRequired = true;
-                }
-
-                if (restartRequired)
-                    log.debug("Fail detected, cluster will be restarted [clusterId=" + clusterId + "]");
-            }
+            boolean restartRequired = hasAffinityChanged()
+                || hasAnyWorkerFailed()
+                || hasChiefFailed()
+                || hasUserScriptFailed();
 
             if (restartRequired) {
-                clusterMgr.stopClusterIfExists(clusterId);
+                log.debug("Cluster will be restarted [clusterId=" + clusterId + "]");
 
-                TensorFlowCluster cluster = clusterMgr.createCluster(
-                    clusterId,
-                    jobArchive,
-                    str -> ignite.message().sendOrdered("us_out_" + clusterId, str, 60 * 1000),
-                    str -> ignite.message().sendOrdered("us_err_" + clusterId, str, 60 * 1000)
-                );
-
-                ignite.message().send(topicName, Optional.of(cluster));
+                restartCluster();
             }
         }
 
-        clusterMgr.stopClusterIfExists(clusterId);
-
-        ignite.message().send(topicName, Optional.empty());
+        stopCluster(true);
 
         log.debug("Cluster maintainer completed [clusterId=" + clusterId + "]");
+    }
+
+    /**
+     * Restarts TensorFlow cluster.
+     */
+    private void restartCluster() {
+        stopCluster(false);
+        startCluster();
+    }
+
+    /**
+     * Stops TensorFlow cluster.
+     *
+     * @param terminate Terminate TensorFlow cluster and notify all listeners that cluster won't be started again.
+     */
+    private void stopCluster(boolean terminate) {
+        clusterMgr.stopClusterIfExists(clusterId);
+
+        if (terminate)
+            ignite.message().send(topicName, Optional.empty());
+    }
+
+    /**
+     * Starts TensorFlow cluster.
+     */
+    private void startCluster() {
+        TensorFlowCluster cluster = clusterMgr.createCluster(
+            clusterId,
+            jobArchive,
+            str -> ignite.message().sendOrdered("us_out_" + clusterId, str, 60 * 1000),
+            str -> ignite.message().sendOrdered("us_err_" + clusterId, str, 60 * 1000)
+        );
+
+        ignite.message().send(topicName, Optional.of(cluster));
     }
 
     /**
@@ -177,5 +173,61 @@ public class TensorFlowClusterMaintainer implements Service {
         }
 
         return false;
+    }
+
+    /**
+     * Checks is any worker has failed.
+     *
+     * @return True if any worker has failed, otherwise false.
+     */
+    private boolean hasAnyWorkerFailed() {
+        TensorFlowCluster cluster = clusterMgr.getCluster(clusterId);
+
+        Map<UUID, List<LongRunningProcessStatus>> statuses;
+        try {
+            statuses = clusterMgr.getSrvProcMgr().ping(cluster.getProcesses());
+        }
+        catch (Exception e) {
+            log.error("Failed to check process statuses", e);
+
+            return true;
+        }
+
+        for (UUID nodeId : statuses.keySet()) {
+            for (LongRunningProcessStatus status : statuses.get(nodeId)) {
+                if (status.getState().equals(LongRunningProcessState.DONE))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks if chief has failed.
+     *
+     * @return True if chief has failed, otherwise false.
+     */
+    private boolean hasChiefFailed() {
+        return clusterMgr.getChiefException(clusterId) != null;
+    }
+
+    /**
+     * Checks if user script failed.
+     *
+     * @return True if user script has failed, otherwise false.
+     */
+    private boolean hasUserScriptFailed() {
+        return clusterMgr.getUserScriptException(clusterId) != null;
+    }
+
+    /**
+     * Checks if user script has completed successfully.
+     *
+     * @return True if user script has completed successfully, otherwise false.
+     */
+    private boolean hasUserScriptCompletedSuccessfully() {
+        return clusterMgr.isUserScriptCompleted(clusterId)
+            && clusterMgr.getUserScriptException(clusterId) == null;
     }
 }

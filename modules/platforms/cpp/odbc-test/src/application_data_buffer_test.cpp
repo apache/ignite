@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <ignite/odbc/system/odbc_constants.h>
 
 #include <boost/test/unit_test.hpp>
@@ -158,7 +154,7 @@ BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
 
 BOOST_AUTO_TEST_CASE(TestPutStringToLong)
 {
-    long numBuf;
+    SQLINTEGER numBuf;
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);
@@ -275,7 +271,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
 
 BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
 {
-    long numBuf;
+    SQLINTEGER numBuf;
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);

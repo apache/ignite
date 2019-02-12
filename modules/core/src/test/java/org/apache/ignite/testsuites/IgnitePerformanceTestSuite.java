@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentTxMultiNodeLoadTest;
 import org.apache.ignite.internal.processors.cache.GridCacheIteratorPerformanceTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadPerformanceTest;
@@ -57,63 +56,67 @@ import org.apache.ignite.loadtests.mergesort.GridMergeSortLoadTest;
 import org.apache.ignite.loadtests.nio.GridNioBenchmarkTest;
 import org.apache.ignite.marshaller.GridMarshallerPerformanceTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiLanLoadTest;
+import org.junit.Ignore;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Tests suite for performance tests tests.
  * Note: Most of these are resource-consuming or non-terminating.
  */
-public class IgnitePerformanceTestSuite extends TestSuite {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheDhtPreloadPerformanceTest.class,
+    GridCacheIteratorPerformanceTest.class,
+    GridCacheMultiNodeLoadTest.class,
+    GridCacheConcurrentTxMultiNodeLoadTest.class,
+    GridCachePartitionedAffinityExcludeNeighborsPerformanceTest.class,
+    GridCachePartitionedAtomicLongLoadTest.class,
+    GridCacheWriteBehindStoreLoadTest.class,
+    GridCircularBufferPerformanceTest.class,
+    GridFuncPerformanceTest.class,
+    GridHashMapLoadTest.class,
+    GridLeanMapPerformanceTest.class,
+    GridMarshallerPerformanceTest.class,
+    GridMetadataAwareAdapterLoadTest.class,
+    GridMultiSplitsLoadTest.class,
+    GridMultiSplitsRedeployLoadTest.class,
+    GridSessionLoadTest.class,
+    GridSingleSplitsNewNodesMulticastLoadTest.class,
+    GridSingleSplitsRedeployLoadTest.class,
+    GridStealingLoadTest.class,
+    GridTcpCommunicationSpiLanLoadTest.class,
+    GridUnsafeMapPerformanceTest.class,
+    GridUnsafePartitionedMapPerformanceTest.class,
+    IgniteDataStreamerPerformanceTest.class,
+    SortedEvictionPolicyPerformanceTest.class,
+
+    IgnitePerformanceTestSuite.TentativeTests.class
+})
+public class IgnitePerformanceTestSuite {
     /**
-     * @return Tests suite for orphaned tests (not in any test sute previously).
+     * Non-JUnit classes with Test in name, which should be either converted to JUnit or removed in the future
+     * Main classes.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Load-Test Suite");
-
-        suite.addTestSuite(GridCacheDhtPreloadPerformanceTest.class);
-        suite.addTestSuite(GridCacheIteratorPerformanceTest.class);
-        suite.addTestSuite(GridCacheMultiNodeLoadTest.class);
-        suite.addTestSuite(GridCacheConcurrentTxMultiNodeLoadTest.class);
-        suite.addTestSuite(GridCachePartitionedAffinityExcludeNeighborsPerformanceTest.class);
-        suite.addTestSuite(GridCachePartitionedAtomicLongLoadTest.class);
-        suite.addTestSuite(GridCacheWriteBehindStoreLoadTest.class);
-        suite.addTestSuite(GridCircularBufferPerformanceTest.class);
-        suite.addTestSuite(GridFuncPerformanceTest.class);
-        suite.addTestSuite(GridHashMapLoadTest.class);
-        suite.addTestSuite(GridLeanMapPerformanceTest.class);
-        suite.addTestSuite(GridMarshallerPerformanceTest.class);
-        suite.addTestSuite(GridMetadataAwareAdapterLoadTest.class);
-        suite.addTestSuite(GridMultiSplitsLoadTest.class);
-        suite.addTestSuite(GridMultiSplitsRedeployLoadTest.class);
-        suite.addTestSuite(GridSessionLoadTest.class);
-        suite.addTestSuite(GridSingleSplitsNewNodesMulticastLoadTest.class);
-        suite.addTestSuite(GridSingleSplitsRedeployLoadTest.class);
-        suite.addTestSuite(GridStealingLoadTest.class);
-        suite.addTestSuite(GridTcpCommunicationSpiLanLoadTest.class);
-        suite.addTestSuite(GridUnsafeMapPerformanceTest.class);
-        suite.addTestSuite(GridUnsafePartitionedMapPerformanceTest.class);
-        suite.addTestSuite(IgniteDataStreamerPerformanceTest.class);
-        suite.addTestSuite(SortedEvictionPolicyPerformanceTest.class);
-
-        // Non-JUnit classes with Test in name, which should be either converted to JUnit or removed in the future
-        // Main classes:
-        Class[] _$ = new Class[] {
-            GridBasicPerformanceTest.class,
-            GridBenchmarkCacheGetLoadTest.class,
-            GridBoundedConcurrentLinkedHashSetLoadTest.class,
-            GridCacheDataStructuresLoadTest.class,
-            GridCacheLoadTest.class,
-            GridCapacityLoadTest.class,
-            GridContinuousOperationsLoadTest.class,
-            GridFutureListenPerformanceTest.class,
-            GridGcTimeoutTest.class,
-            GridJobExecutionSingleNodeLoadTest.class,
-            GridJobExecutionSingleNodeSemaphoreLoadTest.class,
-            GridJobLoadTest.class,
-            GridMergeSortLoadTest.class,
-            GridNioBenchmarkTest.class,
-            GridSingleExecutionTest.class
-        };
-
-        return suite;
+    @RunWith(Suite.class)
+    @Suite.SuiteClasses({
+        GridBasicPerformanceTest.class,
+        GridBenchmarkCacheGetLoadTest.class,
+        GridBoundedConcurrentLinkedHashSetLoadTest.class,
+        GridCacheDataStructuresLoadTest.class,
+        GridCacheLoadTest.class,
+        GridCapacityLoadTest.class,
+        GridContinuousOperationsLoadTest.class,
+        GridFutureListenPerformanceTest.class,
+        GridGcTimeoutTest.class,
+        GridJobExecutionSingleNodeLoadTest.class,
+        GridJobExecutionSingleNodeSemaphoreLoadTest.class,
+        GridJobLoadTest.class,
+        GridMergeSortLoadTest.class,
+        GridNioBenchmarkTest.class,
+        GridSingleExecutionTest.class
+    })
+    @Ignore
+    public static class TentativeTests {
     }
 }

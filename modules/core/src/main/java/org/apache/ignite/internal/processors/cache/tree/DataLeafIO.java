@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  *
@@ -34,15 +33,5 @@ public final class DataLeafIO extends AbstractDataLeafIO {
      */
     private DataLeafIO(int ver) {
         super(T_DATA_REF_LEAF, ver, 12);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return CU.UNDEFINED_CACHE_ID;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean storeCacheId() {
-        return false;
     }
 }

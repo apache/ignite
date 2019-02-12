@@ -39,6 +39,7 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.junit.Test;
 
 /**
  * This class tests that redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
@@ -46,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
  */
 public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
-    protected int gridCount() {
+    @Override protected int gridCount() {
         return 2;
     }
 
@@ -54,7 +55,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractT
     protected final int CNT = 100;
 
     /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cacheCfg = super.cacheConfiguration(igniteInstanceName);
 
         cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(EmptyCacheStore.class));
@@ -70,7 +71,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractT
     }
 
     /** {@inheritDoc} */
-    protected NearCacheConfiguration nearConfiguration() {
+    @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
     }
 
@@ -81,6 +82,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLookup() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -97,6 +99,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBatchLookup() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -117,6 +120,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -133,6 +137,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBatchUpdate() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -153,6 +158,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -174,6 +180,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBatchRemove() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 

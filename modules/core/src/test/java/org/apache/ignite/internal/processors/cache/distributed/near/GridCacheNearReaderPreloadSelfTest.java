@@ -30,7 +30,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -62,6 +64,11 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer> cache3;
 
     /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         cache1 = null;
         cache2 = null;
@@ -75,6 +82,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNearReaderPreload() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             startUp();

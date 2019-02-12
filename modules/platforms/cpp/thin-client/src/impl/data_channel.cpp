@@ -21,13 +21,10 @@
 #include <sstream>
 
 #include <ignite/common/fixed_size_array.h>
+#include <ignite/network/network.h>
 
 #include "impl/message.h"
-#include "impl/ssl/ssl_gateway.h"
-#include "impl/ssl/secure_socket_client.h"
-#include "impl/net/tcp_socket_client.h"
-#include "impl/net/remote_type_updater.h"
-
+#include "impl/remote_type_updater.h"
 #include "impl/data_channel.h"
 
 namespace ignite
@@ -81,13 +78,11 @@ namespace ignite
 
                 if (sslMode != SslMode::DISABLE)
                 {
-                    ssl::SslGateway::GetInstance().LoadAll();
-
-                    socket.reset(new ssl::SecureSocketClient(config.GetSslCertFile(),
-                        config.GetSslKeyFile(), config.GetSslCaFile()));
+                    socket.reset(network::ssl::MakeSecureSocketClient(
+                        config.GetSslCertFile(), config.GetSslKeyFile(), config.GetSslCaFile()));
                 }
                 else
-                    socket.reset(new net::TcpSocketClient());
+                    socket.reset(network::ssl::MakeTcpSocketClient());
 
                 address.host = host;
                 address.port = port;
@@ -147,7 +142,7 @@ namespace ignite
                 {
                     int res = socket->Send(data + sent, len - sent, timeout);
 
-                    if (res < 0 || res == SocketClient::WaitResult::TIMEOUT)
+                    if (res < 0 || res == network::SocketClient::WaitResult::TIMEOUT)
                     {
                         Close();
 
@@ -222,7 +217,7 @@ namespace ignite
 
                     int res = socket->Receive(buffer + received, remain, timeout);
 
-                    if (res < 0 || res == SocketClient::WaitResult::TIMEOUT)
+                    if (res < 0 || res == network::SocketClient::WaitResult::TIMEOUT)
                     {
                         Close();
 

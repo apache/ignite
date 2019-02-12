@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Test;
 
 /**
  *
@@ -52,6 +53,7 @@ public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnect
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectCleaningUsersMetadata() throws Exception {
         Ignite client = grid(serverCount());
 

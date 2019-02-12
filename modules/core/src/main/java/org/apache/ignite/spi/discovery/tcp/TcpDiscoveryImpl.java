@@ -29,7 +29,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -64,7 +66,7 @@ abstract class TcpDiscoveryImpl {
     protected final IgniteLogger log;
 
     /** */
-    protected TcpDiscoveryNode locNode;
+    protected volatile TcpDiscoveryNode locNode;
 
     /** Debug mode. */
     protected boolean debugMode;
@@ -73,7 +75,6 @@ abstract class TcpDiscoveryImpl {
     private int debugMsgHist = 512;
 
     /** Received messages. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     protected ConcurrentLinkedDeque<String> debugLogQ;
 
     /** */
@@ -101,6 +102,18 @@ abstract class TcpDiscoveryImpl {
             log.trace(msg);
         }
     };
+
+    /**
+     * Upcasts collection type.
+     *
+     * @param c Initial collection.
+     * @return Resulting collection.
+     */
+    protected static <T extends R, R> Collection<R> upcast(Collection<T> c) {
+        A.notNull(c, "c");
+
+        return (Collection<R>)c;
+    }
 
     /**
      * @param spi Adapter.
@@ -202,6 +215,12 @@ abstract class TcpDiscoveryImpl {
      * @return Collection of remote nodes.
      */
     public abstract Collection<ClusterNode> getRemoteNodes();
+
+    /**
+     * @param feature Feature to check.
+     * @return {@code True} if all nodes support the given featire, {@code false} otherwise.
+     */
+    public abstract boolean allNodesSupport(IgniteFeatures feature);
 
     /**
      * @param nodeId Node id.
@@ -330,7 +349,6 @@ abstract class TcpDiscoveryImpl {
     /**
      * @throws IgniteSpiException If failed.
      */
-    @SuppressWarnings("BusyWait")
     protected final void registerLocalNodeAddress() throws IgniteSpiException {
         // Make sure address registration succeeded.
         // ... but limit it if join timeout is configured.

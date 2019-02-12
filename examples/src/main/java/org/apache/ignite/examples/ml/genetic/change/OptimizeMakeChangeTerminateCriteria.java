@@ -18,65 +18,75 @@
 package org.apache.ignite.examples.ml.genetic.change;
 
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
- * Terminate Condition implementation for OptimizeMakeChangeGATest <br/>
+ * Terminate Condition implementation for {@link OptimizeMakeChangeGAExample}.
  */
 public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
-    /** Ignite logger */
-    private IgniteLogger igniteLogger = null;
-    /** Ignite instance */
-    private Ignite ignite = null;
+    /** */
+    private final Ignite ignite;
+
+    /** */
+    private final Consumer<String> logConsumer;
 
     /**
-     * @param ignite Ignite
+     * Create class instance.
+     *
+     * @param ignite Ignite instance.
+     * @param logConsumer Logging consumer.
      */
-    public OptimizeMakeChangeTerminateCriteria(Ignite ignite) {
+    OptimizeMakeChangeTerminateCriteria(Ignite ignite, Consumer<String> logConsumer) {
         this.ignite = ignite;
-        this.igniteLogger = ignite.log();
+        this.logConsumer = logConsumer;
     }
 
     /**
-     * @param fittestChromosome Most fit chromosome at for the nth generation
-     * @param averageFitnessScore Average fitness score as of the nth generation
-     * @param currentGeneration Current generation
-     * @return Boolean value
+     * Check whether termination condition is met.
+     *
+     * @param fittestChromosome Most fit chromosome at for the nth generation.
+     * @param averageFitnessScore Average fitness score as of the nth generation.
+     * @param currGeneration Current generation.
+     * @return Status whether condition is met or not.
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
-        int currentGeneration) {
+        int currGeneration) {
         boolean isTerminate = true;
 
-        igniteLogger.info("##########################################################################################");
-        igniteLogger.info("Generation: " + currentGeneration);
-        igniteLogger.info("Fittest is Chromosome Key: " + fittestChromosome);
-        igniteLogger.info("Chromsome: " + fittestChromosome);
-        printCoins(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
-        igniteLogger.info("Avg Chromsome Fitness: " + averageFitnessScore);
-        igniteLogger.info("##########################################################################################");
+        logConsumer.accept(
+            "\n##########################################################################################"
+                + "\n Generation: " + currGeneration
+                + "\n Fittest is Chromosome Key: " + fittestChromosome
+                + "\n Chromosome: " + fittestChromosome
+                + "\n" + reportCoins(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
+                + "\nAvg Chromosome Fitness: " + averageFitnessScore
+                + "\n##########################################################################################");
 
-        if (!(currentGeneration > 5)) {
+        if (!(currGeneration > 5))
             isTerminate = false;
-        }
 
         return isTerminate;
     }
 
     /**
-     * Helper to print change detail
+     * Helper to print change details.
      *
-     * @param genes List if Genes
+     * @param genes List if Genes.
+     * @return Details to print.
      */
-    private void printCoins(List<Gene> genes) {
+    private String reportCoins(List<Gene> genes) {
+        StringBuilder sb = new StringBuilder();
+
         for (Gene gene : genes) {
-            igniteLogger.info("Coin Type: " + ((Coin)gene.getVal()).getCoinType().toString());
-            igniteLogger.info("Number of Coins: " + ((Coin)gene.getVal()).getNumberOfCoins());
+            sb.append("\nCoin Type: ").append(((Coin)gene.getVal()).getCoinType().toString())
+                .append("\nNumber of Coins: ").append(((Coin)gene.getVal()).getNumOfCoins());
         }
 
+        return sb.toString();
     }
 }

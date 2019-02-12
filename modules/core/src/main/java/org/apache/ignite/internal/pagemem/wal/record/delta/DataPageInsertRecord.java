@@ -58,7 +58,7 @@ public class DataPageInsertRecord extends PageDeltaRecord {
 
         AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
 
-        io.addRow(pageAddr, payload, pageMem.pageSize());
+        io.addRow(pageAddr, payload, pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */

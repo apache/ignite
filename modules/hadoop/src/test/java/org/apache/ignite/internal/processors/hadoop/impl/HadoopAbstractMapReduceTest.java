@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount1;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
+import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -342,6 +344,22 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         igniteSecondary = startGridWithIgfs("grid-secondary", SECONDARY_IGFS_NAME, PRIMARY, null, SECONDARY_REST_CFG);
 
         super.beforeTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        igniteSecondary = null;
+        secondaryFs = null;
+        igfs = null;
+
+        HadoopFileSystemsUtils.clearFileSystemCache();
+        FileSystem.clearStatistics();
+
+        Map stat = GridTestUtils.getFieldValue(FileSystem.class, FileSystem.class, "statisticsTable");
+
+        stat.clear();
     }
 
     /**

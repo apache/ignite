@@ -37,7 +37,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.tensorflow.cluster.TensorFlowJobArchive;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
-import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcessBuilderSupplier;
 import org.apache.ignite.tensorflow.core.util.AsyncNativeProcessRunner;
 import org.apache.ignite.tensorflow.core.util.NativeProcessRunner;
 
@@ -118,14 +117,14 @@ public class TensorFlowUserScriptRunner extends AsyncNativeProcessRunner {
         if (workingDir == null)
             throw new IllegalStateException("Working directory is not created");
 
-        ProcessBuilder procBuilder = new PythonProcessBuilderSupplier(false).get();
+        ProcessBuilder procBuilder = new TensorFlowProcessBuilderSupplier(false, null).get();
 
         procBuilder.directory(workingDir);
         procBuilder.command(jobArchive.getCommands());
 
         Map<String, String> env = procBuilder.environment();
         env.put("PYTHONPATH", workingDir.getAbsolutePath());
-        env.put("TF_CONFIG", formatTfConfigVar());
+        env.put("TF_CLUSTER", formatTfClusterVar());
         env.put("TF_WORKERS", formatTfWorkersVar());
         env.put("TF_CHIEF_SERVER", formatTfChiefServerVar());
 
@@ -133,17 +132,12 @@ public class TensorFlowUserScriptRunner extends AsyncNativeProcessRunner {
     }
 
     /**
-     * Formats "TF_CONFIG" variable to be passed into user script.
+     * Formats "TF_CLUSTER" variable to be passed into user script.
      *
-     * @return Formatted "TF_CONFIG" variable to be passed into user script.
+     * @return Formatted "TF_CLUSTER" variable to be passed into user script.
      */
-    private String formatTfConfigVar() {
-        return new StringBuilder()
-            .append("{\"cluster\" : ")
-            .append(clusterSpec.format(Ignition.ignite()))
-            .append(", ")
-            .append("\"task\": {\"type\" : \"" + TensorFlowClusterResolver.CHIEF_JOB_NAME + "\", \"index\": 0}}")
-            .toString();
+    private String formatTfClusterVar() {
+        return clusterSpec.format(Ignition.ignite());
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.misc;
 
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task for changing grid active state.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorChangeGridActiveStateTask extends VisorOneNodeTask<VisorChangeGridActiveStateTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;

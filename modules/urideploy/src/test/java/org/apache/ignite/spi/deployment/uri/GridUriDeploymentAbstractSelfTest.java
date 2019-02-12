@@ -17,8 +17,11 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
@@ -79,5 +82,25 @@ public abstract class GridUriDeploymentAbstractSelfTest extends GridSpiAbstractT
         assert task == null;
 
         info("Not deployed task [task=" + task + ']');
+    }
+
+    /**
+     * @param taskName name of task to wait on.
+     * @param expectDeployed if {@code true}, wait for availability, else wait for unavailability.
+     * @param timeout in ms.
+     * @throws Exception if failed.
+     */
+    protected void waitForTask(String taskName, boolean expectDeployed, long timeout) throws IgniteCheckedException {
+        assertTrue("Failed to wait for (un)deployment of " + taskName,
+            GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+                public boolean applyx() throws IgniteCheckedException {
+                    if (expectDeployed)
+                        return getSpi().findResource(taskName) != null;
+                    else
+                        return getSpi().findResource(taskName) == null;
+                }
+            }, timeout));
+
+        info((expectDeployed ? "Deployed" : "Not deployed") + " task [task=" + taskName + ']');
     }
 }

@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cache get or create with configuration request.
@@ -39,21 +39,20 @@ public class ClientCacheGetOrCreateWithConfigurationRequest extends ClientReques
      * Constructor.
      *
      * @param reader Reader.
+     * @param ver Client version.
      */
-    public ClientCacheGetOrCreateWithConfigurationRequest(BinaryRawReader reader) {
+    public ClientCacheGetOrCreateWithConfigurationRequest(BinaryRawReader reader, ClientListenerProtocolVersion ver) {
         super(reader);
 
-        cacheCfg = ClientCacheConfigurationSerializer.read(reader);
+        cacheCfg = ClientCacheConfigurationSerializer.read(reader, ver);
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_CREATE);
-
         try {
-            // Use security exception handler since the code authorizes "enable on-heap cache" permission
-            runWithSecurityExceptionHandler(() -> ctx.kernalContext().grid().getOrCreateCache(cacheCfg));
-        } catch (CacheExistsException e) {
+            ctx.kernalContext().grid().getOrCreateCache(cacheCfg);
+        }
+        catch (CacheExistsException e) {
             throw new IgniteClientException(ClientStatus.CACHE_EXISTS, e.getMessage());
         }
 

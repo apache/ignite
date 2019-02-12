@@ -27,6 +27,7 @@ import javax.management.JMX;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
+import org.junit.Test;
 
 /**
  * Tests TcpDiscoverySpiMBean.
@@ -54,6 +55,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
      *
      * @throws Exception if fails.
      */
+    @Test
     public void testMBean() throws Exception {
         startGrids(3);
 

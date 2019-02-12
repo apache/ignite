@@ -20,6 +20,11 @@
 const TestingHelper = require('../TestingHelper');
 
 describe('execute examples >', () => {
+    beforeAll((done) => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = TestingHelper.TIMEOUT;
+        done();
+    });
+
     it('CachePutGetExample', (done) => {
         TestingHelper.executeExample('examples/CachePutGetExample.js').
             then(done).

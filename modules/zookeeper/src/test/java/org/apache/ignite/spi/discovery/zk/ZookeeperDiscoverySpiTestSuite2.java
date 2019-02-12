@@ -17,83 +17,33 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-import junit.framework.TestSuite;
-import org.apache.curator.test.TestingCluster;
-import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
-import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedNodeRestartTxSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSequenceApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSequenceApiSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
-import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Regular Ignite tests executed with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstractTestSuite {
-    /** */
-    private static TestingCluster testingCluster;
-
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCachePartitionedNodeRestartTest.class,
+    IgniteCacheEntryListenerWithZkDiscoAtomicTest.class,
+    IgniteClientReconnectCacheTest.class,
+    GridCachePartitionedMultiNodeFullApiSelfTest.class,
+    GridCacheReplicatedMultiNodeFullApiSelfTest.class,
+    GridCommandHandlerTest.class
+})
+public class ZookeeperDiscoverySpiTestSuite2  {
     /**
-     * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
-        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
-
-        initSuite();
-
-        TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
-
-        suite.addTestSuite(ZookeeperDiscoverySuitePreprocessorTest.class);
-
-        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-
-        suite.addTestSuite(IgniteCacheEntryListenerWithZkDiscoAtomicTest.class);
-
-        suite.addTestSuite(GridEventConsumeSelfTest.class);
-
-        suite.addTestSuite(IgniteClientReconnectCacheTest.class);
-
-        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
-        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
-
-        suite.addTestSuite(ClusterNodeMetricsUpdateTest.class);
-
-        suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMultiNodeFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCachePartitionedNodeRestartTxSelfTest.class);
-        suite.addTestSuite(IgniteClientDataStructuresTest.class);
-        suite.addTestSuite(GridCacheReplicatedSequenceApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedSequenceApiSelfTest.class);
-
-        suite.addTestSuite(IgniteCacheReplicatedQuerySelfTest.class);
-
-        suite.addTestSuite(GridCacheAtomicMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMultiJvmFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCommandHandlerTest.class);
-
-        suite.addTestSuite(GridP2PContinuousDeploymentSelfTest.class);
-
-        return suite;
+    @BeforeClass
+    public static void init() throws Exception {
+        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }
 }

@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.MARSH_CLASS_NAME;
@@ -55,6 +56,7 @@ public class BinarySimpleNameTestPropertySelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPropertyEnabled() throws Exception {
         String useSimpleNameBackup = GridTestProperties.getProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER);
 
@@ -72,6 +74,7 @@ public class BinarySimpleNameTestPropertySelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPropertyDisabled() throws Exception {
         checkProperty("org.ignite.test.TestClass");
     }
@@ -80,6 +83,7 @@ public class BinarySimpleNameTestPropertySelfTest extends GridCommonAbstractTest
      * Check if Binary facade is disabled test. Test uses JDK marshaller to provide warranty facade is not available
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryDisabled() throws Exception {
         enableJdkMarshaller = true;
         assertNull(startGrid().binary());

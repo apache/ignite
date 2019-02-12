@@ -117,8 +117,10 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
         cache.query(qry.setArgs(4L.asInstanceOf[JLong], "St. Petersburg")).getAll
     }
 
-    def createEmployeeCache(client: Ignite, cacheName: String): Unit = {
+    def createEmployeeCache(client: Ignite, cacheName: String, schemaName: Option[String] = None): Unit = {
         val ccfg = AbstractDataFrameSpec.cacheConfiguration[String, Employee](cacheName)
+
+        schemaName.foreach(ccfg.setSqlSchema)
 
         val cache = client.getOrCreateCache(ccfg)
 

@@ -22,14 +22,14 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  *
  */
-public class NodeStoppingException extends IgniteCheckedException implements InvalidEnvironmentException {
+public class NodeStoppingException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param cause Original node stopping cause.
      */
-    public NodeStoppingException(NodeStoppingException cause) {
+    public NodeStoppingException(Throwable cause) {
         super(cause);
     }
 

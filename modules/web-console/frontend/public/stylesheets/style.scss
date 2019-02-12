@@ -19,7 +19,6 @@
 @import "./bootstrap-custom";
 @import "./variables";
 @import "~roboto-font/css/fonts.css";
-@import "./../../app/directives/information/information.scss";
 @import "./blocks/error";
 @import "./form-field";
 
@@ -255,17 +254,70 @@ body {
     flex-direction: column;
 }
 
-body > .wrapper,
-    // Nested ui-view, like on password reset state
-body > .wrapper > ui-view {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    flex: 1 0 auto;
+:root {
+    --page-side-padding: 30px;
+}
 
-    .body-container {
-        flex: 1 0 auto;
-        padding-bottom: 30px;
+.wrapper {
+    --header-height: 62px;
+
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto var(--header-height) 1fr;
+    grid-template-areas: 'notifications notifications' 'header header' 'sidebar content';
+
+    permanent-notifications {
+        grid-area: notifications;
+    }
+
+    web-console-header {
+        grid-area: header;
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        transform: translateZ(1px);
+    }
+
+    web-console-sidebar {
+        grid-area: sidebar;
+        transform: translateZ(1px);
+    }
+
+    &>.content {
+        grid-area: content;
+        padding-left: var(--page-side-padding);
+        padding-right: var(--page-side-padding);
+        padding-bottom: var(--page-side-padding);
+        display: flex;
+        flex-direction: column;
+
+        &>ui-view {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+    }
+
+    &.wrapper-public {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto var(--header-height) 1fr auto;
+        grid-template-areas: 'notifications' 'header' 'content' 'footer';
+    }
+}
+
+.public-page {
+    margin-left: auto;
+    margin-right: auto;
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: 530px;
+
+    .public-page__title {
+        font-size: 38px;
+        font-weight: 300;
+        margin: 30px 0 30px;
     }
 }
 
@@ -374,7 +426,6 @@ i.btn {
 h1,
 h2,
 h3 {
-    user-select: none;
     font-weight: normal;
     /* Makes the vertical size of the text the same for all fonts. */
     line-height: 1;
@@ -485,73 +536,44 @@ button.form-control {
         line-height: 65px;
     }
 
-    .empty-caches {
-        text-align: center;
-        color: $ignite-placeholder-color;
-        height: 55px;
-        line-height: 55px;
-    }
-
     .panel-collapse {
         border-top: 1px solid $ignite-border-color;
     }
 
+    .btn-ignite-group {
+        padding: 0;
+        border: none;
+        margin-right: 0;
+        background: transparent;
+    }
+
     .sql-controls {
-        position: relative;
-        top: -1px;
+        display: flex;
+        justify-content: space-between;
         border-top: 1px solid #ddd;
 
-        padding: 10px 10px;
+        & > div {
+            display: flex;
+            padding: 10px;
+            align-items: flex-start;
 
-        input[type="checkbox"] {
-            line-height: 20px;
-            margin-right: 5px;
-        }
-
-        label {
-            line-height: 28px;
-            vertical-align: middle;
-        }
-
-        .btn {
-            line-height: 20px;
-        }
-
-        .ignite-form-field {
-            margin-right: 10px;
-
-            .ignite-form-field__label {
-                float: left;
-                width: auto;
-                margin-right: 5px;
-                line-height: 28px;
+            &:nth-child(2) {
+                flex: 1;
+                justify-content: flex-end;
             }
 
-            .ignite-form-field__label + div {
-                display: block;
-                float: none;
-                width: auto;
+            &:last-child {
+                flex-direction: column;
+                flex-basis: 25%;
             }
         }
 
-        .tipLabel .btn {
-            float: right;
+        button + button {
+            margin-left: 20px;
         }
 
-        .pull-right {
-            margin-left: 10px;
-
-            .ignite-form-field {
-                margin-right: -24px;
-
-                label {
-                    margin-left: 5px;
-                }
-            }
-        }
-
-        .col-sm-3 + .tipLabel {
-            margin-left: 0;
+        .form-field--inline + .form-field--inline {
+            margin-left: 20px;
         }
     }
 
@@ -615,19 +637,10 @@ button.form-control {
 }
 
 .theme-line .panel-heading {
-    padding: 5px 10px;
     margin: 0;
     cursor: pointer;
     font-size: $font-size-large;
     line-height: 24px;
-
-    label {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: calc(100% - 85px);
-        cursor: pointer;
-    }
 
     .btn-group {
         vertical-align: top;
@@ -1782,7 +1795,20 @@ treecontrol.tree-classic {
 }
 
 .getting-started {
+    min-height: 240px;
     margin: 15px 15px 300px;
+
+    ul {
+        line-height: 20px;
+    }
+
+    [class*="col-"] {
+        align-self: flex-start !important;
+    }
+
+    .align-center {
+        justify-content: center !important;
+    }
 }
 
 .getting-started-demo {
@@ -1885,64 +1911,6 @@ treecontrol.tree-classic {
     border-left-width: 0;
     border-right-width: 0;
     border-bottom-width: 0;
-}
-
-.ribbon-wrapper {
-    width: 150px;
-    height: 150px;
-    position: absolute;
-    overflow: hidden;
-    top: 0;
-    z-index: 1001;
-    pointer-events: none;
-}
-
-.ribbon-wrapper.right {
-    right: 0;
-}
-
-.ribbon {
-    position: absolute;
-    top: 42px;
-    width: 186px;
-    padding: 1px 0;
-    color: $btn-primary-color;
-    background: $btn-primary-border;
-
-    right: -42px;
-    -moz-transform: rotate(45deg);
-    -webkit-transform: rotate(45deg);
-    -o-transform: rotate(45deg);
-    -ms-transform: rotate(45deg);
-    transform: rotate(45deg);
-
-    > label {
-        padding: 1px 0;
-        height: 17px;
-        line-height: 12px;
-        text-align: center;
-        text-decoration: none;
-        font-family: Roboto, sans-serif;
-        font-size: 16px;
-        display: block;
-        font-weight: 400;
-
-        border: 1px solid rgba(255,255,255,0.3);
-
-        -moz-text-shadow: 0 0 10px rgba(0,0,0,0.31);
-        -webkit-text-shadow: 0 0 10px rgba(0,0,0,0.31);
-        text-shadow: 0 0 10px rgba(0,0,0,0.31);
-    }
-}
-
-.ribbon-wrapper.left {
-    overflow: visible;
-
-    .ribbon {
-        transform: rotate(-45deg);
-        left: -75px;
-        top: 10px;
-    }
 }
 
 html, body {
@@ -2080,10 +2048,6 @@ html, body {
     position: absolute !important;
 }
 
-.demo-mode {
-    padding-top: 30px;
-}
-
 // Fix for injecting svg icon into BS btn
 .btn--with-icon {
     display: flex;
@@ -2114,6 +2078,7 @@ header.header-with-selector {
 
     div {
         display: flex;
+        align-items: center;
 
         &:nth-child(2) {
             .btn-ignite {

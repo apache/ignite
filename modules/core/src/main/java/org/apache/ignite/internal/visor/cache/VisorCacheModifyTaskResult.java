@@ -36,10 +36,10 @@ public class VisorCacheModifyTaskResult extends VisorDataTransferObject {
     private UUID affinityNode;
 
     /** Result type name. */
-    private String resultType;
+    private String resType;
 
     /** Value for specified key or number of modified rows. */
-    private Object result;
+    private Object res;
 
     /**
      * Default constructor.
@@ -50,13 +50,13 @@ public class VisorCacheModifyTaskResult extends VisorDataTransferObject {
 
     /**
      * @param affinityNode Node ID where modified data contained.
-     * @param resultType Result type name.
-     * @param result Value for specified key or number of modified rows.
+     * @param resType Result type name.
+     * @param res Value for specified key or number of modified rows.
      */
-    public VisorCacheModifyTaskResult(UUID affinityNode, String resultType, Object result) {
+    public VisorCacheModifyTaskResult(UUID affinityNode, String resType, Object res) {
         this.affinityNode = affinityNode;
-        this.resultType = resultType;
-        this.result = result;
+        this.resType = resType;
+        this.res = res;
     }
 
     /**
@@ -70,28 +70,28 @@ public class VisorCacheModifyTaskResult extends VisorDataTransferObject {
      * @return Result type name.
      */
     public String getResultType() {
-        return resultType;
+        return resType;
     }
 
     /**
-     * @return Value for specified key or number of modified rows..
+     * @return Value for specified key or number of modified rows.
      */
     public Object getResult() {
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeUuid(out, affinityNode);
-        U.writeString(out, resultType);
-        out.writeObject(result);
+        U.writeString(out, resType);
+        out.writeObject(res);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         affinityNode = U.readUuid(in);
-        resultType = U.readString(in);
-        result = in.readObject();
+        resType = U.readString(in);
+        res = in.readObject();
     }
 
     /** {@inheritDoc} */

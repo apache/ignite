@@ -52,8 +52,6 @@ import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.AttributeNodeFilter;
 
@@ -74,9 +72,6 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
     /** Grids count. */
     protected static final int GRIDS_COUNT = 10;
-
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Partitions per region distribution. */
     protected static final int[] PARTS_PER_REGION = new int[] {10, 20, 30, 40, 24};
@@ -141,11 +136,6 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
             new DataRegionConfiguration().setMaxSize(20L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
 
         /** Clients cache */
         CacheConfiguration<ClientKey, Client> clientCfg = new CacheConfiguration<>();
@@ -509,12 +499,15 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
                 if (regionId == UNMAPPED_REGION)
                     fail();
             }
-            catch (CacheException ignored) {
-                if (X.hasCause(ignored, InterruptedException.class, IgniteInterruptedCheckedException.class))
+            catch (CacheException e) {
+                if (X.hasCause(e, InterruptedException.class, IgniteInterruptedCheckedException.class))
                     return; // Allow interruptions.
 
-                if (regionId != UNMAPPED_REGION)
-                    fail();
+                if (regionId != UNMAPPED_REGION) {
+                    e.printStackTrace(System.err);
+
+                    fail("Unexpected exception (see details above): " + e.getMessage());
+                }
             }
         }
     }

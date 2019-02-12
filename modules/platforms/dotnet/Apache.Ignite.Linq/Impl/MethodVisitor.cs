@@ -54,7 +54,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             GetStringMethod("ToLower", new Type[0], GetFunc("lower")),
             GetStringMethod("ToUpper", new Type[0], GetFunc("upper")),
-            GetStringMethod("Contains", del: (e, v) => VisitSqlLike(e, v, "'%' || ? || '%'")),
+            GetStringMethod("Contains", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "'%' || ? || '%'")),
             GetStringMethod("StartsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "? || '%'")),
             GetStringMethod("EndsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "'%' || ?")),
             GetStringMethod("IndexOf", new[] {typeof (string)}, GetFunc("instr", -1)),
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("PadRight", "rpad", typeof (int), typeof (char)),
 
             GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string)),
-            GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string), 
+            GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string),
                 typeof(RegexOptions)),
             GetRegexMethod("IsMatch", "regexp_like", typeof (string), typeof (string)),
             GetRegexMethod("IsMatch", "regexp_like", typeof (string), typeof (string), typeof(RegexOptions)),
@@ -205,7 +205,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the instance function.
         /// </summary>
-        private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, 
+        private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor,
             string func, string suffix, params int[] adjust)
         {
             visitor.ResultBuilder.Append(func).Append("(");
@@ -358,7 +358,7 @@ namespace Apache.Ignite.Linq.Impl
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetParameterizedTrimMethod(string name,
             string sqlName)
         {
-            return GetMethod(typeof(string), name, new[] {typeof(char[])}, 
+            return GetMethod(typeof(string), name, new[] {typeof(char[])},
                 (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
         }
 

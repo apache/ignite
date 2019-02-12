@@ -78,7 +78,9 @@ public abstract class AbstractLSQR {
      */
     public LSQRResult solve(double damp, double atol, double btol, double conlim, double iterLim, boolean calcVar,
         double[] x0) {
-        int n = getColumns();
+        Integer n = getColumns();
+        if(n == null)
+            return null;
 
         if (iterLim < 0)
             iterLim = 2 * n;
@@ -313,7 +315,7 @@ public abstract class AbstractLSQR {
     protected abstract double[] iter(double bnorm, double[] target);
 
     /** */
-    protected abstract int getColumns();
+    protected abstract Integer getColumns();
 
     /** */
     private static double[] symOrtho(double a, double b) {

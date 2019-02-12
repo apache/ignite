@@ -297,5 +297,5 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      *
      * @return Label.
      */
-    public @Nullable String label();
+    @Nullable public String label();
 }

@@ -41,7 +41,6 @@ public class JavaLoggerFormatter extends Formatter {
     };
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Override public String format(LogRecord record) {
         String threadName = Thread.currentThread().getName();
 

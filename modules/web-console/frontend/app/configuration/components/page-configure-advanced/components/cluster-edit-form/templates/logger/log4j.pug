@@ -1,0 +1,68 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+-var form = 'logger'
+-var model = '$ctrl.clonedCluster.logger.Log4j'
+-var pathRequired = model + '.mode === "Path" && $ctrl.clonedCluster.logger.kind === "Log4j"'
+
+.pc-form-grid-col-30
+    +form-field__dropdown({
+        label: 'Level:',
+        model: `${model}.level`,
+        name: '"log4jLevel"',
+        placeholder: 'Default',
+        options: '[\
+                    {value: "OFF", label: "OFF"},\
+                    {value: "FATAL", label: "FATAL"},\
+                    {value: "ERROR", label: "ERROR"},\
+                    {value: "WARN", label: "WARN"},\
+                    {value: "INFO", label: "INFO"},\
+                    {value: "DEBUG", label: "DEBUG"},\
+                    {value: "TRACE", label: "TRACE"},\
+                    {value: "ALL", label: "ALL"},\
+                    {value: null, label: "Default"}\
+                ]',
+        tip: 'Level for internal log4j implementation'
+    })
+
+.pc-form-grid-col-30
+    +form-field__dropdown({
+        label: 'Logger configuration:',
+        model: `${model}.mode`,
+        name: '"log4jMode"',
+        required: 'true',
+        placeholder: 'Choose logger mode',
+        options: '[\
+                    {value: "Default", label: "Default"},\
+                    {value: "Path", label: "Path"}\
+                ]',
+        tip: 'Choose logger configuration\
+                <ul>\
+                    <li>Default - default logger</li>\
+                    <li>Path - path or URI to XML configuration</li>\
+                </ul>'
+    })
+.pc-form-grid-col-60(ng-show=pathRequired)
+    +form-field__text({
+        label: 'Path:',
+        model: `${model}.path`,
+        name: '"log4jPath"',
+        required: pathRequired,
+        placeholder: 'Input path',
+        tip: 'Path or URI to XML configuration'
+    })

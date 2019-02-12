@@ -22,6 +22,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactoryAbstractTest;
+import org.junit.Test;
 
 /**
  * LRU Eviction policy tests.
@@ -45,6 +46,7 @@ public class LruEvictionPolicyFactorySelfTest extends EvictionPolicyFactoryAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMiddleAccess() throws Exception {
         policyFactory = createPolicyFactory();
 

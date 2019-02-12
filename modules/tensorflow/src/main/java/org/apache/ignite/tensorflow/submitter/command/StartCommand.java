@@ -28,6 +28,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
 import org.apache.ignite.tensorflow.cluster.TensorFlowJobArchive;
 import picocli.CommandLine;
@@ -97,7 +98,7 @@ public class StartCommand extends AbstractCommand {
 
         if (file.isDirectory())
             return zipDirectory(file);
-        else if (jobArchivePath.endsWith(".zip"))
+        else if (jobArchivePath.endsWith(FilePageStoreManager.ZIP_SUFFIX))
             return zipArchive(file);
         else
             return zipFile(file);

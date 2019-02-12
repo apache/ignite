@@ -19,24 +19,25 @@ package org.apache.ignite.ml.composition.boosting;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ml.composition.boosting.loss.LogLoss;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 
 /**
- * Trainer for binary classifier using Gradient Boosting.
- * As preparing stage this algorithm learn labels in dataset and create mapping dataset labels to 0 and 1.
- * This algorithm uses gradient of Logarithmic Loss metric [LogLoss] by default in each step of learning.
+ * Trainer for binary classifier using Gradient Boosting. As preparing stage this algorithm learn labels in dataset and
+ * create mapping dataset labels to 0 and 1. This algorithm uses gradient of Logarithmic Loss metric [LogLoss] by
+ * default in each step of learning.
  */
 public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     /** External representation of first class. */
@@ -51,9 +52,7 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
      * @param cntOfIterations Count of learning iterations.
      */
     public GDBBinaryClassifierTrainer(double gradStepSize, Integer cntOfIterations) {
-        super(gradStepSize,
-            cntOfIterations,
-            LossGradientPerPredictionFunctions.LOG_LOSS);
+        super(gradStepSize, cntOfIterations, new LogLoss());
     }
 
     /**
@@ -61,35 +60,40 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
      *
      * @param gradStepSize Grad step size.
      * @param cntOfIterations Count of learning iterations.
-     * @param lossGradient Gradient of loss function. First argument is sample size, second argument is valid answer, third argument is current model prediction.
+     * @param loss Loss function.
      */
-    public GDBBinaryClassifierTrainer(double gradStepSize,
-        Integer cntOfIterations,
-        IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
-
-        super(gradStepSize, cntOfIterations, lossGradient);
+    public GDBBinaryClassifierTrainer(double gradStepSize, Integer cntOfIterations, Loss loss) {
+        super(gradStepSize, cntOfIterations, loss);
     }
 
     /** {@inheritDoc} */
-    @Override protected <V, K> void learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, Vector> featureExtractor,
+    @Override protected <V, K> boolean learnLabels(DatasetBuilder<K, V> builder,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lExtractor) {
 
-        List<Double> uniqLabels = new ArrayList<Double>(
-            builder.build(new EmptyContextBuilder<>(), new LabeledDatasetPartitionDataBuilderOnHeap<>(featureExtractor, lExtractor))
-                .compute((IgniteFunction<LabeledDataset<Double,LabeledVector>, Set<Double>>) x ->
+        Set<Double> uniqLabels = builder.build(
+            envBuilder,
+            new EmptyContextBuilder<>(),
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(featureExtractor, lExtractor))
+            .compute((IgniteFunction<LabeledVectorSet<Double, LabeledVector>, Set<Double>>)x ->
                     Arrays.stream(x.labels()).boxed().collect(Collectors.toSet()), (a, b) -> {
-                        if (a == null)
-                            return b;
-                        if (b == null)
-                            return a;
-                        a.addAll(b);
+                    if (a == null)
+                        return b;
+                    if (b == null)
                         return a;
-                    }
-                ));
+                    a.addAll(b);
+                    return a;
+                }
+            );
 
-        A.ensure(uniqLabels.size() == 2, "Binary classifier expects two types of labels in learning dataset");
-        externalFirstCls = uniqLabels.get(0);
-        externalSecondCls = uniqLabels.get(1);
+        if (uniqLabels != null && uniqLabels.size() == 2) {
+            ArrayList<Double> lblsArr = new ArrayList<>(uniqLabels);
+            externalFirstCls = lblsArr.get(0);
+            externalSecondCls = lblsArr.get(1);
+            return true;
+        }
+        else
+            return false;
     }
 
     /** {@inheritDoc} */
@@ -102,5 +106,10 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
         double sigma = 1.0 / (1.0 + Math.exp(-indent));
         double internalCls = sigma < 0.5 ? 0.0 : 1.0;
         return internalCls == 0.0 ? externalFirstCls : externalSecondCls;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GDBBinaryClassifierOnTreesTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (GDBBinaryClassifierOnTreesTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 }

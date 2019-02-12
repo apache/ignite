@@ -34,7 +34,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
-import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticInfo;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
@@ -333,7 +332,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
     /**
      * @param vals collection to seek through.
      */
-    @SuppressWarnings("unchecked")
     private Boolean findLastFlag(Collection<Serializable> vals) {
         Boolean flag = null;
 

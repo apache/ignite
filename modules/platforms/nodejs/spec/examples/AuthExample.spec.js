@@ -20,6 +20,11 @@
 const TestingHelper = require('../TestingHelper');
 
 describe('execute auth example >', () => {
+    beforeAll((done) => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = TestingHelper.TIMEOUT;
+        done();
+    });
+
     it('AuthTlsExample', (done) => {
         TestingHelper.executeExample('examples/AuthTlsExample.js').
             then(done).

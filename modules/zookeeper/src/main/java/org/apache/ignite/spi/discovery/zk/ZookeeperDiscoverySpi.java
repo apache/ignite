@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.curator.utils.PathUtils;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -337,6 +338,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
+    @Override public boolean allNodesSupport(IgniteFeatures feature) {
+        return impl.allNodesSupport(feature);
+    }
+
+    /** {@inheritDoc} */
     @Override public ClusterNode getLocalNode() {
         return impl != null ? impl.localNode() : null;
     }
@@ -502,6 +508,13 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /**
+     * @return Local node attributes
+     */
+    public Map<String, Object> getLocNodeAttrs() {
+        return locNodeAttrs;
+    }
+
+    /**
      * @return Local node instance.
      */
     private ZookeeperClusterNode initLocalNode() {
@@ -588,12 +601,17 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public UUID getCoordinator() {
+        @Override public long getCommErrorProcNum() {
+            return stats.commErrorCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable UUID getCoordinator() {
             return impl.getCoordinator();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String getCoordinatorNodeFormatted() {
+        @Override public @Nullable String getCoordinatorNodeFormatted() {
             return String.valueOf(impl.node(impl.getCoordinator()));
         }
 

@@ -40,7 +40,7 @@ export class PageConfigurationBasic {
     constructor() {
         this._selector = Selector('page-configure-basic');
         this.versionPicker = new VersionPicker();
-        this.totalOffheapSizeInput = Selector('pc-form-field-size#memory');
+        this.totalOffheapSizeInput = Selector('form-field-size#memory');
         this.mainFormAction = Selector('.pc-form-actions-panel .btn-ignite-group .btn-ignite:nth-of-type(1)');
         this.contextFormActionsButton = Selector('.pc-form-actions-panel .btn-ignite-group .btn-ignite:nth-of-type(2)');
         this.contextSaveButton = Selector('a[role=menuitem]').withText(new RegExp(`^${PageConfigurationBasic.SAVE_CHANGES_LABEL}$`));

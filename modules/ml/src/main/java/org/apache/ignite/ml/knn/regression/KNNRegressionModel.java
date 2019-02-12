@@ -22,8 +22,8 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.util.ModelTrace;
 
 /**
@@ -45,12 +45,12 @@ public class KNNRegressionModel extends KNNClassificationModel {
      * Builds the model via prepared dataset.
      * @param dataset Specially prepared object to run algorithm over it.
      */
-    public KNNRegressionModel(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset) {
+    public KNNRegressionModel(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
         super(dataset);
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector v) {
+    @Override public Double predict(Vector v) {
         List<LabeledVector> neighbors = findKNearestNeighbors(v);
 
         return predictYBasedOn(neighbors, v);
@@ -72,18 +72,20 @@ public class KNNRegressionModel extends KNNClassificationModel {
     private double weightedRegression(List<LabeledVector> neighbors, Vector v) {
         double sum = 0.0;
         double div = 0.0;
-        for (LabeledVector<Vector, Double> neighbor : neighbors) {
+        for (LabeledVector<Double> neighbor : neighbors) {
             double distance = distanceMeasure.compute(v, neighbor.features());
             sum += neighbor.label() * distance;
             div += distance;
         }
+        if (div == 0.0) // when all neighbours are equal to the given point
+            return simpleRegression(neighbors);
         return sum / div;
     }
 
     /** */
     private double simpleRegression(List<LabeledVector> neighbors) {
         double sum = 0.0;
-        for (LabeledVector<Vector, Double> neighbor : neighbors)
+        for (LabeledVector<Double> neighbor : neighbors)
             sum += neighbor.label();
         return sum / (double)k;
     }
@@ -95,7 +97,7 @@ public class KNNRegressionModel extends KNNClassificationModel {
 
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
-        return ModelTrace.builder("KNNClassificationModel", pretty)
+        return ModelTrace.builder("KNNRegressionModel", pretty)
             .addField("k", String.valueOf(k))
             .addField("measure", distanceMeasure.getClass().getSimpleName())
             .addField("strategy", stgy.name())

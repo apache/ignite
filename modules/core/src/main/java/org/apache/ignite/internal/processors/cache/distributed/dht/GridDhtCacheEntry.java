@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -362,7 +363,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Tuple with version and value of this entry, or {@code null} if entry is new.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext"})
     @Nullable public IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(
         AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {
@@ -544,7 +544,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return {@code True} if reader was removed as a result of this operation.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @SuppressWarnings("unchecked")
     public boolean removeReader(UUID nodeId, long msgId) throws GridCacheEntryRemovedException {
         lockEntry();
 
@@ -587,7 +586,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /**
      * Clears all readers (usually when partition becomes invalid and ready for eviction).
      */
-    @SuppressWarnings("unchecked")
     @Override public void clearReaders() {
         lockEntry();
 
@@ -648,7 +646,10 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                     ']');
             }
 
-            removeValue();
+            if (cctx.mvccEnabled())
+                cctx.offheap().mvccRemoveAll(this);
+            else
+                removeValue();
 
             // Give to GC.
             update(null, 0L, 0L, ver, true);
@@ -696,7 +697,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Collection of readers after check.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @SuppressWarnings({"unchecked", "ManualArrayToCollectionCopy"})
+    @SuppressWarnings({"ManualArrayToCollectionCopy"})
     protected Collection<ReaderId> checkReadersLocked() throws GridCacheEntryRemovedException {
         assert lockedByCurrentThread();
 

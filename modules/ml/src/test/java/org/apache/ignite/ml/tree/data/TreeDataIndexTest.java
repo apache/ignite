@@ -75,41 +75,41 @@ public class TreeDataIndexTest {
     };
 
     /** */
-    private TreeDataIndex index = new TreeDataIndex(features, labels);
+    private TreeDataIndex idx = new TreeDataIndex(features, labels);
 
     /** */
     @Test
     public void labelInSortedOrderTest() {
-        assertEquals(features.length, index.rowsCount());
-        assertEquals(features[0].length, index.columnsCount());
+        assertEquals(features.length, idx.rowsCount());
+        assertEquals(features[0].length, idx.columnsCount());
 
-        for (int k = 0; k < index.rowsCount(); k++) {
-            for (int featureId = 0; featureId < index.columnsCount(); featureId++)
-                assertEquals(labelsInSortedOrder[k][featureId], index.labelInSortedOrder(k, featureId), 0.01);
+        for (int k = 0; k < idx.rowsCount(); k++) {
+            for (int featureId = 0; featureId < idx.columnsCount(); featureId++)
+                assertEquals(labelsInSortedOrder[k][featureId], idx.labelInSortedOrder(k, featureId), 0.01);
         }
     }
 
     /** */
     @Test
     public void featuresInSortedOrderTest() {
-        assertEquals(features.length, index.rowsCount());
-        assertEquals(features[0].length, index.columnsCount());
+        assertEquals(features.length, idx.rowsCount());
+        assertEquals(features[0].length, idx.columnsCount());
 
-        for (int k = 0; k < index.rowsCount(); k++) {
-            for (int featureId = 0; featureId < index.columnsCount(); featureId++)
-                assertArrayEquals(featuresInSortedOrder[k][featureId], index.featuresInSortedOrder(k, featureId), 0.01);
+        for (int k = 0; k < idx.rowsCount(); k++) {
+            for (int featureId = 0; featureId < idx.columnsCount(); featureId++)
+                assertArrayEquals(featuresInSortedOrder[k][featureId], idx.featuresInSortedOrder(k, featureId), 0.01);
         }
     }
 
     /** */
     @Test
     public void featureInSortedOrderTest() {
-        assertEquals(features.length, index.rowsCount());
-        assertEquals(features[0].length, index.columnsCount());
+        assertEquals(features.length, idx.rowsCount());
+        assertEquals(features[0].length, idx.columnsCount());
 
-        for (int k = 0; k < index.rowsCount(); k++) {
-            for (int featureId = 0; featureId < index.columnsCount(); featureId++)
-                assertEquals((double)k + 1, index.featureInSortedOrder(k, featureId), 0.01);
+        for (int k = 0; k < idx.rowsCount(); k++) {
+            for (int featureId = 0; featureId < idx.columnsCount(); featureId++)
+                assertEquals((double)k + 1, idx.featureInSortedOrder(k, featureId), 0.01);
         }
     }
 
@@ -120,9 +120,9 @@ public class TreeDataIndexTest {
         TreeFilter filter2 = features -> features[1] > 2;
         TreeFilter filterAnd = filter1.and(features -> features[1] > 2);
 
-        TreeDataIndex filtered1 = index.filter(filter1);
+        TreeDataIndex filtered1 = idx.filter(filter1);
         TreeDataIndex filtered2 = filtered1.filter(filter2);
-        TreeDataIndex filtered3 = index.filter(filterAnd);
+        TreeDataIndex filtered3 = idx.filter(filterAnd);
 
         assertEquals(2, filtered1.rowsCount());
         assertEquals(4, filtered1.columnsCount());

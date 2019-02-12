@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -26,10 +27,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -49,69 +55,89 @@ import org.h2.table.TableFilter;
  */
 public class H2PkHashIndex extends GridH2IndexBase {
     /** */
-    private final GridH2Table tbl;
+    private final GridCacheContext cctx;
 
     /** */
-    private final GridCacheContext cctx;
+    private final int segments;
 
     /**
      * @param cctx Cache context.
      * @param tbl Table.
      * @param name Index name.
      * @param colsList Index columns.
+     * @param segments Segments.
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     public H2PkHashIndex(
         GridCacheContext<?, ?> cctx,
         GridH2Table tbl,
         String name,
-        List<IndexColumn> colsList
+        List<IndexColumn> colsList,
+        int segments
     ) {
+        super(tbl);
 
-        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
+        assert segments > 0: segments;
+
+        this.segments = segments;
+
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
 
         IndexColumn.mapColumns(cols, tbl);
 
         initBaseIndex(tbl, 0, name, cols, IndexType.createPrimaryKey(false, true));
 
-        this.tbl = tbl;
         this.cctx = cctx;
     }
 
     /** {@inheritDoc} */
-    @Override protected int segmentsCount() {
-        return 1;
+    @Override public int segmentsCount() {
+        return segments;
     }
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, final SearchRow lower, final SearchRow upper) {
-        IndexingQueryFilter f = threadLocalFilter();
-        IndexingQueryCacheFilter p = null;
+        IndexingQueryCacheFilter filter = null;
+        MvccSnapshot mvccSnapshot = null;
 
-        if (f != null) {
-            String cacheName = getTable().cacheName();
+        QueryContext qctx = queryContextRegistry().getThreadLocal();
 
-            p = f.forCache(cacheName);
+        int seg = 0;
+
+        if (qctx != null) {
+            IndexingQueryFilter f = qctx.filter();
+            filter = f != null ? f.forCache(getTable().cacheName()) : null;
+            mvccSnapshot = qctx.mvccSnapshot();
+            seg = qctx.segment();
         }
 
-        KeyCacheObject lowerObj = null;
-        KeyCacheObject upperObj = null;
+        assert !cctx.mvccEnabled() || mvccSnapshot != null;
 
-        if (lower != null)
-            lowerObj = cctx.toCacheKeyObject(lower.getValue(0).getObject());
-
-        if (upper != null)
-            upperObj = cctx.toCacheKeyObject(upper.getValue(0).getObject());
+        KeyCacheObject lowerObj = lower != null ? cctx.toCacheKeyObject(lower.getValue(0).getObject()) : null;
+        KeyCacheObject upperObj = upper != null ? cctx.toCacheKeyObject(upper.getValue(0).getObject()) : null;
 
         try {
-            List<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
+            CacheDataRowStore.setSkipVersion(true);
 
-            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores())
-                cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj));
+            Collection<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
 
-            return new H2Cursor(new CompositeGridCursor<>(cursors.iterator()), p);
+            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+                int part = store.partId();
+
+                if (segmentForPartition(part) != seg)
+                    continue;
+
+                if (filter == null || filter.applyPartition(part))
+                    cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj, null, mvccSnapshot));
+            }
+
+            return new H2PkHashIndexCursor(cursors.iterator());
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
+        }
+        finally {
+            CacheDataRowStore.setSkipVersion(false);
         }
     }
 
@@ -121,30 +147,19 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("StatementWithEmptyBody")
-    @Override public GridH2Row put(GridH2Row row) {
+    @Override public H2CacheRow put(H2CacheRow row) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.
-
         assert false;
 
         throw DbException.getUnsupportedException("put");
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(GridH2Row row) {
+    @Override public boolean putx(H2CacheRow row) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.
         assert false;
 
         throw DbException.getUnsupportedException("putx");
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridH2Row remove(SearchRow row) {
-        // Should not be called directly. Rows are removed from underlying cache data stores.
-
-        assert false;
-
-        throw DbException.getUnsupportedException("remove");
     }
 
     /** {@inheritDoc} */
@@ -190,30 +205,31 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /**
      * Cursor.
      */
-    private class H2Cursor implements Cursor {
+    private class H2PkHashIndexCursor implements Cursor {
         /** */
-        final GridCursor<? extends CacheDataRow> cursor;
+        private final GridH2RowDescriptor desc;
 
         /** */
-        final IndexingQueryCacheFilter filter;
+        private final Iterator<GridCursor<? extends CacheDataRow>> iter;
+
+        /** */
+        private GridCursor<? extends CacheDataRow> curr;
 
         /**
-         * @param cursor Cursor.
-         * @param filter Filter.
+         * @param iter Cursors iterator.
          */
-        private H2Cursor(GridCursor<? extends CacheDataRow> cursor, IndexingQueryCacheFilter filter) {
-            assert cursor != null;
+        private H2PkHashIndexCursor(Iterator<GridCursor<? extends CacheDataRow>> iter) {
+            assert iter != null;
 
-            this.cursor = cursor;
-            this.filter = filter;
+            this.iter = iter;
+
+            desc = rowDescriptor();
         }
 
         /** {@inheritDoc} */
         @Override public Row get() {
             try {
-                CacheDataRow dataRow = cursor.get();
-
-                return tbl.rowDescriptor().createRow(dataRow);
+                return desc.createRow(curr.get());
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
@@ -228,67 +244,37 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /** {@inheritDoc} */
         @Override public boolean next() {
             try {
-                while (cursor.next()) {
-                    if (filter == null)
-                        return true;
+                CacheDataRowStore.setSkipVersion(true);
 
-                    CacheDataRow dataRow = cursor.get();
+                GridQueryTypeDescriptor type = desc.type();
 
-                    if (filter.applyPartition(dataRow.partition()))
-                        return true;
+                for (;;) {
+                    if (curr != null) {
+                        while (curr.next()) {
+                            // Need to filter rows by value type because in a single cache
+                            // we can have multiple indexed types.
+                            if (type.matchType(curr.get().value()))
+                                return true;
+                        }
+                    }
+
+                    if (!iter.hasNext())
+                        return false;
+
+                    curr = iter.next();
                 }
-
-                return false;
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
+            }
+            finally {
+                CacheDataRowStore.setSkipVersion(false);
             }
         }
 
         /** {@inheritDoc} */
         @Override public boolean previous() {
             throw DbException.getUnsupportedException("previous");
-        }
-    }
-
-    /**
-     *
-     */
-    private static class CompositeGridCursor<T> implements GridCursor<T> {
-        /** */
-        private final Iterator<GridCursor<? extends T>> iter;
-
-        /** */
-        private GridCursor<? extends T> curr;
-
-        /**
-         *
-         */
-        public CompositeGridCursor(Iterator<GridCursor<? extends T>> iter) {
-            this.iter = iter;
-
-            if (iter.hasNext())
-                curr = iter.next();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() throws IgniteCheckedException {
-            if (curr.next())
-                return true;
-
-            while (iter.hasNext()) {
-                curr = iter.next();
-
-                if (curr.next())
-                    return true;
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public T get() throws IgniteCheckedException {
-            return curr.get();
         }
     }
 }

@@ -43,6 +43,7 @@ import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -113,6 +114,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreSession() throws Exception {
         assertEquals(DEFAULT_CACHE_NAME, jcache(0).getName());
 

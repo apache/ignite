@@ -271,7 +271,7 @@ $btn-content-padding-with-border: 9px 11px;
 .btn-ignite--secondary {
     background-color: white;
     color: #424242;
-    border: 1px solid #dedede;
+    border: 1px solid #c5c5c5;
     padding: $btn-content-padding-with-border;
 
     &:hover, &.hover,
@@ -318,6 +318,9 @@ $btn-content-padding-with-border: 9px 11px;
     .btn-ignite.btn-ignite--success {
         $line-color: $ignite-brand-success;
         border-right-color: change-color($line-color, $saturation: 63%, $lightness: 33%);
+    }
+    .btn-ignite.btn-ignite--secondary + .btn-ignite.btn-ignite--secondary {
+        border-left: 0;
     }
 
     &[disabled] .btn-ignite.btn-ignite--primary {

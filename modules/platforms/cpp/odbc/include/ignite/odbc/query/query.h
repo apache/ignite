@@ -47,6 +47,9 @@ namespace ignite
                     /** Batch query type. */
                     BATCH,
 
+                    /** Streaming query type. */
+                    STREAMING,
+
                     /** Foreign keys query type. */
                     FOREIGN_KEYS,
 
@@ -60,7 +63,10 @@ namespace ignite
                     TABLE_METADATA,
 
                     /** Type info query type. */
-                    TYPE_INFO
+                    TYPE_INFO,
+
+                    /** Internal query, that should be parsed by a driver itself. */
+                    INTERNAL
                 };
             };
 
@@ -133,7 +139,7 @@ namespace ignite
                 /**
                  * Move to the next result set.
                  *
-                 * @return Operatoin result.
+                 * @return Operation result.
                  */
                 virtual SqlResult::Type NextResultSet() = 0;
 

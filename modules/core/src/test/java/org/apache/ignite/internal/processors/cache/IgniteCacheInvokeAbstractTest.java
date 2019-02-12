@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.cache.processor.EntryProcessor;
@@ -32,15 +35,22 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -57,21 +67,24 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvoke() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
         invoke(cache, null);
 
-        if (atomicityMode() == TRANSACTIONAL) {
-            invoke(cache, PESSIMISTIC);
+        if (atomicityMode() != ATOMIC) {
+            invoke(cache, PESSIMISTIC); // Tx or Mvcc tx.
 
-            invoke(cache, OPTIMISTIC);
+            if (atomicityMode() == TRANSACTIONAL)
+                invoke(cache, OPTIMISTIC);
         }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInternalInvokeNullable() throws Exception {
         IgniteInternalCache<Integer, Integer> cache = grid(0).cachex(DEFAULT_CACHE_NAME);
 
@@ -222,15 +235,160 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAll() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
         invokeAll(cache, null);
 
-        if (atomicityMode() == TRANSACTIONAL) {
+        if (atomicityMode() != ATOMIC) {
             invokeAll(cache, PESSIMISTIC);
 
-            invokeAll(cache, OPTIMISTIC);
+            if (atomicityMode() == TRANSACTIONAL)
+                invokeAll(cache, OPTIMISTIC);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class MyKey {
+        /** */
+        String key;
+
+
+        /** */
+        @AffinityKeyMapped
+        String affkey = "affkey";
+
+        /** */
+        public MyKey(String key) {
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof MyKey))
+                return false;
+
+            MyKey key1 = (MyKey)o;
+
+            return Objects.equals(key, key1.key) &&
+                Objects.equals(affkey, key1.affkey);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(key, affkey);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "MyKey{" +
+                "key='" + key + '\'' +
+                '}';
+        }
+    }
+
+    /** */
+    static class MyClass1{}
+
+    /** */
+    static class MyClass2{}
+
+    /** */
+    static class MyClass3{}
+
+    /** */
+    Object[] results = new Object[] {
+        new MyClass1(),
+        new MyClass2(),
+        new MyClass3()
+    };
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInvokeAllAppliedOnceOnBinaryTypeRegistration() {
+        IgniteCache<MyKey, Integer> cache = jcache();
+
+        Affinity<Object> affinity = grid(0).affinity(cache.getName());
+
+        for (int i = 0; i < gridCount(); i++) {
+            if(!affinity.isPrimary(grid(i).localNode(), new MyKey(""))) {
+                cache = jcache(i);
+                break;
+            }
+        }
+
+        LinkedHashSet<MyKey> keys = new LinkedHashSet<>(Arrays.asList(
+            new MyKey("remove_0"), new MyKey("1"), new MyKey("2"),
+            new MyKey("remove_3"), new MyKey("remove_4"), new MyKey("register_type_0"),
+            new MyKey("6"), new MyKey("remove_7"), new MyKey("register_type_1"),
+            new MyKey("9"), new MyKey("remove_10"), new MyKey("11"), new MyKey("12"), new MyKey("register_type_2")
+        ));
+
+        for (MyKey key : keys)
+            cache.put(key, 0);
+
+        cache.invokeAll(keys,
+            new CacheEntryProcessor<MyKey, Integer, Object>() {
+
+                @IgniteInstanceResource
+                Ignite ignite;
+
+                @Override public Object process(MutableEntry<MyKey, Integer> entry,
+                    Object... objects) throws EntryProcessorException {
+
+                    String key = entry.getKey().key;
+
+                    if (key.startsWith("register_type")) {
+                        BinaryObjectBuilder bo = ignite.binary().builder(key);
+
+                        bo.build();
+                    }
+
+                    if (key.startsWith("remove")) {
+                        entry.remove();
+                    }
+                    else {
+                        Integer value = entry.getValue() == null ? 0 : entry.getValue();
+
+                        entry.setValue(++value);
+                    }
+
+                    if (key.startsWith("register_type"))
+                        return results[Integer.parseInt(key.substring(key.lastIndexOf("_") + 1))];
+
+                    return null;
+                }
+
+            });
+
+        Map<MyKey, Integer> all = cache.getAll(keys);
+
+        for (Map.Entry<MyKey, Integer> entry : all.entrySet()) {
+            MyKey key = entry.getKey();
+
+            if (key.key.startsWith("remove")) {
+                assertNull(entry.getValue());
+
+                if (cacheStoreFactory() != null)
+                    assertNull(storeMap.get(keys));
+            }
+            else {
+                int value = entry.getValue();
+
+                assertEquals("\"" + key + "' entry has wrong value, exp=1 actl=" + value, 1, value);
+
+                if (cacheStoreFactory() != null)
+                    assertEquals("\"" + key + "' entry has wrong value in cache store, exp=1 actl=" + value,
+                        1, (int)storeMap.get(key));
+            }
         }
     }
 
@@ -536,7 +694,6 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @param resMap Result map.
      * @param exp Expected results.
      */
-    @SuppressWarnings("unchecked")
     private void checkResult(Map resMap, Map<Object, Object> exp) {
         assertNotNull(resMap);
 

@@ -24,17 +24,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test grids starting with non compatible release types.
  */
 public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private String nodeVer;
 
@@ -57,7 +53,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        discoSpi.setIpFinder(IP_FINDER).setForceServerMode(true);
+        discoSpi.setIpFinder(sharedStaticIpFinder).setForceServerMode(true);
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -74,6 +70,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOsEditionDoesNotSupportRollingUpdates() throws Exception {
         nodeVer = "1.0.0";
 
@@ -101,6 +98,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOsEditionDoesNotSupportRollingUpdatesClientMode() throws Exception {
         nodeVer = "1.0.0";
 

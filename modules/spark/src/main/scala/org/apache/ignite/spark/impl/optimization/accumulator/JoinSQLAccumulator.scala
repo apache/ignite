@@ -44,7 +44,7 @@ private[apache] case class JoinSQLAccumulator(
     orderBy: Option[Seq[SortOrder]] = None
 ) extends BinaryNode with SelectAccumulator {
     /** @inheritdoc */
-    override def compileQuery(prettyPrint: Boolean = false): String = {
+    override def compileQuery(prettyPrint: Boolean = false, nestedQuery: Boolean = false): String = {
         val delim = if (prettyPrint) "\n" else " "
         val tab = if (prettyPrint) "  " else ""
 
@@ -68,8 +68,12 @@ private[apache] case class JoinSQLAccumulator(
             sql += s"${delim}ORDER BY " +
                 s"${fixQualifier(orderBy.get).map(exprToString(_, useQualifier = true)).mkString(s",$delim$tab")}"
 
-        if (limit.isDefined)
+        if (limit.isDefined) {
             sql += s" LIMIT ${exprToString(fixQualifier0(limit.get), useQualifier = true)}"
+
+            if (nestedQuery)
+                sql = s"SELECT * FROM ($sql)"
+        }
 
         sql
     }

@@ -40,6 +40,8 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
+    using ImplCompute = Core.Impl.Compute.Compute;
+
     /// <summary>
     /// <see cref="IEvents"/> tests.
     /// </summary>
@@ -509,7 +511,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestSerialization()
         {
             var grid = (Ignite) _grid1;
-            var comp = (Impl.Compute.Compute) grid.GetCluster().ForLocal().GetCompute();
+            var comp = (ImplCompute) grid.GetCluster().ForLocal().GetCompute();
             var locNode = grid.GetCluster().GetLocalNode();
 
             var expectedGuid = Guid.Parse("00000000-0000-0001-0000-000000000002");

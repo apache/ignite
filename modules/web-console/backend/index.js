@@ -23,17 +23,17 @@ const appPath = require('app-module-path');
 appPath.addPath(__dirname);
 appPath.addPath(path.join(__dirname, 'node_modules'));
 
-const { migrate, init } = require('./launch-tools');
+const { checkMongo, migrate, init } = require('./launch-tools');
 
 const injector = require('./injector');
 
 injector.log.info = () => {};
 injector.log.debug = () => {};
 
-Promise.all([injector('settings'), injector('mongo')])
-    .then(([{mongoUrl}]) => {
-        return migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations'));
-    })
+injector('mongo')
+    .then(() => checkMongo())
+    .then(() => injector('settings'))
+    .then(({mongoUrl}) => migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations')))
     .then(() => Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')]))
     .then(init)
     .catch((err) => {

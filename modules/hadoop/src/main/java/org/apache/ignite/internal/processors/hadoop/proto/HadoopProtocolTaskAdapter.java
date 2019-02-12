@@ -74,7 +74,6 @@ public abstract class HadoopProtocolTaskAdapter<R> implements ComputeTask<Hadoop
         private Ignite ignite;
 
         /** */
-        @SuppressWarnings("UnusedDeclaration")
         @JobContextResource
         private ComputeJobContext jobCtx;
 

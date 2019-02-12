@@ -26,10 +26,6 @@
 #include <string>
 #include <algorithm>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -53,7 +49,7 @@ struct TypesTestSuiteFixture : odbc::OdbcTestSuite
     TypesTestSuiteFixture() :
         cache1(0)
     {
-        node = StartTestNode("queries-test.xml", "NodeMain");
+        node = StartPlatformNode("queries-test.xml", "NodeMain");
 
         cache1 = node.GetCache<int64_t, TestType>("cache");
     }

@@ -17,11 +17,12 @@
 
 package org.apache.ignite.yardstick.upload;
 
+import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.apache.ignite.yardstick.upload.model.Values10;
+import org.apache.ignite.yardstick.upload.model.QueryFactory;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
@@ -32,11 +33,11 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
     /** Number of entries to be uploaded during warmup. */
     private long insertRowsCnt;
 
-    /** Name of the {@link #cache} */
-    private String cacheName;
+    /** Name of the cache for test table. */
+    protected static final String CACHE_NAME = "SQL_PUBLIC_" + QueryFactory.UPLOAD_TABLE_NAME;
 
-    /** Cache method {@link test(Map)} uploads data to */
-    private IgniteCache<Long, Values10> cache;
+    /** Facade for creating sql queries. */
+    protected QueryFactory queries;
 
     /**
      * Sets up benchmark: performs warmup on one cache and creates another for {@link #test(Map)} method.
@@ -47,68 +48,70 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        cacheName = this.getClass().getSimpleName();
+        queries = new QueryFactory(args.atomicMode());
 
         insertRowsCnt = args.upload.uploadRowsCnt();
+
+        dropAndCreateTable();
 
         // Number of entries to be uploaded during test().
         long warmupRowsCnt = args.upload.warmupRowsCnt();
 
-        // warmup
-        BenchmarkUtils.println(cfg, "Starting custom warmup.");
-        String warmupCacheName = cacheName + "Warmup";
+        // warmup.
+        BenchmarkUtils.println(cfg, "Starting custom warmup. Uploading " + warmupRowsCnt + " rows.");
 
-        try (IgniteCache<Long, Values10> warmupCache = ignite().createCache(warmupCacheName)) {
-            upload(warmupCacheName, warmupRowsCnt);
-        }
-        finally {
-            ignite().destroyCache(warmupCacheName);
-        }
+        upload(warmupRowsCnt);
 
         BenchmarkUtils.println(cfg, "Custom warmup finished.");
 
-        // cache for benchmarked action
-        cache = ignite().createCache(cacheName);
+        dropAndCreateTable();
+    }
+
+    /**
+     * Drops test table if exists and creates empty new one.
+     */
+    private void dropAndCreateTable() {
+        executeNativeSql(QueryFactory.DROP_TABLE_IF_EXISTS);
+
+        executeNativeSql(queries.createTable());
+
+        for (int idx = 1; idx <= args.upload.indexesCount(); idx++)
+            executeNativeSql(queries.createIndex(idx));
     }
 
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
         try {
-            if (cache == null)
-                throw new IllegalStateException("Cache is null, probably an error during setUp or warmup");
-
-            long size = cache.sizeLong();
+            long size = ignite().cache(CACHE_NAME).sizeLong();
+            //long size = (Long)executeNativeSql(QueryFactory.COUNT).get(0).get(0);
 
             if (size != insertRowsCnt) {
-                String msg = "Incorrect cache size: [actual=" + size + ", expected=" + insertRowsCnt +"].";
+                String msg = "Incorrect cache size: [actual=" + size + ", expected=" + insertRowsCnt + "].";
 
                 BenchmarkUtils.println(cfg, "TearDown: " + msg);
 
                 throw new RuntimeException(msg);
             }
-
-            cache.close();
-
-            ignite().destroyCache(cacheName);
-
-        }
-        catch (IgniteException ex) {
-            BenchmarkUtils.println(cfg, "Could not close or destroy cache: " + ex);
-
-            throw ex;
         }
         finally {
             super.tearDown();
         }
     }
 
+    /**
+     * Executes query using native sql.
+     */
+    private List<List<?>> executeNativeSql(String qry) {
+        return ((IgniteEx)ignite()).context().query().querySqlFields(new SqlFieldsQuery(qry), false).getAll();
+    }
+
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        upload(cacheName, insertRowsCnt);
+        upload(insertRowsCnt);
 
         return true;
     }
 
-    /** Uploads {@param insertsCnt} to cache with name {@param cacheName} using java api. */
-    protected abstract void upload(String cacheName, long insertsCnt);
+    /** Uploads {@param insertsCnt} to test cache/table using java api. */
+    protected abstract void upload(long insertsCnt);
 }

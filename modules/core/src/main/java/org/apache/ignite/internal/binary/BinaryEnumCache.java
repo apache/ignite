@@ -37,7 +37,6 @@ public class BinaryEnumCache {
      * @return Value.
      * @throws BinaryObjectException In case of invalid ordinal.
      */
-    @SuppressWarnings("unchecked")
     public static <T> T get(Class<?> cls, int ord) throws BinaryObjectException {
         assert cls != null;
 

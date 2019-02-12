@@ -55,21 +55,15 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
     /** Value position in Redis message. */
     private static final int VAL_POS = 2;
 
-    /** Grid context. */
-    private final GridKernalContext ctx;
-
     /**
      * Handler constructor.
      *
      * @param log Logger to use.
      * @param hnd Rest handler.
-     * @param ctx Context.
+     * @param ctx Kernal context.
      */
-    public GridRedisSetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd,
-        GridKernalContext ctx) {
-        super(log, hnd);
-
-        this.ctx = ctx;
+    public GridRedisSetCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+        super(log, hnd, ctx);
     }
 
     /** {@inheritDoc} */

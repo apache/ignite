@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.environment.logging;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -28,7 +28,14 @@ public interface MLLogger {
      * Logging verbose level.
      */
     enum VerboseLevel {
-        OFF, LOW, HIGH
+        /** Disabled. */
+        OFF,
+
+        /** Low. */
+        LOW,
+
+        /** High. */
+        HIGH
     }
 
     /**
@@ -44,7 +51,7 @@ public interface MLLogger {
      * @param verboseLevel Verbose level.
      * @param mdl Model.
      */
-    public <K, V> Model<K,V> log(VerboseLevel verboseLevel, Model<K, V> mdl);
+    public <K, V> IgniteModel<K,V> log(VerboseLevel verboseLevel, IgniteModel<K, V> mdl);
 
     /**
      * Log line with formatting.

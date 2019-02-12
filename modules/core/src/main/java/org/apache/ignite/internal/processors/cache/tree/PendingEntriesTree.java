@@ -111,7 +111,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
     }
 
     /** {@inheritDoc} */
-    @Override protected PendingRow getRow(BPlusIO<PendingRow> io, long pageAddr, int idx, Object flag)
+    @Override public PendingRow getRow(BPlusIO<PendingRow> io, long pageAddr, int idx, Object flag)
         throws IgniteCheckedException {
         PendingRow row = io.getLookupRow(this, pageAddr, idx);
 

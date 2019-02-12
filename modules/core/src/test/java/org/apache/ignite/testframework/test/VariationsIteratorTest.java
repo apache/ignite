@@ -20,16 +20,20 @@ package org.apache.ignite.testframework.test;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import junit.framework.TestCase;
 import org.apache.ignite.testframework.configvariations.VariationsIterator;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Test start iterator.
  */
-public class VariationsIteratorTest extends TestCase {
+public class VariationsIteratorTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test1() throws Exception {
         Object[][] arr = new Object[][] {
             {0, 1},
@@ -43,7 +47,7 @@ public class VariationsIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("PointlessArithmeticExpression")
+    @Test
     public void test2() throws Exception {
         Object[][] arr = new Object[][] {
             {0},
@@ -58,7 +62,7 @@ public class VariationsIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("PointlessArithmeticExpression")
+    @Test
     public void test3() throws Exception {
         Object[][] arr = new Object[][] {
             {0, 1, 2, 3, 4, 5},
@@ -73,7 +77,7 @@ public class VariationsIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("PointlessArithmeticExpression")
+    @Test
     public void test4() throws Exception {
         Object[][] arr = new Object[][]{
             {0,1,2},
@@ -91,6 +95,7 @@ public class VariationsIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimple() throws Exception {
         Object[][] arr = new Object[][] {
             {0},
@@ -102,6 +107,7 @@ public class VariationsIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimple2() throws Exception {
         Object[][] arr = new Object[][] {
             {0},

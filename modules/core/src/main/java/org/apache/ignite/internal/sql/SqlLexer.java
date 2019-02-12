@@ -210,36 +210,43 @@ public class SqlLexer implements SqlLexerToken {
     }
 
     /** {@inheritDoc} */
-    public String sql() {
+    @Override public String sql() {
         return sql;
     }
 
     /** {@inheritDoc} */
-    public String token() {
+    @Override public String token() {
         return token;
     }
 
     /** {@inheritDoc} */
-    public char tokenFirstChar() {
+    @Override public char tokenFirstChar() {
         assert tokenTyp != SqlLexerTokenType.EOF;
 
         return token.charAt(0);
     }
 
     /** {@inheritDoc} */
-    public int tokenPosition() {
+    @Override public int tokenPosition() {
         return tokenPos;
     }
 
     /** {@inheritDoc} */
-    public SqlLexerTokenType tokenType() {
+    @Override public SqlLexerTokenType tokenType() {
         return tokenTyp;
     }
 
     /**
      * @return {@code True} if end of data is reached.
      */
-    private boolean eod() {
+    public boolean eod() {
         return pos == inputChars.length - 1;
+    }
+
+    /**
+     * @return Current lexer position.
+     */
+    public int position() {
+        return pos;
     }
 }

@@ -33,18 +33,13 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test entry count. */
     public static final int ENTRY_CNT = 1_000_000;
 
@@ -73,11 +68,6 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setDiscoverySpi(
-            new TcpDiscoverySpi()
-                .setIpFinder(IP_FINDER)
-        );
-
         cfg.setMarshaller(null);
 
         return cfg;
@@ -102,6 +92,7 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageEvictionSql() throws Exception {
         IgniteEx ig = grid(0);
 

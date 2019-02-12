@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.lang.IgniteCallable;
+import org.junit.Test;
 
 /**
  * AtomicReference and AtomicStamped multi node tests.
@@ -40,6 +41,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Igni
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReference() throws Exception {
         // Get random name of reference.
         final String refName = UUID.randomUUID().toString();
@@ -96,6 +98,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Igni
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicStamped() throws Exception {
         // Get random name of stamped.
         final String stampedName = UUID.randomUUID().toString();

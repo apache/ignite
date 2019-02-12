@@ -35,7 +35,7 @@ public class CrossValidationResult {
     /**
      * Scoring board.
      * The key is map of hyper parameters and its values,
-     * the value is score result associated with set of hyper paramters presented in the key.
+     * the value is score result associated with set of hyper parameters presented in the key.
      */
     private Map<Map<String, Double>, double[]> scoringBoard = new HashMap<>();
 
@@ -107,7 +107,7 @@ public class CrossValidationResult {
      * Gets the Scoring Board.
      *
      * The key is map of hyper parameters and its values,
-     * the value is score result associated with set of hyper paramters presented in the key.
+     * the value is score result associated with set of hyper parameters presented in the key.
      *
      * @return The Scoring Board.
      */

@@ -28,14 +28,16 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /** Properties that are not needed on .NET side. */
         private static readonly string[] UnneededProperties =
         {
-            "FileIOFactory"
+            "FileIOFactory",
+            "isWalHistorySizeParameterUsed"
         };
 
         /** Properties that are missing on .NET side. */
         private static readonly string[] MissingProperties =
         {
             // IGNITE-7305
-            "WalBufferSize"
+            "WalBufferSize",
+            "WalCompactionLevel" // IGNITE-9599
         };
 
         /// <summary>

@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -68,6 +69,7 @@ public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommon
      * Test verifies that binary metadata from regular java classes is saved and restored correctly
      * on cluster restart.
      */
+    @Test
     public void testStaticMetadataIsRestoredOnRestart() throws Exception {
         startGrids(1);
 

@@ -29,11 +29,7 @@ namespace ignite
         dbc(NULL),
         stmt(NULL)
     {
-#ifdef IGNITE_TESTS_32
-        grid = StartNode("queries-test-32.xml");
-#else
-        grid = StartNode("queries-test.xml");
-#endif
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
@@ -133,21 +129,21 @@ namespace ignite
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request, const int64_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLBIGINT>(const char* request, const SQLBIGINT& expected)
     {
-        CheckSingleResultNum0<int64_t>(request, expected, SQL_C_SBIGINT);
+        CheckSingleResultNum0<SQLBIGINT>(request, expected, SQL_C_SBIGINT);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request, const int32_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLINTEGER>(const char* request, const SQLINTEGER& expected)
     {
-        CheckSingleResultNum0<int32_t>(request, expected, SQL_C_SLONG);
+        CheckSingleResultNum0<SQLINTEGER>(request, expected, SQL_C_SLONG);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request, const int16_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLSMALLINT>(const char* request, const SQLSMALLINT& expected)
     {
-        CheckSingleResultNum0<int16_t>(request, expected, SQL_C_SSHORT);
+        CheckSingleResultNum0<SQLSMALLINT>(request, expected, SQL_C_SSHORT);
     }
 
     template<>
@@ -213,21 +209,21 @@ namespace ignite
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLBIGINT>(const char* request)
     {
-        CheckSingleResultNum0<int64_t>(request, SQL_C_SBIGINT);
+        CheckSingleResultNum0<SQLBIGINT>(request, SQL_C_SBIGINT);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLINTEGER>(const char* request)
     {
-        CheckSingleResultNum0<int32_t>(request, SQL_C_SLONG);
+        CheckSingleResultNum0<SQLINTEGER>(request, SQL_C_SLONG);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLSMALLINT>(const char* request)
     {
-        CheckSingleResultNum0<int16_t>(request, SQL_C_SSHORT);
+        CheckSingleResultNum0<SQLSMALLINT>(request, SQL_C_SSHORT);
     }
 
     template<>

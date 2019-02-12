@@ -416,11 +416,6 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public void LocalPromote(IEnumerable<int> keys)
-            {
-                throw new NotImplementedException();
-            }
-
             public IQueryCursor<ICacheEntry<int, int>> Query(QueryBase qry)
             {
                 throw new NotImplementedException();
@@ -527,6 +522,21 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public void ResetQueryMetrics()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void PreloadPartition(int partition)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task PreloadPartitionAsync(int partition)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool LocalPreloadPartition(int partition)
             {
                 throw new NotImplementedException();
             }

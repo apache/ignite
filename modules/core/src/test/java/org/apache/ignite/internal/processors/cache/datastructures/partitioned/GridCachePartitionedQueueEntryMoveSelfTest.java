@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContex
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCollectionAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -82,6 +83,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueue() throws Exception {
         final String queueName = "qq";
 

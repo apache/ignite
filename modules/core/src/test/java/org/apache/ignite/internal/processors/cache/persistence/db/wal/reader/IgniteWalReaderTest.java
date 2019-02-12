@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -31,15 +32,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
@@ -51,40 +55,44 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static java.util.Arrays.fill;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
+import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -94,9 +102,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * Test suite for WAL segments reader and event generator.
  */
 public class IgniteWalReaderTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Wal segments count */
     private static final int WAL_SEGMENTS = 10;
 
@@ -118,17 +123,15 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Custom wal mode. */
     private WALMode customWalMode;
 
-    /** Clear properties in afterTest() method. */
-    private boolean clearProperties;
-
     /** Set WAL and Archive path to same value. */
-    private boolean setWalAndArchiveToSameValue;
+    private boolean setWalAndArchiveToSameVal;
+
+    /** Whether to enable WAL archive compaction. */
+    private boolean enableWalCompaction;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
@@ -139,17 +142,17 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setIncludeEventTypes(EventType.EVT_WAL_SEGMENT_ARCHIVED);
+        cfg.setIncludeEventTypes(EVT_WAL_SEGMENT_ARCHIVED, EVT_WAL_SEGMENT_COMPACTED);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setMaxSize(1024L * 1024 * 1024)
                     .setPersistenceEnabled(true))
-            .setWalHistorySize(1)
             .setWalSegmentSize(1024 * 1024)
             .setWalSegments(WAL_SEGMENTS)
-            .setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND);
+            .setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND)
+            .setWalCompactionEnabled(enableWalCompaction);
 
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             dsCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
@@ -158,12 +161,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         File wal = new File(db, "wal");
 
-        if(setWalAndArchiveToSameValue) {
+        if(setWalAndArchiveToSameVal) {
             String walAbsPath = wal.getAbsolutePath();
 
             dsCfg.setWalPath(walAbsPath);
             dsCfg.setWalArchivePath(walAbsPath);
-        } else {
+        }
+        else {
             dsCfg.setWalPath(wal.getAbsolutePath());
             dsCfg.setWalArchivePath(new File(wal, "archive").getAbsolutePath());
         }
@@ -175,8 +179,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 
@@ -186,15 +188,15 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        if (clearProperties)
-            System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+        System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
     }
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testFillWalAndReadRecords() throws Exception {
-        setWalAndArchiveToSameValue = false;
+        setWalAndArchiveToSameVal = false;
 
         Ignite ignite0 = startGrid();
 
@@ -258,7 +260,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 WALRecord walRecord = tup.get2();
 
-                if (walRecord.type() == DATA_RECORD) {
+                if (walRecord.type() == DATA_RECORD || walRecord.type() == MVCC_DATA_RECORD) {
                     DataRecord record = (DataRecord)walRecord;
 
                     for (DataEntry entry : record.writeEntries()) {
@@ -284,7 +286,32 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testArchiveCompletedEventFired() throws Exception {
+        assertTrue(checkWhetherWALRelatedEventFired(EVT_WAL_SEGMENT_ARCHIVED));
+    }
+
+    /**
+     * Tests archive completed event is fired.
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testArchiveCompactedEventFired() throws Exception {
+        boolean oldEnableWalCompaction = enableWalCompaction;
+
+        try {
+            enableWalCompaction = true;
+
+            assertTrue(checkWhetherWALRelatedEventFired(EVT_WAL_SEGMENT_COMPACTED));
+        }
+        finally {
+            enableWalCompaction = oldEnableWalCompaction;
+        }
+    }
+
+    /** */
+    private boolean checkWhetherWALRelatedEventFired(int evtType) throws Exception {
         AtomicBoolean evtRecorded = new AtomicBoolean();
 
         Ignite ignite = startGrid();
@@ -293,7 +320,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final IgniteEvents evts = ignite.events();
 
-        if (!evts.isEnabled(EVT_WAL_SEGMENT_ARCHIVED))
+        if (!evts.isEnabled(evtType))
             fail("nothing to test");
 
         evts.localListen(e -> {
@@ -301,19 +328,19 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
             long idx = archComplEvt.getAbsWalSegmentIdx();
 
-            log.info("Finished archive for segment [" +
+            log.info("Finished for segment [" +
                 idx + ", " + archComplEvt.getArchiveFile() + "]: [" + e + "]");
 
             evtRecorded.set(true);
 
             return true;
-        }, EVT_WAL_SEGMENT_ARCHIVED);
+        }, evtType);
 
-        putDummyRecords(ignite, 500);
+        putDummyRecords(ignite, 5_000);
 
         stopGrid();
 
-        assertTrue(evtRecorded.get());
+        return evtRecorded.get();
     }
 
     /**
@@ -321,6 +348,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failure occurs.
      */
+    @Test
     public void testArchiveIncompleteSegmentAfterInactivity() throws Exception {
         AtomicBoolean waitingForEvt = new AtomicBoolean();
 
@@ -340,7 +368,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             long idx = archComplEvt.getAbsWalSegmentIdx();
 
             log.info("Finished archive for segment [" + idx + ", " +
-                archComplEvt.getArchiveFile() + "]: [" + e + "]");
+                archComplEvt.getArchiveFile() + "]: [" + e + ']');
 
             if (waitingForEvt.get())
                 archiveSegmentForInactivity.countDown();
@@ -367,6 +395,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testFillWalForExactSegmentsCount() throws Exception {
         customWalMode = WALMode.FSYNC;
 
@@ -415,13 +444,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        IteratorParametersBuilder iteratorParametersBuilder = createIteratorParametersBuilder(workDir, subfolderName);
+        IteratorParametersBuilder iterParametersBuilder = createIteratorParametersBuilder(workDir, subfolderName);
 
-        iteratorParametersBuilder.filesOrDirs(workDir);
+        iterParametersBuilder.filesOrDirs(workDir);
 
         scanIterateAndCount(
             factory,
-            iteratorParametersBuilder,
+            iterParametersBuilder,
             totalEntries,
             0,
             null,
@@ -451,6 +480,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testTxFillWalAndExtractDataRecords() throws Exception {
         Ignite ignite0 = startGrid();
 
@@ -472,7 +502,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         String workDir = U.defaultWorkDirectory();
 
-        IteratorParametersBuilder params = createIteratorParametersBuilder(workDir,subfolderName);
+        IteratorParametersBuilder params = createIteratorParametersBuilder(workDir, subfolderName);
 
         params.filesOrDirs(workDir);
 
@@ -552,6 +582,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testFillWalWithDifferentTypes() throws Exception {
         Ignite ig = startGrid();
 
@@ -738,7 +769,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             ctrlMapForBinaryObjects, ctrlMapForBinaryObjects.isEmpty());
 
         assertTrue(" Control Map for strings in entries is not empty after" +
-                " reading records: " + ctrlStringsForBinaryObjSearch, ctrlStringsForBinaryObjSearch.isEmpty());
+            " reading records: " + ctrlStringsForBinaryObjSearch, ctrlStringsForBinaryObjSearch.isEmpty());
     }
 
     /**
@@ -746,6 +777,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testReadEmptyWal() throws Exception {
         customWalMode = WALMode.FSYNC;
 
@@ -763,18 +795,72 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        IteratorParametersBuilder iteratorParametersBuilder =
+        IteratorParametersBuilder iterParametersBuilder =
             createIteratorParametersBuilder(workDir, subfolderName)
-            .filesOrDirs(workDir);
+                .filesOrDirs(workDir);
 
         scanIterateAndCount(
             factory,
-            iteratorParametersBuilder,
+            iterParametersBuilder,
             0,
             0,
             null,
             null
         );
+    }
+
+    /**
+     * Tests WAL iterator which uses shared cache context of currently started Ignite node.
+     */
+    @Test
+    public void testIteratorWithCurrentKernelContext() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        int cntEntries = 100;
+
+        putDummyRecords(ignite, cntEntries);
+
+        String workDir = U.defaultWorkDirectory();
+
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+
+        IteratorParametersBuilder iterParametersBuilder =
+            createIteratorParametersBuilder(workDir, genDbSubfolderName(ignite, 0))
+                .filesOrDirs(workDir)
+                .binaryMetadataFileStoreDir(null)
+                .marshallerMappingFileStoreDir(null)
+                .sharedContext(ignite.context().cache().context());
+
+        AtomicInteger cnt = new AtomicInteger();
+
+        IgniteBiInClosure<Object, Object> objConsumer = (key, val) -> {
+            if (val instanceof IndexedObject) {
+                assertEquals(key, ((IndexedObject)val).iVal);
+                assertEquals(key, cnt.getAndIncrement());
+            }
+        };
+
+        iterateAndCountDataRecord(factory.iterator(iterParametersBuilder.copy()), objConsumer, null);
+
+        assertEquals(cntEntries, cnt.get());
+
+        // Test without converting non primary types.
+        iterParametersBuilder.keepBinary(true);
+
+        cnt.set(0);
+
+        IgniteBiInClosure<Object, Object> binObjConsumer = (key, val) -> {
+            if (val instanceof BinaryObject) {
+                assertEquals(key, ((BinaryObject)val).field("iVal"));
+                assertEquals(key, cnt.getAndIncrement());
+            }
+        };
+
+        iterateAndCountDataRecord(factory.iterator(iterParametersBuilder.copy()), binObjConsumer, null);
+
+        assertEquals(cntEntries, cnt.get());
     }
 
     /**
@@ -813,6 +899,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testRemoveOperationPresentedForDataEntry() throws Exception {
         runRemoveOperationTest(CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -822,16 +909,18 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testRemoveOperationPresentedForDataEntryForAtomic() throws Exception {
+        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
+
         runRemoveOperationTest(CacheAtomicityMode.ATOMIC);
     }
-
 
     /**
      * Test if DELETE operation can be found after mixed cache operations including remove().
      *
-     * @throws Exception if failed.
      * @param mode Cache Atomicity Mode.
+     * @throws Exception if failed.
      */
     private void runRemoveOperationTest(CacheAtomicityMode mode) throws Exception {
         Ignite ignite = startGrid();
@@ -910,6 +999,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testPutAllTxIntoTwoNodes() throws Exception {
         Ignite ignite = startGrid("node0");
         Ignite ignite1 = startGrid(1);
@@ -1001,7 +1091,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             createsFound != null && createsFound > 0);
 
         assertTrue("Create operations count should be at least " + cntEntries + " in log: " + operationsFound,
-            createsFound != null && createsFound >= cntEntries);
+            createsFound >= cntEntries);
     }
 
     /**
@@ -1009,9 +1099,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testTxRecordsReadWoBinaryMeta() throws Exception {
-        clearProperties = true;
-
         System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 
         Ignite ignite = startGrid("node0");
@@ -1045,6 +1134,163 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             null,
             null
         );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCheckBoundsIterator() throws Exception {
+        Ignite ignite = startGrid("node0");
+
+        ignite.cluster().active(true);
+
+        try (IgniteDataStreamer<Integer, IndexedObject> st = ignite.dataStreamer(CACHE_NAME)) {
+            st.allowOverwrite(true);
+
+            for (int i = 0; i < 10_000; i++)
+                st.addData(i, new IndexedObject(i));
+        }
+
+        stopAllGrids();
+
+        List<FileWALPointer> wal = new ArrayList<>();
+
+        String workDir = U.defaultWorkDirectory();
+
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory();
+
+        try (WALIterator it = factory.iterator(workDir)) {
+            while (it.hasNext()) {
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
+
+                wal.add((FileWALPointer)tup.get1());
+            }
+        }
+
+        Random rnd = new Random();
+
+        int from0 = rnd.nextInt(wal.size() - 2) + 1;
+        int to0 = wal.size() - 1;
+
+        // +1 for skip first record.
+        FileWALPointer exp0First = wal.get(from0);
+        FileWALPointer exp0Last = wal.get(to0);
+
+        T2<FileWALPointer, WALRecord> actl0First = null;
+        T2<FileWALPointer, WALRecord> actl0Last = null;
+
+        int records0 = 0;
+
+        try (WALIterator it = factory.iterator(exp0First, workDir)) {
+            while (it.hasNext()) {
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
+
+                if (actl0First == null)
+                    actl0First = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+
+                actl0Last = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+
+                records0++;
+            }
+        }
+
+        log.info("Check REPLAY FROM:" + exp0First + "\n" +
+            "expFirst=" + exp0First + " actlFirst=" + actl0First + ", " +
+            "expLast=" + exp0Last + " actlLast=" + actl0Last);
+
+        // +1 because bound include.
+        Assert.assertEquals(to0 - from0 + 1, records0);
+
+        Assert.assertNotNull(actl0First);
+        Assert.assertNotNull(actl0Last);
+
+        Assert.assertEquals(exp0First, actl0First.get1());
+        Assert.assertEquals(exp0Last, actl0Last.get1());
+
+        int from1 = 0;
+        int to1 = rnd.nextInt(wal.size() - 3) + 1;
+
+        // -3 for skip last record.
+        FileWALPointer exp1First = wal.get(from1);
+        FileWALPointer exp1Last = wal.get(to1);
+
+        T2<FileWALPointer, WALRecord> actl1First = null;
+        T2<FileWALPointer, WALRecord> actl1Last = null;
+
+        int records1 = 0;
+
+        try (WALIterator it = factory.iterator(
+            new IteratorParametersBuilder()
+                .filesOrDirs(workDir)
+                .to(exp1Last)
+        )) {
+            while (it.hasNext()) {
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
+
+                if (actl1First == null)
+                    actl1First = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+
+                actl1Last = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+
+                records1++;
+            }
+        }
+
+        log.info("Check REPLAY TO:" + exp1Last + "\n" +
+            "expFirst=" + exp1First + " actlFirst=" + actl1First + ", " +
+            "expLast=" + exp1Last + " actlLast=" + actl1Last);
+
+        // +1 because bound include.
+        Assert.assertEquals(to1 - from1 + 1, records1);
+
+        Assert.assertNotNull(actl1First);
+        Assert.assertNotNull(actl1Last);
+
+        Assert.assertEquals(exp1First, actl1First.get1());
+        Assert.assertEquals(exp1Last, actl1Last.get1());
+
+        int from2 = rnd.nextInt(wal.size() - 2);
+        int to2 = rnd.nextInt((wal.size() - 1) - from2) + from2;
+
+        FileWALPointer exp2First = wal.get(from2);
+        FileWALPointer exp2Last = wal.get(to2);
+
+        T2<FileWALPointer, WALRecord> actl2First = null;
+        T2<FileWALPointer, WALRecord> actl2Last = null;
+
+        int records2 = 0;
+
+        try (WALIterator it = factory.iterator(
+            new IteratorParametersBuilder()
+                .filesOrDirs(workDir)
+                .from(exp2First)
+                .to(exp2Last)
+        )) {
+            while (it.hasNext()) {
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
+
+                if (actl2First == null)
+                    actl2First = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+
+                actl2Last = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+
+                records2++;
+            }
+        }
+
+        log.info("Check REPLAY BETWEEN:" + exp2First + " " + exp2Last+ "\n" +
+            "expFirst=" + exp2First + " actlFirst=" + actl2First + ", " +
+            "expLast=" + exp2Last + " actlLast=" + actl2Last);
+
+        // +1 because bound include.
+        Assert.assertEquals(to2 - from2 + 1, records2);
+
+        Assert.assertNotNull(actl2First);
+        Assert.assertNotNull(actl2Last);
+
+        Assert.assertEquals(exp2First, actl2First.get1());
+        Assert.assertEquals(exp2Last, actl2Last.get1());
     }
 
     /**
@@ -1100,62 +1346,78 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 WALRecord walRecord = tup.get2();
 
-                if (walRecord.type() == DATA_RECORD && walRecord instanceof DataRecord) {
-                    DataRecord dataRecord = (DataRecord)walRecord;
+                WALRecord.RecordType type = walRecord.type();
 
-                    if (dataRecordHnd != null)
-                        dataRecordHnd.apply(dataRecord);
+                //noinspection EnumSwitchStatementWhichMissesCases
+                switch (type) {
+                    case DATA_RECORD:
+                        // Fallthrough.
+                    case MVCC_DATA_RECORD: {
+                        assert walRecord instanceof DataRecord;
 
-                    List<DataEntry> entries = dataRecord.writeEntries();
+                        DataRecord dataRecord = (DataRecord)walRecord;
 
-                    for (DataEntry entry : entries) {
-                        GridCacheVersion globalTxId = entry.nearXidVersion();
+                        if (dataRecordHnd != null)
+                            dataRecordHnd.apply(dataRecord);
 
-                        Object unwrappedKeyObj;
-                        Object unwrappedValObj;
+                        List<DataEntry> entries = dataRecord.writeEntries();
 
-                        if (entry instanceof UnwrapDataEntry) {
-                            UnwrapDataEntry unwrapDataEntry = (UnwrapDataEntry)entry;
-                            unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
-                            unwrappedValObj = unwrapDataEntry.unwrappedValue();
+                        for (DataEntry entry : entries) {
+                            GridCacheVersion globalTxId = entry.nearXidVersion();
+
+                            Object unwrappedKeyObj;
+                            Object unwrappedValObj;
+
+                            if (entry instanceof UnwrappedDataEntry) {
+                                UnwrappedDataEntry unwrapDataEntry = (UnwrappedDataEntry)entry;
+                                unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
+                                unwrappedValObj = unwrapDataEntry.unwrappedValue();
+                            }
+                            else if (entry instanceof MarshalledDataEntry) {
+                                unwrappedKeyObj = null;
+                                unwrappedValObj = null;
+                                //can't check value
+                            }
+                            else {
+                                final CacheObject val = entry.value();
+
+                                unwrappedValObj = val instanceof BinaryObject ? val : val.value(null, false);
+
+                                final CacheObject key = entry.key();
+
+                                unwrappedKeyObj = key instanceof BinaryObject ? key : key.value(null, false);
+                            }
+
+                            if (DUMP_RECORDS)
+                                log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
+                                    "under transaction: " + globalTxId +
+                                    //; entry " + entry +
+                                    "; Key: " + unwrappedKeyObj +
+                                    "; Value: " + unwrappedValObj);
+
+                            if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
+                                cacheObjHnd.apply(unwrappedKeyObj, unwrappedValObj);
+
+                            Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
+
+                            entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
                         }
-                        else if (entry instanceof LazyDataEntry) {
-                            unwrappedKeyObj = null;
-                            unwrappedValObj = null;
-                            //can't check value
-                        }
-                        else {
-                            final CacheObject val = entry.value();
+                    }
 
-                            unwrappedValObj = val instanceof BinaryObject ? val : val.value(null, false);
+                    break;
 
-                            final CacheObject key = entry.key();
+                    case TX_RECORD:
+                        // Fallthrough
+                    case MVCC_TX_RECORD: {
+                        assert walRecord instanceof TxRecord;
 
-                            unwrappedKeyObj = key instanceof BinaryObject ? key : key.value(null, false);
-                        }
+                        TxRecord txRecord = (TxRecord)walRecord;
+                        GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
                         if (DUMP_RECORDS)
-                            log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
-                                "under transaction: " + globalTxId +
-                                //; entry " + entry +
-                                "; Key: " + unwrappedKeyObj +
-                                "; Value: " + unwrappedValObj);
-
-                        if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
-                            cacheObjHnd.apply(unwrappedKeyObj, unwrappedValObj);
-
-                        Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
-
-                        entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
+                            log.info("//Tx Record, state: " + txRecord.state() +
+                                "; nearTxVersion" + globalTxId);
                     }
-                }
-                else if (walRecord.type() == TX_RECORD && walRecord instanceof TxRecord) {
-                    TxRecord txRecord = (TxRecord)walRecord;
-                    GridCacheVersion globalTxId = txRecord.nearXidVersion();
-
-                    if (DUMP_RECORDS)
-                        log.info("//Tx Record, state: " + txRecord.state() +
-                            "; nearTxVersion" + globalTxId);
                 }
             }
         }
@@ -1281,7 +1543,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
          *
          * @param iVal I value.
          */
-        public TestExternalizable(int iVal) {
+        TestExternalizable(int iVal) {
             this.iVal = iVal;
         }
 

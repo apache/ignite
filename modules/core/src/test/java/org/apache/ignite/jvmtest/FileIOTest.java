@@ -21,14 +21,14 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.UUID;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  * Java file IO test.
  */
-public class FileIOTest extends TestCase {
+public class FileIOTest {
     /** File path. */
     private static final String FILE_PATH = "/test-java-file.tmp";
 
@@ -38,6 +38,7 @@ public class FileIOTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadLineFromBinaryFile() throws Exception {
         File file = new File(FILE_PATH);
 
@@ -79,6 +80,7 @@ public class FileIOTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleFilesCreation() throws Exception {
         File parent = new File(TMP_DIR, "testMultipleFilesCreation");
 
@@ -127,6 +129,7 @@ public class FileIOTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testGetAbsolutePath() {
         for (int i = 0; i < 1000000; i++) {
             new File("/" + UUID.randomUUID().toString()).getAbsolutePath();

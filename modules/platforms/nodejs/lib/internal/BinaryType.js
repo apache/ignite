@@ -18,10 +18,11 @@
 'use strict';
 
 const Util = require('util');
+const Long = require('long');
 const ComplexObjectType = require('../ObjectType').ComplexObjectType;
 const BinaryTypeStorage = require('./BinaryTypeStorage');
 const BinaryUtils = require('./BinaryUtils');
-const BinaryWriter = require('./BinaryWriter');
+const BinaryCommunicator = require('./BinaryCommunicator');
 const Errors = require('../Errors');
 
 class BinaryType {
@@ -104,6 +105,15 @@ class BinaryType {
         return result;
     }
 
+    isValid() {
+        for (let field of this._fields.values()) {
+            if (!field.isValid()) {
+                return false;
+            }
+        }
+        return this._name !== null;
+    }
+
     static _calculateId(name) {
         return BinaryUtils.hashCodeLowerCase(name);
     }
@@ -112,9 +122,9 @@ class BinaryType {
         // type id
         buffer.writeInteger(this._id);
         // type name
-        await BinaryWriter.writeString(buffer, this._name);
+        BinaryCommunicator.writeString(buffer, this._name);
         // affinity key field name
-        await BinaryWriter.writeString(buffer, null);
+        BinaryCommunicator.writeString(buffer, null);
         // fields count
         buffer.writeInteger(this._fields.size);
         // fields
@@ -136,7 +146,7 @@ class BinaryType {
             buffer.writeInteger(length);
             if (length > 0) {
                 for (let [key, value] of this._enumValues) {
-                    await BinaryWriter.writeString(buffer, key);
+                    BinaryCommunicator.writeString(buffer, key);
                     buffer.writeInteger(value);
                 }
             }
@@ -147,10 +157,9 @@ class BinaryType {
         // type id
         this._id = buffer.readInteger();
         // type name
-        const BinaryReader = require('./BinaryReader');
-        this._name = await BinaryReader.readObject(buffer);
+        this._name = BinaryCommunicator.readString(buffer);
         // affinity key field name
-        await BinaryReader.readObject(buffer);
+        BinaryCommunicator.readString(buffer);
         // fields count
         const fieldsCount = buffer.readInteger();
         // fields
@@ -173,13 +182,12 @@ class BinaryType {
     }
 
     async _readEnum(buffer) {
-        const BinaryReader = require('./BinaryReader');
         this._isEnum = buffer.readBoolean();
         if (this._isEnum) {
             const valuesCount = buffer.readInteger();
             this._enumValues = new Array(valuesCount);
             for (let i = 0; i < valuesCount; i++) {
-                this._enumValues[i] = [await BinaryReader.readObject(buffer), buffer.readInteger()];
+                this._enumValues[i] = [BinaryCommunicator.readString(buffer), buffer.readInteger()];
             }
         }
     }
@@ -247,19 +255,16 @@ class BinarySchema {
     }
 
     static _updateSchemaId(schemaId, fieldId) {
-        schemaId = schemaId ^ (fieldId & 0xFF);
-        schemaId = schemaId * FNV1_PRIME;
-        schemaId |= 0;
-        schemaId = schemaId ^ ((fieldId >> 8) & 0xFF);
-        schemaId = schemaId * FNV1_PRIME;
-        schemaId |= 0;
-        schemaId = schemaId ^ ((fieldId >> 16) & 0xFF);
-        schemaId = schemaId * FNV1_PRIME;
-        schemaId |= 0;
-        schemaId = schemaId ^ ((fieldId >> 24) & 0xFF);
-        schemaId = schemaId * FNV1_PRIME;
-        schemaId |= 0;
+        schemaId = BinarySchema._updateSchemaIdPart(schemaId, fieldId & 0xFF);
+        schemaId = BinarySchema._updateSchemaIdPart(schemaId, (fieldId >> 8) & 0xFF);
+        schemaId = BinarySchema._updateSchemaIdPart(schemaId, (fieldId >> 16) & 0xFF);
+        schemaId = BinarySchema._updateSchemaIdPart(schemaId, (fieldId >> 24) & 0xFF);
+        return schemaId;
+    }
 
+    static _updateSchemaIdPart(schemaId, fieldIdPart) {
+        schemaId = schemaId ^ fieldIdPart;
+        schemaId = Long.fromValue(schemaId).multiply(FNV1_PRIME).getLowBits();
         return schemaId;
     }
 
@@ -306,13 +311,17 @@ class BinaryField {
         return this._typeCode;
     }
 
+    isValid() {
+        return this._name !== null;
+    }
+
     static _calculateId(name) {
         return BinaryUtils.hashCodeLowerCase(name);
     }
 
     async _write(buffer) {
         // field name
-        await BinaryWriter.writeString(buffer, this._name);
+        BinaryCommunicator.writeString(buffer, this._name);
         // type code
         buffer.writeInteger(this._typeCode);
         // field id
@@ -320,9 +329,8 @@ class BinaryField {
     }
 
     async _read(buffer) {
-        const BinaryReader = require('./BinaryReader');
         // field name
-        this._name = await BinaryReader.readObject(buffer);
+        this._name = BinaryCommunicator.readString(buffer);
         // type code
         this._typeCode = buffer.readInteger();
         // field id
@@ -338,12 +346,12 @@ class BinaryTypeBuilder {
         return result;
     }
 
-    static async fromTypeId(typeId, schemaId, hasSchema) {
+    static async fromTypeId(communicator, typeId, schemaId) {
         let result = new BinaryTypeBuilder();
-        if (hasSchema) {
-            let type = await BinaryTypeStorage.getEntity().getType(typeId, schemaId);
-            if (type) {
-                result._type = type;
+        let type = await communicator.typeStorage.getType(typeId, schemaId);
+        if (type) {
+            result._type = type;
+            if (schemaId !== null) {
                 result._schema = type.getSchema(schemaId);
                 if (!result._schema) {
                     throw Errors.IgniteClientError.serializationError(
@@ -351,8 +359,11 @@ class BinaryTypeBuilder {
                             schemaId, type.name));
                 }
                 result._fromStorage = true;
-                return result;
             }
+            else {
+                result._schema = new BinarySchema();
+            }
+            return result;
         }
         result._init(null);
         result._type._id = typeId;
@@ -372,7 +383,7 @@ class BinaryTypeBuilder {
 
     static fromComplexObjectType(complexObjectType, jsObject) {
         let result = new BinaryTypeBuilder();
-        const typeInfo = BinaryTypeStorage.getEntity().getByComplexObjectType(complexObjectType);
+        const typeInfo = BinaryTypeStorage.getByComplexObjectType(complexObjectType);
         if (typeInfo) {
             result._type = typeInfo[0];
             result._schema = typeInfo[1];
@@ -380,7 +391,7 @@ class BinaryTypeBuilder {
         }
         else {
             result._fromComplexObjectType(complexObjectType, jsObject);
-            BinaryTypeStorage.getEntity().setByComplexObjectType(complexObjectType, result._type, result._schema);
+            BinaryTypeStorage.setByComplexObjectType(complexObjectType, result._type, result._schema);
         }
         return result;        
     }
@@ -424,9 +435,9 @@ class BinaryTypeBuilder {
         }
     }
 
-    async finalize() {
+    async finalize(communicator) {
         this._schema.finalize();
-        await BinaryTypeStorage.getEntity().addType(this._type, this._schema);
+        await communicator.typeStorage.addType(this._type, this._schema);
     }
 
     constructor() {

@@ -20,36 +20,14 @@ page-signup {
     flex-direction: column;
     flex: 1 0 auto;
 
-    section {
-        h3 {
-            font-size: 38px;
-            font-weight: 300;
-            margin: 30px 0 30px;
-        }
+    form footer {
+        padding: 15px 0;
+        text-align: right;
+        display: flex;
+        align-items: center;
 
-        margin-left: auto;
-        margin-right: auto;
-        width: 530px;
-
-        form footer {
-            padding: 15px 0;
-            text-align: right;
-            display: flex;
-            align-items: center;
-
-            .btn-ignite {
-                margin-left: auto;
-            }
-        }
-
-        form {
-            display: grid;
-            grid-gap: 10px;
-            grid-template-columns: 1fr 1fr;
-
-            .full-width {
-                grid-column: 1 / 3;
-            }
+        .btn-ignite {
+            margin-left: auto;
         }
     }
 

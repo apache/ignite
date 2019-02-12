@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.api.TableEngine;
@@ -30,12 +29,10 @@ import org.h2.table.TableBase;
 /**
  * H2 Table engine.
  */
+@SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public class H2TableEngine implements TableEngine {
     /** */
     private static GridH2RowDescriptor rowDesc0;
-
-    /** */
-    private static H2RowFactory rowFactory0;
 
     /** */
     private static H2TableDescriptor tblDesc0;
@@ -49,16 +46,18 @@ public class H2TableEngine implements TableEngine {
      * @param conn Connection.
      * @param sql DDL clause.
      * @param rowDesc Row descriptor.
-     * @param rowFactory Row factory.
      * @param tblDesc Table descriptor.
      * @throws SQLException If failed.
      * @return Created table.
      */
-    public static synchronized GridH2Table createTable(Connection conn, String sql, GridH2RowDescriptor rowDesc,
-        H2RowFactory rowFactory, H2TableDescriptor tblDesc)
+    public static synchronized GridH2Table createTable(
+        Connection conn,
+        String sql,
+        GridH2RowDescriptor rowDesc,
+        H2TableDescriptor tblDesc
+    )
         throws SQLException {
         rowDesc0 = rowDesc;
-        rowFactory0 = rowFactory;
         tblDesc0 = tblDesc;
 
         try {
@@ -73,14 +72,13 @@ public class H2TableEngine implements TableEngine {
         finally {
             resTbl0 = null;
             tblDesc0 = null;
-            rowFactory0 = null;
             rowDesc0 = null;
         }
     }
 
     /** {@inheritDoc} */
     @Override public TableBase createTable(CreateTableData createTblData) {
-        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, tblDesc0, tblDesc0.cache());
+        resTbl0 = new GridH2Table(createTblData, rowDesc0, tblDesc0, tblDesc0.cacheInfo());
 
         return resTbl0;
     }

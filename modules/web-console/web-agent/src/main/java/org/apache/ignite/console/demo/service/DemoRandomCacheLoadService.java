@@ -29,6 +29,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+
 /**
  * Demo service. Create cache and populate it by random int pairs.
  */
@@ -78,19 +80,19 @@ public class DemoRandomCacheLoadService implements Service {
             @Override public void run() {
                 try {
                     for (String cacheName : ignite.cacheNames()) {
-                        if (!DemoCachesLoadService.DEMO_CACHES.contains(cacheName)) {
-                            IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
+                        IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
-                            if (cache != null) {
-                                for (int i = 0, n = 1; i < cnt; i++, n++) {
-                                    Integer key = rnd.nextInt(RND_CNT);
-                                    Integer val = rnd.nextInt(RND_CNT);
+                        if (cache != null &&
+                            !DemoCachesLoadService.DEMO_CACHES.contains(cacheName) &&
+                            !DFLT_SCHEMA.equalsIgnoreCase(cache.getConfiguration(CacheConfiguration.class).getSqlSchema())) {
+                            for (int i = 0, n = 1; i < cnt; i++, n++) {
+                                Integer key = rnd.nextInt(RND_CNT);
+                                Integer val = rnd.nextInt(RND_CNT);
 
-                                    cache.put(key, val);
+                                cache.put(key, val);
 
-                                    if (rnd.nextInt(100) < 30)
-                                        cache.remove(key);
-                                }
+                                if (rnd.nextInt(100) < 30)
+                                    cache.remove(key);
                             }
                         }
                     }

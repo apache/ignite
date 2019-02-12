@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -149,7 +150,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             TestConditionalWithNullableStructs<double>();
             TestConditionalWithNullableStructs<float>();
             TestConditionalWithNullableStructs<decimal>();
-            TestConditionalWithNullableStructs<DateTime>(DateTime.UtcNow);
+            TestConditionalWithNullableStructs<DateTime>(DateTime.Parse("1983-03-14 13:20:15.999999").ToUniversalTime());
 
             var charException = Assert.Throws<NotSupportedException>(() => TestConditionalWithNullableStructs<char>());
             Assert.AreEqual("Type is not supported for SQL mapping: System.Char", charException.Message);
@@ -342,7 +343,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             });
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            var ex = Assert.Throws<CacheException>(() =>
+            var ex = Assert.Throws<IgniteException>(() =>
                 persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray());
 
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));

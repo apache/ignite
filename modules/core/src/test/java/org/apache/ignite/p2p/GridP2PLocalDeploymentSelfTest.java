@@ -43,6 +43,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.spi.deployment.local.LocalDeploymentSpi.IGNITE_DEPLOYMENT_ADDITIONAL_CHECK;
@@ -105,6 +106,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     @SuppressWarnings({"unchecked"})
+    @Test
     public void testLocalDeployment() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
@@ -182,6 +184,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processIsolatedModeTest(DeploymentMode.PRIVATE);
     }
@@ -191,6 +194,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processIsolatedModeTest(DeploymentMode.ISOLATED);
     }
@@ -200,6 +204,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processSharedModeTest(DeploymentMode.CONTINUOUS);
     }
@@ -209,6 +214,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processSharedModeTest(DeploymentMode.SHARED);
     }
@@ -216,6 +222,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Tests concurrent deployment using delegating classloader for the task.
      */
+    @Test
     public void testConcurrentDeploymentWithDelegatingClassloader() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -273,17 +280,17 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        public Object call() throws Exception {
+        @Override public Object call() throws Exception {
             return null;
         }
 
         /** {@inheritDoc} */
-        public Class<?> deployClass() {
+        @Override public Class<?> deployClass() {
             return this.getClass();
         }
 
         /** {@inheritDoc} */
-        public ClassLoader classLoader() {
+        @Override public ClassLoader classLoader() {
             return clsLdr;
         }
     }

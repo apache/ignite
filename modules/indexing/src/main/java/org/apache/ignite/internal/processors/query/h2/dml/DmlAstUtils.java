@@ -24,7 +24,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
@@ -98,8 +98,6 @@ public final class DmlAstUtils {
 
             GridSqlArray[] args = new GridSqlArray[cols.length];
 
-            boolean noQry = true;
-
             for (int i = 0; i < cols.length; i++) {
                 GridSqlArray arr = new GridSqlArray(rows.size());
 
@@ -123,17 +121,9 @@ public final class DmlAstUtils {
             for (GridSqlElement[] row : rows) {
                 assert cols.length == row.length;
 
-                for (int i = 0; i < row.length; i++) {
-                    GridSqlElement el = row[i];
-
-                    noQry &= (el instanceof GridSqlConst || el instanceof GridSqlParameter);
-
+                for (int i = 0; i < row.length; i++)
                     args[i].addChild(row[i]);
-                }
             }
-
-            if (noQry)
-                return null;
 
             return sel;
         }
@@ -148,10 +138,9 @@ public final class DmlAstUtils {
      * Generate SQL SELECT based on DELETE's WHERE, LIMIT, etc.
      *
      * @param del Delete statement.
-     * @param keysParamIdx Index for .
      * @return SELECT statement.
      */
-    public static GridSqlSelect selectForDelete(GridSqlDelete del, @Nullable Integer keysParamIdx) {
+    public static GridSqlSelect selectForDelete(GridSqlDelete del) {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(del.from());
@@ -168,9 +157,9 @@ public final class DmlAstUtils {
 
         assert gridTbl != null : "Failed to determine target grid table for DELETE";
 
-        Column h2KeyCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.KEY_COL);
+        Column h2KeyCol = gridTbl.getColumn(QueryUtils.KEY_COL);
 
-        Column h2ValCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.VAL_COL);
+        Column h2ValCol = gridTbl.getColumn(QueryUtils.VAL_COL);
 
         GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
@@ -182,8 +171,6 @@ public final class DmlAstUtils {
         mapQry.addColumn(valCol, true);
 
         GridSqlElement where = del.where();
-        if (keysParamIdx != null)
-            where = injectKeysFilterParam(where, keyCol, keysParamIdx);
 
         mapQry.where(where);
         mapQry.limit(del.limit());
@@ -241,7 +228,7 @@ public final class DmlAstUtils {
      */
     @SuppressWarnings("RedundantCast")
     private static IgnitePair<GridSqlElement> findKeyValueEqualityCondition(GridSqlElement where) {
-        if (where == null || !(where instanceof GridSqlOperation))
+        if (!(where instanceof GridSqlOperation))
             return null;
 
         GridSqlOperation whereOp = (GridSqlOperation) where;
@@ -329,10 +316,9 @@ public final class DmlAstUtils {
      * Generate SQL SELECT based on UPDATE's WHERE, LIMIT, etc.
      *
      * @param update Update statement.
-     * @param keysParamIdx Index of new param for the array of keys.
      * @return SELECT statement.
      */
-    public static GridSqlSelect selectForUpdate(GridSqlUpdate update, @Nullable Integer keysParamIdx) {
+    public static GridSqlSelect selectForUpdate(GridSqlUpdate update) {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(update.target());
@@ -349,9 +335,9 @@ public final class DmlAstUtils {
 
         assert gridTbl != null : "Failed to determine target grid table for UPDATE";
 
-        Column h2KeyCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.KEY_COL);
+        Column h2KeyCol = gridTbl.getColumn(QueryUtils.KEY_COL);
 
-        Column h2ValCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.VAL_COL);
+        Column h2ValCol = gridTbl.getColumn(QueryUtils.VAL_COL);
 
         GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
@@ -372,8 +358,6 @@ public final class DmlAstUtils {
         }
 
         GridSqlElement where = update.where();
-        if (keysParamIdx != null)
-            where = injectKeysFilterParam(where, keyCol, keysParamIdx);
 
         mapQry.where(where);
         mapQry.limit(update.limit());
@@ -429,39 +413,6 @@ public final class DmlAstUtils {
             dfltVal = ValueString.get("").convertTo(type);
 
         return new GridSqlConst(dfltVal);
-    }
-
-    /**
-     * Append additional condition to WHERE for it to select only specific keys.
-     *
-     * @param where Initial condition.
-     * @param keyCol Column to base the new condition on.
-     * @return New condition.
-     */
-    private static GridSqlElement injectKeysFilterParam(GridSqlElement where, GridSqlColumn keyCol, int paramIdx) {
-        // Yes, we need a subquery for "WHERE _key IN ?" to work with param being an array without dirty query rewriting.
-        GridSqlSelect sel = new GridSqlSelect();
-
-        GridSqlFunction from = new GridSqlFunction(GridSqlFunctionType.TABLE);
-
-        sel.from(from);
-
-        GridSqlColumn col = new GridSqlColumn(null, from, null, "TABLE", "_IGNITE_ERR_KEYS");
-
-        sel.addColumn(col, true);
-
-        GridSqlAlias alias = new GridSqlAlias("_IGNITE_ERR_KEYS", new GridSqlParameter(paramIdx));
-
-        alias.resultType(keyCol.resultType());
-
-        from.addChild(alias);
-
-        GridSqlElement e = new GridSqlOperation(GridSqlOperationType.IN, keyCol, new GridSqlSubquery(sel));
-
-        if (where == null)
-            return e;
-        else
-            return new GridSqlOperation(GridSqlOperationType.AND, where, e);
     }
 
     /**
@@ -560,7 +511,7 @@ public final class DmlAstUtils {
      * @param c Closure each found table and subquery will be passed to. If returns {@code true} the we need to stop.
      * @return {@code true} If we have found.
      */
-    @SuppressWarnings("RedundantCast")
+    @SuppressWarnings({"RedundantCast", "RedundantIfStatement"})
     private static boolean findTablesInFrom(GridSqlElement from, IgnitePredicate<GridSqlElement> c) {
         if (from == null)
             return false;

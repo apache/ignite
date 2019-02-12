@@ -28,8 +28,8 @@ import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.jetbrains.annotations.NotNull;
 
 /** Data pre-processing step which loads data from different file types. */
@@ -43,8 +43,8 @@ public class LabeledDatasetLoader {
      * @param isFallOnBadData Fall on incorrect data if true.
      * @return Labeled Dataset parsed from file.
      */
-    public static LabeledDataset loadFromTxtFile(Path pathToFile, String separator, boolean isDistributed,
-        boolean isFallOnBadData) throws IOException {
+    public static LabeledVectorSet loadFromTxtFile(Path pathToFile, String separator, boolean isDistributed,
+                                                   boolean isFallOnBadData) throws IOException {
         Stream<String> stream = Files.lines(pathToFile);
         List<String> list = new ArrayList<>();
         stream.forEach(list::add);
@@ -81,7 +81,7 @@ public class LabeledDatasetLoader {
                 for (int i = 0; i < vectors.size(); i++)
                     data[i] = new LabeledVector(vectors.get(i), labels.get(i));
 
-                return new LabeledDataset(data, colSize);
+                return new LabeledVectorSet(data, colSize);
             }
             else
                 throw new NoDataException("File should contain first row with data");
@@ -93,7 +93,7 @@ public class LabeledDatasetLoader {
     /** */
     @NotNull private static Vector parseFeatures(Path pathToFile, boolean isDistributed, boolean isFallOnBadData,
         int colSize, int rowIdx, String[] rowData) {
-        final Vector vec = LabeledDataset.emptyVector(colSize, isDistributed);
+        final Vector vec = LabeledVectorSet.emptyVector(colSize, isDistributed);
 
         if (isFallOnBadData && rowData.length != colSize + 1)
             throw new CardinalityException(colSize + 1, rowData.length);

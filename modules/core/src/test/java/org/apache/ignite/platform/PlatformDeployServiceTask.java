@@ -60,7 +60,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         private final String serviceName;
 
         /** Ignite. */
-        @SuppressWarnings("UnusedDeclaration")
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -85,7 +84,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
     /**
      * Test service.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static class PlatformTestService implements Service {
         /** */
         private boolean isCancelled;

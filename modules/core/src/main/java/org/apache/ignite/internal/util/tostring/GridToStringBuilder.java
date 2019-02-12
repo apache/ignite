@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -115,11 +116,19 @@ public class GridToStringBuilder {
      * have to keep a map of this objects pointed to the position of previous occurrence
      * and remove/add them in each {@code toString()} apply.
      */
-    private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
-        @Override protected IdentityHashMap<Object, Integer> initialValue() {
+    private static ThreadLocal<IdentityHashMap<Object, EntryReference>> savedObjects = new ThreadLocal<IdentityHashMap<Object, EntryReference>>() {
+        @Override protected IdentityHashMap<Object, EntryReference> initialValue() {
             return new IdentityHashMap<>();
         }
     };
+
+    /**
+     * @param obj Object.
+     * @return Hexed identity hashcode.
+     */
+    public static String identity(Object obj) {
+        return '@' + Integer.toHexString(System.identityHashCode(obj));
+    }
 
     /**
      * Produces auto-generated output of string presentation for given object and its declaration class.
@@ -805,7 +814,6 @@ public class GridToStringBuilder {
      * @param cls value class.
      * @param val value to print.
      */
-    @SuppressWarnings({"unchecked"})
     private static void toString(SBLimitedLength buf, Class<?> cls, Object val) {
         if (val == null) {
             buf.a("null");
@@ -822,12 +830,12 @@ public class GridToStringBuilder {
             return;
         }
 
-        IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
+        IdentityHashMap<Object, EntryReference> svdObjs = savedObjects.get();
 
-        if (handleRecursion(buf, val, svdObjs))
+        if (handleRecursion(buf, val, cls, svdObjs))
             return;
 
-        svdObjs.put(val, buf.length());
+        svdObjs.put(val, new EntryReference(buf.length()));
 
         try {
             if (cls.isArray())
@@ -853,7 +861,7 @@ public class GridToStringBuilder {
      */
     private static void addArray(SBLimitedLength buf, Class arrType, Object obj) {
         if (arrType.getComponentType().isPrimitive()) {
-            buf.a(arrayToString(arrType, obj));
+            buf.a(arrayToString(obj));
 
             return;
         }
@@ -974,19 +982,22 @@ public class GridToStringBuilder {
 
         boolean newStr = buf.length() == 0;
 
-        IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
+        IdentityHashMap<Object, EntryReference> svdObjs = savedObjects.get();
 
         if (newStr)
-            svdObjs.put(obj, buf.length());
+            svdObjs.put(obj, new EntryReference(buf.length()));
 
         try {
+            int len = buf.length();
+
             String s = toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen);
 
             if (newStr)
                 return s;
 
-            // Called from another GTSB.toString(), so this string is already in the buffer and shouldn't be returned.
-            return "";
+            buf.setLength(len);
+
+            return s.substring(len);
         }
         finally {
             if (newStr)
@@ -1007,7 +1018,6 @@ public class GridToStringBuilder {
      * @return String presentation of the given object.
      * @param <T> Type of object.
      */
-    @SuppressWarnings({"unchecked"})
     private static <T> String toStringImpl0(
         Class<T> cls,
         SBLimitedLength buf,
@@ -1022,7 +1032,17 @@ public class GridToStringBuilder {
 
             assert cd != null;
 
-            buf.a(cd.getSimpleClassName()).a(" [");
+            buf.a(cd.getSimpleClassName());
+
+            EntryReference ref = savedObjects.get().get(obj);
+
+            if (ref != null && ref.hashNeeded) {
+                buf.a(identity(obj));
+
+                ref.hashNeeded = false;
+            }
+
+            buf.a(" [");
 
             boolean first = true;
 
@@ -1075,100 +1095,76 @@ public class GridToStringBuilder {
     }
 
     /**
-     * @param arrType Type of the array.
-     * @param arr Array object.
+     * Returns limited string representation of array.
+     *
+     * @param arr Array object. Each value is automatically wrapped if it has a primitive type.
      * @return String representation of an array.
      */
-    @SuppressWarnings({"ConstantConditions", "unchecked"})
-    public static <T> String arrayToString(Class arrType, Object arr) {
+    public static String arrayToString(Object arr) {
         if (arr == null)
             return "null";
 
         String res;
-        int more = 0;
 
-        if (arrType.equals(byte[].class)) {
-            byte[] byteArr = (byte[])arr;
-            if (byteArr.length > COLLECTION_LIMIT) {
-                more = byteArr.length - COLLECTION_LIMIT;
-                byteArr = Arrays.copyOf(byteArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(byteArr);
-        }
-        else if (arrType.equals(boolean[].class)) {
-            boolean[] boolArr = (boolean[])arr;
-            if (boolArr.length > COLLECTION_LIMIT) {
-                more = boolArr.length - COLLECTION_LIMIT;
-                boolArr = Arrays.copyOf(boolArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(boolArr);
-        }
-        else if (arrType.equals(short[].class)) {
-            short[] shortArr = (short[])arr;
-            if (shortArr.length > COLLECTION_LIMIT) {
-                more = shortArr.length - COLLECTION_LIMIT;
-                shortArr = Arrays.copyOf(shortArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(shortArr);
-        }
-        else if (arrType.equals(int[].class)) {
-            int[] intArr = (int[])arr;
-            if (intArr.length > COLLECTION_LIMIT) {
-                more = intArr.length - COLLECTION_LIMIT;
-                intArr = Arrays.copyOf(intArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(intArr);
-        }
-        else if (arrType.equals(long[].class)) {
-            long[] longArr = (long[])arr;
-            if (longArr.length > COLLECTION_LIMIT) {
-                more = longArr.length - COLLECTION_LIMIT;
-                longArr = Arrays.copyOf(longArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(longArr);
-        }
-        else if (arrType.equals(float[].class)) {
-            float[] floatArr = (float[])arr;
-            if (floatArr.length > COLLECTION_LIMIT) {
-                more = floatArr.length - COLLECTION_LIMIT;
-                floatArr = Arrays.copyOf(floatArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(floatArr);
-        }
-        else if (arrType.equals(double[].class)) {
-            double[] doubleArr = (double[])arr;
-            if (doubleArr.length > COLLECTION_LIMIT) {
-                more = doubleArr.length - COLLECTION_LIMIT;
-                doubleArr = Arrays.copyOf(doubleArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(doubleArr);
-        }
-        else if (arrType.equals(char[].class)) {
-            char[] charArr = (char[])arr;
-            if (charArr.length > COLLECTION_LIMIT) {
-                more = charArr.length - COLLECTION_LIMIT;
-                charArr = Arrays.copyOf(charArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(charArr);
-        }
-        else {
+        int arrLen;
+
+        if (arr instanceof Object[]) {
             Object[] objArr = (Object[])arr;
-            if (objArr.length > COLLECTION_LIMIT) {
-                more = objArr.length - COLLECTION_LIMIT;
+
+            arrLen = objArr.length;
+
+            if (arrLen > COLLECTION_LIMIT)
                 objArr = Arrays.copyOf(objArr, COLLECTION_LIMIT);
-            }
+
             res = Arrays.toString(objArr);
+        } else {
+            res = toStringWithLimit(arr, COLLECTION_LIMIT);
+
+            arrLen = Array.getLength(arr);
         }
-        if (more > 0) {
+
+        if (arrLen > COLLECTION_LIMIT) {
             StringBuilder resSB = new StringBuilder(res);
 
             resSB.deleteCharAt(resSB.length() - 1);
-            resSB.append("... and ").append(more).append(" more]");
+
+            resSB.append("... and ").append(arrLen - COLLECTION_LIMIT).append(" more]");
 
             res = resSB.toString();
         }
 
         return res;
+    }
+
+    /**
+     * Returns limited string representation of array.
+     *
+     * @param arr Input array. Each value is automatically wrapped if it has a primitive type.
+     * @param limit max array items to string limit.
+     * @return String representation of an array.
+     */
+    private static String toStringWithLimit(Object arr, int limit) {
+        int arrIdxMax = Array.getLength(arr) - 1;
+
+        if (arrIdxMax == -1)
+            return "[]";
+
+        int idxMax = Math.min(arrIdxMax, limit);
+
+        StringBuilder b = new StringBuilder();
+
+        b.append('[');
+
+        for (int i = 0; i <= idxMax; ++i) {
+            b.append(Array.get(arr, i));
+            
+            if (i == idxMax)
+                return b.append(']').toString();
+
+            b.append(", ");
+        }
+
+        return b.toString();
     }
 
     /**
@@ -1801,24 +1797,37 @@ public class GridToStringBuilder {
      *
      * @param buf String builder buffer.
      * @param obj Object.
+     * @param cls Class.
      * @param svdObjs Map with saved objects to handle recursion.
      * @return {@code True} if object is already saved and name@hash was added to buffer.
      * {@code False} if it wasn't saved previously and it should be saved.
      */
-    private static boolean handleRecursion(SBLimitedLength buf, Object obj, IdentityHashMap<Object, Integer> svdObjs) {
-        Integer pos = svdObjs.get(obj);
+    private static boolean handleRecursion(
+        SBLimitedLength buf,
+        Object obj,
+        @NotNull Class cls,
+        IdentityHashMap<Object, EntryReference> svdObjs
+    ) {
+        EntryReference ref = svdObjs.get(obj);
 
-        if (pos == null)
+        if (ref == null)
             return false;
 
-        String name = obj.getClass().getSimpleName();
-        String hash = '@' + Integer.toHexString(System.identityHashCode(obj));
+        int pos = ref.pos;
+
+        String name = cls.getSimpleName();
+        String hash = identity(obj);
         String savedName = name + hash;
+        String charsAtPos = buf.impl().substring(pos, pos + savedName.length());
 
-        if (!buf.isOverflowed() && buf.impl().indexOf(savedName, pos) != pos) {
-            buf.i(pos + name.length(), hash);
+        if (!buf.isOverflowed() && !savedName.equals(charsAtPos)) {
+            if (charsAtPos.startsWith(cls.getSimpleName())) {
+                buf.i(pos + name.length(), hash);
 
-            incValues(svdObjs, obj, hash.length());
+                incValues(svdObjs, obj, hash.length());
+            }
+            else
+                ref.hashNeeded = true;
         }
 
         buf.a(savedName);
@@ -1833,14 +1842,35 @@ public class GridToStringBuilder {
      * @param obj Object.
      * @param hashLen Length of the object's hash.
      */
-    private static void incValues(IdentityHashMap<Object, Integer> svdObjs, Object obj, int hashLen) {
-        Integer baseline = svdObjs.get(obj);
+    private static void incValues(IdentityHashMap<Object, EntryReference> svdObjs, Object obj, int hashLen) {
+        int baseline = svdObjs.get(obj).pos;
 
-        for (IdentityHashMap.Entry<Object, Integer> entry : svdObjs.entrySet()) {
-            Integer pos = entry.getValue();
+        for (IdentityHashMap.Entry<Object, EntryReference> entry : svdObjs.entrySet()) {
+            EntryReference ref = entry.getValue();
+
+            int pos = ref.pos;
 
             if (pos > baseline)
-                entry.setValue(pos + hashLen);
+                ref.pos = pos + hashLen;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class EntryReference {
+        /** Position. */
+        int pos;
+
+        /** First object entry needs hash to be written. */
+        boolean hashNeeded;
+
+        /**
+         * @param pos Position.
+         */
+        private EntryReference(int pos) {
+            this.pos = pos;
+            hashNeeded = false;
         }
     }
 }

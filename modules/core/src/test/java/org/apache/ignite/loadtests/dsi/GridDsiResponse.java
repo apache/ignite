@@ -28,11 +28,9 @@ public class GridDsiResponse implements Serializable {
     private long id;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private long msgId;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private long transactionId;
 
     /**
@@ -60,7 +58,6 @@ public class GridDsiResponse implements Serializable {
         private Long key;
 
         /** */
-        @SuppressWarnings("UnusedDeclaration")
         @AffinityKeyMapped
         private String terminalId;
 

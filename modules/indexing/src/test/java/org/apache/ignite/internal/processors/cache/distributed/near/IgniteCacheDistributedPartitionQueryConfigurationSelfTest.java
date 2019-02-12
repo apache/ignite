@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.util.Arrays;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests cache query configuration.
  */
 public class IgniteCacheDistributedPartitionQueryConfigurationSelfTest extends GridCommonAbstractTest {
     /** Tests partition validation. */
+    @Test
     public void testPartitions() {
         final SqlFieldsQuery qry = new SqlFieldsQuery("select 1");
 
