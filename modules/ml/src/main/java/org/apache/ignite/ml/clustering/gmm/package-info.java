@@ -15,22 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
-
-import org.apache.ignite.ml.math.stat.StatsTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for local and distributed math tests.
+ * <!-- Package description. --> Contains Gauss Mixture Model clustering algorithm (see {@link
+ * org.apache.ignite.ml.clustering.gmm.GmmModel}).
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    StatsTestSuite.class,
-    MathImplLocalTestSuite.class,
-    TracerTest.class,
-    BlasTest.class
-})
-public class MathImplMainTestSuite {
-    // No-op.
-}
+package org.apache.ignite.ml.clustering.gmm;

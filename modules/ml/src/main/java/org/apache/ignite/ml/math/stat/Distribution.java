@@ -15,22 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.stat;
 
-import org.apache.ignite.ml.math.stat.StatsTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.Serializable;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Test suite for local and distributed math tests.
+ * Interface for distributions.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    StatsTestSuite.class,
-    MathImplLocalTestSuite.class,
-    TracerTest.class,
-    BlasTest.class
-})
-public class MathImplMainTestSuite {
-    // No-op.
+public interface Distribution extends Serializable {
+    /**
+     * @param x Vector.
+     * @return probability of vector.
+     */
+    public double prob(Vector x);
+
+    /**
+     * @return dimension of vector space.
+     */
+    public int dimension();
 }
