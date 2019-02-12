@@ -110,8 +110,6 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_EXISTING_PAGE_SPLIT;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_META_PAGE_INIT_ROOT2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
@@ -213,10 +211,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** {@inheritDoc} */
     @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         if (needEncryption(rec)) {
-            if (rec.type() == BTREE_META_PAGE_INIT_ROOT2) {
-                System.out.println();
-            }
-
             int clSz = plainSize(rec);
 
             ByteBuffer clData = ByteBuffer.allocate(clSz);
