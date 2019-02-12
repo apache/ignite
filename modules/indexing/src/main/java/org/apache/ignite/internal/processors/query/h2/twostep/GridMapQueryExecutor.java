@@ -644,7 +644,7 @@ public class GridMapQueryExecutor {
                 reserved
             );
 
-            if (maxMem > 0)
+            if (maxMem != Long.MAX_VALUE && maxMem > 0)
                 qctx.queryMemoryManager(new IgniteH2QueryMemoryManager(maxMem));
 
             qctx.lazyWorker(worker);

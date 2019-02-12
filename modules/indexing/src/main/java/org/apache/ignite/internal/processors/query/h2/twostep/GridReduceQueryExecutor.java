@@ -53,6 +53,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedUpdateRun;
+import org.apache.ignite.internal.processors.query.h2.opt.IgniteH2QueryMemoryManager;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -787,6 +789,9 @@ public class GridReduceQueryExecutor {
                             null
                         );
 
+                        qctx.queryMemoryManager((maxMem == Long.MAX_VALUE) ?
+                            null : new IgniteH2QueryMemoryManager(maxMem));
+
                         QueryContextRegistry qryCtxRegistry = h2.queryContextRegistry();
 
                         qryCtxRegistry.setThreadLocal(qctx);
@@ -838,7 +843,11 @@ public class GridReduceQueryExecutor {
 
                 CacheException resEx = null;
 
-                if (e instanceof CacheException) {
+                IgniteOutOfMemoryException oome = X.cause(e, IgniteOutOfMemoryException.class);
+
+                if (oome != null)
+                    resEx = new CacheException("IgniteOutOfMemoryException: SQL query out of memory", oome);
+                else if (e instanceof CacheException) {
                     if (wasCancelled((CacheException)e))
                         resEx = new  CacheException("Failed to run reduce query locally.",
                             new QueryCancelledException());
