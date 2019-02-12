@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
-
-import org.apache.ignite.ml.math.stat.StatsTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.ml.math.exceptions;
 
 /**
- * Test suite for local and distributed math tests.
+ * Exception to be thrown when a non-singular matrix is expected.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    StatsTestSuite.class,
-    MathImplLocalTestSuite.class,
-    TracerTest.class,
-    BlasTest.class
-})
-public class MathImplMainTestSuite {
-    // No-op.
+public class SingularMatrixException extends MathIllegalArgumentException {
+    /** */
+    public SingularMatrixException() {
+        super("Regular (or non-singular) matrix expected.");
+    }
+
+    /** */
+    public SingularMatrixException(String format, Object... args) {
+        super(format, args);
+    }
 }

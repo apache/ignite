@@ -15,22 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.stat;
 
-import org.apache.ignite.ml.math.stat.StatsTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for local and distributed math tests.
+ * Test suite for stat package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    StatsTestSuite.class,
-    MathImplLocalTestSuite.class,
-    TracerTest.class,
-    BlasTest.class
+    DistributionMixtureTest.class,
+    MultivariateGaussianDistributionTest.class
 })
-public class MathImplMainTestSuite {
-    // No-op.
+public class StatsTestSuite {
 }

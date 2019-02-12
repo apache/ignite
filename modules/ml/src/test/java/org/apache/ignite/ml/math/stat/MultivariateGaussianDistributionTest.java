@@ -15,22 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.stat;
 
-import org.apache.ignite.ml.math.stat.StatsTestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
- * Test suite for local and distributed math tests.
+ * Tests for {@link MultivariateGaussianDistribution}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    StatsTestSuite.class,
-    MathImplLocalTestSuite.class,
-    TracerTest.class,
-    BlasTest.class
-})
-public class MathImplMainTestSuite {
-    // No-op.
+public class MultivariateGaussianDistributionTest {
+    /** */
+    @Test
+    public void testApply() {
+        MultivariateGaussianDistribution distribution = new MultivariateGaussianDistribution(
+            VectorUtils.of(1, 2),
+            new DenseMatrix(new double[][] {new double[] {1, -0.5}, new double[] {-0.5, 1}})
+        );
+
+        Assert.assertEquals(0.183, distribution.prob(VectorUtils.of(1, 2)), 0.01);
+        Assert.assertEquals(0.094, distribution.prob(VectorUtils.of(0, 2)), 0.01);
+    }
 }
