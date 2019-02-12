@@ -176,7 +176,7 @@ public class TestUtils {
      * @param exp Expected vector.
      * @param observed Actual vector.
      */
-    public static void assertEquals(Vector exp, Vector observed) {
+    public static void assertEquals(Vector exp, Vector observed, double eps) {
         Assert.assertNotNull("Observed should not be null", observed);
 
         if (exp.size() != observed.size()) {
@@ -191,8 +191,7 @@ public class TestUtils {
             double eij = exp.getX(i);
             double aij = observed.getX(i);
 
-            // TODO: IGNITE-5824, Check precision here.
-            Assert.assertEquals(eij, aij, 0.0);
+            Assert.assertEquals(eij, aij, eps);
         }
     }
 

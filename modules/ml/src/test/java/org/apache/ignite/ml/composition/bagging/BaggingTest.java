@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition;
+package org.apache.ignite.ml.composition.bagging;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,8 +23,6 @@ import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
-import org.apache.ignite.ml.composition.bagging.BaggedModel;
-import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
 import org.apache.ignite.ml.composition.combinators.parallel.ModelsParallelComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
@@ -118,7 +116,7 @@ public class BaggingTest extends TrainerTest {
         Vector weights = ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)((AdaptableDatasetModel)mdl
             .model()).innerModel()).submodels().get(0)).innerModel()).weights();
 
-        TestUtils.assertEquals(firstModelWeights.get(parts), weights);
+        TestUtils.assertEquals(firstModelWeights.get(parts), weights, 0.0);
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }
