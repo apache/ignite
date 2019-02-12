@@ -3341,6 +3341,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 boolean rmtEnc = cacheInfo.cacheData().config().isEncryptionEnabled();
 
                 if (locEnc != rmtEnc) {
+                    if (errorMessage.length() > 0)
+                        errorMessage.append("\n");
+
                     // Message will be printed on remote node, so need to swap local and remote.
                     errorMessage.append(String.format(ENCRYPT_MISMATCH_MESSAGE, locDesc.cacheName(), rmtEnc, locEnc));
                 }
