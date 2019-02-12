@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.platform.client.ClientAffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -31,7 +32,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
  * Currently used to request list of nodes, to calculate affinity on the client side.
  */
 public class ClientCachePartitionsRequest extends ClientRequest {
-    int[] cacheIds;
+    /** IDs of caches. */
+    private final int[] cacheIds;
 
     /**
      * Initializes a new instance of ClientRawRequest class.
@@ -54,9 +56,13 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
         ArrayList<ClientCachePartitionsMapping> mappings = new ArrayList<>(cacheIds.length);
 
+        ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();
+
         for (int cacheId : cacheIds) {
             DynamicCacheDescriptor cacheDesc = ClientCacheRequest.cacheDescriptor(ctx, cacheId);
-            ClientCachePartitionsMapping currentMapping = new ClientCachePartitionsMapping(ctx, cacheDesc);
+
+            ClientCachePartitionsMapping currentMapping =
+                new ClientCachePartitionsMapping(ctx, cacheDesc, affinityVer.getVersion());
 
             for (DynamicCacheDescriptor another: allCaches.values()) {
                 // Ignoring system caches
@@ -69,7 +75,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             mappings.add(currentMapping);
         }
 
-        return new ClientCachePartitionsResponse(requestId(), mappings);
+        return new ClientCachePartitionsResponse(requestId(), mappings, affinityVer);
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.ArrayList;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.platform.client.ClientAffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -29,21 +30,29 @@ class ClientCachePartitionsResponse extends ClientResponse {
     /** Node partitions. */
     private final ArrayList<ClientCachePartitionsMapping> mappings;
 
+    /** Affinity version. */
+    private final ClientAffinityTopologyVersion affinityVer;
+
     /**
      * @param requestId Request id.
      * @param mappings Mappings for caches.
+     * @param affinityVer Affinity version.
      */
-    ClientCachePartitionsResponse(long requestId, ArrayList<ClientCachePartitionsMapping> mappings) {
+    ClientCachePartitionsResponse(long requestId, ArrayList<ClientCachePartitionsMapping> mappings,
+        ClientAffinityTopologyVersion affinityVer) {
         super(requestId);
 
         assert mappings != null;
 
         this.mappings = mappings;
+        this.affinityVer = affinityVer;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
-        super.encode(ctx, writer);
+        super.encode(ctx, writer, affinityVer);
+
+        affinityVer.write(writer);
 
         writer.writeInt(mappings.size());
 

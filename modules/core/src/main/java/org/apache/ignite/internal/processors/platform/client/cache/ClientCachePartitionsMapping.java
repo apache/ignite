@@ -19,30 +19,31 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionAffinityFunctionType;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityDescriptor;
+import org.apache.ignite.internal.processors.platform.client.ClientPartitionAffinityDescriptor;
 
 /**
  * Partition mapping associated with the group of caches.
  */
 class ClientCachePartitionsMapping
 {
-    /** IDs of the assotiated caches. */
+    /** IDs of the associated caches. */
     private ArrayList<Integer> cacheIds;
 
     /** Affinity descriptor. */
-    private PartitionTableAffinityDescriptor affinityDescriptor;
+    private ClientPartitionAffinityDescriptor affinityDescriptor;
 
     /** Partitions map for caches. */
     private ArrayList<ClientCacheNodePartitions> partitionsMap;
@@ -53,19 +54,17 @@ class ClientCachePartitionsMapping
      * @param cacheDesc Cache descriptor.
      * @return Partitions mapping for cache.
      */
-    private ArrayList<ClientCacheNodePartitions> getPartitionsMap(
-        ClientConnectionContext ctx, DynamicCacheDescriptor cacheDesc) {
-        String cacheName = cacheDesc.cacheName();
+    private ArrayList<ClientCacheNodePartitions> getPartitionsMap(ClientConnectionContext ctx,
+        DynamicCacheDescriptor cacheDesc, AffinityTopologyVersion affVer) {
 
-        GridDiscoveryManager discovery = ctx.kernalContext().discovery();
-        Collection<ClusterNode> nodes = discovery.discoCache().cacheNodes(cacheName);
-
-        Affinity aff = ctx.kernalContext().affinity().affinityProxy(cacheName);
+        GridCacheContext cacheContext = ctx.kernalContext().cache().context().cacheContext(cacheDesc.cacheId());
+        AffinityAssignment assignment = cacheContext.affinity().assignment(affVer);
+        Collection<ClusterNode> nodes = assignment.primaryPartitionNodes();
 
         ArrayList<ClientCacheNodePartitions> res = new ArrayList<>();
 
         for (ClusterNode node : nodes) {
-            int[] parts = aff.primaryPartitions(node);
+            Set<Integer> parts = assignment.primaryPartitions(node.id());
 
             res.add(new ClientCacheNodePartitions(node.id(), parts));
         }
@@ -76,13 +75,14 @@ class ClientCachePartitionsMapping
     /**
      * @param cacheDesc Descriptor of the initial cache.
      */
-    public ClientCachePartitionsMapping(ClientConnectionContext ctx, DynamicCacheDescriptor cacheDesc) {
+    public ClientCachePartitionsMapping(ClientConnectionContext ctx, DynamicCacheDescriptor cacheDesc,
+        AffinityTopologyVersion affVer) {
         cacheIds = new ArrayList<>();
 
         cacheIds.add(cacheDesc.cacheId());
 
         affinityDescriptor = affinityForCache(cacheDesc);
-        partitionsMap = getPartitionsMap(ctx, cacheDesc);
+        partitionsMap = getPartitionsMap(ctx, cacheDesc, affVer);
     }
 
     /**
@@ -99,7 +99,7 @@ class ClientCachePartitionsMapping
      * @param cacheDesc Descriptor of cache to be checked.
      */
     private boolean isCompatible(DynamicCacheDescriptor cacheDesc) {
-        PartitionTableAffinityDescriptor another = affinityForCache(cacheDesc);
+        ClientPartitionAffinityDescriptor another = affinityForCache(cacheDesc);
 
         if (affinityDescriptor == null)
             return another == null;
@@ -111,12 +111,13 @@ class ClientCachePartitionsMapping
      * Prepare affinity identifier for cache.
      *
      * @param cacheDesc Cache descriptor.
-     * @return Affinity identifier.
+     * @return Affinity identifier, if applicable, and null if not.
      */
-    private static PartitionTableAffinityDescriptor affinityForCache(DynamicCacheDescriptor cacheDesc) {
+    private static ClientPartitionAffinityDescriptor affinityForCache(DynamicCacheDescriptor cacheDesc) {
         CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
-        // If custom affinity key mapper is used, we do not need it.
+        // Only caches with no custom affinity key mapper is supported.
+        // TODO: Investigate
         AffinityKeyMapper keyMapper = ccfg.getAffinityMapper();
         if (!(keyMapper instanceof GridCacheDefaultAffinityKeyMapper))
             return null;
@@ -125,22 +126,17 @@ class ClientCachePartitionsMapping
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
             return null;
 
-        PartitionAffinityFunctionType aff = ccfg.getAffinity().getClass().equals(RendezvousAffinityFunction.class) ?
-            PartitionAffinityFunctionType.RENDEZVOUS : PartitionAffinityFunctionType.CUSTOM;
+        // Only RendezvousAffinityFunction is supported for now.
+        if (!ccfg.getAffinity().getClass().equals(RendezvousAffinityFunction.class))
+            return null;
 
-        boolean hasNodeFilter = ccfg.getNodeFilter() != null &&
-            !(ccfg.getNodeFilter() instanceof CacheConfiguration.IgniteAllNodesPredicate);
-
-        return new PartitionTableAffinityDescriptor(
-            aff,
-            ccfg.getAffinity().partitions(),
-            hasNodeFilter,
-            ccfg.getDataRegionName()
+        return new ClientPartitionAffinityDescriptor(
+            ccfg.getAffinity().partitions()
         );
     }
 
     /**
-     * Writer mapping using binary writer.
+     * Write mapping using binary writer.
      * @param writer Writer.
      */
     public void write(BinaryRawWriter writer) {
@@ -149,7 +145,7 @@ class ClientCachePartitionsMapping
         for (int id: cacheIds)
             writer.writeInt(id);
 
-        writer.writeBoolean(affinityDescriptor == null);
+        writer.writeBoolean(affinityDescriptor != null);
 
         if (affinityDescriptor == null)
             return;
