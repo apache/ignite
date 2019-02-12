@@ -4693,14 +4693,27 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     assert needReplaceInner != TRUE;
 
-                    if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel() == tail.lvl) {
-                        // Free root if it became empty after merge.
-                        cutRoot(tail.lvl);
-                        freePage(tail.pageId, tail.page, tail.buf, tail.walPlc, false);
+                    boolean cutRoot = false;
+                    Tail<L> t = tail;
 
-                        // Exit: we are done.
+                    // After merging empty branch it is possible to have an empty root branch, that we need to merge.
+                    // Thus, we try to cut root in a loop.
+                    while (t.getCount() == 0 && t.lvl != 0 && getRootLevel() == t.lvl) {
+                        cutRoot = true;
+
+                        // Free root if it became empty after merge.
+                        cutRoot(t.lvl);
+                        freePage(t.pageId, t.page, t.buf, t.walPlc, false);
+
+                        // Try to cut more.
+                        t = t.down;
+
+                        if (t == null)
+                            break;
                     }
-                    else if (tail.sibling != null &&
+
+                    // If cutRoot - exit, we are done.
+                    if (!cutRoot && tail.sibling != null &&
                         tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf, pageSize())) {
                         // Release everything lower than tail, we've already merged this path.
                         doReleaseTail(tail.down);
@@ -4729,7 +4742,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private void removeDataRowFromLeafTail(Tail<L> t) throws IgniteCheckedException {
             assert !isRemoved();
 
-            Tail<L> leaf = getTail(t);
+            Tail<L> leaf = getTailLeaf(t);
 
             removeDataRowFromLeaf(leaf.pageId, leaf.page, leaf.buf, leaf.walPlc, leaf.io, leaf.getCount(), insertionPoint(leaf));
         }
@@ -4874,14 +4887,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param pageAddr Page address.
          * @param walPlc Full page WAL record policy.
          * @param io IO.
-         *
          * @param cnt Count.
          * @param idx Index to remove.
          * @throws IgniteCheckedException If failed.
          */
-        private void doRemove(long pageId, long page, long pageAddr, Boolean walPlc, BPlusIO<L> io, int cnt,
-            int idx)
-            throws IgniteCheckedException {
+        private void doRemove(
+            long pageId,
+            long page,
+            long pageAddr,
+            Boolean walPlc,
+            BPlusIO<L> io,
+            int cnt,
+            int idx
+        ) throws IgniteCheckedException {
             assert cnt > 0 : cnt;
             assert idx >= 0 && idx < cnt : idx + " " + cnt;
 
@@ -5107,7 +5125,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 inner = inner.down;
             }
 
-            Tail<L> leaf = getTail(inner);
+            Tail<L> leaf = getTailLeaf(inner);
 
             int leafCnt = leaf.getCount();
 
@@ -5273,9 +5291,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /**
          * @param tail Tail to start with.
-         * @return Tail of {@link Tail#EXACT} type at the given level.
+         * @return Tail of {@link Tail#EXACT} type at leaf level.
          */
-        private Tail<L> getTail(Tail<L> tail) {
+        private Tail<L> getTailLeaf(Tail<L> tail) {
             assert tail != null;
 
             Tail<L> t = tail;

@@ -985,14 +985,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         tree.validateTree();
 
+        CyclicBarrier barrier = new CyclicBarrier(threads);
+
         info("Remove...");
 
         try {
-            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
+                    barrier.await(1, TimeUnit.SECONDS);
+
                     Random rnd = new GridRandom();
 
-                    for(;;) {
+                    for (; ; ) {
                         int idx = 0;
                         boolean found = false;
 
@@ -1019,7 +1023,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 }
             }, threads, "remove");
 
+            fut.get(10_000);
+
             assertEquals(0, tree.size());
+
+            info("\n\n" + tree.printTree() + "\n\n");
 
             tree.validateTree();
         }

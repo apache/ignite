@@ -23,14 +23,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class SinglePageReuseBag implements ReuseBag {
+public final class SinglePageReuseBag implements ReuseBag {
     /** */
-    protected long pageId;
+    private long pageId;
 
     /**
      * @param pageId Page ID.
      */
     public SinglePageReuseBag(long pageId) {
+        assert pageId != 0L;
+
         this.pageId = pageId;
     }
 
