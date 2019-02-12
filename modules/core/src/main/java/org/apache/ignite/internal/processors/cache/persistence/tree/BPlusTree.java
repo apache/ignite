@@ -2276,15 +2276,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Number of either all elements in the tree or the elements that match the filter.
      * @throws IgniteCheckedException If failed.
      */
-    public long size(@Nullable TreeRowClosure<L, T> filter) throws IgniteCheckedException {
+    public final long size(@Nullable TreeRowClosure<L, T> filter) throws IgniteCheckedException {
         checkDestroyed();
 
-        for (;;) {
+        try {
             long curPageId;
 
             long metaPage = acquirePage(metaPageId);
 
             try {
+                // TODO Add first page id to treeMeta
                 curPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
             }
             finally {
@@ -2294,11 +2295,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             long cnt = 0;
 
             long curPage = acquirePage(curPageId);
+
             try {
                 long curPageAddr = readLock(curPageId, curPage);
 
-                if (curPageAddr == 0)
-                    continue; // The first page has gone: restart scan.
+                if (curPageAddr == 0) // The first page must always be in place because we always merge backwards.
+                    throw new IllegalStateException("The tree is probably being concurrently destroyed: " + getName());
 
                 try {
                     BPlusIO<L> io = io(curPageAddr);
@@ -2371,6 +2373,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 if (curPage != 0)
                     releasePage(curPageId, curPage);
             }
+        }
+        finally {
+            checkDestroyed();
         }
     }
 
