@@ -730,7 +730,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
-    private UUID executeQuery0(@Nullable CacheEntryUpdatedListener locLsnr,
+    private UUID executeQuery0(CacheEntryUpdatedListener locLsnr,
         IgniteOutClosure<CacheContinuousQueryHandler> clsr,
         int bufSize,
         long timeInterval,

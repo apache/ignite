@@ -660,7 +660,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             ContinuousQuery<K, V> qry0 = (ContinuousQuery<K, V>)qry;
 
             if (qry0.getLocalListener() == null &&
-                qry0.getRemoteFilterFactory() == null && qry0.getRemoteFilter() == null) {
+                qry0.getRemoteFilterFactory() == null &&
+                qry0.getRemoteFilter() == null) {
                 throw new IgniteException("LocalListener, RemoterFilter " +
                     "or RemoteFilterFactory must be specified for the query: " + qry);
             }
