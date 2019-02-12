@@ -69,6 +69,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             [Values(true, false)] bool withCacheStore,
             [Values(true, false)] bool withCustomAffinity)
         {
+            Environment.SetEnvironmentVariable("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", "false");
+
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DataStorageConfiguration = new DataStorageConfiguration
@@ -152,6 +154,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.IsFalse(ignite.GetCacheNames().Contains(cacheName));
             }
+
+            Environment.SetEnvironmentVariable("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", null);
         }
 
         /// <summary>
@@ -242,6 +246,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 var cluster = ignite.GetCluster();
                 Assert.AreEqual(3, cluster.TopologyVersion);
+
+                cluster.baselineConfiguration().updateBaselineAutoAdjustTimeoutAsync(AUTO_ADJUST_TIMEOUT).get();
 
                 // Can not set baseline while inactive.
                 var ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));

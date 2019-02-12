@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
@@ -26,6 +27,9 @@ import org.apache.ignite.internal.processors.subscription.GridInternalSubscripti
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 
@@ -64,7 +68,7 @@ public class DistributedBaselineConfiguration {
                 long timeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
 
                 //set default value.
-                baselineAutoAdjustEnabled.localUpdate(true);
+                baselineAutoAdjustEnabled.localUpdate(getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, true));
                 baselineAutoAdjustTimeout.localUpdate(timeout);
 
                 dispatcher.registerProperty(baselineAutoAdjustEnabled);

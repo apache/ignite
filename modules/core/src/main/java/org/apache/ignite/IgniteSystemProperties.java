@@ -1123,6 +1123,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
 
     /**
+     * Flag to enable baseline auto-adjust by default.
+     */
+    public static final String IGNITE_BASELINE_AUTO_ADJUST_ENABLED = "IGNITE_BASELINE_AUTO_ADJUST_ENABLED";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
