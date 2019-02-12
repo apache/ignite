@@ -32,18 +32,24 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
     /** Node with duplicate ID. */
     private final TcpDiscoveryNode node;
 
+    /** Flog indicating whether duplicate ID was found among existing nodes or in nodes history. */
+    private final boolean foundInNodesHistory;
+
     /**
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
      * @param node Node with same ID.
+     * @param foundInNodesHistory Flag showing if duplicate ID was found in nodes history.
      */
-    public TcpDiscoveryDuplicateIdMessage(UUID creatorNodeId, TcpDiscoveryNode node) {
+    public TcpDiscoveryDuplicateIdMessage(UUID creatorNodeId, TcpDiscoveryNode node, boolean foundInNodesHistory) {
         super(creatorNodeId);
 
         assert node != null;
 
         this.node = node;
+
+        this.foundInNodesHistory = foundInNodesHistory;
     }
 
     /**
@@ -51,6 +57,13 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
      */
     public TcpDiscoveryNode node() {
         return node;
+    }
+
+    /**
+     * @return Flag showing if duplicate ID was found in nodes history.
+     */
+    public boolean foundInNodesHistory() {
+        return foundInNodesHistory;
     }
 
     /** {@inheritDoc} */
