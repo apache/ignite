@@ -359,9 +359,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Default value for {@code TCP_NODELAY} socket option (value is <tt>true</tt>). */
     public static final boolean DFLT_TCP_NODELAY = true;
 
-    /** Default SO_LINGER to set for socket, 0 means enabled with zero timeout. */
-    public static final int DFLT_SO_LINGER = 5;
-
     /** Default value for {@code FILTER_REACHABLE_ADDRESSES} socket option (value is <tt>false</tt>). */
     public static final boolean DFLT_FILTER_REACHABLE_ADDRESSES = false;
 
@@ -1156,9 +1153,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** {@code TCP_NODELAY} option value for created sockets. */
     private boolean tcpNoDelay = DFLT_TCP_NODELAY;
 
-    /** {@code SO_LINGER} option value for created sockets. */
-    private int soLinger = DFLT_SO_LINGER;
-
     /** {@code FILTER_REACHABLE_ADDRESSES} option value for created sockets. */
     private boolean filterReachableAddresses = DFLT_FILTER_REACHABLE_ADDRESSES;
 
@@ -1765,30 +1759,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
-     * Sets value for {@code SO_LINGER} socket option. Each
-     * socket will be opened using provided value.
-     * <p>
-     * Setting non-negative option to will enable SO_LINGER to close sockets in predictable timeout in seconds.
-     * Setting negative option will disable this.
-     * <p>
-     *
-     * @param soLinger SoLinger value to set.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public void setSoLinger(int soLinger) {
-        this.soLinger = soLinger;
-    }
-
-    /**
-     * Gets value for {@code SO_LINGER} socket option.
-     *
-     * @return SO_LINGER value for sockets.
-     */
-    public int getSoLinger() {
-        return soLinger;
-    }
-
-    /**
      * Gets value for {@code FILTER_REACHABLE_ADDRESSES} socket option.
      *
      * @return {@code True} if needed to filter reachable addresses.
@@ -2245,7 +2215,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             log.debug(configInfo("directSendBuf", directSndBuf));
             log.debug(configInfo("selectorsCnt", selectorsCnt));
             log.debug(configInfo("tcpNoDelay", tcpNoDelay));
-            log.debug(configInfo("soLinger", soLinger));
             log.debug(configInfo("sockSndBuf", sockSndBuf));
             log.debug(configInfo("sockRcvBuf", sockRcvBuf));
             log.debug(configInfo("shmemPort", shmemPort));
@@ -3352,7 +3321,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     ch.socket().setTcpNoDelay(tcpNoDelay);
                     ch.socket().setKeepAlive(true);
-                    ch.socket().setSoLinger(getSoLinger() >= 0, getSoLinger());
 
                     if (sockRcvBuf > 0)
                         ch.socket().setReceiveBufferSize(sockRcvBuf);
@@ -5015,11 +4983,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** {@inheritDoc} */
         @Override public boolean isTcpNoDelay() {
             return TcpCommunicationSpi.this.isTcpNoDelay();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getSoLinger() {
-            return TcpCommunicationSpi.this.getSoLinger();
         }
 
         /** {@inheritDoc} */
