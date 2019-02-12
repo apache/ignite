@@ -32,6 +32,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Pattern;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -54,6 +56,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadFactory;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.PART_ID_SIZE;
+import static org.apache.ignite.internal.stat.IoStatisticsType.CACHE_GROUP;
 
 /**
  * Default {@link PageMemoryWarmingUp} implementation.
@@ -61,6 +64,15 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.PART_ID_SIZE;
 public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPagesTracker {
     /** Warm up directory name. */
     private static final String WARM_UP_DIR = "warm";
+
+    /** Throttle time in nanoseconds. */
+    private static final long THROTTLE_TIME_NANOS = 4_000;
+
+    /** How many last seconds we will check for throttle. */
+    private static final int THROTTLE_FIRST_CHECK_PERIOD = 3;
+
+    /** How many last seconds we will check for throttle. */
+    private static final int THROTTLE_CHECK_FREQUENCY = 1_000;
 
     /** Data region configuration. */
     private final DataRegionConfiguration dataRegCfg;
@@ -76,6 +88,21 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
     /** */
     private final ConcurrentMap<Long, Segment> segments = new ConcurrentHashMap<>();
+
+    /** Need throttling. */
+    private final AtomicBoolean needThrottling = new AtomicBoolean();
+
+    /** Throttling count. */
+    private final AtomicLong throttlingCnt = new AtomicLong();
+
+    /** Read rates last timestamp. */
+    private final AtomicLong readRatesLastTs = new AtomicLong();
+
+    /** Reads values. */
+    private final long[] readsVals = new long[THROTTLE_FIRST_CHECK_PERIOD];
+
+    /** Reads rates. */
+    private final long[] readsRates = new long[THROTTLE_FIRST_CHECK_PERIOD + 1]; // + ceil for rates
 
     /** Page memory. */
     private volatile PageMemoryEx pageMem;
@@ -240,7 +267,7 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
         try {
             if (log.isInfoEnabled())
-                log.info("Starting warming-up of DataRegion[name=" + dataRegCfg.getName() + "]");
+                log.info("Starting warming-up of DataRegion [name=" + dataRegCfg.getName() + "]");
 
             File[] segFiles = warmUpDir.listFiles(Segment.FILE_FILTER);
 
@@ -254,7 +281,15 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
             if (log.isInfoEnabled())
                 log.info("Saved warming-up files found: " + segFiles.length);
 
+            initReadsRate();
+
+            needThrottling.set(readsRates[readsRates.length - 1] == Long.MAX_VALUE);
+
+            if (needThrottling.get() && log.isInfoEnabled())
+                log.info("Detected need to throttle warming up.");
+
             long startTs = U.currentTimeMillis();
+            readRatesLastTs.set(startTs);
 
             SegmentLoader segmentLdr = new SegmentLoader();
 
@@ -275,9 +310,14 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
             for (File segFile : segFiles) {
                 Runnable dumpReader = () -> {
-                    pagesWarmed.addAndGet(segmentLdr.load(segFile));
+                    try {
+                        pagesWarmed.addAndGet(segmentLdr.load(segFile, needThrottling));
 
-                    completeFut.onDone();
+                        completeFut.onDone();
+                    }
+                    catch (Throwable e) {
+                        completeFut.onDone(e);
+                    }
                 };
 
                 if (multithreaded)
@@ -292,7 +332,7 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
             long warmingUpTime = U.currentTimeMillis() - startTs;
 
             if (log.isInfoEnabled()) {
-                log.info("Warming-up of DataRegion[name=" + dataRegCfg.getName() + "] finished in " +
+                log.info("Warming-up of DataRegion [name=" + dataRegCfg.getName() + "] finished in " +
                     warmingUpTime + " ms, pages warmed: " + pagesWarmed);
             }
         }
@@ -305,6 +345,138 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
             warmUpThread = null;
         }
+    }
+
+    /**
+     * Get first IO rates and set ceil for them into last element of rates array.
+     */
+    private void initReadsRate() {
+        readsVals[readsVals.length - 1] = ctx.kernalContext().ioStats().totalPhysicalReads(CACHE_GROUP);
+
+        if (readsVals[readsVals.length - 1] == Long.MAX_VALUE) {
+            Arrays.fill(readsVals, Long.MAX_VALUE);
+            Arrays.fill(readsRates, Long.MAX_VALUE);
+
+            return;
+        }
+
+        for (int i = 0; i < THROTTLE_FIRST_CHECK_PERIOD; i++) {
+            LockSupport.parkNanos(1_000_000_000L);
+
+            refreshRates();
+        }
+
+        readsRates[readsRates.length - 1] = readsRates[readsRates.length - 2];
+    }
+
+    /**
+     * Set new IO read rate for last element in rates array.
+     *
+     * @return New IO read rate.
+     */
+    private long refreshRates() {
+        for (int i = 0; i < readsVals.length - 1; i++) {
+            readsVals[i] = readsVals[i + 1];
+            readsRates[i] = readsRates[i + 1];
+        }
+
+        readsVals[readsVals.length - 1] = ctx.kernalContext().ioStats().totalPhysicalReads(CACHE_GROUP);
+        readsRates[readsVals.length - 1] = calculateRate(readsVals);
+
+        return readsRates[readsVals.length - 1];
+    }
+
+    /**
+     * @param reads IO reads.
+     * @return IO rate for given reads.
+     */
+    private long calculateRate(long[] reads) {
+        long curRate = 0;
+
+        for (int i = 1; i < reads.length; i++) {
+            long delta = reads[i] - reads[0];
+
+            if (curRate + delta / reads.length < 0)
+                return Long.MAX_VALUE;
+
+            curRate += delta / reads.length;
+        }
+
+        return curRate;
+    }
+
+    /**
+     * Check that we need to throttle warmUp.
+     *
+     * @return {@code True} if warmUp needs throttling.
+     */
+    private boolean needThrottling() {
+        if (readsVals[readsVals.length - 1] == Long.MAX_VALUE)
+            return true;
+
+        if (readsVals[0] == 0)
+            return false;
+
+        long highBorder = readsRates[readsRates.length - 1] + (long) (readsRates[readsRates.length - 1]
+            * dataRegCfg.getPageMemoryWarmingUpAccuracy());
+        long lowBorder = readsRates[readsRates.length - 1] - (long) (readsRates[readsRates.length - 1]
+            * dataRegCfg.getPageMemoryWarmingUpAccuracy());
+
+        if (needThrottling.get()) {
+            if (allLower(readsRates, lowBorder))
+                return false;
+
+            if (allHigher(readsRates, highBorder)) {
+                readsRates[readsRates.length - 1] = readsRates[readsRates.length - 2]; // inc ceil
+
+                return false;
+            }
+
+            return true;
+        }
+
+        if (allHigher(readsRates, highBorder)) {
+            readsRates[readsRates.length - 1] = readsRates[readsRates.length - 2]; // inc ceil
+
+            return false;
+        }
+
+        if (allHigher(readsRates, lowBorder)) {
+            if (log.isInfoEnabled())
+                log.info("Detected need to throttle warming up.");
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param rates IO read rates.
+     * @param border Top border.
+     * @return {@code True} if all rates are higher than given value.
+     */
+    private boolean allHigher(long[] rates, long border) {
+        for (int i = 0; i < rates.length - 1; i++) {
+            if (rates[i] <= border)
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param rates IO read rates.
+     * @param border Top border.
+     * @return {@code True} if all rates are lower than given value.
+     */
+    private boolean allLower(long[] rates, long border) {
+        for (int i = 0; i < rates.length - 1; i++) {
+            if (rates[i] >= border)
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -617,9 +789,10 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
          * If workers are setted, they will be used for multithreaded loading.
          *
          * @param segFile Dump file to be load.
+         * @param needThrottling Need throttling object.
          * @return Count of warmed pages.
          */
-        public int load(File segFile) {
+        public int load(File segFile, AtomicBoolean needThrottling) {
             AtomicBoolean del = new AtomicBoolean(false);
 
             AtomicInteger pagesWarmed = new AtomicInteger(0);
@@ -657,12 +830,22 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
                     long pageId = PageIdUtils.pageId(partId, pageIdx);
 
                     Runnable pageWarmer = () -> {
-                        if (loadPage(grpId, pageId))
-                            pagesWarmed.incrementAndGet();
-                        else
-                            del.set(true);
+                        try {
+                            if (loadPage(grpId, pageId)) {
+                                pagesWarmed.incrementAndGet();
 
-                        completeFut.onDone();
+                                incThrottleCounter();
+                            } else
+                                del.set(true);
+
+                            if (needThrottling.get())
+                                LockSupport.parkNanos(THROTTLE_TIME_NANOS);
+
+                            completeFut.onDone();
+                        }
+                        catch (Throwable e) {
+                            completeFut.onDone(e);
+                        }
                     };
 
                     if (multithreaded) {
@@ -691,7 +874,7 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
                 del.set(true);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to load warming-up file: " + segFile.getName(), e);
+                throw new IgniteException(e);
             }
             finally {
                 if (del.get() && !segFile.delete())
@@ -723,6 +906,33 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
             }
 
             return warmed;
+        }
+
+        /**
+         * Increase throttle counter and check throttling need.
+         */
+        private void incThrottleCounter() {
+            long cnt = throttlingCnt.addAndGet(1L);
+
+            if (cnt >= THROTTLE_CHECK_FREQUENCY) {
+                synchronized (throttlingCnt) {
+                    cnt = throttlingCnt.get();
+
+                    if (cnt >= THROTTLE_CHECK_FREQUENCY) {
+                        long newTs = U.currentTimeMillis();
+
+                        if (newTs - readRatesLastTs.get() >= 1) {
+                            refreshRates();
+
+                            readRatesLastTs.set(newTs);
+
+                            needThrottling.set(needThrottling());
+                        }
+                    }
+
+                    throttlingCnt.set(-THROTTLE_CHECK_FREQUENCY);
+                }
+            }
         }
     }
 }

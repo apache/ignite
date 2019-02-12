@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.io.File;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -27,9 +30,15 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,6 +69,9 @@ public class PageMemoryWarmingUpTest extends GridCommonAbstractTest {
 
     /** Warming up runtime dump delay. */
     protected long warmingUpRuntimeDumpDelay = 30_000;
+
+    /** Ignite. */
+    private volatile IgniteEx ignite;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -111,6 +123,91 @@ public class PageMemoryWarmingUpTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWarmingUp() throws Exception {
+        fillPersistence();
+
+        ListeningTestLogger log = new ListeningTestLogger(false, log());
+
+        LogListener throttleLsnr = throttleListener(false);
+
+        log.registerListener(throttleLsnr);
+
+        IgniteEx ignite = startGrid(getConfiguration(getTestIgniteInstanceName(0)).setGridLogger(log));
+
+        pushOutDiskCache();
+
+        IgniteCache<Integer, int[]> cache = ignite.getOrCreateCache(CACHE_NAME);
+
+        for (int i = valCnt; i >= 0; i--) {
+            long startTs = U.currentTimeMillis();
+
+            int key = i % valCnt; // Key '0' supposed as cold.
+
+            int[] val = cache.get(key);
+
+            info("### " + key + " get in " + (U.currentTimeMillis() - startTs) + " ms, val=" +
+                (val != null ? val.getClass().getSimpleName() + " [" + val.length + "]" : null));
+        }
+
+        assertTrue(throttleLsnr.check());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testWarmingUpWithLoad() throws Exception {
+        fillPersistence();
+
+        AtomicBoolean stop = new AtomicBoolean(false);
+
+        ListeningTestLogger log = new ListeningTestLogger(false, log());
+
+        LogListener throttleLsnr = throttleListener(true);
+        LogListener stopLsnr = LogListener.matches("Warming-up of DataRegion [name=default] finished in ")
+            .times(1).build();
+
+        log.registerListener(throttleLsnr);
+        log.registerListener(stopLsnr);
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setGridLogger(log);
+
+        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPageMemoryWarmingUpAccuracy(0.9)
+            .setDumpReadThreads(1);
+
+        GridTestUtils.runMultiThreadedAsync(getLoadRunnable(stop), 10, "put-thread");
+
+        boolean res = false;
+
+        try {
+            for (int i = 0; i < 10 && !res; i++) {
+                try {
+                    stopLsnr.reset();
+                    throttleLsnr.reset();
+
+                    ignite = startGrid(cfg);
+
+                    res = GridTestUtils.waitForCondition(stopLsnr::check, 180_000) && throttleLsnr.check();
+                }
+                catch (Throwable t) {
+                    Thread.interrupted();
+                }
+            }
+
+            assertTrue(res);
+        }
+        finally {
+            stop.set(true);
+
+            ignite.close();
+        }
+    }
+
+    /**
+     * Start node, put some vals into persistence and turn off the node.
+     *
+     * @throws Exception if failed.
+     */
+    private void fillPersistence() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -128,23 +225,71 @@ public class PageMemoryWarmingUpTest extends GridCommonAbstractTest {
         forceCheckpoint(ignite);
 
         ignite.close();
+    }
 
-        pushOutDiskCache();
+    /**
+     * @param expectThrottle Expect throttle.
+     * @return LogListener expecting throttle message.
+     */
+    private LogListener throttleListener(boolean expectThrottle) {
+        LogListener.Builder builder = LogListener.matches("Detected need to throttle warming up.");
 
-        ignite = startGrid(0);
+        if (expectThrottle)
+            return builder.atLeast(1).build();
 
-        cache = ignite.getOrCreateCache(CACHE_NAME);
+        return builder.times(0).build();
+    }
 
-        for (int i = valCnt; i >= 0; i--) {
-            long startTs = U.currentTimeMillis();
+    /**
+     * @param stop Stop flag.
+     */
+    private Runnable getLoadRunnable(AtomicBoolean stop) {
+        return new Runnable() {
+            @Override public void run() {
+                Random r = new Random();
 
-            int key = i % valCnt; // Key '0' supposed as cold.
+                int[] val = new int[valSize/2];
 
-            val = cache.get(key);
+                Arrays.fill(val, r.nextInt(10));
 
-            System.out.println("### " + key + " get in " + (U.currentTimeMillis() - startTs) + " ms, val=" +
-                (val != null ? val.getClass().getSimpleName() + " [" + val.length + "]" : null));
-        }
+                while (!stop.get()) {
+                    boolean isIgniteAvailable = false;
+
+                    try {
+                        isIgniteAvailable = ignite != null && ignite.cluster().active();
+                    }
+                    catch (Throwable ignore) {}
+
+                    if (!isIgniteAvailable)
+                        continue;
+
+                    IgniteCache<Integer, int[]> cache0 = ignite.getOrCreateCache(CACHE_NAME);
+
+                    try {
+                        while (!stop.get()) {
+                            int k = valCnt - r.nextInt(valCnt / 2);
+
+                            info("put " + k);
+
+                            if (cache0.get(k) == null)
+                                cache0.put(k, val);
+                            else
+                                cache0.remove(k);
+
+                            IgniteKernal primaryNode = (IgniteKernal)primaryCache(k, CACHE_NAME).unwrap(Ignite.class);
+                            GridCacheEntryEx entry = primaryNode.internalCache(CACHE_NAME).entryEx(k);
+
+                            try {
+                                entry.unswap();
+                            }
+                            catch (IgniteCheckedException | GridCacheEntryRemovedException ignore) {
+                            }
+                        }
+                    }
+                    catch (Throwable ignore) {}
+                }
+            }
+        };
     }
 
     /**

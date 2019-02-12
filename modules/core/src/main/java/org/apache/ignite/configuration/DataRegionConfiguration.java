@@ -91,6 +91,9 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public static final int OPTIMAL_DUMP_READ_THREADS = 4;
 
+    /** Default throttle accuracy. */
+    public static final double DFLT_THROTTLE_ACCURACY = 0.25;
+
     /** Data region name. */
     private String name = DFLT_DATA_REG_DEFAULT_NAME;
 
@@ -162,6 +165,9 @@ public final class DataRegionConfiguration implements Serializable {
     /** Count of threads which are used for warm up pages loading into memory. */
     private int pageLoadThreads = Math.min(
         OPTIMAL_PAGE_LOAD_THREADS, Runtime.getRuntime().availableProcessors());
+
+    /** Page memory warming up accuracy. */
+    private double pageMemoryWarmingUpAccuracy = DFLT_THROTTLE_ACCURACY;
 
     /** Temporary buffer size for checkpoints in bytes. */
     private long checkpointPageBufSize;
@@ -509,6 +515,22 @@ public final class DataRegionConfiguration implements Serializable {
         assert pageLoadThreads > 0;
 
         this.pageLoadThreads = pageLoadThreads;
+
+        return this;
+    }
+
+    /**
+     * @return Page memory warming up accuracy.
+     */
+    public double getPageMemoryWarmingUpAccuracy() {
+        return pageMemoryWarmingUpAccuracy;
+    }
+
+    /**
+     * @param pageMemoryWarmingUpAccuracy New page memory warming up accuracy.
+     */
+    public DataRegionConfiguration setPageMemoryWarmingUpAccuracy(double pageMemoryWarmingUpAccuracy) {
+        this.pageMemoryWarmingUpAccuracy = pageMemoryWarmingUpAccuracy;
 
         return this;
     }
