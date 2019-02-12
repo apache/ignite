@@ -1435,7 +1435,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!gctx.persistenceEnabled())
                 continue;
 
-            snapshotMgr.onCacheGroupStop(gctx);
+            snapshotMgr.onCacheGroupStop(gctx, tup.get2());
 
             PageMemoryEx pageMem = (PageMemoryEx)gctx.dataRegion().pageMemory();
 
