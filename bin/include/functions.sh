@@ -78,7 +78,7 @@ javaMajorVersion() {
 #
 checkJava() {
     # Check JAVA_HOME.
-    if [ "$JAVA_HOME" = "" ]; then
+    if [ "${JAVA_HOME:-}" = "" ]; then
         JAVA=`type -p java`
         RETCODE=$?
 
