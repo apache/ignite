@@ -71,7 +71,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
  */
 public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int TEST_SIZE = SF.applyLB(100_000, 10_000);
+    private static final int TEST_SIZE = SF.applyLB(30_000, 10_000);
 
     /** */
     private static final long TOPOLOGY_STILLNESS_TIME = SF.applyLB(30_000, 5_000);
@@ -107,17 +107,10 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
-
         TcpCommunicationSpi commSpi = new CollectingCommunicationSpi();
-
-        commSpi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         commSpi.setTcpNoDelay(true);
 
         iCfg.setCommunicationSpi(commSpi);
-
-        if (getTestIgniteInstanceName(10).equals(igniteInstanceName))
-            iCfg.setClientMode(true);
 
         CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -140,7 +133,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg2.setRebalanceDelay(SF.applyLB(5000, 500));
         cachePCfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-
         CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheRCfg.setName(CACHE_NAME_DHT_REPLICATED);
@@ -149,8 +141,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cacheRCfg.setRebalanceBatchSize(1);
         cacheRCfg.setRebalanceBatchesPrefetchCount(Integer.MAX_VALUE);
         cacheRCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        ((TcpCommunicationSpi)iCfg.getCommunicationSpi()).setSharedMemoryPort(-1);//Shmem fail fix for Integer.MAX_VALUE.
 
         CacheConfiguration<Integer, Integer> cacheRCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -162,7 +152,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         iCfg.setCacheConfiguration(cachePCfg, cachePCfg2, cacheRCfg, cacheRCfg2);
 
-        iCfg.setRebalanceThreadPoolSize(3);
+        iCfg.setRebalanceThreadPoolSize(1);
 
         return iCfg;
     }

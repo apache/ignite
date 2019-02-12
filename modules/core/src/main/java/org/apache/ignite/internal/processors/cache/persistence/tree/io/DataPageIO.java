@@ -246,44 +246,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     /**
      * @param pageAddr Page address.
      * @param dataOff Data offset.
-     * @param ver New version.
-     */
-    public void updateVersion(long pageAddr, int dataOff, MvccVersion ver) {
-        long addr = pageAddr + dataOff;
-
-        updateVersion(addr, ver.coordinatorVersion(), ver.counter(), ver.operationCounter());
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param itemId Item ID.
-     * @param pageSize Page size.
-     * @param mvccCrd Mvcc coordinator.
-     * @param mvccCntr Mvcc counter.
-     * @param mvccOpCntr Operation counter.
-     */
-    public void updateVersion(long pageAddr, int itemId, int pageSize, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
-
-        long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
-
-        updateVersion(addr, mvccCrd, mvccCntr, mvccOpCntr);
-    }
-
-    /**
-     * @param addr Address.
-     * @param mvccCrd Mvcc coordinator.
-     * @param mvccCntr Mvcc counter.
-     */
-    private void updateVersion(long addr, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        PageUtils.putLong(addr, 0, mvccCrd);
-        PageUtils.putLong(addr, 8, mvccCntr);
-        PageUtils.putInt(addr, 16, mvccOpCntr);
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param dataOff Data offset.
      * @param mvccCrd Mvcc coordinator.
      * @param mvccCntr Mvcc counter.
      * @param mvccOpCntr Operation counter.
@@ -325,7 +287,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         int opCntr = rawMvccOperationCounter(addr, 0);
 
-        rawMvccOperationCounter(addr, 0, ((int)txState << MVCC_HINTS_BIT_OFF) | (opCntr & ~MVCC_HINTS_MASK));
+        rawMvccOperationCounter(addr, 0, (opCntr & ~MVCC_HINTS_MASK) | ((int)txState << MVCC_HINTS_BIT_OFF));
     }
 
     /**
@@ -341,7 +303,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         int opCntr = rawNewMvccOperationCounter(addr, 0);
 
-        rawNewMvccOperationCounter(addr, 0, ((int)txState << MVCC_HINTS_BIT_OFF) | (opCntr & ~MVCC_HINTS_MASK));
+        rawNewMvccOperationCounter(addr, 0, (opCntr & ~MVCC_HINTS_MASK) | (txState << MVCC_HINTS_BIT_OFF));
     }
 
     /**
