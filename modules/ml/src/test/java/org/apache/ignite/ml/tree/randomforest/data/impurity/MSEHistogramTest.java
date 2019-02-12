@@ -97,14 +97,14 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
         List<MSEHistogram> partitions1 = new ArrayList<>();
         List<MSEHistogram> partitions2 = new ArrayList<>();
 
-        int cntOfPartitions = rnd.nextInt(100);
+        int cntOfPartitions = rnd.nextInt(100) + 1;
 
         for (int i = 0; i < cntOfPartitions; i++) {
             partitions1.add(new MSEHistogram(sampleId, bucketMeta1));
             partitions2.add(new MSEHistogram(sampleId, bucketMeta2));
         }
 
-        int datasetSize = rnd.nextInt(1000);
+        int datasetSize = rnd.nextInt(1000) + 1;
         for(int i = 0; i < datasetSize; i++) {
             BootstrappedVector vec = randomVector(false);
             vec.features().set(1, (vec.features().get(1) * 100) % 100);
