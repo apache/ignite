@@ -642,7 +642,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
                 return null;
             }
-        }, SQLException.class, "The query isn't SELECT query");
+        }, SQLException.class, "Given statement type does not match that declared by JDBC driver");
     }
 
     /**
@@ -727,7 +727,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
                 return null;
             }
-        }, SQLException.class, "The query isn't SELECT query");
+        }, SQLException.class, "Given statement type does not match that declared by JDBC driver");
     }
 
     /**

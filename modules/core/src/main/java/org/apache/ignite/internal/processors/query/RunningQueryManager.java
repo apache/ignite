@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -117,6 +118,22 @@ public class RunningQueryManager {
     }
 
     /**
+     * Return SQL queries which executing right now.
+     *
+     * @return List of SQL running queries.
+     */
+    public List<GridRunningQueryInfo> runningSqlQueries() {
+        List<GridRunningQueryInfo> res = new ArrayList<>();
+
+        for (GridRunningQueryInfo run : runs.values()) {
+            if (isSqlQuery(run))
+                res.add(run);
+        }
+
+        return res;
+    }
+
+    /**
      * Check belongs running query to an SQL type.
      *
      * @param runningQryInfo Running query info object.
@@ -130,7 +147,7 @@ public class RunningQueryManager {
      * Return long running user queries.
      *
      * @param duration Duration of long query.
-     * @return List of queries which running longer than given duration.
+     * @return Collection of queries which running longer than given duration.
      */
     public Collection<GridRunningQueryInfo> longRunningQueries(long duration) {
         Collection<GridRunningQueryInfo> res = new ArrayList<>();
