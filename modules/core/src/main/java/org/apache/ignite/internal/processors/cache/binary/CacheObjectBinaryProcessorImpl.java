@@ -948,11 +948,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         AffinityKeyMapper cacheAffMapper = ccfg.getAffinityMapper();
 
-        boolean customAffMapper =
-            cacheAffMapper != null &&
-            !(cacheAffMapper instanceof CacheDefaultBinaryAffinityKeyMapper) &&
-            !(cacheAffMapper instanceof GridCacheDefaultAffinityKeyMapper);
-
         AffinityKeyMapper dfltAffMapper = binaryEnabled ?
             new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
             new GridCacheDefaultAffinityKeyMapper();
@@ -962,7 +957,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return new CacheObjectContext(ctx,
             ccfg.getName(),
             dfltAffMapper,
-            customAffMapper,
+            QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()),
             ccfg.isCopyOnRead(),
             storeVal,
             ctx.config().isPeerClassLoadingEnabled() && !isBinaryEnabled(ccfg),

@@ -24,7 +24,8 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
@@ -48,6 +49,9 @@ public class MapQueryLazyWorker extends GridWorker {
     /** Map query executor. */
     private final GridMapQueryExecutor exec;
 
+    /** Query context registry. */
+    private final QueryContextRegistry qryCtxRegistry;
+
     /** Latch decremented when worker finishes. */
     private final CountDownLatch stopLatch = new CountDownLatch(1);
 
@@ -61,13 +65,15 @@ public class MapQueryLazyWorker extends GridWorker {
      * @param key Lazy worker key.
      * @param log Logger.
      * @param exec Map query executor.
+     * @param qryCtxRegistry Query context registry.
      */
     public MapQueryLazyWorker(@Nullable String instanceName, MapQueryLazyWorkerKey key, IgniteLogger log,
-        GridMapQueryExecutor exec) {
+        GridMapQueryExecutor exec, QueryContextRegistry qryCtxRegistry) {
         super(instanceName, workerName(instanceName, key), log);
 
         this.key = key;
         this.exec = exec;
+        this.qryCtxRegistry = qryCtxRegistry;
     }
 
     /** {@inheritDoc} */
@@ -133,12 +139,12 @@ public class MapQueryLazyWorker extends GridWorker {
                 }
             });
         else {
-            GridH2QueryContext qctx = GridH2QueryContext.get();
+            QueryContext qctx = qryCtxRegistry.getThreadLocal();
 
             if (qctx != null) {
                 qctx.clearContext(nodeStop);
 
-                GridH2QueryContext.clearThreadLocal();
+                qryCtxRegistry.clearThreadLocal();
             }
 
             isCancelled = true;
