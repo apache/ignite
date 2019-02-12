@@ -40,6 +40,9 @@ public class PrewarmingConfiguration implements Serializable {
      */
     public static final int OPTIMAL_DUMP_READ_THREADS = 4;
 
+    /** Default throttle accuracy. */
+    public static final double DFLT_THROTTLE_ACCURACY = 0.25;
+
     /** Prewarming of indexes only flag. */
     private boolean indexesOnly;
 
@@ -56,6 +59,9 @@ public class PrewarmingConfiguration implements Serializable {
     /** Count of threads which are used for warm up pages loading into memory. */
     private int pageLoadThreads = Math.min(
         OPTIMAL_PAGE_LOAD_THREADS, Runtime.getRuntime().availableProcessors());
+
+    /** Prewarming throttle accuracy. */
+    private double throttleAccuracy = DFLT_THROTTLE_ACCURACY;
 
     /**
      * If enabled, only index partitions will be tracked and warmed up.
@@ -166,6 +172,22 @@ public class PrewarmingConfiguration implements Serializable {
         assert pageLoadThreads > 0;
 
         this.pageLoadThreads = pageLoadThreads;
+
+        return this;
+    }
+
+    /**
+     * @return Prewarming throttle accuracy.
+     */
+    public double getThrottleAccuracy() {
+        return throttleAccuracy;
+    }
+
+    /**
+     * @param throttleAccuracy New prewarming throttle accuracy.
+     */
+    public PrewarmingConfiguration setThrottleAccuracy(double throttleAccuracy) {
+        this.throttleAccuracy = throttleAccuracy;
 
         return this;
     }
