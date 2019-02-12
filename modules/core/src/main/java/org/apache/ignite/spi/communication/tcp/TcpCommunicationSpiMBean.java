@@ -233,6 +233,14 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public boolean isTcpNoDelay();
 
     /**
+     * Gets value for {@code SO_LINGER} socket option.
+     *
+     * @return Negative value is SO_LINGER is disabled.
+     */
+    @MXBeanDescription("SO_LINGER socket option value.")
+    public int getSoLinger();
+
+    /**
      * Gets flag defining whether direct send buffer should be used.
      *
      * @return {@code True} if direct buffers should be used.
