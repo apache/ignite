@@ -671,6 +671,9 @@ public class GridAffinityAssignmentCache {
      * @return Cached affinity.
      */
     public AffinityAssignment cachedAffinity(AffinityTopologyVersion topVer) {
+        if (topVer.equals(AffinityTopologyVersion.NONE) || topVer.equals(lastVersion()))
+            return head.get();
+
         AffinityTopologyVersion lastAffChangeTopVer =
             ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(topVer);
 
