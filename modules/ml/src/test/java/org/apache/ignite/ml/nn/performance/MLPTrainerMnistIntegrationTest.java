@@ -54,7 +54,6 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-
     /**
      * {@inheritDoc}
      */

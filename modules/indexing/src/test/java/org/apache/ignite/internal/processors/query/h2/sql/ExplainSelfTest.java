@@ -52,6 +52,7 @@ public class ExplainSelfTest extends AbstractIndexingCommonTest {
     @Override protected void afterTestsStopped() throws Exception {
         ignite = null;
         cache = null;
+        super.afterTestsStopped();
     }
 
     /**

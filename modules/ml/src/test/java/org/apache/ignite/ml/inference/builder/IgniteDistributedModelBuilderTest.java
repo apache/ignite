@@ -40,7 +40,6 @@ public class IgniteDistributedModelBuilderTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-
     /**
      * {@inheritDoc}
      */

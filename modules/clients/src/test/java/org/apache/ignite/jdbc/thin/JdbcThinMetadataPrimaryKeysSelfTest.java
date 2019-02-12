@@ -147,5 +147,4 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
                 Arrays.asList(expPKFields), colNames);
         }
     }
-
 }

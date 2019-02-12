@@ -189,7 +189,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         startGridsMultiThreaded(4);
     }
 
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         execute("DELETE FROM \"Person\".Person");
