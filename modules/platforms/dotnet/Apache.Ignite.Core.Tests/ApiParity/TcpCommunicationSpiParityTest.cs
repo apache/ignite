@@ -65,9 +65,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         };
 
         /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties = {
-            "soLinger"
-        };
+        private static readonly string[] MissingProperties = {};
 
         /// <summary>
         /// Tests the cache configuration parity.
