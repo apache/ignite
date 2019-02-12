@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
@@ -55,9 +57,9 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -716,6 +718,39 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             "\"template=cache\"");
+    }
+
+    /**
+     * Regression test for "if not exists" in case custom schema is used. Creates the same "schema.table" specifying sql
+     * schema implicitly and explicitly.
+     */
+    @Test
+    public void testCreateTableIfNotExistsCustomSchema() {
+        Ignite ignite = grid(0);
+
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache("test");
+
+        String createTblNoSchema = "CREATE TABLE IF NOT EXISTS City(id LONG PRIMARY KEY, name VARCHAR)";
+
+        String createTblExplicitSchema = "CREATE TABLE IF NOT EXISTS \"test\".City(id LONG PRIMARY KEY, name1 VARCHAR);";
+
+        // Schema is "test" due to cache name implicitly:
+        cache.query(new SqlFieldsQuery(createTblNoSchema));
+        cache.query(new SqlFieldsQuery(createTblNoSchema));
+
+        // Schema is "test" because it is specified in the text of the sql query.
+        cache.query(new SqlFieldsQuery(createTblExplicitSchema));
+        cache.query(new SqlFieldsQuery(createTblExplicitSchema));
+
+        // Schema is "test", because it is specified in SqlFieldsQuery field.
+        cache.query(new SqlFieldsQuery(createTblNoSchema).setSchema("test"));
+        cache.query(new SqlFieldsQuery(createTblNoSchema).setSchema("test"));
+
+        //only one City table should be created.
+        List<List<?>> cityTabs = cache.query(new SqlFieldsQuery(
+            "SELECT SCHEMA_NAME, TABLE_NAME FROM IGNITE.TABLES WHERE TABLE_NAME = 'CITY';")).getAll();
+
+        assertEqualsCollections(Collections.singletonList(Arrays.asList("test", "CITY")), cityTabs);
     }
 
     /**
