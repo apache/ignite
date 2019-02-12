@@ -42,7 +42,7 @@ import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFa
  *
  * In this example GMM are used for gaussians shape recovering - means and covariances of them.
  */
-public class GmmClusterizationAlgorithmExample {
+public class GmmClusterizationExample {
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> GMM clustering algorithm over cached dataset usage example started.");
