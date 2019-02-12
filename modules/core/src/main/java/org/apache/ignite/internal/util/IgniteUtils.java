@@ -75,6 +75,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
@@ -104,6 +105,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -209,9 +211,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -249,9 +253,11 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -953,6 +959,18 @@ public abstract class IgniteUtils {
                     ((IgniteClientDisconnectedCheckedException)e).reconnectFuture(),
                     e.getMessage(),
                     e);
+            }
+        });
+
+        m.put(IgniteTxSerializationCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new TransactionSerializationException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxDuplicateKeyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new TransactionDuplicateKeyException(e.getMessage(), e);
             }
         });
 
@@ -10502,6 +10520,48 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Puts additional text to thread name.
+     * Calls {@code enhanceThreadName(Thread.currentThread(), text)}.
+     * For details see {@link #enhanceThreadName(Thread, String)}.
+     *
+     * @param text Text to be set in thread name in square [] braces. Does nothing if cannot find suitable braces.
+     */
+    public static void enhanceThreadName(String text) {
+        enhanceThreadName(Thread.currentThread(), text);
+    }
+
+    /**
+     * Puts additional text to thread name. It finds first square braces in thread name and
+     * sets required text in them. For example, thread has name "my-thread-[]-%gridname%". After
+     * calling {@code enhanceThreadName(thread, "myText")}, the name of the thread will
+     * be "my-thread-[myText]-%gridname%".<br>
+     * This allows to set additional mutable info to thread, like remote host IP address or so.
+     *
+     * @param thread Thread to be renamed, it must contain square braces in name []. Does nothing if {@code null}.
+     * @param text Text to be set in thread name in square [] braces. Does nothing if cannot find suitable braces.
+     */
+    public static void enhanceThreadName(@Nullable Thread thread, String text) {
+        if (thread == null)
+            return;
+
+        String threadName = thread.getName();
+
+        int idxStart = threadName.indexOf('[');
+        int idxEnd = threadName.indexOf(']');
+
+        if (idxStart < 0 || idxEnd < 0 || idxStart >= idxEnd)
+            return;
+
+        StringBuilder sb = new StringBuilder(threadName.length());
+
+        sb.append(threadName, 0, idxStart + 1);
+        sb.append(text);
+        sb.append(threadName, idxEnd, threadName.length());
+
+        thread.setName(sb.toString());
+    }
+
+    /**
      * @param ctx Context.
      *
      * @return instance of current baseline topology if it exists
@@ -11122,5 +11182,59 @@ public abstract class IgniteUtils {
         catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     *  Safely write buffer fully to blocking socket channel.
+     *  Will throw assert if non blocking channel passed.
+     *
+     * @param sockCh WritableByteChannel.
+     * @param buf Buffer.
+     * @throws IOException IOException.
+     */
+    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
+        int totalWritten = 0;
+
+        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
+
+        while (buf.hasRemaining()) {
+            int written = sockCh.write(buf);
+
+            if (written < 0)
+                throw new IOException("Error writing buffer to channel " +
+                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
+
+            totalWritten += written;
+        }
+    }
+
+    /**
+     * @return New identity hash set.
+     */
+    public static <X> Set<X> newIdentityHashSet() {
+        return Collections.newSetFromMap(new IdentityHashMap<>());
+    }
+
+    /**
+     * @param stripes Number of stripes.
+     * @param grpId Group Id.
+     * @param partId Partition Id.
+     * @return Stripe idx.
+     */
+    public static int stripeIdx(int stripes, int grpId, int partId) {
+        assert partId >= 0;
+
+        return Math.abs((Math.abs(grpId) + partId)) % stripes;
+    }
+
+    /**
+     * Check if flag set.
+     *
+     * @param flags Flags.
+     * @param flag Flag.
+     * @return {@code True} if set.
+     */
+    public static boolean isFlagSet(int flags, int flag) {
+        return (flags & flag) == flag;
     }
 }

@@ -92,6 +92,13 @@ public class GridSqlColumn extends GridSqlElement {
         this.tblAlias = tblAlias;
     }
 
+    /**
+     * @return Table alias.
+     */
+    public String tableAlias() {
+        return tblAlias;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
         String sql = Parser.quoteIdentifier(colName);
@@ -132,14 +139,14 @@ public class GridSqlColumn extends GridSqlElement {
      * @return Precision.
      */
     public int precision() {
-        return (int) col.getPrecision();
+        return (int) col.getType().getPrecision();
     }
 
     /**
      * @return Scale.
      */
     public int scale() {
-        return col.getScale();
+        return col.getType().getScale();
     }
 
     /**

@@ -49,7 +49,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -104,6 +103,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -176,19 +178,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         };
 
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9543");
-
-        super.setUp();
-    }
-
     /** Dflt grid. */
-    protected transient Ignite dfltIgnite;
+    protected static transient Ignite dfltIgnite;
 
     /** */
-    private Map<String, CacheConfiguration[]> cacheCfgMap;
+    private static Map<String, CacheConfiguration[]> cacheCfgMap;
+
+    /** */
+    @Before
+    public void beforeGridCacheAbstractFullApiSelfTest()  {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9543", MvccFeatureChecker.forcedMvcc());
+    }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -207,6 +207,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9543", MvccFeatureChecker.forcedMvcc());
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
@@ -284,10 +286,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @throws Exception if something goes bad.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-4380")
     @Test
     public void testInvokeAllMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4380");
-
         final IgniteCache<String, Integer> cache = jcache();
         final int threadCnt = 4;
         final int cnt = 5000;
@@ -5163,8 +5164,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 checkIteratorsCleared();
             }
             catch (Throwable t) {
-                // If AssertionFailedError is in the chain, assume we need to wait and retry.
-                if (!X.hasCause(t, AssertionFailedError.class))
+                // If AssertionError is in the chain, assume we need to wait and retry.
+                if (!X.hasCause(t, AssertionError.class))
                     throw t;
 
                 if (i == 9) {
@@ -6526,7 +6527,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                     size++;
 
-                    e.touch(null);
+                    e.touch();
                 }
             }
 

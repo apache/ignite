@@ -53,8 +53,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -63,7 +61,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final long DURATION = 60_000;
@@ -132,8 +129,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(GRID_CNT);
@@ -141,7 +136,9 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        super.afterTestsStopped();
+
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */

@@ -50,8 +50,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -59,7 +57,6 @@ import org.locationtech.jts.io.WKTReader;
 /**
  * Geo-indexing test.
  */
-@RunWith(JUnit4.class)
 public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int CNT = 100;

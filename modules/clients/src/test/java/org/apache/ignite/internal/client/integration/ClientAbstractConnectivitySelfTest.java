@@ -39,13 +39,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests the REST client-server connectivity with various configurations.
  */
-@RunWith(JUnit4.class)
 public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstractTest {
     /** */
     private static final String WILDCARD_IP = "0.0.0.0";

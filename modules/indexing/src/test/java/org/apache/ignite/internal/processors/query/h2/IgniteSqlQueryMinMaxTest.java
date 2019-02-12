@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -24,16 +25,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.List;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /** Test for SQL min() and max() optimization */
-@RunWith(JUnit4.class)
-public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
+public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
     /** Name of the cache for test */
     private static final String CACHE_NAME = "intCache";
 

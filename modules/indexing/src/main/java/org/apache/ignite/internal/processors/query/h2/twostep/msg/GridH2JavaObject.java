@@ -44,7 +44,7 @@ public class GridH2JavaObject extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2JavaObject(Value val) {
-        assert val.getType() == Value.JAVA_OBJECT : val.getType();
+        assert val.getValueType() == Value.JAVA_OBJECT : val.getType();
 
         b = val.getBytesNoCopy();
     }

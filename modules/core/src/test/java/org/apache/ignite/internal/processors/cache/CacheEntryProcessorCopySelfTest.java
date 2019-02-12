@@ -31,18 +31,14 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for value copy in entry processor.
  */
-@RunWith(JUnit4.class)
 public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
     /** Old value. */
     private static final int OLD_VAL = 100;
@@ -164,7 +160,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
 
             CacheObject obj = entry.peekVisibleValue();
 
-            entry.touch(AffinityTopologyVersion.NONE);
+            entry.touch();
 
             int actCnt = cnt.get();
 

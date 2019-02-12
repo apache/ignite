@@ -31,8 +31,8 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.result.SortOrder;
 import org.h2.value.CompareMode;
 import org.h2.value.Value;
@@ -52,8 +52,6 @@ import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.util.SerializationUtils;
 
 import static org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper.CANT_BE_COMPARE;
@@ -61,8 +59,7 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
 /**
  * Simple tests for {@link InlineIndexHelper}.
  */
-@RunWith(JUnit4.class)
-public class InlineIndexHelperTest extends GridCommonAbstractTest {
+public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
     /** */
     private static final int CACHE_ID = 42;
 
@@ -595,7 +592,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             int off = 0;
             int max = 255;
 
-            InlineIndexHelper ih = new InlineIndexHelper("", v1.getType(), 1, 0,
+            InlineIndexHelper ih = new InlineIndexHelper("", v1.getType().getValueType(), 1, 0,
                 CompareMode.getInstance(null, 0));
 
             off += ih.put(pageAddr, off, v1, max - off);

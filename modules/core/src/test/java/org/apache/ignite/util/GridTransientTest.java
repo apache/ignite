@@ -25,14 +25,11 @@ import java.io.Serializable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Transient value serialization test.
  */
 @GridCommonTest(group = "Utils")
-@RunWith(JUnit4.class)
 public class GridTransientTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final String VALUE = "value";

@@ -1,0 +1,44 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'statistics'
+-var model = '$ctrl.clonedCache'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Statistics
+    panel-description Cache statistics and management settings.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Statistics enabled',
+                    model: `${model}.statisticsEnabled`,
+                    name: '"statisticsEnabled"',
+                    tip: 'Flag indicating whether statistics gathering is enabled on this cache'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Management enabled',
+                    model: `${model}.managementEnabled`,
+                    name: '"managementEnabled"',
+                    tip: 'Flag indicating whether management is enabled on this cache<br/>\
+                         If enabled the CacheMXBean for each cache is registered in the platform MBean server'
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'cacheStatistics')

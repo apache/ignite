@@ -48,8 +48,6 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
@@ -58,7 +56,6 @@ import static org.apache.ignite.lang.IgniteProductVersion.fromString;
  * Base discovery self-test class.
  * @param <T> SPI implementation class.
  */
-@RunWith(JUnit4.class)
 public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** */
     private static final String HTTP_ADAPTOR_MBEAN_NAME = "mbeanAdaptor:protocol=HTTP";

@@ -94,9 +94,14 @@ public final class GridSqlType {
      */
     public static GridSqlType fromColumn(Column c) {
         if (c.getName() != null)
-            c = new Column(null, c.getType(), c.getPrecision(), c.getScale(), c.getDisplaySize());
+            c = new Column(null, c.getType());
 
-        return new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(), c.getCreateSQL());
+        return new GridSqlType(
+            c.getType().getValueType(),
+            c.getType().getScale(),
+            c.getType().getPrecision(),
+            c.getType().getDisplaySize(),
+            c.getCreateSQL());
     }
 
     /**
@@ -104,10 +109,10 @@ public final class GridSqlType {
      * @return Type.
      */
     public static GridSqlType fromExpression(Expression e) {
-        if (e.getType() == Value.UNKNOWN)
+        if (e.getType().getValueType() == Value.UNKNOWN)
             return UNKNOWN;
 
-        return fromColumn(new Column(null, e.getType(), e.getPrecision(), e.getScale(), e.getDisplaySize()));
+        return fromColumn(new Column(null, e.getType()));
     }
 
     /**

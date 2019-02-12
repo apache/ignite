@@ -31,7 +31,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiAbstractTestSuite;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.zookeeper.AsyncCallback;
@@ -40,13 +40,10 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ZookeeperClientTest extends GridCommonAbstractTest {
     /** */
     private static final int SES_TIMEOUT = 60_000;
@@ -573,7 +570,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     private void startZK(int instances) throws Exception {
         assert zkCluster == null;
 
-        zkCluster = ZookeeperDiscoverySpiAbstractTestSuite.createTestingCluster(instances);
+        zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(instances);
 
         zkCluster.start();
     }

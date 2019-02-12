@@ -17,18 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import org.h2.engine.Session;
-import org.h2.engine.SessionInterface;
 import org.h2.expression.Expression;
-import org.h2.message.DbException;
-import org.h2.result.LocalResult;
-import org.h2.result.SortOrder;
-import org.h2.util.Utils;
-import org.h2.util.ValueHashMap;
 import org.h2.value.Value;
-import org.h2.value.ValueArray;
 
 /**
  * H2 local result.
@@ -56,7 +47,10 @@ public class IgniteH2MemCheckLocalResult extends IgniteH2BaseLocalResult {
      * @param visibleColCnt the number of visible columns
      * @param mem Query memory manager.
      */
-    public IgniteH2MemCheckLocalResult(Session ses, Expression[] expressions, int visibleColCnt, IgniteH2QueryMemoryManager mem) {
+    public IgniteH2MemCheckLocalResult(Session ses,
+        Expression[] expressions,
+        int visibleColCnt,
+        IgniteH2QueryMemoryManager mem) {
         super(ses, expressions, visibleColCnt);
 
         assert mem != null;

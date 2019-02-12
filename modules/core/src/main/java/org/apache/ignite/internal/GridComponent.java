@@ -73,7 +73,10 @@ public interface GridComponent {
         ENCRYPTION_MGR,
 
         /** Service processor. */
-        SERVICE_PROC
+        SERVICE_PROC,
+
+        /** Distributed MetaStorage processor. */
+        META_STORAGE;
     }
 
     /**

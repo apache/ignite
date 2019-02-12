@@ -19,38 +19,38 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
+import org.h2.index.Index;
 import org.h2.index.IndexType;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
-import org.h2.table.Table;
 import org.h2.table.TableFilter;
 
 /**
  * H2 tree index base.
  */
-public abstract class H2TreeIndexBase extends GridH2IndexBase {
+public abstract class H2TreeIndexBase extends GridH2IndexBase implements Index {
     /**
-     * Initialize the base index.
+     * Constructor.
      *
-     * @param newTable the table.
-     * @param id the object id.
-     * @param name the index name.
-     * @param newIndexColumns the columns that are indexed or null if this is not yet known.
-     * @param newIndexType the index type.
+     * @param tbl Table.
+     * @param name Index name.
+     * @param cols Indexed columns.
+     * @param type Index type.
      */
-    protected H2TreeIndexBase(Table newTable, int id, String name, IndexColumn[] newIndexColumns,
-        IndexType newIndexType) {
-        super(newTable, id, name, newIndexColumns, newIndexType);
+    protected H2TreeIndexBase(GridH2Table tbl, String name, IndexColumn[] cols, IndexType type) {
+        super(tbl, name, cols, type);
     }
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder, AllColumnsForPlan allColsSet) {
+        SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
+
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
+        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 
         int mul = getDistributedMultiplier(ses, filters, filter);
 

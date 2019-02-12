@@ -50,8 +50,9 @@ public class IgniteH2LocalResultFactory extends LocalResultFactory {
      * @return Gathers memory manager fro query context.
      */
     private IgniteH2QueryMemoryManager memoryManager() {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        return (qctx != null) ?  qctx.queryMemoryManager() : null;
+        return null;
+//        QueryContext qctx = QueryContext.get();
+//
+//        return (qctx != null) ?  qctx.queryMemoryManager() : null;
     }
 }

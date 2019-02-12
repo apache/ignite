@@ -19,7 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.Collection;
 import java.util.HashSet;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeNoCha
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsWithCompactionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteShutdownOnSupplyMessageFailureTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.filename.IgniteUidAsConsistentIdMigrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.FsyncWalRolloverDoesNotBlockTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWALTailIsReachedDuringIterationOverArchiveTest;
@@ -45,23 +46,22 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteReplayWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteStandaloneWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
-/**
- *
- */
-@RunWith(AllTests.class)
+/** */
+@RunWith(DynamicSuite.class)
 public class IgnitePdsMvccTestSuite2 {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
-        TestSuite suite = new TestSuite("Ignite persistent Store Mvcc Test Suite 2");
-
         Collection<Class> ignoredTests = new HashSet<>();
+
+        // TODO IGNITE-7384: include test when implemented.
+        ignoredTests.add(IgniteShutdownOnSupplyMessageFailureTest.class);
 
         // Classes that are contained mvcc test already.
         ignoredTests.add(LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest.class);
@@ -95,8 +95,6 @@ public class IgnitePdsMvccTestSuite2 {
         ignoredTests.add(WalRolloverTypesTest.class);
         ignoredTests.add(FsyncWalRolloverDoesNotBlockTest.class);
 
-        suite.addTest(IgnitePdsTestSuite2.suite(ignoredTests));
-
-        return suite;
+        return IgnitePdsTestSuite2.suite(ignoredTests);
     }
 }

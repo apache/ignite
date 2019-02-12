@@ -42,7 +42,7 @@ public class GridH2Long extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Long(Value val) {
-        assert val.getType() == Value.LONG : val.getType();
+        assert val.getType().getValueType() == Value.LONG : val.getType();
 
         x = val.getLong();
     }

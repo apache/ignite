@@ -29,8 +29,10 @@ import org.h2.util.Bits;
 import org.h2.util.JdbcUtils;
 import org.h2.util.Utils;
 import org.h2.value.CompareMode;
+import org.h2.value.TypeInfo;
 import org.h2.value.Value;
 import org.h2.value.ValueJavaObject;
+import sun.rmi.rmic.iiop.ValueType;
 
 /**
  * H2 Value over {@link CacheObject}. Replacement for {@link ValueJavaObject}.
@@ -85,18 +87,13 @@ public class GridH2ValueCacheObject extends Value {
     }
 
     /** {@inheritDoc} */
-    @Override public int getType() {
+    @Override public TypeInfo getType() {
+        return TypeInfo.TYPE_JAVA_OBJECT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getValueType() {
         return Value.JAVA_OBJECT;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getPrecision() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getDisplaySize() {
-        return 64;
     }
 
     /** {@inheritDoc} */
@@ -193,7 +190,7 @@ public class GridH2ValueCacheObject extends Value {
 
         Value otherVal = (Value)other;
 
-        return otherVal.getType() == Value.JAVA_OBJECT
+        return otherVal.getType().getValueType() == Value.JAVA_OBJECT
             && getObject().equals(otherVal.getObject());
     }
 

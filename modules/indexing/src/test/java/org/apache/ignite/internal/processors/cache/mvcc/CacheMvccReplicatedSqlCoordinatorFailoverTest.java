@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheMode;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * SQL Mvcc coordinator failover test for replicated caches.
@@ -26,5 +28,12 @@ public class CacheMvccReplicatedSqlCoordinatorFailoverTest extends CacheMvccAbst
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.REPLICATED;
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
+    @Test
+    @Override public void testAccountsTxSql_SingleNode_CoordinatorFails_Persistence() throws Exception {
+        super.testAccountsTxSql_SingleNode_CoordinatorFails_Persistence();
     }
 }

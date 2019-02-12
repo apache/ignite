@@ -17,37 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroups;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCaches;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.index.Index;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.Connection;
@@ -62,6 +31,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroups;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroupsIOStatistics;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCaches;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewRunningQueries;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.index.Index;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Schema manager. Responsible for all manipulations on schema objects.
@@ -166,6 +167,9 @@ public class SchemaManager {
         views.add(new SqlSystemViewNodeMetrics(ctx));
         views.add(new SqlSystemViewCaches(ctx));
         views.add(new SqlSystemViewCacheGroups(ctx));
+        views.add(new SqlSystemViewCacheGroupsIOStatistics(ctx));
+        views.add(new SqlSystemViewRunningQueries(ctx));
+        views.add(new SqlSystemViewTables(ctx, this));
 
         return views;
     }
@@ -231,8 +235,9 @@ public class SchemaManager {
 
         H2Schema schema = schema(schemaName);
 
+        Connection conn = null;
         try {
-            Connection conn = connMgr.connectionForThread(schema.schemaName());
+            conn = connMgr.connectionForThread().connection(schema.schemaName());
 
             GridH2Table h2tbl = createTable(schema.schemaName(), schema, tblDesc, conn);
 
@@ -242,7 +247,7 @@ public class SchemaManager {
                 throw new IllegalStateException("Table already exists: " + h2tbl.identifierString());
         }
         catch (SQLException e) {
-            connMgr.onSqlException();
+            connMgr.onSqlException(conn);
 
             throw new IgniteCheckedException("Failed to register query type: " + tblDesc, e);
         }
@@ -440,9 +445,7 @@ public class SchemaManager {
 
         GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
 
-        H2RowFactory rowFactory = tbl.rowFactory(rowDesc);
-
-        GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql, rowDesc, rowFactory, tbl);
+        GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql, rowDesc, tbl);
 
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
             createInitialUserIndex(schemaName, tbl, usrIdx);
@@ -461,7 +464,7 @@ public class SchemaManager {
         if (log.isDebugEnabled())
             log.debug("Removing query index table: " + tbl.fullTableName());
 
-        Connection c = connMgr.connectionForThread(tbl.schemaName());
+        Connection c = connMgr.connectionForThread().connection(tbl.schemaName());
 
         Statement stmt = null;
 
@@ -476,7 +479,7 @@ public class SchemaManager {
             stmt.executeUpdate(sql);
         }
         catch (SQLException e) {
-            connMgr.onSqlException();
+            connMgr.onSqlException(c);
 
             throw new IgniteSQLException("Failed to drop database index table [type=" + tbl.type().name() +
                 ", table=" + tbl.fullTableName() + "]", IgniteQueryErrorCode.TABLE_DROP_FAILED, e);
@@ -692,6 +695,13 @@ public class SchemaManager {
      */
     public GridH2Table dataTable(String schemaName, String tblName) {
         return dataTables.get(new QueryTable(schemaName, tblName));
+    }
+
+    /**
+     * @return all known tables.
+     */
+    public Collection<GridH2Table> dataTables() {
+        return dataTables.values();
     }
 
     /**

@@ -43,13 +43,17 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
     /** */
     private final String cacheName;
 
+    /** */
+    private final int grpId;
+
     /**
      * @param cacheName Name of cache.
      */
-    public IoStatisticsHolderCache(String cacheName) {
+    public IoStatisticsHolderCache(String cacheName, int grpId) {
         assert cacheName != null;
 
         this.cacheName = cacheName;
+        this.grpId = grpId;
     }
 
     /** {@inheritDoc} */
@@ -109,6 +113,13 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
     @Override public void resetStatistics() {
         logicalReadCtr.reset();
         physicalReadCtr.reset();
+    }
+
+    /**
+     * @return Cache group id.
+     */
+    public int cacheGroupId(){
+        return grpId;
     }
 
     /** {@inheritDoc} */

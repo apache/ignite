@@ -30,13 +30,10 @@ import org.apache.ignite.internal.client.router.impl.GridTcpRouterImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Abstract base class for http routing tests.
  */
-@RunWith(JUnit4.class)
 public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
     /** Port number to use by router. */
     private static final int ROUTER_PORT = BINARY_PORT + 1;

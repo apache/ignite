@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiConfigSelfTest;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiSecondCacheSelfTest;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiSelfTest;
@@ -32,38 +30,30 @@ import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiMultip
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiSelfTest;
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiStartStopSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Grid SPI checkpoint self test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    CacheCheckpointSpiConfigSelfTest.class,
+    CacheCheckpointSpiSelfTest.class,
+    CacheCheckpointSpiStartStopSelfTest.class,
+    CacheCheckpointSpiSecondCacheSelfTest.class,
+
+    // JDBC.
+    JdbcCheckpointSpiConfigSelfTest.class,
+    JdbcCheckpointSpiCustomConfigSelfTest.class,
+    JdbcCheckpointSpiDefaultConfigSelfTest.class,
+    JdbcCheckpointSpiStartStopSelfTest.class,
+
+    // Shared FS.
+    GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest.class,
+    GridSharedFsCheckpointSpiSelfTest.class,
+    GridSharedFsCheckpointSpiStartStopSelfTest.class,
+    GridSharedFsCheckpointSpiConfigSelfTest.class,
+    //GridSharedFsCheckpointSpiMultiThreadedSelfTest.class,
+})
 public class IgniteSpiCheckpointSelfTestSuite {
-    /**
-     * @return Checkpoint test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Checkpoint Test Suite");
-
-        // Cache.
-        suite.addTest(new JUnit4TestAdapter(CacheCheckpointSpiConfigSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheCheckpointSpiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheCheckpointSpiStartStopSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheCheckpointSpiSecondCacheSelfTest.class));
-
-        // JDBC.
-        suite.addTest(new JUnit4TestAdapter(JdbcCheckpointSpiConfigSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(JdbcCheckpointSpiCustomConfigSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(JdbcCheckpointSpiDefaultConfigSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(JdbcCheckpointSpiStartStopSelfTest.class));
-
-        // Shared FS.
-        suite.addTest(new JUnit4TestAdapter(GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSharedFsCheckpointSpiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSharedFsCheckpointSpiStartStopSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSharedFsCheckpointSpiConfigSelfTest.class));
-        //suite.addTest(new JUnit4TestAdapter(GridSharedFsCheckpointSpiMultiThreadedSelfTest.class));
-
-        return suite;
-    }
 }

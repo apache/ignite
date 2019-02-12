@@ -42,7 +42,7 @@ public class GridH2Float extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Float(Value val) {
-        assert val.getType() == Value.FLOAT : val.getType();
+        assert val.getType().getValueType() == Value.FLOAT : val.getType();
 
         x = val.getFloat();
     }

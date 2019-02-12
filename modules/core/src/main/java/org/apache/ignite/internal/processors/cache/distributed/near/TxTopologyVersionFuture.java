@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Future to obtain/lock topology version for SELECT FOR UPDATE.
@@ -166,5 +167,10 @@ public class TxTopologyVersionFuture extends GridFutureAdapter<AffinityTopologyV
      */
     public boolean clientFirst() {
         return cctx.localNode().isClient() && !topLocked && !tx.hasRemoteLocks();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TxTopologyVersionFuture.class, this, super.toString());
     }
 }

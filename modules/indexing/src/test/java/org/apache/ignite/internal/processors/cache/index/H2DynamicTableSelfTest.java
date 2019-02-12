@@ -57,7 +57,7 @@ import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -67,14 +67,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.DataType;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for CREATE/DROP TABLE.
  */
 @SuppressWarnings("ThrowableNotThrown")
-@RunWith(JUnit4.class)
 public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
     private static final int CLIENT = 2;
@@ -936,7 +933,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Tests table name conflict check in {@link DdlStatementsProcessor}.
+     * Tests table name conflict check in {@link CommandProcessor}.
      * @throws Exception if failed.
      */
     @Test

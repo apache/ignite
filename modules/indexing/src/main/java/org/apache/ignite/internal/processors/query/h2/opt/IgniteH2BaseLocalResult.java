@@ -19,75 +19,46 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.TreeMap;
+import org.h2.engine.Database;
 import org.h2.engine.Session;
 import org.h2.engine.SessionInterface;
 import org.h2.expression.Expression;
 import org.h2.message.DbException;
+import org.h2.mvstore.db.MVTempResult;
 import org.h2.result.LocalResult;
+import org.h2.result.LocalResultImpl;
+import org.h2.result.ResultExternal;
 import org.h2.result.SortOrder;
 import org.h2.util.Utils;
-import org.h2.util.ValueHashMap;
+import org.h2.value.TypeInfo;
 import org.h2.value.Value;
-import org.h2.value.ValueArray;
+import org.h2.value.ValueRow;
 
 /**
  * H2 local result.
  */
 public class IgniteH2BaseLocalResult implements LocalResult {
-    /** H2 Session. */
-    private Session ses;
 
-    /** Visible column count. */
-    private int visibleColCnt;
-
-    /** Expressions. */
+    private int maxMemoryRows;
+    private Session session;
+    private int visibleColumnCount;
     private Expression[] expressions;
-
-    /** Row ID counter. */
-    private int rowId;
-
-    /** Row count. */
-    private int rowCount;
-
-    /** Rows. */
+    private int rowId, rowCount;
     private ArrayList<Value[]> rows;
-
-    /** Sort. */
     private SortOrder sort;
-
-    /** Distinct rows. */
-    private ValueHashMap<Value[]> distinctRows;
-
-    /** Current row. */
+    private TreeMap<Value, Value[]> distinctRows;
     private Value[] currentRow;
-
-    /** Offset. */
     private int offset;
-
-    /** Limit. */
     private int limit = -1;
-
-    /** Fetch percent. */
     private boolean fetchPercent;
-
-    /** With ties. */
-    private boolean withTies;
-
-    /** Limits were applied. */
+    private SortOrder withTiesSortOrder;
     private boolean limitsWereApplied;
-
-    /** Distinct. */
+    private ResultExternal external;
     private boolean distinct;
-
-    /** Distinct indexes. */
-    private int[] distinctIdxs;
-
-    /** Closed. */
+    private int[] distinctIndexes;
     private boolean closed;
-
-    /** Contains lobs. */
     private boolean containsLobs;
-
     private Boolean containsNull;
 
     /**
@@ -100,45 +71,66 @@ public class IgniteH2BaseLocalResult implements LocalResult {
     /**
      * Construct a local result object.
      *
-     * @param ses the session
+     * @param session the session
      * @param expressions the expression array
-     * @param visibleColCnt the number of visible columns
+     * @param visibleColumnCount the number of visible columns
      */
-    public IgniteH2BaseLocalResult(Session ses, Expression[] expressions, int visibleColCnt) {
-        this.ses = ses;
-        this.rows = Utils.newSmallArrayList();
-        this.visibleColCnt = visibleColCnt;
-        this.rowId = -1;
+    public IgniteH2BaseLocalResult(Session session, Expression[] expressions,
+        int visibleColumnCount) {
+        this.session = session;
+        if (session == null) {
+            this.maxMemoryRows = Integer.MAX_VALUE;
+        }
+        else {
+            Database db = session.getDatabase();
+            if (db.isPersistent() && !db.isReadOnly()) {
+                this.maxMemoryRows = session.getDatabase().getMaxMemoryRows();
+            }
+            else {
+                this.maxMemoryRows = Integer.MAX_VALUE;
+            }
+        }
+        rows = Utils.newSmallArrayList();
+        this.visibleColumnCount = visibleColumnCount;
+        rowId = -1;
         this.expressions = expressions;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isLazy() {
+    @Override
+    public boolean isLazy() {
         return false;
     }
 
-    /**
-     * Does nothing. Ignite manages memory during SQL query execution.
-     */
-    @Override public void setMaxMemoryRows(int maxValue) {
-        // No-op.
+    @Override
+    public void setMaxMemoryRows(int maxValue) {
+        this.maxMemoryRows = maxValue;
     }
 
     /**
-     * Create a shallow copy of the result set. The data and a temporary table
-     * (if there is any) is not copied.
+     * Create a shallow copy of the result set. The data and a temporary table (if there is any) is not copied.
      *
      * @param targetSession the session of the copy
      * @return the copy if possible, or null if copying is not possible
      */
-    @Override public IgniteH2BaseLocalResult createShallowCopy(SessionInterface targetSession) {
-        if (containsLobs)
+    @Override
+    public IgniteH2BaseLocalResult createShallowCopy(SessionInterface targetSession) {
+        if (external == null && (rows == null || rows.size() < rowCount)) {
             return null;
-
+        }
+        if (containsLobs) {
+            return null;
+        }
+        ResultExternal e2 = null;
+        if (external != null) {
+            e2 = external.createShallowCopy();
+            if (e2 == null) {
+                return null;
+            }
+        }
         IgniteH2BaseLocalResult copy = new IgniteH2BaseLocalResult();
-
-        copy.ses = (Session) targetSession;
-        copy.visibleColCnt = this.visibleColCnt;
+        copy.maxMemoryRows = this.maxMemoryRows;
+        copy.session = (Session)targetSession;
+        copy.visibleColumnCount = this.visibleColumnCount;
         copy.expressions = this.expressions;
         copy.rowId = -1;
         copy.rowCount = this.rowCount;
@@ -146,423 +138,484 @@ public class IgniteH2BaseLocalResult implements LocalResult {
         copy.sort = this.sort;
         copy.distinctRows = this.distinctRows;
         copy.distinct = distinct;
-        copy.distinctIdxs = distinctIdxs;
+        copy.distinctIndexes = distinctIndexes;
         copy.currentRow = null;
         copy.offset = 0;
         copy.limit = -1;
-
+        copy.external = e2;
+        copy.containsNull = containsNull;
         return copy;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setSortOrder(SortOrder sort) {
+    @Override
+    public void setSortOrder(SortOrder sort) {
         this.sort = sort;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setDistinct() {
-        assert distinctIdxs == null;
-
+    /**
+     * Remove duplicate rows.
+     */
+    @Override
+    public void setDistinct() {
+        assert distinctIndexes == null;
         distinct = true;
-        distinctRows = new ValueHashMap<>();
+        distinctRows = new TreeMap<>(session.getDatabase().getCompareMode());
     }
 
-    /** {@inheritDoc} */
-    @Override public void setDistinct(int[] distinctIdxs) {
+    /**
+     * Remove rows with duplicates in columns with specified indexes.
+     *
+     * @param distinctIndexes distinct indexes
+     */
+    @Override
+    public void setDistinct(int[] distinctIndexes) {
         assert !distinct;
-
-        this.distinctIdxs = distinctIdxs;
-        distinctRows = new ValueHashMap<>();
+        this.distinctIndexes = distinctIndexes;
+        distinctRows = new TreeMap<>(session.getDatabase().getCompareMode());
     }
 
     /**
      * @return whether this result is a distinct result
      */
     private boolean isAnyDistinct() {
-        return distinct || distinctIdxs != null;
+        return distinct || distinctIndexes != null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void removeDistinct(Value[] values) {
-        if (!distinct)
+    /**
+     * Remove the row from the result set if it exists.
+     *
+     * @param values the row
+     */
+    @Override
+    public void removeDistinct(Value[] values) {
+        if (!distinct) {
             DbException.throwInternalError();
-
-        assert values.length == visibleColCnt;
-
+        }
+        assert values.length == visibleColumnCount;
         if (distinctRows != null) {
-            ValueArray array = ValueArray.get(values);
-
+            ValueRow array = ValueRow.get(values);
             distinctRows.remove(array);
-
             rowCount = distinctRows.size();
+        }
+        else {
+            rowCount = external.removeRow(values);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean containsDistinct(Value[] values) {
-        assert values.length == visibleColCnt;
-
+    /**
+     * Check if this result set contains the given row.
+     *
+     * @param values the row
+     * @return true if the row exists
+     */
+    @Override
+    public boolean containsDistinct(Value[] values) {
+        assert values.length == visibleColumnCount;
+        if (external != null) {
+            return external.contains(values);
+        }
         if (distinctRows == null) {
-            distinctRows = new ValueHashMap<>();
-
+            distinctRows = new TreeMap<>(session.getDatabase().getCompareMode());
             for (Value[] row : rows) {
-                ValueArray array = getArrayOfDistinct(row);
-
+                ValueRow array = getDistinctRow(row);
                 distinctRows.put(array, array.getList());
             }
         }
-
-        ValueArray array = ValueArray.get(values);
-
+        ValueRow array = ValueRow.get(values);
         return distinctRows.get(array) != null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean containsNull() {
+    @Override
+    public boolean containsNull() {
         Boolean r = containsNull;
-
         if (r == null) {
             r = false;
-
             reset();
-
+            loop:
             while (next()) {
                 Value[] row = currentRow;
-
-                for (int i = 0; i < visibleColCnt; i++) {
+                for (int i = 0; i < visibleColumnCount; i++) {
                     if (row[i].containsNull()) {
                         r = true;
-
-                        break;
+                        break loop;
                     }
                 }
             }
-
             reset();
-
             containsNull = r;
         }
-
         return r;
     }
 
-    /** {@inheritDoc} */
-    @Override public void reset() {
+    @Override
+    public void reset() {
         rowId = -1;
-
         currentRow = null;
+        if (external != null) {
+            external.reset();
+        }
     }
 
-    /** {@inheritDoc} */
-    @Override public Value[] currentRow() {
+    @Override
+    public Value[] currentRow() {
         return currentRow;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean next() {
+    @Override
+    public boolean next() {
         if (!closed && rowId < rowCount) {
             rowId++;
-
             if (rowId < rowCount) {
-                currentRow = rows.get(rowId);
-
+                if (external != null) {
+                    currentRow = external.next();
+                }
+                else {
+                    currentRow = rows.get(rowId);
+                }
                 return true;
             }
-
             currentRow = null;
         }
-
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getRowId() {
+    @Override
+    public int getRowId() {
         return rowId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isAfterLast() {
+    @Override
+    public boolean isAfterLast() {
         return rowId >= rowCount;
     }
 
     /**
-     * @param values Values to clone.
+     * @param values Values.
      */
     private void cloneLobs(Value[] values) {
         for (int i = 0; i < values.length; i++) {
             Value v = values[i];
-
             Value v2 = v.copyToResult();
-
             if (v2 != v) {
                 containsLobs = true;
-
-                ses.addTemporaryLob(v2);
-
+                session.addTemporaryLob(v2);
                 values[i] = v2;
             }
         }
     }
 
     /**
-     * @param values
-     * @return
+     * @param values row.
+     * @return Row,
      */
-    private ValueArray getArrayOfDistinct(Value[] values) {
-        if (distinctIdxs != null) {
-            int cnt = distinctIdxs.length;
-
+    private ValueRow getDistinctRow(Value[] values) {
+        if (distinctIndexes != null) {
+            int cnt = distinctIndexes.length;
             Value[] newValues = new Value[cnt];
-
-            for (int i = 0; i < cnt; i++)
-                newValues[i] = values[distinctIdxs[i]];
-
+            for (int i = 0; i < cnt; i++) {
+                newValues[i] = values[distinctIndexes[i]];
+            }
             values = newValues;
         }
-        else if (values.length > visibleColCnt)
-            values = Arrays.copyOf(values, visibleColCnt);
-
-        return ValueArray.get(values);
+        else if (values.length > visibleColumnCount) {
+            values = Arrays.copyOf(values, visibleColumnCount);
+        }
+        return ValueRow.get(values);
     }
 
-    /** {@inheritDoc} */
-    @Override public void addRow(Value[] row) {
-        cloneLobs(row);
+    private void createExternalResult() {
+        external = MVTempResult.of(session.getDatabase(), expressions, distinct, distinctIndexes, visibleColumnCount,
+            sort);
+    }
 
+    /**
+     * Add a row to this object.
+     *
+     * @param values the row to add
+     */
+    @Override
+    public void addRow(Value[] values) {
+        cloneLobs(values);
         if (isAnyDistinct()) {
             if (distinctRows != null) {
-                ValueArray distinctKey = getArrayOfDistinct(row);
-
-                int prevSize = distinctRows.size();
-
-                distinctRows.putIfAbsent(distinctKey, row);
-
-                rowCount = distinctRows.size();
-
-                if (rowCount != prevSize) {
-                    checkAvailableMemory(distinctKey);
-
-                    checkAvailableMemory(row);
+                ValueRow array = getDistinctRow(values);
+                if (!distinctRows.containsKey(array)) {
+                    distinctRows.put(array, values);
                 }
+                rowCount = distinctRows.size();
+                if (rowCount > maxMemoryRows) {
+                    createExternalResult();
+                    rowCount = external.addRows(distinctRows.values());
+                    distinctRows = null;
+                }
+            }
+            else {
+                rowCount = external.addRow(values);
             }
         }
         else {
-            checkAvailableMemory(row);
-
-            rows.add(row);
-
+            rows.add(values);
             rowCount++;
+            if (rows.size() > maxMemoryRows) {
+                addRowsToDisk();
+            }
         }
+    }
+
+    private void addRowsToDisk() {
+        if (external == null) {
+            createExternalResult();
+        }
+        rowCount = external.addRows(rows);
+        rows.clear();
+    }
+
+    @Override
+    public int getVisibleColumnCount() {
+        return visibleColumnCount;
     }
 
     /**
-     * Check memory available for query. Implemented in child classes.
-     * The no-op implementation is used for case query memory for SQL queries is not checked and tracked.
-     *
-     * @param row Row.
+     * This method is called after all rows have been added.
      */
-    protected void checkAvailableMemory(Value... row) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getVisibleColumnCount() {
-        return visibleColCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void done() {
-        if (isAnyDistinct())
-            rows = distinctRows.values();
-
-        if (sort != null && limit != 0) {
-            boolean withLimit = limit > 0 && !withTies;
-
-            if (offset > 0 || withLimit)
-                sort.sort(rows, offset, withLimit ? limit : rows.size());
-            else
-                sort.sort(rows);
+    @Override
+    public void done() {
+        if (external != null) {
+            addRowsToDisk();
         }
-
+        else {
+            if (isAnyDistinct()) {
+                rows = new ArrayList<>(distinctRows.values());
+            }
+            if (sort != null && limit != 0 && !limitsWereApplied) {
+                boolean withLimit = limit > 0 && withTiesSortOrder == null;
+                if (offset > 0 || withLimit) {
+                    sort.sort(rows, offset, withLimit ? limit : rows.size());
+                }
+                else {
+                    sort.sort(rows);
+                }
+            }
+        }
         applyOffsetAndLimit();
-
         reset();
     }
 
-    /**
-     *
-     */
     private void applyOffsetAndLimit() {
-        if (limitsWereApplied)
+        if (limitsWereApplied) {
             return;
-
+        }
         int offset = Math.max(this.offset, 0);
         int limit = this.limit;
-
-        if (offset == 0 && limit < 0 && !fetchPercent || rowCount == 0)
+        if (offset == 0 && limit < 0 && !fetchPercent || rowCount == 0) {
             return;
-
-        if (fetchPercent) {
-            if (limit < 0 || limit > 100)
-                throw DbException.getInvalidValueException("FETCH PERCENT", limit);
-
-            // Oracle rounds percent up, do the same for now
-            limit = (int) (((long) limit * rowCount + 99) / 100);
         }
-
+        if (fetchPercent) {
+            if (limit < 0 || limit > 100) {
+                throw DbException.getInvalidValueException("FETCH PERCENT", limit);
+            }
+            // Oracle rounds percent up, do the same for now
+            limit = (int)(((long)limit * rowCount + 99) / 100);
+        }
         boolean clearAll = offset >= rowCount || limit == 0;
-
         if (!clearAll) {
             int remaining = rowCount - offset;
-
             limit = limit < 0 ? remaining : Math.min(remaining, limit);
-
-            if (offset == 0 && remaining <= limit)
+            if (offset == 0 && remaining <= limit) {
                 return;
-
-        } else
-            limit = 0;
-
-        distinctRows = null;
-        rowCount = limit;
-
-        if (clearAll) {
-            rows.clear();
-
-            return;
-        }
-
-        int to = offset + limit;
-
-        if (withTies && sort != null) {
-            Value[] expected = rows.get(to - 1);
-
-            while (to < rows.size() && sort.compare(expected, rows.get(to)) == 0) {
-                to++;
-
-                rowCount++;
             }
         }
-
-        if (offset != 0 || to != rows.size()) {
-            // avoid copying the whole array for each row
-            rows = new ArrayList<>(rows.subList(offset, to));
+        else {
+            limit = 0;
+        }
+        distinctRows = null;
+        rowCount = limit;
+        if (external == null) {
+            if (clearAll) {
+                rows.clear();
+                return;
+            }
+            int to = offset + limit;
+            if (withTiesSortOrder != null) {
+                Value[] expected = rows.get(to - 1);
+                while (to < rows.size() && withTiesSortOrder.compare(expected, rows.get(to)) == 0) {
+                    to++;
+                    rowCount++;
+                }
+            }
+            if (offset != 0 || to != rows.size()) {
+                // avoid copying the whole array for each row
+                rows = new ArrayList<>(rows.subList(offset, to));
+            }
+        }
+        else {
+            if (clearAll) {
+                external.close();
+                external = null;
+                return;
+            }
+            trimExternal(offset, limit);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public int getRowCount() {
+    private void trimExternal(int offset, int limit) {
+        ResultExternal temp = external;
+        external = null;
+        temp.reset();
+        while (--offset >= 0) {
+            temp.next();
+        }
+        Value[] row = null;
+        while (--limit >= 0) {
+            row = temp.next();
+            rows.add(row);
+            if (rows.size() > maxMemoryRows) {
+                addRowsToDisk();
+            }
+        }
+        if (withTiesSortOrder != null && row != null) {
+            Value[] expected = row;
+            while ((row = temp.next()) != null && withTiesSortOrder.compare(expected, row) == 0) {
+                rows.add(row);
+                rowCount++;
+                if (rows.size() > maxMemoryRows) {
+                    addRowsToDisk();
+                }
+            }
+        }
+        if (external != null) {
+            addRowsToDisk();
+        }
+        temp.close();
+    }
+
+    @Override
+    public int getRowCount() {
         return rowCount;
     }
 
-    /** {@inheritDoc} */
-    @Override public void limitsWereApplied() {
+    @Override
+    public void limitsWereApplied() {
         this.limitsWereApplied = true;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean hasNext() {
+    @Override
+    public boolean hasNext() {
         return !closed && rowId < rowCount - 1;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setLimit(int limit) {
+    /**
+     * Set the number of rows that this result will return at the maximum.
+     *
+     * @param limit the limit (-1 means no limit, 0 means no rows)
+     */
+    @Override
+    public void setLimit(int limit) {
         this.limit = limit;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setFetchPercent(boolean fetchPercent) {
+    /**
+     * @param fetchPercent whether limit expression specifies percentage of rows
+     */
+    @Override
+    public void setFetchPercent(boolean fetchPercent) {
         this.fetchPercent = fetchPercent;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setWithTies(boolean withTies) {
-        this.withTies = withTies;
+    @Override
+    public void setWithTies(SortOrder withTiesSortOrder) {
+        assert sort == null || sort == withTiesSortOrder;
+        this.withTiesSortOrder = withTiesSortOrder;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean needToClose() {
-        return true;
+    @Override
+    public boolean needToClose() {
+        return external != null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        closed = true;
+    @Override
+    public void close() {
+        if (external != null) {
+            external.close();
+            external = null;
+            closed = true;
+        }
     }
 
-    /** {@inheritDoc} */
-    @Override public String getAlias(int i) {
+    @Override
+    public String getAlias(int i) {
         return expressions[i].getAlias();
     }
 
-    /** {@inheritDoc} */
-    @Override public String getTableName(int i) {
+    @Override
+    public String getTableName(int i) {
         return expressions[i].getTableName();
     }
 
-    /** {@inheritDoc} */
-    @Override public String getSchemaName(int i) {
+    @Override
+    public String getSchemaName(int i) {
         return expressions[i].getSchemaName();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getDisplaySize(int i) {
-        return expressions[i].getDisplaySize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getColumnName(int i) {
+    @Override
+    public String getColumnName(int i) {
         return expressions[i].getColumnName();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getColumnType(int i) {
+    @Override
+    public TypeInfo getColumnType(int i) {
         return expressions[i].getType();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getColumnPrecision(int i) {
-        return expressions[i].getPrecision();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getNullable(int i) {
+    @Override
+    public int getNullable(int i) {
         return expressions[i].getNullable();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isAutoIncrement(int i) {
+    @Override
+    public boolean isAutoIncrement(int i) {
         return expressions[i].isAutoIncrement();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getColumnScale(int i) {
-        return expressions[i].getScale();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setOffset(int offset) {
+    /**
+     * Set the offset of the first row to return.
+     *
+     * @param offset the offset
+     */
+    @Override
+    public void setOffset(int offset) {
         this.offset = offset;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return super.toString() + " columns: " + visibleColCnt +
+    @Override
+    public String toString() {
+        return super.toString() + " columns: " + visibleColumnCount +
             " rows: " + rowCount + " pos: " + rowId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isClosed() {
+    /**
+     * Check if this result set is closed.
+     *
+     * @return true if it is
+     */
+    @Override
+    public boolean isClosed() {
         return closed;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getFetchSize() {
+    @Override
+    public int getFetchSize() {
         return 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setFetchSize(int fetchSize) {
+    @Override
+    public void setFetchSize(int fetchSize) {
         // ignore
+    }
+
+    /**
+     * @param row Row.
+     */
+    protected void checkAvailableMemory(Value... row) {
     }
 }

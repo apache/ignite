@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.query.h2.opt.join.ProxyDistributedLookupBatch;
 import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
@@ -35,7 +36,6 @@ import org.h2.table.TableFilter;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.Future;
 
 /**
  * Allows to have 'free' index for alias columns
@@ -56,23 +56,14 @@ public class GridH2ProxyIndex extends BaseIndex {
                             String name,
                             List<IndexColumn> colsList,
                             Index idx) {
-        super(tbl, 0, name, createIndexColumns(colsList, tbl),
+        super(tbl, 0, name, GridH2IndexBase.columnsArray(tbl, colsList),
             IndexType.createNonUnique(false, false, idx instanceof SpatialIndex));
 
-        this.idx = idx;
-    }
-
-    /**
-     * @param colsList Index columns list.
-     * @param tbl Table.
-     * @return Index colums array.
-     */
-    private static IndexColumn[] createIndexColumns(List<IndexColumn> colsList, GridH2Table tbl) {
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
 
-        return cols;
+        this.idx = idx;
     }
 
     /**
@@ -164,7 +155,12 @@ public class GridH2ProxyIndex extends BaseIndex {
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
         IndexLookupBatch batch = idx.createLookupBatch(filters, filter);
 
-        return batch != null ? new ProxyIndexLookupBatch(batch) : null;
+        if (batch == null)
+            return null;
+
+        GridH2RowDescriptor rowDesc = ((GridH2Table)idx.getTable()).rowDescriptor();
+
+        return new ProxyDistributedLookupBatch(batch, rowDesc);
     }
 
     /** {@inheritDoc} */
@@ -172,45 +168,4 @@ public class GridH2ProxyIndex extends BaseIndex {
         // No-op. Will be removed when underlying index is removed
     }
 
-    /** Proxy lookup batch */
-    private class ProxyIndexLookupBatch implements IndexLookupBatch {
-
-        /** Underlying normal lookup batch */
-        private final IndexLookupBatch target;
-
-        /**
-         * Creates proxy lookup batch.
-         *
-         * @param target Underlying index lookup batch.
-         */
-        private ProxyIndexLookupBatch(IndexLookupBatch target) {
-            this.target = target;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean addSearchRows(SearchRow first, SearchRow last) {
-            GridH2RowDescriptor desc = ((GridH2Table)idx.getTable()).rowDescriptor();
-            return target.addSearchRows(desc.prepareProxyIndexRow(first), desc.prepareProxyIndexRow(last));
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isBatchFull() {
-            return target.isBatchFull();
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<Future<Cursor>> find() {
-            return target.find();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getPlanSQL() {
-            return target.getPlanSQL();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset(boolean beforeQuery) {
-            target.reset(beforeQuery);
-        }
-    }
 }

@@ -37,8 +37,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -48,7 +46,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
