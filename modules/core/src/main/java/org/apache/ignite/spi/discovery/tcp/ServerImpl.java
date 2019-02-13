@@ -1116,6 +1116,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return false;
 
             boolean retry = false;
+            boolean failed = false;
+
             Collection<Exception> errs = new ArrayList<>();
 
             for (InetSocketAddress addr : addrs) {
@@ -1154,6 +1156,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Join request sending succeeded, wait for response from topology.
                             return true;
 
+                        case RES_JOIN_IMPOSSIBLE:
+                            failed = true;
+
+                            throw new IgniteSpiException("Impossible to continue join, check if local discovery and communication ports " +
+                                "are not blocked with firewall [addr=" + addr +
+                                ", req=" + joinReq + ", discoLocalPort=" + spi.getLocalPort() +
+                                ", discoLocalPortRange=" + spi.getLocalPortRange() + ']');
+
                         default:
                             // Concurrent startup, try next node.
                             if (res == RES_CONTINUE_JOIN) {
@@ -1171,6 +1181,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
                 catch (IgniteSpiException e) {
+                    if (failed)
+                        throw e;
+
                     errs.add(e);
 
                     if (log.isDebugEnabled()) {
@@ -1295,7 +1308,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
 
-                    synchronized (failedNodes) {
+                    synchronized (mux) {
                         for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                             if (failedNode.id().equals(res.creatorNodeId())) {
                                 if (log.isDebugEnabled())
@@ -6915,6 +6928,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                 spi.getSocketTimeout();
 
             if (state == CONNECTED) {
+                TcpDiscoveryNode node = msg.node();
+
+                // Check that joining node can accept incoming connections.
+                if (node.clientRouterNodeId() == null) {
+                    if (!pingJoiningNode(node)) {
+                        spi.writeToSocket(msg, sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
+
+                        return false;
+                    }
+                }
+
                 spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
                 if (log.isDebugEnabled())
@@ -6963,6 +6987,31 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 return false;
             }
+        }
+
+        /**
+         * @param node Node.
+         */
+        private boolean pingJoiningNode(TcpDiscoveryNode node) {
+            for (InetSocketAddress addr : spi.getNodeAddresses(node, false)) {
+                try {
+                    if (!(addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr))) {
+                        IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null);
+
+                        if (t != null)
+                            return true;
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to ping joining node, closing connection. [node=" + node +
+                            ", err=" + e.getMessage() + ']');
+                }
+            }
+
+            U.warn(log, "Failed to ping joining node, closing connection. [node=" + node + ']');
+
+            return false;
         }
 
         /** {@inheritDoc} */
