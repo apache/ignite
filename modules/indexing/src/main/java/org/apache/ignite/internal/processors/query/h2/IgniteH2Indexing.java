@@ -474,6 +474,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final String schemaName,
         String qry,
         @Nullable final Collection<Object> params,
+        @Nullable List<GridQueryFieldMetadata> meta,
         final IndexingQueryFilter filter,
         boolean enforceJoinOrder,
         boolean startTx,
@@ -580,21 +581,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         sfuFut.initLocal();
                     }
                 }
-            }
-
-            List<GridQueryFieldMetadata> meta;
-
-            try {
-                meta = H2Utils.meta(stmt.getMetaData());
-
-                if (forUpdate) {
-                    assert meta.size() >= 1;
-
-                    meta = meta.subList(0, meta.size() - 1);
-                }
-            }
-            catch (SQLException e) {
-                throw new IgniteCheckedException("Cannot prepare query metadata", e);
             }
 
             GridNearTxLocal tx0 = tx;
@@ -809,28 +795,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
+                        assert F.isEmpty(plan.selectQuery());
+
                         Object[] params = args != null ? args : X.EMPTY_OBJECT_ARRAY;
 
-                        Iterator<List<?>> it;
-
-                        if (!F.isEmpty(plan.selectQuery())) {
-                            GridQueryFieldsResult res = executeQueryLocal0(
-                                schema(cctx.name()),
-                                plan.selectQuery(),
-                                F.asList(params),
-                                null,
-                                false,
-                                false,
-                                0,
-                                null,
-                                null,
-                                null
-                            );
-
-                            it = res.iterator();
-                        }
-                        else
-                            it = plan.createRows(params).iterator();
+                        Iterator<List<?>> it = plan.createRows(params).iterator();
 
                         return new GridQueryCacheObjectsIterator(it, objectContext(), cctx.keepBinary());
                     }
@@ -1092,6 +1061,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private FieldsQueryCursor<List<?>> executeQueryLocal(
         String schemaName,
         SqlFieldsQuery qry,
+        List<GridQueryFieldMetadata> meta,
         final boolean keepBinary,
         IndexingQueryFilter filter,
         GridQueryCancel cancel,
@@ -1103,6 +1073,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             schemaName,
             qry.getSql(),
             F.asList(qry.getArgs()),
+            meta,
             filter,
             qry.isEnforceJoinOrder(),
             startTx,
@@ -1579,10 +1550,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // Execute SQL.
         assert select != null;
 
-        GridCacheTwoStepQuery twoStepQry = select.twoStepQuery();
-
-        if (twoStepQry != null) {
+        if (!select.isLocal()) {
             // Distributed query.
+            GridCacheTwoStepQuery twoStepQry = select.twoStepQuery();
+
             if (ctx.security().enabled())
                 checkSecurity(twoStepQry.cacheIds());
 
@@ -1590,7 +1561,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 schemaName,
                 qry,
                 twoStepQry,
-                select.twoStepQueryMeta(),
+                select.meta(),
                 keepBinary,
                 startTx,
                 mvccTracker,
@@ -1608,6 +1579,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 FieldsQueryCursor<List<?>> res = executeQueryLocal(
                     schemaName,
                     qry,
+                    select.meta(),
                     keepBinary,
                     filter,
                     cancel,
@@ -1743,13 +1715,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .setTimeout(fldsQry.getTimeout(), TimeUnit.MILLISECONDS)
                 .setDataPageScanEnabled(fldsQry.isDataPageScanEnabled());
 
-            cur = (QueryCursorImpl<List<?>>)querySqlFields(schema, newFieldsQry, null, true, true,
-                new StaticMvccQueryTracker(planCctx, mvccSnapshot), cancel, false).get(0);
+            cur = (QueryCursorImpl<List<?>>)querySqlFields(
+                schema,
+                newFieldsQry,
+                null,
+                true,
+                true,
+                new StaticMvccQueryTracker(planCctx, mvccSnapshot),
+                cancel,
+                false
+            ).get(0);
         }
         else {
-            final GridQueryFieldsResult res = executeQueryLocal0(schema, plan.selectQuery(),
-                F.asList(fldsQry.getArgs()), filter, fldsQry.isEnforceJoinOrder(), false, fldsQry.getTimeout(), cancel,
-                new StaticMvccQueryTracker(planCctx, mvccSnapshot), null);
+            GridQueryFieldsResult res = executeQueryLocal0(
+                schema,
+                plan.selectQuery(),
+                F.asList(fldsQry.getArgs()),
+                null,
+                filter,
+                fldsQry.isEnforceJoinOrder(),
+                false,
+                fldsQry.getTimeout(),
+                cancel,
+                new StaticMvccQueryTracker(planCctx, mvccSnapshot),
+                null
+            );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -2832,9 +2822,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else if (plan.hasRows())
             cur = plan.createRows(fieldsQry.getArgs());
         else {
-            final GridQueryFieldsResult res = executeQueryLocal0(schemaName, plan.selectQuery(),
-                F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), false, fieldsQry.getTimeout(),
-                cancel, null, null);
+            final GridQueryFieldsResult res = executeQueryLocal0(
+                schemaName,
+                plan.selectQuery(),
+                F.asList(fieldsQry.getArgs()),
+                null,
+                filters,
+                fieldsQry.isEnforceJoinOrder(),
+                false,
+                fieldsQry.getTimeout(),
+                cancel,
+                null,
+                null
+            );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
