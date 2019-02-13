@@ -203,10 +203,4 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     public void testReadInProgressCoordinatorFailsSimple_FromServer() throws Exception {
         readInProgressCoordinatorFailsSimple(false, new InitIndexing(Integer.class, Integer.class), SQL, DML);
     }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testAccountsTxSql_SingleNode_CoordinatorFails_Persistence() throws Exception {
-        super.testAccountsTxSql_SingleNode_CoordinatorFails_Persistence();
-    }
 }
