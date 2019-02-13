@@ -43,4 +43,9 @@ public interface TemporaryStore extends AutoCloseable {
      * @throws IgniteCheckedException If failed.
      */
     public void truncate() throws IgniteCheckedException;
+
+    /**
+     * @return The value of pages successfully written to the temporary store.
+     */
+    public int writtenPagesCount();
 }

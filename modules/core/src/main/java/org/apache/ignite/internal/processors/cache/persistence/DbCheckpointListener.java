@@ -36,6 +36,11 @@ public interface DbCheckpointListener {
         public boolean nextSnapshot();
 
         /**
+         * @return {@code True} if information must be collected on #onMarkCheckpointBegin() point.
+         */
+        public boolean collectContextInfo();
+
+        /**
          * @return Partition allocation statistic map
          */
         public PartitionAllocationMap partitionStatMap();

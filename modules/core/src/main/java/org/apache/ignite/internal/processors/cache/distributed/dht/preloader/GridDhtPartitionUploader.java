@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIoUpload
 import org.apache.ignite.internal.processors.cache.persistence.file.FileBackupDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -214,12 +215,12 @@ public class GridDhtPartitionUploader {
         }
 
         /** {@inheritDoc} */
-        @Override public void handlePartition(FileBackupDescriptor descr) throws IgniteCheckedException {
+        @Override public void handlePartition(GroupPartitionId grpPartId, FileBackupDescriptor descr) throws IgniteCheckedException {
             uploader.upload(descr.getFile());
         }
 
         /** {@inheritDoc} */
-        @Override public void handleDelta(FileBackupDescriptor descr) throws IgniteCheckedException {
+        @Override public void handleDelta(GroupPartitionId grpPartId, FileBackupDescriptor descr) throws IgniteCheckedException {
             uploader.upload(descr.getFile());
         }
     }

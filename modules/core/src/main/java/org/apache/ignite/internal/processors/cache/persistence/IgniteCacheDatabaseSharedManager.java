@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFre
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
@@ -833,6 +834,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param reason Reason.
      */
     @Nullable public CheckpointFuture forceCheckpoint(String reason) {
+        return null;
+    }
+
+    /**
+     * Perform a snapshot operation on checkponter.
+     *
+     * @param op Snapshot operation.
+     * @param reason The text message reason.
+     * @return Checkpoint progress future.
+     */
+    public CheckpointFuture wakeupForCheckpointOperation(SnapshotOperation op, String reason) {
         return null;
     }
 

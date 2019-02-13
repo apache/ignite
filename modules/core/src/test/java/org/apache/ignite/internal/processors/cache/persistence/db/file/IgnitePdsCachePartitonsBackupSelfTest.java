@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileBackupDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -101,13 +102,15 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
         backup.backup(
             1,
             CU.cacheId(DEFAULT_CACHE_NAME),
-            new HashSet<>(Arrays.asList(1, 2, 3)),
+            new HashSet<>(Collections.singletonList(1)),
             new BackupProcessTask<FileBackupDescriptor>() {
-                @Override public void handlePartition(FileBackupDescriptor descr) throws IgniteCheckedException {
+                @Override public void handlePartition(GroupPartitionId grpPartId,
+                    FileBackupDescriptor descr) throws IgniteCheckedException {
 
                 }
 
-                @Override public void handleDelta(FileBackupDescriptor descr) throws IgniteCheckedException {
+                @Override public void handleDelta(GroupPartitionId grpPartId,
+                    FileBackupDescriptor descr) throws IgniteCheckedException {
 
                 }
             });

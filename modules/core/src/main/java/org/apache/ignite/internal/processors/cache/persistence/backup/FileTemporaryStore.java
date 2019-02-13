@@ -40,7 +40,7 @@ public class FileTemporaryStore implements TemporaryStore {
     private final FileIOFactory factory;
 
     /** */
-    private final Set<Long> savedPages = new HashSet<>();
+    private final Set<Long> writtenPagesCount = new HashSet<>();
 
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -121,19 +121,19 @@ public class FileTemporaryStore implements TemporaryStore {
     @Override public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
         init();
 
-        if (savedPages.contains(pageId))
+        if (writtenPagesCount.contains(pageId))
             return;
 
         lock.writeLock().lock();
 
         try {
-            if (savedPages.add(pageId)) {
+            if (writtenPagesCount.add(pageId)) {
                 try {
                     // Write buffer to the end of the file.
                     fileIO.write(pageBuf);
                 }
                 catch (IOException e) {
-                    savedPages.remove(pageId);
+                    writtenPagesCount.remove(pageId);
 
                     throw new IgniteCheckedException("Backup write failed.", e);
                 }
@@ -149,13 +149,25 @@ public class FileTemporaryStore implements TemporaryStore {
         lock.writeLock().lock();
 
         try {
-            savedPages.clear();
+            writtenPagesCount.clear();
 
             if (fileIO != null)
                 fileIO.clear();
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Truncate store failed", e);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int writtenPagesCount() {
+        lock.writeLock().lock();
+
+        try {
+            return writtenPagesCount.size();
         }
         finally {
             lock.writeLock().unlock();

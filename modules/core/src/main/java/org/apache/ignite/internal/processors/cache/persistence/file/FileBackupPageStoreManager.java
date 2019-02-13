@@ -20,31 +20,44 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.backup.FileTemporaryStore;
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.backup.TemporaryStore;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationAdapter;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 
@@ -53,8 +66,10 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     implements IgniteBackupPageStoreManager<FileBackupDescriptor> {
     /** */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + ".delta";
+
     /** */
     private static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [id=%s, grpId=%s, parts=%s]";
+
     /** Base working directory for saving copied pages. */
     private final File backupWorkDir;
 
@@ -71,7 +86,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
      */
 
     /** Tracking partition files over all running snapshot processes. */
-    private final Set<GroupPartitionId> trackList = new GridConcurrentHashSet<>();
+    private final ConcurrentMap<GroupPartitionId, AtomicInteger> trackMap = new ConcurrentHashMap<>();
 
     /** Collection of backup stores indexed by [grpId, partId] key. */
     private final Map<GroupPartitionId, TemporaryStore> backupStores = new ConcurrentHashMap<>();
@@ -83,7 +98,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     private final int pageSize;
 
     /** */
-    private final ReadWriteLock mgrLock = new ReentrantReadWriteLock();
+    private final ReadWriteLock rwlock = new ReentrantReadWriteLock();
 
     /** Thread local with buffers for handling copy-on-write over {@link PageStore} events. */
     private ThreadLocal<ByteBuffer> threadPageBuf;
@@ -102,6 +117,15 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
         U.ensureDirectory(backupWorkDir, "backup store working directory", log);
 
         ioFactory = new RandomAccessFileIOFactory();
+    }
+
+    /**
+     * @param tmpDir Temporary directory to store files.
+     * @param partId Cache partition identifier.
+     * @return A file representation.
+     */
+    public static File getPartionDeltaFile(File tmpDir, int partId) {
+        return new File(tmpDir, String.format(PART_DELTA_TEMPLATE, partId));
     }
 
     /** {@inheritDoc} */
@@ -123,7 +147,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
             U.closeQuiet(store);
 
         backupStores.clear();
-        trackList.clear();
+        trackMap.clear();
     }
 
     /** {@inheritDoc} */
@@ -133,34 +157,119 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
         Set<Integer> parts,
         BackupProcessTask<FileBackupDescriptor> task
     ) throws IgniteCheckedException {
-        initTemporaryStores(grpId, parts);
+        if (!(cctx.database() instanceof GridCacheDatabaseSharedManager) || parts == null || parts.isEmpty())
+            return;
 
-        CheckpointFuture cpFut = cctx.database().forceCheckpoint(String.format(BACKUP_CP_REASON, idx, grpId, S.compact(parts)));
+        final SortedSet<GroupPartitionId> grpPartIdSet = parts.stream()
+            .map(p -> new GroupPartitionId(grpId, p))
+            .collect(Collectors.toCollection(TreeSet::new));
 
-        if (cpFut == null)
-            throw new IgniteCheckedException("Checkpoint thread is not running.");
+        // Init stores if not created yet.
+        initTemporaryStores(grpPartIdSet);
 
-        cpFut.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-            @Override public void apply(IgniteInternalFuture<Object> future) {
-                // Set each partitoin file size after checkpoint.
-                // Set each start position offset of delta files.
-                // Begin to track writes.
-            }
-        });
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-        // 1. Check for the last checkpoint and run if not.
-        // 2. Wait when checkpoint process ends.
-        // 2. Fix the partition files sizes.
-        // 3. Start tracking all incoming updates for all cache group files.
+        DbCheckpointListener dbLsnr = null;
 
-        // Use sync mode to execute provided task over partitons and corresponding deltas.
+        final BackupContext backupCtx = new BackupContext();
+
         try {
-            task.handlePartition(new FileBackupDescriptor(null, 0, 0, 0));
+            dbLsnr = new DbCheckpointListener() {
+                @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    // Start tracking writes over remaining parts only from the next checkpoint.
+                    if (backupCtx.inited.get() && backupCtx.tracked.compareAndSet(false, true)) {
+                        // Safe iteration over copy-on-write collection.
+                        CopyOnWriteArraySet<GroupPartitionId> leftParts = backupCtx.remainPartIds;
 
-            task.handleDelta(new FileBackupDescriptor(null, 1, 0, 0));
+                        for (GroupPartitionId key : leftParts) {
+                            // Start track.
+                            AtomicInteger cnt = trackMap.putIfAbsent(key, new AtomicInteger(1));
+
+                            if (cnt != null)
+                                cnt.incrementAndGet();
+
+                            // Update offset.
+                            backupCtx.deltaOffsetMap.put(key, backupStores.get(key).writtenPagesCount());
+                        }
+                    }
+                }
+
+                @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    // Will skip the other #onCheckpointBegin() checkpoint. We should wait for the next
+                    // checkpoint and if it occurs must start to track writings of remaining in context partitions.
+                    // Suppose there are no store writings between the end of last checkpoint and the start on new one.
+                    if (backupCtx.inited.compareAndSet(false, true)) {
+                        rwlock.readLock().lock();
+
+                        try {
+                            PartitionAllocationMap allocationMap = ctx.partitionStatMap();
+
+                            allocationMap.prepareForSnapshot();
+
+                            backupCtx.idx = idx;
+
+                            backupCtx.partAllocatedPages = grpPartIdSet.stream()
+                                .collect(Collectors.toMap(Function.identity(),
+                                    p -> allocationMap.get(p).getCurrAllocatedPageCnt()));
+
+                            // Set offsets with default zero values.
+                            backupCtx.deltaOffsetMap = grpPartIdSet.stream()
+                                .collect(Collectors.toConcurrentMap(Function.identity(), o -> 0));
+
+                            backupCtx.remainPartIds = new CopyOnWriteArraySet<>(grpPartIdSet);
+                        }
+                        finally {
+                            rwlock.readLock().unlock();
+                        }
+                    }
+                }
+            };
+
+            dbMgr.addCheckpointListener(dbLsnr);
+
+            CheckpointFuture cpFut = dbMgr.wakeupForCheckpointOperation(
+                new SnapshotOperationAdapter() {
+                    @Override public Set<Integer> cacheGroupIds() {
+                        return new HashSet<>(Collections.singletonList(grpId));
+                    }
+                },
+                String.format(BACKUP_CP_REASON, idx, grpId, S.compact(parts))
+            );
+
+            A.notNull(cpFut, "Checkpoint thread is not running.");
+
+            cpFut.finishFuture().listen(f -> {
+                assert backupCtx.inited.get() : "Backup context must be initialized: " + backupCtx;
+            });
+
+            cpFut.finishFuture().get();
+
+            U.log(log, "Start backup operation [grpId=" + grpId + ", parts=" + S.compact(parts) +
+                ", context=" + backupCtx + ']');
+
+            // Use sync mode to execute provided task over partitons and corresponding deltas.
+            for (GroupPartitionId grpPartId : grpPartIdSet) {
+                long size = backupCtx.partAllocatedPages.get(grpPartId) * pageSize;
+
+                task.handlePartition(grpPartId, new FileBackupDescriptor(null, 0, 0, size));
+
+                // Stop page delta tracking for particular pair id.
+                ofNullable(trackMap.get(grpPartId))
+                    .ifPresent(AtomicInteger::decrementAndGet);
+
+                final Map<GroupPartitionId, Integer> offsets = backupCtx.deltaOffsetMap;
+
+                task.handleDelta(grpPartId, new FileBackupDescriptor(null, 1, 0, 0));
+
+                // Finish partition backup task.
+                backupCtx.remainPartIds.remove(grpPartId);
+            }
         }
         catch (IgniteCheckedException e) {
             U.log(log, "An error occured while handling partition files.", e);
+        }
+        finally {
+            dbMgr.removeCheckpointListener(dbLsnr);
         }
 
         // Remove all tracked partitions.
@@ -168,10 +277,12 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void handleWritePageStore(GroupPartitionId pairId, PageStore store, long pageId) {
-        if (!trackList.contains(pairId))
+        AtomicInteger trackCnt = trackMap.get(pairId);
+
+        if (trackCnt == null || trackCnt.get() <= 0)
             return;
 
-        ByteBuffer tmpPageBuff = threadPageBuf.get();
+        final ByteBuffer tmpPageBuff = threadPageBuf.get();
 
         tmpPageBuff.clear();
 
@@ -193,9 +304,8 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void initTemporaryStores(int grpId, Set<Integer> partIds) throws IgniteCheckedException {
-        if (partIds == null || partIds.isEmpty())
-            return;
+    @Override public void initTemporaryStores(Set<GroupPartitionId> grpPartIds) throws IgniteCheckedException {
+        int grpId = grpPartIds.iterator().next().getGroupId();
 
         CacheConfiguration ccfg = cctx.cache().cacheGroup(grpId).config();
 
@@ -206,19 +316,10 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
         U.ensureDirectory(tempGrpDir, "temporary directory for grpId: " + grpId, log);
 
-        for (Integer partId : partIds) {
-            backupStores.putIfAbsent(new GroupPartitionId(grpId, partId),
-                new FileTemporaryStore(getPartionDeltaFile(tempGrpDir, partId), ioFactory));
+        for (GroupPartitionId gpid : grpPartIds) {
+            backupStores.putIfAbsent(gpid,
+                new FileTemporaryStore(getPartionDeltaFile(tempGrpDir, gpid.getPartitionId()), ioFactory));
         }
-    }
-
-    /**
-     * @param tmpDir Temporary directory to store files.
-     * @param partId Cache partition identifier.
-     * @return A file representation.
-     */
-    public static File getPartionDeltaFile(File tmpDir, int partId) {
-        return new File(tmpDir, String.format(PART_DELTA_TEMPLATE, partId));
     }
 
     /** */
@@ -228,44 +329,34 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
     /** */
     private static class BackupContext {
-        /** Unique identifier of backup process. */
-        private final int idx;
-
-        /** The length of partition file sizes up to each cache partiton file. */
-        private final Map<GroupPartitionId, Long> partitionSizeMap;
-
-        /** The offset from which reading of delta partition file should be started. */
-        private final Map<GroupPartitionId, Long> deltaStartOffsetMap;
-
-        /** Left partitions to be processed. */
-        private final Set<GroupPartitionId> remainPartIds;
+        /** */
+        private final AtomicBoolean inited = new AtomicBoolean();
 
         /** */
-        public BackupContext(int idx,
-            Map<GroupPartitionId, Long> partitionSizeMap,
-            Map<GroupPartitionId, Long> deltaStartOffsetMap,
-            Set<GroupPartitionId> remainPartIds) {
-            this.idx = idx;
-            this.partitionSizeMap = partitionSizeMap;
-            this.deltaStartOffsetMap = deltaStartOffsetMap;
-            this.remainPartIds = remainPartIds;
-        }
+        private final AtomicBoolean tracked = new AtomicBoolean();
+
+        /** Unique identifier of backup process. */
+        private int idx;
+
+        /** The length of partition file sizes up to each cache partiton file. */
+        private Map<GroupPartitionId, Integer> partAllocatedPages;
+
+        /** The offset from which reading of delta partition file should be started. */
+        private ConcurrentMap<GroupPartitionId, Integer> deltaOffsetMap;
+
+        /** Left partitions to be processed. */
+        private CopyOnWriteArraySet<GroupPartitionId> remainPartIds;
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            BackupContext ctx = (BackupContext)o;
-
-            return idx == ctx.idx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return idx;
+        @Override public String toString() {
+            return "BackupContext {" +
+                "inited=" + inited +
+                ", tracked=" + tracked +
+                ", idx=" + idx +
+                ", partAllocatedPages=" + partAllocatedPages +
+                ", deltaOffsetMap=" + deltaOffsetMap +
+                ", remainPartIds=" + remainPartIds +
+                '}';
         }
     }
 }

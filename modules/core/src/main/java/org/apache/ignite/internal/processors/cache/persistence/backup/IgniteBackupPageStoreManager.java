@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
+import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -50,9 +51,8 @@ public interface IgniteBackupPageStoreManager<T> extends GridCacheSharedManager,
     public void handleWritePageStore(GroupPartitionId pairId, PageStore store, long pageId);
 
     /**
-     * @param grpId Cache group to init temorary store for.
-     * @param partIds Cache partitions to init temporary stores for.
+     * @param grpPartIds Collection of pairs cache group and partition ids.
      * @throws IgniteCheckedException If fails.
      */
-    public void initTemporaryStores(int grpId, Set<Integer> partIds) throws IgniteCheckedException;
+    public void initTemporaryStores(Set<GroupPartitionId> grpPartIds) throws IgniteCheckedException;
 }

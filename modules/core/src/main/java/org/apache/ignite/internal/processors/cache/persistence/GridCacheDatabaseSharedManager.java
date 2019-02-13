@@ -137,6 +137,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.CompoundSnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -1831,6 +1832,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
+    @Override public CheckpointFuture wakeupForCheckpointOperation(SnapshotOperation op, String reason) {
+        Checkpointer cp = checkpointer;
+
+        if (cp == null)
+            return null;
+
+        return cp.wakeupForCheckpointOperation(op, reason, false);
+    }
+
+    /** {@inheritDoc} */
     @Override public WALPointer lastCheckpointMarkWalPointer() {
         CheckpointEntry lastCheckpointEntry = cpHistory == null ? null : cpHistory.lastCheckpoint();
 
@@ -3449,23 +3460,36 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param snapshotOperation Snapshot operation.
          */
         public IgniteInternalFuture wakeupForSnapshotCreation(SnapshotOperation snapshotOperation) {
-            GridFutureAdapter<Object> ret;
+            return wakeupForCheckpointOperation(snapshotOperation, "snapshot", true).beginFuture();
+        }
+
+        /**
+         * @param op Snapshot operation to execute.
+         * @param reason The text message on
+         * @param isSnapshot {@code True} than operation will be executed as snapshot.
+         * @return The future represents checkpoint progress states.
+         */
+        private CheckpointFuture wakeupForCheckpointOperation(SnapshotOperation op, String reason, boolean isSnapshot) {
+            CheckpointProgress progress;
 
             synchronized (this) {
+                progress = scheduledCp;
+
                 scheduledCp.nextCpTs = U.currentTimeMillis();
 
-                scheduledCp.reason = "snapshot";
+                scheduledCp.reason = reason;
 
-                scheduledCp.nextSnapshot = true;
+                if (isSnapshot)
+                    scheduledCp.nextSnapshot = true;
+                else
+                    scheduledCp.collectCtxInfo = true;
 
-                scheduledCp.snapshotOperation = snapshotOperation;
-
-                ret = scheduledCp.cpBeginFut;
+                ((CompoundSnapshotOperation)scheduledCp.snapshotOperation).addSnapshotOperation(op, isSnapshot);
 
                 notifyAll();
             }
 
-            return ret;
+            return new CheckpointProgressSnapshot(progress);
         }
 
         /**
@@ -4070,6 +4094,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
+                @Override public boolean collectContextInfo() {
+                    return delegate.collectContextInfo();
+                }
+
+                /** {@inheritDoc} */
                 @Override public PartitionAllocationMap partitionStatMap() {
                     return delegate.partitionStatMap();
                 }
@@ -4102,6 +4131,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                @Override public boolean nextSnapshot() {
                     return currCpProgress.nextSnapshot;
                 }
+
+               /** {@inheritDoc} */
+               @Override public boolean collectContextInfo() {
+                   return currCpProgress.collectCtxInfo;
+               }
 
                /** {@inheritDoc} */
                @Override public PartitionAllocationMap partitionStatMap() {
@@ -4599,6 +4633,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         };
 
+        /**
+         * Flag indicates that additional info must be collected into {@link DbCheckpointListener.Context}
+         * on checkpoint begin phase. Information will be collected under the write lock to guarantee consistency.
+         */
+        private volatile boolean collectCtxInfo;
+
         /** Flag indicates that snapshot operation will be performed after checkpoint. */
         private volatile boolean nextSnapshot;
 
@@ -4606,7 +4646,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile boolean started;
 
         /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
-        private volatile SnapshotOperation snapshotOperation;
+        private volatile SnapshotOperation snapshotOperation = new CompoundSnapshotOperation();
 
         /** Partitions destroy queue. */
         private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
@@ -4653,7 +4693,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /** {@inheritDoc} */
-        @Override public GridFutureAdapter beginFuture() {
+        @Override public GridFutureAdapter<Object> beginFuture() {
             return cpBeginFut;
         }
 
