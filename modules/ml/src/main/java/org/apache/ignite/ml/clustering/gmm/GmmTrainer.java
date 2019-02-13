@@ -37,7 +37,9 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.structures.DatasetRow;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
@@ -61,6 +63,15 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
 
     /** Maximum initialization tries count. */
     private int maxCountOfInitTries = 3;
+
+    /**
+     * Maximum count of clusters that can be achieved.
+     */
+    private int maxCountOfClusters = 2;
+
+    private double maxLikelihoodDivergence = 5;
+
+    private double minElementsForNewCluster = 400;
 
     /**
      * Creates an instance of GmmTrainer.
@@ -100,11 +111,13 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @param numberOfComponents Number of components.
      * @return trainer.
      */
-    public GmmTrainer withCountOfComponents(int numberOfComponents) {
+    public GmmTrainer withInitialCountOfComponents(int numberOfComponents) {
         A.ensure(numberOfComponents > 0, "Number of components in GMM cannot equal 0");
 
         this.countOfComponents = numberOfComponents;
         initialMeans = null;
+        if(countOfComponents > maxCountOfClusters)
+            maxCountOfClusters = countOfComponents;
         return this;
     }
 
@@ -119,6 +132,8 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
 
         this.initialMeans = means.toArray(new Vector[means.size()]);
         this.countOfComponents = means.size();
+        if(countOfComponents > maxCountOfClusters)
+            maxCountOfClusters = countOfComponents;
         return this;
     }
 
@@ -162,6 +177,28 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         return this;
     }
 
+    public GmmTrainer withMaxCountOfClusters(int maxCountOfClusters) {
+        A.ensure(maxCountOfClusters >= countOfComponents, "Max count of components should be greater than " +
+            "initial count of components or equal to it");
+
+        this.maxCountOfClusters = maxCountOfClusters;
+        return this;
+    }
+
+    public GmmTrainer withMaxLikelihoodDivergence(double maxLikelihoodDivergence) {
+        A.ensure(maxLikelihoodDivergence > 0, "Max likelihood divergence should be > 0");
+
+        this.maxLikelihoodDivergence = maxLikelihoodDivergence;
+        return this;
+    }
+
+    public GmmTrainer withMinElementsForNewCluster(int minElementsForNewCluster) {
+        A.ensure(minElementsForNewCluster > 0, "Min elements for new cluster should be > 0");
+
+        this.minElementsForNewCluster = minElementsForNewCluster;
+        return this;
+    }
+
     /**
      * Trains model based on the specified data.
      *
@@ -169,7 +206,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @return GMM model.
      */
     private Optional<GmmModel> fit(Dataset<EmptyContext, GmmPartitionData> dataset) {
-        return init(dataset).map(model -> updateModel(dataset, model));
+        return init(dataset).map(model -> updateModel(dataset, model).model);
     }
 
     /**
@@ -179,12 +216,12 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @param model Model.
      * @return updated model.
      */
-    @NotNull private GmmModel updateModel(Dataset<EmptyContext, GmmPartitionData> dataset, GmmModel model) {
+    @NotNull private UpdateResult updateModel(Dataset<EmptyContext, GmmPartitionData> dataset, GmmModel model) {
         boolean isConverged = false;
         int countOfIterations = 0;
-        double likelihood = Double.NEGATIVE_INFINITY;
+        GmmPartitionData.DatasetLikelihood likelihood = null;
         while (!isConverged) {
-            MeanWithClusterProbAggregator.AggregatedStats stats = MeanWithClusterProbAggregator.aggreateStats(dataset);
+            MeanWithClusterProbAggregator.AggregatedStats stats = MeanWithClusterProbAggregator.aggreateStats(dataset, countOfComponents);
             Vector clusterProbs = stats.clusterProbabilities();
             Vector[] newMeans = stats.means().toArray(new Vector[countOfComponents]);
 
@@ -199,9 +236,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
                 countOfIterations += 1;
                 isConverged = isConverged(model, newModel) || countOfIterations > maxCountOfIterations;
                 model = newModel;
-
-                if (!isConverged)
-                    likelihood = GmmPartitionData.updatePcxiAndComputeLikelihood(dataset, clusterProbs, components);
+                likelihood = GmmPartitionData.updatePcxiAndComputeLikelihood(dataset, clusterProbs, components);
             }
             catch (SingularMatrixException | IllegalArgumentException e) {
                 String msg = "Cannot construct non-singular covariance matrix by data. " +
@@ -211,7 +246,17 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
             }
         }
 
-        return model;
+        return new UpdateResult(model, likelihood);
+    }
+
+    private static class UpdateResult {
+        private final GmmModel model;
+        private final GmmPartitionData.DatasetLikelihood datasetLikelihood;
+
+        public UpdateResult(GmmModel model, GmmPartitionData.DatasetLikelihood datasetLikelihood) {
+            this.model = model;
+            this.datasetLikelihood = datasetLikelihood;
+        }
     }
 
     /**
@@ -343,7 +388,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         try (Dataset<EmptyContext, GmmPartitionData> dataset = datasetBuilder.build(
             LearningEnvironmentBuilder.defaultBuilder(),
             new EmptyContextBuilder<>(),
-            new GmmPartitionData.Builder<>(extractor, countOfComponents)
+            new GmmPartitionData.Builder<>(extractor, maxCountOfClusters)
         )) {
             if (mdl != null) {
                 if (initialMeans != null)

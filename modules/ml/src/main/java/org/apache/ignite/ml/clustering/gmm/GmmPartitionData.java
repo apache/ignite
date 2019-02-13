@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -109,13 +110,6 @@ class GmmPartitionData implements AutoCloseable {
         return pcxi.length;
     }
 
-    /**
-     * @return count of GMM components.
-     */
-    public int countOfComponents() {
-        return size() != 0 ? pcxi[0].length : 0;
-    }
-
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
         //NOP
@@ -195,19 +189,12 @@ class GmmPartitionData implements AutoCloseable {
      * @param components Components.
      * @return dataset likelihood.
      */
-    static double updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
+    static DatasetLikelihood updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
         List<MultivariateGaussianDistribution> components) {
 
         return dataset.compute(
             data -> updatePcxi(data, clusterProbs, components),
-            (fst, sec) -> {
-                if(fst == null)
-                    return sec;
-                else if(sec == null)
-                    return fst;
-                else
-                    return fst + sec;
-            }
+            DatasetLikelihood::merge
         );
     }
 
@@ -217,14 +204,20 @@ class GmmPartitionData implements AutoCloseable {
      * @param clusterProbs Component probabilities.
      * @param components Components.
      */
-    static double updatePcxi(GmmPartitionData data, Vector clusterProbs,
+    static DatasetLikelihood updatePcxi(GmmPartitionData data, Vector clusterProbs,
         List<MultivariateGaussianDistribution> components) {
 
         GmmModel model = new GmmModel(clusterProbs, components);
         data.xsLikelihood = 0.0;
+        double maxProb = Double.NEGATIVE_INFINITY;
+
         for (int i = 0; i < data.size(); i++) {
             Vector x = data.getX(i);
-            data.xsLikelihood += Math.log(model.prob(x));
+            double xProb = model.prob(x);
+            data.xsLikelihood += Math.log(xProb);
+            if(xProb > maxProb)
+                maxProb = xProb;
+
             double normalizer = 0.0;
             for (int c = 0; c < clusterProbs.size(); c++)
                 normalizer += components.get(c).prob(x) * clusterProbs.get(c);
@@ -233,6 +226,37 @@ class GmmPartitionData implements AutoCloseable {
                 data.pcxi[i][c] = (components.get(c).prob(x) * clusterProbs.get(c)) / normalizer;
         }
 
-        return data.xsLikelihood;
+        return new DatasetLikelihood(data.xsLikelihood, maxProb);
+    }
+
+    static class DatasetLikelihood implements Serializable {
+        private static final long serialVersionUID = -5597366148880227086L;
+
+        private final double likelihood;
+        private final double maxProbOfPoint;
+
+        public DatasetLikelihood(double likelihood, double maxProbOfPoint) {
+            this.likelihood = likelihood;
+            this.maxProbOfPoint = maxProbOfPoint;
+        }
+
+        public static DatasetLikelihood merge(DatasetLikelihood left, DatasetLikelihood right) {
+            A.ensure(left != null || right != null, "left != null || right != null");
+            if(left == null)
+                return right;
+            else if(right == null)
+                return left;
+            else {
+                boolean isLeftMax = left.maxProbOfPoint > right.maxProbOfPoint;
+                return new DatasetLikelihood(
+                    left.likelihood + right.likelihood,
+                    isLeftMax ? left.maxProbOfPoint : right.maxProbOfPoint
+                );
+            }
+        }
+
+        public double getLikelihood() {
+            return likelihood;
+        }
     }
 }
