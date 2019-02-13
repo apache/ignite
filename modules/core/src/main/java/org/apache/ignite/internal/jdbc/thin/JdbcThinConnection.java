@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.sql.Array;
 import java.sql.BatchUpdateException;
 import java.sql.Blob;
@@ -38,14 +42,18 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
@@ -66,6 +74,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -93,6 +102,16 @@ public class JdbcThinConnection implements Connection {
     /** Zero timeout as query timeout means no timeout. */
     static final int NO_TIMEOUT = 0;
 
+    /** Index generator. */
+    private static final AtomicLong IDX_GEN = new AtomicLong();
+
+    /** Best effort affinity enabled flag. */
+    // TODO: 13.02.19 IGNITE-11309 JDBC Thin: add flag or property to disable best effort affinity
+    private static final boolean BEST_EFFORT_AFFINITY_ENABLED = true;
+
+    /** Empty inet addresses stub. */
+    public static final InetAddress[] EMPTY_ADDRESSES = new InetAddress[0];
+
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
 
@@ -117,23 +136,35 @@ public class JdbcThinConnection implements Connection {
     /** Current transaction holdability. */
     private int holdability;
 
-    /** Ignite endpoint. */
-    private JdbcThinTcpIo cliIo;
-
     /** Jdbc metadata. Cache the JDBC object on the first access */
     private JdbcThinDatabaseMetadata metadata;
 
     /** Connection properties. */
-    private ConnectionProperties connProps;
+    private final ConnectionProperties connProps;
 
     /** Connected. */
-    private boolean connected;
+    private volatile boolean connected;
 
     /** Tracked statements to close on disconnect. */
     private final ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
 
     /** Query timeout timer */
     private final Timer timer;
+
+    /** Ignite endpoints. */
+    private List<JdbcThinTcpIo> cliIos = new ArrayList<>();
+
+    /** Node Ids tp ignite endpoints. */
+    private final Map<UUID, JdbcThinTcpIo> nodeToConnMap = new ConcurrentHashMap<>();
+
+    /** Server index. */
+    private volatile int srvIdx;
+
+    /** Ignite server version. */
+    private Thread ownThread;
+
+    /** Mutex. */
+    private final Object mux = new Object();
 
     /**
      * Creates new connection.
@@ -150,37 +181,106 @@ public class JdbcThinConnection implements Connection {
 
         schema = normalizeSchema(connProps.getSchema());
 
-        cliIo = new JdbcThinTcpIo(connProps);
+        HostAndPortRange[] srvs = connProps.getAddresses();
+
+        for (int i = 0; i < srvs.length; i++) {
+            srvIdx = nextServerIndex(srvs.length);
+
+            HostAndPortRange srv = srvs[srvIdx];
+
+            InetAddress[] addrs = EMPTY_ADDRESSES;
+
+            try {
+                addrs = InetAddress.getAllByName(srv.host());
+            }
+            catch (UnknownHostException e) {
+                LOG.log(Level.WARNING, "Unable to connect to " + connProps.getUrl() + ", address: " + srv, e);
+            }
+
+            for (InetAddress addr : addrs) {
+                for (int port = srv.portFrom(); port <= srv.portTo(); ++port)
+                    cliIos.add(new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port)));
+            }
+
+        }
 
         timer = new Timer("query-timeout-timer");
 
-        ensureConnected();
+        ensureConnected(cliIos);
     }
 
     /**
      * @throws SQLException On connection error.
      */
-    private synchronized void ensureConnected() throws SQLException {
-        try {
-            if (connected)
-                return;
+    private synchronized void ensureConnected(Collection<JdbcThinTcpIo> cliIos) throws SQLException {
+        if (connected)
+            return;
 
-            assert !closed;
+        assert !closed;
 
-            cliIo.start();
+        assert nodeToConnMap.isEmpty();
 
-            connected = true;
+        List<String> inaccessibleAddrs = null;
+
+        List<Exception> exceptions = null;
+
+        IgniteProductVersion privIgniteEnpointVer = null;
+
+        for (JdbcThinTcpIo cliIo : cliIos) {
+            try {
+                cliIo.start();
+
+                connected = true;
+
+                nodeToConnMap.put(cliIo.nodeId(), cliIo);
+
+                if (!BEST_EFFORT_AFFINITY_ENABLED)
+                    break;
+
+                if (privIgniteEnpointVer != null && !privIgniteEnpointVer.equals(cliIo.igniteVersion())) {
+                    onDisconnect();
+
+                    // TODO: 13.02.19 IGNITE-11309 JDBC Thin: add flag or property to disable best effort affinity
+                    throw new SQLException("Failed to connect to Ignite cluster [url=" +
+                        connProps.getUrl() + "]. Different versions of nodes are not supported in best effort" +
+                        "affinity mode.", SqlStateCode.INTERNAL_ERROR);
+                }
+
+                privIgniteEnpointVer = cliIo.igniteVersion();
+            }
+            catch (Exception exception) {
+                if (inaccessibleAddrs == null)
+                    inaccessibleAddrs = new ArrayList<>();
+
+                inaccessibleAddrs.add(cliIo.socketAddress().getHostName());
+
+                if (exceptions == null)
+                    exceptions = new ArrayList<>();
+
+                exceptions.add(exception);
+            }
         }
-        catch (SQLException e) {
+
+        if (!connected && inaccessibleAddrs != null && exceptions != null) {
             close();
+
+            if (exceptions.size() == 1) {
+                Exception ex = exceptions.get(0);
+
+                if (ex instanceof SQLException)
+                    throw (SQLException)ex;
+                else if (ex instanceof IOException)
+                    throw new SQLException("Failed to connect to Ignite cluster [url=" + connProps.getUrl() + ']',
+                        SqlStateCode.CLIENT_CONNECTION_FAILED, ex);
+            }
+
+            SQLException e = new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED);
+
+            for (Exception ex : exceptions)
+                e.addSuppressed(ex);
 
             throw e;
-        }
-        catch (Exception e) {
-            close();
-
-            throw new SQLException("Failed to connect to Ignite cluster [url=" + connProps.getUrl() + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 
@@ -210,9 +310,11 @@ public class JdbcThinConnection implements Connection {
 
             boolean newVal = ((SqlSetStreamingCommand)cmd).isTurnOn();
 
+            JdbcThinTcpIo cliIo = cliIo();
+
             // Actual ON, if needed.
             if (newVal) {
-                if (!cmd0.isOrdered()  && !cliIo.isUnorderedStreamSupported()) {
+                if (!cmd0.isOrdered() && !cliIo.isUnorderedStreamSupported()) {
                     throw new SQLException("Streaming without order doesn't supported by server [remoteNodeVer="
                         + cliIo.igniteVersion() + ']', SqlStateCode.INTERNAL_ERROR);
                 }
@@ -232,6 +334,7 @@ public class JdbcThinConnection implements Connection {
 
     /**
      * Add another query for batched execution.
+     *
      * @param sql Query.
      * @param args Arguments.
      * @throws SQLException On error.
@@ -259,7 +362,7 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency);
 
-        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, schema);
+        JdbcThinStatement stmt = new JdbcThinStatement(this, resSetHoldability, schema);
 
         synchronized (stmtsMux) {
             stmts.add(stmt);
@@ -379,6 +482,7 @@ public class JdbcThinConnection implements Connection {
 
     /**
      * Send to the server {@code COMMIT} command.
+     *
      * @throws SQLException if failed.
      */
     private void doCommit() throws SQLException {
@@ -400,13 +504,16 @@ public class JdbcThinConnection implements Connection {
 
         closed = true;
 
-        cliIo.close();
+        for (JdbcThinTcpIo clioIo : nodeToConnMap.values())
+            clioIo.close();
+
+        nodeToConnMap.clear();
 
         timer.cancel();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isClosed() throws SQLException {
+    @Override public boolean isClosed() {
         return closed;
     }
 
@@ -719,14 +826,15 @@ public class JdbcThinConnection implements Connection {
         if (secMgr != null)
             secMgr.checkPermission(new SQLPermission(SET_NETWORK_TIMEOUT_PERM));
 
-        cliIo.timeout(ms);
+        for (JdbcThinTcpIo clioIo : nodeToConnMap.values())
+            clioIo.timeout(ms);
     }
 
     /** {@inheritDoc} */
     @Override public int getNetworkTimeout() throws SQLException {
         ensureNotClosed();
 
-        return cliIo.timeout();
+        return cliIo().timeout();
     }
 
     /**
@@ -743,7 +851,7 @@ public class JdbcThinConnection implements Connection {
      * @return Ignite server version.
      */
     IgniteProductVersion igniteVersion() {
-        return cliIo.igniteVersion();
+        return cliIo().igniteVersion();
     }
 
     /**
@@ -755,6 +863,7 @@ public class JdbcThinConnection implements Connection {
 
     /**
      * Send request for execution via {@link #cliIo}.
+     *
      * @param req Request.
      * @return Server response.
      * @throws SQLException On any error.
@@ -765,16 +874,26 @@ public class JdbcThinConnection implements Connection {
 
     /**
      * Send request for execution via {@link #cliIo}.
+     *
      * @param req Request.
      * @param stmt Jdbc thin statement.
      * @return Server response.
      * @throws SQLException On any error.
      */
     <R extends JdbcResult> R sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException {
-        ensureConnected();
+        ensureConnected(cliIos);
 
         RequestTimeoutTimerTask reqTimeoutTimerTask = null;
 
+        synchronized (mux) {
+            if (ownThread != null) {
+                throw new SQLException("Concurrent access to JDBC connection is not allowed"
+                    + " [ownThread=" + ownThread.getName()
+                    + ", curThread=" + Thread.currentThread().getName(), SqlStateCode.CONNECTION_FAILURE);
+            }
+
+            ownThread = Thread.currentThread();
+        }
         try {
             if (stmt != null && stmt.requestTimeout() != NO_TIMEOUT) {
                 reqTimeoutTimerTask = new RequestTimeoutTimerTask(
@@ -784,7 +903,7 @@ public class JdbcThinConnection implements Connection {
                 timer.schedule(reqTimeoutTimerTask, 0, REQUEST_TIMEOUT_PERIOD);
             }
 
-            JdbcResponse res = cliIo.sendRequest(req, stmt);
+            JdbcResponse res = cliIo().sendRequest(req, stmt);
 
             if (res.status() == IgniteQueryErrorCode.QUERY_CANCELED && stmt != null &&
                 stmt.requestTimeout() != NO_TIMEOUT && reqTimeoutTimerTask != null && reqTimeoutTimerTask.expired.get()) {
@@ -810,20 +929,27 @@ public class JdbcThinConnection implements Connection {
         finally {
             if (stmt != null && stmt.requestTimeout() != NO_TIMEOUT && reqTimeoutTimerTask != null)
                 reqTimeoutTimerTask.cancel();
+
+            synchronized (mux) {
+                ownThread = null;
+            }
         }
     }
 
     /**
-     * Send request for execution via {@link #cliIo}. Response is waited at the separate thread
-     *     (see {@link StreamState#asyncRespReaderThread}).
+     * Send request for execution via {@link #cliIo}. Response is waited at the separate thread (see {@link
+     * StreamState#asyncRespReaderThread}).
+     *
      * @param req Request.
      * @throws SQLException On any error.
      */
     void sendQueryCancelRequest(JdbcQueryCancelRequest req) throws SQLException {
-        ensureConnected();
+        ensureConnected(cliIos);
 
         try {
-            cliIo.sendCancelRequest(req);
+            // TODO: 12.02.19 send cancel request to the same node on which the original request was sent.
+            // TODO Currently it's true, cause we always use first tcpIo.
+            cliIo().sendCancelRequest(req);
         }
         catch (Exception e) {
             throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
@@ -831,16 +957,27 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
-     * Send request for execution via {@link #cliIo}. Response is waited at the separate thread
-     *     (see {@link StreamState#asyncRespReaderThread}).
+     * Send request for execution via {@link #cliIo}. Response is waited at the separate thread (see {@link
+     * StreamState#asyncRespReaderThread}).
+     *
      * @param req Request.
      * @throws SQLException On any error.
      */
     private void sendRequestNotWaitResponse(JdbcOrderedBatchExecuteRequest req) throws SQLException {
-        ensureConnected();
+        ensureConnected(cliIos);
+
+        synchronized (mux) {
+            if (ownThread != null) {
+                throw new SQLException("Concurrent access to JDBC connection is not allowed"
+                    + " [ownThread=" + ownThread.getName()
+                    + ", curThread=" + Thread.currentThread().getName(), SqlStateCode.CONNECTION_FAILURE);
+            }
+
+            ownThread = Thread.currentThread();
+        }
 
         try {
-            cliIo.sendBatchRequestNoWaitResponse(req);
+            stickyCliIo().sendBatchRequestNoWaitResponse(req);
         }
         catch (SQLException e) {
             throw e;
@@ -852,6 +989,11 @@ public class JdbcThinConnection implements Connection {
                 throw new SQLException("Connection timed out.", SqlStateCode.CONNECTION_FAILURE, e);
             else
                 throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
+        }
+        finally {
+            synchronized (mux) {
+                ownThread = null;
+            }
         }
     }
 
@@ -869,7 +1011,8 @@ public class JdbcThinConnection implements Connection {
         if (!connected)
             return;
 
-        cliIo.close();
+        for (JdbcThinTcpIo clioIo : nodeToConnMap.values())
+            clioIo.close();
 
         connected = false;
 
@@ -961,6 +1104,7 @@ public class JdbcThinConnection implements Connection {
 
         /**
          * Add another query for batched execution.
+         *
          * @param sql Query.
          * @param args Arguments.
          * @throws SQLException On error.
@@ -971,7 +1115,7 @@ public class JdbcThinConnection implements Connection {
             boolean newQry = (args == null || !F.eq(lastStreamQry, sql));
 
             // Providing null as SQL here allows for recognizing subbatches on server and handling them more efficiently.
-            JdbcQuery q  = new JdbcQuery(newQry ? sql : null, args != null ? args.toArray() : null);
+            JdbcQuery q = new JdbcQuery(newQry ? sql : null, args != null ? args.toArray() : null);
 
             if (streamBatch == null)
                 streamBatch = new ArrayList<>(streamBatchSize);
@@ -1010,7 +1154,7 @@ public class JdbcThinConnection implements Connection {
                     try {
                         lastRespFut.get();
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteCheckedException ignored) {
                         // No-op.
                         // No exceptions are expected here.
                     }
@@ -1027,6 +1171,7 @@ public class JdbcThinConnection implements Connection {
 
         /**
          * Throws at the user thread exception that was thrown at the {@link #asyncRespReaderThread} thread.
+         *
          * @throws SQLException Saved exception.
          */
         void checkError() throws SQLException {
@@ -1078,10 +1223,10 @@ public class JdbcThinConnection implements Connection {
         /**
          *
          */
-        void readResponses () {
+        void readResponses() {
             try {
                 while (true) {
-                    JdbcResponse resp = cliIo.readResponse();
+                    JdbcResponse resp = stickyCliIo().readResponse();
 
                     if (resp.response() instanceof JdbcOrderedBatchExecuteResult) {
                         JdbcOrderedBatchExecuteResult res = (JdbcOrderedBatchExecuteResult)resp.response();
@@ -1116,7 +1261,48 @@ public class JdbcThinConnection implements Connection {
      * @return True if query cancellation supported, false otherwise.
      */
     boolean isQueryCancellationSupported() {
-        return cliIo.isQueryCancellationSupported();
+        return cliIo().isQueryCancellationSupported();
+    }
+
+    /**
+     * @return JdbcThinTcpIo to use for request/response transferring.
+     */
+    private JdbcThinTcpIo cliIo() {
+        assert (!nodeToConnMap.isEmpty());
+
+        return nodeToConnMap.values().iterator().next();
+    }
+
+    /**
+     * @return JdbcThinTcpIo to use for sticky data transferring: streaming, etc.
+     */
+    private JdbcThinTcpIo stickyCliIo() {
+        assert (!nodeToConnMap.isEmpty());
+
+        return nodeToConnMap.values().iterator().next();
+    }
+
+    /**
+     * @return Current server index.
+     */
+    public int serverIndex() {
+        return srvIdx;
+    }
+
+    /**
+     * Get next server index.
+     *
+     * @param len Number of servers.
+     * @return Index of the next server to connect to.
+     */
+    private static int nextServerIndex(int len) {
+        if (len == 1)
+            return 0;
+        else {
+            long nextIdx = IDX_GEN.getAndIncrement();
+
+            return (int)(nextIdx % len);
+        }
     }
 
     /**

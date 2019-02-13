@@ -26,10 +26,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -51,7 +49,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
-import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -106,11 +103,11 @@ public class JdbcThinTcpIo {
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
-    /** Random. */
-    private static final AtomicLong IDX_GEN = new AtomicLong();
-
     /** Connection properties. */
     private final ConnectionProperties connProps;
+
+    /** Socket address. */
+    private final InetSocketAddress sockAddr;
 
     /** Endpoint. */
     private IpcClientTcpEndpoint endpoint;
@@ -130,20 +127,11 @@ public class JdbcThinTcpIo {
     /** Node Id. */
     private UUID nodeId;
 
-    /** Ignite server version. */
-    private Thread ownThread;
-
-    /** Mutex. */
-    private final Object mux = new Object();
-
     /** Connection mutex. */
     private final Object connMux = new Object();
 
     /** Current protocol version used to connection to Ignite. */
     private ClientListenerProtocolVersion srvProtocolVer;
-
-    /** Server index. */
-    private volatile int srvIdx;
 
     /** Socket. */
     private Socket sock;
@@ -152,9 +140,11 @@ public class JdbcThinTcpIo {
      * Constructor.
      *
      * @param connProps Connection properties.
+     * @param sockAddr Socket address.
      */
-    public JdbcThinTcpIo(ConnectionProperties connProps) {
+    public JdbcThinTcpIo(ConnectionProperties connProps, InetSocketAddress sockAddr) {
         this.connProps = connProps;
+        this.sockAddr = sockAddr;
     }
 
     /**
@@ -170,84 +160,13 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
+    // TODO: 13.02.19 called also from tests, and now synchronization moved up to JdbcThinConnection.
     public void start(int timeout) throws SQLException, IOException {
-        synchronized (mux) {
-            if (ownThread != null) {
-                throw new SQLException("Concurrent access to JDBC connection is not allowed"
-                    + " [ownThread=" + ownThread.getName()
-                    + ", curThread=" + Thread.currentThread().getName(), SqlStateCode.CLIENT_CONNECTION_FAILED);
-            }
-
-            ownThread = Thread.currentThread();
-        }
-
         assert !connected;
 
-        try {
-            List<String> inaccessibleAddrs = null;
+        connect(sockAddr, timeout);
 
-            List<Exception> exceptions = null;
-
-            HostAndPortRange[] srvs = connProps.getAddresses();
-
-            for (int i = 0; i < srvs.length; i++) {
-                srvIdx = nextServerIndex(srvs.length);
-
-                HostAndPortRange srv = srvs[srvIdx];
-
-                InetAddress[] addrs = getAllAddressesByHost(srv.host());
-
-                for (InetAddress addr : addrs) {
-                    for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
-                        try {
-                            connect(new InetSocketAddress(addr, port), timeout);
-
-                            break;
-                        }
-                        catch (IOException | SQLException exception) {
-                            if (inaccessibleAddrs == null)
-                                inaccessibleAddrs = new ArrayList<>();
-
-                            inaccessibleAddrs.add(addr.getHostName());
-
-                            if (exceptions == null)
-                                exceptions = new ArrayList<>();
-
-                            exceptions.add(exception);
-                        }
-                    }
-                }
-
-                if (connected)
-                    break;
-            }
-
-            if (!connected && inaccessibleAddrs != null && exceptions != null) {
-                if (exceptions.size() == 1) {
-                    Exception ex = exceptions.get(0);
-
-                    if (ex instanceof SQLException)
-                        throw (SQLException)ex;
-                    else if (ex instanceof IOException)
-                        throw (IOException)ex;
-                }
-
-                SQLException e = new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
-                    SqlStateCode.CLIENT_CONNECTION_FAILED);
-
-                for (Exception ex : exceptions)
-                    e.addSuppressed(ex);
-
-                throw e;
-            }
-
-            handshake(CURRENT_VER);
-        }
-        finally {
-            synchronized (mux) {
-                ownThread = null;
-            }
-        }
+        handshake(CURRENT_VER);
     }
 
     /**
@@ -299,8 +218,8 @@ public class JdbcThinTcpIo {
                 connected = true;
             }
             catch (IgniteCheckedException e) {
-                throw new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
-                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                throw new SQLException("Failed to connect to server [url=" + connProps.getUrl() +
+                    " address=" + addr + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
         }
         catch (Exception e) {
@@ -318,6 +237,7 @@ public class JdbcThinTcpIo {
      * @return Addresses.
      * @throws UnknownHostException If host is unavailable.
      */
+    // TODO: 12.02.19 overrided within org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest.createTcpIo
     protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
         return InetAddress.getAllByName(host);
     }
@@ -399,7 +319,7 @@ public class JdbcThinTcpIo {
             if (srvProtoVer0.compareTo(VER_2_5_0) < 0 && !F.isEmpty(connProps.getUsername())) {
                 throw new SQLException("Authentication doesn't support by remote server[driverProtocolVer="
                     + CURRENT_VER + ", remoteNodeProtocolVer=" + srvProtoVer0 + ", err=" + err
-                    + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
+                    + ", url=" + connProps.getUrl() + " address=" + sockAddr + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
             if (VER_2_8_0.equals(srvProtoVer0)
@@ -475,29 +395,12 @@ public class JdbcThinTcpIo {
      * @throws SQLException On error.
      */
     void sendBatchRequestNoWaitResponse(JdbcOrderedBatchExecuteRequest req) throws IOException, SQLException {
-        synchronized (mux) {
-            if (ownThread != null) {
-                throw new SQLException("Concurrent access to JDBC connection is not allowed"
-                    + " [ownThread=" + ownThread.getName()
-                    + ", curThread=" + Thread.currentThread().getName(), SqlStateCode.CONNECTION_FAILURE);
-            }
-
-            ownThread = Thread.currentThread();
+        if (!isUnorderedStreamSupported()) {
+            throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer="
+                + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
         }
 
-        try {
-            if (!isUnorderedStreamSupported()) {
-                throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer="
-                    + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
-            }
-
-            sendRequestRaw(req);
-        }
-        finally {
-            synchronized (mux) {
-                ownThread = null;
-            }
-        }
+        sendRequestRaw(req);
     }
 
     /**
@@ -505,50 +408,32 @@ public class JdbcThinTcpIo {
      * @param stmt Statement.
      * @return Server response.
      * @throws IOException In case of IO error.
-     * @throws SQLException On concurrent access to JDBC connection.
      */
-    JdbcResponse sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException, IOException {
-        synchronized (mux) {
-            if (ownThread != null) {
-                throw new SQLException("Concurrent access to JDBC connection is not allowed"
-                    + " [ownThread=" + ownThread.getName()
-                    + ", curThread=" + Thread.currentThread().getName(), SqlStateCode.CONNECTION_FAILURE);
-            }
+    JdbcResponse sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws IOException {
+        if (stmt != null) {
+            synchronized (stmt.cancellationMutex()) {
+                if (stmt.isCancelled()) {
+                    if (req instanceof JdbcQueryCloseRequest)
+                        return new JdbcResponse(null);
 
-            ownThread = Thread.currentThread();
-        }
-
-        try {
-            if (stmt != null) {
-                synchronized (stmt.cancellationMutex()) {
-                    if (stmt.isCancelled()) {
-                        if (req instanceof JdbcQueryCloseRequest)
-                            return new JdbcResponse(null);
-
-                        return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
-                    }
-
-                    sendRequestRaw(req);
-
-                    if (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest)
-                        stmt.currentRequestId(req.requestId());
+                    return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
                 }
-            }
-            else
+
                 sendRequestRaw(req);
 
-            JdbcResponse resp = readResponse();
-
-            if (stmt != null && stmt.isCancelled())
-                return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
-            else
-                return resp;
-        }
-        finally {
-            synchronized (mux) {
-                ownThread = null;
+                if (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest)
+                    stmt.currentRequestId(req.requestId());
             }
         }
+        else
+            sendRequestRaw(req);
+
+        JdbcResponse resp = readResponse();
+
+        if (stmt != null && stmt.isCancelled())
+            return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
+        else
+            return resp;
     }
 
     /**
@@ -724,29 +609,6 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @return Current server index.
-     */
-    public int serverIndex() {
-        return srvIdx;
-    }
-
-    /**
-     * Get next server index.
-     *
-     * @param len Number of servers.
-     * @return Index of the next server to connect to.
-     */
-    private static int nextServerIndex(int len) {
-        if (len == 1)
-            return 0;
-        else {
-            long nextIdx = IDX_GEN.getAndIncrement();
-
-            return (int)(nextIdx % len);
-        }
-    }
-
-    /**
      * Enable/disable socket timeout with specified timeout.
      *
      * @param ms the specified timeout, in milliseconds.
@@ -774,4 +636,19 @@ public class JdbcThinTcpIo {
             throw new SQLException("Failed to set connection timeout.", SqlStateCode.INTERNAL_ERROR, e);
         }
     }
+
+    /**
+     * @return Node Id.
+     */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
+     * @return Socket address.
+     */
+    public InetSocketAddress socketAddress() {
+        return sockAddr;
+    }
+
 }
