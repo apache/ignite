@@ -31,7 +31,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     private final int discreteFeatureFrom;
     private final int discreteFeatureTo;
     /** Prior probabilities of each class */
-    private double[] classProbabilities;
+    private double[] priorProbabilities;
     /** Labels. */
     private double[] labels;
 
@@ -48,7 +48,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         discreteFeatureFrom = builder.discreteFeatureFrom;
         discreteFeatureTo = builder.discreteFeatureTo;
 
-        classProbabilities = builder.classProbabilities;
+        priorProbabilities = builder.priorProbabilities;
         labels = builder.labels;
     }
 
@@ -58,12 +58,12 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     }
 
     @Override public Double predict(Vector vector) {
-        double[] probapilityPowers = new double[classProbabilities.length];
-        for (int i = 0; i < classProbabilities.length; i++) {
-            probapilityPowers[i] = Math.log(classProbabilities[i]);
+        double[] probapilityPowers = new double[priorProbabilities.length];
+        for (int i = 0; i < priorProbabilities.length; i++) {
+            probapilityPowers[i] = Math.log(priorProbabilities[i]);
         }
 
-        for (int i = 0; i < classProbabilities.length; i++) {
+        for (int i = 0; i < priorProbabilities.length; i++) {
             for (int j = discreteFeatureFrom; j < discreteFeatureTo; j++) {
                 int bucketNumber = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[j]);
                 double probability = discreteModel.getProbabilities()[i][j][bucketNumber];
@@ -71,7 +71,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             }
         }
 
-        for (int i = 0; i < classProbabilities.length; i++) {
+        for (int i = 0; i < priorProbabilities.length; i++) {
             for (int j = gaussianFeatureFrom; j < gaussianFeatureTo; j++) {
                 double parobability = gauss(vector.get(j), gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][j]);
                 probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
@@ -102,13 +102,13 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return Math.exp(-1. * Math.pow(x - mean, 2) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
     }
 
-    public static CompoundNaiveBayesModel.Builder builder() {
+    public static Builder builder() {
         return new Builder();
     }
 
     public static class Builder {
 
-        private double[] classProbabilities;
+        private double[] priorProbabilities;
         private double[] labels;
 
         private GaussianNaiveBayesModel gaussianModel;
@@ -119,41 +119,41 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         private int discreteFeatureFrom = -1;
         private int discreteFeatureTo = -1;
 
-        Builder wirhClassProbabilities(double[] classProbabilities) {
-            this.classProbabilities = classProbabilities;
+        public Builder wirhPriorProbabilities(double[] priorProbabilities) {
+            this.priorProbabilities = priorProbabilities.clone();
             return this;
         }
 
-        Builder withLabels(double[] labels) {
-            this.labels = labels;
+        public Builder withLabels(double[] labels) {
+            this.labels = labels.clone();
             return this;
         }
 
-        Builder withGaussianModel(GaussianNaiveBayesModel gaussianModel) {
+        public Builder withGaussianModel(GaussianNaiveBayesModel gaussianModel) {
             this.gaussianModel = gaussianModel;
             return this;
         }
 
-        Builder withGaussianModelRange(int from, int toExclusive) {
+        public Builder withGaussianModelRange(int from, int toExclusive) {
             assert from < toExclusive;
             gaussianFeatureFrom = from;
             gaussianFeatureTo = toExclusive;
             return this;
         }
 
-        Builder withDiscreteModel(DiscreteNaiveBayesModel discreteModel) {
+        public Builder withDiscreteModel(DiscreteNaiveBayesModel discreteModel) {
             this.discreteModel = discreteModel;
             return this;
         }
 
-        Builder withDiscreteModelRange(int from, int toExclusive) {
+        private Builder withDiscreteModelRange(int from, int toExclusive) {
             assert from < toExclusive;
             discreteFeatureFrom = from;
             discreteFeatureTo = toExclusive;
             return this;
         }
 
-        CompoundNaiveBayesModel build() {
+        public CompoundNaiveBayesModel build() {
             if (discreteModel != null && (discreteFeatureFrom < 0 || discreteFeatureTo < 0)) {
                 throw new IllegalArgumentException();
             }

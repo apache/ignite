@@ -50,7 +50,7 @@ public class CompoundNaiveBayesModelTest {
         Vector observation = VectorUtils.of(6, 130, 8);
 
         CompoundNaiveBayesModel model = CompoundNaiveBayesModel.builder()
-            .wirhClassProbabilities(classProbabilities)
+            .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withGaussianModel(gaussianModel)
             .withGaussianModelRange(0, observation.size())
@@ -77,7 +77,7 @@ public class CompoundNaiveBayesModelTest {
         Vector observation = VectorUtils.of(2, 0, 1, 2, 0);
 
         CompoundNaiveBayesModel model = CompoundNaiveBayesModel.builder()
-            .wirhClassProbabilities(classProbabilities)
+            .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withDiscreteModel(discreteModel)
             .withDiscreteModelRange(0, observation.size())
