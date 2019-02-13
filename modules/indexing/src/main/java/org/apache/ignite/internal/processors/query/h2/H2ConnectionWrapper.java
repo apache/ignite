@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -59,6 +62,28 @@ public class H2ConnectionWrapper implements AutoCloseable {
      */
     public void schema(@Nullable String schema) {
         this.schema = schema;
+    }
+
+    /**
+     * Connection for schema.
+     *
+     * @param schema Schema name.
+     * @return Connection.
+     */
+    public Connection connection(@Nullable String schema) {
+        if (schema != null && !F.eq(this.schema, schema)) {
+            try {
+                conn.setSchema(schema);
+
+                this.schema = schema;
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
+                    schema + "]", e);
+            }
+        }
+
+        return conn;
     }
 
     /**

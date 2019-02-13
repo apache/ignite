@@ -23,13 +23,10 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstractStandByClientReconnectTest {
     /**
      * @throws Exception If failed.

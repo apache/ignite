@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract future processing transaction enlisting and locking of entries produced with DML and SELECT FOR UPDATE
@@ -36,14 +35,12 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
 
     /**
      * Constructor.
-     *
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
-     * @param parts Partitions.
      * @param tx Transaction.
      * @param timeout Lock acquisition timeout.
      * @param cctx Cache context.
@@ -54,7 +51,6 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
         long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
-        @Nullable int[] parts,
         GridDhtTxLocalAdapter tx,
         long timeout,
         GridCacheContext<?, ?> cctx) {
@@ -64,10 +60,11 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
             threadId,
             nearFutId,
             nearMiniId,
-            null,
             tx,
             timeout,
-            cctx, null);
+            cctx,
+            null,
+            cctx.keepBinary());
     }
 
     /** {@inheritDoc} */

@@ -323,9 +323,9 @@ public interface CacheMetrics {
     public int getSize();
 
     /**
-     * Gets number of non-{@code null} values in the cache as a long value.
+     * Cache size.
      *
-     * @return Number of non-{@code null} values in the cache.
+     * @return Cache size.
      */
     public long getCacheSize();
 

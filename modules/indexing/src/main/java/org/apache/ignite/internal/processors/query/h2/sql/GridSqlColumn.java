@@ -92,6 +92,13 @@ public class GridSqlColumn extends GridSqlElement {
         this.tblAlias = tblAlias;
     }
 
+    /**
+     * @return Table alias.
+     */
+    public String tableAlias() {
+        return tblAlias;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
         String sql = Parser.quoteIdentifier(colName);

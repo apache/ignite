@@ -1374,10 +1374,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param type Type of message.
      * @param c Handler.
      */
-    public void addCacheHandler(
+    public <Msg extends GridCacheMessage> void addCacheHandler(
         int hndId,
-        Class<? extends GridCacheMessage> type,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        Class<Msg> type,
+        IgniteBiInClosure<UUID, ? super Msg> c
+    ) {
         assert !type.isAssignableFrom(GridCacheGroupIdMessage.class) : type;
 
         addHandler(hndId, type, c, cacheHandlers);
@@ -1388,10 +1389,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param type Type of message.
      * @param c Handler.
      */
-    public void addCacheGroupHandler(
+    public <Msg extends GridCacheGroupIdMessage> void addCacheGroupHandler(
         int hndId,
-        Class<? extends GridCacheGroupIdMessage> type,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        Class<Msg> type,
+        IgniteBiInClosure<UUID, ? super Msg> c
+    ) {
         assert !type.isAssignableFrom(GridCacheIdMessage.class) : type;
 
         addHandler(hndId, type, c, grpHandlers);
@@ -1403,11 +1405,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler.
      * @param msgHandlers Message handlers.
      */
-    private void addHandler(
+    private <Msg extends GridCacheMessage> void addHandler(
         int hndId,
-        Class<? extends GridCacheMessage> type,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c,
-        MessageHandlers msgHandlers) {
+        Class<Msg> type,
+        IgniteBiInClosure<UUID, ? super Msg> c,
+        MessageHandlers msgHandlers
+    ) {
         int msgIdx = messageIndex(type);
 
         if (msgIdx != -1) {

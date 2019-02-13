@@ -30,13 +30,10 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopSplitWrapper;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Self test of {@link HadoopSplitWrapper}.
  */
-@RunWith(JUnit4.class)
 public class HadoopSplitWrapperSelfTest extends HadoopAbstractSelfTest {
     /**
      * Tests serialization of wrapper and the wrapped native split.

@@ -62,6 +62,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
@@ -78,8 +79,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
@@ -88,7 +87,6 @@ import static org.junit.Assert.assertArrayEquals;
  * Grid utils tests.
  */
 @GridCommonTest(group = "Utils")
-@RunWith(JUnit4.class)
 public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int[] EMPTY = new int[0];
@@ -1095,14 +1093,31 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> res;
 
+        // Future for avoiding fast execution in only executor threads.
+        // Here we try to pass a number of tasks more that executor size,
+        // but there is a case when all task will be completed after last submit return control and
+        // current thread can not steal task because all task will be already finished.
+        GridFutureAdapter fut = new GridFutureAdapter();
+
         try {
             res = U.doInParallel(10,
                 executorService,
                 data,
                 new IgniteThrowableFunction<Integer, Integer>() {
                     @Override public Integer apply(Integer cnt) {
-                        if (Thread.currentThread().getId() == threadId)
+                        if (Thread.currentThread().getId() == threadId) {
+                            fut.onDone();
+
                             curThreadCnt.incrementAndGet();
+                        }
+                        else {
+                            try {
+                                fut.get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw U.convertException(e);
+                            }
+                        }
 
                         return -cnt;
                     }

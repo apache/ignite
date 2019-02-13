@@ -73,8 +73,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -93,7 +91,6 @@ import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.C
 /**
  * Continuous queries tests.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommonAbstractTest implements Serializable {
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;

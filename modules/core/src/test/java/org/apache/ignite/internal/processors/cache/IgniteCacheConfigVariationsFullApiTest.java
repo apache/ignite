@@ -49,7 +49,6 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -89,8 +88,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -117,7 +114,6 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
  * Full API cache test.
  */
 @SuppressWarnings({"unchecked"})
-@RunWith(JUnit4.class)
 public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVariationsAbstractTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 60 * 1000;
@@ -4336,7 +4332,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 checkTtl0(inTx, oldEntry, ttlVals[i]);
                 break;
             }
-            catch (AssertionFailedError e) {
+            catch (AssertionError e) {
                 if (i < ttlVals.length - 1)
                     info("Ttl test failed, try execute with increased ttl");
                 else
@@ -5211,7 +5207,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 checkIteratorsCleared();
             }
-            catch (AssertionFailedError e) {
+            catch (AssertionError e) {
                 if (i == 9)
                     throw e;
 
@@ -6378,7 +6374,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                     size++;
 
-                    e.touch(null);
+                    e.touch();
                 }
             }
 

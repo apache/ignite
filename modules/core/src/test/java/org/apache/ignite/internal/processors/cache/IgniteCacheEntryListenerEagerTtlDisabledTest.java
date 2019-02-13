@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 public class IgniteCacheEntryListenerEagerTtlDisabledTest extends IgniteCacheEntryListenerTxTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
         super.beforeTestsStarted();
     }

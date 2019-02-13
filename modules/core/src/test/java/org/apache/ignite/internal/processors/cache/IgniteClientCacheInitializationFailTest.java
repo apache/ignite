@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -67,14 +66,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test checks whether cache initialization error on client side
  * doesn't causes hangs and doesn't impact other caches.
  */
-@RunWith(JUnit4.class)
 public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractTest {
     /** Failed cache name. */
     private static final String CACHE_NAME = "cache";
@@ -308,13 +304,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
-            boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel,
-            Long qryId) throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String spaceName,
             String cacheName, String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException {
             return null;
@@ -359,7 +348,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
+        @Override public UpdateSourceIterator<?> executeUpdateOnDataNodeTransactional(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
             String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
             AffinityTopologyVersion topVer,
             MvccSnapshot mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {

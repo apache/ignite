@@ -57,8 +57,7 @@ public class KMeansClusterizationExample {
             IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
                 .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            KMeansTrainer trainer = new KMeansTrainer()
-                .withSeed(7867L);
+            KMeansTrainer trainer = new KMeansTrainer();
 
             KMeansModel mdl = trainer.fit(
                 ignite,

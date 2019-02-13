@@ -20,6 +20,7 @@ package org.apache.ignite.ml.regressions.linear;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Optional;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -34,6 +35,7 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -83,17 +85,19 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
 
     /** {@inheritDoc} */
     @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        FeatureLabelExtractor<K, V, Double> extractor) {
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
         assert updatesStgy != null;
+
+        IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
+        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
 
@@ -160,7 +164,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(LinearRegressionModel mdl) {
+    @Override public boolean isUpdateable(LinearRegressionModel mdl) {
         return true;
     }
 

@@ -39,17 +39,13 @@ import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Test for deployment of multiple configurations at a time.
  */
-@RunWith(JUnit4.class)
 public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractTest {
     /** Number of services to be deployed. */
     private static final int NUM_SERVICES = 100;

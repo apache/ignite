@@ -24,6 +24,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Assume;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -47,8 +48,7 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
 
         super.beforeTestsStarted();
     }

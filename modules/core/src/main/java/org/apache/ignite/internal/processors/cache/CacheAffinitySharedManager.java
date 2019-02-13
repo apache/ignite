@@ -2219,7 +2219,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         Map<UUID, GridDhtPartitionMap> map = new HashMap<>();
 
         for (int p = 0; p < aff.assignment().size(); p++) {
-            HashSet<UUID> ids = aff.getIds(p);
+            Collection<UUID> ids = aff.getIds(p);
 
             for (UUID nodeId : ids) {
                 GridDhtPartitionMap partMap = map.get(nodeId);

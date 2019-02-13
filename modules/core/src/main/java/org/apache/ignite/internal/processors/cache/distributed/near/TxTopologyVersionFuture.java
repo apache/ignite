@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -25,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Future to obtain/lock topology version for SELECT FOR UPDATE.
@@ -111,7 +113,10 @@ public class TxTopologyVersionFuture extends GridFutureAdapter<AffinityTopologyV
 
         try {
             if (cctx.topology().stopping()) {
-                onDone(new CacheStoppedException(cctx.name()));
+                onDone(
+                    cctx.shared().cache().isCacheRestarting(cctx.name())?
+                        new IgniteCacheRestartingException(cctx.name()):
+                        new CacheStoppedException(cctx.name()));
 
                 return;
             }
@@ -162,5 +167,10 @@ public class TxTopologyVersionFuture extends GridFutureAdapter<AffinityTopologyV
      */
     public boolean clientFirst() {
         return cctx.localNode().isClient() && !topLocked && !tx.hasRemoteLocks();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TxTopologyVersionFuture.class, this, super.toString());
     }
 }

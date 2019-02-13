@@ -170,7 +170,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMP
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.SERVICE_PERMISSIONS_SINCE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
@@ -787,7 +786,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoWrk.discoCache = discoCache;
 
                     if (!isLocDaemon && !ctx.clientDisconnected()) {
-                        ctx.cache().context().coordinators().onLocalJoin(discoEvt);
+                        ctx.cache().context().coordinators().onLocalJoin(discoEvt, discoCache);
 
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
@@ -848,6 +847,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     gridStartTime = getSpi().getGridStartTime();
 
                     ((IgniteKernal)ctx.grid()).onReconnected(clusterRestarted);
+
+                    ctx.cache().context().coordinators().onLocalJoin(localJoinEvent(), discoCache);
 
                     ctx.cache().context().exchange().onLocalJoin(localJoinEvent(), discoCache);
 
@@ -1331,9 +1332,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
-            if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) >= 0
-                && ctx.security().enabled() // Matters only if security enabled.
-               ) {
+            if (ctx.security().enabled()) {
                 Boolean rmtSecurityCompatibilityEnabled = n.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
                 if (!F.eq(locSecurityCompatibilityEnabled, rmtSecurityCompatibilityEnabled)) {
@@ -1347,19 +1346,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", rmtNodeAddrs=" + U.addressesAsString(n) +
                         ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
                 }
-            }
-
-            if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) < 0
-                && ctx.security().enabled() // Matters only if security enabled.
-                && (locSecurityCompatibilityEnabled == null || !locSecurityCompatibilityEnabled)) {
-                throw new IgniteCheckedException("Remote node does not support service security permissions. " +
-                    "To be able to join to it, local node must be started with " + IGNITE_SECURITY_COMPATIBILITY_MODE +
-                    " system property set to \"true\". " +
-                    "[locSecurityCompatibilityEnabled=" + locSecurityCompatibilityEnabled +
-                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                    ", rmtNodeAddrs=" + U.addressesAsString(n) +
-                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ", " +
-                    ", rmtNodeVer" + n.version() + ", rmtNode=" + U.toShortString(n) + "]");
             }
         }
 
@@ -2486,7 +2472,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheMap Map to add to.
      * @param cacheName Cache name.
-     * @param rich Node to add
+     * @param node Node to add
      */
     private void addToMap(Map<Integer, List<ClusterNode>> cacheMap, String cacheName, ClusterNode node) {
         List<ClusterNode> cacheNodes = cacheMap.get(CU.cacheId(cacheName));
@@ -2593,7 +2579,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("StatementWithEmptyBody")
         @Override protected void body() throws InterruptedException {
             long lastChk = 0;
 

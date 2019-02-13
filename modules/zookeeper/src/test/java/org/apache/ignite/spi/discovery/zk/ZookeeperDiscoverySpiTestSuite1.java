@@ -17,23 +17,42 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.curator.test.ByteCodeRewrite;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClientTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslFailedAuthTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslSuccessfulAuthTest;
-import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryMiscTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySegmentationAndConnectionRestoreTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryConcurrentStartAndStartStopTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryTopologyChangeAndReconnectTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryCommunicationFailureTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryClientDisconnectTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySplitBrainTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryCustomEventsTest;
 import org.apache.zookeeper.jmx.MBeanRegistry;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.quorum.LearnerZooKeeperServer;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  *
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    ZookeeperDiscoverySegmentationAndConnectionRestoreTest.class,
+    ZookeeperDiscoveryConcurrentStartAndStartStopTest.class,
+    ZookeeperDiscoveryTopologyChangeAndReconnectTest.class,
+    ZookeeperDiscoveryCommunicationFailureTest.class,
+    ZookeeperDiscoveryClientDisconnectTest.class,
+    ZookeeperDiscoverySplitBrainTest.class,
+    ZookeeperDiscoveryCustomEventsTest.class,
+    ZookeeperDiscoveryMiscTest.class,
+    ZookeeperClientTest.class,
+    ZookeeperDiscoverySpiSaslFailedAuthTest.class,
+    ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class,
+})
 public class ZookeeperDiscoverySpiTestSuite1 {
     /**
      * During test suite processing GC can unload some classes whose bytecode has been rewritten here
@@ -53,20 +72,10 @@ public class ZookeeperDiscoverySpiTestSuite1 {
         WORKAROUND = new Class[] {ZooKeeperServer.class, LearnerZooKeeperServer.class, MBeanRegistry.class};
     }
 
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
+    /** */
+    @BeforeClass
+    public static void init() {
         System.setProperty("zookeeper.forceSync", "false");
         System.setProperty("zookeeper.jmx.log4j.disable", "true");
-
-        TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(ZookeeperClientTest.class));
-        suite.addTest(new JUnit4TestAdapter(ZookeeperDiscoverySpiTest.class));
-        suite.addTest(new JUnit4TestAdapter(ZookeeperDiscoverySpiSaslFailedAuthTest.class));
-        suite.addTest(new JUnit4TestAdapter(ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class));
-
-        return suite;
     }
 }

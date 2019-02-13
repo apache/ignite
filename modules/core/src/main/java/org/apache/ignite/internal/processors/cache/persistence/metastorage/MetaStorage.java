@@ -27,13 +27,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -72,7 +73,6 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
@@ -85,7 +85,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 /**
  * General purpose key-value local-only storage.
  */
-public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, ReadWriteMetastorage {
+public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     /** */
     public static final String METASTORAGE_CACHE_NAME = "MetaStorage";
 
@@ -139,10 +139,10 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private FreeListImpl freeList;
 
     /** */
-    private Map<String, byte[]> lastUpdates;
+    private SortedMap<String, byte[]> lastUpdates;
 
     /** */
-    private final Marshaller marshaller = new JdkMarshaller();
+    private final Marshaller marshaller = JdkMarshaller.DEFAULT;
 
     /** */
     private final FailureProcessor failureProcessor;
@@ -155,7 +155,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** */
     public MetaStorage(
-        GridCacheSharedContext cctx,
+        GridCacheSharedContext<?, ?> cctx,
         DataRegion dataRegion,
         DataRegionMetricsImpl regionMetrics,
         boolean readOnly
@@ -224,7 +224,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         for (Iterator<IgniteBiTuple<String, byte[]>> it = tmpStorage.stream().iterator(); it.hasNext(); ) {
             IgniteBiTuple<String, byte[]> t = it.next();
 
-            putData(t.get1(), t.get2());
+            writeRaw(t.get1(), t.get2());
         }
 
         try {
@@ -261,45 +261,50 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** {@inheritDoc} */
     @Override public Serializable read(String key) throws IgniteCheckedException {
-        byte[] data = getData(key);
+        byte[] data = readRaw(key);
 
-        Object result = null;
+        Serializable res = null;
 
         if (data != null)
-            result = marshaller.unmarshal(data, getClass().getClassLoader());
+            res = marshaller.unmarshal(data, U.gridClassLoader());
 
-        return (Serializable)result;
+        return res;
     }
 
+
     /** {@inheritDoc} */
-    @Override public Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred)
-        throws IgniteCheckedException {
-        Map<String, Serializable> res = null;
+    @Override public void iterate(
+        String keyPrefix,
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal
+    ) throws IgniteCheckedException {
+        if (empty)
+            return;
+
+        Iterator<Map.Entry<String, byte[]>> updatesIter = null;
 
         if (readOnly) {
-            if (empty)
-                return Collections.emptyMap();
-
             if (lastUpdates != null) {
-                for (Map.Entry<String, byte[]> lastUpdate : lastUpdates.entrySet()) {
-                    if (keyPred.apply(lastUpdate.getKey())) {
-                        byte[] valBytes = lastUpdate.getValue();
+                SortedMap<String, byte[]> prefixedSubmap = lastUpdates.subMap(keyPrefix, keyPrefix + "\uFFFF");
 
-                        if (valBytes == TOMBSTONE)
-                            continue;
-
-                        if (res == null)
-                            res = new HashMap<>();
-
-                        Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
-
-                        res.put(lastUpdate.getKey(), val);
-                    }
-                }
+                if (!prefixedSubmap.isEmpty())
+                    updatesIter = prefixedSubmap.entrySet().iterator();
             }
         }
 
-        GridCursor<MetastorageDataRow> cur = tree.find(null, null);
+        Map.Entry<String, byte[]> curUpdatesEntry = null;
+
+        if (updatesIter != null) {
+            assert updatesIter.hasNext();
+
+            curUpdatesEntry = updatesIter.next();
+        }
+
+        MetastorageDataRow lower = new MetastorageDataRow(keyPrefix, null);
+
+        MetastorageDataRow upper = new MetastorageDataRow(keyPrefix + "\uFFFF", null);
+
+        GridCursor<MetastorageDataRow> cur = tree.find(lower, upper);
 
         while (cur.next()) {
             MetastorageDataRow row = cur.get();
@@ -307,24 +312,49 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             String key = row.key();
             byte[] valBytes = row.value();
 
-            if (keyPred.apply(key)) {
-                // Either already added it, or this is a tombstone -> ignore.
-                if (lastUpdates != null && lastUpdates.containsKey(key))
-                    continue;
+            int c = 0;
 
-                if (res == null)
-                    res = new HashMap<>();
+            while (curUpdatesEntry != null && (c = curUpdatesEntry.getKey().compareTo(key)) < 0)
+                curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
 
-                Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
-
-                res.put(key, val);
-            }
+            if (curUpdatesEntry != null && c == 0)
+                curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
+            else
+                applyCallback(cb, unmarshal, key, valBytes);
         }
 
-        if (res == null)
-            res = Collections.emptyMap();
+        while (curUpdatesEntry != null)
+            curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
+    }
 
-        return res;
+    /** */
+    private Map.Entry<String, byte[]> advanceCurrentUpdatesEntry(
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal,
+        Iterator<Map.Entry<String, byte[]>> updatesIter,
+        Map.Entry<String, byte[]> curUpdatesEntry
+    ) throws IgniteCheckedException {
+        applyCallback(cb, unmarshal, curUpdatesEntry.getKey(), curUpdatesEntry.getValue());
+
+        return updatesIter.hasNext() ? updatesIter.next() : null;
+    }
+
+    /** */
+    private void applyCallback(
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal,
+        String key,
+        byte[] valBytes
+    ) throws IgniteCheckedException {
+        if (valBytes != TOMBSTONE) {
+            if (unmarshal) {
+                Serializable val = marshaller.unmarshal(valBytes, U.gridClassLoader());
+
+                cb.accept(key, val);
+            }
+            else
+                cb.accept(key, valBytes);
+        }
     }
 
     /**
@@ -350,7 +380,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
         byte[] data = marshaller.marshal(val);
 
-        putData(key, data);
+        writeRaw(key, data);
     }
 
     /** {@inheritDoc} */
@@ -358,8 +388,8 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         removeData(key);
     }
 
-    /** */
-    public void putData(String key, byte[] data) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void writeRaw(String key, byte[] data) throws IgniteCheckedException {
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, data));
 
@@ -380,8 +410,8 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         }
     }
 
-    /** */
-    public byte[] getData(String key) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public byte[] readRaw(String key) throws IgniteCheckedException {
         if (readOnly) {
             if (lastUpdates != null) {
                 byte[] res = lastUpdates.get(key);
@@ -541,7 +571,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** {@inheritDoc} */
-    @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+    @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
         Executor executor = ctx.executor();
 
         if (executor == null) {
@@ -573,6 +603,11 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         freeList.saveMetadata();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        /* No-op. */
     }
 
     /**
@@ -613,13 +648,13 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     public void applyUpdate(String key, byte[] value) throws IgniteCheckedException {
         if (readOnly) {
             if (lastUpdates == null)
-                lastUpdates = new HashMap<>();
+                lastUpdates = new TreeMap<>();
 
             lastUpdates.put(key, value != null ? value : TOMBSTONE);
         }
         else {
             if (value != null)
-                putData(key, value);
+                writeRaw(key, value);
             else
                 removeData(key);
         }

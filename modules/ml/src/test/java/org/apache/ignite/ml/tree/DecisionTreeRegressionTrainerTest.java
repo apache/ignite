@@ -28,8 +28,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link DecisionTreeRegressionTrainer}.
@@ -40,7 +40,7 @@ public class DecisionTreeRegressionTrainerTest {
     private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7};
 
     /** Number of partitions. */
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter()
     public int parts;
 
     /** Use index [= 1 if true]. */

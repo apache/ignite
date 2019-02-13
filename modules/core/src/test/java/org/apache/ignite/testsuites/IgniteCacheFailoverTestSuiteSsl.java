@@ -17,28 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.communication.tcp.IgniteCacheSslStartStopSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({IgniteCacheSslStartStopSelfTest.class})
 public class IgniteCacheFailoverTestSuiteSsl {
-    /**
-     * @return Ignite Cache Failover test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Cache Failover Test Suite SSL");
-
-        // Disable SSL test with old JDK because of https://bugs.openjdk.java.net/browse/JDK-8013809.
-        if (!IgniteUtils.isHotSpot() || IgniteUtils.isJavaVersionAtLeast("1.7.0_65"))
-            suite.addTest(new JUnit4TestAdapter(IgniteCacheSslStartStopSelfTest.class));
-
-        return suite;
-    }
 }

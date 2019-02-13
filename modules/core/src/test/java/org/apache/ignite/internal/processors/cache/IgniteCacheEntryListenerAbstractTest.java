@@ -70,8 +70,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.cache.event.EventType.CREATED;
@@ -85,7 +83,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private static volatile List<CacheEntryEvent<?, ?>> evts;
@@ -110,7 +107,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
         super.beforeTestsStarted();
     }
@@ -118,6 +115,8 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         if (lsnrCfg != null)

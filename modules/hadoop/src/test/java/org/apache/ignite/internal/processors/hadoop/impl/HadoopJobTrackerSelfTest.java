@@ -44,8 +44,6 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.combineExecCnt;
@@ -56,7 +54,6 @@ import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTracke
 /**
  * Job tracker self test.
  */
-@RunWith(JUnit4.class)
 public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     /** */
     private static final String PATH_OUTPUT = "/test-out";

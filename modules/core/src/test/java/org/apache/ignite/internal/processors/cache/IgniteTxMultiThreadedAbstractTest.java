@@ -35,8 +35,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -47,7 +45,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for local transactions.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstractTest {
     /**
      * @return Thread count.

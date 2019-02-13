@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.ClusterNodeMetricsSelfTest;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.GridAffinityNoCacheSelfTest;
@@ -88,99 +86,92 @@ import org.apache.ignite.p2p.GridMultinodeRedeployIsolatedModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployPrivateModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeploySharedModeSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Compute grid test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteTaskSessionSelfTestSuite.class,
+    IgniteTimeoutProcessorSelfTestSuite.class,
+    IgniteJobMetricsSelfTestSuite.class,
+    IgniteContinuousTaskSelfTestSuite.class,
+
+    GridTaskCancelSingleNodeSelfTest.class,
+    GridTaskFailoverSelfTest.class,
+    GridJobCollisionCancelSelfTest.class,
+    GridTaskTimeoutSelfTest.class,
+    GridCancelUnusedJobSelfTest.class,
+    GridTaskJobRejectSelfTest.class,
+    GridTaskExecutionSelfTest.class,
+    //GridTaskExecutionContextSelfTest.class,
+    GridTaskExecutionWithoutPeerClassLoadingSelfTest.class,
+    GridFailoverSelfTest.class,
+    GridTaskListenerSelfTest.class,
+    GridFailoverTopologySelfTest.class,
+    GridTaskResultCacheSelfTest.class,
+    GridTaskMapAsyncSelfTest.class,
+    GridJobContextSelfTest.class,
+    GridJobMasterLeaveAwareSelfTest.class,
+    GridJobStealingSelfTest.class,
+    GridJobSubjectIdSelfTest.class,
+    GridMultithreadedJobStealingSelfTest.class,
+    GridAlwaysFailoverSpiFailSelfTest.class,
+    GridTaskInstanceExecutionSelfTest.class,
+    ClusterNodeMetricsSelfTest.class,
+    ClusterNodeMetricsUpdateTest.class,
+    GridNonHistoryMetricsSelfTest.class,
+    GridCancelledJobsMetricsSelfTest.class,
+    GridCollisionJobsContextSelfTest.class,
+    GridJobStealingZeroActiveJobsSelfTest.class,
+    GridTaskFutureImplStopGridSelfTest.class,
+    GridFailoverCustomTopologySelfTest.class,
+    GridMultipleSpisSelfTest.class,
+    GridStopWithWaitSelfTest.class,
+    GridCancelOnGridStopSelfTest.class,
+    GridDeploymentSelfTest.class,
+    GridDeploymentMultiThreadedSelfTest.class,
+    GridMultipleVersionsDeploymentSelfTest.class,
+    IgniteExplicitImplicitDeploymentSelfTest.class,
+    GridEventStorageCheckAllEventsSelfTest.class,
+    GridCommunicationManagerListenersSelfTest.class,
+    IgniteExecutorServiceTest.class,
+    GridTaskInstantiationSelfTest.class,
+    GridMultipleJobsSelfTest.class,
+    GridCheckpointManagerSelfTest.class,
+    GridCheckpointTaskSelfTest.class,
+    GridTaskNameAnnotationSelfTest.class,
+    GridJobCheckpointCleanupSelfTest.class,
+    GridEventStorageSelfTest.class,
+    GridEventStorageDefaultExceptionTest.class,
+    GridFailoverTaskWithPredicateSelfTest.class,
+    GridProjectionLocalJobMultipleArgumentsSelfTest.class,
+    GridAffinitySelfTest.class,
+    GridAffinityNoCacheSelfTest.class,
+    //GridAffinityMappedTest.class,
+    //GridAffinityP2PSelfTest.class,
+    GridEventStorageRuntimeConfigurationSelfTest.class,
+    GridMultinodeRedeployContinuousModeSelfTest.class,
+    GridMultinodeRedeploySharedModeSelfTest.class,
+    GridMultinodeRedeployPrivateModeSelfTest.class,
+    GridMultinodeRedeployIsolatedModeSelfTest.class,
+    IgniteComputeEmptyClusterGroupTest.class,
+    IgniteComputeTopologyExceptionTest.class,
+    IgniteComputeResultExceptionTest.class,
+    GridTaskFailoverAffinityRunTest.class,
+    TaskNodeRestartTest.class,
+    IgniteRoundRobinErrorAfterClientReconnectTest.class,
+    PublicThreadpoolStarvationTest.class,
+    StripedExecutorTest.class,
+    GridJobServicesAddNodeTest.class,
+
+    IgniteComputeCustomExecutorConfigurationSelfTest.class,
+    IgniteComputeCustomExecutorSelfTest.class,
+
+    IgniteComputeJobOneThreadTest.class,
+
+    VisorManagementEventSelfTest.class
+})
 public class IgniteComputeGridTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Compute Grid Test Suite");
-
-        suite.addTest(IgniteTaskSessionSelfTestSuite.suite());
-        suite.addTest(IgniteTimeoutProcessorSelfTestSuite.suite());
-        suite.addTest(IgniteJobMetricsSelfTestSuite.suite());
-        suite.addTest(IgniteContinuousTaskSelfTestSuite.suite());
-
-        suite.addTest(new JUnit4TestAdapter(GridTaskCancelSingleNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskFailoverSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridJobCollisionCancelSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskTimeoutSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCancelUnusedJobSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskJobRejectSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskExecutionSelfTest.class));
-        //suite.addTest(new JUnit4TestAdapter(GridTaskExecutionContextSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskExecutionWithoutPeerClassLoadingSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridFailoverSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskListenerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridFailoverTopologySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskResultCacheSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskMapAsyncSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridJobContextSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridJobMasterLeaveAwareSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridJobStealingSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridJobSubjectIdSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMultithreadedJobStealingSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridAlwaysFailoverSpiFailSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskInstanceExecutionSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(ClusterNodeMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(ClusterNodeMetricsUpdateTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridNonHistoryMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCancelledJobsMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCollisionJobsContextSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridJobStealingZeroActiveJobsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskFutureImplStopGridSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridFailoverCustomTopologySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMultipleSpisSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridStopWithWaitSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCancelOnGridStopSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridDeploymentSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridDeploymentMultiThreadedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMultipleVersionsDeploymentSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteExplicitImplicitDeploymentSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridEventStorageCheckAllEventsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCommunicationManagerListenersSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteExecutorServiceTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskInstantiationSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMultipleJobsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCheckpointManagerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCheckpointTaskSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskNameAnnotationSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridJobCheckpointCleanupSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridEventStorageSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridEventStorageDefaultExceptionTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridFailoverTaskWithPredicateSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridProjectionLocalJobMultipleArgumentsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridAffinitySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridAffinityNoCacheSelfTest.class));
-        //suite.addTest(new JUnit4TestAdapter(GridAffinityMappedTest.class));
-        //suite.addTest(new JUnit4TestAdapter(GridAffinityP2PSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridEventStorageRuntimeConfigurationSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMultinodeRedeployContinuousModeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMultinodeRedeploySharedModeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMultinodeRedeployPrivateModeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMultinodeRedeployIsolatedModeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteComputeEmptyClusterGroupTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteComputeTopologyExceptionTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteComputeResultExceptionTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskFailoverAffinityRunTest.class));
-        suite.addTest(new JUnit4TestAdapter(TaskNodeRestartTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteRoundRobinErrorAfterClientReconnectTest.class));
-        suite.addTest(new JUnit4TestAdapter(PublicThreadpoolStarvationTest.class));
-        suite.addTest(new JUnit4TestAdapter(StripedExecutorTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridJobServicesAddNodeTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteComputeCustomExecutorConfigurationSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteComputeCustomExecutorSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteComputeJobOneThreadTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(VisorManagementEventSelfTest.class));
-
-        return suite;
-    }
 }

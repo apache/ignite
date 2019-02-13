@@ -17,26 +17,14 @@
 
 package org.apache.ignite.source.flink;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Apache Flink source tests.
  */
-@RunWith(AllTests.class)
-public class FlinkIgniteSourceSelfTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Apache Flink Source Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(FlinkIgniteSourceSelfTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({FlinkIgniteSourceSelfTest.class})
+public class FlinkIgniteSourceSelfTestSuite {
 }
 

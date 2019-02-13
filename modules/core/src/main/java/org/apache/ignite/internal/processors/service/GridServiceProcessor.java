@@ -566,7 +566,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                 if (failedFuts == null)
                     failedFuts = new ArrayList<>();
 
-                GridServiceDeploymentFuture<String> fut = new GridServiceDeploymentFuture<>(cfg);
+                GridServiceDeploymentFuture<String> fut = new GridServiceDeploymentFuture<>(cfg, cfg.getName());
 
                 fut.onDone(err);
 
@@ -642,8 +642,12 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                 break;
             }
             catch (IgniteException | IgniteCheckedException e) {
-                for (String name : res.servicesToRollback())
-                    depFuts.remove(name).onDone(e);
+                for (String name : res.servicesToRollback()) {
+                    GridServiceDeploymentFuture<String> fut;
+
+                    if ((fut = depFuts.remove(name)) != null)
+                        fut.onDone(e);
+                }
 
                 if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
                     if (log.isDebugEnabled())
@@ -696,7 +700,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
         throws IgniteCheckedException {
         String name = cfg.getName();
 
-        GridServiceDeploymentFuture<String> fut = new GridServiceDeploymentFuture<>(cfg);
+        GridServiceDeploymentFuture<String> fut = new GridServiceDeploymentFuture<>(cfg, name);
 
         GridServiceDeploymentFuture<String> old = depFuts.putIfAbsent(name, fut);
 
@@ -1457,7 +1461,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
             GridCacheQueryManager qryMgr = cache.context().queries();
 
-            CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
+            CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false, null);
 
             DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 

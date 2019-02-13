@@ -24,6 +24,7 @@ import org.apache.ignite.ml.inference.builder.SingleModelBuilder;
 import org.apache.ignite.ml.inference.builder.SyncModelBuilder;
 import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
 import org.apache.ignite.ml.inference.reader.ModelReader;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.xgboost.XGModelComposition;
 import org.junit.Test;
 
@@ -73,7 +74,7 @@ public class XGBoostModelParserTest {
                         testObj.put("f" + keyVal[0], Double.parseDouble(keyVal[1]));
                 }
 
-                double prediction = mdl.predict(testObj);
+                double prediction = mdl.predict(VectorUtils.of(testObj));
 
                 double expPrediction = Double.parseDouble(testExpResultsStr);
 

@@ -41,14 +41,11 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * DataSource test.
  */
 @SuppressWarnings("ThrowableNotThrown")
-@RunWith(JUnit4.class)
 public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")

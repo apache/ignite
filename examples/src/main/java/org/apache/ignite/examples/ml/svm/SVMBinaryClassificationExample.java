@@ -18,15 +18,12 @@
 package org.apache.ignite.examples.ml.svm;
 
 import java.io.FileNotFoundException;
-import java.util.Arrays;
-import javax.cache.Cache;
-import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
@@ -60,54 +57,28 @@ public class SVMBinaryClassificationExample {
 
             SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
 
+            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
+            IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+
             SVMLinearClassificationModel mdl = trainer.fit(
                 ignite,
                 dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
+                featureExtractor,
+                lbExtractor
             );
 
             System.out.println(">>> SVM model " + mdl);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
+            double accuracy = BinaryClassificationEvaluator.evaluate(
+                dataCache,
+                mdl,
+                featureExtractor,
+                lbExtractor
+            ).accuracy();
 
-            int amountOfErrors = 0;
-            int totalAmount = 0;
+            System.out.println("\n>>> Accuracy " + accuracy);
 
-            // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-            int[][] confusionMtx = {{0, 0}, {0, 0}};
-
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
-
-                    double prediction = mdl.predict(inputs);
-
-                    totalAmount++;
-                    if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
-                        amountOfErrors++;
-
-                    int idx1 = prediction == 0.0 ? 0 : 1;
-                    int idx2 = groundTruth == 0.0 ? 0 : 1;
-
-                    confusionMtx[idx1][idx2]++;
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
-
-                System.out.println(">>> ---------------------------------");
-
-                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
-            }
-
-            System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
-
-            System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
+            System.out.println(">>> SVM Binary classification model over cache based dataset usage example completed.");
         }
     }
 }
