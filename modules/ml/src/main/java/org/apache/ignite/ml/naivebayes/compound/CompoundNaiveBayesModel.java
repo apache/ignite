@@ -31,7 +31,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     private final int discreteFeatureFrom;
     private final int discreteFeatureTo;
     /** Prior probabilities of each class */
-    private double[] classsProbabilities;
+    private double[] classProbabilities;
     /** Labels. */
     private double[] labels;
 
@@ -48,7 +48,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         discreteFeatureFrom = builder.discreteFeatureFrom;
         discreteFeatureTo = builder.discreteFeatureTo;
 
-        classsProbabilities = builder.classProbabilities;
+        classProbabilities = builder.classProbabilities;
         labels = builder.labels;
     }
 
@@ -58,12 +58,12 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     }
 
     @Override public Double predict(Vector vector) {
-        double[] probapilityPowers = new double[classsProbabilities.length];
-        for (int i = 0; i < classsProbabilities.length; i++) {
-            probapilityPowers[i] = Math.log(classsProbabilities[i]);
+        double[] probapilityPowers = new double[classProbabilities.length];
+        for (int i = 0; i < classProbabilities.length; i++) {
+            probapilityPowers[i] = Math.log(classProbabilities[i]);
         }
 
-        for (int i = 0; i < classsProbabilities.length; i++) {
+        for (int i = 0; i < classProbabilities.length; i++) {
             for (int j = discreteFeatureFrom; j < discreteFeatureTo; j++) {
                 int bucketNumber = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[j]);
                 double probability = discreteModel.getProbabilities()[i][j][bucketNumber];
@@ -71,7 +71,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             }
         }
 
-        for (int i = 0; i < classsProbabilities.length; i++) {
+        for (int i = 0; i < classProbabilities.length; i++) {
             for (int j = gaussianFeatureFrom; j < gaussianFeatureTo; j++) {
                 double parobability = gauss(vector.get(j), gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][j]);
                 probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
