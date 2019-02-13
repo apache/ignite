@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.PrimitiveIterator;
 import java.util.Set;
+import java.util.stream.IntStream;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheServerNotFoundException;
@@ -39,6 +43,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.util.IntArray;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
@@ -49,9 +54,6 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
  * Reduce partition mapper.
  */
 public class ReducePartitionMapper {
-    /** */
-    private static final Set<ClusterNode> UNMAPPED_PARTS = Collections.emptySet();
-
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -62,6 +64,7 @@ public class ReducePartitionMapper {
      * Constructor.
      *
      * @param ctx Kernal context.
+     * @param log Logger.
      */
     public ReducePartitionMapper(GridKernalContext ctx, IgniteLogger log) {
         this.ctx = ctx;
@@ -80,9 +83,7 @@ public class ReducePartitionMapper {
      */
     public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds, AffinityTopologyVersion topVer,
         int[] parts, boolean isReplicatedOnly, long qryId) {
-        Collection<ClusterNode> nodes = null;
-        Map<ClusterNode, IntArray> partsMap = null;
-        Map<ClusterNode, IntArray> qryMap = null;
+        Collection<ClusterNode> nodes = null; Map<ClusterNode, IntArray> qryMap = null;
 
         for (int cacheId : cacheIds) {
             GridCacheContext<?, ?> cctx = cacheContext(cacheId);
@@ -106,13 +107,10 @@ public class ReducePartitionMapper {
             if (isReplicatedOnly)
                 nodes = replicatedUnstableDataNodes(cacheIds, qryId);
             else {
-                partsMap = partitionedUnstableDataNodes(cacheIds, qryId);
+                qryMap = partitionedUnstableDataNodes(cacheIds, parts, qryId);
 
-                if (partsMap != null) {
-                    qryMap = narrowForQuery(partsMap, parts);
-
-                    nodes = qryMap == null ? null : qryMap.keySet();
-                }
+                if (qryMap != null)
+                    nodes = qryMap.keySet();
             }
         }
         else {
@@ -122,7 +120,7 @@ public class ReducePartitionMapper {
                 nodes = qryMap.keySet();
         }
 
-        return new ReducePartitionMapResult(nodes, partsMap, qryMap);
+        return new ReducePartitionMapResult(nodes, null, qryMap);
     }
 
     /**
@@ -305,166 +303,157 @@ public class ReducePartitionMapper {
      * Calculates partition mapping for partitioned cache on unstable topology.
      *
      * @param cacheIds Cache IDs.
+     * @param parts Explicit partitions.
      * @param qryId Query ID.
      * @return Partition mapping or {@code null} if we can't calculate it due to repartitioning and we need to retry.
      */
-    @SuppressWarnings("unchecked")
-    private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(List<Integer> cacheIds, long qryId) {
-        // If the main cache is replicated, just replace it with the first partitioned.
-        GridCacheContext<?,?> cctx = findFirstPartitioned(cacheIds);
+    private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(List<Integer> cacheIds, int[] parts, long qryId) {
+        List<GridCacheContext<?, ?>> cctxs = new ArrayList<>(cacheIds.size());
 
-        final int partsCnt = cctx.affinity().partitions();
+        GridCacheContext<?, ?> firstPartitioned = null; Set<ClusterNode> replicatedOwners = null;
 
-        if (cacheIds.size() > 1) { // Check correct number of partitions for partitioned caches.
-            for (Integer cacheId : cacheIds) {
-                GridCacheContext<?, ?> extraCctx = cacheContext(cacheId);
+        // 1) Check whether all involved caches have the same partitions number and
+        // find nodes owning all partitions of involved replicated caches if needed
+        for (int i = 0; i < cacheIds.size(); i++) {
+            GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(i));
 
-                if (extraCctx.isReplicated() || extraCctx.isLocal())
-                    continue;
+            if (cctx.isLocal()) {
+                if (i == 0)
+                    throw new CacheException("Cache is LOCAL: " + cctx.name());
 
-                int parts = extraCctx.affinity().partitions();
+                continue;
+            }
 
-                if (parts != partsCnt)
-                    throw new CacheException("Number of partitions must be the same for correct collocation [cache1=" +
-                        cctx.name() + ", parts1=" + partsCnt + ", cache2=" + extraCctx.name() +
-                        ", parts2=" + parts + "]");
+            if (cctx.isPartitioned()) {
+                if (firstPartitioned == null)
+                    firstPartitioned = cctx;
+                else if (firstPartitioned.affinity().partitions() != cctx.affinity().partitions()) {
+                    throw new CacheException(
+                        "Number of partitions must be the same for correct collocation [cache1=" +
+                            firstPartitioned.name() + ", parts1=" + firstPartitioned.affinity().partitions() +
+                            ", cache2=" + firstPartitioned.name() + ", parts2=" + cctx.affinity().partitions() + "]");
+                }
+
+                cctxs.add(cctx);
+
+                continue;
+            }
+
+            Set<ClusterNode> nodes = replicatedUnstableDataNodes(cctx, qryId);
+
+            if (!F.isEmpty(replicatedOwners) && !F.isEmpty(nodes))
+                nodes.retainAll(replicatedOwners);
+
+            if (F.isEmpty(replicatedOwners = nodes)) {
+                logRetry("Failed to calculate nodes for SQL query (caches have no common data nodes) " +
+                    "[qryId=" + qryId + ", cacheIds=" + cacheIds + ']');
+
+                return null; // Retry.
             }
         }
 
-        Set<ClusterNode>[] partLocs = new Set[partsCnt];
+        if (firstPartitioned == null)
+            throw new IllegalStateException("Failed to find partitioned cache.");
 
-        // Fill partition locations for main cache.
-        for (int p = 0; p < partsCnt; p++) {
-            List<ClusterNode> owners = cctx.topology().owners(p);
+        PrimitiveIterator.OfInt it = (parts != null ? Arrays.stream(parts) :
+                    IntStream.range(0, firstPartitioned.affinity().partitions())).iterator();
 
-            if (F.isEmpty(owners)) {
-                // Handle special case: no mapping is configured for a partition.
-                if (F.isEmpty(cctx.affinity().assignment(NONE).get(p))) {
-                    partLocs[p] = UNMAPPED_PARTS; // Mark unmapped partition.
+        Map<ClusterNode, Set<Integer>> nodeToParts = new HashMap<>();
 
-                    continue;
-                }
-                else if (!F.isEmpty(dataNodes(cctx.groupId(), NONE))) {
-                    logRetry("Failed to calculate nodes for SQL query (partition has no owners, but corresponding " +
-                        "cache group has data nodes) [qryId=" + qryId + ", cacheIds=" + cacheIds +
-                        ", cacheName=" + cctx.name() + ", cacheId=" + cctx.cacheId() + ", part=" + p +
-                        ", cacheGroupId=" + cctx.groupId() + ']');
+        // 2) Iterate over involved partitions and find all nodes having it excluding nodes
+        // which do not have all partitions of involved replicated caches if needed
+        while (it.hasNext()) {
+            int p = it.nextInt();
 
-                    return null; // Retry.
-                }
+            Set<ClusterNode> nodes = replicatedOwners;
 
-                throw new CacheServerNotFoundException("Failed to find data nodes [cache=" + cctx.name() + ", part=" + p + "]");
-            }
+            for (GridCacheContext<?, ?> cctx : cctxs) {
+                List<ClusterNode> partOwners = cctx.topology().owners(p);
 
-            partLocs[p] = new HashSet<>(owners);
-        }
+                if (F.isEmpty(partOwners)) {
+                    // Handle special case: no mapping is configured for a partition.
+                    if (F.isEmpty(cctx.affinity().assignment(NONE).get(p)))
+                        continue;
 
-        if (cacheIds.size() > 1) {
-            // Find owner intersections for each participating partitioned cache partition.
-            // We need this for logical collocation between different partitioned caches with the same affinity.
-            for (Integer cacheId : cacheIds) {
-                GridCacheContext<?, ?> extraCctx = cacheContext(cacheId);
-
-                // This is possible if we have replaced a replicated cache with a partitioned one earlier.
-                if (cctx == extraCctx)
-                    continue;
-
-                if (extraCctx.isReplicated() || extraCctx.isLocal())
-                    continue;
-
-                for (int p = 0, parts = extraCctx.affinity().partitions(); p < parts; p++) {
-                    List<ClusterNode> owners = extraCctx.topology().owners(p);
-
-                    if (partLocs[p] == UNMAPPED_PARTS)
-                        continue; // Skip unmapped partitions.
-
-                    if (F.isEmpty(owners)) {
-                        if (!F.isEmpty(dataNodes(extraCctx.groupId(), NONE))) {
-                            logRetry("Failed to calculate nodes for SQL query (partition has no owners, but " +
-                                "corresponding cache group has data nodes) [qryId=" + qryId +
-                                ", cacheIds=" + cacheIds + ", cacheName=" + extraCctx.name() +
-                                ", cacheId=" + extraCctx.cacheId() + ", part=" + p +
-                                ", cacheGroupId=" + extraCctx.groupId() + ']');
-
-                            return null; // Retry.
-                        }
-
-                        throw new CacheServerNotFoundException("Failed to find data nodes [cache=" + extraCctx.name() +
-                            ", part=" + p + "]");
-                    }
-
-                    if (partLocs[p] == null)
-                        partLocs[p] = new HashSet<>(owners);
-                    else {
-                        partLocs[p].retainAll(owners); // Intersection of owners.
-
-                        if (partLocs[p].isEmpty()) {
-                            logRetry("Failed to calculate nodes for SQL query (caches have no common data nodes for " +
-                                "partition) [qryId=" + qryId + ", cacheIds=" + cacheIds +
-                                ", lastCacheName=" + extraCctx.name() + ", lastCacheId=" + extraCctx.cacheId() +
-                                ", part=" + p + ']');
-
-                            return null; // Intersection is empty -> retry.
-                        }
-                    }
-                }
-            }
-
-            // Filter nodes where not all the replicated caches loaded.
-            for (Integer cacheId : cacheIds) {
-                GridCacheContext<?, ?> extraCctx = cacheContext(cacheId);
-
-                if (!extraCctx.isReplicated())
-                    continue;
-
-                Set<ClusterNode> dataNodes = replicatedUnstableDataNodes(extraCctx, qryId);
-
-                if (F.isEmpty(dataNodes))
-                    return null; // Retry.
-
-                int part = 0;
-
-                for (Set<ClusterNode> partLoc : partLocs) {
-                    if (partLoc == UNMAPPED_PARTS)
-                        continue; // Skip unmapped partition.
-
-                    partLoc.retainAll(dataNodes);
-
-                    if (partLoc.isEmpty()) {
-                        logRetry("Failed to calculate nodes for SQL query (caches have no common data nodes for " +
-                            "partition) [qryId=" + qryId + ", cacheIds=" + cacheIds +
-                            ", lastReplicatedCacheName=" + extraCctx.name() +
-                            ", lastReplicatedCacheId=" + extraCctx.cacheId() + ", part=" + part + ']');
+                    if (!F.isEmpty(dataNodes(cctx.groupId()))) {
+                        logRetry("Failed to calculate nodes for SQL query (partition has no owners, but corresponding " +
+                            "cache group has data nodes) [qryId=" + qryId + ", cacheIds=" + cacheIds +
+                            ", cacheName=" + cctx.name() + ", cacheId=" + cctx.cacheId() + ", part=" + p +
+                            ", cacheGroupId=" + cctx.groupId() + ']');
 
                         return null; // Retry.
                     }
 
-                    part++;
+                    throw new CacheServerNotFoundException("Failed to find data nodes [cache=" + cctx.name() + ", part=" + p + "]");
                 }
+
+                if (!F.isEmpty(nodes))
+                    partOwners.retainAll(nodes);
+
+                if (F.isEmpty(partOwners)) {
+                    logRetry("Failed to calculate nodes for SQL query (caches have no common data nodes for " +
+                        "partition) [qryId=" + qryId + ", cacheIds=" + cacheIds + ", part=" + p + ']');
+
+                    return null; // Retry.
+                }
+
+                nodes = new HashSet<>(partOwners);
             }
+
+            if (F.isEmpty(nodes)) {
+                logRetry("Failed to calculate nodes for SQL query (caches have no common data nodes for " +
+                    "partition) [qryId=" + qryId + ", cacheIds=" + cacheIds + ", part=" + p + ']');
+
+                return null; // Retry.
+            }
+
+            for (ClusterNode node : nodes)
+                nodeToParts.computeIfAbsent(node, n -> new HashSet<>()).add(p);
         }
 
-        // Collect the final partitions mapping.
+        return processPartitionsMapping(nodeToParts);
+    }
+
+    /**
+     * Here we try to reduce nodes amount as possible. We prefer nodes having maximum number of involved partitions.
+     * All nodes have all involved partitions. Partitions lists do not intersect between nodes.
+     *
+     * @param nodeToParts All available for query executing nodes mapped to their owned partitions.
+     * @return Nodes to execute query.
+     */
+    @NotNull private Map<ClusterNode, IntArray> processPartitionsMapping(Map<ClusterNode, Set<Integer>> nodeToParts) {
         Map<ClusterNode, IntArray> res = new HashMap<>();
 
-        // Here partitions in all IntArray's will be sorted in ascending order, this is important.
-        for (int p = 0; p < partLocs.length; p++) {
-            Set<ClusterNode> pl = partLocs[p];
+        Set<Integer> lastProcessed = null;
 
-            // Skip unmapped partitions.
-            if (pl == UNMAPPED_PARTS)
-                continue;
+        while (!nodeToParts.isEmpty()) {
+            Map.Entry<ClusterNode, Set<Integer>> current = null;
 
-            assert !F.isEmpty(pl) : pl;
+            for (Iterator<Map.Entry<ClusterNode, Set<Integer>>> it0 = nodeToParts.entrySet().iterator(); it0.hasNext(); ) {
+                Map.Entry<ClusterNode, Set<Integer>> e = it0.next();
 
-            ClusterNode n = pl.size() == 1 ? F.first(pl) : F.rand(pl);
+                if (lastProcessed != null)
+                    e.getValue().removeAll(lastProcessed);
 
-            IntArray parts = res.get(n);
+                if (e.getValue().isEmpty()) {
+                    it0.remove();
 
-            if (parts == null)
-                res.put(n, parts = new IntArray());
+                    continue;
+                }
 
-            parts.add(p);
+                if (current == null || e.getValue().size() > current.getValue().size())
+                    current = e;
+            }
+
+            if (current == null)
+                break;
+
+            IntArray array = res.computeIfAbsent(current.getKey(), n -> new IntArray());
+
+            for (Integer p : current.getValue())
+                array.add(p);
+
+            lastProcessed = nodeToParts.remove(current.getKey());
         }
 
         return res;
@@ -539,7 +528,7 @@ public class ReducePartitionMapper {
 
         String cacheName = cctx.name();
 
-        Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(cctx.groupId(), NONE));
+        Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(cctx.groupId()));
 
         if (dataNodes.isEmpty())
             throw new CacheServerNotFoundException("Failed to find data nodes for cache: " + cacheName);
@@ -572,44 +561,12 @@ public class ReducePartitionMapper {
 
     /**
      * @param grpId Cache group ID.
-     * @param topVer Topology version.
      * @return Collection of data nodes.
      */
-    private Collection<ClusterNode> dataNodes(int grpId, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> res = ctx.discovery().cacheGroupAffinityNodes(grpId, topVer);
+    private Collection<ClusterNode> dataNodes(int grpId) {
+        Collection<ClusterNode> res = ctx.discovery().cacheGroupAffinityNodes(grpId, AffinityTopologyVersion.NONE);
 
         return res != null ? res : Collections.emptySet();
-    }
-
-    /**
-     *
-     * @param partsMap Partitions map.
-     * @param parts Partitions.
-     * @return Result.
-     */
-    private static Map<ClusterNode, IntArray> narrowForQuery(Map<ClusterNode, IntArray> partsMap, int[] parts) {
-        if (parts == null)
-            return partsMap;
-
-        Map<ClusterNode, IntArray> cp = U.newHashMap(partsMap.size());
-
-        for (Map.Entry<ClusterNode, IntArray> entry : partsMap.entrySet()) {
-            IntArray filtered = new IntArray(parts.length);
-
-            IntArray orig = entry.getValue();
-
-            for (int i = 0; i < orig.size(); i++) {
-                int p = orig.get(i);
-
-                if (Arrays.binarySearch(parts, p) >= 0)
-                    filtered.add(p);
-            }
-
-            if (filtered.size() > 0)
-                cp.put(entry.getKey(), filtered);
-        }
-
-        return cp.isEmpty() ? null : cp;
     }
 
     /**
