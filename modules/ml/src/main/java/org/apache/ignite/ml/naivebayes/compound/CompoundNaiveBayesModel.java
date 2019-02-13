@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
@@ -27,17 +26,15 @@ import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 
 /** Created by Ravil on 04/02/2019. */
-public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable {
+public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel> {
 
     private final DiscreteNaiveBayesModel discreteModel;
     private final int discreteFeatureFrom;
     private final int discreteFeatureTo;
-    private double[][][] probabilities;
     /** Prior probabilities of each class */
     private double[] classsProbabilities;
     /** Labels. */
     private double[] labels;
-    private double[][] bucketThresholds;
 
     private final GaussianNaiveBayesModel gaussianModel;
     private final int gaussianFeatureFrom;
@@ -47,13 +44,13 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         gaussianModel = builder.gaussianModel;
         gaussianFeatureFrom = builder.gaussianFeatureFrom;
         gaussianFeatureTo = builder.gaussianFeatureTo;
+
         discreteModel = builder.discreteModel;
         discreteFeatureFrom = builder.discreteFeatureFrom;
         discreteFeatureTo = builder.discreteFeatureTo;
 
         classsProbabilities = builder.classProbabilities;
         labels = builder.labels;
-
     }
 
     /** {@inheritDoc} */
@@ -69,8 +66,8 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         for (int i = 0; i < classsProbabilities.length; i++) {
             probapilityPowers[i] = Math.log(classsProbabilities[i]);
             for (int j = discreteFeatureFrom; j < discreteFeatureTo; j++) {
-                int x = toBucketNumber(vector.get(j), bucketThresholds[j]);
-                double p = probabilities[i][j][x];
+                int x = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[j]);
+                double p = discreteModel.getProbabilities()[i][j][x];
                 probapilityPowers[i] += (p > 0 ? Math.log(p) : .0);
             }
         }
@@ -110,7 +107,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return new Builder();
     }
 
-    static class Builder {
+    public static class Builder {
 
         private double[] classProbabilities;
         private double[] labels;
@@ -138,15 +135,22 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             return this;
         }
 
-        Builder withGaussianModelRange(int from, int to) {
-            assert from < to;
+        Builder withGaussianModelRange(int from, int toExclusive) {
+            assert from < toExclusive;
             gaussianFeatureFrom = from;
-            gaussianFeatureTo = to;
+            gaussianFeatureTo = toExclusive;
             return this;
         }
 
         Builder withDiscreteModel(DiscreteNaiveBayesModel discreteModel) {
             this.discreteModel = discreteModel;
+            return this;
+        }
+
+        Builder withDiscreteModelRange(int from, int toExclusive) {
+            assert from < toExclusive;
+            discreteFeatureFrom = from;
+            discreteFeatureTo = toExclusive;
             return this;
         }
 
