@@ -3855,7 +3855,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple;
 
-            boolean hasModifiedPages;
+            boolean hasPages, hasPartitionsToDestroy;
 
             DbCheckpointContextImpl ctx0 = new DbCheckpointContextImpl(curr, new PartitionAllocationMap());
 
@@ -3893,19 +3893,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 cpPagesTuple = beginAllCheckpoints();
 
-                hasModifiedPages = hasPageForWrite(cpPagesTuple.get1()) || !curr.destroyQueue.pendingReqs.isEmpty();
+                hasPages = hasPageForWrite(cpPagesTuple.get1());
+
+                hasPartitionsToDestroy = !curr.destroyQueue.pendingReqs.isEmpty();
 
                 WALPointer cpPtr = null;
 
-                if (hasModifiedPages || curr.nextSnapshot) {
+                if (hasPages || curr.nextSnapshot || hasPartitionsToDestroy) {
                     // No page updates for this checkpoint are allowed from now on.
-                    cpPtr = (cctx.wal().log(cpRec));
+                    cpPtr = cctx.wal().log(cpRec);
 
                     if (cpPtr == null)
                         cpPtr = CheckpointStatus.NULL_PTR;
                 }
 
-                if (hasModifiedPages) {
+                if (hasPages || hasPartitionsToDestroy) {
                     cp = prepareCheckpointEntry(
                         tmpWriteBuf,
                         cpTs,
@@ -3940,7 +3942,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-            if (hasModifiedPages) {
+            if (hasPages || hasPartitionsToDestroy) {
                 assert cp != null;
                 assert cp.checkpointMark() != null;
 
@@ -4145,53 +4147,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             };
         }
 
-        /** */
-        private DbCheckpointListener.Context createOnCheckpointMarkBeginContext(
-            CheckpointProgress currCpProgress,
-            PartitionAllocationMap map,
-            GridCompoundFuture asyncLsnrFut
-        ) {
-           return new DbCheckpointListener.Context() {
-               /** {@inheritDoc} */
-               @Override public boolean nextSnapshot() {
-                    return currCpProgress.nextSnapshot;
-                }
-
-               /** {@inheritDoc} */
-               @Override public PartitionAllocationMap partitionStatMap() {
-                    return map;
-                }
-
-               /** {@inheritDoc} */
-               @Override public boolean needToSnapshot(String cacheOrGrpName) {
-                    return currCpProgress.snapshotOperation.cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
-               }
-
-               /** {@inheritDoc} */
-               @Override public Executor executor() {
-                    return asyncRunner == null ? null : cmd -> {
-                        try {
-                            GridFutureAdapter<?> res = new GridFutureAdapter<>();
-
-                            asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
-
-                            asyncLsnrFut.add(res);
-                        }
-                        catch (RejectedExecutionException e) {
-                            throw new IgniteException("A task should never be rejected by async runner", e);
-                        }
-                    };
-               }
-
-               /** {@inheritDoc} */
-               @Override public boolean hasPages() {
-                    throw new IllegalStateException(
-                        "Property is unknown at this moment. You should use onCheckpointBegin() method."
-                    );
-               }
-           };
-        }
-
         /**
          * Check that at least one collection is not empty.
          *
@@ -4350,6 +4305,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         assert false : "A task should never be rejected by async runner";
                     }
                 };
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean hasPages() {
+                throw new IllegalStateException(
+                    "Property is unknown at this moment. You should use onCheckpointBegin() method."
+                );
             }
 
             /**

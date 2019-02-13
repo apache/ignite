@@ -213,7 +213,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     /**
      * @param testAction Action that trigger stop or destroy of caches.
      */
-    private void performTest(IgniteThrowableFunction<Ignite, Void> testAction) throws Exception {
+    private void performTest(IgniteThrowableFunction<Ignite, Void> testAction, String groupName) throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
         ig0.cluster().active(true);
