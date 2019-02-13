@@ -18,14 +18,19 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -88,6 +93,26 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
             .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
             .setCommunicationSpi(new TrackingTcpCommunicationSpi())
             .setLocalHost("127.0.0.1");
+    }
+
+    /**
+     * Test single table.
+     */
+    @Test
+    public void testValueColumn() {
+        // Put test values into cache.
+        final IgniteCache<Integer, Integer> c = jcache(client(),
+            new CacheConfiguration().setName("test"), Integer.class, Integer.class);
+
+        for (int i = 0; i < ROWS; i++)
+            c.put(i, i);
+
+        Collection<Cache.Entry<Integer, Integer>> entries =
+            c.query(new SqlQuery(Integer.class, "_val < 5")).getAll();
+
+        assertEquals(5, entries.size());
+        assertUsedColumns(usedCols.get(),
+            new UsedTableColumns("__z0", true));
     }
 
     /**
@@ -311,12 +336,12 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         if (actualColInfo == null) {
             if (!F.isEmpty(expected))
                 fail("Invalid extracted columns: [actual=null, expected=" + Arrays.toString(expected) + ']');
-            else {
-                Map<String, Boolean> actualMap  = actualColInfo.createValueUsedMap();
+        }
+        else {
+            Map<String, Boolean> actualMap  = actualColInfo.createValueUsedMap();
 
-                for (UsedTableColumns exp : expected)
-                    assertEquals(actualMap.get(exp.alias), (Boolean)exp.isValUsed);
-            }
+            for (UsedTableColumns exp : expected)
+                assertEquals(actualMap.get(exp.alias), (Boolean)exp.isValUsed);
         }
     }
 

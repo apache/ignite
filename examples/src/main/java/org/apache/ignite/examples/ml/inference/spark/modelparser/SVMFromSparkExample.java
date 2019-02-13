@@ -39,8 +39,7 @@ import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
  */
 public class SVMFromSparkExample {
     /** Path to Spark SVM model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/svm/data" +
-        "/part-00000-b3d800e2-a36c-4948-8e65-29c9f5c9c5b2-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/svm";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {

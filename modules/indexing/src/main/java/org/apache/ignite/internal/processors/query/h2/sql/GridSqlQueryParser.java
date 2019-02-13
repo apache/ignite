@@ -1692,6 +1692,16 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Check whether statement is DML statement.
+     *
+     * @param stmt Statement.
+     * @return {@code True} if this is DML.
+     */
+    public static boolean isDml(Prepared stmt) {
+        return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
+    }
+
+    /**
      * @param stmt Prepared.
      * @return Target table.
      */
@@ -2330,7 +2340,8 @@ public class GridSqlQueryParser {
                 if (valUsed)
                     return;
 
-                valUsed = colId >= QueryUtils.DEFAULT_COLUMNS_COUNT
+                valUsed = colId == QueryUtils.VAL_COL
+                    || colId > QueryUtils.VAL_COL
                     && !desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT)
                     && !desc.isKeyAliasColumn(colId);
 

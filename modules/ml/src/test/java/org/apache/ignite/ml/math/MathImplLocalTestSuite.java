@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math;
 import org.apache.ignite.ml.math.distances.DistanceTest;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeapTest;
 import org.apache.ignite.ml.math.primitives.matrix.DenseMatrixConstructorTest;
+import org.apache.ignite.ml.math.primitives.matrix.LUDecompositionTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixArrayStorageTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixAttributeTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixStorageImplementationTest;
@@ -69,7 +70,8 @@ import org.junit.runners.Suite;
     // Matrix tests.
     MatrixAttributeTest.class,
     DistanceTest.class,
-    LSQROnHeapTest.class
+    LSQROnHeapTest.class,
+    LUDecompositionTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.
