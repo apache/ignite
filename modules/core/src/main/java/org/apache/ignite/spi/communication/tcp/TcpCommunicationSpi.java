@@ -2802,6 +2802,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 while (retry);
             }
             catch (Throwable t) {
+                if (stopping)
+                    throw new IgniteSpiException("Node is stopping.", t);
+
                 log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
 
                 if (t instanceof Error)

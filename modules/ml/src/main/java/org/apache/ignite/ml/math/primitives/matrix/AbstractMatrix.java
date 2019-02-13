@@ -918,4 +918,34 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public String toString() {
         return "Matrix [rows=" + rowSize() + ", cols=" + columnSize() + "]";
     }
+
+    /** {@inheritDoc} */
+    @Override public double determinant() {
+        //TODO: IGNITE-11192, use nd4j
+        try (LUDecomposition dec = new LUDecomposition(this)) {
+            return dec.determinant();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix inverse() {
+        if (rowSize() != columnSize())
+            throw new CardinalityException(rowSize(), columnSize());
+
+        //TODO: IGNITE-11192, use nd4j
+        try (LUDecomposition dec = new LUDecomposition(this)) {
+            return dec.solve(likeIdentity());
+        }
+    }
+
+    /** */
+    protected Matrix likeIdentity() {
+        int n = rowSize();
+        Matrix res = like(n, n);
+
+        for (int i = 0; i < n; i++)
+            res.setX(i, i, 1.0);
+
+        return res;
+    }
 }
