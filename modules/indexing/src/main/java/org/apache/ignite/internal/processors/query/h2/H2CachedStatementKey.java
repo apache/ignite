@@ -36,28 +36,17 @@ class H2CachedStatementKey {
     private final byte flags;
 
     /**
-     * Constructor.
-     *
-     * @param schemaName Schema name.
-     * @param sql SQL.
-     */
-    H2CachedStatementKey(String schemaName, String sql) {
-        this(schemaName, sql, null, false);
-    }
-
-    /**
      * Full-fledged constructor.
      *
      * @param schemaName Schema name.
      * @param sql SQL.
      * @param fieldsQry Query with flags.
-     * @param loc DML {@code SELECT} Locality flag.
      */
-    public H2CachedStatementKey(String schemaName, String sql, SqlFieldsQuery fieldsQry, boolean loc) {
+    public H2CachedStatementKey(String schemaName, String sql, SqlFieldsQuery fieldsQry) {
         this.schemaName = schemaName;
         this.sql = sql;
 
-        if (fieldsQry == null || loc || !UpdatePlanBuilder.isSkipReducerOnUpdateQuery(fieldsQry))
+        if (fieldsQry == null || !UpdatePlanBuilder.isSkipReducerOnUpdateQuery(fieldsQry))
             this.flags = 0; // flags only relevant for server side updates.
         else {
             this.flags = (byte)(1 +
