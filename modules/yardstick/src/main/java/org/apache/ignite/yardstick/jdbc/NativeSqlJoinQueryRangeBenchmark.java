@@ -80,8 +80,10 @@ public class NativeSqlJoinQueryRangeBenchmark extends IgniteAbstractBenchmark {
                 rsSize++;
         }
 
-        if (rsSize != expRsSize)
-            throw new Exception("Invalid result set size [actual=" + rsSize + ", expected=" + expRsSize + ']');
+        if (rsSize != expRsSize) {
+            throw new Exception("Invalid result set size [actual=" + rsSize + ", expected=" + expRsSize
+                + ", qry=" + qry + ']');
+        }
 
         return true;
     }
