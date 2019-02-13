@@ -823,10 +823,10 @@ public class BinaryClassDescriptor {
                     assert false : "Invalid mode: " + mode;
             }
         }
+        catch (UnregisteredBinaryTypeException | UnregisteredClassException e) {
+            throw e;
+        }
         catch (Exception e) {
-            if (e instanceof UnregisteredBinaryTypeException || e instanceof UnregisteredClassException)
-                throw e;
-
             String msg;
 
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))

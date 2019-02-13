@@ -20,16 +20,35 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 
 /**
  *
@@ -71,6 +90,97 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
 
             throw e;
         }
+    }
+
+    /**
+     * IGNITE-11313
+     */
+    @Test
+    public void testContinuousQueryAndBinaryObjectBuilder() throws Exception {
+        startGrids(3).cluster().active(true);
+
+        grid(0).createCache(new CacheConfiguration<>()
+            .setName(CACHE_NAME)
+            .setAtomicityMode(ATOMIC)
+            .setBackups(2)
+            .setCacheMode(PARTITIONED)
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setPartitionLossPolicy(READ_WRITE_SAFE)
+        );
+
+        IgniteEx client1 = startGrid(getConfiguration().setIgniteInstanceName("client1").setClientMode(true));
+        IgniteEx client2 = startGrid(getConfiguration().setIgniteInstanceName("client2").setClientMode(true));
+
+        AtomicBoolean stop = new AtomicBoolean();
+        AtomicInteger keyCntr = new AtomicInteger();
+        AtomicInteger binaryTypeCntr = new AtomicInteger();
+
+        /**
+         *
+         */
+        class MyEntryProcessor implements CacheEntryProcessor<Object, Object, Object> {
+            /** */
+            private int i;
+
+            /** */
+            public MyEntryProcessor(int i) {
+                this.i = i;
+            }
+
+            /** */
+            @IgniteInstanceResource
+            Ignite ignite;
+
+            /** {@inheritDoc} */
+            @Override
+            public Object process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
+                BinaryObjectBuilder builder = ignite.binary().builder("my_type");
+
+                builder.setField("new_field" + i, i);
+
+                entry.setValue(builder.build());
+
+                return null;
+            }
+        }
+
+        IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(() -> {
+            IgniteCache<Object, Object> cache = client1.cache(CACHE_NAME).withKeepBinary();
+
+            while (!stop.get()) {
+                Integer key = keyCntr.getAndIncrement();
+
+                cache.put(key, key);
+
+                cache.invoke(key, new MyEntryProcessor(binaryTypeCntr.get()));
+
+                binaryTypeCntr.incrementAndGet();
+            }
+        }, 8, "writer-thread");
+
+        IgniteInternalFuture fut2 = GridTestUtils.runAsync(() -> {
+            IgniteCache<Object, Object> cache = client2.cache(CACHE_NAME).withKeepBinary();
+
+            while (!stop.get()) {
+                ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+                qry.setInitialQuery(new ScanQuery<>((key, val) -> true));
+
+                qry.setLocalListener(evts -> {});
+
+                //noinspection EmptyTryBlock
+                try (QueryCursor<Cache.Entry<Object, Object>> cursor = cache.query(qry)) {
+                    // No-op.
+                }
+            }
+        });
+
+        doSleep(10_000);
+
+        stop.set(true);
+
+        fut1.get(10, TimeUnit.SECONDS);
+        fut2.get(10, TimeUnit.SECONDS);
     }
 
     /**
