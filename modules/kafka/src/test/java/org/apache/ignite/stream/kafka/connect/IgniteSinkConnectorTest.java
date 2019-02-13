@@ -52,8 +52,6 @@ import org.apache.kafka.connect.util.Callback;
 import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.easymock.EasyMock.mock;
@@ -61,7 +59,6 @@ import static org.easymock.EasyMock.mock;
 /**
  * Tests for {@link IgniteSinkConnector}.
  */
-@RunWith(JUnit4.class)
 public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /** Number of input messages. */
     private static final int EVENT_CNT = 10000;

@@ -29,8 +29,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singleton;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -41,7 +39,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /** */
-@RunWith(JUnit4.class)
 public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
     /** */
     private static IgniteCache<Object, Object> cache;
@@ -348,8 +345,10 @@ public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
         assertNotSupportedInTx(action, OPTIMISTIC, READ_COMMITTED);
         assertNotSupportedInTx(action, OPTIMISTIC, REPEATABLE_READ);
         assertNotSupportedInTx(action, OPTIMISTIC, SERIALIZABLE);
-        assertNotSupportedInTx(action, PESSIMISTIC, READ_COMMITTED);
-        assertNotSupportedInTx(action, PESSIMISTIC, SERIALIZABLE);
+
+        assertSupportedInTx(action, PESSIMISTIC, READ_COMMITTED);
+        assertSupportedInTx(action, PESSIMISTIC, REPEATABLE_READ);
+        assertSupportedInTx(action, PESSIMISTIC, SERIALIZABLE);
     }
 
     /** */
@@ -360,7 +359,16 @@ public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
             fail("Action failure is expected.");
         }
         catch (TransactionException e) {
-            assertEquals("Only pessimistic repeatable read transactions are supported when MVCC is enabled.", e.getMessage());
+            assertEquals("Only pessimistic transactions are supported when MVCC is enabled.", e.getMessage());
+        }
+    }
+
+    /** */
+    private void assertSupportedInTx(Runnable action, TransactionConcurrency conc, TransactionIsolation iso) {
+        try (Transaction tx = grid(0).transactions().txStart(conc, iso)) {
+            action.run();
+
+            tx.commit();
         }
     }
 }

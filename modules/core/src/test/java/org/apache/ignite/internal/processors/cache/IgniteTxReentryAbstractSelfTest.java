@@ -37,8 +37,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -47,7 +45,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests reentry in pessimistic repeatable read tx.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstractTest {
     /** @return Cache mode. */
     protected abstract CacheMode cacheMode();

@@ -38,6 +38,8 @@ export default class PageSignup implements ng.IPostLink {
 
     serverError: string | null = null;
 
+    isLoading = false;
+
     static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils', '$element'];
 
     constructor(
@@ -60,19 +62,26 @@ export default class PageSignup implements ng.IPostLink {
     }
 
     signup() {
+        this.isLoading = true;
+
         this.IgniteFormUtils.triggerValidation(this.form);
 
         this.setServerError(null);
 
-        if (!this.canSubmitForm(this.form))
+        if (!this.canSubmitForm(this.form)) {
+            this.isLoading = false;
             return;
+        }
 
-        return this.Auth.signup(this.data).catch((res) => {
-            if (isEmailConfirmationError(res))
-                return;
 
-            this.IgniteMessages.showError(null, res.data);
-            this.setServerError(res.data);
-        });
+        return this.Auth.signup(this.data)
+            .catch((res) => {
+                if (isEmailConfirmationError(res))
+                    return;
+
+                this.IgniteMessages.showError(null, res.data);
+                this.setServerError(res.data);
+            })
+            .finally(() => this.isLoading = false);
     }
 }

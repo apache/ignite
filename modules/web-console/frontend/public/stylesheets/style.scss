@@ -19,7 +19,6 @@
 @import "./bootstrap-custom";
 @import "./variables";
 @import "~roboto-font/css/fonts.css";
-@import "./../../app/directives/information/information.scss";
 @import "./blocks/error";
 @import "./form-field";
 
@@ -535,13 +534,6 @@ button.form-control {
         color: $ignite-placeholder-color;
         height: 65px;
         line-height: 65px;
-    }
-
-    .empty-caches {
-        text-align: center;
-        color: $ignite-placeholder-color;
-        height: 55px;
-        line-height: 55px;
     }
 
     .panel-collapse {

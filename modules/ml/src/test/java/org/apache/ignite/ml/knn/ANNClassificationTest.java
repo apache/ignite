@@ -44,14 +44,12 @@ public class ANNClassificationTest extends TrainerTest {
             .withK(10)
             .withMaxIterations(10)
             .withEpsilon(1e-4)
-            .withDistance(new EuclideanDistance())
-            .withSeed(1234L);
+            .withDistance(new EuclideanDistance());
 
         Assert.assertEquals(10, trainer.getK());
         Assert.assertEquals(10, trainer.getMaxIterations());
         TestUtils.assertEquals(1e-4, trainer.getEpsilon(), PRECISION);
         Assert.assertEquals(new EuclideanDistance(), trainer.getDistance());
-        Assert.assertEquals(1234L, trainer.getSeed());
 
         NNClassificationModel mdl = trainer.fit(
             cacheMock,
@@ -83,7 +81,7 @@ public class ANNClassificationTest extends TrainerTest {
             .withEpsilon(1e-4)
             .withDistance(new EuclideanDistance());
 
-        ANNClassificationModel originalMdl = (ANNClassificationModel) trainer.withSeed(1234L).fit(
+        ANNClassificationModel originalMdl = (ANNClassificationModel) trainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -92,7 +90,7 @@ public class ANNClassificationTest extends TrainerTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
-        ANNClassificationModel updatedOnSameDataset = (ANNClassificationModel) trainer.withSeed(1234L).update(originalMdl,
+        ANNClassificationModel updatedOnSameDataset = (ANNClassificationModel) trainer.update(originalMdl,
             cacheMock, parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
@@ -100,7 +98,7 @@ public class ANNClassificationTest extends TrainerTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
-        ANNClassificationModel updatedOnEmptyDataset = (ANNClassificationModel) trainer.withSeed(1234L).update(originalMdl,
+        ANNClassificationModel updatedOnEmptyDataset = (ANNClassificationModel) trainer.update(originalMdl,
             new HashMap<Integer, double[]>(), parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]

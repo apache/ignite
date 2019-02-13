@@ -64,7 +64,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     }
 
     /** {@inheritDoc} */
-    @Override protected final void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         initStoreStrategy();
         assert testsCfg != null;
         assert !testsCfg.withClients() || testsCfg.gridCount() >= 3;

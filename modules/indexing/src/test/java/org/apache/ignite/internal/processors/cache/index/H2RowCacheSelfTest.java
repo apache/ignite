@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import javax.cache.Cache;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -34,21 +33,18 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests H2RowCacheRegistry.
  */
 @SuppressWarnings({"unchecked", "ConstantConditions"})
-@RunWith(JUnit4.class)
-public class H2RowCacheSelfTest extends GridCommonAbstractTest {
+public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int ENTRIES = 1_000;
 
@@ -178,12 +174,14 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
         assertEquals(0, rowCache.size());
 
         // Warmup cache.
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize / 2, rowCache.size());
 
         // Query again - are there any leaks?
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize / 2, rowCache.size());
 
@@ -193,7 +191,8 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
 
         assertEquals(maxSize / 2, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize, rowCache.size());
 
@@ -203,16 +202,16 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
 
         assertEquals(maxSize, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize, rowCache.size());
 
         // Delete all.
-        cache.query(new SqlFieldsQuery("DELETE FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("DELETE FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(0, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(0, rowCache.size());
     }
@@ -364,12 +363,14 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
         grid().cache(cacheName)
             .query(new SqlQuery(Value.class, "_key = " + key)).getAll().size();
 
-        ConcurrentLinkedHashMap<Long, GridH2KeyValueRowOnheap> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
+        ConcurrentLinkedHashMap<Long, H2CacheRow> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
 
-        for (Map.Entry<Long, GridH2KeyValueRowOnheap> e : rowsMap.entrySet()) {
-            GridH2KeyValueRowOnheap val = e.getValue();
+        for (Map.Entry<Long, H2CacheRow> e : rowsMap.entrySet()) {
+            H2CacheRow val = e.getValue();
 
-            if ((Integer)val.key().value(null, false) == key)
+            KeyCacheObject rowKey = val.key();
+
+            if ((Integer)rowKey.value(null, false) == key)
                 return e.getKey();
         }
 

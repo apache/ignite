@@ -33,8 +33,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** Tests behaviour of KNNClassification. */
 @RunWith(Parameterized.class)
@@ -90,9 +90,9 @@ public class KNNClassificationTest {
         assertTrue(!knnMdl.toString(false).isEmpty());
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
-        assertEquals(knnMdl.predict(firstVector), 1.0);
+        assertEquals(1.0, knnMdl.predict(firstVector), 0);
         Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
-        assertEquals(knnMdl.predict(secondVector), 2.0);
+        assertEquals(2.0, knnMdl.predict(secondVector), 0);
     }
 
     /** */
@@ -118,9 +118,9 @@ public class KNNClassificationTest {
             .withStrategy(NNStrategy.SIMPLE);
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
-        assertEquals(knnMdl.predict(firstVector), 1.0);
+        assertEquals(1.0, knnMdl.predict(firstVector), 0);
         Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
-        assertEquals(knnMdl.predict(secondVector), 2.0);
+        assertEquals(2.0, knnMdl.predict(secondVector), 0);
     }
 
     /** */
@@ -146,7 +146,7 @@ public class KNNClassificationTest {
             .withStrategy(NNStrategy.SIMPLE);
 
         Vector vector = new DenseVector(new double[] {-1.01, -1.01});
-        assertEquals(knnMdl.predict(vector), 2.0);
+        assertEquals(2.0, knnMdl.predict(vector), 0);
     }
 
     /** */
@@ -172,7 +172,7 @@ public class KNNClassificationTest {
             .withStrategy(NNStrategy.WEIGHTED);
 
         Vector vector = new DenseVector(new double[] {-1.01, -1.01});
-        assertEquals(knnMdl.predict(vector), 1.0);
+        assertEquals(1.0, knnMdl.predict(vector), 0);
     }
 
     /** */

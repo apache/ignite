@@ -97,9 +97,9 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
 
         val schemaName = schemaOrDefault(db, currentSchema)
 
-        igniteSQLTable(ignite, tabName, Some(db)) match {
+        sqlTableInfo(ignite, tabName, Some(db)) match {
             case Some(table) ⇒
-                val tableName = table.getTableName
+                val tableName = table.tableName
 
                 Some(new CatalogTable(
                     identifier = new TableIdentifier(tableName, Some(schemaName)),
@@ -117,10 +117,10 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
                     schema = schema(table),
                     provider = Some(FORMAT_IGNITE),
                     partitionColumnNames =
-                        if (table.getKeyFields != null)
-                            table.getKeyFields.toSeq
+                        if (!allKeyFields(table).isEmpty)
+                            allKeyFields(table).toSeq
                         else
-                            Seq(table.getKeyFieldName),
+                            Seq(table.keyFieldName),
                     bucketSpec = None))
             case None ⇒ None
         }
@@ -259,7 +259,7 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
 
     /** @inheritdoc */
     override protected def doCreateTable(tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit = {
-        igniteSQLTable(ignite, tableDefinition.identifier.table, tableDefinition.identifier.database) match {
+        sqlTableInfo(ignite, tableDefinition.identifier.table, tableDefinition.identifier.database) match {
             case Some(_) ⇒
                 /* no-op */
 
@@ -281,9 +281,9 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
 
     /** @inheritdoc */
     override protected def doDropTable(db: String, tabName: String, ignoreIfNotExists: Boolean, purge: Boolean): Unit =
-        igniteSQLTable(ignite, tabName, Some(schemaOrDefault(db, currentSchema))) match {
+        sqlTableInfo(ignite, tabName, Some(schemaOrDefault(db, currentSchema))) match {
             case Some(table) ⇒
-                val tableName = table.getTableName
+                val tableName = table.tableName
 
                 QueryHelper.dropTable(tableName, ignite)
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.concurrent.CountDownLatch;
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -26,14 +25,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Single node services test.
  */
-@RunWith(JUnit4.class)
 public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
@@ -65,16 +62,16 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         latch.await();
 
-        TestCase.assertEquals(name, 1, DummyService.started(name));
-        TestCase.assertEquals(name, 0, DummyService.cancelled(name));
+        Assert.assertEquals(name, 1, DummyService.started(name));
+        Assert.assertEquals(name, 0, DummyService.cancelled(name));
 
         int nodeCnt = 2;
 
         startExtraNodes(nodeCnt);
 
         try {
-            TestCase.assertEquals(name, 1, DummyService.started(name));
-            TestCase.assertEquals(name, 0, DummyService.cancelled(name));
+            Assert.assertEquals(name, 1, DummyService.started(name));
+            Assert.assertEquals(name, 0, DummyService.cancelled(name));
 
             info(">>> Passed checks.");
 

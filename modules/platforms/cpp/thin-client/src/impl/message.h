@@ -423,10 +423,10 @@ namespace ignite
             };
 
             /**
-             * Cache key value request.
+             * Cache 2 value request.
              */
             template<int32_t OpCode>
-            class CacheKeyValueRequest : public CacheValueRequest<OpCode>
+            class Cache2ValueRequest : public CacheRequest<OpCode>
             {
             public:
                 /**
@@ -434,12 +434,13 @@ namespace ignite
                  *
                  * @param cacheId Cache ID.
                  * @param binary Binary cache flag.
-                 * @param key Key.
-                 * @param value Value.
+                 * @param val1 Value 1.
+                 * @param val2 Value 2.
                  */
-                CacheKeyValueRequest(int32_t cacheId, bool binary, const Writable& key, const Writable& value) :
-                    CacheValueRequest<OpCode>(cacheId, binary, key),
-                    value(value)
+                Cache2ValueRequest(int32_t cacheId, bool binary, const Writable& val1, const Writable& val2) :
+                    CacheRequest<OpCode>(cacheId, binary),
+                    val1(val1),
+                    val2(val2)
                 {
                     // No-op.
                 }
@@ -447,7 +448,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~CacheKeyValueRequest()
+                virtual ~Cache2ValueRequest()
                 {
                     // No-op.
                 }
@@ -459,14 +460,77 @@ namespace ignite
                  */
                 virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
                 {
-                    CacheValueRequest<OpCode>::Write(writer, ver);
+                    CacheRequest<OpCode>::Write(writer, ver);
 
-                    value.Write(writer);
+                    val1.Write(writer);
+                    val2.Write(writer);
                 }
 
             private:
-                /** Value. */
-                const Writable& value;
+                /** Value 1. */
+                const Writable& val1;
+
+                /** Value 2. */
+                const Writable& val2;
+            };
+
+            /**
+             * Cache 3 value request.
+             */
+            template<int32_t OpCode>
+            class Cache3ValueRequest : public CacheRequest<OpCode>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param binary Binary cache flag.
+                 * @param val1 Value 1.
+                 * @param val2 Value 2.
+                 * @param val3 Value 3.
+                 */
+                Cache3ValueRequest(int32_t cacheId, bool binary, const Writable& val1, const Writable& val2,
+                    const Writable& val3) :
+                    CacheRequest<OpCode>(cacheId, binary),
+                    val1(val1),
+                    val2(val2),
+                    val3(val3)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~Cache3ValueRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+                {
+                    CacheRequest<OpCode>::Write(writer, ver);
+
+                    val1.Write(writer);
+                    val2.Write(writer);
+                    val3.Write(writer);
+                }
+
+            private:
+                /** Value 1. */
+                const Writable& val1;
+
+                /** Value 2. */
+                const Writable& val2;
+
+                /** Value 3. */
+                const Writable& val3;
             };
 
             /**

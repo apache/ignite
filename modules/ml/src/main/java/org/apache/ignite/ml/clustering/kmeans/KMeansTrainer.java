@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -43,6 +44,7 @@ import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -61,21 +63,10 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
 
-    /** KMeans initializer. */
-    private long seed;
-
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @return Model.
-     */
+    /** {@inheritDoc} */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        FeatureLabelExtractor<K, V, Double> extractor) {
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
@@ -85,14 +76,17 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
     /** {@inheritDoc} */
     @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
+        FeatureLabelExtractor<K, V, Double> extractor) {
         assert datasetBuilder != null;
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            featureExtractor,
-            lbExtractor
-        );
+        IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
+        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
+
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder =
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(
+                featureExtractor,
+                lbExtractor
+            );
 
         Vector[] centers;
 
@@ -149,7 +143,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(KMeansModel mdl) {
+    @Override public boolean isUpdateable(KMeansModel mdl) {
         return mdl.getCenters().length == k && mdl.distanceMeasure().equals(distance);
     }
 
@@ -235,7 +229,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
             if (data.rowSize() != 0) {
                 if (data.rowSize() > k) { // If it's enough rows in partition to pick k vectors.
-                    final Random random = new Random(seed);
+                    final Random random = environment.randomNumbersGenerator();
 
                     for (int i = 0; i < k; i++) {
                         Set<Integer> uniqueIndices = new HashSet<>();
@@ -272,7 +266,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         // Pick k vectors randomly.
         if (rndPnts.size() >= k) {
             for (int i = 0; i < k; i++) {
-                final LabeledVector rndPnt = rndPnts.get(new Random(seed).nextInt(rndPnts.size()));
+                final LabeledVector rndPnt = rndPnts.get(environment.randomNumbersGenerator().nextInt(rndPnts.size()));
                 rndPnts.remove(rndPnt);
                 initCenters[i] = rndPnt.features();
             }
@@ -392,26 +386,6 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      */
     public KMeansTrainer withDistance(DistanceMeasure distance) {
         this.distance = distance;
-        return this;
-    }
-
-    /**
-     * Gets the seed number.
-     *
-     * @return The parameter value.
-     */
-    public long getSeed() {
-        return seed;
-    }
-
-    /**
-     * Set up the seed.
-     *
-     * @param seed The parameter value.
-     * @return Model with new seed parameter value.
-     */
-    public KMeansTrainer withSeed(long seed) {
-        this.seed = seed;
         return this;
     }
 }

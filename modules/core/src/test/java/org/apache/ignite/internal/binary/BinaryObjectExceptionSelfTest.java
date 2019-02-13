@@ -33,13 +33,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * BinaryObjectExceptionSelfTest
  */
-@RunWith(JUnit4.class)
 public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_KEY = "test_key";

@@ -316,7 +316,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             boolean needVer = this.needVer;
 
             BackupPostProcessingClosure postClos = CU.createBackupPostProcessingClosure(topVer, log,
-                cctx, key, expiryPlc, readThrough, skipVals);
+                cctx, key, expiryPlc, readThrough && cctx.readThroughConfigured(), skipVals);
 
             if (postClos != null) {
                 // Need version to correctly store value.
@@ -488,7 +488,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 taskName,
                                 expiryPlc,
                                 true,
-                                mvccSnapshot,
                                 null);
 
                             if (res != null) {
@@ -507,11 +506,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 null,
                                 taskName,
                                 expiryPlc,
-                                true,
-                                mvccSnapshot);
+                                true);
                         }
 
-                        entry.touch(topVer);
+                        entry.touch();
 
                         // Entry was not in memory or in swap, so we remove it from cache.
                         if (v == null) {

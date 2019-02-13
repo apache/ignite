@@ -17,27 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnCreateDestoryIndexTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnSqlQueryTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    CacheBlockOnSqlQueryTest.class,
+    CacheBlockOnCreateDestoryIndexTest.class
+})
 public class IgniteCacheBlockExchangeOnSqlReadOperationsTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Do Not Block Read Operations Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(CacheBlockOnSqlQueryTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheBlockOnCreateDestoryIndexTest.class));
-
-        return suite;
-    }
 }

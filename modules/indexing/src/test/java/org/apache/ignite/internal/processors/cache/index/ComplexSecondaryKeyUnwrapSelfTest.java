@@ -24,18 +24,13 @@ import java.util.Map;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test of creating and using secondary indexes for tables created through SQL.
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-@RunWith(JUnit4.class)
-public class ComplexSecondaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
-
+public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest {
     /** Counter to generate unique table names. */
     private static int tblCnt = 0;
 

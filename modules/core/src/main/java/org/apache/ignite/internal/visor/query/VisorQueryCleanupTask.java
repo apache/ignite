@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -34,6 +33,8 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.removeQueryHolder;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logMapped;
 
 /**
@@ -106,14 +107,21 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<VisorQueryCleanupT
 
         /** {@inheritDoc} */
         @Override protected Void run(Collection<String> qryIds) {
-            ConcurrentMap<String, VisorQueryCursor> storage = ignite.cluster().nodeLocalMap();
+            long start = U.currentTimeMillis();
 
-            for (String qryId : qryIds) {
-                VisorQueryCursor cur = storage.remove(qryId);
-
-                if (cur != null)
-                    cur.close();
+            if (debug) {
+                start = log(
+                    ignite.log(),
+                    "Queries cancellation started: [" + String.join(", ", qryIds) + "]",
+                    getClass(),
+                    start);
             }
+
+            for (String qryId : qryIds)
+                removeQueryHolder(ignite, qryId);
+
+            if (debug)
+                log(ignite.log(), "Queries cancellation finished", getClass(), start);
 
             return null;
         }

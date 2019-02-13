@@ -27,8 +27,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  * A new instance of the class should be created for every complex network based operations that usually consists of
  * request and response parts.
+ *
  */
 public class IgniteSpiOperationTimeoutHelper {
+    // https://issues.apache.org/jira/browse/IGNITE-11221
+    // We need to reuse new logic ExponentialBackoffTimeout logic in TcpDiscovery instead of this class.
+
     /** */
     private long lastOperStartTs;
 
@@ -84,7 +88,7 @@ public class IgniteSpiOperationTimeoutHelper {
                     "'failureDetectionTimeout' configuration property [failureDetectionTimeout="
                     + failureDetectionTimeout + ']');
         }
-
+        
         return timeout;
     }
 

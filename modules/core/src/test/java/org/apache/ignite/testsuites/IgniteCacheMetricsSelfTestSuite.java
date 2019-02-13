@@ -17,10 +17,12 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImplTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
+import org.apache.ignite.internal.processors.cache.CacheMetricsCacheSizeTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsEntitiesCountTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheValidatorMetricsTest;
@@ -40,20 +42,17 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTck
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMetricsSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache metrics.
  */
-@RunWith(AllTests.class)
 public class IgniteCacheMetricsSelfTestSuite {
     /**
      * @param ignoredTests Ignored tests.
      * @return Cache metrics test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Cache Metrics Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheLocalMetricsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class, ignoredTests);
@@ -74,6 +73,7 @@ public class IgniteCacheMetricsSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, CacheGroupsMetricsRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheValidatorMetricsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsEntitiesCountTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsCacheSizeTest.class, ignoredTests);
 
         // Cluster wide metrics.
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsForClusterGroupSelfTest.class, ignoredTests);
