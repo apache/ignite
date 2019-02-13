@@ -82,11 +82,8 @@ public class JdbcThinTcpIo {
     /** Version 2.8.0. */
     private static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
-    /** Version 2.8.1. */
-    private static final ClientListenerProtocolVersion VER_2_8_1 = ClientListenerProtocolVersion.create(2, 8, 1);
-
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_1;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -377,7 +374,7 @@ public class JdbcThinTcpIo {
                 long ts = reader.readLong();
                 byte[] hash = reader.readByteArray();
 
-                if (ver.compareTo(VER_2_8_1) >= 0)
+                if (ver.compareTo(VER_2_8_0) >= 0)
                     nodeId = reader.readUuid();
 
                 igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
@@ -402,8 +399,7 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_8_0.equals(srvProtoVer0)
-                || VER_2_7_0.equals(srvProtoVer0)
+            if (VER_2_7_0.equals(srvProtoVer0)
                 || VER_2_5_0.equals(srvProtoVer0)
                 || VER_2_4_0.equals(srvProtoVer0)
                 || VER_2_3_0.equals(srvProtoVer0)
