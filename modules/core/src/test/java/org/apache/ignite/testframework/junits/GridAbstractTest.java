@@ -1778,7 +1778,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
 
         if (isSafeTopology()) {
-            stopAllGrids(false);
+            stopAllGrids(true);
 
             if (stopGridErr) {
                 err = new RuntimeException("Not all Ignite instances has been stopped. " +
