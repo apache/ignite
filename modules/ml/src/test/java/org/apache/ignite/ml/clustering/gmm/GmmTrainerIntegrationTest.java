@@ -75,7 +75,7 @@ public class GmmTrainerIntegrationTest extends GridCommonAbstractTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        GmmTrainer trainer = new GmmTrainer(2)
+        GmmTrainer trainer = new GmmTrainer(2, 1)
             .withInitialMeans(Arrays.asList(
                 VectorUtils.of(1.0, 2.0),
                 VectorUtils.of(-1.0, -2.0)));
