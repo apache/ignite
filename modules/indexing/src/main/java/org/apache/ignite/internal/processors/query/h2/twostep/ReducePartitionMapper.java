@@ -427,33 +427,33 @@ public class ReducePartitionMapper {
         Set<Integer> lastProcessed = null;
 
         while (!nodeToParts.isEmpty()) {
-            Map.Entry<ClusterNode, Set<Integer>> current = null;
+            Map.Entry<ClusterNode, Set<Integer>> curr = null;
 
-            for (Iterator<Map.Entry<ClusterNode, Set<Integer>>> it0 = nodeToParts.entrySet().iterator(); it0.hasNext(); ) {
-                Map.Entry<ClusterNode, Set<Integer>> e = it0.next();
+            for (Iterator<Map.Entry<ClusterNode, Set<Integer>>> it = nodeToParts.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<ClusterNode, Set<Integer>> e = it.next();
 
                 if (lastProcessed != null)
                     e.getValue().removeAll(lastProcessed);
 
                 if (e.getValue().isEmpty()) {
-                    it0.remove();
+                    it.remove();
 
                     continue;
                 }
 
-                if (current == null || e.getValue().size() > current.getValue().size())
-                    current = e;
+                if (curr == null || e.getValue().size() > curr.getValue().size())
+                    curr = e;
             }
 
-            if (current == null)
+            if (curr == null)
                 break;
 
-            IntArray array = res.computeIfAbsent(current.getKey(), n -> new IntArray());
+            IntArray array = res.computeIfAbsent(curr.getKey(), n -> new IntArray());
 
-            for (Integer p : current.getValue())
+            for (Integer p : curr.getValue())
                 array.add(p);
 
-            lastProcessed = nodeToParts.remove(current.getKey());
+            lastProcessed = nodeToParts.remove(curr.getKey());
         }
 
         return res;
