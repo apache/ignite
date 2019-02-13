@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -32,8 +33,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
@@ -57,6 +57,9 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
      */
     @Test
     public void test() throws Exception {
+        expectFailure(StorageException.class);
+        expectFailure(IgniteException.class, "GridWorker ");
+
         Ignite ex = startGrid(0);
 
         ex.active(true);
@@ -183,11 +186,6 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
-    /** {@inheritDoc} */
     @Override protected boolean checkTopology() {
         return false;
     }
@@ -201,6 +199,8 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
 
         cleanPersistenceDir();

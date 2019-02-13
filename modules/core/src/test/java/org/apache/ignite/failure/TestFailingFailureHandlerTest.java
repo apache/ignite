@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 public class TestFailingFailureHandlerTest extends OomFailureHandlerTest {
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new TestFailingFailureHandler(this, log);
+        return new TestFailingFailureHandler(this);
     }
 
     /**

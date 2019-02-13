@@ -1702,7 +1702,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return Failure handler implementation.
      */
     protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new TestFailingFailureHandler(this, log);
+        return new TestFailingFailureHandler(this);
     }
 
     /**

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -41,33 +40,24 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
     @GridToStringExclude
     protected final GridAbstractTest test;
 
-    /** Logger. */
-    @GridToStringExclude
-    private final IgniteLogger log; //TODO remove before PA
-
     /**
      * @param test Test.
      */
-    public TestFailingFailureHandler(GridAbstractTest test, IgniteLogger log) {
+    public TestFailingFailureHandler(GridAbstractTest test) {
+        System.out.println("asd123 size=" + expectedErrs.size());
         this.test = test;
-        this.log = log;
     }
 
     /** {@inheritDoc} */
     @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
         String debug = " asd123 handle error="+failureCtx.error().getClass()+", msg="+failureCtx.error().getMessage()+", cause="+(failureCtx.error().getCause()==null?"null":failureCtx.error().getCause().getClass().getSimpleName());
 
-        if (log != null)
-            log.info("log" + debug);
-        else if (ignite != null && ignite.log() != null)
+        if (ignite != null && ignite.log() != null)
             ignite.log().info("ignite.log" + debug);
         else
             System.out.println("sout" + debug);
 
-        // if (test.isMultiJVM())
-        // TODO send compute by IgniteProcessProxy or find another way to change err list in other JVMs
-
-        if (isFailureExpected(failureCtx))
+        if (isFailureExpected(ignite, failureCtx))
             return false;
 
         if (!testIsRunning.getAndSet(false)) {
@@ -87,13 +77,13 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
      * @param failureCtx Failure context.
      * @return True - if critical failure is expected.
      */
-    private boolean isFailureExpected(FailureContext failureCtx) {
+    private boolean isFailureExpected(Ignite ignite, FailureContext failureCtx) {
         for (T2<Class<? extends Throwable>, String> err : expectedErrs) {
             if (!X.hasCause(failureCtx.error(), err.get2(), err.get1()))
                 continue;
 
-            if (log.isInfoEnabled())
-                log.info("Caught expected exception: " + failureCtx.error());
+            if (ignite.log().isInfoEnabled())
+                ignite.log().info("Caught expected exception: " + failureCtx.error());
 
             return true;
         }
