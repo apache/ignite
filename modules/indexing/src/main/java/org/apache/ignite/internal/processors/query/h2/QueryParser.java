@@ -190,7 +190,7 @@ public class QueryParser {
                 || nativeCmd instanceof SqlCreateUserCommand
                 || nativeCmd instanceof SqlAlterUserCommand
                 || nativeCmd instanceof SqlDropUserCommand)
-                )
+            )
                 return null;
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.lastCommandSql());
@@ -364,40 +364,31 @@ public class QueryParser {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        // At this point only SELECT is possible.
-        if (loc) {
-            // No two-step for local query for now.
-            QueryParserResultSelect select = new QueryParserResultSelect(null, null, prepared);
-
-            return new QueryParserResult(newQry, remainingQry, select, null, null);
-        }
-
-        // Only distirbuted SELECT are possible at this point.
+        // Parse SELECT.
         try {
-            GridCacheTwoStepQuery twoStepQry = GridSqlQuerySplitter.split(
-                connMgr.connectionForThread().connection(newQry.getSchema()),
-                prepared,
-                newQry.getArgs(),
-                newQry.isCollocated(),
-                newQry.isDistributedJoins(),
-                newQry.isEnforceJoinOrder(),
-                newQry.isLocal(),
-                idx
-            );
+            GridCacheTwoStepQuery twoStepQry = null;
+
+            if (!loc) {
+                twoStepQry = GridSqlQuerySplitter.split(
+                    connMgr.connectionForThread().connection(newQry.getSchema()),
+                    prepared,
+                    newQry.getArgs(),
+                    newQry.isCollocated(),
+                    newQry.isDistributedJoins(),
+                    newQry.isEnforceJoinOrder(),
+                    newQry.isLocal(),
+                    idx
+                );
+            }
 
             List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
 
-            QueryParserResultSelect select = new QueryParserResultSelect(
-                twoStepQry,
-                meta,
-                prepared
-            );
+            QueryParserResultSelect select = new QueryParserResultSelect(twoStepQry, meta);
 
             return new QueryParserResult(newQry, remainingQry, select, null, null);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteSQLException("Failed to bind parameters: [qry=" + newQry.getSql() + ", params=" +
-                Arrays.deepToString(newQry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
+            throw new IgniteSQLException("Failed to parse query: " + newQry.getSql(), IgniteQueryErrorCode.PARSING, e);
         }
         catch (SQLException e) {
             throw new IgniteSQLException(e);
