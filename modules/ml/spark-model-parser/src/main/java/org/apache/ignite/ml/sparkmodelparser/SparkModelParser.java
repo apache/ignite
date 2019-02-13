@@ -80,8 +80,7 @@ public class SparkModelParser {
                 "The specified path " + pathToMdl + " is not the path to directory.");
 
         String[] files = mdlDir.list();
-        if (files.length == 0)
-            throw new IllegalArgumentException("Directory contain 0 files and sub-directories [directory_path=" + pathToMdl + "]");
+        if (files.length == 0) throw new IllegalArgumentException("Directory contain 0 files and sub-directories [directory_path=" + pathToMdl + "]");
 
         if (Arrays.stream(files).noneMatch("data"::equals))
             throw new IllegalArgumentException("Directory should contain data sub-directory [directory_path=" + pathToMdl + "]");
@@ -130,10 +129,8 @@ public class SparkModelParser {
             String pathToTreesMetadataFile = treesMetadataParquetFiles[0].getPath();
 
             return parseDataWithMetadata(pathToMdlFile, pathToTreesMetadataFile, parsedSparkMdl);
-        }
-        else
+        } else
             return parseData(pathToMdlFile, parsedSparkMdl);
-
     }
 
     /**
