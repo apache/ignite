@@ -74,7 +74,9 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
                 double p = probabilities[i][j][x];
                 probapilityPowers[i] += (p > 0 ? Math.log(p) : .0);
             }
+        }
 
+        for (int i = 0; i < classsProbabilities.length; i++) {
             for (int j = gaussianFeatureFrom; j < gaussianFeatureTo; j++) {
                 double x = vector.get(j);
                 double g = gauss(x, gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][j]);
