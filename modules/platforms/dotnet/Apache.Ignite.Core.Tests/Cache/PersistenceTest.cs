@@ -69,8 +69,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             [Values(true, false)] bool withCacheStore,
             [Values(true, false)] bool withCustomAffinity)
         {
-            Environment.SetEnvironmentVariable("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", "false");
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DataStorageConfiguration = new DataStorageConfiguration
@@ -154,8 +152,6 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.IsFalse(ignite.GetCacheNames().Contains(cacheName));
             }
-
-            Environment.SetEnvironmentVariable("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", null);
         }
 
         /// <summary>
@@ -228,6 +224,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestBaselineTopology()
         {
+            Environment.SetEnvironmentVariable("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", "false");
+
             var cfg1 = new IgniteConfiguration(GetPersistentConfiguration())
             {
                 ConsistentId = "node1"
@@ -284,6 +282,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 var res = cluster.GetBaselineTopology();
                 CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
             }
+
+            Environment.SetEnvironmentVariable("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", null);
         }
 
         /// <summary>
