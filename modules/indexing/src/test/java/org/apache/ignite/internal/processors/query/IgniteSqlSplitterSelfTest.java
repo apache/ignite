@@ -1382,8 +1382,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
 
             checkQueryPlan(c1, true, 1, new SqlFieldsQuery(select0));
-
-            checkQueryPlan(c1, true, 1, new SqlFieldsQuery(select0).setLocal(true));
+            checkQueryPlan(c1, true, 0, new SqlFieldsQuery(select0).setLocal(true));
         }
         finally {
             c1.destroy();

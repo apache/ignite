@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -250,7 +249,7 @@ public class QueryParser {
         PreparedStatement stmt;
 
         try {
-            stmt = connMgr.prepareStatement(c, qry.getSql());
+            stmt = connMgr.prepareStatementNoCache(c, qry.getSql());
         }
         catch (SQLException e) {
             throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
@@ -299,7 +298,6 @@ public class QueryParser {
 
         SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args);
 
-        // TODO: WTF is that? Modifies global query flag (distr joins), invokes additional parsing.
         if (prepared.isQuery()) {
             try {
                 H2Utils.bindParameters(stmt, F.asList(args));
@@ -311,10 +309,8 @@ public class QueryParser {
                     Arrays.deepToString(args) + "]", IgniteQueryErrorCode.PARSING, e);
             }
 
-            GridSqlQueryParser parser = null;
-
             if (!loc) {
-                parser = new GridSqlQueryParser(false);
+                GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
                 GridSqlStatement parsedStmt = parser.parse(prepared);
 
@@ -323,25 +319,10 @@ public class QueryParser {
 
                 loc = parser.isLocalQuery();
             }
-
-            if (loc) {
-                if (parser == null) {
-                    parser = new GridSqlQueryParser(false);
-
-                    parser.parse(prepared);
-                }
-
-                GridCacheContext cctx = parser.getFirstPartitionedCache();
-
-                if (cctx != null && cctx.config().getQueryParallelism() > 1) {
-                    loc = false;
-
-                    newQry.setDistributedJoins(true);
-                }
-            }
         }
 
         // Do not cache multiple statements and distributed queries as whole two step query will be cached later on.
+        // TODO: Remove as a part of https://issues.apache.org/jira/browse/IGNITE-11279
         if (remainingQry != null || !loc)
             connMgr.statementCacheForThread().remove(schemaName, qry.getSql());
 

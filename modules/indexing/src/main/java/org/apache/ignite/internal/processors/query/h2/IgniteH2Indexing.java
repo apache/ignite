@@ -143,7 +143,6 @@ import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -1696,21 +1695,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fldsQry.setLocal(true);
         fldsQry.setDataPageScanEnabled(isDataPageScanEnabled(flags));
 
-        boolean loc = true;
-
-        final boolean replicated = U.isFlagSet(flags, GridH2QueryRequest.FLAG_REPLICATED);
-
-        GridCacheContext<?, ?> cctx0;
-
-        if (!replicated
-            && !F.isEmpty(ids)
-            && (cctx0 = CU.firstPartitioned(cctx.shared(), ids)) != null
-            && cctx0.config().getQueryParallelism() > 1) {
-            fldsQry.setDistributedJoins(true);
-
-            loc = false;
-        }
-
         Connection conn = connMgr.connectionForThread().connection(schema);
 
         H2Utils.setupConnection(conn, false, fldsQry.isEnforceJoinOrder());
@@ -1722,7 +1706,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared prepared = GridSqlQueryParser.prepared(stmt);
 
-        UpdatePlan plan = updatePlan(schema, conn, prepared, fldsQry, loc);
+        UpdatePlan plan = updatePlan(schema, conn, prepared, fldsQry, true);
 
         GridCacheContext planCctx = plan.cacheContext();
 
@@ -1731,37 +1715,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         QueryCursorImpl<List<?>> cur;
 
-        // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
-        // sub-query and not some dummy stuff like "select 1, 2, 3;"
-        if (!loc && !plan.isLocalSubquery()) {
-            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fldsQry.isCollocated())
-                .setArgs(fldsQry.getArgs())
-                .setDistributedJoins(fldsQry.isDistributedJoins())
-                .setEnforceJoinOrder(fldsQry.isEnforceJoinOrder())
-                .setLocal(fldsQry.isLocal())
-                .setPageSize(fldsQry.getPageSize())
-                .setTimeout(fldsQry.getTimeout(), TimeUnit.MILLISECONDS)
-                .setDataPageScanEnabled(fldsQry.isDataPageScanEnabled());
+        GridQueryFieldsResult res = executeQueryLocal0(
+            schema,
+            plan.selectQuery(),
+            F.asList(fldsQry.getArgs()),
+            filter,
+            fldsQry.isEnforceJoinOrder(),
+            false,
+            fldsQry.getTimeout(),
+            cancel,
+            new StaticMvccQueryTracker(planCctx, mvccSnapshot),
+            null
+        );
 
-            cur = (QueryCursorImpl<List<?>>)querySqlFields(schema, newFieldsQry, null, true, true,
-                new StaticMvccQueryTracker(planCctx, mvccSnapshot), cancel, false).get(0);
-        }
-        else {
-            final GridQueryFieldsResult res = executeQueryLocal0(schema, plan.selectQuery(),
-                F.asList(fldsQry.getArgs()), filter, fldsQry.isEnforceJoinOrder(), false, fldsQry.getTimeout(), cancel,
-                new StaticMvccQueryTracker(planCctx, mvccSnapshot), null);
-
-            cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                @Override public Iterator<List<?>> iterator() {
-                    try {
-                        return res.iterator();
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
+        cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+            @Override public Iterator<List<?>> iterator() {
+                try {
+                    return res.iterator();
                 }
-            }, cancel);
-        }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        }, cancel);
 
         return plan.iteratorForTransaction(connMgr, cur);
     }
@@ -1914,7 +1890,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @param filter Filter.
      * @param cancel Cancel state.
-     * @param loc Locality flag.
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
@@ -1922,8 +1897,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String schemaName,
         SqlFieldsQuery qry,
         IndexingQueryFilter filter,
-        GridQueryCancel cancel,
-        boolean loc
+        GridQueryCancel cancel
     ) throws IgniteCheckedException {
         Connection conn = connMgr.connectionForThread().connection(schemaName);
 
@@ -1941,7 +1915,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException(e);
         }
 
-        return executeUpdate(schemaName, c, GridSqlQueryParser.prepared(stmt), qry, loc, filter, cancel);
+        return executeUpdate(schemaName, c, GridSqlQueryParser.prepared(stmt), qry, true, filter, cancel);
     }
 
     /**
