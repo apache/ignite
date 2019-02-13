@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
-import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
@@ -60,26 +59,26 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     @Override public Double predict(Vector vector) {
         double[] probapilityPowers = new double[classsProbabilities.length];
-        Arrays.fill(probapilityPowers, Double.MAX_VALUE);
-        int maxLabelIndex = 0;
-
         for (int i = 0; i < classsProbabilities.length; i++) {
             probapilityPowers[i] = Math.log(classsProbabilities[i]);
+        }
+
+        for (int i = 0; i < classsProbabilities.length; i++) {
             for (int j = discreteFeatureFrom; j < discreteFeatureTo; j++) {
-                int x = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[j]);
-                double p = discreteModel.getProbabilities()[i][j][x];
-                probapilityPowers[i] += (p > 0 ? Math.log(p) : .0);
+                int bucketNumber = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[j]);
+                double probability = discreteModel.getProbabilities()[i][j][bucketNumber];
+                probapilityPowers[i] += (probability > 0 ? Math.log(probability) : .0);
             }
         }
 
         for (int i = 0; i < classsProbabilities.length; i++) {
             for (int j = gaussianFeatureFrom; j < gaussianFeatureTo; j++) {
-                double x = vector.get(j);
-                double g = gauss(x, gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][j]);
-                probapilityPowers[i] += (g > 0 ? Math.log(g) : .0);
+                double parobability = gauss(vector.get(j), gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][j]);
+                probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
             }
         }
 
+        int maxLabelIndex = 0;
         for (int i = 0; i < probapilityPowers.length; i++) {
             if (probapilityPowers[i] > probapilityPowers[maxLabelIndex]) {
                 maxLabelIndex = i;
