@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.math;
 
+import org.apache.ignite.ml.math.stat.StatsTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -25,6 +26,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    StatsTestSuite.class,
     MathImplLocalTestSuite.class,
     TracerTest.class,
     BlasTest.class

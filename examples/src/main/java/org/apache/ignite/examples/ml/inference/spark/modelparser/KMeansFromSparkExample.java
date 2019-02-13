@@ -40,8 +40,7 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  */
 public class KMeansFromSparkExample {
     /** Path to Spark KMeans model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/kmeans/data" +
-        "/part-00000-e1f2c475-c65a-4b9e-879e-de4afd4f65bc-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/kmeans";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {

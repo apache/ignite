@@ -20,6 +20,7 @@ package org.apache.ignite.ml.sparkmodelparser;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,13 +64,93 @@ import org.jetbrains.annotations.Nullable;
 /** Parser of Spark models. */
 public class SparkModelParser {
     /**
+     * Load model from parquet (presented as a directory).
+     *
+     * @param pathToMdl Path to directory with saved model.
+     * @param parsedSparkMdl Parsed spark model.
+     */
+    public static Model parse(String pathToMdl, SupportedSparkModels parsedSparkMdl) throws IllegalArgumentException {
+        File mdlDir = IgniteUtils.resolveIgnitePath(pathToMdl);
+
+        if (mdlDir == null)
+            throw new IllegalArgumentException("Directory not found or empty [directory_path=" + pathToMdl + "]");
+
+        if (!mdlDir.isDirectory())
+            throw new IllegalArgumentException("Spark Model Parser supports loading from directory only. " +
+                "The specified path " + pathToMdl + " is not the path to directory.");
+
+        String[] files = mdlDir.list();
+        if (files.length == 0) throw new IllegalArgumentException("Directory contain 0 files and sub-directories [directory_path=" + pathToMdl + "]");
+
+        if (Arrays.stream(files).noneMatch("data"::equals))
+            throw new IllegalArgumentException("Directory should contain data sub-directory [directory_path=" + pathToMdl + "]");
+
+        if (Arrays.stream(files).noneMatch("metadata"::equals))
+            throw new IllegalArgumentException("Directory should contain metadata sub-directory [directory_path=" + pathToMdl + "]");
+
+        String pathToData = pathToMdl + File.separator + "data";
+        File dataDir = IgniteUtils.resolveIgnitePath(pathToData);
+
+        File[] dataParquetFiles = dataDir.listFiles((dir, name) -> name.matches("^part-.*\\.snappy\\.parquet$"));
+        if (dataParquetFiles.length == 0)
+            throw new IllegalArgumentException("Directory should contain parquet file " +
+                "with model [directory_path=" + pathToData + "]");
+
+        if (dataParquetFiles.length > 1)
+            throw new IllegalArgumentException("Directory should contain only one parquet file " +
+                "with model [directory_path=" + pathToData + "]");
+
+        String pathToMdlFile = dataParquetFiles[0].getPath();
+
+        String pathToMetadata = pathToMdl + File.separator + "metadata";
+        File metadataDir = IgniteUtils.resolveIgnitePath(pathToMetadata);
+        String[] metadataFiles = metadataDir.list();
+
+        if (Arrays.stream(metadataFiles).noneMatch("part-00000"::equals))
+            throw new IllegalArgumentException("Directory should contain json file with model metadata " +
+                "with name part-00000 [directory_path=" + pathToMetadata + "]");
+
+        if (shouldContainTreeMetadataSubDirectory(parsedSparkMdl)) {
+            if (Arrays.stream(files).noneMatch("treesMetadata"::equals))
+                throw new IllegalArgumentException("Directory should contain treeMetadata sub-directory [directory_path=" + pathToMdl + "]");
+
+            String pathToTreesMetadata = pathToMdl + File.separator + "treesMetadata";
+            File treesMetadataDir = IgniteUtils.resolveIgnitePath(pathToTreesMetadata);
+
+            File[] treesMetadataParquetFiles = treesMetadataDir.listFiles((dir, name) -> name.matches("^part-.*\\.snappy\\.parquet$"));
+            if (treesMetadataParquetFiles.length == 0)
+                throw new IllegalArgumentException("Directory should contain parquet file " +
+                    "with model treesMetadata [directory_path=" + pathToTreesMetadata + "]");
+
+            if (treesMetadataParquetFiles.length > 1)
+                throw new IllegalArgumentException("Directory should contain only one parquet file " +
+                    "with model [directory_path=" + pathToTreesMetadata + "]");
+
+            String pathToTreesMetadataFile = treesMetadataParquetFiles[0].getPath();
+
+            return parseDataWithMetadata(pathToMdlFile, pathToTreesMetadataFile, parsedSparkMdl);
+        } else
+            return parseData(pathToMdlFile, parsedSparkMdl);
+
+    }
+
+    /**
+     * @param parsedSparkMdl Parsed spark model.
+     */
+    private static boolean shouldContainTreeMetadataSubDirectory(SupportedSparkModels parsedSparkMdl) {
+        return parsedSparkMdl == SupportedSparkModels.GRADIENT_BOOSTED_TREES
+            || parsedSparkMdl == SupportedSparkModels.GRADIENT_BOOSTED_TREES_REGRESSION;
+    }
+
+
+    /**
      * Load model from parquet file.
      *
      * @param pathToMdl Hadoop path to model saved from Spark.
      * @param parsedSparkMdl One of supported Spark models to parse it.
      * @return Instance of parsedSparkMdl model.
      */
-    public static Model parse(String pathToMdl, SupportedSparkModels parsedSparkMdl) {
+    private static Model parseData(String pathToMdl, SupportedSparkModels parsedSparkMdl) {
         File mdlRsrc = IgniteUtils.resolveIgnitePath(pathToMdl);
         if (mdlRsrc == null)
             throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMdl + "]");
@@ -93,6 +174,39 @@ public class SparkModelParser {
                 return loadDecisionTreeRegressionModel(ignitePathToMdl);
             case RANDOM_FOREST_REGRESSION:
                 return loadRandomForestRegressionModel(ignitePathToMdl);
+            default:
+                throw new UnsupportedSparkModelException(ignitePathToMdl);
+        }
+    }
+
+
+    /**
+     * Load model and its metadata from parquet files.
+     *
+     * @param pathToMdl Hadoop path to model saved from Spark.
+     * @param pathToMetaData Hadoop path to metadata saved from Spark.
+     * @param parsedSparkMdl One of supported Spark models to parse it.
+     * @return Instance of parsedSparkMdl model.
+     */
+    private static Model parseDataWithMetadata(String pathToMdl, String pathToMetaData,
+                                          SupportedSparkModels parsedSparkMdl) {
+        File mdlRsrc1 = IgniteUtils.resolveIgnitePath(pathToMdl);
+        if (mdlRsrc1 == null)
+            throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMdl + "]");
+
+        String ignitePathToMdl = mdlRsrc1.getPath();
+
+        File mdlRsrc2 = IgniteUtils.resolveIgnitePath(pathToMetaData);
+        if (mdlRsrc2 == null)
+            throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMetaData + "]");
+
+        String ignitePathToMdlMetaData = mdlRsrc2.getPath();
+
+        switch (parsedSparkMdl) {
+            case GRADIENT_BOOSTED_TREES:
+                return loadGBTClassifierModel(ignitePathToMdl, ignitePathToMdlMetaData);
+            case GRADIENT_BOOSTED_TREES_REGRESSION:
+                return loadGBTRegressionModel(ignitePathToMdl, ignitePathToMdlMetaData);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
@@ -161,38 +275,6 @@ public class SparkModelParser {
         }
 
         return new KMeansModel(centers, new EuclideanDistance());
-    }
-
-    /**
-     * Load model and its metadata from parquet files.
-     *
-     * @param pathToMdl Hadoop path to model saved from Spark.
-     * @param pathToMetaData Hadoop path to metadata saved from Spark.
-     * @param parsedSparkMdl One of supported Spark models to parse it.
-     * @return Instance of parsedSparkMdl model.
-     */
-    public static Model parseWithMetadata(String pathToMdl, String pathToMetaData,
-        SupportedSparkModels parsedSparkMdl) {
-        File mdlRsrc1 = IgniteUtils.resolveIgnitePath(pathToMdl);
-        if (mdlRsrc1 == null)
-            throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMdl + "]");
-
-        String ignitePathToMdl = mdlRsrc1.getPath();
-
-        File mdlRsrc2 = IgniteUtils.resolveIgnitePath(pathToMetaData);
-        if (mdlRsrc2 == null)
-            throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMetaData + "]");
-
-        String ignitePathToMdlMetaData = mdlRsrc2.getPath();
-
-        switch (parsedSparkMdl) {
-            case GRADIENT_BOOSTED_TREES:
-                return loadGBTClassifierModel(ignitePathToMdl, ignitePathToMdlMetaData);
-            case GRADIENT_BOOSTED_TREES_REGRESSION:
-                return loadGBTRegressionModel(ignitePathToMdl, ignitePathToMdlMetaData);
-            default:
-                throw new UnsupportedSparkModelException(ignitePathToMdl);
-        }
     }
 
     /**
