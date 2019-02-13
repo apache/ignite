@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
@@ -40,34 +39,25 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractCompu
      */
     @Test
     public void test() {
-        execute(grid("srv_initiator"));
-        execute(grid("clnt_initiator"));
+        runAndCheck(grid(SRV_INITIATOR));
+        runAndCheck(grid(CLNT_INITIATOR));
     }
 
     /**
-     * @param initiator Node that initiates an execution.
+     * Performs test case.
      */
-    private void execute(IgniteEx initiator) {
-        perform(initiator, (s) -> {
-            try {
-                s.submit(new TestIgniteRunnable(endpoints())).get();
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    /**
-     * Performs test.
-     */
-    private void perform(IgniteEx initiator, Consumer<ExecutorService> c) {
-        perform(initiator,
+    private void runAndCheck(IgniteEx initiator) {
+        runAndCheck(initiator,
             () -> {
                 for (UUID nodeId : transitions()) {
-                    c.accept(
-                        initiator.executorService(initiator.cluster().forNodeId(nodeId))
-                    );
+                    ExecutorService svc = initiator.executorService(initiator.cluster().forNodeId(nodeId));
+
+                    try {
+                        svc.submit(new TestIgniteRunnable(endpoints())).get();
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             });
     }

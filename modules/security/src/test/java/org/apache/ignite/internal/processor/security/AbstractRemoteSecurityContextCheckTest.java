@@ -38,6 +38,18 @@ public class AbstractRemoteSecurityContextCheckTest extends AbstractSecurityTest
     /** Verifier to check results of tests. */
     protected static final Verifier VERIFIER = new Verifier();
 
+    /** Name of server initiator node. */
+    protected static final String SRV_INITIATOR = "srv_initiator";
+
+    /** Name of client initiator node. */
+    protected static final String CLNT_INITIATOR = "clnt_initiator";
+
+    /** Name of server transition node. */
+    protected static final String SRV_TRANSITION = "srv_transition";
+
+    /** Name of server endpoint node. */
+    protected static final String SRV_ENDPOINT = "srv_endpoint";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -53,13 +65,13 @@ public class AbstractRemoteSecurityContextCheckTest extends AbstractSecurityTest
      * Starts nodes.
      */
     protected void startNodes() throws Exception {
-        startGrid("srv_initiator", allowAllPermissionSet());
+        startGrid(SRV_INITIATOR, allowAllPermissionSet());
 
-        startGrid("clnt_initiator", allowAllPermissionSet(), true);
+        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
 
-        startGrid("srv_transition", allowAllPermissionSet());
+        startGrid(SRV_TRANSITION, allowAllPermissionSet());
 
-        startGrid("srv_endpoint", allowAllPermissionSet());
+        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
     }
 
     /**

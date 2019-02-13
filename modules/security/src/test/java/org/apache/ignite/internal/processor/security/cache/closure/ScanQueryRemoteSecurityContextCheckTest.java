@@ -39,24 +39,24 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
      */
     @Test
     public void test() throws Exception {
-        IgniteEx srvInitiator = grid("srv_initiator");
+        IgniteEx srvInitiator = grid(SRV_INITIATOR);
 
-        IgniteEx clntInitiator = grid("clnt_initiator");
+        IgniteEx clntInitiator = grid(CLNT_INITIATOR);
 
-        IgniteEx srvTransition = grid("srv_transition");
+        IgniteEx srvTransition = grid(SRV_TRANSITION);
 
-        IgniteEx srvEndpoint = grid("srv_endpoint");
+        IgniteEx srvEndpoint = grid(SRV_ENDPOINT);
 
         srvInitiator.cache(CACHE_NAME).put(prmKey(srvTransition), 1);
         srvInitiator.cache(CACHE_NAME).put(prmKey(srvEndpoint), 2);
 
         awaitPartitionMapExchange();
 
-        perform(srvInitiator, () -> query(srvInitiator));
-        perform(clntInitiator, () -> query(clntInitiator));
+        runAndCheck(srvInitiator, () -> query(srvInitiator));
+        runAndCheck(clntInitiator, () -> query(clntInitiator));
 
-        perform(srvInitiator, () -> transform(srvInitiator));
-        perform(clntInitiator, () -> transform(clntInitiator));
+        runAndCheck(srvInitiator, () -> transform(srvInitiator));
+        runAndCheck(clntInitiator, () -> transform(clntInitiator));
     }
 
     /**
@@ -65,7 +65,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     private void query(IgniteEx initiator) {
         initiator.cache(CACHE_NAME).query(
             new ScanQuery<>(
-                new QueryFilter("srv_transition", "srv_endpoint")
+                new QueryFilter(SRV_TRANSITION, SRV_ENDPOINT)
             )
         ).getAll();
     }
@@ -76,7 +76,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     private void transform(IgniteEx initiator) {
         initiator.cache(CACHE_NAME).query(
             new ScanQuery<>((k, v) -> true),
-            new Transformer("srv_transition", "srv_endpoint")
+            new Transformer(SRV_TRANSITION, SRV_ENDPOINT)
         ).getAll();
     }
 

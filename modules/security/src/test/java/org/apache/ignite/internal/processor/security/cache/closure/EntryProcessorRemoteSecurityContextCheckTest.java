@@ -40,23 +40,23 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
      */
     @Test
     public void test() {
-        execute(grid("srv_initiator"));
-        execute(grid("clnt_initiator"));
+        runAndCheck(grid(SRV_INITIATOR));
+        runAndCheck(grid(CLNT_INITIATOR));
     }
 
     /**
      * @param initiator Node that initiates an execution.
      */
-    private void execute(IgniteEx initiator) {
+    private void runAndCheck(IgniteEx initiator) {
         UUID secSubjectId = secSubjectId(initiator);
 
         for (InvokeMethodEnum ime : InvokeMethodEnum.values()) {
             VERIFIER.start(secSubjectId)
-                .add("srv_transition", 1)
-                .add("srv_endpoint", 1);
+                .add(SRV_TRANSITION, 1)
+                .add(SRV_ENDPOINT, 1);
 
             invoke(ime, initiator,
-                new TestEntryProcessor(ime, "srv_endpoint"), prmKey(grid("srv_transition")));
+                new TestEntryProcessor(ime, SRV_ENDPOINT), prmKey(grid(SRV_TRANSITION)));
 
             VERIFIER.checkResult();
         }

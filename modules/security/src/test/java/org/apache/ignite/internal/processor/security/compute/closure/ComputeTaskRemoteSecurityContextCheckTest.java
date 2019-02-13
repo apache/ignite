@@ -44,20 +44,20 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractComputeRe
      */
     @Test
     public void test() {
-        execute(grid("srv_initiator"));
-        execute(grid("clnt_initiator"));
+        runAndCheck(grid(SRV_INITIATOR));
+        runAndCheck(grid(CLNT_INITIATOR));
     }
 
     /**
      * @param initiator Node that initiates an execution.
      */
-    private void execute(IgniteEx initiator) {
-        perform(initiator,
+    private void runAndCheck(IgniteEx initiator) {
+        runAndCheck(initiator,
             () -> initiator.compute().execute(
                 new TestComputeTask(transitions(), endpoints(), false), 0
             )
         );
-        perform(initiator,
+        runAndCheck(initiator,
             () -> initiator.compute().executeAsync(
                 new TestComputeTask(transitions(), endpoints(), true), 0
             ).get()

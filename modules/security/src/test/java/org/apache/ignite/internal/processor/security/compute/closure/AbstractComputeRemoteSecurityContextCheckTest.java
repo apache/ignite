@@ -27,13 +27,19 @@ import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityConte
  * Abstract compute security test.
  */
 public abstract class AbstractComputeRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
+    /** Name of client transition node. */
+    public static final String CLNT_TRANSITION = "clnt_transition";
+
+    /** Name of client endpoint node. */
+    public static final String CLNT_ENDPOINT = "clnt_endpoint";
+
     /** {@inheritDoc} */
     @Override protected void startNodes() throws Exception{
         super.startNodes();
 
-        startGrid("clnt_transition", allowAllPermissionSet(), true);
+        startGrid(CLNT_TRANSITION, allowAllPermissionSet(), true);
 
-        startGrid("clnt_endpoint", allowAllPermissionSet());
+        startGrid(CLNT_ENDPOINT, allowAllPermissionSet());
     }
 
     /**
@@ -42,12 +48,13 @@ public abstract class AbstractComputeRemoteSecurityContextCheckTest extends Abst
      * @param node Node.
      * @param r Runnable.
      */
-    protected void perform(IgniteEx node, Runnable r) {
+    protected final void runAndCheck(IgniteEx node, Runnable r) {
         VERIFIER.start(secSubjectId(node))
-            .add("srv_transition", 1)
-            .add("clnt_transition", 1)
-            .add("srv_endpoint", 2)
-            .add("clnt_endpoint", 2);
+            .add(SRV_TRANSITION, 1)
+            .add(CLNT_TRANSITION, 1)
+            .add(SRV_ENDPOINT, 2)
+            .add(CLNT_ENDPOINT, 2);
+
         r.run();
 
         VERIFIER.checkResult();
@@ -58,8 +65,8 @@ public abstract class AbstractComputeRemoteSecurityContextCheckTest extends Abst
      */
     protected Collection<UUID> transitions() {
         return Arrays.asList(
-            grid("srv_transition").localNode().id(),
-            grid("clnt_transition").localNode().id()
+            grid(SRV_TRANSITION).localNode().id(),
+            grid(CLNT_TRANSITION).localNode().id()
         );
     }
 
@@ -68,8 +75,8 @@ public abstract class AbstractComputeRemoteSecurityContextCheckTest extends Abst
      */
     protected Collection<UUID> endpoints() {
         return Arrays.asList(
-            grid("srv_endpoint").localNode().id(),
-            grid("clnt_endpoint").localNode().id()
+            grid(SRV_ENDPOINT).localNode().id(),
+            grid(CLNT_ENDPOINT).localNode().id()
         );
     }
 }

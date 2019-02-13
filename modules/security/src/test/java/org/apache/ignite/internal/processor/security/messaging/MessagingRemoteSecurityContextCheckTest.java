@@ -37,6 +37,12 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
+    /** Name of client transition node. */
+    public static final String CLNT_TRANSITION = "clnt_transition";
+
+    /** Name of client endpoint node. */
+    public static final String CLNT_ENDPOINT = "clnt_endpoint";
+
     /** Barrier. */
     private static final CyclicBarrier BARRIER = new CyclicBarrier(3);
 
@@ -44,9 +50,9 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
     @Override protected void startNodes() throws Exception {
         super.startNodes();
 
-        startGrid("clnt_transition", allowAllPermissionSet(), true);
+        startGrid(CLNT_TRANSITION, allowAllPermissionSet(), true);
 
-        startGrid("clnt_endpoint", allowAllPermissionSet());
+        startGrid(CLNT_ENDPOINT, allowAllPermissionSet());
     }
 
     /**
@@ -54,11 +60,11 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
      */
     @Test
     public void test() {
-        messaging(grid("srv_initiator"), grid("srv_transition"));
-        messaging(grid("srv_initiator"), grid("clnt_transition"));
+        messaging(grid(SRV_INITIATOR), grid(SRV_TRANSITION));
+        messaging(grid(SRV_INITIATOR), grid(CLNT_TRANSITION));
 
-        messaging(grid("clnt_initiator"), grid("srv_transition"));
-        messaging(grid("clnt_initiator"), grid("clnt_transition"));
+        messaging(grid(CLNT_INITIATOR), grid(SRV_TRANSITION));
+        messaging(grid(CLNT_INITIATOR), grid(CLNT_TRANSITION));
     }
 
     /**
@@ -69,13 +75,13 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
      */
     private void messaging(IgniteEx lsnrNode, IgniteEx evtNode) {
         VERIFIER.start(secSubjectId(lsnrNode))
-            .add("srv_endpoint", 1)
-            .add("clnt_endpoint", 1);
+            .add(SRV_ENDPOINT, 1)
+            .add(CLNT_ENDPOINT, 1);
 
         BARRIER.reset();
 
         IgniteMessaging messaging = lsnrNode.message(
-            lsnrNode.cluster().forNode(grid("srv_endpoint").localNode(), grid("clnt_endpoint").localNode())
+            lsnrNode.cluster().forNode(grid(SRV_ENDPOINT).localNode(), grid(CLNT_ENDPOINT).localNode())
         );
 
         String topic = "HOT_TOPIC";

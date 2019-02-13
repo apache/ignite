@@ -62,12 +62,12 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
      */
     @Test
     public void test() {
-        IgniteEx srvInitiator = grid("srv_initiator");
+        IgniteEx srvInitiator = grid(SRV_INITIATOR);
 
-        IgniteEx clntInitiator = grid("clnt_initiator");
+        IgniteEx clntInitiator = grid(CLNT_INITIATOR);
 
-        perform(srvInitiator, ()->loadCache(srvInitiator));
-        perform(clntInitiator, ()->loadCache(clntInitiator));
+        runAndCheck(srvInitiator, ()->loadCache(srvInitiator));
+        runAndCheck(clntInitiator, ()->loadCache(clntInitiator));
     }
 
     /**
@@ -75,7 +75,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
      */
     private void loadCache(IgniteEx initiator) {
         initiator.<Integer, Integer>cache(CACHE_NAME).loadCache(
-            new TestClosure("srv_transition", "srv_endpoint")
+            new TestClosure(SRV_TRANSITION, SRV_ENDPOINT)
         );
     }
 

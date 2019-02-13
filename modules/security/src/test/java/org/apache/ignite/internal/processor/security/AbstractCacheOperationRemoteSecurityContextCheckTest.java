@@ -55,10 +55,10 @@ public abstract class AbstractCacheOperationRemoteSecurityContextCheckTest exten
      * @param node Node.
      * @param r Runnable.
      */
-    protected void perform(IgniteEx node, Runnable r){
+    protected final void runAndCheck(IgniteEx node, Runnable r){
         VERIFIER.start(secSubjectId(node))
-            .add("srv_transition", 1)
-            .add("srv_endpoint", 1);
+            .add(SRV_TRANSITION, 1)
+            .add(SRV_ENDPOINT, 1);
 
         r.run();
 

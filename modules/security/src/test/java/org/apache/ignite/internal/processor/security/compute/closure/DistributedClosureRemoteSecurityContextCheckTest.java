@@ -39,15 +39,15 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractCo
      */
     @Test
     public void test() {
-        execute(grid("srv_initiator"));
-        execute(grid("clnt_initiator"));
+        runAndCheck(grid(SRV_INITIATOR));
+        runAndCheck(grid(CLNT_INITIATOR));
     }
 
     /**
      * @param initiator Node that initiates an execution.
      */
-    private void execute(IgniteEx initiator) {
-        perform(initiator,
+    private void runAndCheck(IgniteEx initiator) {
+        runAndCheck(initiator,
             () -> compute(initiator, transitions())
                 .broadcast((IgniteRunnable)new CommonClosure(endpoints(), true) {
                     @Override protected void transit(IgniteCompute cmp) {
@@ -55,7 +55,7 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractCo
                     }
                 }));
 
-        perform(initiator,
+        runAndCheck(initiator,
             () -> compute(initiator, transitions())
                 .broadcastAsync((IgniteRunnable)new CommonClosure(endpoints(), true) {
                     @Override protected void transit(IgniteCompute cmp) {
@@ -63,47 +63,60 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractCo
                     }
                 }).get());
 
-        perform(initiator,
+        runAndCheck(initiator,
             (cmp) -> cmp.call(new CommonClosure(endpoints()) {
                 @Override protected void transit(IgniteCompute cmp) {
                     cmp.call(endpointClosure());
                 }
             }));
 
-        perform(initiator,
+        runAndCheck(initiator,
             (cmp) -> cmp.callAsync(new CommonClosure(endpoints()) {
                 @Override protected void transit(IgniteCompute cmp) {
                     cmp.callAsync(endpointClosure()).get();
                 }
             }).get());
 
-        perform(initiator,
+        runAndCheck(initiator,
             (cmp) -> cmp.run(new CommonClosure(endpoints()) {
                 @Override protected void transit(IgniteCompute cmp) {
                     cmp.run(endpointClosure());
                 }
             }));
 
-        perform(initiator,
+        runAndCheck(initiator,
             (cmp) -> cmp.runAsync(new CommonClosure(endpoints()) {
                 @Override protected void transit(IgniteCompute cmp) {
                     cmp.runAsync(endpointClosure()).get();
                 }
             }).get());
 
-        perform(initiator,
+        runAndCheck(initiator,
             (cmp) -> cmp.apply(new CommonClosure(endpoints()) {
                 @Override protected void transit(IgniteCompute cmp) {
                     cmp.apply(endpointClosure(), new Object());
                 }
             }, new Object()));
 
-        perform(initiator,
+        runAndCheck(initiator,
             (cmp) -> cmp.applyAsync(new CommonClosure(endpoints()) {
                 @Override protected void transit(IgniteCompute cmp) {
                     cmp.applyAsync(endpointClosure(), new Object()).get();
                 }
             }, new Object()).get());
+    }
+
+    /**
+     * Performs test case.
+     */
+    private void runAndCheck(IgniteEx initiator, Consumer<IgniteCompute> c) {
+        runAndCheck(
+            initiator,
+            () -> {
+                for (UUID nodeId : transitions())
+                    c.accept(compute(initiator, nodeId));
+            }
+        );
     }
 
     /**
@@ -119,19 +132,6 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractCo
      */
     private static IgniteCompute compute(Ignite ignite, UUID id) {
         return ignite.compute(ignite.cluster().forNodeId(id));
-    }
-
-    /**
-     * Performs test.
-     */
-    private void perform(IgniteEx initiator, Consumer<IgniteCompute> c) {
-        perform(
-            initiator,
-            () -> {
-                for (UUID nodeId : transitions())
-                    c.accept(compute(initiator, nodeId));
-            }
-        );
     }
 
     /**

@@ -42,12 +42,12 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
      */
     @Test
     public void testDataStreamer() {
-        IgniteEx srvInitiator = grid("srv_initiator");
+        IgniteEx srvInitiator = grid(SRV_INITIATOR);
 
-        IgniteEx clntInitiator = grid("clnt_initiator");
+        IgniteEx clntInitiator = grid(CLNT_INITIATOR);
 
-        perform(srvInitiator, () -> dataStreamer(srvInitiator));
-        perform(clntInitiator, () -> dataStreamer(clntInitiator));
+        runAndCheck(srvInitiator, () -> dataStreamer(srvInitiator));
+        runAndCheck(clntInitiator, () -> dataStreamer(clntInitiator));
     }
 
     /**
@@ -55,9 +55,9 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
      */
     private void dataStreamer(Ignite initiator) {
         try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_NAME)) {
-            strm.receiver(StreamVisitor.from(new TestClosure(grid("srv_endpoint").localNode().id())));
+            strm.receiver(StreamVisitor.from(new TestClosure(grid(SRV_ENDPOINT).localNode().id())));
 
-            strm.addData(prmKey(grid("srv_transition")), 100);
+            strm.addData(prmKey(grid(SRV_TRANSITION)), 100);
         }
     }
 
