@@ -131,7 +131,6 @@ public class SparkModelParser {
             return parseDataWithMetadata(pathToMdlFile, pathToTreesMetadataFile, parsedSparkMdl);
         } else
             return parseData(pathToMdlFile, parsedSparkMdl);
-
     }
 
     /**
@@ -179,7 +178,6 @@ public class SparkModelParser {
         }
     }
 
-
     /**
      * Load model and its metadata from parquet files.
      *
@@ -189,7 +187,7 @@ public class SparkModelParser {
      * @return Instance of parsedSparkMdl model.
      */
     private static Model parseDataWithMetadata(String pathToMdl, String pathToMetaData,
-                                          SupportedSparkModels parsedSparkMdl) {
+        SupportedSparkModels parsedSparkMdl) {
         File mdlRsrc1 = IgniteUtils.resolveIgnitePath(pathToMdl);
         if (mdlRsrc1 == null)
             throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMdl + "]");
