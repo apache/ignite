@@ -45,7 +45,6 @@ public abstract class AbstractCacheOperationRemoteSecurityContextCheckTest exten
             new CacheConfiguration<>()
                 .setName(CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setReadFromBackup(false)
         };
     }
 

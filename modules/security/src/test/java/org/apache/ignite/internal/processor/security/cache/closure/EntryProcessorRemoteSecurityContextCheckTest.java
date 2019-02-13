@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
@@ -56,7 +55,7 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
                 .add(SRV_ENDPOINT, 1);
 
             invoke(ime, initiator,
-                new TestEntryProcessor(ime, SRV_ENDPOINT), prmKey(grid(SRV_TRANSITION)));
+                new TestEntryProcessor(grid(SRV_ENDPOINT).localNode().id()), prmKey(grid(SRV_TRANSITION)));
 
             VERIFIER.checkResult();
         }
@@ -68,7 +67,7 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
      * @param ep Entry Processor.
      * @param key Key.
      */
-    private static void invoke(InvokeMethodEnum ime, IgniteEx initiator,
+    private void invoke(InvokeMethodEnum ime, IgniteEx initiator,
         EntryProcessor<Integer, Integer, Object> ep, Integer key) {
         switch (ime) {
             case INVOKE:
@@ -78,8 +77,7 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
                 break;
             case INVOKE_ALL:
                 initiator.<Integer, Integer>cache(CACHE_NAME)
-                    .invokeAll(Collections.singleton(key), ep)
-                    .values().stream().findFirst().ifPresent(EntryProcessorResult::get);
+                    .invokeAll(Collections.singleton(key), ep);
 
                 break;
             case INVOKE_ASYNC:
@@ -89,8 +87,7 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
                 break;
             case INVOKE_ALL_ASYNC:
                 initiator.<Integer, Integer>cache(CACHE_NAME)
-                    .invokeAllAsync(Collections.singleton(key), ep)
-                    .get().values().stream().findFirst().ifPresent(EntryProcessorResult::get);
+                    .invokeAllAsync(Collections.singleton(key), ep).get();
 
                 break;
             default:
@@ -114,19 +111,14 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
      * Entry processor for tests with transition invoke call.
      */
     static class TestEntryProcessor implements EntryProcessor<Integer, Integer, Object> {
-        /** Invoke method. */
-        private final InvokeMethodEnum ime;
-
-        /** Endpoint node name. */
-        private final String endpoint;
+        /** Endpoint node id. */
+        private final UUID endpointId;
 
         /**
-         * @param ime Invoke method.
-         * @param endpoint Endpoint node name.
+         * @param endpointId Endpoint node id.
          */
-        public TestEntryProcessor(InvokeMethodEnum ime, String endpoint) {
-            this.ime = ime;
-            this.endpoint = endpoint;
+        public TestEntryProcessor(UUID endpointId) {
+            this.endpointId = endpointId;
         }
 
         /** {@inheritDoc} */
@@ -136,10 +128,11 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
             VERIFIER.verify(loc);
 
-            if (endpoint != null) {
-                invoke(
-                    ime, loc, new TestEntryProcessor(ime, null), prmKey(endpoint)
-                );
+            if (endpointId != null) {
+                loc.compute(loc.cluster().forNodeId(endpointId))
+                    .broadcast(
+                        ()-> VERIFIER.verify(Ignition.localIgnite())
+                    );
             }
 
             return null;

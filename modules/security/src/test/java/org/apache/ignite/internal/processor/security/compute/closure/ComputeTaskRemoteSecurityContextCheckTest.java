@@ -57,6 +57,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractComputeRe
                 new TestComputeTask(transitions(), endpoints(), false), 0
             )
         );
+
         runAndCheck(initiator,
             () -> initiator.compute().executeAsync(
                 new TestComputeTask(transitions(), endpoints(), true), 0

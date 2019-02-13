@@ -47,12 +47,10 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
             new CacheConfiguration<Integer, Integer>()
                 .setName(CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setReadFromBackup(false)
                 .setCacheStoreFactory(new TestStoreFactory()),
             new CacheConfiguration<Integer, Integer>()
                 .setName(TRANSITION_LOAD_CACHE)
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setReadFromBackup(false)
                 .setCacheStoreFactory(new TestStoreFactory())
         };
     }
@@ -63,7 +61,6 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     @Test
     public void test() {
         IgniteEx srvInitiator = grid(SRV_INITIATOR);
-
         IgniteEx clntInitiator = grid(CLNT_INITIATOR);
 
         runAndCheck(srvInitiator, ()->loadCache(srvInitiator));

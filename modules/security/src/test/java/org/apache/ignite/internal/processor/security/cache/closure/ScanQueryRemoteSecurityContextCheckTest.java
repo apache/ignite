@@ -40,11 +40,8 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     @Test
     public void test() throws Exception {
         IgniteEx srvInitiator = grid(SRV_INITIATOR);
-
         IgniteEx clntInitiator = grid(CLNT_INITIATOR);
-
         IgniteEx srvTransition = grid(SRV_TRANSITION);
-
         IgniteEx srvEndpoint = grid(SRV_ENDPOINT);
 
         srvInitiator.cache(CACHE_NAME).put(prmKey(srvTransition), 1);

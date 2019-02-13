@@ -43,7 +43,6 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     @Test
     public void testDataStreamer() {
         IgniteEx srvInitiator = grid(SRV_INITIATOR);
-
         IgniteEx clntInitiator = grid(CLNT_INITIATOR);
 
         runAndCheck(srvInitiator, () -> dataStreamer(srvInitiator));
