@@ -247,8 +247,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 var cluster = ignite.GetCluster();
                 Assert.AreEqual(3, cluster.TopologyVersion);
 
-                cluster.baselineConfiguration().updateBaselineAutoAdjustTimeoutAsync(AUTO_ADJUST_TIMEOUT).get();
-
                 // Can not set baseline while inactive.
                 var ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));
                 Assert.AreEqual("Changing BaselineTopology on inactive cluster is not allowed.", ex.Message);
