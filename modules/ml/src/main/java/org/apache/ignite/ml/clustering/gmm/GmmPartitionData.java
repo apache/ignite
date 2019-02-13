@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -43,6 +44,11 @@ class GmmPartitionData implements AutoCloseable {
     private double[][] pcxi;
 
     /**
+     * Sum of ln(P(x)) for each x in partition data.
+     */
+    private double xsLikelihood;
+
+    /**
      * Creates an instance of GmmPartitionData.
      *
      * @param xs Dataset.
@@ -53,6 +59,7 @@ class GmmPartitionData implements AutoCloseable {
 
         this.xs = xs;
         this.pcxi = pcxi;
+        this.xsLikelihood = Double.NEGATIVE_INFINITY;
     }
 
     /**
@@ -68,6 +75,13 @@ class GmmPartitionData implements AutoCloseable {
      */
     public List<LabeledVector<Double>> getAllXs() {
         return Collections.unmodifiableList(xs);
+    }
+
+    /**
+     * @return likelihood of stored data.
+     */
+    public double dataLikelihood() {
+        return xsLikelihood;
     }
 
     /**
@@ -174,16 +188,43 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
+     * Updates P(c|xi) values in partitions and compute dataset likelihood.
+     *
+     * @param dataset Dataset.
+     * @param clusterProbs Component probabilities.
+     * @param components Components.
+     * @return dataset likelihood.
+     */
+    static double updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
+        List<MultivariateGaussianDistribution> components) {
+
+        return dataset.compute(
+            data -> updatePcxi(data, clusterProbs, components),
+            (fst, sec) -> {
+                if(fst == null)
+                    return sec;
+                else if(sec == null)
+                    return fst;
+                else
+                    return fst + sec;
+            }
+        );
+    }
+
+    /**
      * Updates P(c|xi) values in partitions given components probabilities and components of GMM.
      *
      * @param clusterProbs Component probabilities.
      * @param components Components.
      */
-    static void updatePcxi(GmmPartitionData data, Vector clusterProbs,
+    static double updatePcxi(GmmPartitionData data, Vector clusterProbs,
         List<MultivariateGaussianDistribution> components) {
 
+        GmmModel model = new GmmModel(clusterProbs, components);
+        data.xsLikelihood = 0.0;
         for (int i = 0; i < data.size(); i++) {
             Vector x = data.getX(i);
+            data.xsLikelihood += Math.log(model.prob(x));
             double normalizer = 0.0;
             for (int c = 0; c < clusterProbs.size(); c++)
                 normalizer += components.get(c).prob(x) * clusterProbs.get(c);
@@ -191,5 +232,7 @@ class GmmPartitionData implements AutoCloseable {
             for (int c = 0; c < clusterProbs.size(); c++)
                 data.pcxi[i][c] = (components.get(c).prob(x) * clusterProbs.get(c)) / normalizer;
         }
+
+        return data.xsLikelihood;
     }
 }

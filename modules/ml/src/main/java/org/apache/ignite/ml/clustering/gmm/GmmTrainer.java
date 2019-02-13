@@ -173,6 +173,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     @NotNull private GmmModel updateModel(Dataset<EmptyContext, GmmPartitionData> dataset, GmmModel model) {
         boolean isConverged = false;
         int countOfIterations = 0;
+        double likelihood = Double.NEGATIVE_INFINITY;
         while (!isConverged) {
             MeanWithClusterProbAggregator.AggregatedStats stats = MeanWithClusterProbAggregator.aggreateStats(dataset);
             Vector clusterProbs = stats.clusterProbabilities();
@@ -191,7 +192,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
                 model = newModel;
 
                 if (!isConverged)
-                    dataset.compute(data -> GmmPartitionData.updatePcxi(data, clusterProbs, components));
+                    likelihood = GmmPartitionData.updatePcxiAndComputeLikelihood(dataset, clusterProbs, components);
             }
             catch (SingularMatrixException | IllegalArgumentException e) {
                 String msg = "Cannot construct non-singular covariance matrix by data. " +
