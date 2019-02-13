@@ -55,13 +55,6 @@ public class IgniteMvccTxTimeoutAbstractTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(GRID_COUNT, true);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
