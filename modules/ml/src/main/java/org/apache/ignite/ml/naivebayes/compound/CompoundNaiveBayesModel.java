@@ -62,7 +62,6 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     }
 
     @Override public Double predict(Vector vector) {
-        double maxProbapilityPower = -Double.MAX_VALUE;
         double[] probapilityPowers = new double[classsProbabilities.length];
         Arrays.fill(probapilityPowers, Double.MAX_VALUE);
         int maxLabelIndex = 0;
