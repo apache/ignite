@@ -19,10 +19,15 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -338,10 +343,12 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
                 fail("Invalid extracted columns: [actual=null, expected=" + Arrays.toString(expected) + ']');
         }
         else {
-            Map<String, Boolean> actualMap  = actualColInfo.createValueUsedMap();
+            Set<UsedTableColumns> actualSet = actualColInfo.createValueUsedMap().entrySet().stream()
+                .map(e -> new UsedTableColumns(e.getKey(), e.getValue())).collect(Collectors.toSet());
 
-            for (UsedTableColumns exp : expected)
-                assertEquals(actualMap.get(exp.alias), (Boolean)exp.isValUsed);
+            Set<UsedTableColumns> expSet = Arrays.stream(expected).collect(Collectors.toSet());
+
+            assertEquals(expSet, actualSet);
         }
     }
 
