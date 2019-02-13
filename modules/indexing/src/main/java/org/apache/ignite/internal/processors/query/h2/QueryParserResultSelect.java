@@ -26,6 +26,7 @@ import java.util.List;
 /**
  * Parsing result for SELECT.
  */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class QueryParserResultSelect {
     /** Two-step query, or {@code} null if this result is for local query. */
     private final GridCacheTwoStepQuery twoStepQry;
@@ -49,7 +50,7 @@ public class QueryParserResultSelect {
     /**
      * @return Two-step query, or {@code} null if this result is for local query.
      */
-    GridCacheTwoStepQuery twoStepQuery() {
+    public GridCacheTwoStepQuery twoStepQuery() {
         return twoStepQry;
     }
 
