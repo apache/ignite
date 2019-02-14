@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-711")
 public class TaskExamplesMultiNodeSelfTest extends TaskExamplesSelfTest {
     /** {@inheritDoc} */
-    @Test
     @Override protected void beforeTest() throws Exception {
         startRemoteNodes();
     }

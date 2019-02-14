@@ -17,8 +17,6 @@
 
 package org.apache.ignite.examples;
 
-import org.junit.jupiter.api.Test;
-
 /**
  * Events examples multi-node self test.
  */
