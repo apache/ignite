@@ -55,6 +55,9 @@ abstract class TcpDiscoveryImpl {
     /** Response WAIT. */
     protected static final int RES_WAIT = 200;
 
+    /** Response join impossible. */
+    protected static final int RES_JOIN_IMPOSSIBLE = 255;
+
     /** */
     protected final TcpDiscoverySpi spi;
 
