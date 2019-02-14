@@ -22,11 +22,13 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Date;
+import org.jetbrains.annotations.Nullable;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
 import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.DATE;
+import static java.sql.Types.DECIMAL;
 import static java.sql.Types.DOUBLE;
 import static java.sql.Types.FLOAT;
 import static java.sql.Types.INTEGER;
@@ -36,8 +38,6 @@ import static java.sql.Types.TIME;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
-import static java.sql.Types.DECIMAL;
-
 import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
 
 /**
@@ -162,5 +162,37 @@ public class JdbcThinUtils {
             long.class.getName().equals(cls) ||
             float.class.getName().equals(cls) ||
             double.class.getName().equals(cls));
+    }
+
+    /**
+     * Converts raw byte value to the nullable Boolean. Useful for the deserialization in the handshake.
+     *
+     * @param raw byte value to convert to Boolean.
+     * @return converted value.
+     */
+    @Nullable public static Boolean nullableBooleanFromByte(byte raw) {
+        switch (raw) {
+            case (byte)2:
+                return null;
+            case (byte)1:
+                return Boolean.TRUE;
+            case (byte)0:
+                return Boolean.FALSE;
+            default:
+                throw new NumberFormatException("Incorrect byte: " + raw + ". Impossible to read nullable Boolean from it.");
+        }
+    }
+
+    /**
+     * Converts nullable Boolean to the raw byte. Useful for the serialization in the handshake.
+     *
+     * @param val value to convert.
+     * @return byte representation.
+     */
+    public static byte nullableBooleanToByte(Boolean val) {
+        if (val == null)
+            return (byte)2;
+
+        return val ? (byte)1 : (byte)0;
     }
 }
