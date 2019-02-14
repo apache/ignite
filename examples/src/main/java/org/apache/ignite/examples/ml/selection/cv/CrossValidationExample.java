@@ -26,9 +26,9 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
-import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetrics;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
@@ -85,7 +85,7 @@ public class CrossValidationExample {
 
             System.out.println(">>> Accuracy: " + Arrays.toString(accuracyScores));
 
-            BinaryClassificationMetrics metrics = new BinaryClassificationMetrics()
+            BinaryClassificationMetrics metrics = (BinaryClassificationMetrics) new BinaryClassificationMetrics()
                 .withNegativeClsLb(0.0)
                 .withPositiveClsLb(1.0)
                 .withMetric(BinaryClassificationMetricValues::balancedAccuracy);
