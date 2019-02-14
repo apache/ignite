@@ -6731,7 +6731,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             checkObsolete();
 
-
             for (int i = 0; i < entries.size(); i++) {
                 GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)entries.get(i);
 
@@ -6803,6 +6802,68 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         res.oldValue(oldVal);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccPreloadEntry(
+        AffinityTopologyVersion topVer,
+        List<GridCacheEntryInfo> entries,
+        GridCacheOperation op)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
+
+        WALPointer logPtr = null;
+
+        ensureFreeSpace();
+
+        boolean updated = false;
+
+        lockEntry();
+
+        try {
+            checkObsolete();
+
+            for (int i = 0; i < entries.size(); i++) {
+                GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)entries.get(i);
+
+                 if (cctx.offheap().mvccInitialValueIfAbsent(this,
+                    info.value(),
+                    info.version(),
+                    info.expireTime(),
+                    info.mvccVersion(),
+                    info.newMvccVersion(),
+                    info.mvccTxState(),
+                    info.newMvccTxState()) ) {
+                     updated = true;
+
+                     if (!cctx.isNear() && cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
+                         logPtr = cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
+                             cctx.cacheId(),
+                             info.key(),
+                             info.value(),
+                             info.value() == null ? DELETE : CREATE,
+                             null,
+                             info.version(),
+                             info.expireTime(),
+                             partition(),
+                             0,
+                             info.mvccVersion()
+                         )));
+                     }
+                 }
+            }
+        }
+        finally {
+            if (lockedByCurrentThread()) {
+                unlockEntry();
+
+                cctx.evicts().touch(this);
+            }
+        }
+
+        if (logPtr != null)
+            cctx.shared().wal().flush(logPtr, false);
+
+        return updated;
     }
 
     /**
