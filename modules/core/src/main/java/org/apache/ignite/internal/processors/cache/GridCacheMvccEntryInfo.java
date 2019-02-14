@@ -36,6 +36,9 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static final int SIZE_OVERHEAD = 4 * 8 /* long */ + 2 /* int */;
+
+    /** */
     private long mvccCrdVer;
 
     /** */
@@ -119,6 +122,11 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
         mvccCrdVer = crd;
         mvccCntr = cntr;
         mvccOpCntr = opCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int marshalledSize(CacheObjectContext ctx) throws IgniteCheckedException {
+        return SIZE_OVERHEAD + super.marshalledSize(ctx);
     }
 
     /** {@inheritDoc} */
