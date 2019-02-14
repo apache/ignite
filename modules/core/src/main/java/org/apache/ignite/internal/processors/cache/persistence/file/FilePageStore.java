@@ -605,8 +605,8 @@ public class FilePageStore implements PageStore {
                     long off = pageOffset(pageId);
 
                     assert (off >= 0 && off <= allocated.get()) || recover :
-                        "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) +
-                            ", pageId=" + U.hexLong(pageId) + ", file=" + cfgFile.getPath();
+                        "off=" + off + ", allocated=" + allocated.get() +
+                            ", pageId=" + pageId + ", file=" + cfgFile.getPath();
 
                     assert pageBuf.position() == 0;
                     assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()

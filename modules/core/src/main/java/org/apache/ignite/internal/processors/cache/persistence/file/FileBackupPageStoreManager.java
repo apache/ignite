@@ -21,10 +21,11 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -33,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.persistence.backup.FileTempor
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.backup.TemporaryStore;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationAdapter;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -175,7 +176,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
         if (!(cctx.database() instanceof GridCacheDatabaseSharedManager) || parts == null || parts.isEmpty())
             return;
 
-        final SortedSet<GroupPartitionId> grpPartIdSet = parts.stream()
+        final NavigableSet<GroupPartitionId> grpPartIdSet = parts.stream()
             .map(p -> new GroupPartitionId(grpId, p))
             .collect(Collectors.toCollection(TreeSet::new));
 
@@ -204,7 +205,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                                 cnt.incrementAndGet();
 
                             // Update offsets.
-                            backupCtx.deltaOffsetMap.put(key, backupStores.get(key).writtenPagesCount());
+                            backupCtx.deltaOffsetMap.put(key, pageSize * backupStores.get(key).writtenPagesCount());
                         }
                     }
                 }
@@ -221,15 +222,20 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
                             allocationMap.prepareForSnapshot();
 
+                            U.log(log, "Total allocated: " + allocationMap.size());
+
                             backupCtx.idx = idx;
 
-                            backupCtx.partAllocatedPages = grpPartIdSet.stream()
-                                .collect(Collectors.toMap(Function.identity(),
-                                    p -> allocationMap.get(p).getCurrAllocatedPageCnt()));
+                            for (GroupPartitionId key : grpPartIdSet) {
+                                PagesAllocationRange allocRange = allocationMap.get(key);
 
-                            // Set offsets with default zero values.
-                            backupCtx.deltaOffsetMap = grpPartIdSet.stream()
-                                .collect(Collectors.toConcurrentMap(Function.identity(), o -> 0));
+                                assert allocRange != null : key;
+
+                                backupCtx.partAllocatedPages.put(key, pageSize * allocRange.getCurrAllocatedPageCnt());
+
+                                // Set offsets with default zero values.
+                                backupCtx.deltaOffsetMap.put(key, 0);
+                            }
 
                             backupCtx.remainPartIds = new CopyOnWriteArraySet<>(grpPartIdSet);
                         }
@@ -267,7 +273,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 final CacheConfiguration grpCfg = cctx.cache()
                     .cacheGroup(grpPartId.getGroupId())
                     .config();
-                final long size = backupCtx.partAllocatedPages.get(grpPartId) * pageSize;
+                final long size = backupCtx.partAllocatedPages.get(grpPartId);
 
                 task.handlePartition(grpPartId,
                     resolvePartitionFileCfg(grpCfg, grpPartId.getPartitionId()),
@@ -281,7 +287,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
                 final Map<GroupPartitionId, Integer> offsets = backupCtx.deltaOffsetMap;
                 final int deltaOffset = offsets.get(grpPartId);
-                final long deltaSize = backupStores.get(grpPartId).writtenPagesCount() * pageSize;
+                final long deltaSize = backupStores.get(grpPartId).writtenPagesCount();
 
                 task.handleDelta(grpPartId,
                     resolvePartitionDeltaFileCfg(grpCfg, grpPartId.getPartitionId()),
@@ -294,7 +300,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 U.log(log, "Partition delta handled [pairId" + grpPartId + ']');
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             U.log(log, "An error occured while handling partition files.", e);
 
             for (GroupPartitionId key : grpPartIdSet) {
@@ -303,6 +309,8 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 if (keyCnt != null && (keyCnt.decrementAndGet() == 0))
                     U.closeQuiet(backupStores.get(key));
             }
+
+            throw e;
         }
         finally {
             dbMgr.removeCheckpointListener(dbLsnr);
@@ -323,7 +331,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
         tmpPageBuff.clear();
 
         try {
-            store.read(pageId, tmpPageBuff, true);
+            store.read(pageId, tmpPageBuff, false);
 
             tmpPageBuff.rewind();
 
@@ -332,6 +340,8 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
             assert tempStore != null;
 
             tempStore.write(pageId, tmpPageBuff);
+
+            tmpPageBuff.flip();
         }
         catch (IgniteCheckedException e) {
             U.log(log, "An error occured while backuping page. Please, check configured backup store " +
@@ -370,11 +380,14 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
         /** Unique identifier of backup process. */
         private int idx;
 
-        /** The length of partition file sizes up to each cache partiton file. */
-        private Map<GroupPartitionId, Integer> partAllocatedPages;
+        /**
+         * The length of partition file sizes up to each cache partiton file.
+         * Partition has value greater than zero only for OWNING state partitons.
+         */
+        private Map<GroupPartitionId, Integer> partAllocatedPages = new HashMap<>();
 
         /** The offset from which reading of delta partition file should be started. */
-        private ConcurrentMap<GroupPartitionId, Integer> deltaOffsetMap;
+        private ConcurrentMap<GroupPartitionId, Integer> deltaOffsetMap = new ConcurrentHashMap<>();
 
         /** Left partitions to be processed. */
         private CopyOnWriteArraySet<GroupPartitionId> remainPartIds;

@@ -218,7 +218,7 @@ public class GridDhtPartitionUploader {
             GroupPartitionId grpPartId,
             File file,
             long offset,
-            long size
+            long count
         ) throws IgniteCheckedException {
             uploader.upload(file);
         }
@@ -228,7 +228,7 @@ public class GridDhtPartitionUploader {
             GroupPartitionId grpPartId,
             File file,
             long offset,
-            long size
+            long count
         ) throws IgniteCheckedException {
             uploader.upload(file);
         }
