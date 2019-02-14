@@ -1728,7 +1728,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         final AtomicLong curPutKey = new AtomicLong();
 
         for (long i = 0; i < SLIDING_WINDOW_SIZE; i++) {
-            Long x = curPutKey.getAndDecrement();
+            Long x = curPutKey.getAndIncrement();
 
             assertNull(tree.put(x));
             assertTrue(rmvQueue.add(x));
@@ -1747,7 +1747,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 putRmvOpBarrier.await();
 
                 for (int i = 0; i < loopCnt && !stop.get(); ++i) {
-                    Long putVal = curPutKey.getAndDecrement();
+                    Long putVal = curPutKey.getAndIncrement();
+
                     assertNull(tree.put(putVal));
 
                     rmvQueue.add(putVal);
@@ -1767,15 +1768,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 while (!stop.get()) {
                     long treeSize = tree.size();
 
-                    // This is all we can guarantee for SLIDING_WINDOW_SIZE > MAX_PER_PAGE.
-                    long minSize = MAX_PER_PAGE + 1;
-                    // This makes sense only in case of descending move of the sliding window (curPutKey is decremented).
-                    long maxSize = SLIDING_WINDOW_SIZE + putRmvThreadCnt;
-
-                    if (treeSize < minSize || treeSize > maxSize) {
-                        fail("Tree size is not in bounds: " + treeSize + " must be in [" + minSize +
-                            " .. " + maxSize + "]");
-                    }
+                    assertTrue("Tree size: " + treeSize, treeSize >= SLIDING_WINDOW_SIZE);
                 }
 
                 return null;
