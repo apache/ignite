@@ -280,6 +280,11 @@ public class PageMemoryImpl implements PageMemoryEx {
     private DataRegionMetricsImpl memMetrics;
 
     /**
+     * Marker that stop was invoked and memory is not supposed for any usage.
+     */
+    private volatile boolean stopped;
+
+    /**
      * @param directMemoryProvider Memory allocator to use.
      * @param sizes segments sizes, last is checkpoint pool size.
      * @param ctx Cache shared context.
@@ -341,6 +346,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
+        stopped = false;
+
         directMemoryProvider.initialize(sizes);
 
         List<DirectMemoryRegion> regions = new ArrayList<>(sizes.length);
@@ -416,11 +423,15 @@ public class PageMemoryImpl implements PageMemoryEx {
                 seg.close();
         }
 
+        stopped = true;
+
         directMemoryProvider.shutdown(deallocate);
     }
 
     /** {@inheritDoc} */
     @Override public void releasePage(int grpId, long pageId, long page) {
+        assert !stopped;
+
         Segment seg = segment(grpId, pageId);
 
         seg.readLock().lock();
@@ -435,43 +446,59 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long readLock(int grpId, long pageId, long page) {
+        assert !stopped;
+
         return readLockPage(page, new FullPageId(pageId, grpId), false);
     }
 
     /** {@inheritDoc} */
     @Override public void readUnlock(int grpId, long pageId, long page) {
+        assert !stopped;
+
         readUnlockPage(page);
     }
 
     /** {@inheritDoc} */
     @Override public long writeLock(int grpId, long pageId, long page) {
+        assert !stopped;
+
         return writeLock(grpId, pageId, page, false);
     }
 
     /** {@inheritDoc} */
     @Override public long writeLock(int grpId, long pageId, long page, boolean restore) {
+        assert !stopped;
+
         return writeLockPage(page, new FullPageId(pageId, grpId), !restore);
     }
 
     /** {@inheritDoc} */
     @Override public long tryWriteLock(int grpId, long pageId, long page) {
+        assert !stopped;
+
         return tryWriteLockPage(page, new FullPageId(pageId, grpId), true);
     }
 
     /** {@inheritDoc} */
     @Override public void writeUnlock(int grpId, long pageId, long page, Boolean walPlc,
         boolean dirtyFlag) {
+        assert !stopped;
+
         writeUnlock(grpId, pageId, page, walPlc, dirtyFlag, false);
     }
 
     /** {@inheritDoc} */
     @Override public void writeUnlock(int grpId, long pageId, long page, Boolean walPlc,
         boolean dirtyFlag, boolean restore) {
+        assert !stopped;
+
         writeUnlockPage(page, new FullPageId(pageId, grpId), walPlc, dirtyFlag, restore);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDirty(int grpId, long pageId, long page) {
+        assert !stopped;
+
         return isDirty(page);
     }
 
@@ -481,6 +508,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             flags == PageIdAllocator.FLAG_IDX && partId == PageIdAllocator.INDEX_PARTITION :
             "flags = " + flags + ", partId = " + partId;
 
+        assert !stopped;
         assert stateChecker.checkpointLockIsHeldByThread();
 
         if (isThrottlingEnabled())
@@ -636,21 +664,29 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long metaPageId(int grpId) throws IgniteCheckedException {
+        assert !stopped;
+
         return storeMgr.metaPageId(grpId);
     }
 
     /** {@inheritDoc} */
     @Override public long partitionMetaPageId(int grpId, int partId) throws IgniteCheckedException {
+        assert !stopped;
+
         return PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, 0);
     }
 
     /** {@inheritDoc} */
     @Override public long acquirePage(int grpId, long pageId) throws IgniteCheckedException {
+        assert !stopped;
+
         return acquirePage(grpId, pageId, false);
     }
 
     /** {@inheritDoc} */
     @Override public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException {
+        assert !stopped;
+
         FullPageId fullId = new FullPageId(pageId, grpId);
 
         int partId = PageIdUtils.partId(pageId);
@@ -1389,6 +1425,8 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Pointer to the page read buffer.
      */
     private long readLockPage(long absPtr, FullPageId fullId, boolean force, boolean touch) {
+        assert !stopped;
+
         int tag = force ? -1 : PageIdUtils.tag(fullId.pageId());
 
         boolean locked = rwLock.readLock(absPtr + PAGE_LOCK_OFFSET, tag);
@@ -1406,6 +1444,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long readLockForce(int grpId, long pageId, long page) {
+        assert !stopped;
+
         return readLockPage(page, new FullPageId(pageId, grpId), true);
     }
 
