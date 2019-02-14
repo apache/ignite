@@ -43,6 +43,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -65,6 +66,12 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
         return new IgniteConfiguration()
             .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder))
             .setPeerClassLoadingEnabled(true);
+    }
+
+    /** Stop all grids after each test. */
+    @After
+    public void stopAllGridsAfterTest() {
+        stopAllGrids();
     }
 
     /**
