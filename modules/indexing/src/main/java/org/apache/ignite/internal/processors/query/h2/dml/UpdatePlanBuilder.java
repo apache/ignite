@@ -100,9 +100,14 @@ public final class UpdatePlanBuilder {
      * @return Update plan.
      */
     @SuppressWarnings("ConstantConditions")
-    public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos,
-        boolean dmlInsideTxAllowed)
+    public static UpdatePlan planForStatement(
+        Prepared prepared,
+        boolean loc,
+        IgniteH2Indexing idx,
+        @Nullable Connection conn,
+        @Nullable SqlFieldsQuery fieldsQry,
+        boolean dmlInsideTxAllowed
+    )
         throws IgniteCheckedException {
         assert !prepared.isQuery();
 
@@ -140,7 +145,7 @@ public final class UpdatePlanBuilder {
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
-            return planForUpdate(stmt, loc, idx, mvccEnabled, conn, fieldsQry, errKeysPos);
+            return planForUpdate(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
         else
             throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -402,13 +407,17 @@ public final class UpdatePlanBuilder {
      * @param mvccEnabled Mvcc flag.
      * @param conn Connection.
      * @param fieldsQuery Original query.
-     * @param errKeysPos index to inject param for re-run keys at. Null if it's not a re-run plan.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
-    private static UpdatePlan planForUpdate(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
-        boolean mvccEnabled, @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery,
-        @Nullable Integer errKeysPos) throws IgniteCheckedException {
+    private static UpdatePlan planForUpdate(
+        GridSqlStatement stmt,
+        boolean loc,
+        IgniteH2Indexing idx,
+        boolean mvccEnabled,
+        @Nullable Connection conn,
+        @Nullable SqlFieldsQuery fieldsQuery
+    ) throws IgniteCheckedException {
         GridSqlElement target;
 
         FastUpdate fastUpdate;
@@ -493,7 +502,7 @@ public final class UpdatePlanBuilder {
                 KeyValueSupplier valSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps,
                     false, true);
 
-                sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
+                sel = DmlAstUtils.selectForUpdate((GridSqlUpdate)stmt);
 
                 String selectSql = sel.getSQL();
 
@@ -519,7 +528,7 @@ public final class UpdatePlanBuilder {
                 );
             }
             else {
-                sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
+                sel = DmlAstUtils.selectForDelete((GridSqlDelete)stmt);
 
                 String selectSql = sel.getSQL();
 
@@ -641,7 +650,7 @@ public final class UpdatePlanBuilder {
      * @return Closure returning key or value.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    @SuppressWarnings({"ConstantConditions", "unchecked", "IfMayBeConditional"})
     private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
         final int colIdx, boolean hasProps, final boolean key, boolean forUpdate) throws IgniteCheckedException {
         final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
@@ -666,7 +675,7 @@ public final class UpdatePlanBuilder {
                 // If we have key or value explicitly present in query, create new builder upon them...
                 return new KeyValueSupplier() {
                     /** {@inheritDoc} */
-                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                    @Override public Object apply(List<?> arg) {
                         Object obj = arg.get(colIdx);
 
                         if (obj == null)
@@ -686,7 +695,7 @@ public final class UpdatePlanBuilder {
                 // ...and if we don't, just create a new builder.
                 return new KeyValueSupplier() {
                     /** {@inheritDoc} */
-                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                    @Override public Object apply(List<?> arg) {
                         BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
 
                         cctx.prepareAffinityField(builder);
@@ -776,7 +785,7 @@ public final class UpdatePlanBuilder {
      * @param statement Statement.
      */
     private static void verifyUpdateColumns(GridSqlStatement statement) {
-        if (statement == null || !(statement instanceof GridSqlUpdate))
+        if (!(statement instanceof GridSqlUpdate))
             return;
 
         GridSqlUpdate update = (GridSqlUpdate) statement;
@@ -926,23 +935,30 @@ public final class UpdatePlanBuilder {
             try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
                 H2Utils.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
 
-                final GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(conn,
+                GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(
+                    conn,
                     GridSqlQueryParser.prepared(stmt),
                     fieldsQry.getArgs(),
                     fieldsQry.isCollocated(),
                     fieldsQry.isDistributedJoins(),
                     fieldsQry.isEnforceJoinOrder(),
-                    idx.partitionExtractor());
+                    false,
+                    idx
+                );
 
-                boolean distributed = qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
+                boolean distributed = !qry.isLocal() && qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
                     !qry.mapQueries().get(0).hasSubQueries();
 
-                if (!distributed)
-                    return null;
+                if (distributed) {
+                    List<Integer> cacheIds = H2Utils.collectCacheIds(idx, CU.cacheId(cacheName), qry.tables());
 
-                return new DmlDistributedPlanInfo(qry.isReplicatedOnly(),
-                    idx.collectCacheIds(CU.cacheId(cacheName), qry),
-                    qry.derivedPartitions());
+                    H2Utils.collectMvccEnabled(idx, cacheIds);
+                    H2Utils.checkQuery(idx, cacheIds, qry.mvccEnabled(), qry.forUpdate(), qry.tables());
+
+                    return new DmlDistributedPlanInfo(qry.isReplicatedOnly(), cacheIds, qry.derivedPartitions());
+                }
+                else
+                    return null;
             }
         }
         catch (SQLException e) {
@@ -978,7 +994,7 @@ public final class UpdatePlanBuilder {
         }
 
         /** {@inheritDoc} */
-        @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+        @Override public Object apply(List<?> arg) {
             return arg.get(colIdx);
         }
     }

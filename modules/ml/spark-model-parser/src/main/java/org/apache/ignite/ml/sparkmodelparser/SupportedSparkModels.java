@@ -47,6 +47,9 @@ public enum SupportedSparkModels {
     /** Random forest regression. */
     RANDOM_FOREST_REGRESSION,
 
+    /** Gradient boosted trees regression. */
+    GRADIENT_BOOSTED_TREES_REGRESSION,
+
     /**
      * Gradient boosted trees.
      * NOTE: support binary classification only with raw labels 0 and 1

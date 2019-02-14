@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include "impl/net/end_point.h"
+#include <ignite/network/end_point.h>
 
 namespace ignite
 {
@@ -58,7 +58,7 @@ namespace ignite
                  *
                  * @return End points.
                  */
-                const std::vector<net::EndPoint>& GetEndPoints() const
+                const std::vector<network::EndPoint>& GetEndPoints() const
                 {
                     return endPoints;
                 }
@@ -92,7 +92,7 @@ namespace ignite
                         std::string addr;
                         reader.ReadString(addr);
 
-                        endPoints.push_back(net::EndPoint(addr, static_cast<uint16_t>(port)));
+                        endPoints.push_back(network::EndPoint(addr, static_cast<uint16_t>(port)));
                     }
 
                     int32_t partsNum = reader.ReadInt32();
@@ -106,7 +106,7 @@ namespace ignite
 
             private:
                 /** Node end points. */
-                std::vector<net::EndPoint> endPoints;
+                std::vector<network::EndPoint> endPoints;
 
                 /** Cache partitions. */
                 std::vector<int32_t> partitions;

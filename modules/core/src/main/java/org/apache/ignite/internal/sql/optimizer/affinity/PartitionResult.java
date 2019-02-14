@@ -75,9 +75,11 @@ public class PartitionResult {
             return explicitParts;
         else if (derivedParts != null) {
             try {
-                Collection<Integer> realParts = derivedParts.tree().apply(args);
+                Collection<Integer> realParts = derivedParts.tree().apply(null, args);
 
-                if (F.isEmpty(realParts))
+                if (realParts == null)
+                    return null;
+                else if (realParts.isEmpty())
                     return IgniteUtils.EMPTY_INTS;
                 else {
                     int[] realParts0 = new int[realParts.size()];
