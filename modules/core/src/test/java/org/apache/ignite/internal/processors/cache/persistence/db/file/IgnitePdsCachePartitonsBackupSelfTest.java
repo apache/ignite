@@ -25,11 +25,14 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -51,10 +54,12 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -63,12 +68,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 
 /** */
 public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int CACHE_PARTS_COUNT = 16;
+
+    /** */
+    private static final int PAGE_SIZE = 1024;
 
     /** */
     private static final FileIOFactory ioFactory = new RandomAccessFileIOFactory();
@@ -79,47 +89,24 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
             new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024)
                 .setPersistenceEnabled(true)
         )
-        .setPageSize(1024)
+        .setPageSize(PAGE_SIZE)
         .setWalMode(WALMode.LOG_ONLY);
+
+    /** */
+    private static final CacheConfiguration<Integer, Integer> defaultCacheCfg =
+        new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setRebalanceMode(CacheRebalanceMode.ASYNC)
+            .setBackups(1)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false)
+                .setPartitions(CACHE_PARTS_COUNT));
 
     /** */
     private FilePageStoreFactory pageStoreFactory = new FileVersionCheckingFactory(ioFactory, ioFactory, memCfg);
 
     /** Directory to store temporary files on testing cache backup process. */
     private File mergeTempDir;
-
-    /**
-     * @param from File to copy from.
-     * @param offset Starting file position.
-     * @param count Bytes to copy to destination.
-     * @param to Output directory.
-     * @throws IgniteCheckedException If fails.
-     */
-    private static File copy(File from, long offset, long count, File to) throws IgniteCheckedException {
-        assert to.isDirectory();
-
-        try {
-            File destFile = new File(to, from.getName());
-
-            if (!destFile.exists() || destFile.delete())
-                destFile.createNewFile();
-
-            try (FileChannel src = new FileInputStream(from).getChannel();
-                 FileChannel dest = new FileOutputStream(destFile).getChannel()) {
-                src.position(offset);
-
-                long written = 0;
-
-                while (written < count)
-                    written += src.transferTo(written, count - written, dest);
-            }
-
-            return destFile;
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
-        }
-    }
 
     /** */
     @Before
@@ -137,23 +124,10 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setConsistentId(igniteInstanceName);
-
-        cfg.setDataStorageConfiguration(memCfg);
-
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setRebalanceMode(CacheRebalanceMode.ASYNC)
-            .setBackups(1)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setAffinity(new RendezvousAffinityFunction(false)
-                .setPartitions(CACHE_PARTS_COUNT));
-
-        cfg.setCacheConfiguration(ccfg);
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName)
+            .setConsistentId(igniteInstanceName)
+            .setDataStorageConfiguration(memCfg)
+            .setCacheConfiguration(defaultCacheCfg);
     }
 
     /**
@@ -161,19 +135,28 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testCopyCachePartitonFiles() throws Exception {
-        final IgniteEx ignite0 = (IgniteEx)startGrid(1);
+        IgniteEx ig0 = startGrid(0);
 
-        ignite0.cluster().active(true);
-
-        final IgniteCache<Integer, Integer> cache = ignite0.cache(DEFAULT_CACHE_NAME);
+        ig0.cluster().active(true);
 
         for (int i = 0; i < 2048; i++)
-            cache.put(i, i);
+            ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        GridCacheSharedContext<?, ?> cctx0 = ignite0.context().cache().context();
+        ig0.context().cache().context().database()
+            .waitForCheckpoint("save cache data to partition files");
 
-        File mergeCacheDir = U.resolveWorkDirectory(mergeTempDir.getAbsolutePath(),
-            cacheDirName(cctx0.cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME)).config()), true);
+        File cacheWorkDir = ((FilePageStoreManager)ig0.context().cache().context().pageStore())
+            .cacheWorkDir(defaultCacheCfg);
+
+        Map<String, Integer> exeptedCacheCRCParts = calculateCRC32Partitions(cacheWorkDir);
+
+        GridCacheSharedContext<?, ?> cctx1 = ig0.context().cache().context();
+
+        File mergeCacheDir = U.resolveWorkDirectory(
+            mergeTempDir.getAbsolutePath(),
+            cacheDirName(defaultCacheCfg),
+            true
+        );
 
         final CountDownLatch slowCopy = new CountDownLatch(1);
 
@@ -182,9 +165,9 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
             @Override public void run() {
                 try {
                     for (int i = 2048; i < 4096; i++)
-                        cache.put(i, i);
+                        ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-                    CheckpointFuture cpFut = cctx0.database().forceCheckpoint("the next one");
+                    CheckpointFuture cpFut = cctx1.database().forceCheckpoint("the next one");
 
                     cpFut.finishFuture().get();
 
@@ -198,22 +181,16 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
             }
         });
 
-        final int pageSize = ignite0.cachex(DEFAULT_CACHE_NAME)
-            .context()
-            .dataRegion()
-            .pageMemory()
-            .pageSize();
-
-        final ByteBuffer pageBuff = ByteBuffer.allocate(pageSize)
+        final ByteBuffer pageBuff = ByteBuffer.allocate(PAGE_SIZE)
             .order(ByteOrder.nativeOrder());
 
-        cctx0.storeBackup()
+        cctx1.storeBackup()
             .backup(
                 1,
                 CU.cacheId(DEFAULT_CACHE_NAME),
                 IntStream.range(0, CACHE_PARTS_COUNT).boxed().collect(Collectors.toSet()),
                 new BackupProcessTask() {
-                    /** Saved partition id file. */
+                    /** Last seen handled partition id file. */
                     private File lastSavedPartId;
 
                     @Override public void handlePartition(
@@ -256,7 +233,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
                             while ((readed += src.read(pageBuff)) > 0 && readed < count) {
                                 pageBuff.rewind();
 
-                                assert pageBuff.remaining() == pageSize : pageBuff.remaining();
+                                assert pageBuff.remaining() == PAGE_SIZE : pageBuff.remaining();
 
                                 long pageId = PageIO.getPageId(pageBuff);
 
@@ -270,5 +247,64 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
                         }
                     }
                 });
+
+        Map<String, Integer> snapshottedCacheParts = calculateCRC32Partitions(mergeCacheDir);
+
+        assertEquals(exeptedCacheCRCParts, snapshottedCacheParts);
+    }
+
+    /**
+     * Calculate CRC for all partition files of specified cache.
+     *
+     * @param cacheDir Cache directory to iterate over partition files.
+     * @return The map of [fileName, checksum].
+     * @throws IOException If fails.
+     */
+    private static Map<String, Integer> calculateCRC32Partitions(File cacheDir) throws IOException {
+        assert cacheDir.isDirectory();
+
+        Map<String, Integer> result = new HashMap<>();
+
+        try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
+            p -> p.toFile().getName().startsWith(PART_FILE_PREFIX))
+        ) {
+            for (Path path : partFiles)
+                result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
+        }
+
+        return result;
+    }
+
+    /**
+     * @param from File to copy from.
+     * @param offset Starting file position.
+     * @param count Bytes to copy to destination.
+     * @param to Output directory.
+     * @throws IgniteCheckedException If fails.
+     */
+    private static File copy(File from, long offset, long count, File to) throws IgniteCheckedException {
+        assert to.isDirectory();
+
+        try {
+            File destFile = new File(to, from.getName());
+
+            if (!destFile.exists() || destFile.delete())
+                destFile.createNewFile();
+
+            try (FileChannel src = new FileInputStream(from).getChannel();
+                 FileChannel dest = new FileOutputStream(destFile).getChannel()) {
+                src.position(offset);
+
+                long written = 0;
+
+                while (written < count)
+                    written += src.transferTo(written, count - written, dest);
+            }
+
+            return destFile;
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 }
