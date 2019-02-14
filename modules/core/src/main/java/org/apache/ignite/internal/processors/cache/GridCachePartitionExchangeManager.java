@@ -60,6 +60,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
+import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -94,8 +96,11 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
@@ -465,6 +470,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public void onLocalJoin(DiscoveryEvent evt, DiscoCache cache) {
         discoLsnr.onEvent(evt, cache);
+
+//        GridClusterStateProcessor stateProcessor = cctx.kernalContext().state();
+//
+//        DiscoveryDataClusterState state = stateProcessor.clusterState();
+//
+//        if (state.localTransition()) {
+//            ChangeGlobalStateFinishMessage msg = new ChangeGlobalStateFinishMessage(
+//                state.transitionRequestId(),
+//                true,
+//                true,
+//                true
+//            );
+//
+//            stateProcessor.onStateFinishMessage(msg); // Very questionable.
+//
+//            cctx.kernalContext().discovery().updateTopologySnapshot();
+//        }
     }
 
     /**
@@ -491,13 +513,61 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             ExchangeActions exchActs = null;
 
-            if (evt.type() == EVT_NODE_JOINED && evt.eventNode().isLocal()) {
+            boolean locJoin = evt.type() == EVT_NODE_JOINED && evt.eventNode().isLocal();
+
+            if (locJoin) {
                 LocalJoinCachesContext locJoinCtx = cctx.cache().localJoinCachesContext();
 
                 if (locJoinCtx != null) {
                     exchActs = new ExchangeActions();
 
                     exchActs.localJoinContext(locJoinCtx);
+                }
+            }
+
+            if (!n.isClient() && !n.isDaemon() || locJoin) {
+                DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();
+
+                if (clusterState.localTransition()) {
+                    IgniteClusterImpl cluster = cctx.kernalContext().cluster().get();
+
+                    DistributedBaselineConfiguration bc = cluster.baselineConfiguration();
+
+                    boolean autoAdjustBaseline = clusterState.active()
+                        && bc.isBaselineAutoAdjustEnabled()
+                        && bc.getBaselineAutoAdjustTimeout() == 0L
+                        && !CU.isPersistenceEnabled(cctx.gridConfig())
+                        && !clusterState.transition();
+
+                    if (autoAdjustBaseline) {
+                        BaselineTopology blt = clusterState.baselineTopology();
+
+                        ChangeGlobalStateMessage msg = new ChangeGlobalStateMessage(
+                            UUID.randomUUID(),
+                            loc.id(),
+                            null,
+                            true,
+                            blt,
+                            true,
+                            System.currentTimeMillis()
+                        );
+
+                        AffinityTopologyVersion topVer = null;
+
+                        StateChangeRequest stateChangeReq = new StateChangeRequest(
+                            msg,
+                            BaselineTopologyHistoryItem.fromBaseline(blt),
+                            false,
+                            topVer
+                        );
+
+                        if (exchActs == null)
+                            exchActs = new ExchangeActions();
+
+                        exchActs.stateChangeRequest(stateChangeReq);
+
+//                        msg.exchangeActions(exchActs);
+                    }
                 }
             }
 
@@ -2333,6 +2403,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             ", evtNode=" + fut.firstEvent().eventNode().id() +
                             ", evtNodeClient=" + fut.firstEvent().eventNode().isClient() + ']');
                     }
+
+//                    ExchangeActions exchActions = curFut.exchangeActions();
+//
+//                    if (exchActions != null && fut.exchangeActions() != null)
+//                        exchActions.stateChangeRequest(fut.exchangeActions().stateChangeRequest());
 
                     addDiscoEvtForTest(fut.firstEvent());
 

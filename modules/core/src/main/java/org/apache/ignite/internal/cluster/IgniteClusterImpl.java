@@ -324,14 +324,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** */
     private Collection<BaselineNode> baselineNodes() {
-        Collection<ClusterNode> srvNodes = ctx.cluster().get().forServers().nodes();
-
-        ArrayList baselineNodes = new ArrayList(srvNodes.size());
-
-        for (ClusterNode clN : srvNodes)
-            baselineNodes.add(clN);
-
-        return baselineNodes;
+        return new ArrayList<>(ctx.cluster().get().forServers().nodes());
     }
 
     /** {@inheritDoc} */

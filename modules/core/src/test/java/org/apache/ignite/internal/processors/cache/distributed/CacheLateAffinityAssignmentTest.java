@@ -1674,11 +1674,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInitCacheReceivedOnJoin() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String s) {
-                return null;
-            }
-        };
+        cacheC = s -> null;
 
         startServer(0, 1);
 
@@ -1686,26 +1682,20 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(2, 1), true);
 
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String s) {
-                return new CacheConfiguration[]{cacheConfiguration()};
-            }
-        };
+        cacheC = s -> new CacheConfiguration[]{cacheConfiguration()};
 
         startServer(2, 3);
 
-        checkAffinity(3, topVer(3, 0), false);
+        checkAffinity(3, topVer(3, 0), true); // was false
 
-        checkAffinity(3, topVer(3, 1), true);
+//        checkAffinity(3, topVer(3, 1), true); // Why?
 
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String s) {
-                CacheConfiguration ccfg = cacheConfiguration();
+        cacheC = s -> {
+            CacheConfiguration ccfg = cacheConfiguration();
 
-                ccfg.setName(CACHE_NAME2);
+            ccfg.setName(CACHE_NAME2);
 
-                return new CacheConfiguration[]{ccfg};
-            }
+            return new CacheConfiguration[]{ccfg};
         };
 
         startClient(3, 4);

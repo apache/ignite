@@ -44,6 +44,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -74,6 +75,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -679,12 +681,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
                         ctx.state().onStateFinishMessage((ChangeGlobalStateFinishMessage)customMsg);
 
-                        Snapshot snapshot = topSnap.get();
-
-                        // Topology version does not change, but need create DiscoCache with new state.
-                        DiscoCache discoCache = snapshot.discoCache.copy(snapshot.topVer, ctx.state().clusterState());
-
-                        topSnap.set(new Snapshot(snapshot.topVer, discoCache));
+                        updateTopologySnapshot();
 
                         incMinorTopVer = false;
                     }
@@ -765,6 +762,70 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 else
                     // Current version.
                     discoCache = discoCache();
+
+                if (!node.isClient() && !node.isDaemon() || locJoinEvt) {
+                    if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED || type == EVT_NODE_JOINED) {
+                        DistributedBaselineConfiguration bc = ctx.cluster().get().baselineConfiguration();
+
+                        DiscoveryDataClusterState oldState = ctx.state().clusterState();
+
+                        boolean autoAdjustBaseline = oldState.active()
+                            && bc.isBaselineAutoAdjustEnabled()
+                            && bc.getBaselineAutoAdjustTimeout() == 0L
+                            && !CU.isPersistenceEnabled(ctx.config());
+
+                        if (autoAdjustBaseline && !oldState.transition()) {
+                            BaselineTopology oldBlt = oldState.baselineTopology();
+
+                            Collection<ClusterNode> bltNodes = topSnapshot.stream()
+                                .filter(n -> !n.isClient() && !n.isDaemon())
+                                .collect(Collectors.toList());
+
+                            if (!bltNodes.isEmpty()) {
+                                int newBltId = oldBlt == null ? 0 : oldBlt.id() + 1; // Bullshit
+
+                                log.info("--> newBltId=" + newBltId
+                                    + "\n    locJoinEvt=" + locJoinEvt
+                                    + "\n    oldState=" + oldState
+                                );
+
+                                BaselineTopology newBlt = BaselineTopology.build(bltNodes, newBltId);
+
+                                UUID transitionId = oldState.transition() ? oldState.transitionRequestId() : node.id();
+
+                                ChangeGlobalStateMessage changeGlobalStateMsg = new ChangeGlobalStateMessage(
+                                    transitionId,
+                                    node.id(),
+                                    null,
+                                    true,
+                                    newBlt,
+                                    true,
+                                    System.currentTimeMillis()
+                                );
+
+                                ctx.state().onStateChangeMessage(
+                                    new AffinityTopologyVersion(topVer, minorTopVer),
+                                    changeGlobalStateMsg,
+                                    discoCache
+                                );
+
+                                ChangeGlobalStateFinishMessage finishMsg = new ChangeGlobalStateFinishMessage(
+                                    transitionId,
+                                    true,
+                                    true
+                                );
+
+                                ctx.state().onStateFinishMessage(finishMsg);
+
+                                ctx.state().clusterState().localTransition(true);
+
+                                updateTopologySnapshot();
+
+                                discoCache = discoCache();
+                            }
+                        }
+                    }
+                }
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (locJoinEvt) {
@@ -854,12 +915,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ctx.service().onLocalJoin(localJoinEvent(), discoCache);
 
+                    DiscoCache discoCache0 = discoCache;
+
                     ctx.cluster().clientReconnectFuture().listen(new CI1<IgniteFuture<?>>() {
                         @Override public void apply(IgniteFuture<?> fut) {
                             try {
                                 fut.get();
 
-                                discoWrk.addEvent(EVT_CLIENT_NODE_RECONNECTED, nextTopVer, node, discoCache, topSnapshot, null);
+                                discoWrk.addEvent(EVT_CLIENT_NODE_RECONNECTED, nextTopVer, node, discoCache0, topSnapshot, null);
                             }
                             catch (IgniteException ignore) {
                                 // No-op.
@@ -968,6 +1031,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
+    }
+
+    public void updateTopologySnapshot() {
+        Snapshot snapshot = topSnap.get();
+
+        // Topology version does not change, but need create DiscoCache with new state.
+        DiscoCache discoCache = snapshot.discoCache.copy(snapshot.topVer, ctx.state().clusterState());
+
+        topSnap.set(new Snapshot(snapshot.topVer, discoCache));
     }
 
     /**

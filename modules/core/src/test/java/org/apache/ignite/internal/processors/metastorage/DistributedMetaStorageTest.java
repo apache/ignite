@@ -113,7 +113,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testMultipleNodes() throws Exception {
         int cnt = 4;
 
-        startGridsMultiThreaded(cnt);
+        startGrids(cnt);
 
         grid(0).cluster().active(true);
 
@@ -139,7 +139,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testListenersOnWrite() throws Exception {
         int cnt = 4;
 
-        startGridsMultiThreaded(cnt);
+        startGrids(cnt);
 
         grid(0).cluster().active(true);
 
@@ -172,7 +172,21 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testListenersOnRemove() throws Exception {
         int cnt = 4;
 
-        startGridsMultiThreaded(cnt);
+        for (int i = 0; i < cnt; i++) {
+            System.out.println("--> Starting node " + i);
+
+            startGrid(i);
+
+            System.out.println("--> Started node " + i);
+
+            for (int j = 0; j <= i; j++)
+                System.out.println(j + " --> " + grid(j).context().state().clusterState());
+
+            doSleep(200);
+        }
+
+
+//        System.exit(1);
 
         grid(0).cluster().active(true);
 
@@ -359,5 +373,37 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         Arrays.sort(fullData1, Comparator.comparing(o -> U.field(o, "key")));
 
         assertEqualsCollections(Arrays.asList(fullData1), Arrays.asList(fullData2));
+    }
+
+    /** */
+    @Test
+    public void testA() throws Exception {
+        startGrids(3);
+
+        startGrid(getConfiguration(UUID.randomUUID().toString()).setClientMode(true));
+
+        stopGrid(2);
+
+        assertEquals(2, grid(0).cluster().currentBaselineTopology().size());
+
+        startGrid(3);
+
+        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
+
+        startGrid(4);
+
+        assertEquals(4, grid(0).cluster().currentBaselineTopology().size());
+
+        stopGrid(1);
+
+        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
+
+        IgniteEx client = startGrid(getConfiguration(UUID.randomUUID().toString()).setClientMode(true));
+
+        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
+
+        stopGrid(client.name());
+
+        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
     }
 }

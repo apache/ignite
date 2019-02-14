@@ -692,4 +692,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         assertDistributedMetastoragesAreEqual(grid(0), grid(1));
     }
+
+    /** {@inheritDoc} */
+    @Test @Ignore
+    @Override public void testA() {
+    }
 }

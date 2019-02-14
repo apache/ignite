@@ -80,6 +80,11 @@ public class DiscoveryDataClusterState implements Serializable {
     private transient volatile Exception transitionError;
 
     /**
+     * TODO Document.
+     */
+    private transient volatile boolean locTransition;
+
+    /**
      * @param active Current status.
      * @return State instance.
      */
@@ -269,5 +274,19 @@ public class DiscoveryDataClusterState implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DiscoveryDataClusterState.class, this);
+    }
+
+    /**
+     * TODO Document.
+     */
+    public boolean localTransition() {
+        return locTransition;
+    }
+
+    /**
+     * TODO Document.
+     */
+    public void localTransition(boolean locTransition) {
+        this.locTransition = locTransition;
     }
 }

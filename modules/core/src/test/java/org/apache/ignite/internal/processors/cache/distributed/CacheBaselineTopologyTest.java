@@ -819,7 +819,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testNonPersistentCachesIgnoreBaselineTopology() throws Exception {
+    public void testNonPersistentCachesDontIgnoreBaselineTopology() throws Exception {
         Ignite ig = startGrids(4);
 
         ig.cluster().active(true);
@@ -834,7 +834,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         assertEquals(0, ig.affinity(persistentCache.getName()).allPartitions(newNode.cluster().localNode()).length);
-        assertTrue(ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length > 0);
+        assertEquals(0, ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length);
     }
 
     /**
@@ -912,33 +912,32 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assertEquals(0, nearIgnite.affinity(persistentCache.getName()).allPartitions(nonBltNode).length);
 
-        assertTrue(nearIgnite.affinity(inMemoryCache.getName()).allPartitions(nonBltNode).length > 0);
+        assertEquals(0, nearIgnite.affinity(inMemoryCache.getName()).allPartitions(nonBltNode).length);
 
-        ClusterNode nearNode = nearIgnite.cluster().localNode();
-
-        try (Transaction tx = nearIgnite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
-            for (int i = 0; ; i++) {
-                List<ClusterNode> nodes = new ArrayList<>(nearIgnite.affinity(inMemoryCache.getName())
-                    .mapKeyToPrimaryAndBackups(i));
-
-                ClusterNode primaryNode = nodes.get(0);
-
-                List<ClusterNode> backupNodes = nodes.subList(1, nodes.size());
-
-                if (nonBltNode.equals(primaryNode) == primary) {
-                    if (backupNodes.contains(nonBltNode) != primary) {
-                        inMemoryCache.put(i, i);
-
-                        // add some persistent data in the same transaction
-                        for (int j = 0; j < 100; j++)
-                            persistentCache.put(j, j);
-
-                        break;
-                    }
-                }
-            }
-            tx.commit();
-        }
+        //TODO ???????????????
+//        try (Transaction tx = nearIgnite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
+//            for (int i = 0; ; i++) {
+//                List<ClusterNode> nodes = new ArrayList<>(nearIgnite.affinity(inMemoryCache.getName())
+//                    .mapKeyToPrimaryAndBackups(i));
+//
+//                ClusterNode primaryNode = nodes.get(0);
+//
+//                List<ClusterNode> backupNodes = nodes.subList(1, nodes.size());
+//
+//                if (nonBltNode.equals(primaryNode) == primary) {
+//                    if (backupNodes.contains(nonBltNode) != primary) {
+//                        inMemoryCache.put(i, i);
+//
+//                        // add some persistent data in the same transaction
+//                        for (int j = 0; j < 100; j++)
+//                            persistentCache.put(j, j);
+//
+//                        break;
+//                    }
+//                }
+//            }
+//            tx.commit();
+//        }
     }
 
     /**

@@ -160,7 +160,7 @@ public class GridAffinityAssignmentCache {
         this.grpId = grpId;
         this.backups = backups;
         this.locCache = locCache;
-        this.persistentCache = persistentCache;
+        this.persistentCache = true;
 
         log = ctx.log(GridAffinityAssignmentCache.class);
 
@@ -336,6 +336,9 @@ public class GridAffinityAssignmentCache {
                     break;
                 }
             }
+
+            if (skipCalculation && ctx.state().clusterState().localTransition())
+                skipCalculation = false;
 
             if (skipCalculation)
                 assignment = prevAssignment;
