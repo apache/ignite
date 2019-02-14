@@ -743,7 +743,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
-        UpdatePlan plan = updatePlan(schemaName, conn, p, null);
+        UpdatePlan plan = updatePlan(schemaName, conn, p, null, true);
 
         IgniteDataStreamer<?, ?> streamer = cliCtx.streamerForCache(plan.cacheContext().name());
 
@@ -782,7 +782,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             assert p != null;
 
-            final UpdatePlan plan = updatePlan(schemaName, null, p, null);
+            final UpdatePlan plan = updatePlan(schemaName, null, p, null, true);
 
             assert plan.isLocalSubquery();
 
@@ -1668,7 +1668,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fldsQry.setLocal(true);
         fldsQry.setDataPageScanEnabled(isDataPageScanEnabled(flags));
 
-        boolean locSplit = false;
+        boolean loc = true;
 
         final boolean replicated = U.isFlagSet(flags, GridH2QueryRequest.FLAG_REPLICATED);
 
@@ -1677,9 +1677,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!replicated
             && !F.isEmpty(ids)
             && (cctx0 = CU.firstPartitioned(cctx.shared(), ids)) != null
-            && cctx0.config().getQueryParallelism() > 1
-        ) {
-            locSplit = true;
+            && cctx0.config().getQueryParallelism() > 1) {
+            fldsQry.setDistributedJoins(true);
+
+            loc = false;
         }
 
         Connection conn = connMgr.connectionForThread().connection(schema);
@@ -1693,7 +1694,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared prepared = GridSqlQueryParser.prepared(stmt);
 
-        UpdatePlan plan = updatePlan(schema, conn, prepared, fldsQry);
+        UpdatePlan plan = updatePlan(schema, conn, prepared, fldsQry, loc);
 
         GridCacheContext planCctx = plan.cacheContext();
 
@@ -1704,7 +1705,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
         // sub-query and not some dummy stuff like "select 1, 2, 3;"
-        if (locSplit && !plan.isLocalSubquery()) {
+        if (!loc && !plan.isLocalSubquery()) {
             SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fldsQry.isCollocated())
                 .setArgs(fldsQry.getArgs())
                 .setDistributedJoins(fldsQry.isDistributedJoins())
@@ -1903,7 +1904,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @param filter Filter.
      * @param cancel Cancel state.
-     * @param locSplit Locality flag.
+     * @param loc Locality flag.
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
@@ -1912,7 +1913,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         SqlFieldsQuery qry,
         IndexingQueryFilter filter,
         GridQueryCancel cancel,
-        boolean locSplit
+        boolean loc
     ) throws IgniteCheckedException {
         Connection conn = connMgr.connectionForThread().connection(schemaName);
 
@@ -1930,7 +1931,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException(e);
         }
 
-        return executeUpdate(schemaName, c, GridSqlQueryParser.prepared(stmt), qry, locSplit, filter, cancel);
+        return executeUpdate(schemaName, c, GridSqlQueryParser.prepared(stmt), qry, loc, filter, cancel);
     }
 
     /**
@@ -2492,7 +2493,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             List<Object[]> argss = fieldsQry0.batchedArguments();
 
-            UpdatePlan plan = updatePlan(schemaName, conn, prepared, fieldsQry0);
+            UpdatePlan plan = updatePlan(schemaName, conn, prepared, fieldsQry0, false);
 
             GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -2587,20 +2588,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection.
      * @param prepared Prepared statement.
      * @param fieldsQry Original query.
-     * @param locSplit Whether local split is needed.
+     * @param loc Query locality flag.
      * @param filters Cache name and key filter.
      * @param cancel Cancel.
      * @return Update result (modified items count and failed keys).
      * @throws IgniteCheckedException if failed.
      */
     private UpdateResult executeUpdate(String schemaName, Connection conn, Prepared prepared,
-        SqlFieldsQuery fieldsQry, boolean locSplit, IndexingQueryFilter filters, GridQueryCancel cancel)
+        SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
         Object[] errKeys = null;
 
         long items = 0;
 
-        UpdatePlan plan = updatePlan(schemaName, conn, prepared, fieldsQry);
+        UpdatePlan plan = updatePlan(schemaName, conn, prepared, fieldsQry, loc);
 
         GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -2610,7 +2611,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             UpdateResult r;
 
             try {
-                r = executeUpdate0(schemaName, plan, fieldsQry, locSplit, filters, cancel);
+                r = executeUpdate0(schemaName, plan, fieldsQry, loc, filters, cancel);
             }
             finally {
                 DmlUtils.restoreKeepBinaryContext(cctx, opCtx);
@@ -2639,7 +2640,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param schemaName Schema name.
      * @param plan Cache context.
      * @param fieldsQry Fields query.
-     * @param locSplit Whether local split is needed.
+     * @param loc Local query flag.
      * @param filters Cache name and key filter.
      * @param cancel Query cancel state holder.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
@@ -2650,7 +2651,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String schemaName,
         final UpdatePlan plan,
         SqlFieldsQuery fieldsQry,
-        boolean locSplit,
+        boolean loc,
         IndexingQueryFilter filters,
         GridQueryCancel cancel
     ) throws IgniteCheckedException {
@@ -2804,7 +2805,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
         // sub-query and not some dummy stuff like "select 1, 2, 3;"
-        if (locSplit && !plan.isLocalSubquery()) {
+        if (!loc && !plan.isLocalSubquery()) {
             assert !F.isEmpty(plan.selectQuery());
 
             SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fieldsQry.isCollocated())
@@ -2847,7 +2848,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }, cancel);
         }
 
-        return DmlUtils.processSelectResult(plan, cur, fieldsQry.getPageSize());
+        int pageSize = loc ? 0 : fieldsQry.getPageSize();
+
+        return DmlUtils.processSelectResult(plan, cur, pageSize);
     }
 
     /**
@@ -2858,6 +2861,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection.
      * @param p Prepared statement.
      * @param fieldsQry Original fields query.
+     * @param loc Local query flag.
      * @return Update plan.
      */
     @SuppressWarnings("IfMayBeConditional")
@@ -2865,20 +2869,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String schema,
         Connection conn,
         Prepared p,
-        SqlFieldsQuery fieldsQry
+        SqlFieldsQuery fieldsQry,
+        boolean loc
     ) throws IgniteCheckedException {
         if (F.eq(QueryUtils.SCHEMA_SYS, schema))
             throw new IgniteSQLException("DML statements are not supported on " + schema + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        H2CachedStatementKey planKey = new H2CachedStatementKey(schema, p.getSQL(), fieldsQry);
+        H2CachedStatementKey planKey = new H2CachedStatementKey(schema, p.getSQL(), fieldsQry, loc);
 
         UpdatePlan res = updatePlanCache.get(planKey);
 
         if (res != null)
             return res;
 
-        res = UpdatePlanBuilder.planForStatement(p, this, conn, fieldsQry, updateInTxAllowed);
+        res = UpdatePlanBuilder.planForStatement(p, loc, this, conn, fieldsQry, updateInTxAllowed);
 
         // Don't cache re-runs
         UpdatePlan oldRes = updatePlanCache.putIfAbsent(planKey, res);

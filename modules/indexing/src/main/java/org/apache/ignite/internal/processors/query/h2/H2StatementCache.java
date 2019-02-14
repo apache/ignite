@@ -94,7 +94,7 @@ final class H2StatementCache {
      * @param sql SQL statement.
      */
     void remove(String schemaName, String sql) {
-        lruStmtCache.remove(new H2CachedStatementKey(schemaName, sql, null));
+        lruStmtCache.remove(new H2CachedStatementKey(schemaName, sql));
     }
 
     /**
