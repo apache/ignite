@@ -83,7 +83,9 @@ public class ReducePartitionMapper {
      */
     public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds, AffinityTopologyVersion topVer,
         int[] parts, boolean isReplicatedOnly, long qryId) {
-        Collection<ClusterNode> nodes = null; Map<ClusterNode, IntArray> qryMap = null;
+        Collection<ClusterNode> nodes = null;
+        Map<ClusterNode, IntArray> partsMap = null;
+        Map<ClusterNode, IntArray> qryMap = null;
 
         for (int cacheId : cacheIds) {
             GridCacheContext<?, ?> cctx = cacheContext(cacheId);
@@ -107,10 +109,10 @@ public class ReducePartitionMapper {
             if (isReplicatedOnly)
                 nodes = replicatedUnstableDataNodes(cacheIds, qryId);
             else {
-                qryMap = partitionedUnstableDataNodes(cacheIds, parts, qryId);
+                partsMap = qryMap = partitionedUnstableDataNodes(cacheIds, parts, qryId);
 
-                if (qryMap != null)
-                    nodes = qryMap.keySet();
+                if (partsMap != null)
+                    nodes = partsMap.keySet();
             }
         }
         else {
@@ -120,7 +122,7 @@ public class ReducePartitionMapper {
                 nodes = qryMap.keySet();
         }
 
-        return new ReducePartitionMapResult(nodes, null, qryMap);
+        return new ReducePartitionMapResult(nodes, partsMap, qryMap);
     }
 
     /**
