@@ -334,6 +334,9 @@ public class IgniteJdbcDriver implements Driver {
     /** Parameter: replicated only flag (SQL hint). */
     public static final String PARAM_LAZY = "lazy";
 
+    /** Parameter: data page scan (SQl hint). */
+    public static final String PARAM_DATA_PAGE_SCAN = "dataPageScan";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -384,6 +387,9 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Lazy property name. */
     public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
+
+    /** Data page scan property name. */
+    public static final String PROP_DATA_PAGE_SCAN = PROP_PREFIX + PARAM_DATA_PAGE_SCAN;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -458,7 +464,8 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(PROP_LAZY), ""),
             new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
             new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
-            new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), "")
+            new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), ""),
+            new JdbcDriverPropertyInfo("Data page scan is allowed", info.getProperty(PROP_DATA_PAGE_SCAN), "")
         );
 
         if (info.getProperty(PROP_CFG) != null)

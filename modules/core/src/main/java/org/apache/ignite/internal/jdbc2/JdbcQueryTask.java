@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Task for SQL queries execution through {@link IgniteJdbcDriver}.
@@ -169,6 +170,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
             qry.setEnforceJoinOrder(enforceJoinOrder());
             qry.setLazy(lazy());
             qry.setSchema(schemaName);
+            qry.setDataPageScanEnabled(dataPageScan());
 
             FieldsQueryCursor<List<?>> fldQryCursor = cache.withKeepBinary().query(qry);
 
@@ -256,6 +258,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
      */
     protected boolean skipReducerOnUpdate() {
         return false;
+    }
+
+    /**
+     * @return Whether or not data page scan is supported or {@code null} for server default.
+     */
+    protected @Nullable Boolean dataPageScan(){
+        return null;
     }
 
     /**
