@@ -96,15 +96,6 @@ import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
-import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
-import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateResultsIterator;
-import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateSingleEntryIterator;
-import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
-import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
-import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -114,10 +105,17 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccLeafIO;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateResultsIterator;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateSingleEntryIterator;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
@@ -126,6 +124,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -133,6 +132,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -1269,7 +1269,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw U.convertException(e);
         }
     }
 
