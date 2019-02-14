@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,6 +34,7 @@ public class UnregisteredBinaryTypeException extends IgniteException {
 
     /** */
     private final BinaryMetadata binaryMetadata;
+    public final GridFutureAdapter<?> fut;
 
     /**
      * @param typeId Type ID.
@@ -41,6 +43,7 @@ public class UnregisteredBinaryTypeException extends IgniteException {
     public UnregisteredBinaryTypeException(int typeId, BinaryMetadata binaryMetadata) {
         this.typeId = typeId;
         this.binaryMetadata = binaryMetadata;
+        fut = null;
     }
 
     /**
@@ -53,6 +56,7 @@ public class UnregisteredBinaryTypeException extends IgniteException {
         super(msg);
         this.typeId = typeId;
         this.binaryMetadata = binaryMetadata;
+        fut = null;
     }
 
     /**
@@ -65,6 +69,7 @@ public class UnregisteredBinaryTypeException extends IgniteException {
         super(cause);
         this.typeId = typeId;
         this.binaryMetadata = binaryMetadata;
+        fut = null;
     }
 
     /**
@@ -78,6 +83,14 @@ public class UnregisteredBinaryTypeException extends IgniteException {
         super(msg, cause);
         this.typeId = typeId;
         this.binaryMetadata = binaryMetadata;
+        fut = null;
+    }
+
+    public UnregisteredBinaryTypeException(int typeId, BinaryMetadata binaryMetadata, GridFutureAdapter<?> fut) {
+        this.typeId = typeId;
+        this.binaryMetadata = binaryMetadata;
+
+        this.fut = fut;
     }
 
     /**

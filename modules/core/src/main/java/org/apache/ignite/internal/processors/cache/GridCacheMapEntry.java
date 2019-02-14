@@ -2245,7 +2245,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         lockListenerReadLock();
         lockEntry();
-        IgniteThread.onForbidBinaryMetadataRequestSectionEntered();
+        // Not needed actually.
+//        IgniteThread.onForbidBinaryMetadataRequestSectionEntered();
 
         try {
             checkObsolete();
@@ -2502,7 +2503,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
         }
         finally {
-            IgniteThread.onForbidBinaryMetadataRequestSectionLeft();
+//            IgniteThread.onForbidBinaryMetadataRequestSectionLeft();
             unlockEntry();
             unlockListenerReadLock();
         }
@@ -6690,10 +6691,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 return null;
             }
+            catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+                throw e;
+            }
             catch (Exception e) {
-                if (e instanceof UnregisteredClassException || e instanceof UnregisteredBinaryTypeException)
-                    throw (IgniteException)e;
-
                 writeObj = invokeEntry.valObj;
 
                 return new IgniteBiTuple<>(null, e);

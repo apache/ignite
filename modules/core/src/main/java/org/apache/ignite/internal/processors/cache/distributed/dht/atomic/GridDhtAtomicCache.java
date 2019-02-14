@@ -1877,6 +1877,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             .binaryContext().descriptorForClass(ex.cls(), false, false);
                     }
                     catch (UnregisteredBinaryTypeException ex) {
+                        // K O C T bI JI b
+                        if (ex.fut != null) {
+                            ex.fut.get();
+
+                            continue;
+                        }
+
                         IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
 
                         assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
