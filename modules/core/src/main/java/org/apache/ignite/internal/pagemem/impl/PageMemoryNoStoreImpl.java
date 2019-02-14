@@ -164,6 +164,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private final GridCacheSharedContext<?, ?> ctx;
 
     /**
+     * Marker that stop was invoked and memory is not supposed for any usage.
+     */
+    private volatile boolean stopped;
+
+    /**
      * @param log Logger.
      * @param directMemoryProvider Memory allocator to use.
      * @param sharedCtx Cache shared context.
@@ -202,6 +207,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
+        stopped = false;
+
         long startSize = dataRegionCfg.getInitialSize();
         long maxSize = dataRegionCfg.getMaxSize();
 
@@ -243,6 +250,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
 
+        stopped = true;
+
         directMemoryProvider.shutdown(deallocate);
 
         if (directMemoryProvider instanceof Closeable) {
@@ -262,6 +271,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int grpId, int partId, byte flags) {
+        assert !stopped;
+
         long relPtr = borrowFreePage();
         long absPtr = 0;
 
@@ -326,6 +337,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public boolean freePage(int cacheId, long pageId) {
+        assert !stopped;
+
         releaseFreePage(pageId);
 
         return true;
@@ -445,6 +458,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long acquirePage(int cacheId, long pageId) {
+        assert !stopped;
+
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         Segment seg = segment(pageIdx);
@@ -454,6 +469,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public void releasePage(int cacheId, long pageId, long page) {
+        assert !stopped;
+
         if (trackAcquiredPages) {
             Segment seg = segment(PageIdUtils.pageIndex(pageId));
 
@@ -463,6 +480,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long readLock(int cacheId, long pageId, long page) {
+        assert !stopped;
+
         if (rwLock.readLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
             return page + PAGE_OVERHEAD;
 
@@ -471,6 +490,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long readLockForce(int cacheId, long pageId, long page) {
+        assert !stopped;
+
         if (rwLock.readLock(page + LOCK_OFFSET, -1))
             return page + PAGE_OVERHEAD;
 
@@ -479,11 +500,15 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public void readUnlock(int cacheId, long pageId, long page) {
+        assert !stopped;
+
         rwLock.readUnlock(page + LOCK_OFFSET);
     }
 
     /** {@inheritDoc} */
     @Override public long writeLock(int cacheId, long pageId, long page) {
+        assert !stopped;
+
         if (rwLock.writeLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
             return page + PAGE_OVERHEAD;
 
@@ -492,6 +517,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long tryWriteLock(int cacheId, long pageId, long page) {
+        assert !stopped;
+
         if (rwLock.tryWriteLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
             return page + PAGE_OVERHEAD;
 
@@ -506,6 +533,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         Boolean walPlc,
         boolean dirtyFlag
     ) {
+        assert !stopped;
+
         long actualId = PageIO.getPageId(page + PAGE_OVERHEAD);
 
         rwLock.writeUnlock(page + LOCK_OFFSET, PageIdUtils.tag(actualId));

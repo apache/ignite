@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -883,7 +884,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             if (trackable)
                 cctx.mvcc().removeFuture(futId);
 
-            cctx.dht().sendTtlUpdateRequest(expiryPlc);
+            if (!(err instanceof NodeStoppingException))
+                cctx.dht().sendTtlUpdateRequest(expiryPlc);
 
             return true;
         }
