@@ -3207,7 +3207,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 byte state = state(grp, crd, cntr, opCntr);
 
                 if (state == TxState.COMMITTED || state == TxState.ABORTED) {
-                    iox.rawMvccOperationCounter(pageAddr, off, opCntr | (state << MVCC_HINTS_BIT_OFF));
+                    iox.rawMvccOperationCounter(pageAddr, off,
+                        (opCntr & MVCC_OP_COUNTER_MASK) | (state << MVCC_HINTS_BIT_OFF));
 
                     if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
                         ctx.wal().log(new DataPageMvccUpdateTxStateHintRecord(cacheId, pageId, itemId, state));
@@ -3225,7 +3226,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 byte state = state(grp, newCrd, newCntr, newOpCntr);
 
                 if (state == TxState.COMMITTED || state == TxState.ABORTED) {
-                    iox.rawNewMvccOperationCounter(pageAddr, off, newOpCntr | (state << MVCC_HINTS_BIT_OFF));
+                    iox.rawNewMvccOperationCounter(pageAddr, off,
+                        (newOpCntr & MVCC_OP_COUNTER_MASK)| (state << MVCC_HINTS_BIT_OFF));
 
                     if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
                         ctx.wal().log(new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, state));
@@ -3268,8 +3270,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             assert cntr == newRow.mvccCounter();
             assert opCntr == newRow.mvccOperationCounter();
 
+            assert newRow.mvccTxState() != TxState.NA : newRow.mvccTxState();
+
             if (txState != newRow.mvccTxState() && newRow.mvccTxState() != TxState.NA) {
-                assert txState == TxState.NA;
+                assert txState == TxState.NA : txState;
 
                 iox.rawMvccOperationCounter(pageAddr, off, opCntr | (newRow.mvccTxState() << MVCC_HINTS_BIT_OFF));
 
@@ -3284,16 +3288,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 newRow.newMvccCounter(),
                 newRow.newMvccOperationCounter()) != 0) {
 
+                assert newTxState == TxState.ABORTED || newCrd == MVCC_CRD_COUNTER_NA;
+
                 iox.updateNewVersion(pageAddr, off, newRow.newMvccCoordinatorVersion(), newRow.newMvccCounter(),
                     newRow.newMvccOperationCounter(), newRow.newMvccTxState());
 
-                    if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
-                        ctx.wal().log(new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId,
-                            newRow.newMvccCoordinatorVersion(), newRow.newMvccCounter(),
-                            newRow.newMvccOperationCounter() | (newRow.newMvccTxState() << MVCC_HINTS_BIT_OFF)));
-                }
-                else if (newTxState != newRow.newMvccTxState() && newRow.newMvccTxState() != TxState.NA) {
-                    assert newTxState == TxState.NA : newTxState;
+                if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
+                    ctx.wal().log(new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId,
+                        newRow.newMvccCoordinatorVersion(), newRow.newMvccCounter(),
+                        newRow.newMvccOperationCounter() | (newRow.newMvccTxState() << MVCC_HINTS_BIT_OFF)));
+            }
+            else if (newTxState != newRow.newMvccTxState() && newRow.newMvccTxState() != TxState.NA) {
+                assert newTxState == TxState.NA : newTxState;
 
                 iox.rawNewMvccOperationCounter(pageAddr, off, newOpCntr | (newRow.newMvccTxState() << MVCC_HINTS_BIT_OFF));
 
