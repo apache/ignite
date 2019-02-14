@@ -1929,15 +1929,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert msg != null;
 
         StringBuilder errorMsgBldr = new StringBuilder();
-
-        if (msg.foundInNodesHistory())
-            errorMsgBldr
-                .append("Node with the same ID was found in node IDs history ");
-        else
-            errorMsgBldr
-                .append("Local node has the same ID as existing node in topology ");
-
         errorMsgBldr
+            .append("Node with the same ID was found in node IDs history ")
+            .append("or existing node in topology has the same ID ")
             .append("(fix configuration and restart local node) [localNode=")
             .append(locNode)
             .append(", existingNode=")

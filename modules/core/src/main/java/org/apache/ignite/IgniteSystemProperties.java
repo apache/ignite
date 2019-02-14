@@ -1117,6 +1117,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
 
     /**
+     * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
+     */
+    public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

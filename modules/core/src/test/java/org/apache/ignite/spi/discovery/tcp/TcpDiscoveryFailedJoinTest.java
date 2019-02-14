@@ -32,6 +32,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Test;
 
 /**
  * Test checks that if node cannot accept incoming connections it will be
@@ -73,14 +75,16 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /** */
+    @After
+    public void afterTest() throws Exception {
         stopAllGrids();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscoveryRefuse() throws Exception {
         failType = SpiFailType.REFUSE;
 
@@ -100,6 +104,7 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscoveryDrop() throws Exception {
         failType = SpiFailType.DROP;
 
@@ -152,7 +157,7 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Emulates situation when network drops packages.
      */
     private static class DropTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */

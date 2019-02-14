@@ -152,6 +152,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_NODE_IDS_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -277,8 +278,10 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Last listener future. */
     private IgniteFuture<?> lastCustomEvtLsnrFut;
 
-    /** */
-    private static final int JOINED_NODE_IDS_HISTORY_SIZE = 50;
+    /**
+     * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
+     */
+    private static final int JOINED_NODE_IDS_HISTORY_SIZE = getInteger(IGNITE_NODE_IDS_HISTORY_SIZE, 50);
 
     /** History of all node UUIDs that current node has seen. */
     private final GridBoundedLinkedHashSet<UUID> nodesIdsHist =
@@ -1123,7 +1126,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return false;
 
             boolean retry = false;
-            boolean failed = false;
+            boolean joinImpossible = false;
 
             Collection<Exception> errs = new ArrayList<>();
 
@@ -1164,12 +1167,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             return true;
 
                         case RES_JOIN_IMPOSSIBLE:
-                            failed = true;
+                            joinImpossible = true;
 
-                            throw new IgniteSpiException("Impossible to continue join, check if local discovery and communication ports " +
-                                "are not blocked with firewall [addr=" + addr +
-                                ", req=" + joinReq + ", discoLocalPort=" + spi.getLocalPort() +
-                                ", discoLocalPortRange=" + spi.getLocalPortRange() + ']');
+                            break;
 
                         default:
                             // Concurrent startup, try next node.
@@ -1188,9 +1188,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
                 catch (IgniteSpiException e) {
-                    if (failed)
-                        throw e;
-
                     errs.add(e);
 
                     if (log.isDebugEnabled()) {
@@ -1205,6 +1202,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     noResAddrs.add(addr);
                 }
+
+                if (joinImpossible)
+                    throw new IgniteSpiException("Impossible to continue join, " +
+                        "check if local discovery and communication ports " +
+                        "are not blocked with firewall [addr=" + addr +
+                        ", req=" + joinReq + ", discoLocalPort=" + spi.getLocalPort() +
+                        ", discoLocalPortRange=" + spi.getLocalPortRange() + ']');
             }
 
             if (retry) {
@@ -3801,7 +3805,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         try {
                             trySendMessageDirectly(node, new TcpDiscoveryDuplicateIdMessage(locNodeId,
-                                existingNode, false));
+                                existingNode));
                         }
                         catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
@@ -3864,7 +3868,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (nodesIdsHist.contains(node.id())) {
                             try {
                                 trySendMessageDirectly(node, new TcpDiscoveryDuplicateIdMessage(locNodeId,
-                                    node, true));
+                                    node));
                             }
                             catch (IgniteSpiException e) {
                                 if (log.isDebugEnabled())
@@ -7028,7 +7032,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * @param node Node.
+         * @param node Remote node to ping.
+         *
+         * @return {@code True} if ping was successful and {@code false} if ping failed for any reason.
          */
         private boolean pingJoiningNode(TcpDiscoveryNode node) {
             for (InetSocketAddress addr : spi.getNodeAddresses(node, false)) {
