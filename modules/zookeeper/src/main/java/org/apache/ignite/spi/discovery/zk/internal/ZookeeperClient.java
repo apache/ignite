@@ -948,6 +948,7 @@ public class ZookeeperClient implements Watcher {
     private void closeClient() {
         try {
             zk.close();
+            log.info("MY ZK CLOSED");
         }
         catch (Exception closeErr) {
             U.warn(log, "Failed to close ZooKeeper client: " + closeErr, closeErr);

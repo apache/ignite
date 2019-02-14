@@ -477,6 +477,7 @@ public class ZookeeperDiscoveryImpl {
         if (rtState.joined) {
             assert rtState.evtsData != null;
 
+            log.info("LOCAL_EVT NODE DISCONNECTED n="+locNode.id());
             lsnr.onDiscovery(EVT_CLIENT_NODE_DISCONNECTED,
                 rtState.evtsData.topVer,
                 locNode,
@@ -2022,7 +2023,7 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * @param node Joining node data.
+     * @param joiningNodeData Joining node data.
      * @return Validation result.
      */
     private ZkNodeValidateResult validateJoiningNode(ZkJoiningNodeData joiningNodeData) {
@@ -3013,6 +3014,7 @@ public class ZookeeperDiscoveryImpl {
 
             final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
+            log.info("LOCAL_EVT NODE JOINED n="+locNode.id());
             lsnr.onDiscovery(EVT_NODE_JOINED,
                 joinedEvtData.topVer,
                 locNode,
@@ -3021,6 +3023,7 @@ public class ZookeeperDiscoveryImpl {
                 null).get();
 
             if (rtState.reconnect) {
+                log.info("LOCAL_EVT NODE RECONNECTED n="+locNode.id());
                 lsnr.onDiscovery(EVT_CLIENT_NODE_RECONNECTED,
                     joinedEvtData.topVer,
                     locNode,

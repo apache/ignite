@@ -17,18 +17,16 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -40,8 +38,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
-    @Test
+//    @Test
     public void testReconnectServersRestart_1() throws Exception {
         reconnectServersRestart(1);
     }
@@ -49,15 +46,15 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     @Test
     public void testReconnectServersRestart_2() throws Exception {
         reconnectServersRestart(3);
     }
+
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testReconnectServersRestart_3() throws Exception {
         startGrid(0);
 
@@ -96,7 +93,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testReconnectServersRestart_4() throws Exception {
         startGrid(0);
 
@@ -141,6 +138,8 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
      * @throws Exception If failed.
      */
     private void reconnectServersRestart(int srvs) throws Exception {
+        sesTimeout = 30_000;
+
         startGridsMultiThreaded(srvs);
 
         helper.clientMode(true);
