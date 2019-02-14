@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -85,6 +86,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -123,6 +125,8 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -214,7 +218,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     private static String forceFailureMsg;
 
     /** Lazily initialized current test method. */
-    private static volatile Method currTestMtd;
+    private volatile Method currTestMtd;
 
     /** */
     static {
@@ -643,6 +647,62 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
             throw t;
         }
+    }
+
+    /** */
+    private final List<T2<String, String>> sysProps = new LinkedList<>();
+
+    /** */
+    @Before
+    public void setSystemPropertiesBeforeTest() {
+        List<WithSystemProperty[]> allProps = new LinkedList<>();
+
+        for (Class<?> clazz = getClass(); clazz != GridAbstractTest.class; clazz = clazz.getSuperclass()) {
+            SystemPropertiesList clsProps = clazz.getAnnotation(SystemPropertiesList.class);
+
+            if (clsProps != null)
+                allProps.add(0, clsProps.value());
+            else {
+                WithSystemProperty clsProp = clazz.getAnnotation(WithSystemProperty.class);
+
+                if (clsProp != null)
+                    allProps.add(0, new WithSystemProperty[] {clsProp});
+            }
+        }
+
+        SystemPropertiesList testProps = currentTestAnnotation(SystemPropertiesList.class);
+
+        if (testProps != null)
+            allProps.add(testProps.value());
+        else {
+            WithSystemProperty testProp = currentTestAnnotation(WithSystemProperty.class);
+
+            if (testProp != null)
+                allProps.add(new WithSystemProperty[] {testProp});
+        }
+
+        for (WithSystemProperty[] props : allProps) {
+            for (WithSystemProperty prop : props) {
+                String oldVal = prop.value() == null
+                    ? System.clearProperty(prop.key())
+                    : System.setProperty(prop.key(), prop.value());
+
+                sysProps.add(0, new T2<>(prop.key(), oldVal));
+            }
+        }
+    }
+
+    /** */
+    @After
+    public void clearSystemPropertiesAfterTest() {
+        for (T2<String, String> t2 : sysProps) {
+            if (t2.getValue() == null)
+                System.clearProperty(t2.getKey());
+            else
+                System.setProperty(t2.getKey(), t2.getValue());
+        }
+
+        sysProps.clear();
     }
 
     /**
