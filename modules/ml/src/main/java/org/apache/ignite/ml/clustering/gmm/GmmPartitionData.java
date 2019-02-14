@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -45,11 +44,6 @@ class GmmPartitionData implements AutoCloseable {
     private double[][] pcxi;
 
     /**
-     * Sum of ln(P(x)) for each x in partition data.
-     */
-    private double xsLikelihood;
-
-    /**
      * Creates an instance of GmmPartitionData.
      *
      * @param xs Dataset.
@@ -60,7 +54,6 @@ class GmmPartitionData implements AutoCloseable {
 
         this.xs = xs;
         this.pcxi = pcxi;
-        this.xsLikelihood = Double.NEGATIVE_INFINITY;
     }
 
     /**
@@ -76,13 +69,6 @@ class GmmPartitionData implements AutoCloseable {
      */
     public List<LabeledVector<Double>> getAllXs() {
         return Collections.unmodifiableList(xs);
-    }
-
-    /**
-     * @return likelihood of stored data.
-     */
-    public double dataLikelihood() {
-        return xsLikelihood;
     }
 
     /**
@@ -170,6 +156,7 @@ class GmmPartitionData implements AutoCloseable {
 
             Vector x = data.getX(i);
             for (int c = 0; c < initMeans.length; c++) {
+                data.setPcxi(c, i, 0.0);
                 double distance = initMeans[c].getDistanceSquared(x);
                 if (distance < minSquaredDist) {
                     closestClusterId = c;
@@ -189,12 +176,12 @@ class GmmPartitionData implements AutoCloseable {
      * @param components Components.
      * @return dataset likelihood.
      */
-    static DatasetLikelihood updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
+    static double updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
         List<MultivariateGaussianDistribution> components) {
 
         return dataset.compute(
             data -> updatePcxi(data, clusterProbs, components),
-            DatasetLikelihood::merge
+            (left, right) -> asPrimitive(left) + asPrimitive(right)
         );
     }
 
@@ -204,17 +191,15 @@ class GmmPartitionData implements AutoCloseable {
      * @param clusterProbs Component probabilities.
      * @param components Components.
      */
-    static DatasetLikelihood updatePcxi(GmmPartitionData data, Vector clusterProbs,
+    static double updatePcxi(GmmPartitionData data, Vector clusterProbs,
         List<MultivariateGaussianDistribution> components) {
 
         GmmModel model = new GmmModel(clusterProbs, components);
-        data.xsLikelihood = 0.0;
         double maxProb = Double.NEGATIVE_INFINITY;
 
         for (int i = 0; i < data.size(); i++) {
             Vector x = data.getX(i);
             double xProb = model.prob(x);
-            data.xsLikelihood += Math.log(xProb);
             if(xProb > maxProb)
                 maxProb = xProb;
 
@@ -226,37 +211,14 @@ class GmmPartitionData implements AutoCloseable {
                 data.pcxi[i][c] = (components.get(c).prob(x) * clusterProbs.get(c)) / normalizer;
         }
 
-        return new DatasetLikelihood(data.xsLikelihood, maxProb);
+        return maxProb;
     }
 
-    static class DatasetLikelihood implements Serializable {
-        private static final long serialVersionUID = -5597366148880227086L;
-
-        private final double likelihood;
-        private final double maxProbOfPoint;
-
-        public DatasetLikelihood(double likelihood, double maxProbOfPoint) {
-            this.likelihood = likelihood;
-            this.maxProbOfPoint = maxProbOfPoint;
-        }
-
-        public static DatasetLikelihood merge(DatasetLikelihood left, DatasetLikelihood right) {
-            A.ensure(left != null || right != null, "left != null || right != null");
-            if(left == null)
-                return right;
-            else if(right == null)
-                return left;
-            else {
-                boolean isLeftMax = left.maxProbOfPoint > right.maxProbOfPoint;
-                return new DatasetLikelihood(
-                    left.likelihood + right.likelihood,
-                    isLeftMax ? left.maxProbOfPoint : right.maxProbOfPoint
-                );
-            }
-        }
-
-        public double getLikelihood() {
-            return likelihood;
-        }
+    /**
+     * @param val Value.
+     * @return 0 if Value == null and simplified value in terms of type otherwise.
+     */
+    private static double asPrimitive(Double val) {
+        return val == null ? 0.0 : val;
     }
 }
