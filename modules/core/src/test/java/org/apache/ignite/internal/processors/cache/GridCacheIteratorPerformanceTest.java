@@ -26,15 +26,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Cache iterator performance test.
  */
-@RunWith(JUnit4.class)
 public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
     /** Large entry count. */
     private static final int LARGE_ENTRY_CNT = 100000;

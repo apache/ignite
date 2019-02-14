@@ -30,15 +30,12 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Tests local query.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {

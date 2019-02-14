@@ -34,8 +34,6 @@ import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.util.concurrent.Callable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,7 +45,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
     /**
      * @param igfs If {@code true} created IGFS configuration.

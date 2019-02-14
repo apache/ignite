@@ -49,8 +49,6 @@ import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertArrayEquals;
@@ -58,7 +56,6 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     /** */
     private static final String SEQ_NUM_FLD = "f0";

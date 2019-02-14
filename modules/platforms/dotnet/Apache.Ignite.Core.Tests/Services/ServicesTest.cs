@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(prx.ToString(), svc.ToString());
             Assert.AreEqual(17, prx.TestProperty);
             Assert.IsTrue(prx.Initialized);
-            Assert.IsTrue(prx.Executed);
+            Assert.IsTrue(TestUtils.WaitForCondition(() => prx.Executed, 5000));
             Assert.IsFalse(prx.Cancelled);
             Assert.AreEqual(SvcName, prx.LastCallContextName);
 
@@ -337,7 +337,7 @@ namespace Apache.Ignite.Core.Tests.Services
             // Property getter.
             Assert.AreEqual(37, prx.TestProperty);
             Assert.IsTrue(prx.Initialized);
-            Assert.IsTrue(prx.Executed);
+            Assert.IsTrue(TestUtils.WaitForCondition(() => prx.Executed, 5000));
             Assert.IsFalse(prx.Cancelled);
             Assert.AreEqual(SvcName, prx.LastCallContextName);
 

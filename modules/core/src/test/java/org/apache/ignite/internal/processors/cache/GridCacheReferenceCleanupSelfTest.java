@@ -33,16 +33,11 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
@@ -50,7 +45,6 @@ import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** Cache mode for the current test. */
     private CacheMode mode;
@@ -77,9 +71,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testAtomicLongPartitioned() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
-
         mode = CacheMode.PARTITIONED;
 
         startGrids(2);
@@ -95,9 +86,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testAtomicLongReplicated() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
-
         mode = CacheMode.REPLICATED;
 
         startGrids(2);
@@ -113,7 +101,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testAtomicLongLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = CacheMode.LOCAL;
 
@@ -158,7 +146,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testOneAsyncOpLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = CacheMode.LOCAL;
 
@@ -203,7 +191,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testSeveralAsyncOpsLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = CacheMode.LOCAL;
 
@@ -248,7 +236,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testSyncOpAsyncCommitLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = CacheMode.LOCAL;
 
@@ -293,7 +281,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testAsyncOpsAsyncCommitLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = CacheMode.LOCAL;
 

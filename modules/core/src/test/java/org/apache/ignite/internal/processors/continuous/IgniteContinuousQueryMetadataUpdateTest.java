@@ -38,15 +38,12 @@ import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for the start continuous query process. Processing the {@link StartRoutineDiscoveryMessage} message should not
  * awaiting metadata update. Otherwise, it may lead to possible deadlock in discovery thread in the case of mutable
  * discovery messages and peer class loading enabled. See IGNITE-10238, IGNITE-6668 for details.
  */
-@RunWith(JUnit4.class)
 public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

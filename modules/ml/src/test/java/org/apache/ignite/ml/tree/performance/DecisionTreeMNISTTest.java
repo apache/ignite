@@ -29,7 +29,7 @@ import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset using locally stored data. For manual run.

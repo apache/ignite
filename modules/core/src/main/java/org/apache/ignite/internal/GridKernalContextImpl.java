@@ -72,6 +72,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
@@ -217,6 +219,14 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Cluster state process. */
     @GridToStringInclude
     private GridClusterStateProcessor stateProc;
+
+    /** Global metastorage. */
+    @GridToStringInclude
+    private DistributedMetaStorage distributedMetastorage;
+
+    /** Global metastorage. */
+    @GridToStringInclude
+    private DistributedConfigurationProcessor distributedConfigurationProcessor;
 
     /** */
     @GridToStringInclude
@@ -602,6 +612,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             cacheProc = (GridCacheProcessor)comp;
         else if (comp instanceof GridClusterStateProcessor)
             stateProc = (GridClusterStateProcessor)comp;
+        else if (comp instanceof DistributedMetaStorage)
+            distributedMetastorage = (DistributedMetaStorage)comp;
+        else if (comp instanceof DistributedConfigurationProcessor)
+            distributedConfigurationProcessor = (DistributedConfigurationProcessor)comp;
         else if (comp instanceof GridTaskSessionProcessor)
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
@@ -749,6 +763,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridClusterStateProcessor state() {
         return stateProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DistributedMetaStorage distributedMetastorage() {
+        return distributedMetastorage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DistributedConfigurationProcessor distributedConfiguration() {
+        return distributedConfigurationProcessor;
     }
 
     /** {@inheritDoc} */

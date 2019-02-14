@@ -53,8 +53,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.cancelledTasks;
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.executedTasks;
@@ -67,7 +65,6 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
 /**
  * Tests map-reduce task execution basics.
  */
-@RunWith(JUnit4.class)
 public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /** Test param. */
     private static final String MAP_WRITE = "test.map.write";

@@ -33,13 +33,10 @@ import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for JdbcThinTcpIo.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
     /** Server port range. */
     private static final int[] SERVER_PORT_RANGE = {59000, 59020};

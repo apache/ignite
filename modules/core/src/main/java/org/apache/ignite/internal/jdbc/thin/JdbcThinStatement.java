@@ -25,6 +25,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -80,6 +81,9 @@ public class JdbcThinStatement implements Statement {
 
     /** Query timeout. */
     private int timeout;
+
+    /** Request timeout. */
+    private int reqTimeout;
 
     /** Fetch size. */
     private int pageSize = DFLT_PAGE_SIZE;
@@ -305,34 +309,49 @@ public class JdbcThinStatement implements Statement {
                 byte[] buf = new byte[batchSize];
 
                 int readBytes;
+                int timeSpendMillis = 0;
+
                 while ((readBytes = input.read(buf)) != -1) {
+                    long startTime = System.currentTimeMillis();
+
                     if (readBytes == 0)
                         continue;
 
+                    if (reqTimeout != JdbcThinConnection.NO_TIMEOUT)
+                        reqTimeout -= timeSpendMillis;
+
                     JdbcResult res = conn.sendRequest(new JdbcBulkLoadBatchRequest(
-                        cmdRes.cursorId(),
-                        batchNum++,
-                        JdbcBulkLoadBatchRequest.CMD_CONTINUE,
-                        readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes)),
+                            cmdRes.cursorId(),
+                            batchNum++,
+                            JdbcBulkLoadBatchRequest.CMD_CONTINUE,
+                            readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes)),
                         this);
 
                     if (!(res instanceof JdbcQueryExecuteResult))
                         throw new SQLException("Unknown response sent by the server: " + res);
+
+                    timeSpendMillis = (int)(System.currentTimeMillis() - startTime);
                 }
 
+                if (reqTimeout != JdbcThinConnection.NO_TIMEOUT)
+                    reqTimeout -= timeSpendMillis;
+
                 return conn.sendRequest(new JdbcBulkLoadBatchRequest(
-                    cmdRes.cursorId(),
-                    batchNum++,
-                    JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF),
+                        cmdRes.cursorId(),
+                        batchNum++,
+                        JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF),
                     this);
             }
         }
         catch (Exception e) {
+            if (e instanceof SQLTimeoutException)
+                throw (SQLTimeoutException)e;
+
             try {
                 conn.sendRequest(new JdbcBulkLoadBatchRequest(
-                    cmdRes.cursorId(),
-                    batchNum,
-                    JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR),
+                        cmdRes.cursorId(),
+                        batchNum,
+                        JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR),
                     this);
             }
             catch (SQLException e1) {
@@ -466,6 +485,8 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Invalid timeout value.");
 
         this.timeout = timeout * 1000;
+
+        reqTimeout = this.timeout;
     }
 
     /** {@inheritDoc} */
@@ -943,11 +964,20 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
-     * @param currReqId Sets curresnt request Id.
+     * @param currReqId Sets current request Id.
      */
     void currentRequestId(long currReqId) {
         synchronized (cancellationMux) {
             this.currReqId = currReqId;
+        }
+    }
+
+    /**
+     * @return Current request Id.
+     */
+    long currentRequestId() {
+        synchronized (cancellationMux) {
+            return currReqId;
         }
     }
 
@@ -963,5 +993,12 @@ public class JdbcThinStatement implements Statement {
      */
     private boolean isQueryCancellationSupported() {
         return conn.isQueryCancellationSupported();
+    }
+
+    /**
+     * @return Request timeout.
+     */
+    int requestTimeout() {
+        return reqTimeout;
     }
 }

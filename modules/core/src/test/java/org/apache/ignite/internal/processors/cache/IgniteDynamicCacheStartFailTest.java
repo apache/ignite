@@ -36,11 +36,4 @@ public class IgniteDynamicCacheStartFailTest extends IgniteAbstractDynamicCacheS
 
         awaitPartitionMapExchange();
     }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
 }

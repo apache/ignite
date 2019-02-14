@@ -20,7 +20,6 @@ package org.apache.ignite.ml.genetic.cache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.functions.GAGridFunction;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;

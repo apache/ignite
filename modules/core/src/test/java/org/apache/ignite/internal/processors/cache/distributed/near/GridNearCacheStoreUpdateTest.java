@@ -44,13 +44,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Check that near cache is updated when entry loaded from store.
  */
-@RunWith(JUnit4.class)
 public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
@@ -76,8 +73,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         srv = startGrid("server");
         client = startGrid("client");

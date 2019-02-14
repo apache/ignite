@@ -27,14 +27,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
  */
-@RunWith(JUnit4.class)
 public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODES_COUNT = 4;
@@ -107,10 +105,9 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
     @Test
     public void testConcurrentAddUpdateRemoveNodeRestartCoordinator() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7472");
-
         final IgniteInternalFuture restartFut = restartCoordinator();
 
         AuthorizationContext.context(actxDflt);

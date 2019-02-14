@@ -19,13 +19,10 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test attempt to execute a map-reduce task while no Hadoop processor available.
  */
-@RunWith(JUnit4.class)
 public class HadoopNoHadoopMapReduceTest extends HadoopMapReduceTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

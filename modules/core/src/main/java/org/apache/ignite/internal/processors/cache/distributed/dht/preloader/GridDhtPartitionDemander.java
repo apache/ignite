@@ -64,7 +64,6 @@ import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -925,7 +924,7 @@ public class GridDhtPartitionDemander {
                         cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
                         false
                     )) {
-                        cached.touch(topVer); // Start tracking.
+                        cached.touch(); // Start tracking.
 
                         if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                             cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
@@ -933,7 +932,7 @@ public class GridDhtPartitionDemander {
                                 false, null, null, null, true);
                     }
                     else {
-                        cached.touch(topVer); // Start tracking.
+                        cached.touch(); // Start tracking.
 
                         if (log.isTraceEnabled())
                             log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +

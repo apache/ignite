@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -26,6 +27,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -46,6 +48,8 @@ import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
+
+import static java.util.stream.IntStream.range;
 
 /**
  * Striped executor.
@@ -408,6 +412,44 @@ public class StripedExecutor implements ExecutorService {
         @NotNull TimeUnit unit
     ) throws InterruptedException, ExecutionException, TimeoutException {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Method for await all task completion in some specific striped indexes or all.
+     * The method guarantees what all tasks which were passed before this call
+     * will be completed before method return control.
+     *
+     * @param stripes Striped idxs for await. Empty params means await all stripes.
+     */
+    public void awaitComplete(int... stripes) throws InterruptedException {
+        CountDownLatch awaitLatch;
+
+        if (stripes.length == 0) {
+            awaitLatch = new CountDownLatch(stripes());
+
+            // We have to ensure that all asynchronous updates are done.
+            // StripedExecutor guarantees ordering inside stripe - it would enough to await "finishing" tasks.
+            range(0, stripes()).forEach(idx -> execute(idx, awaitLatch::countDown));
+        }
+        else {
+            awaitLatch = new CountDownLatch(stripes.length);
+
+            for (int idx : stripes)
+                execute(idx, awaitLatch::countDown);
+        }
+
+        while (true) {
+            if (awaitLatch.await(60, TimeUnit.SECONDS))
+                break;
+            else {
+                U.log(log, "Await stripes executor complete tasks" +
+                    ", awaitLatch=" + awaitLatch.getCount() +
+                    ", stripes=" + (stripes.length == 0 ?
+                    Arrays.toString(range(0, stripes()).toArray()) : Arrays.toString(stripes)) +
+                    ", queueSize=" + Arrays.toString(stripesQueueSizes()) +
+                    ", activeStatus=" + Arrays.toString(stripesActiveStatuses()));
+            }
+        }
     }
 
     /** {@inheritDoc} */

@@ -53,15 +53,12 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests the correctness of web sessions caching functionality.
  */
-@RunWith(JUnit4.class)
 public class WebSessionSelfTest extends GridCommonAbstractTest {
     /** Port for test Jetty server. */
     private static final int TEST_JETTY_PORT = 49090;

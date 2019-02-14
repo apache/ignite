@@ -28,15 +28,14 @@ import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.LabeledVectorSetTestTrainPair;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /** Tests behaviour of KNNClassificationTest. */
 public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet> {
@@ -96,13 +95,12 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
 
         assertEquals(dataset.copy().colSize(), 2);
 
-        @SuppressWarnings("unchecked")
-        final LabeledVector<Vector, Double> row = (LabeledVector<Vector, Double>)dataset.getRow(0);
+        final LabeledVector<Double> row = (LabeledVector<Double>)dataset.getRow(0);
 
-        assertEquals(row.features().get(0), 1.0);
-        assertEquals(row.label(), 1.0);
+        assertEquals(1.0, row.features().get(0), 0);
+        assertEquals(1.0, row.label(), 0);
         dataset.setLabel(0, 2.0);
-        assertEquals(row.label(), 2.0);
+        assertEquals(2.0, row.label(), 0);
 
         assertEquals(0, new LabeledVectorSet().rowSize());
         assertEquals(1, new LabeledVectorSet(1, 2).rowSize());
@@ -207,11 +205,11 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
     /** */
     @Test
     public void testLoadingFileWithMissedData() throws URISyntaxException, IOException {
-        Path path = Paths.get(Objects.requireNonNull(this.getClass().getClassLoader().getResource(IRIS_MISSED_DATA)).toURI());
+        Path path = Paths.get(Objects.requireNonNull(getClass().getClassLoader().getResource(IRIS_MISSED_DATA)).toURI());
 
         LabeledVectorSet training = LabeledDatasetLoader.loadFromTxtFile(path, ",", false, false);
 
-        assertEquals(training.features(2).get(1), 0.0);
+        assertEquals(training.features(2).get(1), 0.0, 0);
     }
 
     /** */
@@ -266,7 +264,7 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
         LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs);
         final double[] labels = dataset.labels();
         for (int i = 0; i < lbs.length; i++)
-            assertEquals(lbs[i], labels[i]);
+            assertEquals(lbs[i], labels[i], 0);
     }
 
     /** */
@@ -290,6 +288,6 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
         LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs);
-        this.externalizeTest(dataset);
+        externalizeTest(dataset);
     }
 }

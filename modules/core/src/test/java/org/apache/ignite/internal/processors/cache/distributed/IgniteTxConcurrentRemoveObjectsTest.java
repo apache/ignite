@@ -33,8 +33,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -45,7 +43,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest {
     /** Cache partitions. */
     private static final int CACHE_PARTITIONS = 16;
@@ -72,8 +69,6 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         System.setProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL, Long.toString(oldIgniteCacheRmvEntriesTtl));
 
         super.afterTestsStopped();

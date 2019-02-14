@@ -17,8 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
 import org.apache.ignite.internal.processors.cache.IgnitePdsDataRegionMetricsTxTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
@@ -27,9 +28,11 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyC
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSporadicDataRecordsOnBackupTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest2;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
@@ -52,28 +55,27 @@ import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTes
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
-/**
- *
- */
-@RunWith(AllTests.class)
+/** */
+@RunWith(DynamicSuite.class)
 public class IgnitePdsTestSuite {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Ignored tests.
-     * @return IgniteCache test suite.
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         addRealPageStoreTests(suite, ignoredTests);
         addRealPageStoreTestsLongRunning(suite, ignoredTests);
@@ -119,7 +121,7 @@ public class IgnitePdsTestSuite {
      * @param suite suite to add tests into.
      * @param ignoredTests Ignored tests.
      */
-    private static void addRealPageStoreTestsLongRunning(TestSuite suite, Collection<Class> ignoredTests) {
+    private static void addRealPageStoreTestsLongRunning(List<Class<?>> suite, Collection<Class> ignoredTests) {
         // Basic PageMemory tests.
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsPageReplacementTest.class, ignoredTests);
     }
@@ -132,7 +134,7 @@ public class IgnitePdsTestSuite {
      * @param suite suite to add tests into.
      * @param ignoredTests Ignored tests.
      */
-    public static void addRealPageStoreTests(TestSuite suite, Collection<Class> ignoredTests) {
+    public static void addRealPageStoreTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
 
         // Checkpointing smoke-test.
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class, ignoredTests);
@@ -152,6 +154,8 @@ public class IgnitePdsTestSuite {
         // GridTestUtils.addTestIfNeeded(suite, IgnitePdsClientNearCachePutGetTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteDbPutGetWithCacheStoreTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest2.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsSporadicDataRecordsOnBackupTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistence.class, ignoredTests);
 
@@ -168,5 +172,6 @@ public class IgnitePdsTestSuite {
 
         //MetaStorage
         GridTestUtils.addTestIfNeeded(suite, IgniteMetaStorageBasicTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, DistributedMetaStoragePersistentTest.class, ignoredTests);
     }
 }

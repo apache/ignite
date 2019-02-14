@@ -98,10 +98,10 @@ public class KNNRegressionExample {
 
                 System.out.println(">>> ---------------------------------");
 
-                mse = mse / totalAmount;
+                mse /= totalAmount;
                 System.out.println("\n>>> Mean squared error (MSE) " + mse);
 
-                mae = mae / totalAmount;
+                mae /= totalAmount;
                 System.out.println("\n>>> Mean absolute error (MAE) " + mae);
 
                 System.out.println(">>> kNN regression over cached dataset usage example completed.");

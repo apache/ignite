@@ -17,8 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorGridSplitCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheTest;
@@ -33,20 +34,17 @@ import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplic
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Topology validator test suite.
  */
-@RunWith(AllTests.class)
 public class IgniteTopologyValidatorTestSuite {
     /**
      * @param ignoredTests Ignored tests.
      * @return Topology validator tests suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Topology validator Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedAtomicCacheTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedTxCacheTest.class, ignoredTests);

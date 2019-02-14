@@ -41,8 +41,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -53,7 +51,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstractTest {
     /** Number of grids to start. */
     private static final int GRID_CNT = 5;
@@ -66,7 +63,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         super.beforeTestsStarted();
     }
@@ -94,6 +91,8 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         if (!client) {

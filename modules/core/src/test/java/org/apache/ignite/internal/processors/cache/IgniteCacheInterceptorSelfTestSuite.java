@@ -17,61 +17,62 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Cache interceptor suite.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheInterceptorSelfTestSuite {
     /**
      * @return Cache API test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Ignored tests.
-     * @return IgniteCache test suite.
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("CacheInterceptor Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorLocalSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorLocalWithStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalWithStoreSelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorLocalAtomicSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorLocalAtomicWithStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalAtomicSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalAtomicWithStoreSelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicNearEnabledSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicWithStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicNearEnabledSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicWithStoreSelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicReplicatedSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicWithStoreReplicatedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicReplicatedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicWithStoreReplicatedSelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorNearEnabledSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorWithStoreSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorReplicatedSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorReplicatedWithStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorNearEnabledSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorWithStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorReplicatedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorReplicatedWithStoreSelfTest.class, ignoredTests);
 
 // TODO GG-11141.
-//        GridTestUtils.addTestIfNeeded(suite,GridCacheOnCopyFlagTxPartitionedSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite,GridCacheOnCopyFlagReplicatedSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite,GridCacheOnCopyFlagLocalSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite,GridCacheOnCopyFlagAtomicSelfTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheOnCopyFlagTxPartitionedSelfTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheOnCopyFlagReplicatedSelfTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheOnCopyFlagLocalSelfTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheOnCopyFlagAtomicSelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,CacheInterceptorPartitionCounterRandomOperationsTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,CacheInterceptorPartitionCounterLocalSanityTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheInterceptorPartitionCounterRandomOperationsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheInterceptorPartitionCounterLocalSanityTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorAtomicRebalanceTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorTransactionalRebalanceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicRebalanceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorTransactionalRebalanceTest.class, ignoredTests);
 
         return suite;
     }

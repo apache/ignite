@@ -18,8 +18,8 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
-import {timer, merge, defer, from} from 'rxjs';
-import {mergeMap, tap, switchMap, exhaustMap, take} from 'rxjs/operators';
+import {timer, merge, defer, of, EMPTY} from 'rxjs';
+import {tap, switchMap, exhaustMap, take, pluck, distinctUntilChanged, filter, map, catchError} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
 
@@ -255,16 +255,16 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['IgniteInput', '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
+    static $inject = ['IgniteInput', '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', '$window', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
 
     /**
      * @param {CSV} CSV
      */
-    constructor(private IgniteInput: InputDialog, $root, private $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
+    constructor(private IgniteInput: InputDialog, $root, private $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
         const $ctrl = this;
 
         this.CSV = CSV;
-        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser, DemoInfo });
+        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser, DemoInfo });
 
         // Define template urls.
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
@@ -923,9 +923,6 @@ export class NotebookCtrl {
         };
 
         const _startWatch = () => {
-            const awaitClusters$ = from(
-                agentMgr.startClusterWatch('Leave Queries', 'default-state'));
-
             const finishLoading$ = defer(() => {
                 if (!$root.IgniteDemoMode)
                     Loading.finish('sqlLoading');
@@ -935,17 +932,37 @@ export class NotebookCtrl {
                 return merge(timer(0, period).pipe(exhaustMap(() => _refreshCaches())), finishLoading$);
             };
 
-            this.refresh$ = awaitClusters$.pipe(
-                mergeMap(() => agentMgr.currentCluster$),
-                tap(() => Loading.start('sqlLoading')),
-                tap(() => {
-                    _.forEach($scope.notebook.paragraphs, (paragraph) => {
-                        paragraph.reset($interval);
-                    });
-                }),
-                switchMap(() => refreshCaches(5000))
-            )
-                .subscribe();
+            const cluster$ = agentMgr.connectionSbj.pipe(
+                pluck('cluster'),
+                distinctUntilChanged(),
+                tap((cluster) => {
+                    this.clusterIsAvailable = (!!cluster && cluster.active === true) || agentMgr.isDemoMode();
+                })
+            );
+
+            this.refresh$ = cluster$.pipe(
+                switchMap((cluster) => {
+                    if (!cluster && !agentMgr.isDemoMode()) {
+                        return of(EMPTY).pipe(
+                            tap(() => {
+                                $scope.caches = [];
+                            })
+                        );
+                    }
+
+                    return of(cluster).pipe(
+                        tap(() => Loading.start('sqlLoading')),
+                        tap(() => {
+                            _.forEach($scope.notebook.paragraphs, (paragraph) => {
+                                paragraph.reset($interval);
+                            });
+                        }),
+                        switchMap(() => refreshCaches(5000))
+                    );
+                })
+            );
+
+            this.subscribers$ = merge(this.refresh$).subscribe();
         };
 
         const _newParagraph = (paragraph) => {
@@ -1218,7 +1235,47 @@ export class NotebookCtrl {
             _rebuildColumns(paragraph);
         };
 
-        const _showLoading = (paragraph, enable) => paragraph.loading = enable;
+        const _showLoading = (paragraph, enable) => {
+            if (paragraph.qryType === 'scan')
+                paragraph.scanningInProgress = enable;
+
+            paragraph.loading = enable;
+        };
+
+        const _fetchQueryResult = (paragraph, clearChart, res, qryArg) => {
+            if (!_.isNil(res.rows)) {
+                _processQueryResult(paragraph, clearChart, res);
+                _tryStartRefresh(paragraph);
+
+                $scope.$applyAsync();
+
+                return;
+            }
+
+            const subscription = timer(100, 500).pipe(
+                exhaustMap(() => agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)),
+                filter((res) => !_.isNil(res.rows)),
+                take(1),
+                map((res) => _fetchQueryResult(paragraph, false, res, qryArg)),
+                catchError((err) => {
+                    if (paragraph.subscription) {
+                        paragraph.subscription.unsubscribe();
+                        paragraph.setError(err);
+
+                        _showLoading(paragraph, false);
+                        delete paragraph.subscription;
+
+                        $scope.$applyAsync();
+                    }
+
+                    return of(err);
+                })
+            ).subscribe();
+
+            Object.defineProperty(paragraph, 'subscription', {value: subscription, configurable: true});
+
+            return subscription;
+        };
 
         /**
          * @param {Object} paragraph Query
@@ -1229,6 +1286,11 @@ export class NotebookCtrl {
         const _processQueryResult = (paragraph, clearChart, res) => {
             const prevKeyCols = paragraph.chartKeyCols;
             const prevValCols = paragraph.chartValCols;
+
+            if (paragraph.subscription) {
+                paragraph.subscription.unsubscribe();
+                delete paragraph.subscription;
+            }
 
             if (!_.eq(paragraph.meta, res.columns)) {
                 paragraph.meta = [];
@@ -1323,10 +1385,35 @@ export class NotebookCtrl {
         const _closeOldQuery = (paragraph) => {
             const nid = paragraph.resNodeId;
 
-            if (paragraph.queryId && _.find($scope.caches, ({nodes}) => _.find(nodes, {nid: nid.toUpperCase()})))
-                return agentMgr.queryClose(nid, paragraph.queryId);
+            if (paragraph.queryId) {
+                const qryId = paragraph.queryId;
+                delete paragraph.queryId;
+
+                return agentMgr.queryClose(nid, qryId);
+            }
 
             return $q.when();
+        };
+
+        $scope.cancelQuery = (paragraph) => {
+            if (paragraph.subscription) {
+                paragraph.subscription.unsubscribe();
+                delete paragraph.subscription;
+            }
+
+            _showLoading(paragraph, false);
+            this.$scope.stopRefresh(paragraph);
+
+            _closeOldQuery(paragraph)
+                .then(() => _showLoading(paragraph, false))
+                .catch((err) => {
+                    _showLoading(paragraph, false);
+                    paragraph.setError(err);
+                });
+        };
+
+        $scope.cancelQueryAvailable = (paragraph) => {
+            return !!paragraph.subscription;
         };
 
         /**
@@ -1372,7 +1459,8 @@ export class NotebookCtrl {
                     }
 
                     return nids[_.random(0, nids.length - 1)];
-                });
+                })
+                .catch(Messages.showError);
         };
 
         const _executeRefresh = (paragraph) => {
@@ -1381,9 +1469,23 @@ export class NotebookCtrl {
             agentMgr.awaitCluster()
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
-                .then((nid) => agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins,
-                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy, args.collocated))
-                .then((res) => _processQueryResult(paragraph, false, res))
+                .then((nid) => {
+                    const qryArg = {
+                        nid,
+                        cacheName: args.cacheName,
+                        query: args.query,
+                        nonCollocatedJoins: args.nonCollocatedJoins,
+                        enforceJoinOrder: args.enforceJoinOrder,
+                        replicatedOnly: false,
+                        local: !!args.localNid,
+                        pageSize: args.pageSize,
+                        lazy: args.lazy,
+                        collocated: args.collocated
+                    };
+
+                    return agentMgr.querySql(qryArg)
+                        .then((res) => _fetchQueryResult(paragraph, false, res, qryArg));
+                })
                 .catch((err) => paragraph.setError(err));
         };
 
@@ -1392,8 +1494,6 @@ export class NotebookCtrl {
 
             if (_.get(paragraph, 'rate.installed') && paragraph.queryExecuted()) {
                 $scope.chartAcceptKeyColumn(paragraph, TIME_LINE);
-
-                _executeRefresh(paragraph);
 
                 const delay = paragraph.rate.value * paragraph.rate.unit;
 
@@ -1428,6 +1528,19 @@ export class NotebookCtrl {
 
         $scope.cacheNameForSql = (paragraph) => {
             return $scope.ddlAvailable() && !paragraph.useAsDefaultSchema ? null : paragraph.cacheName;
+        };
+
+        const _initQueryResult = (paragraph, res) => {
+            paragraph.resNodeId = res.responseNodeId;
+            paragraph.queryId = res.queryId;
+
+            paragraph.rows = [];
+            paragraph.gridOptions.adjustHeight(paragraph.rows.length);
+
+            paragraph.meta = [];
+            paragraph.setError({message: ''});
+
+            paragraph.hasNext = false;
         };
 
         $scope.execute = (paragraph, local = false) => {
@@ -1467,13 +1580,25 @@ export class NotebookCtrl {
                             ActivitiesData.post({ group: 'sql', action: '/queries/execute' });
 
                             const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : query;
+                            const qryArg = {
+                                nid,
+                                cacheName: args.cacheName,
+                                query: qry,
+                                nonCollocatedJoins,
+                                enforceJoinOrder,
+                                replicatedOnly: false,
+                                local,
+                                pageSize: args.pageSize,
+                                lazy,
+                                collocated
+                            };
 
-                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy, collocated);
-                        })
-                        .then((res) => {
-                            _processQueryResult(paragraph, true, res);
+                            return agentMgr.querySql(qryArg)
+                                .then((res) => {
+                                    _initQueryResult(paragraph, res);
 
-                            _tryStartRefresh(paragraph);
+                                    return _fetchQueryResult(paragraph, true, res, qryArg);
+                                });
                         })
                         .catch((err) => {
                             paragraph.setError(err);
@@ -1481,6 +1606,8 @@ export class NotebookCtrl {
                             _showLoading(paragraph, false);
 
                             $scope.stopRefresh(paragraph);
+
+                            Messages.showError(err);
                         })
                         .then(() => paragraph.ace.focus());
                 });
@@ -1525,9 +1652,25 @@ export class NotebookCtrl {
 
                     ActivitiesData.post({ group: 'sql', action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, nonCollocatedJoins, enforceJoinOrder, false, false, args.pageSize, false, collocated);
+                    const qryArg = {
+                        nid,
+                        cacheName: args.cacheName,
+                        query: args.query,
+                        nonCollocatedJoins,
+                        enforceJoinOrder,
+                        replicatedOnly: false,
+                        local: false,
+                        pageSize: args.pageSize,
+                        lazy: false, collocated
+                    };
+
+                    return agentMgr.querySql(qryArg)
+                        .then((res) => {
+                            _initQueryResult(paragraph, res);
+
+                            return _fetchQueryResult(paragraph, true, res, qryArg);
+                        });
                 })
-                .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
                     paragraph.setError(err);
 
@@ -1545,7 +1688,6 @@ export class NotebookCtrl {
             $scope.scanAvailable(paragraph) && _chooseNode(cacheName, local)
                 .then((nid) => {
                     paragraph.localQueryMode = local;
-                    paragraph.scanningInProgress = true;
 
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
@@ -1569,15 +1711,28 @@ export class NotebookCtrl {
 
                             ActivitiesData.post({ group: 'sql', action: '/queries/scan' });
 
-                            return agentMgr.queryScan(nid, cacheName, filter, false, caseSensitive, false, local, pageSize);
+                            const qryArg = {
+                                nid,
+                                cacheName,
+                                filter,
+                                regEx: false,
+                                caseSensitive,
+                                near: false,
+                                local,
+                                pageSize
+                            };
+
+                            return agentMgr.queryScan(qryArg).then((res) => {
+                                _initQueryResult(paragraph, res);
+
+                                return _fetchQueryResult(paragraph, true, res, qryArg);
+                            });
                         })
-                        .then((res) => _processQueryResult(paragraph, true, res))
                         .catch((err) => {
                             paragraph.setError(err);
 
                             _showLoading(paragraph, false);
-                        })
-                        .then(() => paragraph.scanningInProgress = false);
+                        });
                 });
         };
 
@@ -1718,8 +1873,26 @@ export class NotebookCtrl {
 
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
-                    ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
-                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy, !!args.collocated))
+                    ? agentMgr.queryScanGetAll({
+                        nid,
+                        cacheName: args.cacheName,
+                        filter: args.query,
+                        regEx: !!args.regEx,
+                        caseSensitive: !!args.caseSensitive,
+                        near: !!args.near,
+                        local: !!args.localNid
+                    })
+                    : agentMgr.querySqlGetAll({
+                        nid,
+                        cacheName: args.cacheName,
+                        query: args.query,
+                        nonCollocatedJoins: !!args.nonCollocatedJoins,
+                        enforceJoinOrder: !!args.enforceJoinOrder,
+                        replicatedOnly: false,
+                        local: !!args.localNid,
+                        lazy: !!args.lazy,
+                        collocated: !!args.collocated
+                    }))
                 .then((res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
                 .then(() => {
@@ -1758,7 +1931,7 @@ export class NotebookCtrl {
             paragraph.rate.installed = true;
 
             if (paragraph.queryExecuted() && !paragraph.scanExplain())
-                _tryStartRefresh(paragraph);
+                _executeRefresh(paragraph);
         };
 
         $scope.stopRefresh = function(paragraph) {
@@ -1817,7 +1990,7 @@ export class NotebookCtrl {
         $scope.dblclickMetadata = function(paragraph, node) {
             paragraph.ace.insert(node.name);
 
-            setTimeout(() => paragraph.ace.focus(), 1);
+            setTimeout(() => paragraph.ace.focus(), 100);
         };
 
         $scope.importMetadata = function() {
@@ -1904,6 +2077,22 @@ export class NotebookCtrl {
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});
             }
         };
+
+        $window.addEventListener('beforeunload', () => {
+            this._closeOpenedQueries(this.$scope.notebook.paragraphs);
+        });
+    }
+
+    _closeOpenedQueries(paragraphs) {
+        _.forEach(paragraphs, ({queryId, subscription, resNodeId}) => {
+            if (subscription)
+                subscription.unsubscribe();
+
+            if (queryId) {
+                this.agentMgr.queryClose(resNodeId, queryId)
+                    .catch(() => { /* No-op. */ });
+            }
+        });
     }
 
     scanActions: QueryActions<Paragraph & {type: 'scan'}> = [
@@ -1964,6 +2153,8 @@ export class NotebookCtrl {
             await this.Confirm.confirm('Are you sure you want to remove query: "' + paragraph.name + '"?');
             this.$scope.stopRefresh(paragraph);
 
+            this._closeOpenedQueries([paragraph]);
+
             const paragraph_idx = _.findIndex(this.$scope.notebook.paragraphs, (item) => paragraph === item);
             const panel_idx = _.findIndex(this.$scope.expandedParagraphs, (item) => paragraph_idx === item);
 
@@ -1995,7 +2186,9 @@ export class NotebookCtrl {
     }
 
     $onDestroy() {
-        if (this.refresh$)
-            this.refresh$.unsubscribe();
+        this._closeOpenedQueries(this.$scope.notebook.paragraphs);
+
+        if (this.subscribers$)
+            this.subscribers$.unsubscribe();
     }
 }
