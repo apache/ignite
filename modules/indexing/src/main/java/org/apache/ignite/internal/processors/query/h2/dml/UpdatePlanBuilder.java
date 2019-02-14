@@ -88,25 +88,25 @@ public final class UpdatePlanBuilder {
      * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
      * if available.
      *
+     * @param schemaName Schema name.
      * @param stmt Statement.
      * @param mvccEnabled MVCC enabled flag.
      * @param idx Indexing.
-     * @param conn Connection.
      * @param fieldsQry Original query.
      * @return Update plan.
      */
     @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForStatement(
+        String schemaName,
         GridSqlStatement stmt,
         boolean mvccEnabled,
         IgniteH2Indexing idx,
-        @Nullable Connection conn,
         @Nullable SqlFieldsQuery fieldsQry
     ) throws IgniteCheckedException {
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(stmt, idx, mvccEnabled, conn, fieldsQry);
+            return planForInsert(schemaName, stmt, idx, mvccEnabled, fieldsQry);
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
-            return planForUpdate(stmt, idx, mvccEnabled, conn, fieldsQry);
+            return planForUpdate(schemaName, stmt, idx, mvccEnabled, fieldsQry);
         else
             throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -115,20 +115,20 @@ public final class UpdatePlanBuilder {
     /**
      * Prepare update plan for INSERT or MERGE.
      *
+     * @param schemaName Schema name.
      * @param stmt INSERT or MERGE statement.
      * @param idx Indexing.
      * @param mvccEnabled Mvcc flag.
-     * @param conn Connection.
      * @param fieldsQuery Original query.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
     private static UpdatePlan planForInsert(
+        String schemaName,
         GridSqlStatement stmt,
         IgniteH2Indexing idx,
         boolean mvccEnabled,
-        @Nullable Connection conn,
         @Nullable SqlFieldsQuery fieldsQuery
     ) throws IgniteCheckedException {
         GridSqlQuery sel = null;
@@ -258,7 +258,7 @@ public final class UpdatePlanBuilder {
             distributed = checkPlanCanBeDistributed(
                 idx,
                 mvccEnabled,
-                conn,
+                schemaName,
                 fieldsQuery,
                 selectSql,
                 tbl.dataTable().cacheName()
@@ -333,19 +333,19 @@ public final class UpdatePlanBuilder {
     /**
      * Prepare update plan for UPDATE or DELETE.
      *
+     * @param schemaName Schema name.
      * @param stmt UPDATE or DELETE statement.
      * @param idx Indexing.
-     * @param mvccEnabled Mvcc flag.
-     * @param conn Connection.
+     * @param mvccEnabled MVCC flag.
      * @param fieldsQuery Original query.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
     private static UpdatePlan planForUpdate(
+        String schemaName,
         GridSqlStatement stmt,
         IgniteH2Indexing idx,
         boolean mvccEnabled,
-        @Nullable Connection conn,
         @Nullable SqlFieldsQuery fieldsQuery
     ) throws IgniteCheckedException {
         GridSqlElement target;
@@ -442,7 +442,7 @@ public final class UpdatePlanBuilder {
                     distributed = checkPlanCanBeDistributed(
                         idx,
                         mvccEnabled,
-                        conn,
+                        schemaName,
                         fieldsQuery,
                         selectSql,
                         tbl.dataTable().cacheName()
@@ -477,7 +477,7 @@ public final class UpdatePlanBuilder {
                     distributed = checkPlanCanBeDistributed(
                         idx,
                         mvccEnabled,
-                        conn,
+                        schemaName,
                         fieldsQuery,
                         selectSql,
                         tbl.dataTable().cacheName()
@@ -862,7 +862,7 @@ public final class UpdatePlanBuilder {
      *
      * @param idx Indexing.
      * @param mvccEnabled Mvcc flag.
-     * @param conn Connection.
+     * @param schemaName Schema name.
      * @param fieldsQry Initial update query.
      * @param selectQry Derived select query.
      * @param cacheName Cache name.
@@ -872,7 +872,7 @@ public final class UpdatePlanBuilder {
     private static DmlDistributedPlanInfo checkPlanCanBeDistributed(
         IgniteH2Indexing idx,
         boolean mvccEnabled,
-        Connection conn,
+        String schemaName,
         SqlFieldsQuery fieldsQry,
         String selectQry,
         String cacheName
@@ -881,9 +881,7 @@ public final class UpdatePlanBuilder {
         if ((!mvccEnabled && !isSkipReducerOnUpdateQuery(fieldsQry)) || DmlUtils.isBatched(fieldsQry))
             return null;
 
-        assert conn != null;
-
-        try {
+        try (Connection conn = idx.connections().connectionNoCache(schemaName)) {
             // Get a new prepared statement for derived select query.
             try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
                 H2Utils.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
@@ -900,7 +898,7 @@ public final class UpdatePlanBuilder {
                 );
 
                 boolean distributed =
-                    !qry.isLocalSplit() &&                                                    // No split for local qry
+                    !qry.isLocalSplit() &&                                                    // No split for local
                     qry.hasCacheIds() &&                                                      // Over real caches
                     qry.skipMergeTable() &&                                                   // No merge table
                     qry.mapQueries().size() == 1 && !qry.mapQueries().get(0).hasSubQueries(); // One w/o subqueries

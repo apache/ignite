@@ -31,8 +31,10 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
@@ -72,7 +74,7 @@ public class QueryParser {
     private static final int CACHE_SIZE = 1024;
 
     /** A pattern for commands having internal implementation in Ignite. */
-    public static final Pattern INTERNAL_CMD_RE = Pattern.compile(
+    private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
         "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user",
         Pattern.CASE_INSENSITIVE);
 
@@ -396,18 +398,6 @@ public class QueryParser {
     /**
      * Prepare DML statement.
      *
-     * @param preparedStmt Prepared statement.
-     * @return Statement.
-     */
-    public QueryParserResultDml prepareDmlStatement(PreparedStatement preparedStmt) {
-        Prepared prep = GridSqlQueryParser.prepared(preparedStmt);
-
-        return prepareDmlStatement(prep);
-    }
-
-    /**
-     * Prepare DML statement.
-     *
      * @param prepared Prepared.
      * @return Statement.
      */
@@ -441,7 +431,16 @@ public class QueryParser {
                 MvccUtils.throwAtomicityModesMismatchException(ctx.config(), curCtx.config());
         }
 
-        return new QueryParserResultDml(stmt, mvccEnabled);
+        // Get streamer info.
+        GridH2Table streamTbl = null;
+
+        if (GridSqlQueryParser.isStreamableInsertStatement(prepared)) {
+            GridSqlInsert insert = (GridSqlInsert)stmt;
+
+            streamTbl = DmlAstUtils.gridTableForElement(insert.into()).dataTable();
+        }
+
+        return new QueryParserResultDml(stmt, mvccEnabled, streamTbl);
     }
 
     /**
