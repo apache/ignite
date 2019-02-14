@@ -872,6 +872,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
 
     /**
+     * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
+     */
+    public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
