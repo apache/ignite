@@ -927,7 +927,7 @@ public final class UpdatePlanBuilder {
      * @param qry Query.
      * @return {@code true} if update can be distributed.
      */
-    public static boolean isSkipReducerOnUpdateQuery(SqlFieldsQuery qry) {
+    private static boolean isSkipReducerOnUpdateQuery(SqlFieldsQuery qry) {
         return qry != null && !qry.isLocal() &&
             qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isSkipReducerOnUpdate();
     }
