@@ -123,34 +123,36 @@ public class QueryParser {
      */
     private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry) {
         // First, let's check if we already have a two-step query for this statement...
-        QueryParserCacheKey cachedQryKey = new QueryParserCacheKey(
+        QueryParserCacheKey cachedKey = new QueryParserCacheKey(
             schemaName,
             qry.getSql(),
             qry.isCollocated(),
             qry.isDistributedJoins(),
             qry.isEnforceJoinOrder(),
-            qry.isLocal());
+            qry.isLocal()
+        );
 
-        QueryParserCacheEntry cachedQry = cache.get(cachedQryKey);
+        QueryParserCacheEntry cached = cache.get(cachedKey);
 
-        if (cachedQry != null) {
-            QueryParserResultSelect select = new QueryParserResultSelect(
-                cachedQry.query(),
-                cachedQry.meta(),
-                null
-            );
-
-            return new QueryParserResult(qry, null, select, null, null);
-        }
+        if (cached != null)
+            return new QueryParserResult(qry, null, cached.select(), cached.dml(), cached.command());
 
         // Try parting as native command.
         QueryParserResult parseRes = parseNative(schemaName, qry);
 
-        if (parseRes != null)
-            return parseRes;
+        // Otherwise parse with H2.
+        if (parseRes == null)
+            parseRes = parseH2(schemaName, qry);
 
-        // Parse with H2.
-        return parseH2(schemaName, qry);
+        // Add to cache if not multi-statement.
+        if (parseRes.remainingQuery() == null) {
+            cached = new QueryParserCacheEntry(parseRes.select(), parseRes.dml(), parseRes.command());
+
+            cache.put(cachedKey, cached);
+        }
+
+        // Done.
+        return parseRes;
     }
 
     /**
@@ -188,7 +190,7 @@ public class QueryParser {
                 || nativeCmd instanceof SqlCreateUserCommand
                 || nativeCmd instanceof SqlAlterUserCommand
                 || nativeCmd instanceof SqlDropUserCommand)
-                )
+            )
                 return null;
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.lastCommandSql());
@@ -362,29 +364,12 @@ public class QueryParser {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        // At this point only SELECT is possible.
-        if (loc) {
-            // No two-step for local query for now.
-            QueryParserResultSelect select = new QueryParserResultSelect(null, null, prepared);
+        // Parse SELECT.
+        try {
+            GridCacheTwoStepQuery twoStepQry = null;
 
-            return new QueryParserResult(newQry, remainingQry, select, null, null);
-        }
-
-        // Only distirbuted SELECT are possible at this point.
-        QueryParserCacheKey cachedQryKey = new QueryParserCacheKey(
-            schemaName,
-            qry.getSql(),
-            qry.isCollocated(),
-            qry.isDistributedJoins(),
-            qry.isEnforceJoinOrder(),
-            qry.isLocal()
-        );
-
-        QueryParserCacheEntry cachedQry = cache.get(cachedQryKey);
-
-        if (cachedQry == null) {
-            try {
-                GridCacheTwoStepQuery twoStepQry = GridSqlQuerySplitter.split(
+            if (!loc) {
+                twoStepQry = GridSqlQuerySplitter.split(
                     connMgr.connectionForThread().connection(newQry.getSchema()),
                     prepared,
                     newQry.getArgs(),
@@ -394,33 +379,24 @@ public class QueryParser {
                     newQry.isLocal(),
                     idx
                 );
+            }
 
-                List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
+            List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
 
-                cachedQry = new QueryParserCacheEntry(meta, twoStepQry);
+            QueryParserResultSelect select = new QueryParserResultSelect(twoStepQry, meta);
 
-                if (remainingQry == null && !twoStepQry.explain())
-                    cache.putIfAbsent(cachedQryKey, cachedQry);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSQLException("Failed to bind parameters: [qry=" + newQry.getSql() + ", params=" +
-                    Arrays.deepToString(newQry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
-            }
-            catch (SQLException e) {
-                throw new IgniteSQLException(e);
-            }
-            finally {
-                U.close(stmt, log);
-            }
+            return new QueryParserResult(newQry, remainingQry, select, null, null);
         }
-
-        QueryParserResultSelect select = new QueryParserResultSelect(
-            cachedQry.query(),
-            cachedQry.meta(),
-            prepared
-        );
-
-        return new QueryParserResult(newQry, remainingQry, select, null, null);
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException("Failed to parse query: " + newQry.getSql(), IgniteQueryErrorCode.PARSING, e);
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+        finally {
+            // TODO: Leak if returned earlier. Will be fixed in https://issues.apache.org/jira/browse/IGNITE-11279
+            U.close(stmt, log);
+        }
     }
 
     /**
