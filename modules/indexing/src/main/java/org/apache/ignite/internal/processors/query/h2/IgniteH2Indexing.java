@@ -502,7 +502,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Prepared p = GridSqlQueryParser.prepared(stmt);
 
             if (GridSqlQueryParser.isDml(p)) {
-                QueryParserResultDml dml = QueryParser.prepareDmlStatement(p);
+                QueryParserResultDml dml = parser.prepareDmlStatement(p);
 
                 SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
 
@@ -743,7 +743,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         checkStatementStreamable(stmt);
 
-        QueryParserResultDml dml = QueryParser.prepareDmlStatement(stmt);
+        QueryParserResultDml dml = parser.prepareDmlStatement(stmt);
 
         UpdatePlan plan = updatePlan(schemaName, conn, dml, null, true);
 
@@ -780,7 +780,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             checkStatementStreamable(stmt);
 
-            QueryParserResultDml dml = QueryParser.prepareDmlStatement(stmt);
+            QueryParserResultDml dml = parser.prepareDmlStatement(stmt);
 
             final UpdatePlan plan = updatePlan(schemaName, null, dml, null, true);
 
@@ -1681,7 +1681,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         IndexingQueryFilter filter = backupFilter(topVer, parts);
 
-        QueryParserResultDml dml = QueryParser.prepareDmlStatement(stmt);
+        QueryParserResultDml dml = parser.prepareDmlStatement(stmt);
 
         UpdatePlan plan = updatePlan(schema, conn, dml, fldsQry, loc);
 
@@ -1919,7 +1919,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException(e);
         }
 
-        return executeUpdate(schemaName, c, QueryParser.prepareDmlStatement(stmt), qry, loc, filter, cancel);
+        return executeUpdate(schemaName, c, parser.prepareDmlStatement(stmt), qry, loc, filter, cancel);
     }
 
     /**

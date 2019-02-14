@@ -399,7 +399,7 @@ public class QueryParser {
      * @param preparedStmt Prepared statement.
      * @return Statement.
      */
-    public static QueryParserResultDml prepareDmlStatement(PreparedStatement preparedStmt) {
+    public QueryParserResultDml prepareDmlStatement(PreparedStatement preparedStmt) {
         Prepared prep = GridSqlQueryParser.prepared(preparedStmt);
 
         return prepareDmlStatement(prep);
@@ -411,13 +411,18 @@ public class QueryParser {
      * @param prepared Prepared.
      * @return Statement.
      */
-    public static QueryParserResultDml prepareDmlStatement(Prepared prepared) {
+    public QueryParserResultDml prepareDmlStatement(Prepared prepared) {
         // Prepare AST.
         GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
         GridSqlStatement stmt = parser.parse(prepared);
 
         List<GridH2Table> tbls = parser.tablesForDml();
+
+        // Check if caches are started because we may need to collect affinity info later on, so they needs to be
+        // available on local node.
+        for (GridH2Table h2tbl : tbls)
+            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl);
 
         // Check MVCC mode.
         GridCacheContextInfo ctx = null;
