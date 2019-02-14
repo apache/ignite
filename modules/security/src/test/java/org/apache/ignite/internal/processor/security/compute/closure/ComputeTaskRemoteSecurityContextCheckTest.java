@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +32,8 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -38,7 +41,53 @@ import org.junit.Test;
 /**
  * Testing permissions when the compute task is executed cache operations on remote node.
  */
-public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractComputeRemoteSecurityContextCheckTest {
+public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
+    /** Name of server initiator node. */
+    private static final String SRV_INITIATOR = "srv_initiator";
+
+    /** Name of client initiator node. */
+    private static final String CLNT_INITIATOR = "clnt_initiator";
+
+    /** Name of server transition node. */
+    private static final String SRV_TRANSITION = "srv_transition";
+
+    /** Name of server endpoint node. */
+    private static final String SRV_ENDPOINT = "srv_endpoint";
+
+    /** Name of client transition node. */
+    private static final String CLNT_TRANSITION = "clnt_transition";
+
+    /** Name of client endpoint node. */
+    private static final String CLNT_ENDPOINT = "clnt_endpoint";
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+
+        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
+
+        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+
+        startGrid(CLNT_TRANSITION, allowAllPermissionSet(), true);
+
+        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+
+        startGrid(CLNT_ENDPOINT, allowAllPermissionSet());
+
+        G.allGrids().get(0).cluster().active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void setupVerifier(Verifier verifier) {
+        verifier
+            .add(SRV_TRANSITION, 1)
+            .add(CLNT_TRANSITION, 1)
+            .add(SRV_ENDPOINT, 2)
+            .add(CLNT_ENDPOINT, 2);
+    }
+
     /**
      *
      */
@@ -52,16 +101,36 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractComputeRe
      * @param initiator Node that initiates an execution.
      */
     private void runAndCheck(IgniteEx initiator) {
-        runAndCheck(initiator,
+        runAndCheck(secSubjectId(initiator),
             () -> initiator.compute().execute(
                 new TestComputeTask(transitions(), endpoints(), false), 0
             )
         );
 
-        runAndCheck(initiator,
+        runAndCheck(secSubjectId(initiator),
             () -> initiator.compute().executeAsync(
                 new TestComputeTask(transitions(), endpoints(), true), 0
             ).get()
+        );
+    }
+
+    /**
+     * @return Collection of transition node ids.
+     */
+    private Collection<UUID> transitions() {
+        return Arrays.asList(
+            grid(SRV_TRANSITION).localNode().id(),
+            grid(CLNT_TRANSITION).localNode().id()
+        );
+    }
+
+    /**
+     * @return Collection of endpont nodes ids.
+     */
+    private Collection<UUID> endpoints() {
+        return Arrays.asList(
+            grid(SRV_ENDPOINT).localNode().id(),
+            grid(CLNT_ENDPOINT).localNode().id()
         );
     }
 
@@ -116,7 +185,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractComputeRe
                         }
 
                         @Override public Object execute() throws IgniteException {
-                            VERIFIER.verify(loc);
+                            verify(loc);
 
                             if (!endpoints.isEmpty()) {
                                 if (isAsync)

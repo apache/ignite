@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -34,44 +33,17 @@ import static org.junit.Assert.assertThat;
 /**
  *
  */
-public class AbstractRemoteSecurityContextCheckTest extends AbstractSecurityTest {
+public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSecurityTest {
     /** Verifier to check results of tests. */
-    protected static final Verifier VERIFIER = new Verifier();
-
-    /** Name of server initiator node. */
-    protected static final String SRV_INITIATOR = "srv_initiator";
-
-    /** Name of client initiator node. */
-    protected static final String CLNT_INITIATOR = "clnt_initiator";
-
-    /** Name of server transition node. */
-    protected static final String SRV_TRANSITION = "srv_transition";
-
-    /** Name of server endpoint node. */
-    protected static final String SRV_ENDPOINT = "srv_endpoint";
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startNodes();
-
-        assert !G.allGrids().isEmpty();
-
-        G.allGrids().get(0).cluster().active(true);
-    }
+    private static final Verifier VERIFIER = new Verifier();
 
     /**
-     * Starts nodes.
+     * Checks that current security context is valid and incriments invoke's counter.
+     *
+     * @param ignite Local node.
      */
-    protected void startNodes() throws Exception {
-        startGrid(SRV_INITIATOR, allowAllPermissionSet());
-
-        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
-
-        startGrid(SRV_TRANSITION, allowAllPermissionSet());
-
-        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+    public static void verify(Ignite ignite){
+        VERIFIER.verify((IgniteEx)ignite);
     }
 
     /**
@@ -89,6 +61,25 @@ public class AbstractRemoteSecurityContextCheckTest extends AbstractSecurityTest
      */
     protected void assertCauseSecurityException(Throwable throwable) {
         assertThat(X.cause(throwable, SecurityException.class), notNullValue());
+    }
+
+    /**
+     * Setups expected behavior to passed verifier.
+     */
+    protected abstract void setupVerifier(Verifier verifier);
+
+    /**
+     * Sets up VERIFIER, performs the runnable and checks the result.
+     *
+     * @param secSubjId Expected security subject id.
+     * @param r Runnable.
+     */
+    protected final void runAndCheck(UUID secSubjId, Runnable r) {
+        setupVerifier(VERIFIER.start(secSubjId));
+
+        r.run();
+
+        VERIFIER.checkResult();
     }
 
     /**
@@ -110,7 +101,7 @@ public class AbstractRemoteSecurityContextCheckTest extends AbstractSecurityTest
          *
          * @param expSecSubjId Expected security subject id.
          */
-        public Verifier start(UUID expSecSubjId) {
+        private Verifier start(UUID expSecSubjId) {
             this.expSecSubjId = expSecSubjId;
 
             map.clear();
@@ -136,16 +127,7 @@ public class AbstractRemoteSecurityContextCheckTest extends AbstractSecurityTest
          *
          * @param ignite Local node.
          */
-        public void verify(Ignite ignite) {
-            verify((IgniteEx)ignite);
-        }
-
-        /**
-         * Checks that current security context is valid and incriments invoke's counter.
-         *
-         * @param ignite Local node.
-         */
-        public void verify(IgniteEx ignite) {
+        private void verify(IgniteEx ignite) {
             assert expSecSubjId != null;
             assert ignite != null;
 
@@ -169,7 +151,7 @@ public class AbstractRemoteSecurityContextCheckTest extends AbstractSecurityTest
         /**
          * Checks result of test and clears expected behavior.
          */
-        public void checkResult() {
+        private void checkResult() {
             assert !map.isEmpty();
 
             map.forEach((key, value) ->

@@ -49,22 +49,6 @@ public abstract class AbstractCacheOperationRemoteSecurityContextCheckTest exten
     }
 
     /**
-     * Sets up VERIFIER, performs the runnable and checks the result.
-     *
-     * @param node Node.
-     * @param r Runnable.
-     */
-    protected final void runAndCheck(IgniteEx node, Runnable r){
-        VERIFIER.start(secSubjectId(node))
-            .add(SRV_TRANSITION, 1)
-            .add(SRV_ENDPOINT, 1);
-
-        r.run();
-
-        VERIFIER.checkResult();
-    }
-
-    /**
      * Getting the key that is contained on primary partition on passed node for {@link #CACHE_NAME} cache.
      *
      * @param ignite Node.

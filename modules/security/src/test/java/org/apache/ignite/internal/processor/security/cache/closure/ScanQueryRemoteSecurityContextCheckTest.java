@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -34,6 +35,40 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
+    /** Name of server initiator node. */
+    private static final String SRV_INITIATOR = "srv_initiator";
+
+    /** Name of client initiator node. */
+    private static final String CLNT_INITIATOR = "clnt_initiator";
+
+    /** Name of server transition node. */
+    private static final String SRV_TRANSITION = "srv_transition";
+
+    /** Name of server endpoint node. */
+    private static final String SRV_ENDPOINT = "srv_endpoint";
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+
+        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
+
+        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+
+        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+
+        G.allGrids().get(0).cluster().active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void setupVerifier(Verifier verifier) {
+        verifier
+            .add(SRV_TRANSITION, 1)
+            .add(SRV_ENDPOINT, 1);
+    }
+
     /**
      *
      */
@@ -49,11 +84,11 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
         awaitPartitionMapExchange();
 
-        runAndCheck(srvInitiator, () -> query(srvInitiator));
-        runAndCheck(clntInitiator, () -> query(clntInitiator));
+        runAndCheck(secSubjectId(srvInitiator), () -> query(srvInitiator));
+        runAndCheck(secSubjectId(clntInitiator), () -> query(clntInitiator));
 
-        runAndCheck(srvInitiator, () -> transform(srvInitiator));
-        runAndCheck(clntInitiator, () -> transform(clntInitiator));
+        runAndCheck(secSubjectId(srvInitiator), () -> transform(srvInitiator));
+        runAndCheck(secSubjectId(clntInitiator), () -> transform(clntInitiator));
     }
 
     /**
@@ -103,7 +138,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
         /** {@inheritDoc} */
         @Override public boolean apply(Integer s, Integer i) {
             if (node.equals(loc.name())) {
-                VERIFIER.verify(loc);
+                verify(loc);
 
                 if (endpoint != null) {
                     loc.cache(CACHE_NAME).query(
@@ -142,7 +177,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
         /** {@inheritDoc} */
         @Override public Integer apply(Cache.Entry<Integer, Integer> entry) {
             if (node.equals(loc.name())) {
-                VERIFIER.verify(loc);
+                verify(loc);
 
                 if (endpoint != null) {
                     loc.cache(CACHE_NAME).query(

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
@@ -25,6 +26,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -33,7 +36,53 @@ import org.junit.Test;
 /**
  * Testing permissions when the compute closure is executed cache operations on remote node.
  */
-public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractComputeRemoteSecurityContextCheckTest {
+public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
+    /** Name of server initiator node. */
+    private static final String SRV_INITIATOR = "srv_initiator";
+
+    /** Name of client initiator node. */
+    private static final String CLNT_INITIATOR = "clnt_initiator";
+
+    /** Name of server transition node. */
+    private static final String SRV_TRANSITION = "srv_transition";
+
+    /** Name of server endpoint node. */
+    private static final String SRV_ENDPOINT = "srv_endpoint";
+
+    /** Name of client transition node. */
+    private static final String CLNT_TRANSITION = "clnt_transition";
+
+    /** Name of client endpoint node. */
+    private static final String CLNT_ENDPOINT = "clnt_endpoint";
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+
+        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
+
+        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+
+        startGrid(CLNT_TRANSITION, allowAllPermissionSet(), true);
+
+        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+
+        startGrid(CLNT_ENDPOINT, allowAllPermissionSet());
+
+        G.allGrids().get(0).cluster().active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void setupVerifier(AbstractRemoteSecurityContextCheckTest.Verifier verifier) {
+        verifier
+            .add(SRV_TRANSITION, 1)
+            .add(CLNT_TRANSITION, 1)
+            .add(SRV_ENDPOINT, 2)
+            .add(CLNT_ENDPOINT, 2);
+    }
+
     /**
      *
      */
@@ -47,7 +96,7 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractCo
      * @param initiator Node that initiates an execution.
      */
     private void runAndCheck(IgniteEx initiator) {
-        runAndCheck(initiator,
+        runAndCheck(secSubjectId(initiator),
             () -> compute(initiator, transitions())
                 .broadcast((IgniteRunnable)new CommonClosure(endpoints(), true) {
                     @Override protected void transit(IgniteCompute cmp) {
@@ -55,7 +104,7 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractCo
                     }
                 }));
 
-        runAndCheck(initiator,
+        runAndCheck(secSubjectId(initiator),
             () -> compute(initiator, transitions())
                 .broadcastAsync((IgniteRunnable)new CommonClosure(endpoints(), true) {
                     @Override protected void transit(IgniteCompute cmp) {
@@ -111,7 +160,7 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractCo
      */
     private void runAndCheck(IgniteEx initiator, Consumer<IgniteCompute> c) {
         runAndCheck(
-            initiator,
+            secSubjectId(initiator),
             () -> {
                 for (UUID nodeId : transitions())
                     c.accept(compute(initiator, nodeId));
@@ -120,8 +169,27 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractCo
     }
 
     /**
-     * @return IgniteCompute is produced by passed node for cluster group
-     * that contains nodes with ids from collection.
+     * @return Collection of transition node ids.
+     */
+    private Collection<UUID> transitions() {
+        return Arrays.asList(
+            grid(SRV_TRANSITION).localNode().id(),
+            grid(CLNT_TRANSITION).localNode().id()
+        );
+    }
+
+    /**
+     * @return Collection of endpont nodes ids.
+     */
+    private Collection<UUID> endpoints() {
+        return Arrays.asList(
+            grid(SRV_ENDPOINT).localNode().id(),
+            grid(CLNT_ENDPOINT).localNode().id()
+        );
+    }
+
+    /**
+     * @return IgniteCompute is produced by passed node for cluster group that contains nodes with ids from collection.
      */
     private static IgniteCompute compute(Ignite ignite, Collection<UUID> ids) {
         return ignite.compute(ignite.cluster().forNodeIds(ids));
@@ -167,7 +235,7 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractCo
         private void body() {
             Ignite ignite = Ignition.localIgnite();
 
-            VERIFIER.verify(ignite);
+            verify(ignite);
 
             if (!endpoints.isEmpty()) {
                 if (isBroadcast)

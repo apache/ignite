@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.junit.Test;
@@ -37,22 +38,51 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
+    /** Barrier. */
+    private static final CyclicBarrier BARRIER = new CyclicBarrier(3);
+
+    /** Name of server initiator node. */
+    private static final String SRV_INITIATOR = "srv_initiator";
+
+    /** Name of client initiator node. */
+    private static final String CLNT_INITIATOR = "clnt_initiator";
+
+    /** Name of server transition node. */
+    private static final String SRV_TRANSITION = "srv_transition";
+
     /** Name of client transition node. */
     public static final String CLNT_TRANSITION = "clnt_transition";
+
+    /** Name of server endpoint node. */
+    private static final String SRV_ENDPOINT = "srv_endpoint";
 
     /** Name of client endpoint node. */
     public static final String CLNT_ENDPOINT = "clnt_endpoint";
 
-    /** Barrier. */
-    private static final CyclicBarrier BARRIER = new CyclicBarrier(3);
-
     /** {@inheritDoc} */
-    @Override protected void startNodes() throws Exception {
-        super.startNodes();
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+
+        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
+
+        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+
+        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
         startGrid(CLNT_TRANSITION, allowAllPermissionSet(), true);
 
         startGrid(CLNT_ENDPOINT, allowAllPermissionSet());
+
+        G.allGrids().get(0).cluster().active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void setupVerifier(Verifier verifier) {
+        verifier
+            .add(SRV_ENDPOINT, 1)
+            .add(CLNT_ENDPOINT, 1);
     }
 
     /**
@@ -60,11 +90,11 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
      */
     @Test
     public void test() {
-        messaging(grid(SRV_INITIATOR), grid(SRV_TRANSITION));
-        messaging(grid(SRV_INITIATOR), grid(CLNT_TRANSITION));
+        runAndCheck(grid(SRV_INITIATOR), grid(SRV_TRANSITION));
+        runAndCheck(grid(SRV_INITIATOR), grid(CLNT_TRANSITION));
 
-        messaging(grid(CLNT_INITIATOR), grid(SRV_TRANSITION));
-        messaging(grid(CLNT_INITIATOR), grid(CLNT_TRANSITION));
+        runAndCheck(grid(CLNT_INITIATOR), grid(SRV_TRANSITION));
+        runAndCheck(grid(CLNT_INITIATOR), grid(CLNT_TRANSITION));
     }
 
     /**
@@ -73,44 +103,42 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
      * @param lsnrNode Node that registers a listener on a remote node.
      * @param evtNode Node that generates an event.
      */
-    private void messaging(IgniteEx lsnrNode, IgniteEx evtNode) {
-        VERIFIER.start(secSubjectId(lsnrNode))
-            .add(SRV_ENDPOINT, 1)
-            .add(CLNT_ENDPOINT, 1);
+    private void runAndCheck(IgniteEx lsnrNode, IgniteEx evtNode) {
+        runAndCheck(secSubjectId(lsnrNode),
+            () -> {
+                BARRIER.reset();
 
-        BARRIER.reset();
+                IgniteMessaging messaging = lsnrNode.message(
+                    lsnrNode.cluster().forNode(grid(SRV_ENDPOINT).localNode(), grid(CLNT_ENDPOINT).localNode())
+                );
 
-        IgniteMessaging messaging = lsnrNode.message(
-            lsnrNode.cluster().forNode(grid(SRV_ENDPOINT).localNode(), grid(CLNT_ENDPOINT).localNode())
-        );
+                String topic = "HOT_TOPIC";
 
-        String topic = "HOT_TOPIC";
+                UUID lsnrId = messaging.remoteListen(topic,
+                    new IgniteBiPredicate<UUID, Object>() {
+                        @Override public boolean apply(UUID uuid, Object o) {
+                            try {
+                                verify(Ignition.localIgnite());
 
-        UUID lsnrId = messaging.remoteListen(topic,
-            new IgniteBiPredicate<UUID, Object>() {
-                @Override public boolean apply(UUID uuid, Object o) {
-                    try {
-                        VERIFIER.verify(Ignition.localIgnite());
-
-                        return true;
+                                return true;
+                            }
+                            finally {
+                                barrierAwait();
+                            }
+                        }
                     }
-                    finally {
-                        barrierAwait();
-                    }
+                );
+
+                try {
+                    evtNode.message().send(topic, "Fire!");
+                }
+                finally {
+                    barrierAwait();
+
+                    messaging.stopRemoteListen(lsnrId);
                 }
             }
         );
-
-        try {
-            evtNode.message().send(topic, "Fire!");
-        }
-        finally {
-            barrierAwait();
-
-            messaging.stopRemoteListen(lsnrId);
-        }
-
-        VERIFIER.checkResult();
     }
 
     /**

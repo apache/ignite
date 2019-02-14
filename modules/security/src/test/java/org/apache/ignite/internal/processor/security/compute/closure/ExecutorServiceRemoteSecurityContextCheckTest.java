@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
@@ -24,6 +25,8 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,7 +36,53 @@ import org.junit.runners.JUnit4;
  * Testing permissions when the service task is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractComputeRemoteSecurityContextCheckTest {
+public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
+    /** Name of server initiator node. */
+    private static final String SRV_INITIATOR = "srv_initiator";
+
+    /** Name of client initiator node. */
+    private static final String CLNT_INITIATOR = "clnt_initiator";
+
+    /** Name of server transition node. */
+    private static final String SRV_TRANSITION = "srv_transition";
+
+    /** Name of server endpoint node. */
+    private static final String SRV_ENDPOINT = "srv_endpoint";
+
+    /** Name of client transition node. */
+    private static final String CLNT_TRANSITION = "clnt_transition";
+
+    /** Name of client endpoint node. */
+    private static final String CLNT_ENDPOINT = "clnt_endpoint";
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+
+        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
+
+        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+
+        startGrid(CLNT_TRANSITION, allowAllPermissionSet(), true);
+
+        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+
+        startGrid(CLNT_ENDPOINT, allowAllPermissionSet());
+
+        G.allGrids().get(0).cluster().active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void setupVerifier(Verifier verifier) {
+        verifier
+            .add(SRV_TRANSITION, 1)
+            .add(CLNT_TRANSITION, 1)
+            .add(SRV_ENDPOINT, 2)
+            .add(CLNT_ENDPOINT, 2);
+    }
+
     /**
      *
      */
@@ -47,7 +96,7 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractCompu
      * Performs test case.
      */
     private void runAndCheck(IgniteEx initiator) {
-        runAndCheck(initiator,
+        runAndCheck(secSubjectId(initiator),
             () -> {
                 for (UUID nodeId : transitions()) {
                     ExecutorService svc = initiator.executorService(initiator.cluster().forNodeId(nodeId));
@@ -60,6 +109,26 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractCompu
                     }
                 }
             });
+    }
+
+    /**
+     * @return Collection of transition node ids.
+     */
+    private Collection<UUID> transitions() {
+        return Arrays.asList(
+            grid(SRV_TRANSITION).localNode().id(),
+            grid(CLNT_TRANSITION).localNode().id()
+        );
+    }
+
+    /**
+     * @return Collection of endpont nodes ids.
+     */
+    private Collection<UUID> endpoints() {
+        return Arrays.asList(
+            grid(SRV_ENDPOINT).localNode().id(),
+            grid(CLNT_ENDPOINT).localNode().id()
+        );
     }
 
     /**
@@ -80,7 +149,7 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractCompu
         @Override public void run() {
             Ignite ignite = Ignition.localIgnite();
 
-            VERIFIER.verify(ignite);
+            verify(ignite);
 
             if (!endpoints.isEmpty()) {
                 try {

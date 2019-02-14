@@ -25,6 +25,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -34,6 +35,40 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
+    /** Name of server initiator node. */
+    private static final String SRV_INITIATOR = "srv_initiator";
+
+    /** Name of client initiator node. */
+    private static final String CLNT_INITIATOR = "clnt_initiator";
+
+    /** Name of server transition node. */
+    private static final String SRV_TRANSITION = "srv_transition";
+
+    /** Name of server endpoint node. */
+    private static final String SRV_ENDPOINT = "srv_endpoint";
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+
+        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
+
+        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+
+        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+
+        G.allGrids().get(0).cluster().active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void setupVerifier(Verifier verifier) {
+        verifier
+            .add(SRV_TRANSITION, 1)
+            .add(SRV_ENDPOINT, 1);
+    }
+
     /**
      *
      */
@@ -50,14 +85,11 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
         UUID secSubjectId = secSubjectId(initiator);
 
         for (InvokeMethodEnum ime : InvokeMethodEnum.values()) {
-            VERIFIER.start(secSubjectId)
-                .add(SRV_TRANSITION, 1)
-                .add(SRV_ENDPOINT, 1);
-
-            invoke(ime, initiator,
-                new TestEntryProcessor(grid(SRV_ENDPOINT).localNode().id()), prmKey(grid(SRV_TRANSITION)));
-
-            VERIFIER.checkResult();
+            runAndCheck(
+                secSubjectId,
+                () -> invoke(ime, initiator,
+                    new TestEntryProcessor(grid(SRV_ENDPOINT).localNode().id()), prmKey(grid(SRV_TRANSITION)))
+            );
         }
     }
 
@@ -126,12 +158,12 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
             Object... objects) throws EntryProcessorException {
             IgniteEx loc = (IgniteEx)Ignition.localIgnite();
 
-            VERIFIER.verify(loc);
+            verify(loc);
 
             if (endpointId != null) {
                 loc.compute(loc.cluster().forNodeId(endpointId))
                     .broadcast(
-                        ()-> VERIFIER.verify(Ignition.localIgnite())
+                        () -> verify(Ignition.localIgnite())
                     );
             }
 
