@@ -287,10 +287,10 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         Optional<Long> totalPartSizeAfterRestore = totalPartitionsSize(cacheFolder);
 
-        //Allowed that size after repeated put operations should be not more than on 5%(heuristic value) greater than before operation.
-        long correctedRestoreSize = totalPartSizeAfterRestore.get() - (long)(totalPartSizeBeforeStop.get() * 0.05);
+        //It allow that size after repeated put operations should be not more than on 15%(heuristic value) greater than before operations. In fact, it should not be multiplied in twice every time.
+        long correctedRestoreSize = totalPartSizeAfterRestore.get() - (long)(totalPartSizeBeforeStop.get() * 0.15);
 
-        assertTrue("Size after repeated put operations should be not more than on 5% greater. " +
+        assertTrue("Size after repeated put operations should be not more than on 15% greater. " +
                 "Size before = " + totalPartSizeBeforeStop.get() + ", Size after = " + totalPartSizeAfterRestore.get(),
             totalPartSizeBeforeStop.get() > correctedRestoreSize);
     }
