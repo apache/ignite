@@ -47,7 +47,7 @@
 
     <artifactId>ignite-appserver-test</artifactId>
     <packaging>jar</packaging>
-    <version>2.8.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
