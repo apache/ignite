@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -143,6 +144,6 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MetaPageUpdatePartitionDataRecord.class, this, "super", super.toString());
+        return S.toString(MetaPageUpdatePartitionDataRecord.class, this, "partId", PageIdUtils.partId(pageId()), "super", super.toString());
     }
 }

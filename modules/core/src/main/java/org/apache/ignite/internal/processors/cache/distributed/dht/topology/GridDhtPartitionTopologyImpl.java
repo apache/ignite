@@ -1406,7 +1406,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             long updCntr = incomeCntrMap.updateCounter(part.id());
                             long curCntr = part.updateCounter();
 
-                            if (updCntr != 0) {
+                            if (updCntr != 0 || curCntr != 0) {  // Avoid zero counter update to empty partition.
                                 part.updateCounter(updCntr);
 
                                 if (updCntr > curCntr) {
@@ -1701,7 +1701,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     long updCntr = cntrMap.updateCounter(part.id());
                     long locUpdCntr = part.updateCounter();
 
-                    if (updCntr != 0) {
+                    if (updCntr != 0 || locUpdCntr != 0) { // Avoid zero counter update to empty partition.
                         part.updateCounter(updCntr);
 
                         if (updCntr > locUpdCntr) {
