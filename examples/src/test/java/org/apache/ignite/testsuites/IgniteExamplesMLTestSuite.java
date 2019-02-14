@@ -21,22 +21,34 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.stream.Collectors;
+import javassist.ClassClassPath;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtMethod;
+import javassist.CtNewMethod;
+import javassist.bytecode.AnnotationsAttribute;
+import javassist.bytecode.ClassFile;
+import javassist.bytecode.ConstPool;
+import javassist.bytecode.annotation.Annotation;
+import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.TestFactory;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 /**
  * Examples test suite.
  * <p>
  * Contains only ML Grid Ignite examples tests.</p>
  */
+@RunWith(IgniteExamplesMLTestSuite.DynamicSuite.class)
 public class IgniteExamplesMLTestSuite {
     /** Base package to create test classes in. */
     private static final String basePkgForTests = "org.apache.ignite.examples.ml";
@@ -45,10 +57,64 @@ public class IgniteExamplesMLTestSuite {
     private static final String clsNamePtrn = ".*Example$";
 
     /** */
-    @BeforeAll
+    @BeforeClass
     public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteExamplesMLTestSuite.class));
+    }
+
+    /**
+     * Creates list of test classes for Ignite ML examples.
+     *
+     * @return Created list.
+     * @throws IOException, ClassNotFoundException If failed.
+     */
+    public static Class<?>[] suite() throws IOException, ClassNotFoundException {
+        return getClasses(basePkgForTests)
+            .stream()
+            .map(IgniteExamplesMLTestSuite::makeTestClass)
+            .collect(Collectors.toList())
+            .toArray(new Class[] {null});
+    }
+
+    /**
+     * Creates test class for given example.
+     *
+     * @param exampleCls Class of the example to be tested.
+     * @return Test class.
+     */
+    private static Class<?> makeTestClass(Class<?> exampleCls) {
+        ClassPool cp = ClassPool.getDefault();
+        cp.insertClassPath(new ClassClassPath(IgniteExamplesMLTestSuite.class));
+
+        CtClass cl = cp.makeClass(basePkgForTests + "." + exampleCls.getSimpleName() + "SelfTest");
+
+        try {
+            cl.setSuperclass(cp.get(GridAbstractExamplesTest.class.getName()));
+
+            CtMethod mtd = CtNewMethod.make("public void testExample() { "
+                + exampleCls.getCanonicalName()
+                + ".main("
+                + MLExamplesCommonArgs.class.getName()
+                + ".EMPTY_ARGS_ML); }", cl);
+
+            // Create and add annotation.
+            ClassFile ccFile = cl.getClassFile();
+            ConstPool constpool = ccFile.getConstPool();
+
+            AnnotationsAttribute attr = new AnnotationsAttribute(constpool, AnnotationsAttribute.visibleTag);
+            Annotation annot = new Annotation("org.junit.Test", constpool);
+
+            attr.addAnnotation(annot);
+            mtd.getMethodInfo().addAttribute(attr);
+
+            cl.addMethod(mtd);
+
+            return cl.toClass();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -59,7 +125,7 @@ public class IgniteExamplesMLTestSuite {
      * @throws ClassNotFoundException If some classes not found.
      * @throws IOException If some resources unavailable.
      */
-    static List<Class> getClasses(String pkgName) throws ClassNotFoundException, IOException {
+    private static List<Class> getClasses(String pkgName) throws ClassNotFoundException, IOException {
         String path = pkgName.replace('.', '/');
 
         Enumeration<URL> resources = Thread.currentThread()
@@ -108,16 +174,11 @@ public class IgniteExamplesMLTestSuite {
         return classes;
     }
 
-    @TestFactory
-    Collection<DynamicTest> mlModule() throws IOException, ClassNotFoundException {
-        List<Class> classes = getClasses(basePkgForTests);
-        Collection<DynamicTest> classesList = new ArrayList<>();
-        String[] params = {"--unattended"};
-
-        for (Class<?> cl : classes)
-            classesList.add(dynamicTest(cl.getSimpleName(),
-                () -> cl.getMethod("main", String[].class).invoke(null, (Object)params)));
-
-        return classesList;
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError, IOException, ClassNotFoundException {
+            super(cls, suite());
+        }
     }
 }
