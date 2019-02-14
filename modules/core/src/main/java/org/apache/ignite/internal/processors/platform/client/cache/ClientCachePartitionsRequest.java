@@ -52,30 +52,57 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Map<String, DynamicCacheDescriptor> allCaches = ctx.kernalContext().cache().cacheDescriptors();
-
-        ArrayList<ClientCachePartitionsMapping> mappings = new ArrayList<>(cacheIds.length);
+        ArrayList<ClientCacheAffinityAwarenessGroup> mappings = new ArrayList<>(cacheIds.length);
 
         ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();
 
+        // As a fisrt step, get a set of mappings that we need to return.
+        // To do that, check if any of the caches listed in request can be grouped.
         for (int cacheId : cacheIds) {
             DynamicCacheDescriptor cacheDesc = ClientCacheRequest.cacheDescriptor(ctx, cacheId);
 
-            ClientCachePartitionsMapping currentMapping =
-                new ClientCachePartitionsMapping(ctx, cacheDesc, affinityVer.getVersion());
+            ClientCacheAffinityAwarenessGroup currentMapping =
+                new ClientCacheAffinityAwarenessGroup(ctx, cacheDesc, affinityVer.getVersion());
 
-            for (DynamicCacheDescriptor another: allCaches.values()) {
-                // Ignoring system caches
-                if (!another.cacheType().userCache() || another.cacheId() == cacheId)
-                    continue;
+            boolean merged = tryMerge(mappings, currentMapping);
 
-                currentMapping.addIfCompatible(another);
-            }
+            if (!merged)
+                mappings.add(currentMapping);
+        }
 
-            mappings.add(currentMapping);
+        Map<String, DynamicCacheDescriptor> allCaches = ctx.kernalContext().cache().cacheDescriptors();
+
+        // As a second step, check all other caches and add them to groups they are compatible with.
+        for (DynamicCacheDescriptor cacheDesc: allCaches.values()) {
+            // Ignoring system caches
+            if (!cacheDesc.cacheType().userCache())
+                continue;
+
+            ClientCacheAffinityAwarenessGroup currentMapping =
+                new ClientCacheAffinityAwarenessGroup(ctx, cacheDesc, affinityVer.getVersion());
+
+            tryMerge(mappings, currentMapping);
         }
 
         return new ClientCachePartitionsResponse(requestId(), mappings, affinityVer);
+    }
+
+    /**
+     * Try add mapping to other mappings if compatible to one of them.
+     * @param mappings Mappings.
+     * @param mappingToMerge Mapping to merge.
+     * @return True if merged.
+     */
+    private static boolean tryMerge(ArrayList<ClientCacheAffinityAwarenessGroup> mappings,
+        ClientCacheAffinityAwarenessGroup mappingToMerge) {
+        for (ClientCacheAffinityAwarenessGroup mapping : mappings) {
+            boolean merged = mapping.tryMerge(mappingToMerge);
+
+            if (merged)
+                return true;
+        }
+
+        return false;
     }
 
     /**
