@@ -669,7 +669,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert io.getRootLevel(metaAddr) == newLvl;
 
-            treeMeta = new TreeMetaData(newLvl, io.getFirstPageId(metaAddr, newLvl));
+            treeMeta = new TreeMetaData(newLvl, io.getFirstPageId(metaAddr, newLvl), io.getFirstPageId(metaAddr, 0));
 
             return TRUE;
         }
@@ -702,7 +702,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert io.getRootLevel(pageAddr) == lvl;
             assert io.getFirstPageId(pageAddr, lvl) == rootPageId;
 
-            treeMeta = new TreeMetaData(lvl, rootPageId);
+            treeMeta = new TreeMetaData(lvl, rootPageId, io.getFirstPageId(pageAddr, 0));
 
             return TRUE;
         }
@@ -734,7 +734,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert io.getRootLevel(pageAddr) == 0;
             assert io.getFirstPageId(pageAddr, 0) == rootId;
 
-            treeMeta = new TreeMetaData(0, rootId);
+            treeMeta = new TreeMetaData(0, rootId, rootId);
 
             return TRUE;
         }
@@ -894,8 +894,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                 int rootLvl = io.getRootLevel(pageAddr);
                 long rootId = io.getFirstPageId(pageAddr, rootLvl);
+                long firstId = io.getFirstPageId(pageAddr, 0);
 
-                treeMeta = meta0 = new TreeMetaData(rootLvl, rootId);
+                treeMeta = meta0 = new TreeMetaData(rootLvl, rootId, firstId);
             }
             finally {
                 readUnlock(metaPageId, metaPage, pageAddr);
@@ -955,16 +956,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private GridCursor<T> findLowerUnbounded(L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
         ForwardCursor cursor = new ForwardCursor(null, upper, c, x);
 
-        long firstPageId;
-
-        long metaPage = acquirePage(metaPageId);
-        try  {
-            firstPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
-        }
-        finally {
-            releasePage(metaPageId, metaPage);
-        }
-
+        long firstPageId = treeMeta().firstId;
         long firstPage = acquirePage(firstPageId);
 
         try {
@@ -1104,18 +1096,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
-                long curPageId;
-
-                long metaPage = acquirePage(metaPageId);
-
-                try {
-                    curPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
-                }
-                finally {
-                    releasePage(metaPageId, metaPage);
-                }
-
+                long curPageId = treeMeta().firstId;
                 long curPage = acquirePage(curPageId);
+
                 try {
                     long curPageAddr = readLock(curPageId, curPage);
 
@@ -1420,6 +1403,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public final void validateTree() throws IgniteCheckedException {
+        long firstPageId;
         long rootPageId;
         int rootLvl;
 
@@ -1433,6 +1417,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             validateFirstPages(metaPageId, metaPage, rootLvl);
 
             rootPageId = getFirstPageId(metaPageId, metaPage, rootLvl);
+            firstPageId = getFirstPageId(metaPageId, metaPage, 0);
+
+            if (treeMeta != null) {
+                if (treeMeta.rootLvl != rootLvl)
+                    fail("Root lvl tree meta.");
+
+                if (treeMeta.rootId != rootPageId)
+                    fail("Root id tree meta.");
+
+                if (treeMeta.firstId != firstPageId)
+                    fail("First id tree meta.");
+            }
 
             validateDownPages(rootPageId, 0L, rootLvl);
 
@@ -2280,17 +2276,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         checkDestroyed();
 
         try {
-            long curPageId;
-
-            long metaPage = acquirePage(metaPageId);
-
-            try {
-                // TODO Add first page id to treeMeta
-                curPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
-            }
-            finally {
-                releasePage(metaPageId, metaPage);
-            }
+            long curPageId = treeMeta().firstId;
 
             long cnt = 0;
 
@@ -6134,13 +6120,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         final long rootId;
 
+        /** This page is always the same during the tree lifetime. */
+        final long firstId;
+
         /**
          * @param rootLvl Root level.
          * @param rootId Root page ID.
+         * @param firstId First (leftmost) page in the tree.
          */
-        TreeMetaData(int rootLvl, long rootId) {
+        TreeMetaData(int rootLvl, long rootId, long firstId) {
             this.rootLvl = rootLvl;
             this.rootId = rootId;
+            this.firstId = firstId;
         }
 
         /** {@inheritDoc} */
