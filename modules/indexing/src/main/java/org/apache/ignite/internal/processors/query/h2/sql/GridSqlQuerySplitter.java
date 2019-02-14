@@ -1194,7 +1194,6 @@ public class GridSqlQuerySplitter {
 
         // -- HAVING
         if (havingCol >= 0 && !collocatedGrpBy) {
-            // TODO IGNITE-1140 - Find aggregate functions in HAVING clause or rewrite query to put all aggregates to SELECT clause.
             // We need to find HAVING column in reduce query.
             for (int i = visibleCols; i < rdcQry.allColumns(); i++) {
                 GridSqlAst c = rdcQry.column(i);
@@ -1217,7 +1216,6 @@ public class GridSqlQuerySplitter {
             // If collocatedGrpBy is true, then aggregateFound is always false.
             if (aggregateFound) // Ordering over aggregates does not make sense.
                 mapQry.clearSort(); // Otherwise map sort will be used by offset-limit.
-            // TODO IGNITE-1141 - Check if sorting is done over aggregated expression, otherwise we can sort and use offset-limit.
         }
 
         // -- LIMIT

@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
+package org.apache.ignite.internal.transactions;
 
 /**
- * Tests the recovery after a dynamic cache start failure.
+ * Exception thrown whenever Mvcc transaction has been finished before operation finished.
+ * E.g. rollback due to some reason.
  */
-public class IgniteDynamicCacheStartFailTest extends IgniteAbstractDynamicCacheStartFailTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+public class IgniteTxAlreadyCompletedCheckedException extends TransactionCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(gridCount());
-
-        awaitPartitionMapExchange();
+    /**
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public IgniteTxAlreadyCompletedCheckedException(String msg) {
+        super(msg);
     }
 }

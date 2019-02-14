@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.h2.command.Prepared;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -32,39 +32,37 @@ public class QueryParserResultSelect {
     private final GridCacheTwoStepQuery twoStepQry;
 
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
-    private final List<GridQueryFieldMetadata> twoStepQryMeta;
+    private final List<GridQueryFieldMetadata> meta;
 
-    /** Prepared statement for local query. */
-    private final Prepared locPrepared;
-
-    public QueryParserResultSelect(
-        GridCacheTwoStepQuery twoStepQry,
-        List<GridQueryFieldMetadata> twoStepQryMeta,
-        Prepared locPrepared
-    ) {
+    /**
+     * Constructor.
+     *
+     * @param twoStepQry Distributed query plan.
+     * @param meta Fields metadata.
+     */
+    public QueryParserResultSelect(@Nullable GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta) {
         this.twoStepQry = twoStepQry;
-        this.twoStepQryMeta = twoStepQryMeta;
-        this.locPrepared = locPrepared;
+        this.meta = meta;
     }
 
     /**
      * @return Two-step query, or {@code} null if this result is for local query.
      */
-    public GridCacheTwoStepQuery twoStepQuery() {
+    @Nullable public GridCacheTwoStepQuery twoStepQuery() {
         return twoStepQry;
     }
 
     /**
      * @return Two-step query metadata.
      */
-    public List<GridQueryFieldMetadata> twoStepQueryMeta() {
-        return twoStepQryMeta;
+    public List<GridQueryFieldMetadata> meta() {
+        return meta;
     }
 
     /**
-     * @return Prepared statement for local query.
+     * @return Whether this is a local query.
      */
-    public Prepared localPrepared() {
-        return locPrepared;
+    public boolean isLocal() {
+        return twoStepQry == null;
     }
 }
