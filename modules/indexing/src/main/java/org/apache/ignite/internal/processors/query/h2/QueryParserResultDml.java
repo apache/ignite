@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.h2.command.Prepared;
 
 /**
@@ -24,21 +25,32 @@ import org.h2.command.Prepared;
  */
 public class QueryParserResultDml {
     /** Command. */
-    private final Prepared prepared;
+    private final GridSqlStatement stmt;
+
+    /** MVCC enabled flag. */
+    private final boolean mvccEnabled;
 
     /**
      * Constructor.
      *
-     * @param prepared Command.
+     * @param stmt Command.
      */
-    public QueryParserResultDml(Prepared prepared) {
-        this.prepared = prepared;
+    public QueryParserResultDml(GridSqlStatement stmt, boolean mvccEnabled) {
+        this.stmt = stmt;
+        this.mvccEnabled = mvccEnabled;
     }
 
     /**
      * @return Command.
      */
-    public Prepared prepared() {
-        return prepared;
+    public GridSqlStatement statement() {
+        return stmt;
+    }
+
+    /**
+     * @return MVCC enabled.
+     */
+    public boolean mvccEnabled() {
+        return mvccEnabled;
     }
 }

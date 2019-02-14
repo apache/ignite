@@ -970,8 +970,6 @@ public class CommandProcessor {
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
         }
 
-        H2Utils.checkAndStartNotStartedCache(ctx, tbl);
-
         UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
 
         IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new DmlBulkLoadDataConverter(plan);
