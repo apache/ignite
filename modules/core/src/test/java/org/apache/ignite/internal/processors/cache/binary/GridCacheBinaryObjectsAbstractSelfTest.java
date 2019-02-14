@@ -17,34 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import javax.cache.Cache;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.*;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -78,8 +54,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import javax.cache.Cache;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.*;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -1197,6 +1182,40 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
             if (nearConfiguration() != null)
                 checkTransform(nearKey(c));
+        }
+    }
+
+    /**
+     * IGNITE-11282
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPrimitiveArrayAsCacheKey() throws Exception {
+        IgniteKernal ignite = (IgniteKernal) grid(0);
+
+        Object[] testIdx = new Object[]{
+            new byte[]{1,0,1},
+            new int[]{1,2,3},
+            new boolean[]{true,true,false},
+            new float[]{1,2,3},
+            new double[]{1,2,3},
+            new long[]{1,2,3},
+            new char[]{'a','b','c'}
+        };
+
+        CacheConfiguration<Object,Object> ccfg = new CacheConfiguration<>("default2")
+                .setAtomicityMode(TRANSACTIONAL);
+
+        IgniteCache<Object,Object> jcache = ignite.createCache(ccfg);
+
+        for (Object idx: testIdx) {
+            jcache.put(idx,"testValue");
+
+            try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                assert jcache.get(idx) != null : "No record of type:" + idx.getClass().getName();
+
+                tx.commit();
+            }
         }
     }
 

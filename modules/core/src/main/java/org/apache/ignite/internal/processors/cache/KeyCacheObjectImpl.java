@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  *
@@ -113,7 +114,25 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     @Override public int hashCode() {
         assert val != null;
 
-        return val.hashCode();
+        if (val.getClass().isArray()) {
+            if (val instanceof byte[])
+                return Arrays.hashCode((byte[])val);
+            else if (val instanceof int[])
+                return Arrays.hashCode((int[])val);
+            else if (val instanceof boolean[])
+                return Arrays.hashCode((boolean[])val);
+            else if (val instanceof float[])
+                return Arrays.hashCode((float[])val);
+            else if (val instanceof double[])
+                return Arrays.hashCode((double[])val);
+            else if (val instanceof long[])
+                return Arrays.hashCode((long[])val);
+            else if (val instanceof char[])
+                return Arrays.hashCode((char[])val);
+            else
+                throw new AssertionError("Wrong cache index type:" + val.getClass().getName());
+        }else
+            return val.hashCode();
     }
 
     /** {@inheritDoc} */
@@ -198,7 +217,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
         KeyCacheObjectImpl other = (KeyCacheObjectImpl)obj;
 
-        return val.equals(other.val);
+        return hashCode() == other.hashCode();
     }
 
     /** {@inheritDoc} */
