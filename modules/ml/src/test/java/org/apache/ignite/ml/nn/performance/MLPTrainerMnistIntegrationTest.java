@@ -54,11 +54,6 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
-
     /**
      * {@inheritDoc}
      */

@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -2867,6 +2866,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 while (retry);
             }
             catch (Throwable t) {
+                if (stopping)
+                    throw new IgniteSpiException("Node is stopping.", t);
+
                 log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
 
                 if (t instanceof Error)
@@ -3299,7 +3301,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
 
-            Collections.sort(addrs0, U.inetAddressesComparator(sameHost));
+            addrs0.sort(U.inetAddressesComparator(sameHost));
 
             addrs = new LinkedHashSet<>(addrs0);
         }
@@ -3358,10 +3360,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @throws IgniteCheckedException If failed.
      */
     protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
-        GridNioSession session = createNioSession(node, connIdx);
+        GridNioSession ses = createNioSession(node, connIdx);
 
-        return session == null ?
-            null : new GridTcpNioCommunicationClient(connIdx, session, log);
+        return ses == null ?
+            null : new GridTcpNioCommunicationClient(connIdx, ses, log);
     }
 
     /**
@@ -3396,7 +3398,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private GridNioSession createNioSession(ClusterNode node, int connIdx) throws IgniteCheckedException {
         Collection<InetSocketAddress> addrs = nodeAddresses(node);
 
-        GridNioSession session = null;
+        GridNioSession ses = null;
         IgniteCheckedException errs = null;
 
         long totalTimeout;
@@ -3418,7 +3420,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 maxConnTimeout
             );
 
-            while (session == null) { // Reconnection on handshake timeout.
+            while (ses == null) { // Reconnection on handshake timeout.
                 if (stopping)
                     throw new IgniteSpiException("Node is stopping.");
 
@@ -3458,11 +3460,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         U.closeQuiet(ch);
 
                         // Ensure the session is closed.
-                        GridNioSession ses = recoveryDesc.session();
+                        GridNioSession sesFromRecovery = recoveryDesc.session();
 
-                        if (ses != null) {
-                            while (ses.closeTime() == 0)
-                                ses.close();
+                        if (sesFromRecovery != null) {
+                            while (sesFromRecovery.closeTime() == 0)
+                                sesFromRecovery.close();
                         }
 
                         return null;
@@ -3549,10 +3551,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         meta.put(CONN_IDX_META, connKey);
                         meta.put(GridNioServer.RECOVERY_DESC_META_KEY, recoveryDesc);
 
-                        session = nioSrvr.createSession(ch, meta, false, null).get();
+                        ses = nioSrvr.createSession(ch, meta, false, null).get();
                     }
                     finally {
-                        if (session == null) {
+                        if (ses == null) {
                             U.closeQuiet(ch);
 
                             if (recoveryDesc != null)
@@ -3561,10 +3563,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 catch (IgniteSpiOperationTimeoutException e) { // Handshake is timed out.
-                    if (session != null) {
-                        session.close();
+                    if (ses != null) {
+                        ses.close();
 
-                        session = null;
+                        ses = null;
                     }
 
                     onException("Handshake timed out (will retry with increased timeout) [connTimeoutStrategy=" + connTimeoutStgy +
@@ -3600,10 +3602,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
                 catch (Exception e) {
                     // Most probably IO error on socket connect or handshake.
-                    if (session != null) {
-                        session.close();
+                    if (ses != null) {
+                        ses.close();
 
-                        session = null;
+                        ses = null;
                     }
 
                     onException("Client creation failed [addr=" + addr + ", err=" + e + ']', e);
@@ -3650,15 +3652,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
             }
 
-            if (session != null)
+            if (ses != null)
                 break;
         }
 
-        // The node will be dropped in case connection creation is impossible.
-        if (session == null)
+        if (ses == null)
             processSessionCreationError(node, addrs, errs == null ? new IgniteCheckedException("No session found") : errs);
 
-        return session;
+        return ses;
     }
 
     /**

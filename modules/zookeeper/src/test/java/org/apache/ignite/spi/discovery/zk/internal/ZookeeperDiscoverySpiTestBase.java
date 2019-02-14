@@ -118,7 +118,12 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     /** */
     protected Map<String, Object> userAttrs;
 
-    /** */
+    /**
+     * Map for checking discovery events per test. The {@link EVT_NODE_JOINED}, {@link EVT_NODE_FAILED}, {@link
+     * EVT_NODE_LEFT} events should be handled only once per topology version.
+     *
+     * Need to be cleaned in case of cluster restart.
+     */
     protected static ConcurrentHashMap<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> evts = new ConcurrentHashMap<>();
 
     /** */
