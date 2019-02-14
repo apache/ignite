@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
-
-import org.apache.ignite.cache.CacheMode;
+package org.apache.ignite.internal.transactions;
 
 /**
- * SQL Mvcc coordinator failover test for replicated caches.
+ * Exception thrown whenever Mvcc transaction has been finished before operation finished.
+ * E.g. rollback due to some reason.
  */
-public class CacheMvccReplicatedSqlCoordinatorFailoverTest extends CacheMvccAbstractSqlCoordinatorFailoverTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+public class IgniteTxAlreadyCompletedCheckedException extends TransactionCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public IgniteTxAlreadyCompletedCheckedException(String msg) {
+        super(msg);
     }
 }

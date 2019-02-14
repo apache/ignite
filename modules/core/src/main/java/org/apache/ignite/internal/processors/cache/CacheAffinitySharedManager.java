@@ -1545,7 +1545,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert grp != null;
 
                 if (affReq != null && affReq.contains(aff.groupId())) {
-                    assert AffinityTopologyVersion.NONE.equals(aff.lastVersion());
+                    assert AffinityTopologyVersion.NONE.equals(aff.lastVersion()) : aff.lastVersion();
 
                     CacheGroupAffinityMessage affMsg = receivedAff.get(aff.groupId());
 
@@ -1553,7 +1553,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     List<List<ClusterNode>> assignments = affMsg.createAssignments(nodesByOrder, evts.discoveryCache());
 
-                    assert resTopVer.equals(evts.topologyVersion());
+                    assert resTopVer.equals(evts.topologyVersion()) : "resTopVer=" + resTopVer +
+                        ", evts.topVer=" + evts.topologyVersion();
 
                     List<List<ClusterNode>> idealAssign =
                         affMsg.createIdealAssignments(nodesByOrder, evts.discoveryCache());
@@ -1561,7 +1562,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     if (idealAssign != null)
                         aff.idealAssignment(idealAssign);
                     else {
-                        assert !aff.centralizedAffinityFunction();
+                        assert !aff.centralizedAffinityFunction() : aff;
 
                         // Calculate ideal assignments.
                         aff.calculate(evts.topologyVersion(), evts, evts.discoveryCache());
