@@ -64,7 +64,10 @@ public class GridSqlUsedColumnsInfo implements Message {
         }
     }
 
-    /** */
+    /**
+     *
+     * @return The map table aliases to value used flag for the table.
+     */
     public Map<String, Boolean> createValueUsedMap() {
         assert aliases.length == valUsed.length : "Inconsistent arrays lenght: " +
             "[aliases=" + S.arrayToString(aliases) + ", valUsed=" + S.arrayToString(valUsed);
@@ -76,7 +79,6 @@ public class GridSqlUsedColumnsInfo implements Message {
 
         return mapValUsed;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

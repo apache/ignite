@@ -139,7 +139,7 @@ public class QueryContext {
     }
 
     /**
-     * @return Information about used columns.
+     * @return Information about used columns: maps alias name to flag indicates usage value of an entry.
      */
     public Map<String, Boolean> usedColumnsInfo() {
         return usedCols;
