@@ -175,11 +175,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         if (memoryMetricsEnabled) {
             memoryMetricsEnabled = false;
 
-            stopAllGrids();
-            Thread.currentThread().sleep(100);
-            startGrids(gridCount());
-
-            initCache();
+            restartGrid();
         }
     }
 
@@ -2019,19 +2015,34 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     @Test
     public void testDataStorageMetricsEnabled() throws Exception {
-        stopAllGrids();
+        if (!memoryMetricsEnabled) {
+            restartGrid();
 
-        memoryMetricsEnabled = true;
-
-        startGrids(gridCount());
-        grid(0).cluster().active(true);
-        initCache();
+            memoryMetricsEnabled = true;
+        }
 
         String ret = content(F.asMap("cmd", GridRestCommand.DATA_STORAGE_METRICS.key()));
 
         assertNotNull(validateJsonResponse(ret));
 
         info(GridRestCommand.DATA_STORAGE_METRICS.key().toUpperCase() + " command result: " + ret);
+    }
+
+    /**
+     * Restart grid.
+     *
+     * @throws Exception If failed.
+     */
+    protected void restartGrid() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+
+        startGrids(gridCount());
+
+        grid(0).cluster().active(true);
+
+        initCache();
     }
 
     /**
