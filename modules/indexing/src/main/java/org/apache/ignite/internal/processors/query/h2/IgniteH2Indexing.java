@@ -1550,14 +1550,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // Execute SQL.
         assert select != null;
 
-        if (!select.isLocal()) {
+        if (select.splitNeeded()) {
             // Distributed query.
             GridCacheTwoStepQuery twoStepQry = select.twoStepQuery();
 
             if (ctx.security().enabled())
                 checkSecurity(twoStepQry.cacheIds());
 
-            FieldsQueryCursor<List<?>> res = executeQuery(
+            FieldsQueryCursor<List<?>> res = executeQueryWithSplit(
                 schemaName,
                 qry,
                 twoStepQry,
@@ -1769,7 +1769,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
      * @return Cursor representing distributed query result.
      */
-    private FieldsQueryCursor<List<?>> executeQuery(String schemaName, SqlFieldsQuery qry,
+    private FieldsQueryCursor<List<?>> executeQueryWithSplit(String schemaName, SqlFieldsQuery qry,
         GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta, boolean keepBinary,
         boolean startTx, MvccQueryTracker mvccTracker, GridQueryCancel cancel, boolean registerAsNewQry) {
         if (log.isDebugEnabled())
