@@ -15,25 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.spi.communication.tcp.internal;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Tests the recovery after a dynamic cache start failure.
+ * Internal exception class for proper timeout handling.
  */
-public class IgniteDynamicCacheStartFailTest extends IgniteAbstractDynamicCacheStartFailTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+public class HandshakeException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(gridCount());
-
-        awaitPartitionMapExchange();
+    /**
+     * @param msg Error message.
+     */
+    public HandshakeException(String msg) {
+        super(msg);
     }
 }
