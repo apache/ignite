@@ -134,7 +134,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IOOME handling.
      */
-    public void testIoomErrorHandling(boolean pds, boolean mvcc) throws Exception {
+    private void testIoomErrorHandling(boolean pds, boolean mvcc) throws Exception {
         this.pds = pds;
         this.mvcc = mvcc;
 
@@ -161,8 +161,13 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
             }
 
             assertFalse(dummyFailureHandler(ignite0).failure());
-            assertTrue(dummyFailureHandler(ignite1).failure());
-            assertTrue(X.hasCause(dummyFailureHandler(ignite1).failureContext().error(), IgniteOutOfMemoryException.class));
+
+            if (mvcc && pds)
+                assertFalse(dummyFailureHandler(ignite1).failure());
+            else {
+                assertTrue(dummyFailureHandler(ignite1).failure());
+                assertTrue(X.hasCause(dummyFailureHandler(ignite1).failureContext().error(), IgniteOutOfMemoryException.class));
+            }
         }
         finally {
             stopGrid(1);

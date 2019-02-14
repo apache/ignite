@@ -64,6 +64,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11311")
     @Test
     public void testAccountsTxSql_SingleNode_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
