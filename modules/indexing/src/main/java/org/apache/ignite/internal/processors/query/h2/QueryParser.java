@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
@@ -245,19 +244,17 @@ public class QueryParser {
 
         H2Utils.setupConnection(c, /*distributedJoins*/false, /*enforceJoinOrder*/enforceJoinOrderOnParsing);
 
-        boolean loc = qry.isLocal();
-
         PreparedStatement stmt;
 
         try {
-            stmt = connMgr.prepareStatement(c, qry.getSql());
+            stmt = connMgr.prepareStatementNoCache(c, qry.getSql());
         }
         catch (SQLException e) {
             throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
                 IgniteQueryErrorCode.PARSING, e);
         }
 
-        if (loc && GridSqlQueryParser.checkMultipleStatements(stmt))
+        if (qry.isLocal() && GridSqlQueryParser.checkMultipleStatements(stmt))
             throw new IgniteSQLException("Multiple statements queries are not supported for local queries.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
@@ -299,52 +296,6 @@ public class QueryParser {
 
         SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args);
 
-        // TODO: WTF is that? Modifies global query flag (distr joins), invokes additional parsing.
-        if (prepared.isQuery()) {
-            try {
-                H2Utils.bindParameters(stmt, F.asList(args));
-            }
-            catch (IgniteCheckedException e) {
-                U.closeQuiet(stmt);
-
-                throw new IgniteSQLException("Failed to bind parameters: [qry=" + prepared.getSQL() + ", params=" +
-                    Arrays.deepToString(args) + "]", IgniteQueryErrorCode.PARSING, e);
-            }
-
-            GridSqlQueryParser parser = null;
-
-            if (!loc) {
-                parser = new GridSqlQueryParser(false);
-
-                GridSqlStatement parsedStmt = parser.parse(prepared);
-
-                // Legit assertion - we have H2 query flag above.
-                assert parsedStmt instanceof GridSqlQuery;
-
-                loc = parser.isLocalQuery();
-            }
-
-            if (loc) {
-                if (parser == null) {
-                    parser = new GridSqlQueryParser(false);
-
-                    parser.parse(prepared);
-                }
-
-                GridCacheContext cctx = parser.getFirstPartitionedCache();
-
-                if (cctx != null && cctx.config().getQueryParallelism() > 1) {
-                    loc = false;
-
-                    newQry.setDistributedJoins(true);
-                }
-            }
-        }
-
-        // Do not cache multiple statements and distributed queries as whole two step query will be cached later on.
-        if (remainingQry != null || !loc)
-            connMgr.statementCacheForThread().remove(schemaName, qry.getSql());
-
         if (CommandProcessor.isCommand(prepared)) {
             GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
 
@@ -364,11 +315,47 @@ public class QueryParser {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        // Parse SELECT.
+        // Parse SELECT. Split is required either if query is distirubted, or when it is local, but executed
+        // over segmented PARTITIONED case. In this case multiple map queries will be executed against local
+        // node stripes in parallel and then merged through reduce process.
+
+
+        // Calculate if query is in fact can be executed locally.
+        boolean loc = qry.isLocal();
+
+        GridSqlQueryParser parser = null;
+
+        if (!loc) {
+            parser = new GridSqlQueryParser(false);
+
+            parser.parse(prepared);
+
+            if (parser.isLocalQuery())
+                loc = true;
+        }
+
+        // If this is a local query, check if it must be split.
+        boolean locSplit = false;
+
+        if (loc) {
+            if (parser == null) {
+                parser = new GridSqlQueryParser(false);
+
+                parser.parse(prepared);
+            }
+
+            GridCacheContext cctx = parser.getFirstPartitionedCache();
+
+            if (cctx != null && cctx.config().getQueryParallelism() > 1)
+                locSplit = true;
+        }
+
+        boolean splitNeeded = !loc || locSplit;
+
         try {
             GridCacheTwoStepQuery twoStepQry = null;
 
-            if (!loc) {
+            if (splitNeeded) {
                 twoStepQry = GridSqlQuerySplitter.split(
                     connMgr.connectionForThread().connection(newQry.getSchema()),
                     prepared,
@@ -376,14 +363,14 @@ public class QueryParser {
                     newQry.isCollocated(),
                     newQry.isDistributedJoins(),
                     newQry.isEnforceJoinOrder(),
-                    newQry.isLocal(),
+                    locSplit,
                     idx
                 );
             }
 
             List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
 
-            QueryParserResultSelect select = new QueryParserResultSelect(twoStepQry, meta);
+            QueryParserResultSelect select = new QueryParserResultSelect(twoStepQry, locSplit, meta);
 
             return new QueryParserResult(newQry, remainingQry, select, null, null);
         }

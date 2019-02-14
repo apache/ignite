@@ -946,8 +946,11 @@ public final class UpdatePlanBuilder {
                     idx
                 );
 
-                boolean distributed = !qry.isLocal() && qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
-                    !qry.mapQueries().get(0).hasSubQueries();
+                boolean distributed =
+                    !qry.isLocalSplit() &&                                                    // No split for local qry
+                    qry.hasCacheIds() &&                                                      // Over real caches
+                    qry.skipMergeTable() &&                                                   // No merge table
+                    qry.mapQueries().size() == 1 && !qry.mapQueries().get(0).hasSubQueries(); // One w/o subqueries
 
                 if (distributed) {
                     List<Integer> cacheIds = H2Utils.collectCacheIds(idx, CU.cacheId(cacheName), qry.tables());
