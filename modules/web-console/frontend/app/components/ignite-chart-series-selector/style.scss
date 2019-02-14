@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-export default class {
-    static $inject = ['$scope', '$sce'];
+.bs-select-menu {
+  .bssm-item-text {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
 
-    /**
-     * @param {ng.IScope} $scope
-     */
-    constructor($scope, $sce) {
-        this.$scope = $scope;
-        this.$sce = $sce;
-    }
-
-    trustHtml(str) {
-        return this.$sce.trustAsHtml(str);
-    }
-
-    areAllSelected() {
-        return this.$scope.$matches.every(({index}) => this.$scope.$isActive(index));
-    }
+  .color-map {
+    font-size: 20px;
+    position: relative;
+    top: -3px;
+    margin-right: 3px;
+  }
 }

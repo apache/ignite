@@ -53,10 +53,13 @@ export default class IgniteChartSeriesSelectorController {
         const labels = this.chartApi.config.datasetLegendMapping;
 
         return Object.keys(this.chartApi.config.datasetLegendMapping).map((key) => {
+            const datasetIndex = this.chartApi.config.data.datasets.findIndex((dataset) => dataset.label === key);
+
             return {
                 key,
-                label: labels[key].name || labels[key],
-                hidden: labels[key].hidden
+                label: `<span class='color-map' style='color: ${this.chartApi.config.data.datasets[datasetIndex].borderColor};'>&#9724;</span> <span>${labels[key].name || key}</span>`,
+                hidden: labels[key].hidden,
+                title: labels[key].name || labels[key]
             };
         });
     }
