@@ -875,9 +875,9 @@ public final class UpdatePlanBuilder {
                     qry.mapQueries().size() == 1 && !qry.mapQueries().get(0).hasSubQueries(); // One w/o subqueries
 
                 if (distributed) {
+                    // TODO: This should be done during plan build.
                     List<Integer> cacheIds = H2Utils.collectCacheIds(idx, CU.cacheId(cacheName), qry.tables());
 
-                    H2Utils.collectMvccEnabled(idx, cacheIds);
                     H2Utils.checkQuery(idx, cacheIds, qry.mvccEnabled(), qry.forUpdate(), qry.tables());
 
                     return new DmlDistributedPlanInfo(qry.isReplicatedOnly(), cacheIds);
