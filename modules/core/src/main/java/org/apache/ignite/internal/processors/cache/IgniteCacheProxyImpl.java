@@ -800,6 +800,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
         }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
         catch (Exception e) {
             if (e instanceof CacheException)
                 throw (CacheException)e;
