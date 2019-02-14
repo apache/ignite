@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import java.util.Arrays;
-import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
-import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import org.apache.ignite.ml.selection.scoring.metric.Metric;
 
 /**
- * Tests for {@link Fmeasure}.
+ * Metric calculator for one class label.
+ *
+ * @param <L> Type of a label (truth or prediction).
  */
-public class FmeasureTest {
-    /** */
-    @Test
-    public void testScore() {
-        Fmeasure<Integer> scoreCalculator = new Fmeasure<>(1);
+public abstract class ClassMetric<L> implements Metric<L> {
+    /** Class label. */
+    protected L clsLb;
 
-        LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1, 0, 1, 0, 1, 0),
-            Arrays.asList(1, 0, 0, 1, 1, 0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        assertEquals((double)2/3, score, 1e-12);
+    /**
+     * The class of interest or positive class.
+     *
+     * @param clsLb The label.
+     */
+    public ClassMetric(L clsLb) {
+        this.clsLb = clsLb;
     }
 }

@@ -26,8 +26,8 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.sparkmodelparser.SparkModelParser;
 import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
 
@@ -69,7 +69,7 @@ public class LogRegFromSparkExample {
 
             System.out.println(">>> Logistic regression model: " + mdl);
 
-            double accuracy = BinaryClassificationEvaluator.evaluate(
+            double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,

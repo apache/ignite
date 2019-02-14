@@ -23,12 +23,13 @@ import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursorTe
 import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursorTest;
 import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluatorTest;
 import org.apache.ignite.ml.selection.scoring.evaluator.EvaluatorTest;
-import org.apache.ignite.ml.selection.scoring.metric.AccuracyTest;
-import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricsTest;
-import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricsValuesTest;
-import org.apache.ignite.ml.selection.scoring.metric.FmeasureTest;
-import org.apache.ignite.ml.selection.scoring.metric.PrecisionTest;
-import org.apache.ignite.ml.selection.scoring.metric.RecallTest;
+import org.apache.ignite.ml.selection.scoring.metric.classification.AccuracyTest;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricsTest;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricsValuesTest;
+import org.apache.ignite.ml.selection.scoring.metric.classification.FmeasureTest;
+import org.apache.ignite.ml.selection.scoring.metric.classification.PrecisionTest;
+import org.apache.ignite.ml.selection.scoring.metric.classification.RecallTest;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricsTest;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitterTest;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapperTest;
 import org.junit.runner.RunWith;
@@ -53,6 +54,7 @@ import org.junit.runners.Suite;
     BinaryClassificationMetricsTest.class,
     BinaryClassificationMetricsValuesTest.class,
     BinaryClassificationEvaluatorTest.class,
+    RegressionMetricsTest.class
 })
 public class SelectionTestSuite {
 }

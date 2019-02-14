@@ -15,23 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
+
+import java.util.Iterator;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
+import org.apache.ignite.ml.selection.scoring.metric.Metric;
 
 /**
- * Metric calculator for one class label.
+ * Accuracy score calculator.
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public abstract class ClassMetric<L> implements Metric<L> {
-    /** Class label. */
-    protected L clsLb;
+public class Accuracy<L> implements Metric<L> {
+    /** {@inheritDoc} */
+    @Override public double score(Iterator<LabelPair<L>> iter) {
+        long totalCnt = 0;
+        long correctCnt = 0;
 
-    /**
-     * The class of interest or positive class.
-     *
-     * @param clsLb The label.
-     */
-    public ClassMetric(L clsLb) {
-        this.clsLb = clsLb;
+        while (iter.hasNext()) {
+            LabelPair<L> e = iter.next();
+
+            L prediction = e.getPrediction();
+            L truth = e.getTruth();
+
+            if (prediction.equals(truth))
+                correctCnt++;
+
+            totalCnt++;
+        }
+
+        return 1.0 * correctCnt / totalCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return "accuracy";
     }
 }

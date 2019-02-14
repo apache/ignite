@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -74,7 +74,7 @@ public class DiscreteNaiveBayesTrainerExample {
 
             System.out.println(">>> Discrete Naive Bayes model: " + mdl);
 
-            double accuracy = BinaryClassificationEvaluator.evaluate(
+            double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,

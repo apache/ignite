@@ -35,8 +35,8 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 
 /**
@@ -50,7 +50,7 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
  * <p>
  * Then, it trains the model based on the processed data using decision tree classification.</p>
  * <p>
- * Finally, this example uses {@link BinaryClassificationEvaluator} functionality to compute metrics from predictions.</p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_10_Scaling_With_Stacking {
     /** Run example. */
@@ -121,7 +121,7 @@ public class Step_10_Scaling_With_Stacking {
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
-                double accuracy = BinaryClassificationEvaluator.evaluate(
+                double accuracy = Evaluator.evaluate(
                     dataCache,
                     mdl,
                     normalizationPreprocessor,

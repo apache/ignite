@@ -15,33 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
 
 import java.util.Iterator;
-import java.util.function.Function;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
+import org.apache.ignite.ml.selection.scoring.metric.AbstractMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.exceptions.UnknownClassLabelException;
 
 /**
  * Binary classification metrics calculator.
  * It could be used in two ways: to caculate all binary classification metrics or specific metric.
  */
-public class BinaryClassificationMetrics implements Metric<Double> {
+public class BinaryClassificationMetrics extends AbstractMetrics<BinaryClassificationMetricValues> {
     /** Positive class label. */
     private double positiveClsLb = 1.0;
 
     /** Negative class label. Default value is 0.0. */
     private double negativeClsLb;
 
-    /** The main metric to get individual score. */
-    private Function<BinaryClassificationMetricValues, Double> metric = BinaryClassificationMetricValues::accuracy;
-
+    {
+        metric = BinaryClassificationMetricValues::accuracy;
+    }
     /**
      * Calculates binary metrics values.
      *
      * @param iter Iterator that supplies pairs of truth values and predicated.
      * @return Scores for all binary metrics.
      */
-    public BinaryClassificationMetricValues scoreAll(Iterator<LabelPair<Double>> iter) {
+    @Override public BinaryClassificationMetricValues scoreAll(Iterator<LabelPair<Double>> iter) {
         long tp = 0;
         long tn = 0;
         long fp = 0;
@@ -89,18 +90,6 @@ public class BinaryClassificationMetrics implements Metric<Double> {
         if (Double.isFinite(negativeClsLb))
             this.negativeClsLb = negativeClsLb;
         return this;
-    }
-
-    /** */
-    public BinaryClassificationMetrics withMetric(Function<BinaryClassificationMetricValues, Double> metric) {
-        if (metric != null)
-            this.metric = metric;
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double score(Iterator<LabelPair<Double>> iter) {
-        return metric.apply(scoreAll(iter));
     }
 
     /** {@inheritDoc} */

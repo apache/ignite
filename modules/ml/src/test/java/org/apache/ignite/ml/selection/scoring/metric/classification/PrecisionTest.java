@@ -15,24 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric.exceptions;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import org.apache.ignite.IgniteException;
+import java.util.Arrays;
+import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
+import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- * Indicates an unknown class label for metric calculator.
+ * Tests for {@link Precision}.
  */
-public class UnknownClassLabelException extends IgniteException {
+public class PrecisionTest {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Test
+    public void testScore() {
+        Precision<Integer> scoreCalculator = new Precision<>(0);
 
+        LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
+            Arrays.asList(1, 0, 1, 0, 1, 0),
+            Arrays.asList(1, 0, 0, 1, 1, 0)
+        );
 
-    /**
-     * @param incorrectVal Incorrect value.
-     * @param positiveClsLb Positive class label.
-     * @param negativeClsLb Negative class label.
-     */
-    public UnknownClassLabelException(double incorrectVal, double positiveClsLb, double negativeClsLb) {
-        super("The next class label: " + incorrectVal + " is not positive class label: " + positiveClsLb + " or negative class label: " + negativeClsLb);
+        double score = scoreCalculator.score(cursor.iterator());
+
+        assertEquals((double)2/3, score, 1e-12);
     }
 }

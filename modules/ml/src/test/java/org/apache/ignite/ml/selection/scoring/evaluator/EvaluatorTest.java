@@ -40,7 +40,7 @@ import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -53,7 +53,7 @@ import static org.apache.ignite.ml.TestUtils.testEnvBuilder;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link BinaryClassificationEvaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
+ * Tests for {@link Evaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
  * Step_8_CV_with_Param_Grid example.
  */
 public class EvaluatorTest extends GridCommonAbstractTest {
@@ -259,7 +259,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 lbExtractor
             );
 
-            actualAccuracy.set(BinaryClassificationEvaluator.evaluate(
+            actualAccuracy.set(Evaluator.evaluate(
                 cache,
                 split.getTestFilter(),
                 bestMdl,
@@ -268,7 +268,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 new Accuracy<>()
             ));
 
-            actualAccuracy2.set(BinaryClassificationEvaluator.evaluate(
+            actualAccuracy2.set(Evaluator.evaluate(
                 cache,
                 bestMdl,
                 preprocessor,

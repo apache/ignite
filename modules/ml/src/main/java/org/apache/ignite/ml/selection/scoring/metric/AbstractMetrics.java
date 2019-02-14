@@ -18,36 +18,36 @@
 package org.apache.ignite.ml.selection.scoring.metric;
 
 import java.util.Iterator;
+import java.util.function.Function;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 
 /**
- * Accuracy score calculator.
- *
- * @param <L> Type of a label (truth or prediction).
+ * Abstract metrics calculator.
+ * It could be used in two ways: to caculate all regression metrics or custom regression metric.
  */
-public class Accuracy<L> implements Metric<L> {
-    /** {@inheritDoc} */
-    @Override public double score(Iterator<LabelPair<L>> iter) {
-        long totalCnt = 0;
-        long correctCnt = 0;
+public abstract class AbstractMetrics<M extends MetricValues> implements Metric<Double> {
+    /** The main metric to get individual score. */
+    protected Function<M, Double> metric;
 
-        while (iter.hasNext()) {
-            LabelPair<L> e = iter.next();
+    /**
+     * Calculates metrics values.
+     *
+     * @param iter Iterator that supplies pairs of truth values and predicated.
+     * @return Scores for all regression metrics.
+     */
+    public abstract M scoreAll(Iterator<LabelPair<Double>> iter);
 
-            L prediction = e.getPrediction();
-            L truth = e.getTruth();
-
-            if (prediction.equals(truth))
-                correctCnt++;
-
-            totalCnt++;
-        }
-
-        return 1.0 * correctCnt / totalCnt;
+    /**
+     *
+     */
+    public AbstractMetrics withMetric(Function<M, Double> metric) {
+        if (metric != null)
+            this.metric = metric;
+        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
-        return "accuracy";
+    @Override public double score(Iterator<LabelPair<Double>> iter) {
+        return metric.apply(scoreAll(iter));
     }
 }

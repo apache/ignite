@@ -29,8 +29,8 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 import org.dmg.pmml.PMML;
@@ -63,7 +63,7 @@ public class LogRegFromSparkThroughPMMLExample {
 
             System.out.println(">>> Logistic regression model: " + mdl);
 
-            double accuracy = BinaryClassificationEvaluator.evaluate(
+            double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
                 (k, v) -> v.copyOfRange(1, v.size()),

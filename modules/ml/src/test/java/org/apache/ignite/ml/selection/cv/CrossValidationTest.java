@@ -20,15 +20,15 @@ package org.apache.ignite.ml.selection.cv;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricValues;
 import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link CrossValidation}.
