@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,7 +51,7 @@ public class PartitionReservation {
      * @param reserved Reserved partitions.
      * @param err Error message.
      */
-    public PartitionReservation(@Nullable List<GridReservable> reserved, @Nullable String err) {
+    public PartitionReservation(@NotNull List<GridReservable> reserved, @Nullable String err) {
         this.reserved = reserved;
         this.err = err;
     }
