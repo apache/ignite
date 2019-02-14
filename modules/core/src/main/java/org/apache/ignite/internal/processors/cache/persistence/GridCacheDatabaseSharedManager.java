@@ -3484,7 +3484,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 else
                     scheduledCp.collectCtxInfo = true;
 
-                ((CompoundSnapshotOperation)scheduledCp.snapshotOperation).addSnapshotOperation(op, isSnapshot);
+                scheduledCp.snapshotOperation.addSnapshotOperation(op, isSnapshot);
 
                 notifyAll();
             }
@@ -4646,7 +4646,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile boolean started;
 
         /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
-        private volatile SnapshotOperation snapshotOperation = new CompoundSnapshotOperation();
+        private volatile CompoundSnapshotOperation snapshotOperation = new CompoundSnapshotOperation();
 
         /** Partitions destroy queue. */
         private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();

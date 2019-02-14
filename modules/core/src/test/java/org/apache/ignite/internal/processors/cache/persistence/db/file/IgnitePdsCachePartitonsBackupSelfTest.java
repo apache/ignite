@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.HashSet;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,7 +33,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileBackupDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -97,20 +97,20 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
 
         awaitPartitionMapExchange();
 
-        IgniteBackupPageStoreManager<FileBackupDescriptor> backup = ignite0.context().cache().context().storeBackup();
+        IgniteBackupPageStoreManager backup = ignite0.context().cache().context().storeBackup();
 
         backup.backup(
             1,
             CU.cacheId(DEFAULT_CACHE_NAME),
             new HashSet<>(Collections.singletonList(1)),
-            new BackupProcessTask<FileBackupDescriptor>() {
-                @Override public void handlePartition(GroupPartitionId grpPartId,
-                    FileBackupDescriptor descr) throws IgniteCheckedException {
+            new BackupProcessTask() {
+                @Override public void handlePartition(GroupPartitionId grpPartId, File file, long offset,
+                    long size) throws IgniteCheckedException {
 
                 }
 
-                @Override public void handleDelta(GroupPartitionId grpPartId,
-                    FileBackupDescriptor descr) throws IgniteCheckedException {
+                @Override public void handleDelta(GroupPartitionId grpPartId, File file, long offset,
+                    long size) throws IgniteCheckedException {
 
                 }
             });

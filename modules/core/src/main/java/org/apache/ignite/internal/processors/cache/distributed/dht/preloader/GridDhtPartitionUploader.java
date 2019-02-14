@@ -31,11 +31,10 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIoUploader;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileBackupDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
@@ -205,7 +204,7 @@ public class GridDhtPartitionUploader {
     }
 
     /** */
-    private static class FileBackupTask implements BackupProcessTask<FileBackupDescriptor> {
+    private static class FileBackupTask implements BackupProcessTask {
         /** */
         private final FileIoUploader uploader;
 
@@ -215,13 +214,23 @@ public class GridDhtPartitionUploader {
         }
 
         /** {@inheritDoc} */
-        @Override public void handlePartition(GroupPartitionId grpPartId, FileBackupDescriptor descr) throws IgniteCheckedException {
-            uploader.upload(descr.getFile());
+        @Override public void handlePartition(
+            GroupPartitionId grpPartId,
+            File file,
+            long offset,
+            long size
+        ) throws IgniteCheckedException {
+            uploader.upload(file);
         }
 
         /** {@inheritDoc} */
-        @Override public void handleDelta(GroupPartitionId grpPartId, FileBackupDescriptor descr) throws IgniteCheckedException {
-            uploader.upload(descr.getFile());
+        @Override public void handleDelta(
+            GroupPartitionId grpPartId,
+            File file,
+            long offset,
+            long size
+        ) throws IgniteCheckedException {
+            uploader.upload(file);
         }
     }
 

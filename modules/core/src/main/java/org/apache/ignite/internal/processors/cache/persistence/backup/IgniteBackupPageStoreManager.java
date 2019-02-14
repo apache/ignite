@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /** */
-public interface IgniteBackupPageStoreManager<T> extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
+public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
     /**
      * Take backup of specified cache group partition files and syncronously wait to its completion.
      *
@@ -40,7 +40,7 @@ public interface IgniteBackupPageStoreManager<T> extends GridCacheSharedManager,
         int idx,
         int grpId,
         Set<Integer> parts,
-        BackupProcessTask<T> hndlr
+        BackupProcessTask hndlr
     ) throws IgniteCheckedException;
 
     /**
@@ -51,8 +51,8 @@ public interface IgniteBackupPageStoreManager<T> extends GridCacheSharedManager,
     public void handleWritePageStore(GroupPartitionId pairId, PageStore store, long pageId);
 
     /**
-     * @param grpPartIds Collection of pairs cache group and partition ids.
+     * @param grpPartIdSet Collection of pairs cache group and partition ids.
      * @throws IgniteCheckedException If fails.
      */
-    public void initTemporaryStores(Set<GroupPartitionId> grpPartIds) throws IgniteCheckedException;
+    public void initTemporaryStores(Set<GroupPartitionId> grpPartIdSet) throws IgniteCheckedException;
 }

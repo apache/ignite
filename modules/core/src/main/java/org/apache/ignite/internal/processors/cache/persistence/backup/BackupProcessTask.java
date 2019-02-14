@@ -17,24 +17,39 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
+import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 
 /**
- * @param <T> A type of handling operation.
+ *
  */
-public interface BackupProcessTask<T> {
+public interface BackupProcessTask {
     /**
      * @param grpPartId Cache group and partition pair identifiers.
-     * @param descr Processing cotext.
+     * @param file A representation of partiton file.
+     * @param offset Start point offset.
+     * @param size End read point.
      * @throws IgniteCheckedException If fails.
      */
-    public void handlePartition(GroupPartitionId grpPartId, T descr) throws IgniteCheckedException;
+    public void handlePartition(
+        GroupPartitionId grpPartId,
+        File file,
+        long offset,
+        long size
+    ) throws IgniteCheckedException;
 
     /**
      * @param grpPartId Cache group and partition pair identifiers.
-     * @param descr Processing cotext.
+     * @param file A representation of partiton file.
+     * @param offset Start point offset.
+     * @param size End read point.
      * @throws IgniteCheckedException If fails.
      */
-    public void handleDelta(GroupPartitionId grpPartId, T descr) throws IgniteCheckedException;
+    public void handleDelta(
+        GroupPartitionId grpPartId,
+        File file,
+        long offset,
+        long size
+    ) throws IgniteCheckedException;
 }

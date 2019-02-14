@@ -60,10 +60,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 
 /** */
 public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
-    implements IgniteBackupPageStoreManager<FileBackupDescriptor> {
+    implements IgniteBackupPageStoreManager {
     /** */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + ".delta";
 
@@ -75,15 +77,6 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
     /** Factory to working with {@link TemporaryStore} as file storage. */
     private final FileIOFactory ioFactory;
-
-    /**
-     * Scheduled snapshot processes:
-     * idx
-     * grpId
-     * partId
-     * partiton fixed size
-     * delta offset
-     */
 
     /** Tracking partition files over all running snapshot processes. */
     private final ConcurrentMap<GroupPartitionId, AtomicInteger> trackMap = new ConcurrentHashMap<>();
@@ -128,6 +121,28 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
         return new File(tmpDir, String.format(PART_DELTA_TEMPLATE, partId));
     }
 
+    /**
+     * @param ccfg Cache configuration.
+     * @param partId Partiton identifier.
+     * @return The cache partiton file.
+     */
+    private File resolvePartitionFileCfg(CacheConfiguration ccfg, int partId) {
+        File cacheDir = ((FilePageStoreManager)cctx.pageStore()).cacheWorkDir(ccfg);
+
+        return getPartitionFile(cacheDir, partId);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param partId Partiton identifier.
+     * @return The cache partiton delta file.
+     */
+    private File resolvePartitionDeltaFileCfg(CacheConfiguration ccfg, int partId) {
+        File cacheTempDir = cacheWorkDir(backupWorkDir, ccfg);
+
+        return getPartionDeltaFile(cacheTempDir, partId);
+    }
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
@@ -155,7 +170,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
         int idx,
         int grpId,
         Set<Integer> parts,
-        BackupProcessTask<FileBackupDescriptor> task
+        BackupProcessTask task
     ) throws IgniteCheckedException {
         if (!(cctx.database() instanceof GridCacheDatabaseSharedManager) || parts == null || parts.isEmpty())
             return;
@@ -188,7 +203,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                             if (cnt != null)
                                 cnt.incrementAndGet();
 
-                            // Update offset.
+                            // Update offsets.
                             backupCtx.deltaOffsetMap.put(key, backupStores.get(key).writtenPagesCount());
                         }
                     }
@@ -244,29 +259,50 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
             cpFut.finishFuture().get();
 
-            U.log(log, "Start backup operation [grpId=" + grpId + ", parts=" + S.compact(parts) +
+            U.log(log, "Start snapshot operation over files [grpId=" + grpId + ", parts=" + S.compact(parts) +
                 ", context=" + backupCtx + ']');
 
             // Use sync mode to execute provided task over partitons and corresponding deltas.
             for (GroupPartitionId grpPartId : grpPartIdSet) {
-                long size = backupCtx.partAllocatedPages.get(grpPartId) * pageSize;
+                final CacheConfiguration grpCfg = cctx.cache()
+                    .cacheGroup(grpPartId.getGroupId())
+                    .config();
+                final long size = backupCtx.partAllocatedPages.get(grpPartId) * pageSize;
 
-                task.handlePartition(grpPartId, new FileBackupDescriptor(null, 0, 0, size));
+                task.handlePartition(grpPartId,
+                    resolvePartitionFileCfg(grpCfg, grpPartId.getPartitionId()),
+                    0,
+                    size);
 
                 // Stop page delta tracking for particular pair id.
                 ofNullable(trackMap.get(grpPartId))
                     .ifPresent(AtomicInteger::decrementAndGet);
+                U.log(log, "Partition file handled [pairId" + grpPartId + ']');
 
                 final Map<GroupPartitionId, Integer> offsets = backupCtx.deltaOffsetMap;
+                final int deltaOffset = offsets.get(grpPartId);
+                final long deltaSize = backupStores.get(grpPartId).writtenPagesCount() * pageSize;
 
-                task.handleDelta(grpPartId, new FileBackupDescriptor(null, 1, 0, 0));
+                task.handleDelta(grpPartId,
+                    resolvePartitionDeltaFileCfg(grpCfg, grpPartId.getPartitionId()),
+                    deltaOffset,
+                    deltaSize);
 
                 // Finish partition backup task.
                 backupCtx.remainPartIds.remove(grpPartId);
+
+                U.log(log, "Partition delta handled [pairId" + grpPartId + ']');
             }
         }
         catch (IgniteCheckedException e) {
             U.log(log, "An error occured while handling partition files.", e);
+
+            for (GroupPartitionId key : grpPartIdSet) {
+                AtomicInteger keyCnt = trackMap.get(key);
+
+                if (keyCnt != null && (keyCnt.decrementAndGet() == 0))
+                    U.closeQuiet(backupStores.get(key));
+            }
         }
         finally {
             dbMgr.removeCheckpointListener(dbLsnr);
@@ -304,21 +340,17 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void initTemporaryStores(Set<GroupPartitionId> grpPartIds) throws IgniteCheckedException {
-        int grpId = grpPartIds.iterator().next().getGroupId();
+    @Override public void initTemporaryStores(Set<GroupPartitionId> grpPartIdSet) throws IgniteCheckedException {
+        for (GroupPartitionId grpPartId : grpPartIdSet) {
+            CacheConfiguration ccfg = cctx.cache().cacheGroup(grpPartId.getGroupId()).config();
 
-        CacheConfiguration ccfg = cctx.cache().cacheGroup(grpId).config();
+            // Create cache temporary directory if not.
+            File tempGroupDir = U.resolveWorkDirectory(backupWorkDir.getAbsolutePath(), cacheDirName(ccfg), false);
 
-        assert ccfg != null;
+            U.ensureDirectory(tempGroupDir, "temporary directory for grpId: " + grpPartId.getGroupId(), log);
 
-        // Create cache temporary directory if not.
-        File tempGrpDir = U.resolveWorkDirectory(backupWorkDir.getAbsolutePath(), cacheDirName(ccfg), false);
-
-        U.ensureDirectory(tempGrpDir, "temporary directory for grpId: " + grpId, log);
-
-        for (GroupPartitionId gpid : grpPartIds) {
-            backupStores.putIfAbsent(gpid,
-                new FileTemporaryStore(getPartionDeltaFile(tempGrpDir, gpid.getPartitionId()), ioFactory));
+            backupStores.putIfAbsent(grpPartId,
+                new FileTemporaryStore(getPartionDeltaFile(tempGroupDir, grpPartId.getPartitionId()), ioFactory));
         }
     }
 

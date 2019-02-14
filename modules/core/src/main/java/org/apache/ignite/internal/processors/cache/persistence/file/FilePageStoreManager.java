@@ -964,9 +964,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return storeWorkDir;
     }
 
-    // public File cacheWorkDir(CacheConfiguration ccfg)
-    // public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName)
-
     /**
      * @param ccfg Cache configuration.
      * @return Store dir for given cache.
