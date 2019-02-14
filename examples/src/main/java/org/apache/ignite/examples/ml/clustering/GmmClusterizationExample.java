@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.clustering;
 
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -56,8 +56,8 @@ public class GmmClusterizationExample {
             System.out.println(">>> Ignite grid started.");
 
             long seed = 0;
-            IgniteCache<UUID, LabeledVector<Double>> dataCache = ignite.getOrCreateCache(
-                new CacheConfiguration<UUID, LabeledVector<Double>>("GMM_EXAMPLE_CACHE")
+            IgniteCache<Integer, LabeledVector<Double>> dataCache = ignite.getOrCreateCache(
+                new CacheConfiguration<Integer, LabeledVector<Double>>("GMM_EXAMPLE_CACHE")
                     .setAffinity(new RendezvousAffinityFunction(false, 10))
             );
 
@@ -77,11 +77,14 @@ public class GmmClusterizationExample {
                 ).move(VectorUtils.of(0., -10.))
             ).build(seed++).asDataStream();
 
-            dataStream.fillCacheWithVecUUIDAsKey(50000, dataCache);
-            GmmTrainer trainer = new GmmTrainer(3);
+            AtomicInteger keyGen = new AtomicInteger();
+            dataStream.fillCacheWithCustomKey(50000, dataCache, v -> keyGen.getAndIncrement());
+            GmmTrainer trainer = new GmmTrainer(1);
 
             GmmModel mdl = trainer
-                .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed++))
+                .withMaxCountIterations(10)
+                .withMaxCountOfClusters(4)
+                .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed))
                 .fit(ignite, dataCache, (k, v) -> v.features(), (k, v) -> v.label());
 
             System.out.println(">>> GMM means and covariances");
