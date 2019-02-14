@@ -21,7 +21,6 @@ import org.apache.ignite.examples.spark.SharedRDDExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.jupiter.api.Test;
 
-
 /**
  * SharedRDD  examples self test.
  */

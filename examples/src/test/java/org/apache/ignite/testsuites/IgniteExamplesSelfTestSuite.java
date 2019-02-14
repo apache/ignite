@@ -92,8 +92,11 @@ import org.junit.runner.RunWith;
     CacheClientBinaryExampleTest.class,
     ComputeClientBinaryExampleTest.class,
 
+    // ML Grid.
+    IgniteExamplesMLTestSuite.class,
+
     // Encryption.
-    EncryptedCacheExampleSelfTest.class
+    EncryptedCacheExampleSelfTest.class,
 })
 public class IgniteExamplesSelfTestSuite {
 }
