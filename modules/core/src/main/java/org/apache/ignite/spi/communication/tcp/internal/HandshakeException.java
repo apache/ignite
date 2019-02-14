@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.spi.communication.tcp.internal;
 
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * SQL Mvcc coordinator failover test for replicated caches.
+ * Internal exception class for proper timeout handling.
  */
-public class CacheMvccReplicatedSqlCoordinatorFailoverTest extends CacheMvccAbstractSqlCoordinatorFailoverTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+public class HandshakeException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * @param msg Error message.
+     */
+    public HandshakeException(String msg) {
+        super(msg);
     }
 }
