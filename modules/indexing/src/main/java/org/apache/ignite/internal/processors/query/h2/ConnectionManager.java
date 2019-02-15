@@ -328,7 +328,7 @@ public class ConnectionManager {
 
             H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
 
-            stmt = PreparedStatementExImpl.wrap(prepareStatementNoCache(c, sql));
+            stmt = prepareStatementNoCache(c, sql);
 
             cache.put(key, stmt);
         }

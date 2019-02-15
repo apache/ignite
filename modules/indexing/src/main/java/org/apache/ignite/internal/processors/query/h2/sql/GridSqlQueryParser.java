@@ -582,11 +582,7 @@ public class GridSqlQueryParser {
 
     /** */
     private static Command extractCommand(PreparedStatement stmt) {
-        try {
-            return COMMAND.get(stmt.unwrap(JdbcPreparedStatement.class));
-        } catch (SQLException e) {
-            throw new IgniteSQLException(e);
-        }
+        return COMMAND.get((JdbcPreparedStatement)stmt);
     }
 
     /**
