@@ -817,7 +817,7 @@ public class MvccUtils {
         if (tx == null)
             tracker = new MvccQueryTrackerImpl(cctx);
         else
-            tracker = new StaticMvccQueryTracker(cctx, requestSnapshot(cctx, tx));
+            tracker = new StaticMvccQueryTracker(cctx, requestSnapshot(tx));
 
         if (tracker.snapshot() == null)
             // TODO IGNITE-7388
@@ -827,13 +827,11 @@ public class MvccUtils {
     }
 
     /**
-     * @param cctx Cache context.
      * @param tx Transaction.
      * @throws IgniteCheckedException If failed.
      * @return Mvcc snapshot.
      */
-    public static MvccSnapshot requestSnapshot(GridCacheContext cctx,
-        @NotNull GridNearTxLocal tx) throws IgniteCheckedException {
+    public static MvccSnapshot requestSnapshot(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         MvccSnapshot snapshot = tx.mvccSnapshot();
 
         if (snapshot == null)
