@@ -35,6 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiMulticastTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryUnresolvedHostTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryClientSuspensionSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryFailedJoinTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryCoordinatorFailureTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
@@ -131,6 +132,8 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteClientConnectTest.class));
         suite.addTest(new TestSuite(IgniteClientReconnectMassiveShutdownTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryClientSuspensionSelfTest.class));
+
+        suite.addTest(new TestSuite(TcpDiscoveryFailedJoinTest.class));
 
         // SSL.
         suite.addTest(new TestSuite(IgniteClientConnectSslTest.class));
