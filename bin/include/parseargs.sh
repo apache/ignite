@@ -40,7 +40,7 @@ set -o functrace
 # in other scripts to parse common command lines parameters.
 #
 
-CONFIG=${DEFAULT_CONFIG}
+CONFIG=${DEFAULT_CONFIG:-}
 INTERACTIVE="0"
 NOJMX="0"
 QUIET="-DIGNITE_QUIET=true"
