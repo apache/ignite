@@ -335,6 +335,15 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_RESET_QUERY_METRICS = 86;
 
+    /** */
+    public static final int OP_PRELOAD_PARTITION = 87;
+
+    /** */
+    public static final int OP_PRELOAD_PARTITION_ASYNC = 88;
+
+    /** */
+    public static final int OP_LOCAL_PRELOAD_PARTITION = 89;
+
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
 
@@ -760,6 +769,14 @@ public class PlatformCache extends PlatformAbstractTarget {
                     PlatformCacheExtension ext = extension(reader.readInt());
 
                     return ext.processInOutStreamLong(this, reader.readInt(), reader, mem);
+
+                case OP_PRELOAD_PARTITION_ASYNC:
+                    readAndListenFuture(reader, cache.preloadPartitionAsync(reader.readInt()));
+
+                    return TRUE;
+
+                case OP_LOCAL_PRELOAD_PARTITION:
+                    return cache.localPreloadPartition(reader.readInt()) ? TRUE : FALSE;
             }
         }
         catch (Exception e) {
@@ -1114,6 +1131,11 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             case OP_RESET_QUERY_METRICS:
                 cache.resetQueryMetrics();
+
+                return TRUE;
+
+            case OP_PRELOAD_PARTITION:
+                cache.preloadPartition((int)val);
 
                 return TRUE;
         }

@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageI
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionException;
@@ -43,7 +43,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_COMPLETED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -55,16 +54,16 @@ public class MvccUtils {
     public static final int MVCC_KEY_ABSENT_BEFORE_OFF = 29;
 
     /** */
-    public static final int MVCC_KEY_ABSENT_BEFORE_MASK = 0b0001 << MVCC_KEY_ABSENT_BEFORE_OFF;
-
-    /** */
     public static final int MVCC_HINTS_BIT_OFF = MVCC_KEY_ABSENT_BEFORE_OFF + 1;
 
-    /** */
-    public static final int MVCC_HINTS_MASK = 0b0011 << MVCC_HINTS_BIT_OFF;
+    /** Mask for KeyAbsent flag. */
+    public static final int MVCC_KEY_ABSENT_BEFORE_MASK = 1 << MVCC_KEY_ABSENT_BEFORE_OFF;
 
-    /** Mask for all masked high bits in operation counter field. */
-    public static final int MVCC_OP_COUNTER_MASK = 0b0111 << MVCC_KEY_ABSENT_BEFORE_OFF;
+    /** Mask for tx hints. (2 highest bits)  */
+    public static final int MVCC_HINTS_MASK = Integer.MIN_VALUE >> 1;
+
+    /** Mask for operation counter bits. (Excludes hints and flags) */
+    public static final int MVCC_OP_COUNTER_MASK = ~(Integer.MIN_VALUE >> 2);
 
     /** */
     public static final long MVCC_CRD_COUNTER_NA = 0L;
@@ -87,8 +86,8 @@ public class MvccUtils {
     /** */
     public static final int MVCC_START_OP_CNTR = 1;
 
-    /** */
-    public static final int MVCC_READ_OP_CNTR = ~MVCC_HINTS_MASK;
+    /** Used as 'read' snapshot op counter. */
+    public static final int MVCC_READ_OP_CNTR = MVCC_OP_COUNTER_MASK;
 
     /** */
     public static final int MVCC_INVISIBLE = 0;
@@ -215,16 +214,18 @@ public class MvccUtils {
      * @param snapshot Snapshot.
      * @param mvccCrd Mvcc coordinator.
      * @param mvccCntr Mvcc counter.
-     * @param opCntr Operation counter.
+     * @param opCntrWithHints Operation counter.
      * @param useTxLog {@code True} if TxLog should be used.
      * @return {@code True} if visible.
      * @throws IgniteCheckedException If failed.
      */
     public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
-        int opCntr, boolean useTxLog) throws IgniteCheckedException {
+        int opCntrWithHints, boolean useTxLog) throws IgniteCheckedException {
+        int opCntr = opCntrWithHints & MVCC_OP_COUNTER_MASK;
+
         if (mvccCrd == MVCC_CRD_COUNTER_NA) {
-            assert mvccCntr == MVCC_COUNTER_NA && opCntr == MVCC_OP_COUNTER_NA
-                : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
+            assert mvccCntr == MVCC_COUNTER_NA && opCntrWithHints == MVCC_OP_COUNTER_NA
+                : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntrWithHints) + ", snapshot=" + snapshot;
 
             return false; // Unassigned version is always invisible
         }
@@ -237,6 +238,8 @@ public class MvccUtils {
         long snapshotCntr = snapshot.counter();
         int snapshotOpCntr = snapshot.operationCounter();
 
+        assert (snapshotOpCntr & ~MVCC_OP_COUNTER_MASK) == 0 : snapshot;
+
         if (mvccCrd > snapshotCrd)
             return false; // Rows in the future are never visible.
 
@@ -244,11 +247,11 @@ public class MvccUtils {
             if (!useTxLog)
                 return true; // The checking row is expected to be committed.
 
-            byte state = state(cctx, mvccCrd, mvccCntr, opCntr);
+            byte state = state(cctx, mvccCrd, mvccCntr, opCntrWithHints);
 
             if (MVCC_MAX_SNAPSHOT.compareTo(snapshot) != 0 // Special version which sees all committed entries.
                 && state != TxState.COMMITTED && state != TxState.ABORTED)
-                throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntr, snapshot);
+                throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntrWithHints, snapshot);
 
             return state == TxState.COMMITTED;
         }
@@ -261,7 +264,7 @@ public class MvccUtils {
         // because read-only queries use last committed version in it's snapshot which could be actually aborted
         // (during transaction recovery we do not know whether recovered transaction was committed or aborted).
         if (mvccCntr == snapshotCntr && snapshotOpCntr != MVCC_READ_OP_CNTR) {
-            assert opCntr <= snapshotOpCntr : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
+            assert opCntr <= snapshotOpCntr : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntrWithHints) + ", snapshot=" + snapshot;
 
             return opCntr < snapshotOpCntr; // we don't see own pending updates
         }
@@ -272,10 +275,10 @@ public class MvccUtils {
         if (!useTxLog)
             return true; // The checking row is expected to be committed.
 
-        byte state = state(cctx, mvccCrd, mvccCntr, opCntr);
+        byte state = state(cctx, mvccCrd, mvccCntr, opCntrWithHints);
 
         if (state != TxState.COMMITTED && state != TxState.ABORTED)
-            throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntr, snapshot);
+            throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntrWithHints, snapshot);
 
         return state == TxState.COMMITTED;
     }
@@ -476,7 +479,7 @@ public class MvccUtils {
 
         if ((cmp = Long.compare(mvccCrdLeft, mvccCrdRight)) != 0
             || (cmp = Long.compare(mvccCntrLeft, mvccCntrRight)) != 0
-            || (cmp = Integer.compare(mvccOpCntrLeft & ~MVCC_HINTS_MASK, mvccOpCntrRight & ~MVCC_HINTS_MASK)) != 0)
+            || (cmp = Integer.compare(mvccOpCntrLeft & MVCC_OP_COUNTER_MASK, mvccOpCntrRight & MVCC_OP_COUNTER_MASK)) != 0)
             return cmp;
 
         return 0;
@@ -537,7 +540,7 @@ public class MvccUtils {
      * @return Always {@code true}.
      */
     public static boolean mvccVersionIsValid(long crdVer, long cntr, int opCntr) {
-        return mvccVersionIsValid(crdVer, cntr) && opCntr != MVCC_OP_COUNTER_NA;
+        return mvccVersionIsValid(crdVer, cntr) && (opCntr & MVCC_OP_COUNTER_MASK) != MVCC_OP_COUNTER_NA;
     }
 
     /**
@@ -628,13 +631,13 @@ public class MvccUtils {
 
         long mvccCrd = dataIo.mvccCoordinator(pageAddr, offset);
         long mvccCntr = dataIo.mvccCounter(pageAddr, offset);
-        int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
+        int mvccOpCntr = dataIo.rawMvccOperationCounter(pageAddr, offset);
 
-        assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
+        assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr ) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
 
         long newMvccCrd = dataIo.newMvccCoordinator(pageAddr, offset);
         long newMvccCntr = dataIo.newMvccCounter(pageAddr, offset);
-        int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
+        int newMvccOpCntr = dataIo.rawNewMvccOperationCounter(pageAddr, offset);
 
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr)
             : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);
@@ -674,9 +677,9 @@ public class MvccUtils {
      * @param tx Transaction.
      * @return Checked transaction.
      */
-    public static GridNearTxLocal checkActive(GridNearTxLocal tx) {
+    public static GridNearTxLocal checkActive(GridNearTxLocal tx) throws IgniteTxAlreadyCompletedCheckedException {
         if (tx != null && tx.state() != TransactionState.ACTIVE)
-            throw new IgniteSQLException("Transaction is already completed.", TRANSACTION_COMPLETED);
+            throw new IgniteTxAlreadyCompletedCheckedException("Transaction is already completed.");
 
         return tx;
     }

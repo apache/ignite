@@ -196,7 +196,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Cache context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
-    /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
+    /**
+     * Busy lock to prevent activities from accessing exchanger while it's stopping. Stopping uses write lock, so every
+     * {@link #enterBusy()} will be failed as false. But regular operation uses read lock acquired multiple times.
+     */
     private ReadWriteLock busyLock;
 
     /** */
@@ -475,7 +478,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
          */
         assert exchangeDone() : "Should not be called before exchange is finished";
 
-        return isDone() ? result() : exchCtx.events().topologyVersion();
+        if (isDone())
+            return result();
+
+        final ExchangeContext exchCtx0;
+
+        synchronized (mux) {
+            if (state == ExchangeLocalState.MERGED) {
+                assert mergedWith != null;
+
+                exchCtx0 = mergedWith.exchCtx;
+            }
+            else
+                exchCtx0 = exchCtx;
+        }
+
+        return exchCtx0.events().topologyVersion();
     }
 
     /**
@@ -638,7 +656,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return {@code true} if entered to busy state.
+     * @return {@code true} if entered to busy state. {@code false} for stop node.
      */
     private boolean enterBusy() {
         if (busyLock.readLock().tryLock())
@@ -2031,9 +2049,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Finish merged future to allow GridCachePartitionExchangeManager.ExchangeFutureSet cleanup.
      */
-    public void finishMerged(AffinityTopologyVersion resVer) {
+    public void finishMerged(AffinityTopologyVersion resVer, GridDhtPartitionsExchangeFuture exchFut) {
         synchronized (mux) {
-            if (state == null) state = ExchangeLocalState.MERGED;
+            if (state == null) {
+                state = ExchangeLocalState.MERGED;
+
+                mergedWith = exchFut;
+            }
         }
 
         done.set(true);
@@ -3113,7 +3135,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         try {
             // Reserve at least 2 threads for system operations.
-            U.doInParallel(
+            doInParallel(
                 U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2),
                 cctx.kernalContext().getSystemExecutorService(),
                 cctx.cache().cacheGroups(),
@@ -3293,6 +3315,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param sndResNodes Additional nodes to send finish message to.
      */
     private void finishExchangeOnCoordinator(@Nullable Collection<ClusterNode> sndResNodes) {
+        if (isDone() || !enterBusy())
+            return;
+
         try {
             if (!F.isEmpty(exchangeGlobalExceptions) && dynamicCacheStartExchange() && isRollbackSupported()) {
                 sendExchangeFailureMessage();
@@ -3333,7 +3358,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.affinity().onServerJoinWithExchangeMergeProtocol(this, true);
 
 
-                U.doInParallel(
+                doInParallel(
                     parallelismLvl,
                     cctx.kernalContext().getSystemExecutorService(),
                     cctx.affinity().cacheGroups().values(),
@@ -3356,37 +3381,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             Map<Integer, CacheGroupAffinityMessage> joinedNodeAff = new ConcurrentHashMap<>(cctx.cache().cacheGroups().size());
 
-            U.doInParallel(
+            doInParallel(
                 parallelismLvl,
                 cctx.kernalContext().getSystemExecutorService(),
-                msgs.entrySet(),
-                entry -> {
-                    GridDhtPartitionsSingleMessage msg = entry.getValue();
-
-                    for (Map.Entry<Integer, GridDhtPartitionMap> e : msg.partitions().entrySet()) {
-                        Integer grpId = e.getKey();
-
-                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                        GridDhtPartitionTopology top = grp != null
-                            ? grp.topology()
-                            : cctx.exchange().clientTopology(grpId, events().discoveryCache());
-
-                        CachePartitionPartialCountersMap cntrs = msg.partitionUpdateCounters(grpId, top.partitions());
-
-                        if (cntrs != null)
-                            top.collectUpdateCounters(cntrs);
-                    }
-
-                    Collection<Integer> affReq = msg.cacheGroupsAffinityRequest();
-
-                    if (affReq != null)
-                        CacheGroupAffinityMessage.createAffinityMessages(
-                            cctx,
-                            resTopVer,
-                            affReq,
-                            joinedNodeAff
-                        );
+                msgs.values(),
+                msg -> {
+                    processSingleMessageOnCrdFinish(msg, joinedNodeAff);
 
                     return null;
                 }
@@ -3592,6 +3592,43 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else
                 onDone(e);
         }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * @param msg Single message to process.
+     * @param messageAccumulator Message to store message which need to be sent after.
+     */
+    private void processSingleMessageOnCrdFinish(
+        GridDhtPartitionsSingleMessage msg,
+        Map<Integer, CacheGroupAffinityMessage> messageAccumulator
+    ) {
+        for (Map.Entry<Integer, GridDhtPartitionMap> e : msg.partitions().entrySet()) {
+            Integer grpId = e.getKey();
+
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            GridDhtPartitionTopology top = grp != null
+                ? grp.topology()
+                : cctx.exchange().clientTopology(grpId, events().discoveryCache());
+
+            CachePartitionPartialCountersMap cntrs = msg.partitionUpdateCounters(grpId, top.partitions());
+
+            if (cntrs != null)
+                top.collectUpdateCounters(cntrs);
+        }
+
+        Collection<Integer> affReq = msg.cacheGroupsAffinityRequest();
+
+        if (affReq != null)
+            CacheGroupAffinityMessage.createAffinityMessages(
+                cctx,
+                exchCtx.events().topologyVersion(),
+                affReq,
+                messageAccumulator
+            );
     }
 
     /**
@@ -4390,6 +4427,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     try {
                         boolean crdChanged = false;
                         boolean allReceived = false;
+                        boolean wasMerged = false;
 
                         ClusterNode crd0;
 
@@ -4405,8 +4443,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             newCrdFut0.onNodeLeft(node.id());
 
                         synchronized (mux) {
-                            if (!srvNodes.remove(node))
-                                return;
+                            srvNodes.remove(node);
 
                             boolean rmvd = remaining.remove(node.id());
 
@@ -4415,6 +4452,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                     if (mergedJoinExchMsgs.get(node.id()) == null) {
                                         mergedJoinExchMsgs.remove(node.id());
 
+                                        wasMerged = true;
                                         rmvd = true;
                                     }
                                 }
@@ -4513,11 +4551,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             }
 
                             if (allReceived) {
+                                boolean wasMerged0 = wasMerged;
+
                                 cctx.kernalContext().getSystemExecutorService().submit(new Runnable() {
                                     @Override public void run() {
                                         awaitSingleMapUpdates();
 
-                                        onAllReceived(null);
+                                        if (wasMerged0)
+                                            finishExchangeOnCoordinator(null);
+                                        else
+                                            onAllReceived(null);
                                     }
                                 });
                             }
@@ -4866,14 +4909,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** {@inheritDoc} */
     @Override public String toString() {
         Set<UUID> remaining;
+        Set<UUID> mergedJoinExch;
 
         synchronized (mux) {
             remaining = new HashSet<>(this.remaining);
+            mergedJoinExch = mergedJoinExchMsgs == null ? null : new HashSet<>(mergedJoinExchMsgs.keySet());
         }
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
             "evtLatch", evtLatch == null ? "null" : evtLatch.getCount(),
             "remaining", remaining,
+            "mergedJoinExchMsgs", mergedJoinExch,
             "super", super.toString());
     }
 

@@ -146,6 +146,8 @@ import formSignup from './components/form-signup';
 import sidebar from './components/web-console-sidebar';
 import permanentNotifications from './components/permanent-notifications';
 import signupConfirmation from './components/page-signup-confirmation';
+import noDataCmp from './components/no-data';
+import globalProgressBar from './components/global-progress-line';
 
 import igniteServices from './services';
 
@@ -246,7 +248,9 @@ export default angular
         sidebar.name,
         permanentNotifications.name,
         timedRedirection.name,
-        signupConfirmation.name
+        signupConfirmation.name,
+        noDataCmp.name,
+        globalProgressBar.name
     ])
     .service('$exceptionHandler', $exceptionHandler)
     // Directives.
@@ -305,11 +309,11 @@ export default angular
 
             // Set up the states.
             $stateProvider
-            .state('base', {
-                url: '',
-                abstract: true,
-                template: baseTemplate
-            });
+                .state('base', {
+                    url: '',
+                    abstract: true,
+                    template: baseTemplate
+                });
 
             $urlRouterProvider.otherwise('/404');
             $locationProvider.html5Mode(true);
@@ -360,17 +364,17 @@ export default angular
                         localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
                 }
                 catch (ignored) {
-                // No-op.
+                    // No-op.
                 }
             });
         }
     ])
     .run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
-        /**
-         * @param {ng.IRootScopeService} $root
-         * @param {ng.IHttpService} $http
-         * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
-         */
+    /**
+    * @param {ng.IRootScopeService} $root
+    * @param {ng.IHttpService} $http
+    * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
+    */
         ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
             $root.revertIdentity = () => {
                 $http.get('/api/v1/admin/revert/identity')
@@ -382,8 +386,8 @@ export default angular
         }
     ])
     .run(['IgniteIcon',
-        /**
-         * @param {import('./components/ignite-icon/service').default} IgniteIcon
-         */
+    /**
+    * @param {import('./components/ignite-icon/service').default} IgniteIcon
+    */
         (IgniteIcon) => IgniteIcon.registerIcons(icons)
     ]);

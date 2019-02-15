@@ -26,14 +26,17 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -52,7 +55,22 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
     /** Start client flag. */
     private final AtomicBoolean clientJustStarted = new AtomicBoolean(false);
-    
+
+    /** Failure detection timeout. */
+    private int failureDetectionTimeout = -1;
+
+    /** Node add finished delay. */
+    private int nodeAddFinishedDelay = 5_000;
+
+    /** Connection timeout. */
+    private long connTimeout = -1;
+
+    /** Maxx connection timeout. */
+    private long maxxConnTimeout = -1;
+
+    /** Recon count. */
+    private int reconCnt = -1;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -65,9 +83,24 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
             ipFinder.registerAddresses(Collections.singleton(new InetSocketAddress(InetAddress.getLoopbackAddress(), 47501)));
 
             disco.setIpFinder(ipFinder);
+
+
+            if (failureDetectionTimeout != -1)
+                cfg.setFailureDetectionTimeout(failureDetectionTimeout);
+
+            if (connTimeout != -1) {
+                TcpCommunicationSpi tcpCommSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
+
+                tcpCommSpi.setConnectTimeout(connTimeout);
+                tcpCommSpi.setMaxConnectTimeout(maxxConnTimeout);
+                tcpCommSpi.setReconnectCount(reconCnt);
+            }
         }
-        else
+        else {
             disco.setIpFinder(sharedStaticIpFinder);
+
+            cfg.setFailureDetectionTimeout(60_000);
+        }
 
         disco.setJoinTimeout(2 * 60_000);
         disco.setSocketTimeout(1000);
@@ -94,6 +127,54 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClientConnectToBigTopology() throws Exception {
+        failureDetectionTimeout = -1;
+        connTimeout = -1;
+
+        testClientConnectToBigTopology0();
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFailureDetectionTimeoutReached() throws Exception {
+        failureDetectionTimeout = 1000;
+        connTimeout = -1;
+
+        try {
+            testClientConnectToBigTopology0();
+        }
+        catch (CacheException e) {
+            assertTrue(e.getCause().getMessage().contains("Failed to send message"));
+        }
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCustomTimeoutReached() throws Exception {
+        failureDetectionTimeout = 1000;
+
+        connTimeout = 1000;
+        maxxConnTimeout = 3000;
+        reconCnt = 3;
+
+        try {
+            testClientConnectToBigTopology0();
+        }
+        catch (CacheException e) {
+            assertTrue(e.getCause().getMessage().contains("Failed to send message"));
+        }
+    }
+
+    /**
+     *
+     * @throws Exception In case of error.
+     */
+    public void testClientConnectToBigTopology0() throws Exception {
         Ignite ignite = startGrids(3);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -140,9 +221,9 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
                     try {
                         latch.await();
 
-                        Thread.sleep(5_000);
+                        Thread.sleep(nodeAddFinishedDelay);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        fail("Unexpected interrupt on nodeAddFinishedDelay");
                     }
 
                 super.writeToSocket(sock, out, msg, timeout);
