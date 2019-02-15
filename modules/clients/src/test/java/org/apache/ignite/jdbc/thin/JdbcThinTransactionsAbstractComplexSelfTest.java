@@ -190,13 +190,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         execute("DELETE FROM \"Person\".Person");
 

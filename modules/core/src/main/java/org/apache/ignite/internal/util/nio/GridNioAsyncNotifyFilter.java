@@ -104,7 +104,8 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
+    @Override public void onExceptionCaught(GridNioSession ses,
+        IgniteCheckedException ex) throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 

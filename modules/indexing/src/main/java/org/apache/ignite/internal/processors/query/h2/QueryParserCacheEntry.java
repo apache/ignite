@@ -17,43 +17,58 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cached two-step query.
  */
 public class QueryParserCacheEntry {
-    /** */
-    private final List<GridQueryFieldMetadata> meta;
+    /** Select. */
+    private final QueryParserResultSelect select;
 
-    /** */
-    private final GridCacheTwoStepQuery twoStepQry;
+    /** DML. */
+    private final QueryParserResultDml dml;
+
+    /** Command. */
+    private final QueryParserResultCommand cmd;
 
     /**
-     * @param meta Fields metadata.
-     * @param twoStepQry Query.
+     * Constructor.
+     *
+     * @param select SELECT.
+     * @param dml DML.
+     * @param cmd Command.
      */
-    public QueryParserCacheEntry(List<GridQueryFieldMetadata> meta, GridCacheTwoStepQuery twoStepQry) {
-        this.meta = meta;
-        this.twoStepQry = twoStepQry;
+    public QueryParserCacheEntry(
+        @Nullable QueryParserResultSelect select,
+        @Nullable QueryParserResultDml dml,
+        @Nullable QueryParserResultCommand cmd
+    ) {
+        this.select = select;
+        this.dml = dml;
+        this.cmd = cmd;
     }
 
     /**
-     * @return Fields metadata.
+     * @return SELECT.
      */
-    public List<GridQueryFieldMetadata> meta() {
-        return meta;
+    @Nullable public QueryParserResultSelect select() {
+        return select;
     }
 
     /**
-     * @return Query.
+     * @return DML.
      */
-    public GridCacheTwoStepQuery query() {
-        return twoStepQry;
+    @Nullable public QueryParserResultDml dml() {
+        return dml;
+    }
+
+    /**
+     * @return Command.
+     */
+    @Nullable public QueryParserResultCommand command() {
+        return cmd;
     }
 
     /** {@inheritDoc} */

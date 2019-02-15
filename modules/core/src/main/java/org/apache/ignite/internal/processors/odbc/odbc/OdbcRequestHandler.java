@@ -62,6 +62,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 
@@ -974,6 +975,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         if (e instanceof TransactionSerializationException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, msg);
+        if (e instanceof TransactionAlreadyCompletedException)
+            return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, msg);
         if (e instanceof MvccUtils.NonMvccTransactionException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, msg);
         if (e instanceof MvccUtils.UnsupportedTxModeException)

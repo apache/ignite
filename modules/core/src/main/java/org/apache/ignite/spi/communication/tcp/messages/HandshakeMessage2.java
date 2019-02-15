@@ -32,6 +32,9 @@ public class HandshakeMessage2 extends HandshakeMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Message size in bytes including {@link HandshakeMessage} fields. */
+    public static final int HANDSHAKE2_MESSAGE_SIZE = MESSAGE_FULL_SIZE + 4;
+
     /** */
     private int connIdx;
 
@@ -62,6 +65,11 @@ public class HandshakeMessage2 extends HandshakeMessage {
     /** {@inheritDoc} */
     @Override public int connectionIndex() {
         return connIdx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMessageSize() {
+        return HANDSHAKE2_MESSAGE_SIZE;
     }
 
     /** {@inheritDoc} */

@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlReque
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2SelectForUpdateTxDetails;
+import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CIX2;
@@ -92,6 +93,7 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionException;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -406,7 +408,8 @@ public class GridReduceQueryExecutor {
         boolean forUpdate,
         int pageSize
     ) {
-        if (qry.isLocal() && parts != null)
+        // If explicit partitions are set, but there are no real tables, ignore.
+        if (!qry.hasCacheIds() && parts != null)
             parts = null;
 
         assert !qry.mvccEnabled() || mvccTracker != null;
@@ -462,7 +465,14 @@ public class GridReduceQueryExecutor {
 
             boolean mvccEnabled = mvccEnabled(ctx);
 
-            final GridNearTxLocal curTx = mvccEnabled ? checkActive(tx(ctx)) : null;
+            final GridNearTxLocal curTx;
+
+            try {
+                curTx = mvccEnabled ? checkActive(tx(ctx)) : null;
+            }
+            catch (IgniteTxAlreadyCompletedCheckedException e) {
+                throw new TransactionAlreadyCompletedException(e.getMessage(), e);
+            }
 
             final GridNearTxSelectForUpdateFuture sfuFut;
 
@@ -535,7 +545,7 @@ public class GridReduceQueryExecutor {
                     throw new CacheException("Partitions are not supported for replicated caches");
             }
 
-            if (qry.isLocal())
+            if (qry.isLocalSplit() || !qry.hasCacheIds())
                 nodes = singletonList(ctx.discovery().localNode());
             else {
                 ReducePartitionMapResult nodesParts =
@@ -646,8 +656,6 @@ public class GridReduceQueryExecutor {
                             .parameterIndexes(mapQry.parameterIndexes()));
                 }
 
-                final boolean distributedJoins = qry.distributedJoins();
-
                 final long qryReqId0 = qryReqId;
 
                 cancel.set(new Runnable() {
@@ -660,11 +668,9 @@ public class GridReduceQueryExecutor {
 
                 int flags = singlePartMode && !enforceJoinOrder ? 0 : GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
 
-                if (distributedJoins)
+                // Distributed joins flag is set if it is either reald
+                if (qry.distributedJoins())
                     flags |= GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS;
-
-                if (qry.isLocal())
-                    flags |= GridH2QueryRequest.FLAG_IS_LOCAL;
 
                 if (qry.explain())
                     flags |= GridH2QueryRequest.FLAG_EXPLAIN;
@@ -682,7 +688,7 @@ public class GridReduceQueryExecutor {
                     .topologyVersion(topVer)
                     .pageSize(r.pageSize())
                     .caches(qry.cacheIds())
-                    .tables(distributedJoins ? qry.tables() : null)
+                    .tables(qry.distributedJoins() ? qry.tables() : null)
                     .partitions(convert(partsMap))
                     .queries(mapQrys)
                     .parameters(params)

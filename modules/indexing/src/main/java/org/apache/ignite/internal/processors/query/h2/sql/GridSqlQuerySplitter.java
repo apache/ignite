@@ -115,8 +115,8 @@ public class GridSqlQuerySplitter {
     /** */
     private final boolean collocatedGrpBy;
 
-    /** */
-    private final boolean distributedJoins;
+    /** Whether partition extraction is possible. */
+    private final boolean canExtractPartitions;
 
     /** */
     private final IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
@@ -128,15 +128,25 @@ public class GridSqlQuerySplitter {
      * @param params Query parameters.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
      * @param distributedJoins Distributed joins flag.
+     * @param locSplit Local split flag.
      * @param extractor Partition extractor.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, boolean distributedJoins,
-        PartitionExtractor extractor) {
+    public GridSqlQuerySplitter(
+        Object[] params,
+        boolean collocatedGrpBy,
+        boolean distributedJoins,
+        boolean locSplit,
+        PartitionExtractor extractor
+    ) {
         this.params = params;
         this.collocatedGrpBy = collocatedGrpBy;
-        this.distributedJoins = distributedJoins;
         this.extractor = extractor;
+
+        // Partitions *CANNOT* be extracted if:
+        // 1) Distributed joins are enabled (https://issues.apache.org/jira/browse/IGNITE-10971)
+        // 2) This is a local query with split (https://issues.apache.org/jira/browse/IGNITE-11316)
+        canExtractPartitions = !distributedJoins && !locSplit;
     }
 
     /**
@@ -171,6 +181,7 @@ public class GridSqlQuerySplitter {
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
      * @param enforceJoinOrder Enforce join order.
+     * @param locSplit Whether this is a split for local query.
      * @param idx Indexing.
      * @return Two step query.
      * @throws SQLException If failed.
@@ -183,7 +194,7 @@ public class GridSqlQuerySplitter {
         boolean collocatedGrpBy,
         boolean distributedJoins,
         boolean enforceJoinOrder,
-        boolean local,
+        boolean locSplit,
         IgniteH2Indexing idx
     ) throws SQLException, IgniteCheckedException {
         SplitterContext.set(distributedJoins);
@@ -196,7 +207,7 @@ public class GridSqlQuerySplitter {
                 collocatedGrpBy,
                 distributedJoins,
                 enforceJoinOrder,
-                local,
+                locSplit,
                 idx
             );
         }
@@ -212,6 +223,7 @@ public class GridSqlQuerySplitter {
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
      * @param enforceJoinOrder Enforce join order.
+     * @param locSplit Whether this is a split for local query.
      * @param idx Indexing.
      * @return Two step query.
      * @throws SQLException If failed.
@@ -224,7 +236,7 @@ public class GridSqlQuerySplitter {
         boolean collocatedGrpBy,
         boolean distributedJoins,
         boolean enforceJoinOrder,
-        boolean local,
+        boolean locSplit,
         IgniteH2Indexing idx
     ) throws SQLException, IgniteCheckedException {
         if (params == null)
@@ -244,6 +256,7 @@ public class GridSqlQuerySplitter {
             params,
             collocatedGrpBy,
             distributedJoins,
+            locSplit,
             idx.partitionExtractor()
         );
 
@@ -306,7 +319,7 @@ public class GridSqlQuerySplitter {
             splitter.extractor.mergeMapQueries(splitter.mapSqlQrys),
             cacheIds,
             mvccEnabled,
-            local || F.isEmpty(cacheIds)
+            locSplit
         );
     }
 
@@ -1194,7 +1207,6 @@ public class GridSqlQuerySplitter {
 
         // -- HAVING
         if (havingCol >= 0 && !collocatedGrpBy) {
-            // TODO IGNITE-1140 - Find aggregate functions in HAVING clause or rewrite query to put all aggregates to SELECT clause.
             // We need to find HAVING column in reduce query.
             for (int i = visibleCols; i < rdcQry.allColumns(); i++) {
                 GridSqlAst c = rdcQry.column(i);
@@ -1217,7 +1229,6 @@ public class GridSqlQuerySplitter {
             // If collocatedGrpBy is true, then aggregateFound is always false.
             if (aggregateFound) // Ordering over aggregates does not make sense.
                 mapQry.clearSort(); // Otherwise map sort will be used by offset-limit.
-            // TODO IGNITE-1141 - Check if sorting is done over aggregated expression, otherwise we can sort and use offset-limit.
         }
 
         // -- LIMIT
@@ -1259,7 +1270,7 @@ public class GridSqlQuerySplitter {
         map.partitioned(SplitterUtils.hasPartitionedTables(mapQry));
         map.hasSubQueries(SplitterUtils.hasSubQueries(mapQry));
 
-        if (map.isPartitioned() && !distributedJoins)
+        if (map.isPartitioned() && canExtractPartitions)
             map.derivedPartitions(extractor.extract(mapQry));
 
         mapSqlQrys.add(map);
