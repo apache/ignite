@@ -918,6 +918,7 @@ public class GridDhtPartitionDemander {
 
 
                         history.clear();
+                        entry = null;
                     }
 
                     if (!hasMore)
@@ -1136,7 +1137,7 @@ public class GridDhtPartitionDemander {
                 return false;
             }
         }
-        catch (IgniteInterruptedCheckedException|ClusterTopologyCheckedException e) {
+        catch (IgniteInterruptedCheckedException | ClusterTopologyCheckedException e) {
             throw e;
         }
         catch (IgniteCheckedException e) {

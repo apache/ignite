@@ -151,7 +151,7 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     @Override public synchronized CacheDataRow peek() {
         if (cached == null) {
             if (!hasNext())
-                throw new NoSuchElementException();
+                return null;
 
             cached = next();
         }

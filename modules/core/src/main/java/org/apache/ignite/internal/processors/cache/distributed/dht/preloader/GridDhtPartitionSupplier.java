@@ -419,6 +419,8 @@ class GridDhtPartitionSupplier {
             assert remainingParts.isEmpty()
                 : "Partitions after rebalance should be either done or missing: " + remainingParts;
 
+            assert iter.peek() == null : iter.peek();
+
             if (sctx != null)
                 clearContext(sctx, log);
             else
