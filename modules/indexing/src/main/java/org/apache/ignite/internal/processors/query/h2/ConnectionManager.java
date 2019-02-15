@@ -302,14 +302,25 @@ public class ConnectionManager {
 
         PreparedStatement stmt = cache.get(key);
 
-        if (stmt != null && !stmt.isClosed() && !stmt.unwrap(JdbcStatement.class).isCancelled() &&
-            !GridSqlQueryParser.prepared(stmt).needRecompile()) {
-            assert stmt.getConnection() == c;
+        // Nothing found.
+        if (stmt == null)
+            return null;
 
-            return stmt;
-        }
+        // TODO: Remove thread local caching at all. Just keep per-connection statement cache.
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-11211
+        // Statement is not from the given connection.
+        if (stmt.getConnection() != c)
+            return null;
 
-        return null;
+        // Is statement still valid?
+        if (
+            stmt.isClosed() ||                                 // Closed.
+            stmt.unwrap(JdbcStatement.class).isCancelled() ||  // Cancelled.
+            GridSqlQueryParser.prepared(stmt).needRecompile() // Outdated (schema has been changed concurrently).
+        )
+            return null;
+
+        return stmt;
     }
 
     /**

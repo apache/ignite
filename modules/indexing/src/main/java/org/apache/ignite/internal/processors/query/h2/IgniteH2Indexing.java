@@ -578,7 +578,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     qryCtxRegistry.setThreadLocal(qctx);
 
-                    // TODO: Schema is not set!
                     ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn = connMgr.detachThreadConnection();
 
                     try {
