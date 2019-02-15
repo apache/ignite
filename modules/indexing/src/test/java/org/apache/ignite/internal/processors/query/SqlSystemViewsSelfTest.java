@@ -665,7 +665,6 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /**
      * Regression test. Verifies that duration metrics is able to be longer than 24 hours.
      */
-    @Test
     public void testDurationMetricsCanBeLonger24Hours() throws Exception {
         Ignite ign = startGrid("MockedMetrics", getConfiguration().setMetricsUpdateFrequency(500));
 
