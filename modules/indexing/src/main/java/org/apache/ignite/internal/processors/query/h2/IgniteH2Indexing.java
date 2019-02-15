@@ -475,10 +475,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (params != null)
                 fieldsQry.setArgs(params.toArray());
 
-            QueryParserResult parseRes = parser.parse(schemaName, fieldsQry);
-
-            if (parseRes.remainingQuery() != null)
-                throw new IgniteSQLException("Multiple statements queries are not supported for local queries");
+            QueryParserResult parseRes = parser.parse(schemaName, fieldsQry, false);
 
             if (parseRes.isDml()) {
                 UpdateResult updRes = executeUpdate(schemaName, parseRes.dml(), fieldsQry, true, filter, cancel);
@@ -581,10 +578,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     qryCtxRegistry.setThreadLocal(qctx);
 
+                    // TODO: Schema is not set!
                     ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn = connMgr.detachThreadConnection();
 
                     try {
-                        Connection conn0 = conn.object().connection();
+                        Connection conn0 = conn.object().connection(schemaName);
 
                         PreparedStatement stmt = preparedStatementWithParams(
                             conn0,
@@ -811,12 +809,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return DML.
      */
     private QueryParserResultDml streamerParse(String schemaName, String qry) {
-        QueryParserResult parseRes = parser.parse(schemaName, new SqlFieldsQuery(qry));
-
-        if (parseRes.remainingQuery() != null) {
-            throw new IgniteSQLException("Multiple statements queries are not supported for streaming mode.",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
+        QueryParserResult parseRes = parser.parse(schemaName, new SqlFieldsQuery(qry), false);
 
         QueryParserResultDml dml = parseRes.dml();
 
@@ -1287,12 +1280,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SqlFieldsQuery remainingQry = qry;
 
             while (remainingQry != null) {
-                QueryParserResult parseRes = parser.parse(schemaName, remainingQry);
+                QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts);
 
                 remainingQry = parseRes.remainingQuery();
-
-                if (remainingQry != null && failOnMultipleStmts)
-                    throw new IgniteSQLException("Multiple statements queries are not supported");
 
                 SqlFieldsQuery newQry = parseRes.query();
 
@@ -1543,7 +1533,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             loc = false;
         }
 
-        QueryParserResult parseRes = parser.parse(schema, fldsQry);
+        QueryParserResult parseRes = parser.parse(schema, fldsQry, false);
 
         assert parseRes.remainingQuery() == null;
 
@@ -1774,7 +1764,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         boolean loc
     ) throws IgniteCheckedException {
-        QueryParserResult parseRes = parser.parse(schemaName, qry);
+        QueryParserResult parseRes = parser.parse(schemaName, qry, false);
 
         assert parseRes.remainingQuery() == null;
 

@@ -113,10 +113,11 @@ public class QueryParser {
      *
      * @param schemaName schema name.
      * @param qry query to parse.
+     * @param remainingAllowed Whether multiple statements are allowed.            
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
-    public QueryParserResult parse(String schemaName, SqlFieldsQuery qry) {
-        QueryParserResult res = parse0(schemaName, qry);
+    public QueryParserResult parse(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
+        QueryParserResult res = parse0(schemaName, qry, remainingAllowed);
 
         checkQueryType(qry, res.isSelect());
 
@@ -128,9 +129,10 @@ public class QueryParser {
      *
      * @param schemaName schema name.
      * @param qry query to parse.
+     * @param remainingAllowed Whether multiple statements are allowed.
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
-    private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry) {
+    private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
         // First, let's check if we already have a two-step query for this statement...
         QueryParserCacheKey cachedKey = new QueryParserCacheKey(
             schemaName,
@@ -143,15 +145,15 @@ public class QueryParser {
 
         QueryParserCacheEntry cached = cache.get(cachedKey);
 
-        if (cached != null)
+        if (cached != null) 
             return new QueryParserResult(qry, null, cached.select(), cached.dml(), cached.command());
 
         // Try parting as native command.
-        QueryParserResult parseRes = parseNative(schemaName, qry);
+        QueryParserResult parseRes = parseNative(schemaName, qry, remainingAllowed);
 
         // Otherwise parse with H2.
         if (parseRes == null)
-            parseRes = parseH2(schemaName, qry);
+            parseRes = parseH2(schemaName, qry, remainingAllowed);
 
         // Add to cache if not multi-statement.
         if (parseRes.remainingQuery() == null) {
@@ -170,11 +172,12 @@ public class QueryParser {
      *
      * @param schemaName Schema name.
      * @param qry which sql text to parse.
+     * @param remainingAllowed Whether multiple statements are allowed.              
      * @return Command or {@code null} if cannot parse this query.
      */
     @SuppressWarnings("IfMayBeConditional")
     @Nullable
-    private QueryParserResult parseNative(String schemaName, SqlFieldsQuery qry) {
+    private QueryParserResult parseNative(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
         String sql = qry.getSql();
 
         // Heuristic check for fast return.
@@ -204,12 +207,13 @@ public class QueryParser {
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.lastCommandSql());
 
-            SqlFieldsQuery remainingQry;
-
-            if (F.isEmpty(parser.remainingSql()))
-                remainingQry = null;
-            else
+            SqlFieldsQuery remainingQry = null;
+            
+            if (!F.isEmpty(parser.remainingSql())) {
+                checkRemainingAllowed(remainingAllowed);
+                
                 remainingQry = cloneFieldsQuery(qry).setSql(parser.remainingSql()).setArgs(qry.getArgs());
+            }
 
             QueryParserResultCommand cmd = new QueryParserResultCommand(nativeCmd, null, false);
 
@@ -240,10 +244,11 @@ public class QueryParser {
      *
      * @param schemaName Schema name.
      * @param qry Query.
+     * @param remainingAllowed Whether multiple statements are allowed.              
      * @return Parsing result.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private QueryParserResult parseH2(String schemaName, SqlFieldsQuery qry) {
+    private QueryParserResult parseH2(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
         Connection c = connMgr.connectionForThread().connection(schemaName);
 
         // For queries that are explicitly local, we rely on the flag specified in the query
@@ -277,35 +282,44 @@ public class QueryParser {
                 throw new IgniteSQLException("Explains of update queries are not supported.",
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-            int paramsCnt = prepared.getParameters().size();
-
-            Object[] argsOrig = qry.getArgs();
-
-            Object[] args = null;
-            Object[] remainingArgs = null;
-
-            if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
-                if (argsOrig == null || argsOrig.length < paramsCnt) {
-                    throw new IgniteException("Invalid number of query parameters. " +
-                        "Cannot find " + (argsOrig != null ? argsOrig.length + 1 : 1) + " parameter.");
-                }
-
-                args = Arrays.copyOfRange(argsOrig, 0, paramsCnt);
-
-                if (paramsCnt != argsOrig.length)
-                    remainingArgs = Arrays.copyOfRange(argsOrig, paramsCnt, argsOrig.length);
+            SqlFieldsQuery remainingQry = null;
+            
+            if (!F.isEmpty(prep.remainingSql())) {
+                checkRemainingAllowed(remainingAllowed);
+                
+                remainingQry = cloneFieldsQuery(qry).setSql(prep.remainingSql());
             }
-            else
-                remainingArgs = argsOrig;
 
-            SqlFieldsQuery remainingQry;
+            SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL());
+            
+            if (remainingQry == null) {
+                newQry.setArgs(qry.getArgs());
+            }
+            else {
+                int paramsCnt = prepared.getParameters().size();
 
-            if (F.isEmpty(prep.remainingSql()))
-                remainingQry = null;
-            else
-                remainingQry = cloneFieldsQuery(qry).setSql(prep.remainingSql()).setArgs(remainingArgs);
+                Object[] argsOrig = qry.getArgs();
 
-            SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args);
+                Object[] args = null;
+                Object[] remainingArgs = null;
+
+                if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
+                    if (argsOrig == null || argsOrig.length < paramsCnt) {
+                        throw new IgniteException("Invalid number of query parameters. " +
+                            "Cannot find " + (argsOrig != null ? argsOrig.length + 1 : 1) + " parameter.");
+                    }
+
+                    args = Arrays.copyOfRange(argsOrig, 0, paramsCnt);
+
+                    if (paramsCnt != argsOrig.length)
+                        remainingArgs = Arrays.copyOfRange(argsOrig, paramsCnt, argsOrig.length);
+                }
+                else
+                    remainingArgs = argsOrig;
+
+                newQry.setArgs(args);
+                remainingQry.setArgs(remainingArgs);
+            }
 
             if (CommandProcessor.isCommand(prepared)) {
                 GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
@@ -405,6 +419,19 @@ public class QueryParser {
     }
 
     /**
+     * Throw exception is multiple statements are not allowed.
+     * 
+     * @param allowed Whether multiple statements are allowed.
+     */
+    private static void checkRemainingAllowed(boolean allowed) {
+        if (allowed)
+            return; 
+        
+        throw new IgniteSQLException("Multiple statements queries are not supported.",
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
      * Get ID of the first MVCC cache for SELECT.
      *
      * @param objMap Object map.
@@ -413,23 +440,32 @@ public class QueryParser {
     private Integer mvccCacheIdForSelect(Map<Object, Object> objMap) {
         Boolean mvccEnabled = null;
         Integer mvccCacheId = null;
-        GridCacheContext ctx0 = null;
+        GridCacheContextInfo cctx = null;
 
         for (Object o : objMap.values()) {
             if (o instanceof GridSqlAlias)
-                o = GridSqlAlias.unwrap((GridSqlAst) o);
-            if (o instanceof GridSqlTable && ((GridSqlTable) o).dataTable() != null) {
-                GridCacheContext cctx = ((GridSqlTable)o).dataTable().cacheContext();
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+            if (o instanceof GridSqlTable && ((GridSqlTable)o).dataTable() != null) {
+                GridSqlTable tbl = (GridSqlTable)o;
 
-                assert cctx != null;
+                if (tbl.dataTable() != null) {
+                    GridCacheContextInfo curCctx = tbl.dataTable().cacheInfo();
 
-                if (mvccEnabled == null) {
-                    mvccEnabled = cctx.mvccEnabled();
-                    mvccCacheId = cctx.cacheId();
-                    ctx0 = cctx;
+                    assert curCctx != null;
+
+                    boolean curMvccEnabled =
+                        curCctx.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
+                    if (mvccEnabled == null) {
+                        mvccEnabled = curMvccEnabled;
+
+                        mvccCacheId = curCctx.cacheId();
+
+                        cctx = curCctx;
+                    }
+                    else if (mvccEnabled != curMvccEnabled)
+                        MvccUtils.throwAtomicityModesMismatchException(cctx.config(), curCctx.config());
                 }
-                else if (mvccEnabled != cctx.mvccEnabled())
-                    MvccUtils.throwAtomicityModesMismatchException(ctx0.config(), cctx.config());
             }
         }
 
