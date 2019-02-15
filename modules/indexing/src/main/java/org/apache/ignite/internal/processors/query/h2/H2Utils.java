@@ -775,9 +775,7 @@ public class H2Utils {
                 if (tbl != null) {
                     checkAndStartNotStartedCache(idx.kernalContext(), tbl);
 
-                    int cacheId = tbl.cacheId();
-
-                    caches0.add(cacheId);
+                    caches0.add(tbl.cacheId());
                 }
             }
         }
@@ -814,7 +812,7 @@ public class H2Utils {
                 cctx0 = cctx;
             }
             else if (cctx.mvccEnabled() != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(cctx0, cctx);
+                MvccUtils.throwAtomicityModesMismatchException(cctx0.config(), cctx.config());
         }
 
         return mvccEnabled;
