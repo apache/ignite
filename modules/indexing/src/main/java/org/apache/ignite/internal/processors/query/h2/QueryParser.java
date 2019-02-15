@@ -282,6 +282,7 @@ public class QueryParser {
                 throw new IgniteSQLException("Explains of update queries are not supported.",
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
+            // Get remaining query and check if it is allowed.
             SqlFieldsQuery remainingQry = null;
             
             if (!F.isEmpty(prep.remainingSql())) {
@@ -290,37 +291,36 @@ public class QueryParser {
                 remainingQry = cloneFieldsQuery(qry).setSql(prep.remainingSql());
             }
 
+            // Prepare new query.
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL());
-            
-            if (remainingQry == null) {
-                newQry.setArgs(qry.getArgs());
-            }
-            else {
-                int paramsCnt = prepared.getParameters().size();
 
-                Object[] argsOrig = qry.getArgs();
+            int paramsCnt = prepared.getParameters().size();
 
-                Object[] args = null;
-                Object[] remainingArgs = null;
+            Object[] argsOrig = qry.getArgs();
 
-                if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
-                    if (argsOrig == null || argsOrig.length < paramsCnt) {
-                        throw new IgniteException("Invalid number of query parameters. " +
-                            "Cannot find " + (argsOrig != null ? argsOrig.length + 1 : 1) + " parameter.");
-                    }
+            Object[] args = null;
+            Object[] remainingArgs = null;
 
-                    args = Arrays.copyOfRange(argsOrig, 0, paramsCnt);
-
-                    if (paramsCnt != argsOrig.length)
-                        remainingArgs = Arrays.copyOfRange(argsOrig, paramsCnt, argsOrig.length);
+            if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
+                if (argsOrig == null || argsOrig.length < paramsCnt) {
+                    throw new IgniteException("Invalid number of query parameters. " +
+                        "Cannot find " + (argsOrig != null ? argsOrig.length + 1 : 1) + " parameter.");
                 }
-                else
-                    remainingArgs = argsOrig;
 
-                newQry.setArgs(args);
-                remainingQry.setArgs(remainingArgs);
+                args = Arrays.copyOfRange(argsOrig, 0, paramsCnt);
+
+                if (paramsCnt != argsOrig.length)
+                    remainingArgs = Arrays.copyOfRange(argsOrig, paramsCnt, argsOrig.length);
             }
+            else
+                remainingArgs = argsOrig;
 
+            newQry.setArgs(args);
+
+            if (remainingQry != null)
+                remainingQry.setArgs(remainingArgs);
+
+            // Do actual parsing.
             if (CommandProcessor.isCommand(prepared)) {
                 GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
 
