@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlReque
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2SelectForUpdateTxDetails;
+import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CIX2;
@@ -92,6 +93,7 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionException;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -386,6 +388,8 @@ public class GridReduceQueryExecutor {
      * @param lazy Lazy execution flag.
      * @param mvccTracker Query tracker.
      * @param dataPageScanEnabled If data page scan is enabled.
+     * @param forUpdate For update flag.
+     * @param pageSize Page size.
      * @return Rows iterator.
      */
     @SuppressWarnings({"BusyWait", "IfMayBeConditional"})
@@ -400,7 +404,9 @@ public class GridReduceQueryExecutor {
         int[] parts,
         boolean lazy,
         MvccQueryTracker mvccTracker,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        boolean forUpdate,
+        int pageSize
     ) {
         if (qry.isLocal() && parts != null)
             parts = null;
@@ -412,9 +418,17 @@ public class GridReduceQueryExecutor {
         if (F.isEmpty(params))
             params = EMPTY_PARAMS;
 
-        final List<GridCacheSqlQuery> mapQueries = singlePartMode ?
-            prepareMapQueryForSinglePartition(qry, params) :
-            qry.mapQueries();
+        List<GridCacheSqlQuery> mapQueries;
+
+        if (singlePartMode)
+            mapQueries = prepareMapQueryForSinglePartition(qry, params);
+        else {
+            mapQueries = new ArrayList<>(qry.mapQueries().size());
+
+            // Copy queries here because node ID will be changed below.
+            for (GridCacheSqlQuery mapQry : qry.mapQueries())
+                mapQueries.add(mapQry.copy());
+        }
 
         final boolean isReplicatedOnly = qry.isReplicatedOnly();
 
@@ -450,7 +464,14 @@ public class GridReduceQueryExecutor {
 
             boolean mvccEnabled = mvccEnabled(ctx);
 
-            final GridNearTxLocal curTx = mvccEnabled ? checkActive(tx(ctx)) : null;
+            final GridNearTxLocal curTx;
+
+            try {
+                curTx = mvccEnabled ? checkActive(tx(ctx)) : null;
+            }
+            catch (IgniteTxAlreadyCompletedCheckedException e) {
+                throw new TransactionAlreadyCompletedException(e.getMessage(), e);
+            }
 
             final GridNearTxSelectForUpdateFuture sfuFut;
 
@@ -458,7 +479,7 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer;
 
-            if (qry.forUpdate()) {
+            if (forUpdate) {
                 // Indexing should have started TX at this point for FOR UPDATE query.
                 assert mvccEnabled && curTx != null;
 
@@ -491,8 +512,13 @@ public class GridReduceQueryExecutor {
 
             long qryReqId = qryIdGen.incrementAndGet();
 
-            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
-                mapQueries.size(), qry.pageSize(), sfuFut, dataPageScanEnabled);
+            final ReduceQueryRun r = new ReduceQueryRun(
+                h2.connections().connectionForThread().connection(schemaName),
+                mapQueries.size(),
+                pageSize,
+                sfuFut,
+                dataPageScanEnabled
+            );
 
             Collection<ClusterNode> nodes;
 
@@ -683,7 +709,7 @@ public class GridReduceQueryExecutor {
 
                 final C2<ClusterNode, Message, Message> spec;
 
-                if (qry.forUpdate()) {
+                if (forUpdate) {
                     final AtomicInteger cnt = new AtomicInteger();
 
                     spec = new C2<ClusterNode, Message, Message>() {
@@ -1344,6 +1370,7 @@ public class GridReduceQueryExecutor {
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
             if (mapQry.hasSubQueries()) {
                 hasSubQries = true;
+
                 break;
             }
         }

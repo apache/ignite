@@ -34,13 +34,6 @@ public class GridServiceDeploymentFuture<T extends Serializable> extends GridFut
 
     /**
      * @param cfg Configuration.
-     */
-    public GridServiceDeploymentFuture(ServiceConfiguration cfg) {
-        this(cfg, null);
-    }
-
-    /**
-     * @param cfg Configuration.
      * @param srvcId Service id.
      */
     public GridServiceDeploymentFuture(ServiceConfiguration cfg, T srvcId) {

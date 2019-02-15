@@ -913,7 +913,7 @@ public class GridMapQueryExecutor {
                 local = false;
             }
 
-            UpdateResult updRes = h2.mapDistributedUpdate(req.schemaName(), fldsQry, filter, cancel, local);
+            UpdateResult updRes = h2.executeUpdateOnDataNode(req.schemaName(), fldsQry, filter, cancel, local);
 
             GridCacheContext<?, ?> mainCctx =
                 !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;

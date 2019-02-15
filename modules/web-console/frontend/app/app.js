@@ -147,6 +147,7 @@ import sidebar from './components/web-console-sidebar';
 import permanentNotifications from './components/permanent-notifications';
 import signupConfirmation from './components/page-signup-confirmation';
 import noDataCmp from './components/no-data';
+import globalProgressBar from './components/global-progress-line';
 
 import igniteServices from './services';
 
@@ -249,7 +250,8 @@ export default angular
         permanentNotifications.name,
         timedRedirection.name,
         signupConfirmation.name,
-        noDataCmp.name
+        noDataCmp.name,
+        globalProgressBar.name
     ])
     .service('$exceptionHandler', $exceptionHandler)
     // Directives.

@@ -40,8 +40,7 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  */
 public class LinearRegressionFromSparkExample {
     /** Path to Spark linear regression model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/linreg/data" +
-        "/part-00000-1ff2d09d-6cdf-4ad3-bddd-7cad8378429d-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/linreg";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
