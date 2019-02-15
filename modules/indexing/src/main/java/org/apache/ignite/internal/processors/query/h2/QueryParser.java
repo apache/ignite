@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -302,15 +301,15 @@ public class QueryParser {
             Object[] remainingArgs = null;
 
             if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
-                if (argsOrig == null || argsOrig.length < paramsCnt) {
-                    throw new IgniteException("Invalid number of query parameters. " +
-                        "Cannot find " + (argsOrig != null ? argsOrig.length + 1 : 1) + " parameter.");
+                if (argsOrig == null || argsOrig.length < paramsCnt)
+                    // Not enough parameters, but we will handle this later on execution phase.
+                    args = argsOrig;
+                else {
+                    args = Arrays.copyOfRange(argsOrig, 0, paramsCnt);
+
+                    if (paramsCnt != argsOrig.length)
+                        remainingArgs = Arrays.copyOfRange(argsOrig, paramsCnt, argsOrig.length);
                 }
-
-                args = Arrays.copyOfRange(argsOrig, 0, paramsCnt);
-
-                if (paramsCnt != argsOrig.length)
-                    remainingArgs = Arrays.copyOfRange(argsOrig, paramsCnt, argsOrig.length);
             }
             else
                 remainingArgs = argsOrig;
@@ -434,7 +433,7 @@ public class QueryParser {
      * Get ID of the first MVCC cache for SELECT.
      *
      * @param objMap Object map.
-     * @return ID of the first MVCC cache or {@code null} if no MVCC caches invloved.
+     * @return ID of the first MVCC cache or {@code null} if no MVCC caches involved.
      */
     private Integer mvccCacheIdForSelect(Map<Object, Object> objMap) {
         Boolean mvccEnabled = null;
