@@ -64,6 +64,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -1263,26 +1264,15 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }));
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {
-            grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
-            grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(2, 2);
+            Map<Integer, Integer> entries = new HashMap<>();
 
-            assertTrue(GridTestUtils.waitForCondition(
-                () -> FILTERED.size() == 2 &&
-                    FILTERED.containsKey(1) &&
-                    FILTERED.containsKey(2) &&
-                    FILTERED.get(1).equals(1) &&
-                    FILTERED.get(2).equals(2), getTestTimeout()));
+            entries.put(1, 1);
+            entries.put(2, 2);
 
-            if (bypassFilter && setLocLsnr) {
-                assertTrue(GridTestUtils.waitForCondition(
-                    () -> listened.size() == 2 &&
-                        listened.containsKey(1) &&
-                        listened.containsKey(2) &&
-                        listened.get(1) == 1 &&
-                        listened.get(2) == 2, getTestTimeout()));
-            }
-            else
-                assertTrue(listened.isEmpty());
+            fillCacheAndCheck(0, DEFAULT_CACHE_NAME, entries,
+                () -> bypassFilter && setLocLsnr ?
+                    FILTERED.equals(entries) && listened.equals(entries) :
+                    FILTERED.equals(entries) && listened.isEmpty());
         }
     }
 
@@ -1313,26 +1303,15 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             });
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {
-            grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
-            grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(2, 2);
+            Map<Integer, Integer> entries = new HashMap<>();
 
-            assertTrue(GridTestUtils.waitForCondition(
-                () -> FILTERED.size() == 2 &&
-                    FILTERED.containsKey(1) &&
-                    FILTERED.containsKey(2) &&
-                    FILTERED.get(1).equals(1) &&
-                    FILTERED.get(2).equals(2), getTestTimeout()));
+            entries.put(1, 1);
+            entries.put(2, 2);
 
-            if (bypassFilter && setLocLsnr) {
-                assertTrue(GridTestUtils.waitForCondition(
-                    () -> listened.size() == 2 &&
-                        listened.containsKey(1) &&
-                        listened.containsKey(2) &&
-                        listened.get(1) == 1 &&
-                        listened.get(2) == 2, getTestTimeout()));
-            }
-            else
-                assertTrue(listened.isEmpty());
+            fillCacheAndCheck(0, DEFAULT_CACHE_NAME, entries,
+                () -> bypassFilter && setLocLsnr ?
+                    FILTERED.equals(entries) && listened.equals(entries) :
+                    FILTERED.equals(entries) && listened.isEmpty());
         }
     }
 
@@ -1375,27 +1354,30 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }));
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {
-            grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
-            grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(2, 2);
+            Map<Integer, Integer> entries = new HashMap<>();
 
-            assertTrue(GridTestUtils.waitForCondition(
-                () -> FILTERED.size() == 2 &&
-                    FILTERED.containsKey(1) &&
-                    FILTERED.containsKey(2) &&
-                    FILTERED.get(1).equals(1) &&
-                    FILTERED.get(2).equals(2), getTestTimeout()));
+            entries.put(1, 1);
+            entries.put(2, 2);
 
-            if (bypassFilter && setLocLsnr) {
-                assertTrue(GridTestUtils.waitForCondition(
-                    () -> listened.size() == 2 &&
-                        listened.containsKey(1) &&
-                        listened.containsKey(2) &&
-                        listened.get(1) == 1 &&
-                        listened.get(2) == 2, getTestTimeout()));
-            }
-            else
-                assertTrue(listened.isEmpty());
+            fillCacheAndCheck(0, DEFAULT_CACHE_NAME, entries,
+                () -> bypassFilter && setLocLsnr ?
+                    FILTERED.equals(entries) && listened.equals(entries) :
+                    FILTERED.equals(entries) && listened.isEmpty());
         }
+    }
+
+    /**
+     * @param idx Node index.
+     * @param name Cache name.
+     * @param entries Entries which cache will be filled with.
+     * @param cond Condition to check.
+     */
+    private <K, V> void fillCacheAndCheck(int idx, String name, Map<K, V> entries, GridAbsPredicate cond)
+        throws Exception {
+        entries.forEach((key, value) ->
+            grid(idx).<K, V>cache(name).put(key, value));
+
+        assertTrue(GridTestUtils.waitForCondition(cond, getTestTimeout()));
     }
 
     /**
