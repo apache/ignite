@@ -867,66 +867,62 @@ public class GridDhtPartitionDemander {
         if (!infos.hasNext())
             return;
 
-        List<GridCacheEntryInfo> history = new ArrayList<>();
-
-        GridCacheMvccEntryInfo prev = null;
+        List<GridCacheEntryInfo> entryHist = new ArrayList<>();
 
         GridCacheContext cctx = null;
 
         // Loop through all received entries and try to preload them.
-        while (infos.hasNext() || !history.isEmpty()) {
+        while (infos.hasNext() || !entryHist.isEmpty()) {
             ctx.database().checkpointReadLock();
 
             try {
                 for (int i = 0; i < 100; i++) {
+                    boolean hasMore = infos.hasNext();
+
+                    assert hasMore || !entryHist.isEmpty();
+
                     GridCacheMvccEntryInfo entry = null;
 
                     boolean flushHistory;
-                    int cacheId;
-
-                    boolean hasMore = infos.hasNext();
 
                     if (hasMore) {
                         entry = (GridCacheMvccEntryInfo)infos.next();
 
-                        cacheId = entry.cacheId();
+                        GridCacheMvccEntryInfo prev = entryHist.isEmpty() ? null : (GridCacheMvccEntryInfo)entryHist.get(0);
 
-                        flushHistory = prev != null && (prev.cacheId() != cacheId || !prev.key().equals(entry.key()));
+                        flushHistory = prev != null && (prev.cacheId() !=  entry.cacheId() || !prev.key().equals(entry.key()));
                     }
-                    else if (history.isEmpty())
-                        return;
-                    else {
-                        cacheId = prev.cacheId();
-
+                    else
                         flushHistory = true;
-                    }
 
                     if (flushHistory) {
-                        if (!mvccPreloadEntry(node, p, history, topVer)) {
+                        assert !entryHist.isEmpty();
+
+                        if (!mvccPreloadEntry(node, p, entryHist, topVer)) {
                             if (log.isTraceEnabled())
                                 log.trace("Got entries for invalid partition during " +
-                                    "preloading (will skip) [p=" + p + ", entry=" + prev + ']');
+                                    "preloading (will skip) [p=" + p +
+                                    ", entry=" + entryHist.get(entryHist.size() - 1) + ']');
 
                             return; // Skip current partition.
                         }
 
+                        int cacheId = entryHist.get(0).cacheId();
+
                         if (cctx == null || cacheId != cctx.cacheId())
                             cctx = grp.sharedGroup() ? grp.shared().cacheContext(cacheId) : grp.singleCacheContext();
 
-                        if (cctx.statisticsEnabled())
+                        if (cctx != null && cctx.statisticsEnabled())
                             cctx.cache().metrics0().onRebalanceKeyReceived();
 
 
-                        history.clear();
-                        entry = null;
+                        if (!hasMore)
+                            return;
+
+                        entryHist.clear();
                     }
 
-                    if (!hasMore)
-                        return;
-
-                    history.add(entry);
-
-                    prev = entry;
+                    entryHist.add(entry);
                 }
             }
             finally {
