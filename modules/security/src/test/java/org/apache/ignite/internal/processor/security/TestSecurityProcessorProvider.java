@@ -72,6 +72,9 @@ public class TestSecurityProcessorProvider implements PluginProvider {
         if (cls.isAssignableFrom(GridSecurityProcessor.class)) {
             String secProcCls = securityProcessorClass(ctx);
 
+            if(secProcCls == null)
+                return null;
+
             try {
                 Class implCls = Class.forName(secProcCls);
 
