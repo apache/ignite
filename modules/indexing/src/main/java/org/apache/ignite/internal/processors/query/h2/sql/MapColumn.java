@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Map queyr column. Required to get proper data types for reduce table.
+ * Map query column. Required to get proper data types for reduce table.
  */
 public class MapColumn {
     /** No parameter. */
