@@ -266,141 +266,142 @@ public class QueryParser {
                 IgniteQueryErrorCode.PARSING, e);
         }
 
-        if (qry.isLocal() && GridSqlQueryParser.checkMultipleStatements(stmt))
-            throw new IgniteSQLException("Multiple statements queries are not supported for local queries.",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        GridSqlQueryParser.PreparedWithRemaining prep = GridSqlQueryParser.preparedWithRemaining(stmt);
-
-        Prepared prepared = prep.prepared();
-
-        if (GridSqlQueryParser.isExplainUpdate(prepared))
-            throw new IgniteSQLException("Explains of update queries are not supported.",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        int paramsCnt = prepared.getParameters().size();
-
-        Object[] argsOrig = qry.getArgs();
-
-        Object[] args = null;
-        Object[] remainingArgs = null;
-
-        if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
-            if (argsOrig == null || argsOrig.length < paramsCnt) {
-                throw new IgniteException("Invalid number of query parameters. " +
-                    "Cannot find " + (argsOrig != null ? argsOrig.length + 1 : 1) + " parameter.");
-            }
-
-            args = Arrays.copyOfRange(argsOrig, 0, paramsCnt);
-
-            if (paramsCnt != argsOrig.length)
-                remainingArgs = Arrays.copyOfRange(argsOrig, paramsCnt, argsOrig.length);
-        }
-        else
-            remainingArgs = argsOrig;
-
-        SqlFieldsQuery remainingQry;
-
-        if (F.isEmpty(prep.remainingSql()))
-            remainingQry = null;
-        else
-            remainingQry = cloneFieldsQuery(qry).setSql(prep.remainingSql()).setArgs(remainingArgs);
-
-        SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args);
-
-        if (CommandProcessor.isCommand(prepared)) {
-            GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
-
-            QueryParserResultCommand cmd = new QueryParserResultCommand(null, cmdH2, false);
-
-            return new QueryParserResult(newQry, remainingQry, null, null, cmd);
-        }
-        else if (CommandProcessor.isCommandNoOp(prepared)) {
-            QueryParserResultCommand cmd = new QueryParserResultCommand(null, null, true);
-
-            return new QueryParserResult(newQry, remainingQry, null, null, cmd);
-        }
-        else if (GridSqlQueryParser.isDml(prepared)) {
-            QueryParserResultDml dml = prepareDmlStatement(prepared);
-
-            return new QueryParserResult(newQry, remainingQry, null, dml, null);
-        }
-        else if (!prepared.isQuery()) {
-            throw new IgniteSQLException("Unsupported statement: " + newQry.getSql(),
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
-
-        // Parse SELECT. Split is required either if query is distirubted, or when it is local, but executed
-        // over segmented PARTITIONED case. In this case multiple map queries will be executed against local
-        // node stripes in parallel and then merged through reduce process.
-
-
-        // Calculate if query is in fact can be executed locally.
-        boolean loc = qry.isLocal();
-
-        GridSqlQueryParser parser = new GridSqlQueryParser(false);
-
-        GridSqlStatement stmt0 = parser.parse(prepared);
-
-        List<Integer> cacheIds = parser.cacheIds();
-        Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
-
-        if (!loc) {
-            if (parser.isLocalQuery())
-                loc = true;
-        }
-
-        // If this is a local query, check if it must be split.
-        boolean locSplit = false;
-
-        if (loc) {
-            GridCacheContext cctx = parser.getFirstPartitionedCache();
-
-            if (cctx != null && cctx.config().getQueryParallelism() > 1)
-                locSplit = true;
-        }
-
-        boolean splitNeeded = !loc || locSplit;
-
         try {
-            GridCacheTwoStepQuery twoStepQry = null;
+            if (qry.isLocal() && GridSqlQueryParser.checkMultipleStatements(stmt))
+                throw new IgniteSQLException("Multiple statements queries are not supported for local queries.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-            if (splitNeeded) {
-                twoStepQry = GridSqlQuerySplitter.split(
-                    connMgr.connectionForThread().connection(newQry.getSchema()),
-                    prepared,
-                    newQry.getArgs(),
-                    newQry.isCollocated(),
-                    newQry.isDistributedJoins(),
-                    newQry.isEnforceJoinOrder(),
-                    locSplit,
-                    idx
-                );
+            GridSqlQueryParser.PreparedWithRemaining prep = GridSqlQueryParser.preparedWithRemaining(stmt);
+
+            Prepared prepared = prep.prepared();
+
+            if (GridSqlQueryParser.isExplainUpdate(prepared))
+                throw new IgniteSQLException("Explains of update queries are not supported.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            int paramsCnt = prepared.getParameters().size();
+
+            Object[] argsOrig = qry.getArgs();
+
+            Object[] args = null;
+            Object[] remainingArgs = null;
+
+            if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
+                if (argsOrig == null || argsOrig.length < paramsCnt) {
+                    throw new IgniteException("Invalid number of query parameters. " +
+                        "Cannot find " + (argsOrig != null ? argsOrig.length + 1 : 1) + " parameter.");
+                }
+
+                args = Arrays.copyOfRange(argsOrig, 0, paramsCnt);
+
+                if (paramsCnt != argsOrig.length)
+                    remainingArgs = Arrays.copyOfRange(argsOrig, paramsCnt, argsOrig.length);
+            }
+            else
+                remainingArgs = argsOrig;
+
+            SqlFieldsQuery remainingQry;
+
+            if (F.isEmpty(prep.remainingSql()))
+                remainingQry = null;
+            else
+                remainingQry = cloneFieldsQuery(qry).setSql(prep.remainingSql()).setArgs(remainingArgs);
+
+            SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args);
+
+            if (CommandProcessor.isCommand(prepared)) {
+                GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
+
+                QueryParserResultCommand cmd = new QueryParserResultCommand(null, cmdH2, false);
+
+                return new QueryParserResult(newQry, remainingQry, null, null, cmd);
+            }
+            else if (CommandProcessor.isCommandNoOp(prepared)) {
+                QueryParserResultCommand cmd = new QueryParserResultCommand(null, null, true);
+
+                return new QueryParserResult(newQry, remainingQry, null, null, cmd);
+            }
+            else if (GridSqlQueryParser.isDml(prepared)) {
+                QueryParserResultDml dml = prepareDmlStatement(prepared);
+
+                return new QueryParserResult(newQry, remainingQry, null, dml, null);
+            }
+            else if (!prepared.isQuery()) {
+                throw new IgniteSQLException("Unsupported statement: " + newQry.getSql(),
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-            List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
+            // Parse SELECT.
+            GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
-            boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
+            GridSqlStatement stmt0 = parser.parse(prepared);
 
-            QueryParserResultSelect select = new QueryParserResultSelect(
-                stmt0,
-                twoStepQry,
-                meta,
-                cacheIds,
-                mvccCacheId,
-                forUpdate
-            );
+            List<Integer> cacheIds = parser.cacheIds();
+            Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
 
-            return new QueryParserResult(newQry, remainingQry, select, null, null);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSQLException("Failed to parse query: " + newQry.getSql(), IgniteQueryErrorCode.PARSING, e);
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
+            // Calculate if query is in fact can be executed locally.
+            boolean loc = qry.isLocal();
+
+            if (!loc) {
+                if (parser.isLocalQuery())
+                    loc = true;
+            }
+
+            // If this is a local query, check if it must be split.
+            boolean locSplit = false;
+
+            if (loc) {
+                GridCacheContext cctx = parser.getFirstPartitionedCache();
+
+                if (cctx != null && cctx.config().getQueryParallelism() > 1)
+                    locSplit = true;
+            }
+
+            // Split is required either if query is distributed, or when it is local, but executed
+            // over segmented PARTITIONED case. In this case multiple map queries will be executed against local
+            // node stripes in parallel and then merged through reduce process.
+            boolean splitNeeded = !loc || locSplit;
+
+            try {
+                GridCacheTwoStepQuery twoStepQry = null;
+
+                if (splitNeeded) {
+                    twoStepQry = GridSqlQuerySplitter.split(
+                        connMgr.connectionForThread().connection(newQry.getSchema()),
+                        prepared,
+                        newQry.getArgs(),
+                        newQry.isCollocated(),
+                        newQry.isDistributedJoins(),
+                        newQry.isEnforceJoinOrder(),
+                        locSplit,
+                        idx
+                    );
+                }
+
+                List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
+
+                boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
+
+                QueryParserResultSelect select = new QueryParserResultSelect(
+                    stmt0,
+                    twoStepQry,
+                    meta,
+                    cacheIds,
+                    mvccCacheId,
+                    forUpdate
+                );
+
+                return new QueryParserResult(newQry, remainingQry, select, null, null);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSQLException("Failed to parse query: " + newQry.getSql(), IgniteQueryErrorCode.PARSING,
+                    e);
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException(e);
+            }
         }
         finally {
-            // TODO: Leak if returned earlier. Will be fixed in https://issues.apache.org/jira/browse/IGNITE-11279
             U.close(stmt, log);
         }
     }
