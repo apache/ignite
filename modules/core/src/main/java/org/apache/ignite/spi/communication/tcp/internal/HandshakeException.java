@@ -15,42 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.spi.communication.tcp.internal;
 
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.h2.command.Prepared;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Parsing result for DML statement.
+ * Internal exception class for proper timeout handling.
  */
-public class QueryParserResultDml {
-    /** Command. */
-    private final GridSqlStatement stmt;
-
-    /** MVCC enabled flag. */
-    private final boolean mvccEnabled;
+public class HandshakeException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Constructor.
-     *
-     * @param stmt Command.
+     * @param msg Error message.
      */
-    public QueryParserResultDml(GridSqlStatement stmt, boolean mvccEnabled) {
-        this.stmt = stmt;
-        this.mvccEnabled = mvccEnabled;
-    }
-
-    /**
-     * @return Command.
-     */
-    public GridSqlStatement statement() {
-        return stmt;
-    }
-
-    /**
-     * @return MVCC enabled.
-     */
-    public boolean mvccEnabled() {
-        return mvccEnabled;
+    public HandshakeException(String msg) {
+        super(msg);
     }
 }

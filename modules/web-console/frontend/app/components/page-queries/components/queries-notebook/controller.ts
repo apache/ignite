@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
-import {timer, merge, defer, of} from 'rxjs';
+import {timer, merge, defer, of, EMPTY} from 'rxjs';
 import {tap, switchMap, exhaustMap, take, pluck, distinctUntilChanged, filter, map, catchError} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
@@ -942,8 +942,13 @@ export class NotebookCtrl {
 
             this.refresh$ = cluster$.pipe(
                 switchMap((cluster) => {
-                    if (!cluster && !agentMgr.isDemoMode())
-                        return of(null);
+                    if (!cluster && !agentMgr.isDemoMode()) {
+                        return of(EMPTY).pipe(
+                            tap(() => {
+                                $scope.caches = [];
+                            })
+                        );
+                    }
 
                     return of(cluster).pipe(
                         tap(() => Loading.start('sqlLoading')),

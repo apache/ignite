@@ -15,42 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
-
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.h2.command.Prepared;
+package org.apache.ignite.internal.transactions;
 
 /**
- * Parsing result for DML statement.
+ * Exception thrown whenever Mvcc transaction has been finished before operation finished.
+ * E.g. rollback due to some reason.
  */
-public class QueryParserResultDml {
-    /** Command. */
-    private final GridSqlStatement stmt;
-
-    /** MVCC enabled flag. */
-    private final boolean mvccEnabled;
+public class IgniteTxAlreadyCompletedCheckedException extends TransactionCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Constructor.
+     * Creates new exception with given error message.
      *
-     * @param stmt Command.
+     * @param msg Error message.
      */
-    public QueryParserResultDml(GridSqlStatement stmt, boolean mvccEnabled) {
-        this.stmt = stmt;
-        this.mvccEnabled = mvccEnabled;
-    }
-
-    /**
-     * @return Command.
-     */
-    public GridSqlStatement statement() {
-        return stmt;
-    }
-
-    /**
-     * @return MVCC enabled.
-     */
-    public boolean mvccEnabled() {
-        return mvccEnabled;
+    public IgniteTxAlreadyCompletedCheckedException(String msg) {
+        super(msg);
     }
 }

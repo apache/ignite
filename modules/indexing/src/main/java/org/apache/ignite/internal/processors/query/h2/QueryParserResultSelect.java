@@ -31,6 +31,9 @@ public class QueryParserResultSelect {
     /** Two-step query, or {@code} null if this result is for local query. */
     private final GridCacheTwoStepQuery twoStepQry;
 
+    /** Whether local split is needed. */
+    private final boolean locSplit;
+
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> meta;
 
@@ -38,10 +41,19 @@ public class QueryParserResultSelect {
      * Constructor.
      *
      * @param twoStepQry Distributed query plan.
+     * @param locSplit Whether local split is needed.
      * @param meta Fields metadata.
      */
-    public QueryParserResultSelect(@Nullable GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta) {
+    public QueryParserResultSelect(
+        @Nullable GridCacheTwoStepQuery twoStepQry,
+        boolean locSplit,
+        List<GridQueryFieldMetadata> meta
+    ) {
+        // Local split can be true only is there is a two-step plan.
+        assert twoStepQry == null && !locSplit || twoStepQry != null;
+
         this.twoStepQry = twoStepQry;
+        this.locSplit = locSplit;
         this.meta = meta;
     }
 
@@ -53,6 +65,13 @@ public class QueryParserResultSelect {
     }
 
     /**
+     * @return {@code True} if local query should be split.
+     */
+    public boolean localSplit() {
+        return locSplit;
+    }
+
+    /**
      * @return Two-step query metadata.
      */
     public List<GridQueryFieldMetadata> meta() {
@@ -60,9 +79,9 @@ public class QueryParserResultSelect {
     }
 
     /**
-     * @return Whether this is a local query.
+     * @return Whether split is needed for this query.
      */
-    public boolean isLocal() {
-        return twoStepQry == null;
+    public boolean splitNeeded() {
+        return twoStepQry != null;
     }
 }
