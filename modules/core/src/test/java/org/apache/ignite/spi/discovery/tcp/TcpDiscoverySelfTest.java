@@ -137,6 +137,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private SegmentationPolicy segPlc;
 
+    /** */
+    private UUID failingNodeId = UUID.randomUUID();
+
     /**
      * @throws Exception If fails.
      */
@@ -159,6 +162,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         else
             nodeSpi.set(null);
 
+        if (igniteInstanceName.equals("node01"))
+            spi = failingOnNodeJoinSpi;
+
         discoMap.put(igniteInstanceName, spi);
 
         spi.setIpFinder(ipFinder);
@@ -168,6 +174,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         spi.setIpFinderCleanFrequency(5000);
 
         spi.setJoinTimeout(5000);
+
+        spi.setConnectionRecoveryTimeout(0);
 
         cfg.setDiscoverySpi(spi);
 
@@ -243,6 +251,43 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /** Discovery SPI aimed to fail node with it when another server node joins the topology. */
+    private TcpDiscoverySpi failingOnNodeJoinSpi = new TcpDiscoverySpi() {
+        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
+                UUID nodeId = ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId();
+
+                if (nodeId.equals(failingNodeId)) {
+                    Object workerObj = GridTestUtils.getFieldValue(impl, "msgWorker");
+
+                    OutputStream out = GridTestUtils.getFieldValue(workerObj, "out");
+
+                    try {
+                        out.close();
+                    }
+                    catch (Exception ignored) {
+                        // No-op.
+                    }
+
+                    return;
+                }
+            }
+
+            super.startMessageProcess(msg);
+        }
+    };
+
+    @Test
+    public void testNodeTreatedAsFailed() throws Exception {
+        IgniteEx ig0 = startGrid("node00");
+
+        IgniteEx ig1 = startGrid("node01");
+
+        nodeId = failingNodeId;
+
+        IgniteEx ig2 = startGrid("node02");
     }
 
     /** {@inheritDoc} */
