@@ -53,6 +53,12 @@ public class NewComponentStatisticsAggregator implements Serializable {
     }
 
     /**
+     * Creates an instance of NewComponentStatisticsAggregator.
+     */
+    public NewComponentStatisticsAggregator() {
+    }
+
+    /**
      * @return Mean of anomalies.
      */
     public Vector mean() {
@@ -67,20 +73,26 @@ public class NewComponentStatisticsAggregator implements Serializable {
     }
 
     /**
+     * @return Total count of rows in partition/dataset.
+     */
+    public long totalRowCount() {
+        return totalRowCount;
+    }
+
+    /**
      * Compute statistics for new mean for GMM.
      *
      * @param dataset Dataset.
      * @param maxXsProb Max likelihood between all xs.
      * @param maxProbDivergence Max probability divergence between maximum value and others.
-     * @param newClusterId Id for new cluster.
      * @param currentModel Current model.
      * @return aggregated statistics for new mean.
      */
     static NewComponentStatisticsAggregator computeNewMean(Dataset<EmptyContext, GmmPartitionData> dataset,
-        double maxXsProb, double maxProbDivergence, int newClusterId, GmmModel currentModel) {
+        double maxXsProb, double maxProbDivergence, GmmModel currentModel) {
 
         return dataset.compute(
-            data -> computeNewMeanMap(data, maxXsProb, maxProbDivergence, newClusterId, currentModel),
+            data -> computeNewMeanMap(data, maxXsProb, maxProbDivergence, currentModel),
             NewComponentStatisticsAggregator::computeNewMeanReduce
         );
     }
@@ -91,27 +103,37 @@ public class NewComponentStatisticsAggregator implements Serializable {
      * @param data Data.
      * @param maxXsProb Max xs prob.
      * @param maxProbDivergence Max prob divergence.
-     * @param newClusterId New cluster id.
      * @param currentModel Current model.
      * @return aggregator for partition.
      */
     static NewComponentStatisticsAggregator computeNewMeanMap(GmmPartitionData data, double maxXsProb,
-        double maxProbDivergence, int newClusterId, GmmModel currentModel) {
+        double maxProbDivergence, GmmModel currentModel) {
 
-        NewComponentStatisticsAggregator adder = new NewComponentStatisticsAggregator(0, 0, null);
+        NewComponentStatisticsAggregator adder = new NewComponentStatisticsAggregator();
         for (int i = 0; i < data.size(); i++) {
             Vector x = data.getX(i);
-            if (currentModel.prob(x) < (maxXsProb / maxProbDivergence)) {
-                if (adder.sumOfAnomalies == null)
-                    adder.sumOfAnomalies = x;
-                else
-                    adder.sumOfAnomalies = adder.sumOfAnomalies.plus(x);
-                adder.rowCountForNewCluster++;
-            }
-
-            adder.totalRowCount++;
+            adder.add(x, currentModel.prob(x) < (maxXsProb / maxProbDivergence));
         }
         return adder;
+    }
+
+    /**
+     * Adds vector to statistics.
+     *
+     * @param x Vector from dataset.
+     * @param isAnomaly True if vector is anomaly.
+     */
+    void add(Vector x, boolean isAnomaly) {
+        if (isAnomaly) {
+            if (sumOfAnomalies == null)
+                sumOfAnomalies = x.copy();
+            else
+                sumOfAnomalies = sumOfAnomalies.plus(x);
+
+            rowCountForNewCluster += 1;
+        }
+
+        totalRowCount += 1;
     }
 
     /**
@@ -130,10 +152,18 @@ public class NewComponentStatisticsAggregator implements Serializable {
         else if (right == null)
             return left;
         else
-            return new NewComponentStatisticsAggregator(
-                left.totalRowCount + right.totalRowCount,
-                left.rowCountForNewCluster + right.rowCountForNewCluster,
-                left.sumOfAnomalies.plus(right.sumOfAnomalies)
-            );
+            return left.plus(right);
+    }
+
+    /**
+     * @param other Other aggregator.
+     * @return sum of aggregators.
+     */
+    NewComponentStatisticsAggregator plus(NewComponentStatisticsAggregator other) {
+        return new NewComponentStatisticsAggregator(
+            totalRowCount + other.totalRowCount,
+            rowCountForNewCluster + other.rowCountForNewCluster,
+            sumOfAnomalies.plus(other.sumOfAnomalies)
+        );
     }
 }

@@ -252,8 +252,8 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
                     break;
 
                 double maxXProb = updateResult.maxProbInDataset;
-                NewComponentStatisticsAggregator newMeanAdder = NewComponentStatisticsAggregator.computeNewMean(dataset, maxXProb, maxLikelihoodDivergence,
-                    countOfComponents, currentModel);
+                NewComponentStatisticsAggregator newMeanAdder = NewComponentStatisticsAggregator.computeNewMean(dataset,
+                    maxXProb, maxLikelihoodDivergence, currentModel);
 
                 Vector newMean = newMeanAdder.mean();
                 if (newMeanAdder.rowCountForNewCluster() < minElementsForNewCluster)
