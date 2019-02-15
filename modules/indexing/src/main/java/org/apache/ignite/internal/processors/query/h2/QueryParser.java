@@ -63,6 +63,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -332,13 +334,13 @@ public class QueryParser {
         // Calculate if query is in fact can be executed locally.
         boolean loc = qry.isLocal();
 
-        GridSqlQueryParser parser = null;
+        GridSqlQueryParser parser = new GridSqlQueryParser(false);
+
+        GridSqlStatement stmt0 = parser.parse(prepared);
+
+        List<Integer> cacheIds = parser.cacheIds();
 
         if (!loc) {
-            parser = new GridSqlQueryParser(false);
-
-            parser.parse(prepared);
-
             if (parser.isLocalQuery())
                 loc = true;
         }
@@ -347,12 +349,6 @@ public class QueryParser {
         boolean locSplit = false;
 
         if (loc) {
-            if (parser == null) {
-                parser = new GridSqlQueryParser(false);
-
-                parser.parse(prepared);
-            }
-
             GridCacheContext cctx = parser.getFirstPartitionedCache();
 
             if (cctx != null && cctx.config().getQueryParallelism() > 1)
@@ -379,7 +375,16 @@ public class QueryParser {
 
             List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
 
-            QueryParserResultSelect select = new QueryParserResultSelect(twoStepQry, locSplit, meta);
+            boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
+
+            QueryParserResultSelect select = new QueryParserResultSelect(
+                stmt0,
+                twoStepQry,
+                locSplit,
+                meta,
+                cacheIds,
+                forUpdate
+            );
 
             return new QueryParserResult(newQry, remainingQry, select, null, null);
         }

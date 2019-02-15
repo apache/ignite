@@ -497,23 +497,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             QueryParserResultSelect select = parseRes.select();
 
+            assert select != null;
+
             MvccSnapshot mvccSnapshot = null;
 
-            // TODO: Collect this flag in SELECT.
-            boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(p);
+            boolean forUpdate = select.forUpdate();
 
             if (forUpdate && !mvccEnabled)
                 throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
                     "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-            if (ctx.security().enabled()) {
-                GridSqlQueryParser parser = new GridSqlQueryParser(false);
-
-                parser.parse(p);
-
-                // TODO: Collact cache IDs in SELECT.
-                checkSecurity(parser.cacheIds());
-            }
+            if (ctx.security().enabled())
+                checkSecurity(select.cacheIds());
 
             GridNearTxSelectForUpdateFuture sfuFut = null;
 
@@ -537,12 +532,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
                             "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                    // TODO: Rewritten query should be part of SELECT plan.
-                    GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(p);
-
-                    qry = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(stmt0, forUpdate = tx != null);
-
-                    stmt = preparedStatementWithParams(conn, qry, params, true);
+                    qry = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(select.statement(), forUpdate = tx != null);
 
                     if (forUpdate) {
                         GridCacheContext cctx = mvccTracker.context();
@@ -565,7 +555,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridNearTxLocal tx0 = tx;
             MvccQueryTracker mvccTracker0 = mvccTracker;
             GridNearTxSelectForUpdateFuture sfuFut0 = sfuFut;
-            PreparedStatement stmt0 = stmt;
             String qry0 = qry;
             int timeout0 = opTimeout;
 
@@ -583,11 +572,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     qryCtxRegistry.setThreadLocal(qctx);
 
-                    ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = connMgr.detachThreadConnection();
+                    ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn = connMgr.detachThreadConnection();
 
                     try {
-                        // TODO: Establish connection, get cached statement.
-                        ResultSet rs = executeSqlQueryWithTimer(stmt0, conn, qry0, params, timeout0, cancel, dataPageScanEnabled);
+                        Connection conn0 = conn.object().connection();
+
+                        PreparedStatement stmt = preparedStatementWithParams(
+                            conn0,
+                            qry0,
+                            params,
+                            true
+                        );
+
+                        ResultSet rs = executeSqlQueryWithTimer(
+                            stmt,
+                            conn0,
+                            qry0,
+                            params,
+                            timeout0,
+                            cancel,
+                            dataPageScanEnabled
+                        );
 
                         if (sfuFut0 != null) {
                             assert tx0.mvccSnapshot() != null;
@@ -640,10 +645,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             }
                         }
 
-                        return new H2FieldsIterator(rs, mvccTracker0, sfuFut0 != null, detachedConn);
+                        return new H2FieldsIterator(rs, mvccTracker0, sfuFut0 != null, conn);
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
-                        detachedConn.recycle();
+                        conn.recycle();
 
                         try {
                             if (mvccTracker0 != null)

@@ -1784,7 +1784,7 @@ public class GridSqlQueryParser {
     /**
      * @return All known cache IDs.
      */
-    public Collection<Integer> cacheIds() {
+    public List<Integer> cacheIds() {
         ArrayList<Integer> res = new ArrayList<>(1);
 
         for (Object o : h2ObjToGridObj.values()) {
