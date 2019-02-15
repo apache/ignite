@@ -70,6 +70,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSkipReducerOnUpdateSelf
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataPrimaryKeysSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
+import org.apache.ignite.jdbc.thin.JdbcThinMultiStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
@@ -187,6 +188,7 @@ import org.junit.runners.Suite;
     JdbcThinDynamicIndexTransactionalPartitionedNearSelfTest.class,
     JdbcThinDynamicIndexTransactionalPartitionedSelfTest.class,
     JdbcThinDynamicIndexTransactionalReplicatedSelfTest.class,
+    JdbcThinMultiStatementSelfTest.class,
 
     // New thin JDBC driver, DML tests
     JdbcThinBulkLoadAtomicPartitionedNearSelfTest.class,

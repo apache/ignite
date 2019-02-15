@@ -63,11 +63,6 @@ public class IgniteSqlQueryParallelismTest extends AbstractIndexingCommonTest {
         startGridsMultiThreaded(3, false);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param name Cache name.
      * @param idxTypes Indexed types.

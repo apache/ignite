@@ -146,8 +146,7 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
  */
 @SuppressWarnings({
     "TransientFieldInNonSerializableClass",
-    "ProhibitedExceptionDeclared",
-    "JUnitTestCaseWithNonTrivialConstructors"
+    "ProhibitedExceptionDeclared"
 })
 public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /**************************************************************
@@ -1779,7 +1778,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
 
         if (isSafeTopology()) {
-            stopAllGrids(false);
+            stopAllGrids(true);
 
             if (stopGridErr) {
                 err = new RuntimeException("Not all Ignite instances has been stopped. " +

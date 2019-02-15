@@ -198,7 +198,13 @@ public enum GridRestCommand {
     REMOVE_USER("removeuser"),
 
     /** */
-    UPDATE_USER("updateuser");
+    UPDATE_USER("updateuser"),
+
+    /** Data region metrics. */
+    DATA_REGION_METRICS("dataregion"),
+
+    /** Data storage metrics. */
+    DATA_STORAGE_METRICS("datastorage");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

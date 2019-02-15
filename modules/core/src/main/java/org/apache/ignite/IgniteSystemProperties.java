@@ -722,12 +722,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";
 
     /**
-     * Start Ignite on versions of JRE 7 older than 1.7.0_71. For proper work it may require
-     * disabling JIT in some places.
-     */
-    public static final String IGNITE_FORCE_START_JAVA7 = "IGNITE_FORCE_START_JAVA7";
-
-    /**
      * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
      * support service security permissions. In this case security permissions will be ignored
      * (if they set).
@@ -1121,6 +1115,11 @@ public final class IgniteSystemProperties {
      * Limit the maximum number of objects in memory during the recovery procedure.
      */
     public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
+
+    /**
+     * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
+     */
+    public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
 
     /**
      * Flag to enable baseline auto-adjust by default.

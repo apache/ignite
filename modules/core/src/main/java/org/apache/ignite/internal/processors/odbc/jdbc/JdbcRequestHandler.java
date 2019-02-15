@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 
@@ -900,7 +901,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param cancel Hook for query cancellation.
      * @throws QueryCancelledException If query was cancelled during execution.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked"})
+    @SuppressWarnings({"ForLoopReplaceableByForEach"})
     private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr, GridQueryCancel cancel) throws QueryCancelledException {
         try {
@@ -1116,6 +1117,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
         if (e instanceof TransactionSerializationException)
             return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, e.getMessage());
+        if (e instanceof TransactionAlreadyCompletedException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, e.getMessage());
         if (e instanceof TransactionDuplicateKeyException)
             return new JdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, e.getMessage());
         if (e instanceof MvccUtils.NonMvccTransactionException)
