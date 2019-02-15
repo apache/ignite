@@ -890,7 +890,8 @@ public class GridDhtPartitionDemander {
 
                         GridCacheMvccEntryInfo prev = entryHist.isEmpty() ? null : (GridCacheMvccEntryInfo)entryHist.get(0);
 
-                        flushHistory = prev != null && (prev.cacheId() !=  entry.cacheId() || !prev.key().equals(entry.key()));
+                        flushHistory = prev != null && ((grp.sharedGroup() && prev.cacheId() !=  entry.cacheId())
+                            || !prev.key().equals(entry.key()));
                     }
                     else
                         flushHistory = true;
@@ -900,7 +901,7 @@ public class GridDhtPartitionDemander {
 
                         int cacheId = entryHist.get(0).cacheId();
 
-                        if (cctx == null || cacheId != cctx.cacheId())
+                        if (cctx == null || grp.sharedGroup() && cacheId != cctx.cacheId())
                             cctx = grp.sharedGroup() ? grp.shared().cacheContext(cacheId) : grp.singleCacheContext();
 
                         if (cctx != null) {
@@ -956,7 +957,7 @@ public class GridDhtPartitionDemander {
 
                     GridCacheEntryInfo entry = infos.next();
 
-                    if (cctx == null || entry.cacheId() != cctx.cacheId())
+                    if (cctx == null || grp.sharedGroup() && entry.cacheId() != cctx.cacheId())
                         cctx = grp.sharedGroup() ? grp.shared().cacheContext(entry.cacheId()) : grp.singleCacheContext();
 
                     if (cctx == null)
@@ -1001,7 +1002,6 @@ public class GridDhtPartitionDemander {
         GridCacheContext cctx
     ) throws IgniteCheckedException {
         assert ctx.database().checkpointLockIsHeldByThread();
-        assert cctx != null && cctx.cacheId() == entry.cacheId();
 
         try {
             GridCacheEntryEx cached = null;
@@ -1087,8 +1087,6 @@ public class GridDhtPartitionDemander {
         assert !history.isEmpty();
 
         GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)history.get(0);
-
-        assert cctx != null && info.cacheId() == cctx.cacheId();
 
         try {
             GridCacheEntryEx cached = null;

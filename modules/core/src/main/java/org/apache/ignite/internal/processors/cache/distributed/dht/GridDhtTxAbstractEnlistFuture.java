@@ -751,15 +751,21 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             entry.value(row.value());
             entry.expireTime(row.expireTime());
 
+            assert mvccSnapshot.coordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA;
+
             if (MvccUtils.compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) != 0) {
                 entry.mvccTxState(row.mvccTxState() != TxState.NA ? row.mvccTxState() :
                     MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter()));
+
+                assert entry.mvccTxState() != TxState.ABORTED;
             }
 
-            if (MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0) {
-                entry.newMvccTxState(row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
-                    MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                    row.newMvccOperationCounter()));
+            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA) {
+                if (MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0) {
+                    entry.newMvccTxState(row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
+                        MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
+                            row.newMvccOperationCounter()));
+                }
             }
 
             res.add(entry);

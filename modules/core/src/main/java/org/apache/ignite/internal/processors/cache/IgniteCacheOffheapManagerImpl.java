@@ -3227,7 +3227,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 if (state == TxState.COMMITTED || state == TxState.ABORTED) {
                     iox.rawNewMvccOperationCounter(pageAddr, off,
-                        (newOpCntr & MVCC_OP_COUNTER_MASK)| (state << MVCC_HINTS_BIT_OFF));
+                        (newOpCntr & MVCC_OP_COUNTER_MASK) | (state << MVCC_HINTS_BIT_OFF));
 
                     if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
                         ctx.wal().log(new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, state));
