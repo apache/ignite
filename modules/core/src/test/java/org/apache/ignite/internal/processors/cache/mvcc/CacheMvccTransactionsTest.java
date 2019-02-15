@@ -82,8 +82,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -107,9 +105,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * TODO IGNITE-6739: tests reload
- * TODO IGNITE-6739: extend tests to use single/mutiple nodes, all tx types.
- * TODO IGNITE-6739: test with cache groups.
+ *
  */
 @SuppressWarnings("unchecked")
 public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
@@ -1193,115 +1189,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
-    @Test
-    public void testCleanupWaitsForGet2() throws Exception {
-        /*
-        Simulate case when there are two active transactions modifying the same key
-        (it is possible if key lock is released but ack message is delayed), and at this moment
-        query is started.
-         */
-        testSpi = true;
-
-        client = false;
-
-        startGrids(2);
-
-        client = true;
-
-        final Ignite client = startGrid(2);
-
-        awaitPartitionMapExchange();
-
-        final IgniteCache<Object, Object> cache = client.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 16).
-            setNodeFilter(new TestCacheNodeExcludingFilter(ignite(0).name())));
-
-        final Integer key1 = 1;
-        final Integer key2 = 2;
-
-        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            cache.put(key1, 0);
-            cache.put(key2, 0);
-
-            tx.commit();
-        }
-
-        TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(grid(0));
-
-        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
-
-        final CountDownLatch getLatch = new CountDownLatch(1);
-
-        clientSpi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
-            @Override public void apply(ClusterNode node, Message msg) {
-                if (msg instanceof MvccAckRequestTx)
-                    doSleep(2000);
-            }
-        });
-
-        crdSpi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
-            /** */
-            private AtomicInteger cntr = new AtomicInteger();
-
-            @Override public void apply(ClusterNode node, Message msg) {
-                if (msg instanceof MvccSnapshotResponse) {
-                    if (cntr.incrementAndGet() == 2) {
-                        getLatch.countDown();
-
-                        doSleep(1000);
-                    }
-                }
-            }
-        });
-
-        final IgniteInternalFuture<?> putFut1 = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    cache.put(key1, 1);
-
-                    tx.commit();
-                }
-
-                return null;
-            }
-        }, "put1");
-
-        final IgniteInternalFuture<?> putFut2 = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    cache.put(key1, 2);
-
-                    tx.commit();
-                }
-
-                return null;
-            }
-        }, "put2");
-
-        IgniteInternalFuture<?> getFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                U.await(getLatch);
-
-                while (!putFut1.isDone() || !putFut2.isDone()) {
-                    Map<Object, Object> vals1 = checkAndGetAll(false, cache, F.asSet(key1, key2), SCAN);
-                    Map<Object, Object> vals2 = checkAndGetAll(false, cache, F.asSet(key1, key2), GET);
-
-                    assertEquals(2, vals1.size());
-                    assertEquals(2, vals2.size());
-                }
-
-                return null;
-            }
-        }, 4, "get-thread");
-
-        putFut1.get();
-        putFut2.get();
-        getFut.get();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testCleanupWaitsForGet3() throws Exception {
         for (int i = 0; i < 4; i++) {
@@ -1721,7 +1608,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxGetAllReadsSnapshot_SingleNode_SinglePartition() throws Exception {
         txReadsSnapshot(1, 0, 0, 1, GET);
@@ -1730,7 +1616,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxGetAllReadsSnapshot_ClientServer() throws Exception {
         txReadsSnapshot(4, 2, 1, 64, GET);
@@ -1739,7 +1624,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxScanReadsSnapshot_SingleNode_SinglePartition() throws Exception {
         txReadsSnapshot(1, 0, 0, 1, SCAN);
@@ -1748,7 +1632,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxScanReadsSnapshot_ClientServer() throws Exception {
         txReadsSnapshot(4, 2, 1, 64, SCAN);
@@ -2882,7 +2765,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_SingleNode_SinglePartition() throws Exception {
         doImplicitPartsScanTest(1, 0, 0, 1, 10_000);
@@ -2891,7 +2773,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_SingleNode() throws Exception {
         doImplicitPartsScanTest(1, 0, 0, 64, 10_000);
@@ -2900,7 +2781,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_ClientServer_Backups0() throws Exception {
         doImplicitPartsScanTest(4, 2, 0, 64, 10_000);
@@ -2909,7 +2789,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_ClientServer_Backups1() throws Exception {
         doImplicitPartsScanTest(4, 2, 1, 64, 10_000);
@@ -2918,7 +2797,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_ClientServer_Backups2() throws Exception {
         doImplicitPartsScanTest(4, 2, 2, 64, 10_000);
