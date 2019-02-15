@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -682,71 +681,6 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(5L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'")
             .get(0).get(0));
-
-        // Check cache groups.
-        resAll = execSql("SELECT ID, GROUP_NAME, IS_SHARED, CACHE_COUNT, " +
-            "CACHE_MODE, ATOMICITY_MODE, AFFINITY, PARTITIONS_COUNT, " +
-            "NODE_FILTER, DATA_REGION_NAME, TOPOLOGY_VALIDATOR, PARTITION_LOSS_POLICY, " +
-            "REBALANCE_MODE, REBALANCE_DELAY, REBALANCE_ORDER, BACKUPS " +
-            "FROM IGNITE.CACHE_GROUPS");
-
-        assertColumnTypes(resAll.get(0),
-            Integer.class, String.class, Boolean.class, Integer.class,
-            String.class, String.class, String.class, Integer.class,
-            String.class, String.class, String.class, String.class,
-            String.class, Long.class, Integer.class, Integer.class);
-
-        assertEquals(2, execSql("SELECT CACHE_COUNT FROM IGNITE.CACHE_GROUPS " +
-            "WHERE GROUP_NAME = 'cache_grp'").get(0).get(0));
-
-        assertEquals("cache_grp", execSql("SELECT GROUP_NAME FROM IGNITE.CACHE_GROUPS " +
-            "WHERE IS_SHARED = true AND GROUP_NAME like 'cache%'").get(0).get(0));
-
-        // Check index on ID column.
-        assertEquals("cache_tx_repl", execSql("SELECT GROUP_NAME FROM IGNITE.CACHE_GROUPS " +
-            "WHERE ID = ?", ignite0.cachex("cache_tx_repl").context().groupId()).get(0).get(0));
-
-        assertEquals(0, execSql("SELECT ID FROM IGNITE.CACHE_GROUPS WHERE ID = 0").size());
-
-        // Check join by indexed column.
-        assertEquals("cache_tx_repl", execSql("SELECT CG.GROUP_NAME FROM IGNITE.CACHES C JOIN " +
-            "IGNITE.CACHE_GROUPS CG ON C.GROUP_ID = CG.ID WHERE C.NAME = 'cache_tx_repl'").get(0).get(0));
-
-        // Check join by non-indexed column.
-        assertEquals("cache_grp", execSql("SELECT CG.GROUP_NAME FROM IGNITE.CACHES C JOIN " +
-            "IGNITE.CACHE_GROUPS CG ON C.GROUP_NAME = CG.GROUP_NAME WHERE C.NAME = 'cache_tx_part'").get(0).get(0));
-
-        // Check configuration equality for cache and cache group views.
-        assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES C JOIN IGNITE.CACHE_GROUPS CG " +
-            "ON C.NAME = CG.GROUP_NAME WHERE C.NAME like 'cache%' " +
-            "AND C.CACHE_MODE = CG.CACHE_MODE " +
-            "AND C.ATOMICITY_MODE = CG.ATOMICITY_MODE " +
-            "AND COALESCE(C.AFFINITY, '-') = COALESCE(CG.AFFINITY, '-') " +
-            "AND COALESCE(C.NODE_FILTER, '-') = COALESCE(CG.NODE_FILTER, '-') " +
-            "AND COALESCE(C.DATA_REGION_NAME, '-') = COALESCE(CG.DATA_REGION_NAME, '-') " +
-            "AND COALESCE(C.TOPOLOGY_VALIDATOR, '-') = COALESCE(CG.TOPOLOGY_VALIDATOR, '-') " +
-            "AND C.PARTITION_LOSS_POLICY = CG.PARTITION_LOSS_POLICY " +
-            "AND C.REBALANCE_MODE = CG.REBALANCE_MODE " +
-            "AND C.REBALANCE_DELAY = CG.REBALANCE_DELAY " +
-            "AND C.REBALANCE_ORDER = CG.REBALANCE_ORDER " +
-            "AND C.BACKUPS = CG.BACKUPS").get(0).get(0));
-
-        // Check quick count.
-        assertEquals(execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS").get(0).get(0),
-            execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS WHERE ID <> ID + 1").get(0).get(0));
-
-        // Check that cache groups are the same on different nodes.
-        assertEquals(4L, execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
-            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
-
-        assertEquals(4L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
-            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
-
-        assertEquals(4L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
-            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
-
-        assertEquals(4L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
-            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
     }
 
     /**
