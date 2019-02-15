@@ -1293,27 +1293,41 @@ public class GridSqlQuerySplitter {
      */
     @SuppressWarnings("IfMayBeConditional")
     private LinkedHashMap<String,?> collectColumns(List<GridSqlAst> cols) {
-        LinkedHashMap<String, GridSqlType> res = new LinkedHashMap<>(cols.size(), 1f, false);
+        LinkedHashMap<String, MapColumn> res = new LinkedHashMap<>(cols.size(), 1f, false);
 
         for (int i = 0; i < cols.size(); i++) {
             GridSqlAst col = cols.get(i);
-            GridSqlType t = col.resultType();
 
-            if (t == null)
-                throw new NullPointerException("Column type: " + col);
-
-            if (t == GridSqlType.UNKNOWN)
-                throw new IllegalStateException("Unknown type: " + col);
-
+            GridSqlAst colUnwrapped;
             String alias;
 
-            if (col instanceof GridSqlAlias)
+            if (col instanceof GridSqlAlias) {
+                colUnwrapped = col.child();
                 alias = ((GridSqlAlias)col).alias();
-            else
+            }
+            else {
+                colUnwrapped = col;
                 alias = columnName(i);
+            }
 
-            if (res.put(alias, t) != null)
-                throw new IllegalStateException("Alias already exists: " + alias);
+            if (colUnwrapped instanceof GridSqlParameter) {
+                int idx = ((GridSqlParameter)colUnwrapped).index();
+
+                if (res.put(alias, new MapColumn(idx)) != null)
+                    throw new IllegalStateException("Alias already exists: " + alias);
+            }
+            else {
+                GridSqlType type = col.resultType();
+
+                if (type == null)
+                    throw new NullPointerException("Column type: " + col);
+
+                if (type == GridSqlType.UNKNOWN)
+                    throw new IllegalStateException("Unknown type: " + col);
+
+                if (res.put(alias, new MapColumn(type)) != null)
+                    throw new IllegalStateException("Alias already exists: " + alias);
+            }
         }
 
         return res;

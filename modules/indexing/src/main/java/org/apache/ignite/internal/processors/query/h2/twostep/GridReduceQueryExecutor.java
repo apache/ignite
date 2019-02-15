@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
+import org.apache.ignite.internal.processors.query.h2.sql.MapColumn;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -599,7 +600,7 @@ public class GridReduceQueryExecutor {
                     ReduceTable tbl;
 
                     try {
-                        tbl = createMergeTable(r.connection(), mapQry, qry.explain());
+                        tbl = createMergeTable(r.connection(), mapQry, qry.explain(), params);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -1151,7 +1152,7 @@ public class GridReduceQueryExecutor {
         int tblIdx = 0;
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
-            ReduceTable tbl = createMergeTable(c, mapQry, false);
+            ReduceTable tbl = createMergeTable(c, mapQry, false, params);
 
             fakeTable(c, tblIdx++).innerTable(tbl);
         }
@@ -1246,11 +1247,12 @@ public class GridReduceQueryExecutor {
      * @param conn Connection.
      * @param qry Query.
      * @param explain Explain.
+     * @param params Parameters.
      * @return Table.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private ReduceTable createMergeTable(JdbcConnection conn, GridCacheSqlQuery qry, boolean explain)
+    private ReduceTable createMergeTable(JdbcConnection conn, GridCacheSqlQuery qry, boolean explain, Object[] params)
         throws IgniteCheckedException {
         try {
             Session ses = (Session)conn.getSession();
@@ -1270,13 +1272,37 @@ public class GridReduceQueryExecutor {
 
                 for (Map.Entry<String,?> e : colsMap.entrySet()) {
                     String alias = e.getKey();
-                    GridSqlType t = (GridSqlType)e.getValue();
+                    MapColumn col = (MapColumn)e.getValue();
 
                     assert !F.isEmpty(alias);
 
-                    Column c = new Column(alias, t.type(), t.precision(), t.scale(), t.displaySize());
+                    GridSqlType type;
 
-                    cols.add(c);
+                    if (col.isParameter()) {
+                        int idx = col.parameterIndex();
+
+                        if (F.isEmpty(params) || params.length < idx)
+                            throw new IllegalStateException("Insufficient parameters: " + idx);
+
+                        Object param = params[idx];
+
+                        type = H2Utils.typeForObject(ses, param);
+                    }
+                    else {
+                        type = col.type();
+
+                        assert type != null;
+                    }
+
+                    Column col0 = new Column(
+                        alias,
+                        type.type(),
+                        type.precision(),
+                        type.scale(),
+                        type.displaySize()
+                    );
+
+                    cols.add(col0);
                 }
 
                 data.columns = cols;
