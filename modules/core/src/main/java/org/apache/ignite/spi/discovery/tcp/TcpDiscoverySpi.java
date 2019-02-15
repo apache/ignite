@@ -2498,6 +2498,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         /** {@inheritDoc} */
+        @Override public void excludeNode(String nodeId) {
+            impl.failNode(UUID.fromString(nodeId), "Node failed from JMX interface, initiator=" + getLocalNodeId());
+        }
+
+        /** {@inheritDoc} */
         @Override public void dumpDebugInfo() {
             impl.dumpDebugInfo(log);
         }

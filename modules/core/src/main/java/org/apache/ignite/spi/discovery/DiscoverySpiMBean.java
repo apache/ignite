@@ -81,4 +81,12 @@ public interface DiscoverySpiMBean {
      */
     @MXBeanDescription("Local node formatted as a string.")
     public String getLocalNodeFormatted();
+
+     /**
+      * Exclude node from cluster.
+      *
+      * @param nodeId Node id string.
+      */
+     @MXBeanDescription("Exclude node from cluster.")
+     public void excludeNode(String nodeId);
 }

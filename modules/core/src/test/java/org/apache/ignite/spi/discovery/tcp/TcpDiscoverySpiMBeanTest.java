@@ -17,16 +17,21 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import javax.management.JMX;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
+import java.util.UUID;
+
 import org.junit.Test;
 
 /**
@@ -81,4 +86,62 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
     }
+
+        /**
+      * Tests TcpDiscoverySpiMBean#excludeNode.
+      *
+      * @throws Exception if fails.
+      */
+        public void testNodeExclusion() throws Exception {
+            int srvCnt = 2;
+
+            IgniteEx grid0 = (IgniteEx)startGrids(srvCnt);
+
+            IgniteEx client = null;
+
+            try {
+                Ignition.setClientMode(true);
+
+                client = startGrid(srvCnt);
+            }
+            finally {
+                Ignition.setClientMode(false);
+            }
+
+            MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
+
+            ObjectName spiName = U.makeMBeanName(grid0.context().igniteInstanceName(), "SPIs",
+                TcpDiscoverySpi.class.getSimpleName());
+
+            TcpDiscoverySpiMBean bean = JMX.newMBeanProxy(srv, spiName, TcpDiscoverySpiMBean.class);
+
+            assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
+
+            assertEquals(grid0.cluster().forClients().nodes().size(), 1);
+
+            bean.excludeNode(client.localNode().id().toString());
+
+            assertTrue(GridTestUtils.waitForCondition(() ->
+                grid0.cluster().forClients().nodes().isEmpty(), 5_000));
+
+            assertTrue(strLog.toString().contains("Node failed through JMX interface"));
+
+            assertEquals(grid0.cluster().forClients().nodes().size(), 0);
+
+            bean.excludeNode(new UUID(0, 0).toString());
+
+            bean.excludeNode("fakeUUID");
+
+            assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
+
+            ClusterNode node = grid0.cluster().forServers().nodes().stream().filter(n -> n.id() != grid0.localNode().id())
+                .findFirst().get();
+
+            assertNotNull(node);
+
+            bean.excludeNode(node.id().toString());
+
+            assertTrue(GridTestUtils.waitForCondition(() ->
+                grid0.cluster().forServers().nodes().size() == srvCnt - 1, 5_000));
+        }
 }

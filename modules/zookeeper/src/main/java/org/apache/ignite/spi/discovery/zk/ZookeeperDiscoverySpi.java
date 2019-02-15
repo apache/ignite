@@ -621,6 +621,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         }
 
         /** {@inheritDoc} */
+        @Override public void excludeNode(String nodeId) {
+            impl.failNode(UUID.fromString(nodeId), "Node failed from JMX interface, initiator=" + getLocalNodeId());
+        }
+
+        /** {@inheritDoc} */
         @Override public String getZkConnectionString() {
             return zkConnectionString;
         }
