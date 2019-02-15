@@ -1192,6 +1192,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataRow val = new DataEntryRow(next);
 
             if (donePart != -1) {
+                int pIdx = partMap.partitionIndex(donePart);
+
+                log.info("DBG: Partition done [partId=" + donePart + " from=" + partMap.initialUpdateCounterAt(pIdx) + " to=" + partMap.updateCounterAt(pIdx) + ']');
+
                 doneParts.add(donePart);
 
                 donePart = -1;
@@ -1303,14 +1307,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             if (idx >= 0 && !missingParts.contains(idx)) {
                                 rebalancedCntrs[idx] += rbRec.range();
 
-                                if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx))
+                                if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx)) {
+                                    int pIdx = partMap.partitionIndex(donePart);
+
+                                    log.info("DBG: Partition done [partId=" + donePart + " from=" + partMap.initialUpdateCounterAt(pIdx) + " to=" + partMap.updateCounterAt(pIdx) + ']');
+
                                     doneParts.add(rbRec.partitionId()); // Add to done set immediately.
+                                }
                             }
                         }
                     }
                 }
 
                 // TODO FIXME introduce isDone() for doneParts.size() == partMap.size()
+                // TODO print info about not done partitions
                 assert entryIt != null || doneParts.size() == partMap.size() :
                     "Reached end of WAL but not all partitions are done";
             }

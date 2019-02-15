@@ -195,9 +195,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-//        stopAllGrids();
-//
-//        cleanPersistenceDir();
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     @Override protected void beforeTest() throws Exception {
@@ -208,12 +208,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-//        if (error)
-//            System.exit(1);
-//
+        if (error)
+            System.exit(1);
+
         stopAllGrids();
-//
-//        cleanPersistenceDir();
+
+        cleanPersistenceDir();
     }
 
     /**
@@ -221,7 +221,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      * @throws Exception If fails.
      */
-    //@Test
+    @Test
     public void testRebalancingOnRestart() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -273,7 +273,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      * @throws Exception If fails.
      */
-    //@Test
+    @Test
     public void testRebalancingOnRestartAfterCheckpoint() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -335,7 +335,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testTopologyChangesWithConstantLoad() throws Exception {
         final long timeOut = U.currentTimeMillis() + 5 * 60 * 1000;
 
@@ -533,7 +533,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testForceRebalance() throws Exception {
         testForceRebalance(CACHE);
     }
@@ -541,7 +541,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testForceRebalanceClientTopology() throws Exception {
         filteredCacheEnabled = true;
 
@@ -594,40 +594,40 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         }
     }
 
+//    @Test
+//    public void testZzz() throws Exception {
+//        final Ignite ig = startGrids(4);
+//
+//        ig.cluster().active(true);
+//
+//        log.info("Checking data... " + ig.cache(CACHE).size());
+//
+//        Map<Integer, Long> cntrs = new HashMap<>();
+//
+//        for (int g = 0; g < 4; g++) {
+//            IgniteEx ig0 = grid(g);
+//
+//            for (GridDhtLocalPartition part : ig0.cachex(CACHE).context().topology().currentLocalPartitions()) {
+//                if (cntrs.containsKey(part.id()))
+//                    assertEquals(String.valueOf(part.id()), (long) cntrs.get(part.id()), part.updateCounter());
+//                else
+//                    cntrs.put(part.id(), part.updateCounter());
+//            }
+//
+//            for (int k0 = 0; k0 < 33950; k0++) {
+//                Object tmp = ig0.cache(CACHE).get(k0);
+//
+////                if (tmp == null)
+////                    log.info("DBG: Missing key: k=" + String.valueOf(k0) + " grid=" + grid(g).name());
+//
+//                assertEquals(String.valueOf(k0) + " " + g, k0, tmp);
+//            }
+//        }
+//
+//        assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
+//    }
+
     @Test
-    public void testZzz() throws Exception {
-        final Ignite ig = startGrids(4);
-
-        ig.cluster().active(true);
-
-        log.info("Checking data... " + ig.cache(CACHE).size());
-
-        Map<Integer, Long> cntrs = new HashMap<>();
-
-        for (int g = 0; g < 4; g++) {
-            IgniteEx ig0 = grid(g);
-
-            for (GridDhtLocalPartition part : ig0.cachex(CACHE).context().topology().currentLocalPartitions()) {
-                if (cntrs.containsKey(part.id()))
-                    assertEquals(String.valueOf(part.id()), (long) cntrs.get(part.id()), part.updateCounter());
-                else
-                    cntrs.put(part.id(), part.updateCounter());
-            }
-
-            for (int k0 = 0; k0 < 33950; k0++) {
-                Object tmp = ig0.cache(CACHE).get(k0);
-
-//                if (tmp == null)
-//                    log.info("DBG: Missing key: k=" + String.valueOf(k0) + " grid=" + grid(g).name());
-
-                assertEquals(String.valueOf(k0) + " " + g, k0, tmp);
-            }
-        }
-
-        assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
-    }
-
-    //@Test
     public void testZPartitionCounterConsistencyOnUnstableTopology0() throws Exception {
         try {
             doTestPartitionCounterConsistencyOnUnstableTopology();
@@ -637,7 +637,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         }
     }
 
-    //@Test
+    @Test
     public void testZPartitionCounterConsistencyOnUnstableTopology1() throws Exception {
         try {
             doTestPartitionCounterConsistencyOnUnstableTopology();
@@ -647,7 +647,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         }
     }
 
-    //@Test
+    @Test
     public void testZPartitionCounterConsistencyOnUnstableTopology2() throws Exception {
         try {
             doTestPartitionCounterConsistencyOnUnstableTopology();
@@ -742,8 +742,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 for (int k0 = 0; k0 < keys; k0++) {
                     Object tmp = ig0.cache(CACHE).get(k0);
 
-                    if (tmp == null)
-                        log.info("DBG: " + String.valueOf(k0) + " " + grid(g).name());
+                    if (tmp == null) {
+                        log.info("DBG: missed " + String.valueOf(k0) + " " + grid(g).name());
+                    }
 
                     assertEquals(String.valueOf(k0) + " " + g, k0, tmp);
                 }

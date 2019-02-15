@@ -907,8 +907,8 @@ public class GridDhtPartitionDemander {
 
                 cached = cctx.cache().entryEx(entry.key());
 
-                if (log.isTraceEnabled())
-                    log.trace("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + from.id() + ']');
+                //if (log.isTraceEnabled())
+                log.info("DBG: received key [key=" + entry.key() + ", part=" + p + ", fromNode=" + from.id() + ", grpId=" + grp.groupId() + ']');
 
                 if (preloadPred == null || preloadPred.apply(entry)) {
                     if (cached.initialValue(
