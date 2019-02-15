@@ -28,12 +28,15 @@ export default class GlobalProgressLine {
     $onChanges() {
         if (this.isLoading === true) {
             this._child = this.$element[0].querySelector('.global-progress-line__progress-line');
-            this.$document[0].querySelector('web-console-header').appendChild(this._child);
+            if (this._child) this.$document[0].querySelector('web-console-header').appendChild(this._child);
         } else
             this.$element.hide();
     }
 
     $onDestroy() {
-        if (this._child) this._child.parentElement.removeChild(this._child);
+        if (this._child) {
+            this._child.parentElement.removeChild(this._child);
+            this._child = null;
+        }
     }
 }

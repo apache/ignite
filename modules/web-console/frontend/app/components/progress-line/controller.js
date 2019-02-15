@@ -47,14 +47,16 @@ export default class ProgressLine {
      * @param {{value: ng.IChangesObject<ProgressLineValue>}} changes
      */
     $onChanges(changes) {
-        if (changes.value.currentValue === -1) {
-            this.$element[0].classList.remove(COMPLETE_CLASS);
-            this.$element[0].classList.add(INDETERMINATE_CLASS);
-            return;
-        }
-        if (typeof changes.value.currentValue === 'number') {
-            if (changes.value.currentValue === 1) this.$element[0].classList.add(COMPLETE_CLASS);
-            this.$element[0].classList.remove(INDETERMINATE_CLASS);
+        if (this.$element.length > 0) {
+            if (changes.value.currentValue === -1) {
+                this.$element[0].classList.remove(COMPLETE_CLASS);
+                this.$element[0].classList.add(INDETERMINATE_CLASS);
+                return;
+            }
+            if (typeof changes.value.currentValue === 'number') {
+                if (changes.value.currentValue === 1) this.$element[0].classList.add(COMPLETE_CLASS);
+                this.$element[0].classList.remove(INDETERMINATE_CLASS);
+            }
         }
     }
 }
