@@ -104,14 +104,19 @@ namespace ignite
                 bool success = Send(mem.Data(), mem.Length(), timeout);
 
                 if (!success)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not send message to remote host: timeout");
+                {
+                    success = TryRestoreConnection(timeout);
+
+                    if (!success)
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Can not send message to remote host: timeout");
+                }
 
                 success = Receive(mem, timeout);
 
                 if (!success)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not send message to remote host: timeout");
+                        "Can not receive message response from the remote host: timeout");
             }
 
             bool DataChannel::Send(const int8_t* data, size_t len, int32_t timeout)
@@ -324,7 +329,7 @@ namespace ignite
             bool DataChannel::EnsureConnected(int32_t timeout)
             {
                 if (socket.get() != 0)
-                    return false;
+                    return true;
 
                 return TryRestoreConnection(timeout);
             }
