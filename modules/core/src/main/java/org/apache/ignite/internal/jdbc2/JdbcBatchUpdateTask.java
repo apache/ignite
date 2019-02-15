@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.jetbrains.annotations.Nullable;
 
 import static java.sql.Statement.SUCCESS_NO_INFO;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
@@ -172,7 +171,6 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
         qry.setDistributedJoins(distributedJoins);
         qry.setSchema(schemaName);
         qry.setArgs(args == null ? null : args.toArray());
-        qry.setDataPageScanEnabled(dataPageScan());
 
         QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
 
@@ -211,13 +209,6 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
         }
 
         return longRes.intValue();
-    }
-
-    /**
-     * @return Whether or not data page scan is supported or {@code null} for server default.
-     */
-    protected @Nullable Boolean dataPageScan(){
-        return null;
     }
 
     /**

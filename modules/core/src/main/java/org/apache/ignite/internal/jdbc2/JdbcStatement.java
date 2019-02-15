@@ -116,9 +116,9 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryMultipleStatementsTask qryTask = JdbcQueryMultipleStatementsTaskV2.createTask(loc ? ignite : null, conn.schemaName(),
+        JdbcQueryMultipleStatementsTask qryTask = new JdbcQueryMultipleStatementsTask(loc ? ignite : null, conn.schemaName(),
             sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(), conn.isCollocatedQuery(),
-            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), conn.isDataPageScan());
+            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
 
         try {
             List<JdbcStatementResultInfo> rsInfos =
@@ -160,10 +160,9 @@ public class JdbcStatement implements Statement {
             else
                 isQuery = true;
 
-        JdbcQueryTask qryTask = JdbcQueryTaskV4.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
+        JdbcQueryTask qryTask = JdbcQueryTaskV3.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
             sql, isQuery, loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
-            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), false,
-            conn.skipReducerOnUpdate(), conn.isDataPageScan());
+            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), false, conn.skipReducerOnUpdate());
 
         try {
             JdbcQueryTaskResult qryRes =
@@ -447,9 +446,9 @@ public class JdbcStatement implements Statement {
         if (!conn.isDmlSupported())
             throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
 
-        JdbcBatchUpdateTask task = JdbcBatchUpdateTaskV2.createTask(loc ? ignite : null, conn.cacheName(),
+        JdbcBatchUpdateTask task = new JdbcBatchUpdateTask(loc ? ignite : null, conn.cacheName(),
             conn.schemaName(), command, batch, batchArgs, loc, getFetchSize(), conn.isLocalQuery(),
-            conn.isCollocatedQuery(), conn.isDistributedJoins(), conn.isDataPageScan());
+            conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
             int[] res = loc ? task.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(task);

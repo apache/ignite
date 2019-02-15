@@ -69,7 +69,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.jetbrains.annotations.Nullable;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
@@ -78,7 +77,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_CACHE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_CFG;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_COLLOCATED;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_DATA_PAGE_SCAN;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LAZY;
@@ -175,9 +173,6 @@ public class JdbcConnection implements Connection {
     /** Skip reducer on update flag. */
     private final boolean skipReducerOnUpdate;
 
-    /** Scan data pages query execution flag. */
-    private final @Nullable Boolean dataPageScan;
-
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
 
@@ -219,10 +214,6 @@ public class JdbcConnection implements Connection {
 
         multipleStmts = Boolean.parseBoolean(props.getProperty(PROP_MULTIPLE_STMTS));
         skipReducerOnUpdate = Boolean.parseBoolean(props.getProperty(PROP_SKIP_REDUCER_ON_UPDATE));
-
-        String dataPageScan = props.getProperty(PROP_DATA_PAGE_SCAN);
-
-        this.dataPageScan = dataPageScan == null ? null : (Boolean)Boolean.parseBoolean(dataPageScan);
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -903,11 +894,6 @@ public class JdbcConnection implements Connection {
      */
     boolean isLazy() {
         return lazy;
-    }
-
-    /** @return Whether or not data page scan is allowed. If {@code null}, then server defaults are used. */
-    public Boolean isDataPageScan() {
-        return dataPageScan;
     }
 
     /**

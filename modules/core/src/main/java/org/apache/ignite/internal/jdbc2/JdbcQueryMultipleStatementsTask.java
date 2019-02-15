@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Task for SQL queries execution through {@link IgniteJdbcDriver}.
@@ -121,7 +120,6 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
         qry.setEnforceJoinOrder(enforceJoinOrder);
         qry.setLazy(lazy);
         qry.setSchema(schemaName);
-        qry.setDataPageScanEnabled(dataPageScan());
 
         GridKernalContext ctx = ((IgniteKernal)ignite).context();
 
@@ -165,13 +163,6 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
         }
 
         return resultsInfo;
-    }
-
-    /**
-     * @return Whether or not data page scan is supported or {@code null} for server default.
-     */
-    protected @Nullable Boolean dataPageScan() {
-        return null;
     }
 
 }
