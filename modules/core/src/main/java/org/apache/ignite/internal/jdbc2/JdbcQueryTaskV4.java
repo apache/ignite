@@ -21,11 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * V4 version of the task: added data page scan support.
- */
 public class JdbcQueryTaskV4 extends JdbcQueryTaskV3 {
-    /** Data page scan. */
     private final Boolean dataPageScan;
 
     /**
