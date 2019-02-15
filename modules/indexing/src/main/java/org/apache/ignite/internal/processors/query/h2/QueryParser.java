@@ -21,14 +21,18 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
@@ -308,8 +312,11 @@ public class QueryParser {
 
             return new QueryParserResult(newQry, remainingQry, null, null, cmd);
         }
-        else if (GridSqlQueryParser.isDml(prepared))
-            return new QueryParserResult(newQry, remainingQry, null ,new QueryParserResultDml(prepared), null);
+        else if (GridSqlQueryParser.isDml(prepared)) {
+            QueryParserResultDml dml = prepareDmlStatement(prepared);
+
+            return new QueryParserResult(newQry, remainingQry, null, dml, null);
+        }
         else if (!prepared.isQuery()) {
             throw new IgniteSQLException("Unsupported statement: " + newQry.getSql(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -384,6 +391,57 @@ public class QueryParser {
             // TODO: Leak if returned earlier. Will be fixed in https://issues.apache.org/jira/browse/IGNITE-11279
             U.close(stmt, log);
         }
+    }
+
+    /**
+     * Prepare DML statement.
+     *
+     * @param preparedStmt Prepared statement.
+     * @return Statement.
+     */
+    public QueryParserResultDml prepareDmlStatement(PreparedStatement preparedStmt) {
+        Prepared prep = GridSqlQueryParser.prepared(preparedStmt);
+
+        return prepareDmlStatement(prep);
+    }
+
+    /**
+     * Prepare DML statement.
+     *
+     * @param prepared Prepared.
+     * @return Statement.
+     */
+    public QueryParserResultDml prepareDmlStatement(Prepared prepared) {
+        // Prepare AST.
+        GridSqlQueryParser parser = new GridSqlQueryParser(false);
+
+        GridSqlStatement stmt = parser.parse(prepared);
+
+        List<GridH2Table> tbls = parser.tablesForDml();
+
+        // Check if caches are started because we may need to collect affinity info later on, so they needs to be
+        // available on local node.
+        for (GridH2Table h2tbl : tbls)
+            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl);
+
+        // Check MVCC mode.
+        GridCacheContextInfo ctx = null;
+        boolean mvccEnabled = false;
+
+        for (GridH2Table h2tbl : tbls) {
+            GridCacheContextInfo curCtx = h2tbl.cacheInfo();
+            boolean curMvccEnabled = curCtx.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
+            if (ctx == null) {
+                ctx = curCtx;
+
+                mvccEnabled = curMvccEnabled;
+            }
+            else if (curMvccEnabled != mvccEnabled)
+                MvccUtils.throwAtomicityModesMismatchException(ctx.config(), curCtx.config());
+        }
+
+        return new QueryParserResultDml(stmt, mvccEnabled);
     }
 
     /**
