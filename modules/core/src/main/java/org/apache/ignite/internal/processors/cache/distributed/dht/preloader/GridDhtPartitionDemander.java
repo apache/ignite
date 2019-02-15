@@ -898,25 +898,24 @@ public class GridDhtPartitionDemander {
                     if (flushHistory) {
                         assert !entryHist.isEmpty();
 
-                        if (!mvccPreloadEntry(node, p, entryHist, topVer)) {
-                            if (log.isTraceEnabled())
-                                log.trace("Got entries for invalid partition during " +
-                                    "preloading (will skip) [p=" + p +
-                                    ", entry=" + entryHist.get(entryHist.size() - 1) + ']');
-
-                            return; // Skip current partition.
-                        }
-
                         int cacheId = entryHist.get(0).cacheId();
 
                         if (cctx == null || cacheId != cctx.cacheId())
                             cctx = grp.sharedGroup() ? grp.shared().cacheContext(cacheId) : grp.singleCacheContext();
 
-                        assert cctx != null;
+                        if (cctx != null) {
+                            if (!mvccPreloadEntry(cctx, node, entryHist, topVer, p)) {
+                                if (log.isTraceEnabled())
+                                    log.trace("Got entries for invalid partition during " +
+                                        "preloading (will skip) [p=" + p +
+                                        ", entry=" + entryHist.get(entryHist.size() - 1) + ']');
 
-                        if (cctx != null && cctx.statisticsEnabled())
-                            cctx.cache().metrics0().onRebalanceKeyReceived();
+                                return; // Skip current partition.
+                            }
 
+                            if (cctx.statisticsEnabled())
+                                cctx.cache().metrics0().onRebalanceKeyReceived();
+                        }
 
                         if (!hasMore)
                             return;
@@ -957,16 +956,21 @@ public class GridDhtPartitionDemander {
 
                     GridCacheEntryInfo entry = infos.next();
 
-                    if (!preloadEntry(node, p, entry, topVer)) {
+                    if (cctx == null || entry.cacheId() != cctx.cacheId())
+                        cctx = grp.sharedGroup() ? grp.shared().cacheContext(entry.cacheId()) : grp.singleCacheContext();
+
+                    if (cctx == null)
+                        continue;
+                    else if (cctx.isNear())
+                        cctx = cctx.dhtCache().context();
+
+                    if (!preloadEntry(node, p, entry, topVer, cctx)) {
                         if (log.isTraceEnabled())
                             log.trace("Got entries for invalid partition during " +
                                 "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
 
                         return;
                     }
-
-                    if (cctx == null || entry.cacheId() != cctx.cacheId())
-                        cctx = grp.sharedGroup() ? grp.shared().cacheContext(entry.cacheId()) : grp.singleCacheContext();
 
                     if (cctx.statisticsEnabled())
                         cctx.cache().metrics0().onRebalanceKeyReceived();
@@ -985,6 +989,7 @@ public class GridDhtPartitionDemander {
      * @param p Partition id.
      * @param entry Preloaded entry.
      * @param topVer Topology version.
+     * @param cctx Cache context.
      * @return {@code False} if partition has become invalid during preloading.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
@@ -992,22 +997,16 @@ public class GridDhtPartitionDemander {
         ClusterNode from,
         int p,
         GridCacheEntryInfo entry,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        GridCacheContext cctx
     ) throws IgniteCheckedException {
         assert ctx.database().checkpointLockIsHeldByThread();
+        assert cctx != null && cctx.cacheId() == entry.cacheId();
 
         try {
             GridCacheEntryEx cached = null;
 
             try {
-                GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(entry.cacheId()) : grp.singleCacheContext();
-
-                if (cctx == null)
-                    return true;
-
-                if (cctx.isNear())
-                    cctx = cctx.dhtCache().context();
-
                 cached = cctx.cache().entryEx(entry.key());
 
                 if (log.isTraceEnabled())
@@ -1072,36 +1071,29 @@ public class GridDhtPartitionDemander {
     /**
      * Adds {@code entry} to partition {@code p}.
      *
+     * @param cctx Cache context.
      * @param from Node which sent entry.
-     * @param p Partition id.
      * @param history Mvcc entry history.
      * @param topVer Topology version.
+     * @param p Partition id.
      * @return {@code False} if partition has become invalid during preloading.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private boolean mvccPreloadEntry(
-        ClusterNode from,
-        int p,
-        List<GridCacheEntryInfo> history,
-        AffinityTopologyVersion topVer
+        GridCacheContext cctx, ClusterNode from,
+        List<GridCacheEntryInfo> history, AffinityTopologyVersion topVer, int p
     ) throws IgniteCheckedException {
         assert ctx.database().checkpointLockIsHeldByThread();
         assert !history.isEmpty();
 
         GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)history.get(0);
 
+        assert cctx != null && info.cacheId() == cctx.cacheId();
+
         try {
             GridCacheEntryEx cached = null;
 
             try {
-                GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
-
-                if (cctx == null)
-                    return true;
-
-                if (cctx.isNear())
-                    cctx = cctx.dhtCache().context();
-
                 cached = cctx.cache().entryEx(info.key());
 
                 if (log.isTraceEnabled())
