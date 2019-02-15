@@ -117,8 +117,6 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
 
             verify(loc);
 
-            //Should check a security context on the endpoint node through compute service
-            //because using streamer from receiver may be cause of system worker dead
             loc.compute(loc.cluster().forNodeId(endpoint)).broadcast(new IgniteRunnable() {
                 @Override public void run() {
                     verify(loc);

@@ -107,7 +107,8 @@ public interface IgniteSecurityProcessor {
     }
 
     /**
-     * @return True if IgniteSecurityProcessor is not no operation else false.
+     * @return True if IgniteSecurityProcessor is a plugin implementation,
+     * false if it's used a default NoOp implementation.
      */
     public boolean enabled();
 }

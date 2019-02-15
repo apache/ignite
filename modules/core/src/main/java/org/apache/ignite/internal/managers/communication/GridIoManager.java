@@ -1549,7 +1549,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener.
      * @param nodeId Node ID.
      * @param msg Message.
-     * @param secSubjId Security subject taht will be used to open a security session.
+     * @param secSubjId Security subject that will be used to open a security session.
      */
     private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg, UUID secSubjId) {
         Byte oldPlc = CUR_PLC.get();

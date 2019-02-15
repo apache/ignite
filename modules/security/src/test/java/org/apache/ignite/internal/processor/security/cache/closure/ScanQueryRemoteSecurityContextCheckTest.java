@@ -116,7 +116,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
      * Test query filter.
      */
     static class QueryFilter implements IgniteBiPredicate<Integer, Integer> {
-        /** Locale ignite. */
+        /** Local ignite. */
         @IgniteInstanceResource
         private Ignite loc;
 
@@ -155,7 +155,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
      * Test transformer.
      */
     static class Transformer implements IgniteClosure<Cache.Entry<Integer, Integer>, Integer> {
-        /** Locale ignite. */
+        /** Local ignite. */
         @IgniteInstanceResource
         private Ignite loc;
 

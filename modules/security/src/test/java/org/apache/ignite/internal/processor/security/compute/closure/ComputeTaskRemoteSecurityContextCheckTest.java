@@ -147,7 +147,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
         /** If true then run async. */
         private final boolean isAsync;
 
-        /** Locale ignite. */
+        /** Local ignite. */
         @IgniteInstanceResource
         protected Ignite loc;
 

@@ -115,7 +115,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
      * Closure for tests.
      */
     static class TestClosure implements IgniteBiPredicate<Integer, Integer> {
-        /** Locale ignite. */
+        /** Local ignite. */
         @IgniteInstanceResource
         private Ignite loc;
 
