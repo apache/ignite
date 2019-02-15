@@ -381,7 +381,6 @@ public class QueryParser {
                     twoStepQry = GridSqlQuerySplitter.split(
                         connMgr.connectionForThread().connection(newQry.getSchema()),
                         prepared,
-                        newQry.getArgs(),
                         newQry.isCollocated(),
                         newQry.isDistributedJoins(),
                         newQry.isEnforceJoinOrder(),
