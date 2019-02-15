@@ -895,7 +895,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testWaitPreviousTxAck() throws Exception {
         testSpi = true;
@@ -912,33 +911,18 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(1, 1);
             cache.put(2, 1);
-            cache.put(3, 1);
 
             tx.commit();
         }
 
         TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(ignite);
 
-        clientSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            /** */
-            boolean block = true;
-
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                if (block && msg instanceof MvccAckRequestTx) {
-                    block = false;
-
-                    return true;
-                }
-
-                return false;
-            }
-        });
+        clientSpi.blockMessages((node, msg) -> msg instanceof MvccAckRequestTx);
 
         IgniteInternalFuture<?> txFut1 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    cache.put(2, 2);
-                    cache.put(3, 2);
+                    cache.put(1, 2);
 
                     tx.commit();
                 }
@@ -950,24 +934,22 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         IgniteInternalFuture<?> txFut2 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    cache.put(1, 3);
                     cache.put(2, 3);
 
                     tx.commit();
                 }
 
-                // Should see changes mady by both tx1 and tx2.
-                Map<Object, Object> res = checkAndGetAll(false, cache, F.asSet(1, 2, 3), SCAN, GET);
+                // Should see changes made by both tx1 and tx2.
+                Map<Object, Object> res = checkAndGetAll(false, cache, F.asSet(1, 2), SCAN, GET);
 
-                assertEquals(3, res.get(1));
+                assertEquals(2, res.get(1));
                 assertEquals(3, res.get(2));
-                assertEquals(2, res.get(3));
 
                 return null;
             }
         });
 
-        clientSpi.waitForBlocked();
+        clientSpi.waitForBlocked(2);
 
         Thread.sleep(1000);
 
@@ -976,11 +958,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         txFut1.get();
         txFut2.get();
 
-        Map<Object, Object> res = checkAndGetAll(false, cache, F.asSet(1, 2, 3), SCAN, GET);
+        Map<Object, Object> res = checkAndGetAll(false, cache, F.asSet(1, 2), SCAN, GET);
 
-        assertEquals(3, res.get(1));
+        assertEquals(2, res.get(1));
         assertEquals(3, res.get(2));
-        assertEquals(2, res.get(3));
     }
 
     /**
