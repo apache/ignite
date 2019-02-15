@@ -1878,8 +1878,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                     catch (UnregisteredBinaryTypeException ex) {
                         if (ex.future() != null) {
+                            // Wait for the future that couldn't be processed because of
+                            // IgniteThread#isForbiddenToRequestBinaryMetadata flag being true. Usually this means
+                            // that awaiting for the future right there would lead to potential deadlock if
+                            // continuous queries are used in parallel with entry processor.
                             ex.future().get();
 
+                            // Retry and don't update current binary metadata, because it most likely already exists.
                             continue;
                         }
 

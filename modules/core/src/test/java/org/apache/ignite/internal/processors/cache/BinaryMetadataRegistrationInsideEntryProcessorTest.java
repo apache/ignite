@@ -100,7 +100,10 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
     }
 
     /**
-     * IGNITE-11313
+     * Continuously execute multiple EntryProcessors with having continuous queries in parallel.
+     * This used to lead to several deadlocks.
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void testContinuousQueryAndBinaryObjectBuilder() throws Exception {
@@ -122,11 +125,9 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
         AtomicInteger keyCntr = new AtomicInteger();
         AtomicInteger binaryTypeCntr = new AtomicInteger();
 
-        /**
-         *
-         */
+        /** */
         class MyEntryProcessor implements CacheEntryProcessor<Object, Object, Object> {
-            /** */
+            /** Cached int value retrieved from {@code binaryTypeCntr} variable. */
             private int i;
 
             /** */
