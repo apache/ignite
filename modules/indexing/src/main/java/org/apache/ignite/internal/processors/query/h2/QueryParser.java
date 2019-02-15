@@ -459,7 +459,8 @@ public class QueryParser {
                     if (mvccEnabled == null) {
                         mvccEnabled = curMvccEnabled;
 
-                        mvccCacheId = curCctx.cacheId();
+                        if (mvccEnabled)
+                            mvccCacheId = curCctx.cacheId();
 
                         cctx = curCctx;
                     }
