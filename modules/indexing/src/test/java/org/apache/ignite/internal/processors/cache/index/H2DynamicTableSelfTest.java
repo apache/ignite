@@ -94,7 +94,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     private static final String CACHE_NAME_BACKUPS = CACHE_NAME + "_backups";
 
     /** Name of the cache that has query parallelism = 7 in it configuration. */
-    private static final String CACHE_NAME_QUERY_PARALLELISM_7 = CACHE_NAME + "_query_parallelism";
+    private static final String CACHE_NAME_PARALLELISM_7 = CACHE_NAME + "_parallelism";
 
     /** Number of backups for backup test. */
     private static final int DFLT_BACKUPS = 2;
@@ -113,7 +113,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_BACKUPS).setBackups(DFLT_BACKUPS));
 
-        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_QUERY_PARALLELISM_7).setQueryParallelism(7));
+        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_PARALLELISM_7).setQueryParallelism(7));
     }
 
     /** {@inheritDoc} */
@@ -558,7 +558,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test query_parallelism WHITH create table command parameter.
+     * Test parallelism WITH create table command parameter.
      */
     @Test
     public void testQueryParallelism() {
@@ -566,21 +566,21 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         assertQueryParallelism("QP_DEFAULT", 1);
 
-        execute("CREATE TABLE QP_DEFAULT_EXPLICIT (id INT PRIMARY KEY, val INT) WITH \"query_parallelism = 1 \"");
+        execute("CREATE TABLE QP_DEFAULT_EXPLICIT (id INT PRIMARY KEY, val INT) WITH \"parallelism = 1 \"");
 
         assertQueryParallelism("QP_DEFAULT_EXPLICIT", 1);
 
-        execute("CREATE TABLE QP_CUSTOM (id INT PRIMARY KEY, val INT) WITH \"query_parallelism = 42 \"");
+        execute("CREATE TABLE QP_CUSTOM (id INT PRIMARY KEY, val INT) WITH \"parallelism = 42 \"");
 
         assertQueryParallelism("QP_CUSTOM", 42);
 
         execute("CREATE TABLE QP_DEFAULT_FROM_TEMPLATE (id INT PRIMARY KEY, val INT) " +
-            "WITH \"template = " + CACHE_NAME_QUERY_PARALLELISM_7 + " \"");
+            "WITH \"template = " + CACHE_NAME_PARALLELISM_7 + " \"");
 
         assertQueryParallelism("QP_DEFAULT_FROM_TEMPLATE", 7);
 
         execute("CREATE TABLE QP_OVERWRITE_TEMPLATE (id INT PRIMARY KEY, val INT) " +
-            "WITH \"query_parallelism = 42, template = " + CACHE_NAME_QUERY_PARALLELISM_7 + " \"");
+            "WITH \"parallelism = 42, template = " + CACHE_NAME_PARALLELISM_7 + " \"");
 
         assertQueryParallelism("QP_OVERWRITE_TEMPLATE", 42);
     }
@@ -715,24 +715,24 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Negative test that is trying to set incorrect query_parallelism value: empty, negative, zero or non-integer.
+     * Negative test that is trying to set incorrect parallelism value: empty, negative, zero or non-integer.
      */
     @Test
     public void testQueryParallelismNegative() {
-        assertCreateTableWithParamsThrows("QUERY_parallelism = 0",
-            "\"QUERY_PARALLELISM\" cannot be less or equal to zero: 0");
+        assertCreateTableWithParamsThrows("parallelism = 0",
+            "\"PARALLELISM\" cannot be less or equal to zero: 0");
 
-        assertCreateTableWithParamsThrows("QUERY_parallelism = -5",
-            "\"QUERY_PARALLELISM\" cannot be less or equal to zero: -5");
+        assertCreateTableWithParamsThrows("parallelism = -5",
+            "\"PARALLELISM\" cannot be less or equal to zero: -5");
 
-        assertCreateTableWithParamsThrows("QUERY_parallelism = 3.14",
-            "Parameter value must be an integer [name=QUERY_PARALLELISM, value=3.14]");
+        assertCreateTableWithParamsThrows("parallelism = 3.14",
+            "Parameter value must be an integer [name=PARALLELISM, value=3.14]");
 
-        assertCreateTableWithParamsThrows("QUERY_parallelism =",
-            "Parameter value cannot be empty: QUERY_PARALLELISM");
+        assertCreateTableWithParamsThrows("parallelism =",
+            "Parameter value cannot be empty: PARALLELISM");
 
-        assertCreateTableWithParamsThrows("QUERY_parallelism = Five please",
-            "Parameter value must be an integer [name=QUERY_PARALLELISM, value=Five please]");
+        assertCreateTableWithParamsThrows("parallelism = Five please",
+            "Parameter value must be an integer [name=PARALLELISM, value=Five please]");
     }
 
     /**

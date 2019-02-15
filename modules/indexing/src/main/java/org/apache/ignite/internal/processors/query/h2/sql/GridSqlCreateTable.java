@@ -89,7 +89,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
     private boolean encrypted;
 
     /** See {@link CacheConfiguration#getQueryParallelism()}. */
-    private Integer qryParallelism;
+    private Integer parallelism;
 
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
@@ -360,15 +360,15 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /**
      * Query parallelism value.
      */
-    @Nullable public Integer queryParallelism() {
-        return qryParallelism;
+    @Nullable public Integer parallelism() {
+        return parallelism;
     }
 
     /**
-     * @param qryParallelism new query parallelism value.
+     * @param parallelism new query parallelism value.
      */
-    public void queryParallelism(Integer qryParallelism) {
-        this.qryParallelism = qryParallelism;
+    public void parallelism(Integer parallelism) {
+        this.parallelism = parallelism;
     }
 
     /** {@inheritDoc} */

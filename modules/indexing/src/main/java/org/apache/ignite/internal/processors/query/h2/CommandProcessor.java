@@ -437,7 +437,7 @@ public class CommandProcessor {
 
                     ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheName(),
                         cmd.cacheGroup(), cmd.dataRegionName(), cmd.affinityKey(), cmd.atomicityMode(),
-                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists(), cmd.encrypted(), cmd.queryParallelism());
+                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists(), cmd.encrypted(), cmd.parallelism());
                 }
             }
             else if (cmdH2 instanceof GridSqlDropTable) {

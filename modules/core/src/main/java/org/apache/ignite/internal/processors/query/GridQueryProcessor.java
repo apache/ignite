@@ -1513,6 +1513,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param backups Backups.
      * @param ifNotExists Quietly ignore this command if table already exists.
      * @param encrypted Encrypted flag.
+     * @param qryParallelism query parallelism value for configuration of underlying cache.
      * @throws IgniteCheckedException If failed.
      */
     public void dynamicTableCreate(
