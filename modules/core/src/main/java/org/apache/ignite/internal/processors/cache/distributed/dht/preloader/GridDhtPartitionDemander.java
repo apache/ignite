@@ -912,6 +912,8 @@ public class GridDhtPartitionDemander {
                         if (cctx == null || cacheId != cctx.cacheId())
                             cctx = grp.sharedGroup() ? grp.shared().cacheContext(cacheId) : grp.singleCacheContext();
 
+                        assert cctx != null;
+
                         if (cctx != null && cctx.statisticsEnabled())
                             cctx.cache().metrics0().onRebalanceKeyReceived();
 
