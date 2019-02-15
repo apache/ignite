@@ -102,13 +102,16 @@ import javax.cache.CacheException;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
 
 /**
  * H2 utility methods.
  */
 public class H2Utils {
+    /** Dummy metadata for update result. */
+    public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
+        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
+
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
