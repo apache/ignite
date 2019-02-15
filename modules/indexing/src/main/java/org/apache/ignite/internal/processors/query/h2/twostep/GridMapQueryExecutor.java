@@ -297,13 +297,12 @@ public class GridMapQueryExecutor {
         final int[] parts = qryParts == null ? partsMap == null ? null : partsMap.get(ctx.localNodeId()) : qryParts;
 
         boolean distributedJoins = req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS);
-        boolean local = req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL);
+        boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
+        boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
+        boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
+        boolean lazy = (FORCE_LAZY && req.queries().size() == 1) || req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
 
-        final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
-        final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
-        final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
-        final boolean lazy = (FORCE_LAZY && req.queries().size() == 1) || req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
-        final Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
+        Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
 
         final List<Integer> cacheIds = req.caches();
 
@@ -393,7 +392,6 @@ public class GridMapQueryExecutor {
                     parts,
                     req.pageSize(),
                     distributedJoins,
-                    local,
                     enforceJoinOrder,
                     false, // Replicated is always false here (see condition above).
                     req.timeout(),
@@ -421,7 +419,6 @@ public class GridMapQueryExecutor {
                                 parts,
                                 req.pageSize(),
                                 distributedJoins,
-                                local,
                                 enforceJoinOrder,
                                 false,
                                 req.timeout(),
@@ -452,7 +449,6 @@ public class GridMapQueryExecutor {
             parts,
             req.pageSize(),
             distributedJoins,
-            local,
             enforceJoinOrder,
             replicated,
             req.timeout(),
@@ -477,8 +473,7 @@ public class GridMapQueryExecutor {
      * @param partsMap Partitions map for unstable topology.
      * @param parts Explicit partitions for current node.
      * @param pageSize Page size.
-     * @param distributeJoins Query distributed join mode.
-     * @param local Lcoal flag.
+     * @param distributedJoins Query distributed join mode.
      * @param lazy Streaming flag.
      * @param mvccSnapshot MVCC snapshot.
      * @param tx Transaction.
@@ -498,8 +493,7 @@ public class GridMapQueryExecutor {
         final Map<UUID, int[]> partsMap,
         final int[] parts,
         final int pageSize,
-        final boolean distributeJoins,
-        final boolean local,
+        final boolean distributedJoins,
         final boolean enforceJoinOrder,
         final boolean replicated,
         final int timeout,
@@ -537,8 +531,7 @@ public class GridMapQueryExecutor {
                         partsMap,
                         parts,
                         pageSize,
-                        distributeJoins,
-                        local,
+                        distributedJoins,
                         enforceJoinOrder,
                         replicated,
                         timeout,
@@ -618,9 +611,8 @@ public class GridMapQueryExecutor {
             // Prepare query context.
             DistributedJoinContext distributedJoinCtx = null;
 
-            if (distributeJoins && !replicated) {
+            if (distributedJoins && !replicated) {
                 distributedJoinCtx = new DistributedJoinContext(
-                    local,
                     topVer,
                     partsMap,
                     node.id(),
@@ -642,7 +634,7 @@ public class GridMapQueryExecutor {
 
             Connection conn = h2.connections().connectionForThread().connection(schemaName);
 
-            H2Utils.setupConnection(conn, distributeJoins, enforceJoinOrder);
+            H2Utils.setupConnection(conn, distributedJoins, enforceJoinOrder);
 
             qryCtxRegistry.setThreadLocal(qctx);
 

@@ -158,11 +158,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends AbstractIndexingCom
         populateDataIntoPerson();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return Cache.
      */

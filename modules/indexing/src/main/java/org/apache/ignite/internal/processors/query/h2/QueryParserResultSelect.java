@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.h2.command.Prepared;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -31,40 +31,57 @@ public class QueryParserResultSelect {
     /** Two-step query, or {@code} null if this result is for local query. */
     private final GridCacheTwoStepQuery twoStepQry;
 
+    /** Whether local split is needed. */
+    private final boolean locSplit;
+
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
-    private final List<GridQueryFieldMetadata> twoStepQryMeta;
+    private final List<GridQueryFieldMetadata> meta;
 
-    /** Prepared statement for local query. */
-    private final Prepared locPrepared;
-
+    /**
+     * Constructor.
+     *
+     * @param twoStepQry Distributed query plan.
+     * @param locSplit Whether local split is needed.
+     * @param meta Fields metadata.
+     */
     public QueryParserResultSelect(
-        GridCacheTwoStepQuery twoStepQry,
-        List<GridQueryFieldMetadata> twoStepQryMeta,
-        Prepared locPrepared
+        @Nullable GridCacheTwoStepQuery twoStepQry,
+        boolean locSplit,
+        List<GridQueryFieldMetadata> meta
     ) {
+        // Local split can be true only is there is a two-step plan.
+        assert twoStepQry == null && !locSplit || twoStepQry != null;
+
         this.twoStepQry = twoStepQry;
-        this.twoStepQryMeta = twoStepQryMeta;
-        this.locPrepared = locPrepared;
+        this.locSplit = locSplit;
+        this.meta = meta;
     }
 
     /**
      * @return Two-step query, or {@code} null if this result is for local query.
      */
-    public GridCacheTwoStepQuery twoStepQuery() {
+    @Nullable public GridCacheTwoStepQuery twoStepQuery() {
         return twoStepQry;
+    }
+
+    /**
+     * @return {@code True} if local query should be split.
+     */
+    public boolean localSplit() {
+        return locSplit;
     }
 
     /**
      * @return Two-step query metadata.
      */
-    public List<GridQueryFieldMetadata> twoStepQueryMeta() {
-        return twoStepQryMeta;
+    public List<GridQueryFieldMetadata> meta() {
+        return meta;
     }
 
     /**
-     * @return Prepared statement for local query.
+     * @return Whether split is needed for this query.
      */
-    public Prepared localPrepared() {
-        return locPrepared;
+    public boolean splitNeeded() {
+        return twoStepQry != null;
     }
 }
