@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processor.security;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
-import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -39,11 +39,9 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
     /**
      * Checks that current security context is valid and incriments invoke's counter.
-     *
-     * @param ignite Local node.
      */
-    public static void verify(Ignite ignite){
-        VERIFIER.verify((IgniteEx)ignite);
+    public static void verify(){
+        VERIFIER.verify((IgniteEx)Ignition.localIgnite());
     }
 
     /**

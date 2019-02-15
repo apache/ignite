@@ -113,13 +113,13 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
         /** {@inheritDoc} */
         @Override public void apply(IgniteCache<Integer, Integer> entries,
             Map.Entry<Integer, Integer> entry) {
-            IgniteEx loc = (IgniteEx)Ignition.localIgnite();
+            verify();
 
-            verify(loc);
+            IgniteEx loc = (IgniteEx)Ignition.localIgnite();
 
             loc.compute(loc.cluster().forNodeId(endpoint)).broadcast(new IgniteRunnable() {
                 @Override public void run() {
-                    verify(loc);
+                    verify();
                 }
             });
         }

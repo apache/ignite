@@ -137,7 +137,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
         /** {@inheritDoc} */
         @Override public boolean apply(Integer k, Integer v) {
             if (node.equals(loc.name())) {
-                verify(loc);
+                verify();
 
                 if (endpoint != null) {
                     loc.<Integer, Integer>cache(TRANSITION_LOAD_CACHE).loadCache(

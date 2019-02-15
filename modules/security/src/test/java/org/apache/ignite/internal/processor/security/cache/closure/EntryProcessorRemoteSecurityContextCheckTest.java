@@ -25,6 +25,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -156,14 +157,14 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
         /** {@inheritDoc} */
         @Override public Object process(MutableEntry<Integer, Integer> entry,
             Object... objects) throws EntryProcessorException {
-            IgniteEx loc = (IgniteEx)Ignition.localIgnite();
-
-            verify(loc);
+            verify();
 
             if (endpointId != null) {
+                IgniteEx loc = (IgniteEx)Ignition.localIgnite();
+
                 loc.compute(loc.cluster().forNodeId(endpointId))
                     .broadcast(
-                        () -> verify(Ignition.localIgnite())
+                        AbstractRemoteSecurityContextCheckTest::verify
                     );
             }
 

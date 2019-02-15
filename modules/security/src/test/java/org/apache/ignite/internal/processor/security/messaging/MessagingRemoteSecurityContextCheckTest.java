@@ -118,7 +118,7 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
                     new IgniteBiPredicate<UUID, Object>() {
                         @Override public boolean apply(UUID uuid, Object o) {
                             try {
-                                verify(Ignition.localIgnite());
+                                verify();
 
                                 return true;
                             }

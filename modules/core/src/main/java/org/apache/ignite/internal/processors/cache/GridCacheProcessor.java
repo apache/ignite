@@ -4306,11 +4306,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cfg Cache configuration.
      */
     private void authorizeCacheCreate(CacheConfiguration cfg) {
-        ctx.security().authorize(cfg.getName(), SecurityPermission.CACHE_CREATE);
+        if(cfg != null) {
+            ctx.security().authorize(cfg.getName(), SecurityPermission.CACHE_CREATE);
 
-        if (cfg != null && cfg.isOnheapCacheEnabled() &&
-            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE))
-            throw new SecurityException("Authorization failed for enabling on-heap cache.");
+            if (cfg.isOnheapCacheEnabled() &&
+                IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE))
+                throw new SecurityException("Authorization failed for enabling on-heap cache.");
+        }
     }
 
     /**

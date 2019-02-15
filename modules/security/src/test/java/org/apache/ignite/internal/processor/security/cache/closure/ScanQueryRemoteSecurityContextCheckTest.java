@@ -138,7 +138,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
         /** {@inheritDoc} */
         @Override public boolean apply(Integer s, Integer i) {
             if (node.equals(loc.name())) {
-                verify(loc);
+                verify();
 
                 if (endpoint != null) {
                     loc.cache(CACHE_NAME).query(
@@ -177,7 +177,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
         /** {@inheritDoc} */
         @Override public Integer apply(Cache.Entry<Integer, Integer> entry) {
             if (node.equals(loc.name())) {
-                verify(loc);
+                verify();
 
                 if (endpoint != null) {
                     loc.cache(CACHE_NAME).query(

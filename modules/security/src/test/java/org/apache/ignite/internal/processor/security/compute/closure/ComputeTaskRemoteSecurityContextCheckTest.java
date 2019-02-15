@@ -185,7 +185,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
                         }
 
                         @Override public Object execute() throws IgniteException {
-                            verify(loc);
+                            verify();
 
                             if (!endpoints.isEmpty()) {
                                 if (isAsync)

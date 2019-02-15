@@ -233,11 +233,11 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
          * Main logic of CommonClosure.
          */
         private void body() {
-            Ignite ignite = Ignition.localIgnite();
-
-            verify(ignite);
+            verify();
 
             if (!endpoints.isEmpty()) {
+                Ignite ignite = Ignition.localIgnite();
+
                 if (isBroadcast)
                     transit(compute(ignite, endpoints));
                 else {

@@ -147,11 +147,11 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
 
         /** {@inheritDoc} */
         @Override public void run() {
-            Ignite ignite = Ignition.localIgnite();
-
-            verify(ignite);
+            verify();
 
             if (!endpoints.isEmpty()) {
+                Ignite ignite = Ignition.localIgnite();
+
                 try {
                     for (UUID nodeId : endpoints) {
                         ignite.executorService(ignite.cluster().forNodeId(nodeId))
