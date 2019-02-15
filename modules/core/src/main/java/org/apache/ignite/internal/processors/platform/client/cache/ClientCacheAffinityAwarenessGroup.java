@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.lang.IgnitePredicate;
 
@@ -40,6 +42,9 @@ import org.apache.ignite.lang.IgnitePredicate;
  */
 class ClientCacheAffinityAwarenessGroup
 {
+    /** Binary processor. */
+    CacheObjectBinaryProcessorImpl proc;
+
     /** Flag that shows whether mapping is applicable for affinity awareness optimisation. */
     private final boolean applicable;
 
@@ -49,8 +54,8 @@ class ClientCacheAffinityAwarenessGroup
     /** IDs of the groups of the associated caches. */
     private HashSet<Integer> cacheGroupIds;
 
-    /** IDs of the associated caches. */
-    private HashSet<Integer> cacheIds;
+    /** Descriptor of the associated caches. */
+    private HashMap<Integer, DynamicCacheDescriptor> cacheDescs;
 
     /**
      * @param ctx Connection context.
@@ -59,12 +64,13 @@ class ClientCacheAffinityAwarenessGroup
      */
     public ClientCacheAffinityAwarenessGroup(ClientConnectionContext ctx, DynamicCacheDescriptor cacheDesc,
         AffinityTopologyVersion affVer) {
+        proc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
 
         applicable = isApplicable(cacheDesc);
         partitionsMap = getPartitionsMap(ctx, cacheDesc, affVer);
 
-        cacheIds = new HashSet<>();
-        cacheIds.add(cacheDesc.cacheId());
+        cacheDescs = new HashMap<>();
+        cacheDescs.put(cacheDesc.cacheId(), cacheDesc);
 
         cacheGroupIds = new HashSet<>();
         cacheGroupIds.add(cacheDesc.groupId());
@@ -77,7 +83,7 @@ class ClientCacheAffinityAwarenessGroup
      */
     public boolean tryMerge(ClientCacheAffinityAwarenessGroup another) {
         if (isCompatible(another)) {
-            cacheIds.addAll(another.cacheIds);
+            cacheDescs.putAll(another.cacheDescs);
             cacheGroupIds.addAll(another.cacheGroupIds);
 
             return true;
@@ -140,10 +146,27 @@ class ClientCacheAffinityAwarenessGroup
      * @param writer Writer.
      */
     public void write(BinaryRawWriter writer) {
-        writer.writeInt(cacheIds.size());
+        writer.writeInt(cacheDescs.size());
 
-        for (int id: cacheIds)
-            writer.writeInt(id);
+        for (DynamicCacheDescriptor desc: cacheDescs.values()) {
+            writer.writeInt(desc.cacheId());
+
+            if (!applicable)
+                continue;
+
+            CacheConfiguration ccfg = desc.cacheConfiguration();
+            CacheKeyConfiguration[] keyCfgs = ccfg.getKeyConfiguration();
+
+            writer.writeInt(keyCfgs.length);
+
+            for (CacheKeyConfiguration keyCfg : keyCfgs) {
+                int keyTypeId = proc.typeId(keyCfg.getTypeName());
+                int affinityKeyFieldId = proc.binaryContext().fieldId(keyTypeId, keyCfg.getAffinityKeyFieldName());
+
+                writer.writeInt(keyTypeId);
+                writer.writeInt(affinityKeyFieldId);
+            }
+        }
 
         writer.writeBoolean(applicable);
 
