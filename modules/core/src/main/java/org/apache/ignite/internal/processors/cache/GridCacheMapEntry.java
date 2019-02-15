@@ -2245,8 +2245,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         lockListenerReadLock();
         lockEntry();
-        // Not needed actually.
-//        IgniteThread.onForbidBinaryMetadataRequestSectionEntered();
 
         try {
             checkObsolete();
@@ -2503,7 +2501,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
         }
         finally {
-//            IgniteThread.onForbidBinaryMetadataRequestSectionLeft();
             unlockEntry();
             unlockListenerReadLock();
         }

@@ -550,14 +550,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 return;
             }
 
-            if (failIfUnregistered) {
-                throw new UnregisteredBinaryTypeException(
-                    "Attempted to update binary metadata inside a critical synchronization block (will be " +
-                        "automatically retried). This exception must not be wrapped to any other exception class. " +
-                        "If you encounter this exception outside of EntryProcessor, please report to Apache Ignite " +
-                        "dev-list.",
-                    typeId, mergedMeta);
-            }
+            if (failIfUnregistered)
+                throw new UnregisteredBinaryTypeException(typeId, mergedMeta);
 
             long t0 = System.nanoTime();
 

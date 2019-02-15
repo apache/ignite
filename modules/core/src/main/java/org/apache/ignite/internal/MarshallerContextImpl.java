@@ -277,7 +277,10 @@ public class MarshallerContextImpl implements MarshallerContext {
                 if (transport.stopping())
                     return false;
 
-                IgniteInternalFuture<MappingExchangeResult> fut = transport.awaitMappingAcceptance(new MarshallerMappingItem(platformId, typeId, clsName), cache);
+                MarshallerMappingItem item = new MarshallerMappingItem(platformId, typeId, clsName);
+
+                GridFutureAdapter<MappingExchangeResult> fut = transport.awaitMappingAcceptance(item, cache);
+
                 MappingExchangeResult res = fut.get();
 
                 return convertXchRes(res);
@@ -287,7 +290,10 @@ public class MarshallerContextImpl implements MarshallerContext {
             if (transport.stopping())
                 return false;
 
-            GridFutureAdapter<MappingExchangeResult> fut = transport.proposeMapping(new MarshallerMappingItem(platformId, typeId, clsName), cache);
+            MarshallerMappingItem item = new MarshallerMappingItem(platformId, typeId, clsName);
+
+            GridFutureAdapter<MappingExchangeResult> fut = transport.proposeMapping(item, cache);
+
             if (!IgniteThread.currentThreadCanRequestBinaryMetadata())
                 throw new UnregisteredBinaryTypeException(typeId, null, fut);
 
