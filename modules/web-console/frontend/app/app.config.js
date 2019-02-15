@@ -47,7 +47,6 @@ igniteConsoleCfg.config(['$animateProvider', ($animateProvider) => {
 // AngularStrap modal popup configuration.
 igniteConsoleCfg.config(['$modalProvider', ($modalProvider) => {
     Object.assign($modalProvider.defaults, {
-        animation: 'am-fade-and-scale',
         placement: 'center',
         html: true
     });

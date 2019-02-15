@@ -1654,6 +1654,10 @@ th[st-sort] {
     }
 }
 
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
 .panel-tip-container {
     display: inline-block;
 }
