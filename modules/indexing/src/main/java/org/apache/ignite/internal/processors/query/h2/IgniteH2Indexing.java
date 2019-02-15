@@ -115,11 +115,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
@@ -160,7 +157,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
-import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.table.IndexColumn;
@@ -174,9 +170,12 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.request
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
-import static org.apache.ignite.internal.processors.query.h2.H2Utils.*;
-import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_CACHE_ID;
-import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_STATE;
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.bindParameters;
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.validateTypeDescriptor;
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.zeroCursor;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 
 /**
@@ -515,9 +514,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             int opTimeout = qryTimeout;
 
             if (mvccEnabled) {
-                if (mvccTracker == null)
-                    // TODO: Remove the whole method!
-                    mvccTracker = mvccTracker(stmt, startTx);
+                if (mvccTracker == null) {
+                    Integer mvccCacheId = select.mvccCacheId();
+
+                    if (mvccCacheId != null) {
+                        GridCacheContext mvccCacheCtx = ctx.cache().context().cacheContext(select.mvccCacheId());
+
+                        if (mvccCacheCtx == null)
+                            throw new IgniteCheckedException("Cache has been stopped concurrently [cacheId=" +
+                                mvccCacheId + ']');
+
+                        mvccTracker = MvccUtils.mvccTracker(mvccCacheCtx, startTx);
+                    }
+                }
 
                 if (mvccTracker != null) {
                     mvccSnapshot = mvccTracker.snapshot();
@@ -1071,99 +1080,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         cursor.fieldsMeta(res.metaData());
 
         return cursor;
-    }
-
-    /**
-     * Initialises MVCC filter and returns MVCC query tracker if needed.
-     * @param stmt Prepared statement.
-     * @param startTx Start transaction flag.
-     * @return MVCC query tracker or {@code null} if MVCC is disabled for involved caches.
-     */
-    private MvccQueryTracker mvccTracker(PreparedStatement stmt, boolean startTx) throws IgniteCheckedException {
-        boolean mvccEnabled;
-
-        GridCacheContext mvccCacheCtx = null;
-
-        try {
-            if (stmt.isWrapperFor(PreparedStatementEx.class)) {
-                PreparedStatementEx stmtEx = stmt.unwrap(PreparedStatementEx.class);
-
-                Boolean mvccState = stmtEx.meta(MVCC_STATE);
-
-                mvccEnabled = mvccState != null ? mvccState : checkMvcc(stmt);
-
-                if (mvccEnabled) {
-                    Integer cacheId = stmtEx.meta(MVCC_CACHE_ID);
-
-                    assert cacheId != null;
-
-                    mvccCacheCtx = ctx.cache().context().cacheContext(cacheId);
-
-                    assert mvccCacheCtx != null;
-                }
-            }
-            else
-                mvccEnabled = checkMvcc(stmt);
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
-        }
-
-        assert !mvccEnabled || mvccCacheCtx != null;
-
-        return mvccEnabled ? MvccUtils.mvccTracker(mvccCacheCtx, startTx) : null;
-    }
-
-    /**
-     * Checks if statement uses MVCC caches. If it does, additional metadata is added to statement.
-     *
-     * @param stmt Statement to check.
-     * @return {@code True} if there MVCC cache involved in statement.
-     * @throws SQLException If parser failed.
-     */
-    private static Boolean checkMvcc(PreparedStatement stmt) throws SQLException {
-        GridSqlQueryParser parser = new GridSqlQueryParser(false);
-
-        parser.parse(GridSqlQueryParser.prepared(stmt));
-
-        Boolean mvccEnabled = null;
-        Integer mvccCacheId = null;
-        GridCacheContext ctx0 = null;
-
-        for (Object o : parser.objectsMap().values()) {
-            if (o instanceof GridSqlAlias)
-                o = GridSqlAlias.unwrap((GridSqlAst) o);
-            if (o instanceof GridSqlTable && ((GridSqlTable) o).dataTable() != null) {
-                GridCacheContext cctx = ((GridSqlTable)o).dataTable().cacheContext();
-
-                assert cctx != null;
-
-                if (mvccEnabled == null) {
-                    mvccEnabled = cctx.mvccEnabled();
-                    mvccCacheId = cctx.cacheId();
-                    ctx0 = cctx;
-                }
-                else if (mvccEnabled != cctx.mvccEnabled())
-                    MvccUtils.throwAtomicityModesMismatchException(ctx0.config(), cctx.config());
-            }
-        }
-
-        if (mvccEnabled == null)
-            return false;
-
-        // Remember mvccEnabled flag to avoid further additional parsing if statement obtained from the statement cache.
-        if (stmt.isWrapperFor(PreparedStatementEx.class)) {
-            PreparedStatementEx stmtEx = stmt.unwrap(PreparedStatementEx.class);
-
-            if (mvccEnabled) {
-                stmtEx.putMeta(MVCC_CACHE_ID, mvccCacheId);
-                stmtEx.putMeta(MVCC_STATE, Boolean.TRUE);
-            }
-            else
-                stmtEx.putMeta(MVCC_STATE, FALSE);
-        }
-
-        return mvccEnabled;
     }
 
     /**

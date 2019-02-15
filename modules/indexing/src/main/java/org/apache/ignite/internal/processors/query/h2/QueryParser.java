@@ -34,10 +34,13 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.SqlStrictParseException;
@@ -66,6 +69,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -339,6 +343,7 @@ public class QueryParser {
         GridSqlStatement stmt0 = parser.parse(prepared);
 
         List<Integer> cacheIds = parser.cacheIds();
+        Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
 
         if (!loc) {
             if (parser.isLocalQuery())
@@ -380,9 +385,9 @@ public class QueryParser {
             QueryParserResultSelect select = new QueryParserResultSelect(
                 stmt0,
                 twoStepQry,
-                locSplit,
                 meta,
                 cacheIds,
+                mvccCacheId,
                 forUpdate
             );
 
@@ -401,12 +406,44 @@ public class QueryParser {
     }
 
     /**
+     * Get ID of the first MVCC cache for SELECT.
+     *
+     * @param objMap Object map.
+     * @return ID of the first MVCC cache or {@code null} if no MVCC caches invloved.
+     */
+    private Integer mvccCacheIdForSelect(Map<Object, Object> objMap) {
+        Boolean mvccEnabled = null;
+        Integer mvccCacheId = null;
+        GridCacheContext ctx0 = null;
+
+        for (Object o : objMap.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst) o);
+            if (o instanceof GridSqlTable && ((GridSqlTable) o).dataTable() != null) {
+                GridCacheContext cctx = ((GridSqlTable)o).dataTable().cacheContext();
+
+                assert cctx != null;
+
+                if (mvccEnabled == null) {
+                    mvccEnabled = cctx.mvccEnabled();
+                    mvccCacheId = cctx.cacheId();
+                    ctx0 = cctx;
+                }
+                else if (mvccEnabled != cctx.mvccEnabled())
+                    MvccUtils.throwAtomicityModesMismatchException(ctx0.config(), cctx.config());
+            }
+        }
+
+        return mvccCacheId;
+    }
+
+    /**
      * Prepare DML statement.
      *
      * @param prepared Prepared.
      * @return Statement.
      */
-    public QueryParserResultDml prepareDmlStatement(Prepared prepared) {
+    private QueryParserResultDml prepareDmlStatement(Prepared prepared) {
         // Prepare AST.
         GridSqlQueryParser parser = new GridSqlQueryParser(false);
 

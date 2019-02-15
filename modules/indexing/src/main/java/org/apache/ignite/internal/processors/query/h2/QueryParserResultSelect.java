@@ -35,14 +35,14 @@ public class QueryParserResultSelect {
     /** Two-step query, or {@code} null if this result is for local query. */
     private final GridCacheTwoStepQuery twoStepQry;
 
-    /** Whether local split is needed. */
-    private final boolean locSplit;
-
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> meta;
 
     /** Involved cache IDs. */
     private final List<Integer> cacheIds;
+
+    /** ID of the first MVCC cache. */
+    private final Integer mvccCacheId;
 
     /** FOR UPDATE flag. */
     private final boolean forUpdate;
@@ -52,27 +52,24 @@ public class QueryParserResultSelect {
      *
      * @param stmt Statement.
      * @param twoStepQry Distributed query plan.
-     * @param locSplit Whether local split is needed.
      * @param meta Fields metadata.
      * @param cacheIds Cache IDs.
+     * @param mvccCacheId ID of the first MVCC cache.
      * @param forUpdate Whether this is FOR UPDATE flag.
      */
     public QueryParserResultSelect(
         GridSqlStatement stmt,
         @Nullable GridCacheTwoStepQuery twoStepQry,
-        boolean locSplit,
         List<GridQueryFieldMetadata> meta,
         List<Integer> cacheIds,
+        @Nullable Integer mvccCacheId,
         boolean forUpdate
     ) {
-        // Local split can be true only is there is a two-step plan.
-        assert twoStepQry == null && !locSplit || twoStepQry != null;
-
         this.stmt = stmt;
         this.twoStepQry = twoStepQry;
-        this.locSplit = locSplit;
         this.meta = meta;
         this.cacheIds = cacheIds;
+        this.mvccCacheId = mvccCacheId;
         this.forUpdate = forUpdate;
     }
 
@@ -88,13 +85,6 @@ public class QueryParserResultSelect {
      */
     @Nullable public GridCacheTwoStepQuery twoStepQuery() {
         return twoStepQry;
-    }
-
-    /**
-     * @return {@code True} if local query should be split.
-     */
-    public boolean localSplit() {
-        return locSplit;
     }
 
     /**
@@ -116,6 +106,20 @@ public class QueryParserResultSelect {
      */
     public List<Integer> cacheIds() {
         return cacheIds;
+    }
+
+    /**
+     * @return ID of the first MVCC cache.
+     */
+    public Integer mvccCacheId() {
+        return mvccCacheId;
+    }
+
+    /**
+     * @return Whether this is a SELECT for MVCC caches.
+     */
+    public boolean mvccEnabled() {
+        return mvccCacheId != null;
     }
 
     /**
