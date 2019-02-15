@@ -140,9 +140,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Protocol version. */
     private final ClientListenerProtocolVersion protocolVer;
 
-    /** Data page scan support for query execution. */
-    private @Nullable final Boolean dataPageScan;
-
     /** Authentication context */
     private AuthorizationContext actx;
 
@@ -203,7 +200,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate
+            skipReducerOnUpdate,
+            dataPageScan
         );
 
         this.busyLock = busyLock;
@@ -212,7 +210,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.nestedTxMode = nestedTxMode;
         this.protocolVer = protocolVer;
         this.actx = actx;
-        this.dataPageScan = dataPageScan;
 
         log = ctx.log(getClass());
 
@@ -563,7 +560,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setLazy(cliCtx.isLazy());
             qry.setNestedTxMode(nestedTxMode);
             qry.setAutoCommit(req.autoCommit());
-            qry.setDataPageScanEnabled(dataPageScan);
+            qry.setDataPageScanEnabled(cliCtx.isDataPageScan());
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
@@ -877,7 +874,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry.setLazy(cliCtx.isLazy());
                     qry.setNestedTxMode(nestedTxMode);
                     qry.setAutoCommit(req.autoCommit());
-                    qry.setDataPageScanEnabled(dataPageScan);
+                    qry.setDataPageScanEnabled(cliCtx.isDataPageScan());
 
                     qry.setSchema(schemaName);
                 }

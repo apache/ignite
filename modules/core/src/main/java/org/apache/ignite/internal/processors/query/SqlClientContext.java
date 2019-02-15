@@ -28,6 +28,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Container for connection properties passed by various drivers (JDBC, ODBC drivers) having notion of an
@@ -56,6 +57,9 @@ public class SqlClientContext implements AutoCloseable {
 
     /** Skip reducer on update flag. */
     private final boolean skipReducerOnUpdate;
+
+    /** Data page scan support for query execution. */
+    private final @Nullable Boolean dataPageScan;
 
     /** Monitor. */
     private final Object mux = new Object();
@@ -103,7 +107,8 @@ public class SqlClientContext implements AutoCloseable {
      */
     public SqlClientContext(GridKernalContext ctx, Factory<GridWorker> orderedBatchWorkerFactory,
         boolean distributedJoins, boolean enforceJoinOrder,
-        boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate) {
+        boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate,
+        @Nullable Boolean dataPageScan) {
         this.ctx = ctx;
         this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
         this.distributedJoins = distributedJoins;
@@ -112,6 +117,7 @@ public class SqlClientContext implements AutoCloseable {
         this.replicatedOnly = replicatedOnly;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
+        this.dataPageScan = dataPageScan;
 
         log = ctx.log(SqlClientContext.class.getName());
     }
@@ -211,6 +217,13 @@ public class SqlClientContext implements AutoCloseable {
      */
     public boolean isSkipReducerOnUpdate() {
         return skipReducerOnUpdate;
+    }
+
+    /**
+     * @return data page scan support or {@code null} if not set.
+     */
+    public @Nullable Boolean isDataPageScan() {
+        return dataPageScan;
     }
 
     /**
