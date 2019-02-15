@@ -1,4 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o pipefail
+set -o errtrace
+set -o functrace
+
 #
 #                   GridGain Community Edition Licensing
 #                   Copyright 2019 GridGain Systems, Inc.
@@ -40,7 +46,7 @@
 #
 # Import common functions.
 #
-if [ "${IGNITE_HOME}" = "" ];
+if [ "${IGNITE_HOME:-}" = "" ];
     then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
     else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
@@ -62,7 +68,7 @@ checkJava
 #
 setIgniteHome
 
-if [ "${DEFAULT_CONFIG}" == "" ]; then
+if [ "${DEFAULT_CONFIG:-}" == "" ]; then
     DEFAULT_CONFIG=config/default-config.xml
 fi
 
@@ -82,7 +88,7 @@ RESTART_SUCCESS_OPT="-DIGNITE_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
 
-if [ "${DOCK_OPTS}" == "" ]; then
+if [ "${DOCK_OPTS:-}" == "" ]; then
     DOCK_OPTS="-Xdock:name=Ignite Node"
 fi
 
@@ -91,7 +97,7 @@ fi
 #
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
-if [ -z "$JVM_OPTS" ] ; then
+if [ -z "${JVM_OPTS:-}" ] ; then
     JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m"
 fi
 
@@ -120,7 +126,7 @@ ENABLE_ASSERTIONS="1"
 #
 # Set '-ea' options if assertions are enabled.
 #
-if [ "${ENABLE_ASSERTIONS}" = "1" ]; then
+if [ "${ENABLE_ASSERTIONS:-}" = "1" ]; then
     JVM_OPTS="${JVM_OPTS} -ea"
 fi
 
@@ -175,12 +181,12 @@ while [ "${ERRORCODE}" -ne "130" ]
 do
     case $osname in
         Darwin*)
-            "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}"  \
+            "$JAVA" ${JVM_OPTS:-} ${QUIET:-} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}"  \
              -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-             -DIGNITE_PROG_NAME="$0" -cp "${CP}" ${MAIN_CLASS} "${CONFIG}" "$@"
+             -DIGNITE_PROG_NAME="$0" -cp "${CP}" ${MAIN_CLASS} "${CONFIG:-}" "$@"
         ;;
         *)
-            "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" \
+            "$JAVA" ${JVM_OPTS:-} ${QUIET:-} "${RESTART_SUCCESS_OPT}" \
              -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
              -DIGNITE_PROG_NAME="$0" -cp "${CP}" ${MAIN_CLASS} "$@"
         ;;

@@ -1,4 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o pipefail
+set -o errtrace
+set -o functrace
+
 #
 #                   GridGain Community Edition Licensing
 #                   Copyright 2019 GridGain Systems, Inc.
@@ -40,7 +46,7 @@
 #
 # Import common functions.
 #
-if [ "${IGNITE_HOME}" = "" ];
+if [ "${IGNITE_HOME:-}" = "" ];
     then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
     else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
@@ -67,7 +73,7 @@ setIgniteHome
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
 
-JDBCLINK="jdbc:ignite:thin://${HOST_AND_PORT}${SCHEMA_DELIMITER}${SCHEMA}${PARAMS}"
+JDBCLINK="jdbc:ignite:thin://${HOST_AND_PORT:-}${SCHEMA_DELIMITER:-}${SCHEMA:-}${PARAMS:-}"
 
 CP="${IGNITE_LIBS}"
 
