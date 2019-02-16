@@ -56,7 +56,7 @@ public class SplitterUtils {
 
     /**
      * @param qry Select.
-     * @param paramsCnt Number of parameters..
+     * @param paramsCnt Number of parameters.
      * @param paramIdxs Parameter indexes.
      */
     public static void findParamsQuery(GridSqlQuery qry, int paramsCnt, TreeSet<Integer> paramIdxs) {

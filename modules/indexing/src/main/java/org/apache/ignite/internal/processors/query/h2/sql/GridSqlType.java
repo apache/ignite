@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.expression.Expression;
 import org.h2.table.Column;
@@ -77,7 +78,9 @@ public final class GridSqlType {
      * @param displaySize Display size.
      * @param sql SQL definition of the type.
      */
-    public GridSqlType(int type, int scale, long precision, int displaySize, String sql) {
+    private GridSqlType(int type, int scale, long precision, int displaySize, String sql) {
+        assert !F.isEmpty(sql) || type == Value.UNKNOWN || type == Value.RESULT_SET;
+
         this.type = type;
         this.scale = scale;
         this.precision = precision;

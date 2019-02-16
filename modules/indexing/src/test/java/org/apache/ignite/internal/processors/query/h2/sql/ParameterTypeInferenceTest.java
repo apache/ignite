@@ -92,17 +92,8 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInferenceLocal() {
-        List<Object[]> argss = new ArrayList<>();
-
-        argss.add(new Object[] { null });
-        argss.add(new Object[] { "STRING" });
-        argss.add(new Object[] { 1 });
-        argss.add(new Object[] { 1L });
-        argss.add(new Object[] { new BigDecimal("12.12") });
-        argss.add(new Object[] { UUID.randomUUID() });
-
-        check("SELECT ? FROM cache", true, argss);
-        check("SELECT ? FROM cache ORDER BY val", true, argss);
+        check("SELECT ? FROM cache", true);
+        check("SELECT ? FROM cache ORDER BY val", true);
     }
 
     /**
@@ -110,16 +101,7 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInferenceNoReduce() {
-        List<Object[]> argss = new ArrayList<>();
-
-        argss.add(new Object[] { null });
-        argss.add(new Object[] { "STRING" });
-        argss.add(new Object[] { 1 });
-        argss.add(new Object[] { 1L });
-        argss.add(new Object[] { new BigDecimal("12.12") });
-        argss.add(new Object[] { UUID.randomUUID() });
-
-        check("SELECT ? FROM cache", false, argss);
+        check("SELECT ? FROM cache", false);
     }
 
     /**
@@ -127,6 +109,16 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInferenceReduce() {
+        check("SELECT ? FROM cache ORDER BY val", false);
+    }
+
+    /**
+     * Execute query.
+     *
+     * @param qry Query.
+     * @param loc Local flag.
+     */
+    private void check(String qry, boolean loc) {
         List<Object[]> argss = new ArrayList<>();
 
         argss.add(new Object[] { null });
@@ -136,17 +128,6 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
         argss.add(new Object[] { new BigDecimal("12.12") });
         argss.add(new Object[] { UUID.randomUUID() });
 
-        check("SELECT ? FROM cache ORDER BY val", false, argss);
-    }
-
-    /**
-     * Execute query.
-     *
-     * @param qry Query.
-     * @param loc Local flag.
-     * @param argss Arugments to be applied in different order.
-     */
-    private void check(String qry, boolean loc, List<Object[]> argss) {
         clearParserCache();
 
         for (int i = 0; i < argss.size(); i++) {

@@ -599,7 +599,7 @@ public class GridReduceQueryExecutor {
                     ReduceTable tbl;
 
                     try {
-                        tbl = createMergeTable(r.connection(), mapQry, qry.explain(), params);
+                        tbl = createMergeTable(r.connection(), mapQry, qry.explain());
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -1151,7 +1151,7 @@ public class GridReduceQueryExecutor {
         int tblIdx = 0;
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
-            ReduceTable tbl = createMergeTable(c, mapQry, false, params);
+            ReduceTable tbl = createMergeTable(c, mapQry, false);
 
             fakeTable(c, tblIdx++).innerTable(tbl);
         }
@@ -1246,12 +1246,11 @@ public class GridReduceQueryExecutor {
      * @param conn Connection.
      * @param qry Query.
      * @param explain Explain.
-     * @param params Parameters.
      * @return Table.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private ReduceTable createMergeTable(JdbcConnection conn, GridCacheSqlQuery qry, boolean explain, Object[] params)
+    private ReduceTable createMergeTable(JdbcConnection conn, GridCacheSqlQuery qry, boolean explain)
         throws IgniteCheckedException {
         try {
             Session ses = (Session)conn.getSession();
