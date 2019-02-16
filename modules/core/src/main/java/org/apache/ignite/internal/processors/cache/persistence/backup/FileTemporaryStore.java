@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.backup;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.util.HashSet;
@@ -27,8 +28,12 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
@@ -38,6 +43,9 @@ public class FileTemporaryStore implements TemporaryStore {
 
     /** */
     private final FileIOFactory factory;
+
+    /** */
+    private final int pageSize;
 
     /** */
     private final Set<Long> writtenPagesCount = new HashSet<>();
@@ -55,9 +63,10 @@ public class FileTemporaryStore implements TemporaryStore {
      * @param file File to store.
      * @param factory Facotry.
      */
-    public FileTemporaryStore(File file, FileIOFactory factory) {
+    public FileTemporaryStore(File file, FileIOFactory factory, int pageSize) {
         this.file = file;
         this.factory = factory;
+        this.pageSize = pageSize;
     }
 
     /**
@@ -113,8 +122,7 @@ public class FileTemporaryStore implements TemporaryStore {
 
     /** {@inheritDoc} */
     @Override public void read(ByteBuffer pageBuf) throws IgniteCheckedException {
-        init();
-
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -129,8 +137,28 @@ public class FileTemporaryStore implements TemporaryStore {
         try {
             if (writtenPagesCount.add(pageId)) {
                 try {
+                    assert pageBuf.position() == 0;
+                    assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
+                        + " should be same with " + ByteOrder.nativeOrder();
+                    assert pageBuf.limit() == pageSize : pageBuf.limit();
+                    assert PageIdUtils.flag(pageId) == PageMemory.FLAG_DATA;
+
+                    int crc = PageIO.getCrc(pageBuf);
+                    int crc32 = FastCrc.calcCrc(pageBuf, pageSize);
+
+                    // TODO remove debug
+                    System.out.println("onPageWrite pageId=" + pageId +
+                        ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
+                        ", part=" + file.getName() +
+                        ", fileSize=" + fileIO.size() +
+                        ", crcBuff=" + crc32 +
+                        ", crcPage=" + crc +
+                        ", pageOffset=" + pageOffset(pageId) + ']');
+
+                    pageBuf.rewind();
+
                     // Write buffer to the end of the file.
-                    fileIO.write(pageBuf);
+                    fileIO.writeFully(pageBuf);
                 }
                 catch (IOException e) {
                     writtenPagesCount.remove(pageId);
@@ -142,6 +170,11 @@ public class FileTemporaryStore implements TemporaryStore {
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    public long pageOffset(long pageId) {
+        return (long) PageIdUtils.pageIndex(pageId) * 1024 + 1024;
     }
 
     /** {@inheritDoc} */

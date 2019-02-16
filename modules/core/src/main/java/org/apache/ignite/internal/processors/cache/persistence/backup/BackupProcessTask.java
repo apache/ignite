@@ -22,7 +22,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 
 /**
- *
+ * While processing cache partition delta file it can contains a batch o pages
+ * which is not related to the current running process (e.g. newly allocated page which
+ * is written to the end of partition file and which is not belongs to the previously
+ * copied partiton file by offset).
  */
 public interface BackupProcessTask {
     /**
@@ -43,13 +46,13 @@ public interface BackupProcessTask {
      * @param grpPartId Cache group and partition pair identifiers.
      * @param file A representation of partiton file.
      * @param offset Start point offset.
-     * @param count Count of bytes to handle.
+     * @param size Size of delta to handle.
      * @throws IgniteCheckedException If fails.
      */
     public void handleDelta(
         GroupPartitionId grpPartId,
         File file,
         long offset,
-        long count
+        long size
     ) throws IgniteCheckedException;
 }

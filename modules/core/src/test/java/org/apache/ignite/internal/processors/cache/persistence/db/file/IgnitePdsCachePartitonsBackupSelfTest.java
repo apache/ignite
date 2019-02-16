@@ -75,7 +75,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /** */
 public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int CACHE_PARTS_COUNT = 16;
+    private static final int CACHE_PARTS_COUNT = 4;
 
     /** */
     private static final int PAGE_SIZE = 1024;
@@ -139,7 +139,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
 
         ig0.cluster().active(true);
 
-        for (int i = 0; i < 2048; i++)
+        for (int i = 0; i < 1024; i++)
             ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
         ig0.context().cache().context().database()
@@ -164,7 +164,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    for (int i = 2048; i < 4096; i++)
+                    for (int i = 1024; i < 2048; i++)
                         ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
                     CheckpointFuture cpFut = cctx1.database().forceCheckpoint("the next one");
@@ -213,33 +213,51 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
                         GroupPartitionId grpPartId,
                         File file,
                         long offset,
-                        long count
+                        long size
                     ) throws IgniteCheckedException {
                         // Will perform a copy delta file page by page simultaneously with merge pages operation.
-                        pageBuff.clear();
-
                         try (SeekableByteChannel src = Files.newByteChannel(file.toPath())) {
                             src.position(offset);
 
-                            PageStore pageStore = pageStoreFactory.createPageStore(
-                                PageMemory.FLAG_DATA,
+                            pageBuff.clear();
+
+                            PageStore pageStore = pageStoreFactory.createPageStore(PageMemory.FLAG_DATA,
                                 lastSavedPartId,
                                 AllocatedPageTracker.NO_OP,
-                                PageStoreWriteHandler.NO_OP
-                            );
+                                PageStoreWriteHandler.NO_OP);
 
-                            long readed = offset;
+                            pageStore.init();
 
-                            while ((readed += src.read(pageBuff)) > 0 && readed < count) {
-                                pageBuff.rewind();
+                            long readed;
+                            long position = offset;
 
-                                assert pageBuff.remaining() == PAGE_SIZE : pageBuff.remaining();
-
-                                long pageId = PageIO.getPageId(pageBuff);
-
-                                pageStore.write(pageId, pageBuff, 0, true);
+                            while ((readed = src.read(pageBuff)) > 0 && position < size) {
+                                position += readed;
 
                                 pageBuff.flip();
+
+                                long pageId = PageIO.getPageId(pageBuff);
+                                long pageOffset = pageStore.pageOffset(pageId);
+                                int crc32 = FastCrc.calcCrc(pageBuff, PAGE_SIZE);
+                                int crc = PageIO.getCrc(pageBuff);
+
+                                // TODO remove debug
+                                U.log(log, "handle partition delta [pageId=" + pageId +
+                                    ", pageOffset=" + pageOffset +
+                                    ", partSize=" + pageStore.size() +
+                                    ", position=" + position +
+                                    ", size=" + size +
+                                    ", crcBuff=" + crc32 +
+                                    ", crcPage=" + crc +
+                                    ", part=" + file.getName() + ']');
+
+                                pageBuff.rewind();
+
+                                // Other pages are not related to handled partition file and must be ignored.
+                                if (pageOffset < pageStore.size())
+                                    pageStore.write(pageId, pageBuff, 0, false);
+
+                                pageBuff.clear();
                             }
                         }
                         catch (IOException e) {

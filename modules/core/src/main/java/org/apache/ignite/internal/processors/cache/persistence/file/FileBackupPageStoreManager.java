@@ -95,7 +95,10 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     private final ReadWriteLock rwlock = new ReentrantReadWriteLock();
 
     /** Thread local with buffers for handling copy-on-write over {@link PageStore} events. */
-    private ThreadLocal<ByteBuffer> threadPageBuf;
+    private ThreadLocal<ByteBuffer> threadPageBuff;
+
+    /** */
+    private ThreadLocal<byte[]> threadTempArr;
 
     /** */
     public FileBackupPageStoreManager(GridKernalContext ctx) throws IgniteCheckedException {
@@ -148,8 +151,10 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        setThreadPageBuf(ThreadLocal.withInitial(() ->
+        setThreadPageBuff(ThreadLocal.withInitial(() ->
             ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder())));
+
+        threadTempArr = ThreadLocal.withInitial(() -> new byte[pageSize]);
     }
 
     /** {@inheritDoc} */
@@ -287,7 +292,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
                 final Map<GroupPartitionId, Integer> offsets = backupCtx.deltaOffsetMap;
                 final int deltaOffset = offsets.get(grpPartId);
-                final long deltaSize = backupStores.get(grpPartId).writtenPagesCount();
+                final long deltaSize = backupStores.get(grpPartId).writtenPagesCount() * pageSize;
 
                 task.handleDelta(grpPartId,
                     resolvePartitionDeltaFileCfg(grpCfg, grpPartId.getPartitionId()),
@@ -301,7 +306,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
             }
         }
         catch (Exception e) {
-            U.log(log, "An error occured while handling partition files.", e);
+            U.error(log, "An error occured while handling partition files.", e);
 
             for (GroupPartitionId key : grpPartIdSet) {
                 AtomicInteger keyCnt = trackMap.get(key);
@@ -315,8 +320,6 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
         finally {
             dbMgr.removeCheckpointListener(dbLsnr);
         }
-
-        // Remove all tracked partitions.
     }
 
     /** {@inheritDoc} */
@@ -326,14 +329,19 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
         if (trackCnt == null || trackCnt.get() <= 0)
             return;
 
-        final ByteBuffer tmpPageBuff = threadPageBuf.get();
+        final ByteBuffer tmpPageBuff = threadPageBuff.get();
 
         tmpPageBuff.clear();
 
         try {
-            store.read(pageId, tmpPageBuff, false);
+            store.read(pageId, tmpPageBuff, true);
 
-            tmpPageBuff.rewind();
+            tmpPageBuff.flip();
+
+            // We can read an empty page as it isn't exist in the store (e.g. on first write request).
+            // Check the buffer contains only zero bytes and exit.
+            if (isNewPage(tmpPageBuff))
+                return;
 
             TemporaryStore tempStore = backupStores.get(pairId);
 
@@ -341,12 +349,34 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
             tempStore.write(pageId, tmpPageBuff);
 
-            tmpPageBuff.flip();
+            tmpPageBuff.clear();
         }
-        catch (IgniteCheckedException e) {
-            U.log(log, "An error occured while backuping page. Please, check configured backup store " +
+        catch (Exception e) {
+            U.error(log, "An error occured while backuping page. Please, check configured backup store " +
                 "[pairId=" + pairId + ", pageId=" + pageId + ']', e);
         }
+    }
+
+    /**
+     * @param buff Input array to check.
+     * @return {@code True} if contains only zero bytes.
+     */
+    private boolean isNewPage(ByteBuffer buff) {
+        assert buff.position() == 0 : buff.position();
+        assert buff.limit() == pageSize : buff.limit();
+
+        byte[] array = threadTempArr.get();
+
+        buff.get(array);
+
+        buff.rewind();
+
+        int sum = 0;
+
+        for (byte b : array)
+            sum |= b;
+
+        return sum == 0;
     }
 
     /** {@inheritDoc} */
@@ -360,13 +390,16 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
             U.ensureDirectory(tempGroupDir, "temporary directory for grpId: " + grpPartId.getGroupId(), log);
 
             backupStores.putIfAbsent(grpPartId,
-                new FileTemporaryStore(getPartionDeltaFile(tempGroupDir, grpPartId.getPartitionId()), ioFactory));
+                new FileTemporaryStore(getPartionDeltaFile(tempGroupDir,
+                    grpPartId.getPartitionId()),
+                    ioFactory,
+                    pageSize));
         }
     }
 
     /** */
-    public void setThreadPageBuf(final ThreadLocal<ByteBuffer> buf) {
-        threadPageBuf = buf;
+    public void setThreadPageBuff(final ThreadLocal<ByteBuffer> buf) {
+        threadPageBuff = buf;
     }
 
     /** */

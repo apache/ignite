@@ -66,6 +66,11 @@ public interface PageStore {
     public void readHeader(ByteBuffer buf) throws IgniteCheckedException;
 
     /**
+     * @throws StorageException If failed to initialize store file.
+     */
+    public void init() throws StorageException;
+
+    /**
      * Writes a page.
      *
      * @param pageId Page ID.
