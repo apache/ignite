@@ -2418,6 +2418,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             try {
                 PageUtils.putBytes(pageAddr, 0, pageSnapshotRecord.pageData());
+
+                int realPageSize = pageMem.realPageSize(pageSnapshotRecord.groupId());
+
+                if (pageSnapshotRecord.pageData().length < realPageSize)
+                    cctx.kernalContext().compress().decompressPage(pageMem.pageBuffer(pageAddr), realPageSize);
             }
             finally {
                 pageMem.writeUnlock(grpId, pageId, page, null, true, true);

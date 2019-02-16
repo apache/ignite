@@ -55,6 +55,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
@@ -103,9 +104,11 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.io.GridFileUtils;
@@ -355,6 +358,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Switch segment record offset. */
     private final AtomicLongArray switchSegmentRecordOffset;
 
+    /** Page snapshot records compression algorithm. */
+    private volatile DiskPageCompression pageCompression;
+
+    /** Page snapshot records compression level. */
+    private volatile int pageCompressionLevel;
+
     /**
      * @param ctx Kernal context.
      */
@@ -478,6 +487,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentRouter,
                 ioFactory
             );
+
+            pageCompression = dsCfg.getWalPageCompression();
+
+            if (pageCompression != null) {
+                if (serializerVer < 2) {
+                    throw new IgniteCheckedException("WAL page snapshots compression not supported for serializerVer=" +
+                        serializerVer);
+                }
+
+                cctx.kernalContext().compress().checkPageCompressionSupported();
+
+                pageCompressionLevel = dsCfg.getWalPageCompressionLevel() != null ?
+                    CompressionProcessor.checkCompressionLevelBounds(dsCfg.getWalPageCompressionLevel(), pageCompression) :
+                    CompressionProcessor.getDefaultCompressionLevel(pageCompression);
+            }
         }
     }
 
@@ -775,6 +799,25 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         // Logging was not resumed yet.
         if (currWrHandle == null || (isDisable != null && isDisable.check()))
             return null;
+
+        // Do page snapshots compression if configured.
+        if (pageCompression != null && rec instanceof PageSnapshot) {
+            PageSnapshot pageSnapshot = (PageSnapshot)rec;
+
+            int pageSize = pageSnapshot.realPageSize();
+
+            ByteBuffer pageData = ByteBuffer.wrap(pageSnapshot.pageData()).order(ByteOrder.nativeOrder());
+
+            ByteBuffer compressedPage = cctx.kernalContext().compress().compressPage(pageData, pageSize, 1,
+                pageCompression, pageCompressionLevel);
+
+            if (compressedPage != pageData) {
+                assert compressedPage.isDirect() : "Is direct buffer: " + compressedPage.isDirect();
+
+                rec = new PageSnapshot(pageSnapshot.fullPageId(), GridUnsafe.bufferAddress(compressedPage),
+                    compressedPage.limit(), pageSize);
+            }
+        }
 
         // Need to calculate record size first.
         rec.size(serializer.size(rec));

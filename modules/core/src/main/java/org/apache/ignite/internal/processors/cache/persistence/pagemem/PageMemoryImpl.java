@@ -961,6 +961,11 @@ public class PageMemoryImpl implements PageMemoryEx {
                                     curPage = wrapPointer(tmpAddr, pageSize());
 
                                 PageUtils.putBytes(tmpAddr, 0, snapshot.pageData());
+
+                                int realPageSize = realPageSize(snapshot.groupId());
+
+                                if (snapshot.pageData().length < realPageSize)
+                                    ctx.kernalContext().compress().decompressPage(curPage, realPageSize);
                             }
 
                             break;

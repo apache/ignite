@@ -28,8 +28,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.xerial.snappy.Snappy;
 
@@ -64,6 +66,11 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     }
 
     /** {@inheritDoc} */
+    @Override public void checkPageCompressionSupported() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void checkPageCompressionSupported(Path storagePath, int pageSize) throws IgniteCheckedException {
         if (!U.isLinux())
             throw new IgniteCheckedException("Currently page compression is supported only for Linux.");
@@ -94,45 +101,73 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         int compressLevel
     ) throws IgniteCheckedException {
         assert compression != null;
-        assert U.isPow2(pageSize): pageSize;
         assert U.isPow2(blockSize): blockSize;
-        assert page.position() == 0 && page.limit() == pageSize;
+        assert page.position() == 0 && page.limit() >= pageSize;
 
+        int oldPageLimit = page.limit();
+
+        try {
+            // Page size will be less than page limit when TDE is enabled. To make compaction and compression work
+            // correctly we need to set limit to real page size.
+            page.limit(pageSize);
+
+            ByteBuffer compactPage = doCompactPage(page, pageSize);
+
+            int compactSize = compactPage.limit();
+
+            assert compactSize <= pageSize : compactSize;
+
+            // If no need to compress further or configured just to skip garbage.
+            if (compactSize < blockSize || compression == SKIP_GARBAGE)
+                return setCompactionInfo(compactPage, compactSize);
+
+            ByteBuffer compressedPage = doCompressPage(compression, compactPage, compactSize, compressLevel);
+
+            assert compressedPage.position() == 0;
+            int compressedSize = compressedPage.limit();
+
+            int freeCompactBlocks = (pageSize - compactSize) / blockSize;
+            int freeCompressedBlocks = (pageSize - compressedSize) / blockSize;
+
+            if (freeCompactBlocks >= freeCompressedBlocks) {
+                if (freeCompactBlocks == 0)
+                    return page; // No blocks will be released.
+
+                return setCompactionInfo(compactPage, compactSize);
+            }
+
+            return setCompressionInfo(compressedPage, compression, compressedSize, compactSize);
+        }
+        finally {
+            page.limit(oldPageLimit);
+        }
+    }
+
+    /**
+     * @param page Page buffer.
+     * @param pageSize Page size.
+     * @return Compacted page buffer.
+     */
+    private ByteBuffer doCompactPage(ByteBuffer page, int pageSize) throws IgniteCheckedException {
         PageIO io = PageIO.getPageIO(page);
-
-        if (!(io instanceof CompactablePageIO))
-            return page;
 
         ByteBuffer compactPage = compactBuf.get();
 
-        // Drop the garbage from the page.
-        ((CompactablePageIO)io).compactPage(page, compactPage, pageSize);
-        page.clear();
+        if (io instanceof CompactablePageIO) {
+            // Drop the garbage from the page.
+            ((CompactablePageIO)io).compactPage(page, compactPage, pageSize);
+        }
+        else {
+            // Direct buffer is required as output of this method.
+            if (page.isDirect())
+                return page;
 
-        int compactSize = compactPage.limit();
+            PageUtils.putBytes(GridUnsafe.bufferAddress(compactPage), 0, page.array());
 
-        assert compactSize <= pageSize: compactSize;
-
-        // If no need to compress further or configured just to skip garbage.
-        if (compactSize < blockSize || compression == SKIP_GARBAGE)
-            return setCompactionInfo(compactPage, compactSize);
-
-        ByteBuffer compressedPage = doCompressPage(compression, compactPage, compactSize, compressLevel);
-
-        assert compressedPage.position() == 0;
-        int compressedSize = compressedPage.limit();
-
-        int freeCompactBlocks = (pageSize - compactSize) / blockSize;
-        int freeCompressedBlocks = (pageSize - compressedSize) / blockSize;
-
-        if (freeCompactBlocks >= freeCompressedBlocks) {
-            if (freeCompactBlocks == 0)
-                return page; // No blocks will be released.
-
-            return setCompactionInfo(compactPage, compactSize);
+            compactPage.limit(pageSize);
         }
 
-        return setCompressionInfo(compressedPage, compression, compressedSize, compactSize);
+        return compactPage;
     }
 
     /**
@@ -282,7 +317,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
     /** {@inheritDoc} */
     @Override public void decompressPage(ByteBuffer page, int pageSize) throws IgniteCheckedException {
-        assert page.capacity() == pageSize;
+        assert page.capacity() >= pageSize : "capacity=" + page.capacity() + ", pageSize=" + pageSize;
 
         byte compressType = PageIO.getCompressionType(page);
 
@@ -339,9 +374,14 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             assert page.limit() == compactSize;
         }
 
-        CompactablePageIO io = PageIO.getPageIO(page);
+        PageIO io = PageIO.getPageIO(page);
 
-        io.restorePage(page, pageSize);
+        if (io instanceof CompactablePageIO)
+            ((CompactablePageIO)io).restorePage(page, pageSize);
+        else {
+            assert compactSize == pageSize
+                : "Wrong compacted page size [compactSize=" + compactSize + ", pageSize=" + pageSize + ']';
+        }
 
         setCompressionInfo(page, null, 0, 0);
     }

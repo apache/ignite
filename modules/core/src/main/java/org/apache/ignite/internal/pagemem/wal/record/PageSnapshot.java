@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 /**
  *
  */
-public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware{
+public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware {
     /** */
     @GridToStringExclude
     private byte[] pageData;
@@ -38,7 +38,7 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware{
     private FullPageId fullPageId;
 
     /**
-     * PageSIze without encryption overhead.
+     * PageSize without encryption overhead.
      */
     private int realPageSize;
 
@@ -88,6 +88,18 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware{
     }
 
     /** {@inheritDoc} */
+    @Override public int groupId() {
+        return fullPageId.groupId();
+    }
+
+    /**
+     * @return PageSize without encryption overhead.
+     */
+    public int realPageSize() {
+        return realPageSize;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         ByteBuffer buf = ByteBuffer.allocateDirect(pageData.length);
         buf.order(ByteOrder.nativeOrder());
@@ -102,16 +114,11 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware{
                 + super.toString() + "]]";
         }
         catch (IgniteCheckedException ignored) {
-            return "Error during call'toString' of PageSnapshot [fullPageId=" + fullPageId() +
+            return "Error during call 'toString' of PageSnapshot [fullPageId=" + fullPageId() +
                 ", pageData = " + Arrays.toString(pageData) + ", super=" + super.toString() + "]";
         }
         finally {
             GridUnsafe.cleanDirectBuffer(buf);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public int groupId() {
-        return fullPageId.groupId();
     }
 }

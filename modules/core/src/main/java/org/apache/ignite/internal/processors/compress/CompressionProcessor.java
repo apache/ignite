@@ -134,6 +134,15 @@ public class CompressionProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Checks weither page compression is supported.
+     *
+     * @throws IgniteCheckedException If compression is not supported.
+     */
+    public void checkPageCompressionSupported() throws IgniteCheckedException {
+        fail();
+    }
+
+    /**
      * @param storagePath Storage path.
      * @param pageSize Page size.
      * @throws IgniteCheckedException If compression is not supported.

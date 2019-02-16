@@ -185,7 +185,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in)
+    @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in, int size)
         throws IOException, IgniteCheckedException {
         if (type == ENCRYPTED_RECORD) {
             if (encSpi == null) {
@@ -202,10 +202,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             if (clData.get1() == null)
                 return new EncryptedRecord(clData.get2(), clData.get3());
 
-            return readPlainRecord(clData.get3(), clData.get1(), true);
+            return readPlainRecord(clData.get3(), clData.get1(), true, clData.get1().buffer().capacity());
         }
 
-        return readPlainRecord(type, in, false);
+        return readPlainRecord(type, in, false, size);
     }
 
     /** {@inheritDoc} */
@@ -533,20 +533,21 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param type Record type.
      * @param in Input
      * @param encrypted Record was encrypted.
+     * @param recordSize Record size.
      * @return Deserialized record.
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
     WALRecord readPlainRecord(RecordType type, ByteBufferBackedDataInput in,
-        boolean encrypted) throws IOException, IgniteCheckedException {
+        boolean encrypted, int recordSize) throws IOException, IgniteCheckedException {
         WALRecord res;
 
         switch (type) {
             case PAGE_RECORD:
-                byte[] arr = new byte[pageSize];
-
                 int cacheId = in.readInt();
                 long pageId = in.readLong();
+
+                byte[] arr = new byte[recordSize == 0 ? pageSize : (recordSize - 4 - 8)];
 
                 in.readFully(arr);
 
