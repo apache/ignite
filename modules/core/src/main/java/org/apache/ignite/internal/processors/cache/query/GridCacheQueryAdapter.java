@@ -594,7 +594,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             GridNearTxLocal tx = cctx.tm().userTx();
 
             if (tx != null)
-                mvccSnapshot = MvccUtils.requestSnapshot(cctx, tx);
+                mvccSnapshot = MvccUtils.requestSnapshot(tx);
             else {
                 mvccTracker = MvccUtils.mvccTracker(cctx, null);
 

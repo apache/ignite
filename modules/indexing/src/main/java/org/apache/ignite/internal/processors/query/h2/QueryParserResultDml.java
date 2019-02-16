@@ -17,28 +17,62 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.h2.command.Prepared;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Parsing result for DML statement.
  */
 public class QueryParserResultDml {
     /** Command. */
-    private final Prepared prepared;
+    private final GridSqlStatement stmt;
+
+    /** MVCC enabled flag. */
+    private final boolean mvccEnabled;
+
+    /** Streamer table. */
+    private final GridH2Table streamTbl;
 
     /**
      * Constructor.
      *
-     * @param prepared Command.
+     * @param stmt Command.
+     * @param mvccEnabled Whether MVCC is enabled.
+     * @param streamTbl Streamer table.
      */
-    public QueryParserResultDml(Prepared prepared) {
-        this.prepared = prepared;
+    public QueryParserResultDml(GridSqlStatement stmt, boolean mvccEnabled, @Nullable GridH2Table streamTbl) {
+        this.stmt = stmt;
+        this.mvccEnabled = mvccEnabled;
+        this.streamTbl = streamTbl;
     }
 
     /**
      * @return Command.
      */
-    public Prepared prepared() {
-        return prepared;
+    public GridSqlStatement statement() {
+        return stmt;
+    }
+
+    /**
+     * @return MVCC enabled.
+     */
+    public boolean mvccEnabled() {
+        return mvccEnabled;
+    }
+
+    /**
+     * @return Streamer table.
+     */
+    @Nullable public GridH2Table streamTable() {
+        return streamTbl;
+    }
+
+    /**
+     * @return Whether statement can be used in streaming.
+     */
+    public boolean streamable() {
+        return streamTbl != null;
     }
 }

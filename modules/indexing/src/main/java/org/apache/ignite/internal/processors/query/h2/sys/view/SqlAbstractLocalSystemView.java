@@ -28,7 +28,6 @@ import org.h2.util.DateTimeUtils;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
-import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueTimestampTimeZone;
 
@@ -141,19 +140,6 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
         catch (RuntimeException e) {
             return null;
         }
-    }
-
-    /**
-     * Converts millis to ValueTime
-     *
-     * @param millis Millis.
-     */
-    protected static Value valueTimeFromMillis(long millis) {
-        if (millis == -1L || millis == Long.MAX_VALUE)
-            return ValueNull.INSTANCE;
-        else
-            // Note: ValueTime.fromMillis(long) method trying to convert time using timezone and return wrong result.
-            return ValueTime.fromNanos(millis * 1_000_000L);
     }
 
     /**

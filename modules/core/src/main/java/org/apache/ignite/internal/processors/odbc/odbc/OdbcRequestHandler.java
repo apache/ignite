@@ -558,7 +558,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             assert cliCtx.isStream();
 
-            ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(), qry.batchedArguments());
+            ctx.query().streamBatchedUpdateQuery(
+                qry.getSchema(),
+                cliCtx,
+                qry.getSql(),
+                qry.batchedArguments()
+            );
         }
         catch (Exception e) {
             U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
