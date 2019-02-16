@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
@@ -716,36 +715,6 @@ public class H2Utils {
             throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ", stmt=" +
                 stmt + ']', e);
         }
-    }
-
-    /**
-     * Resolve type for parameter.
-     *
-     * @param ses Session.
-     * @param obj Parameter.
-     * @return Type.
-     */
-    public static GridSqlType typeForObject(Session ses, Object obj) {
-        int h2Typ;
-
-        if (obj == null)
-            h2Typ = Value.STRING;
-        else if (obj instanceof BigInteger)
-            h2Typ = Value.JAVA_OBJECT;
-        else if (obj instanceof BigDecimal)
-            h2Typ = Value.DECIMAL;
-        else
-            h2Typ = Value.UNKNOWN;
-
-        Value val = DataType.convertToValue(ses, obj, h2Typ);
-
-        return new GridSqlType(
-            val.getType(),
-            val.getScale(),
-            val.getPrecision(),
-            val.getDisplaySize(),
-            null
-        );
     }
 
     /**

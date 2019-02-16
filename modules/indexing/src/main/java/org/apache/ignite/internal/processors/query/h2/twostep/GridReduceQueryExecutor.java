@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
-import org.apache.ignite.internal.processors.query.h2.sql.MapColumn;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -1272,35 +1271,23 @@ public class GridReduceQueryExecutor {
 
                 for (Map.Entry<String,?> e : colsMap.entrySet()) {
                     String alias = e.getKey();
-                    MapColumn col = (MapColumn)e.getValue();
+                    GridSqlType type = (GridSqlType)e.getValue();
 
                     assert !F.isEmpty(alias);
 
-                    GridSqlType type;
+                    Column col0;
 
-                    if (col.isParameter()) {
-                        int idx = col.parameterIndex();
-
-                        if (F.isEmpty(params) || params.length < idx)
-                            throw new IllegalStateException("Insufficient parameters: " + idx);
-
-                        Object param = params[idx];
-
-                        type = H2Utils.typeForObject(ses, param);
-                    }
+                    if (type == GridSqlType.UNKNOWN)
+                        col0 = new Column(alias, Value.STRING);
                     else {
-                        type = col.type();
-
-                        assert type != null;
+                        col0 = new Column(
+                            alias,
+                            type.type(),
+                            type.precision(),
+                            type.scale(),
+                            type.displaySize()
+                        );
                     }
-
-                    Column col0 = new Column(
-                        alias,
-                        type.type(),
-                        type.precision(),
-                        type.scale(),
-                        type.displaySize()
-                    );
 
                     cols.add(col0);
                 }
