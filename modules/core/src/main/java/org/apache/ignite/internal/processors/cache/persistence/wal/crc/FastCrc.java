@@ -95,7 +95,7 @@ public final class FastCrc {
         if (file.isDirectory())
             throw new IllegalArgumentException("CRC32 can't be calculated over directories");
 
-        CRC32 algo = CRC.get();
+        CRC32 algo = new CRC32();
 
         try (InputStream in = new CheckedInputStream(new FileInputStream(file), algo);
              OutputStream out = new NullOutputStream()) {

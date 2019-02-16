@@ -75,7 +75,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /** */
 public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int CACHE_PARTS_COUNT = 4;
+    private static final int CACHE_PARTS_COUNT = 8;
 
     /** */
     private static final int PAGE_SIZE = 1024;
@@ -238,7 +238,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
 
                                 long pageId = PageIO.getPageId(pageBuff);
                                 long pageOffset = pageStore.pageOffset(pageId);
-                                int crc32 = FastCrc.calcCrc(pageBuff, PAGE_SIZE);
+                                int crc32 = FastCrc.calcCrc(pageBuff, pageBuff.limit());
                                 int crc = PageIO.getCrc(pageBuff);
 
                                 // TODO remove debug

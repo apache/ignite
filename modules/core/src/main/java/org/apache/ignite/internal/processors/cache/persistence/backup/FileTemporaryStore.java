@@ -144,7 +144,7 @@ public class FileTemporaryStore implements TemporaryStore {
                     assert PageIdUtils.flag(pageId) == PageMemory.FLAG_DATA;
 
                     int crc = PageIO.getCrc(pageBuf);
-                    int crc32 = FastCrc.calcCrc(pageBuf, pageSize);
+                    int crc32 = FastCrc.calcCrc(pageBuf, pageBuf.limit());
 
                     // TODO remove debug
                     System.out.println("onPageWrite pageId=" + pageId +

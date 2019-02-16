@@ -365,7 +365,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
             tmpPageBuff.clear();
         }
         catch (IgniteDataIntegrityViolationException e) {
-            // Page can be readed with zero bytes only.
+            // The page can be readed with zero bytes only if it allocated but not changed yet.
             U.warn(log, "Ignore integrity violation checks [pairId=" + pairId + ", pageId=" + pageId + "]. " +
                 "Error message: " + e.getMessage());
         }
