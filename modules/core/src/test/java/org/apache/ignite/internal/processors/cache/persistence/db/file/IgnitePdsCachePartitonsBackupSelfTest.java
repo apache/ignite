@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -215,6 +216,10 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
                         long offset,
                         long size
                     ) throws IgniteCheckedException {
+                        // Nothing to handle
+                        if (!file.exists())
+                            return;
+
                         // Will perform a copy delta file page by page simultaneously with merge pages operation.
                         try (SeekableByteChannel src = Files.newByteChannel(file.toPath())) {
                             src.position(offset);
@@ -238,7 +243,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
 
                                 long pageId = PageIO.getPageId(pageBuff);
                                 long pageOffset = pageStore.pageOffset(pageId);
-                                int crc32 = FastCrc.calcCrc(pageBuff, pageBuff.limit());
+                                int crc32 = FastCrc.calcCrc(new CRC32(), pageBuff, pageBuff.limit());
                                 int crc = PageIO.getCrc(pageBuff);
 
                                 // TODO remove debug

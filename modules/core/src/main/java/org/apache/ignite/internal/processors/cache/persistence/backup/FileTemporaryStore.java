@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -144,7 +145,7 @@ public class FileTemporaryStore implements TemporaryStore {
                     assert PageIdUtils.flag(pageId) == PageMemory.FLAG_DATA;
 
                     int crc = PageIO.getCrc(pageBuf);
-                    int crc32 = FastCrc.calcCrc(pageBuf, pageBuf.limit());
+                    int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
 
                     // TODO remove debug
                     System.out.println("onPageWrite pageId=" + pageId +
@@ -174,7 +175,7 @@ public class FileTemporaryStore implements TemporaryStore {
 
     /** {@inheritDoc} */
     public long pageOffset(long pageId) {
-        return (long) PageIdUtils.pageIndex(pageId) * 1024 + 1024;
+        return (long)PageIdUtils.pageIndex(pageId) * pageSize + pageSize;
     }
 
     /** {@inheritDoc} */

@@ -117,7 +117,7 @@ public final class FastCrc {
      *
      * @return Crc checksum.
      */
-    private static int calcCrc(CRC32 crcAlgo, ByteBuffer buf, int len) {
+    public static int calcCrc(CRC32 crcAlgo, ByteBuffer buf, int len) {
         int initLimit = buf.limit();
 
         buf.limit(buf.position() + len);
