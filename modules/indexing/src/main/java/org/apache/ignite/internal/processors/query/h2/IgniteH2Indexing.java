@@ -2302,6 +2302,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @return Parser.
+     */
+    public QueryParser parser() {
+        return parser;
+    }
+
+    /**
      * @return Schema manager.
      */
     public SchemaManager schemaManager() {

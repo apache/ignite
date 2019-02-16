@@ -26,13 +26,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Test type inference for SQL parameters.
@@ -43,6 +47,9 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
 
     /** Cache. */
     private static final String CACHE_NAME = "cache";
+
+    /** Number of nodes. */
+    private static final int NODE_CNT = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -56,7 +63,7 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Ignite node = startGrids(2);
+        Ignite node = startGrids(NODE_CNT);
 
         QueryEntity qryEntity = new QueryEntity(InferenceKey.class, InferenceValue.class).setTableName("cache");
 
@@ -75,13 +82,27 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        clearParserCache();
+    }
+
     /**
      * Test type inference for local query.
      */
     @Test
     public void testInferenceLocal() {
-        check("SELECT ? FROM cache ORDER BY val", true, new Object[] { null }, Object.class);
-        //check("SELECT val, ? FROM cache", true, new Object[] { "test" }, String.class);
+        List<Object[]> argss = new ArrayList<>();
+
+        argss.add(new Object[] { null });
+        argss.add(new Object[] { "STRING" });
+        argss.add(new Object[] { 1 });
+        argss.add(new Object[] { 1L });
+        argss.add(new Object[] { new BigDecimal("12.12") });
+        argss.add(new Object[] { UUID.randomUUID() });
+
+        check("SELECT ? FROM cache", true, argss);
+        check("SELECT ? FROM cache ORDER BY val", true, argss);
     }
 
     /**
@@ -89,7 +110,16 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInferenceNoReduce() {
+        List<Object[]> argss = new ArrayList<>();
 
+        argss.add(new Object[] { null });
+        argss.add(new Object[] { "STRING" });
+        argss.add(new Object[] { 1 });
+        argss.add(new Object[] { 1L });
+        argss.add(new Object[] { new BigDecimal("12.12") });
+        argss.add(new Object[] { UUID.randomUUID() });
+
+        check("SELECT ? FROM cache", false, argss);
     }
 
     /**
@@ -97,7 +127,16 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInferenceReduce() {
+        List<Object[]> argss = new ArrayList<>();
 
+        argss.add(new Object[] { null });
+        argss.add(new Object[] { "STRING" });
+        argss.add(new Object[] { 1 });
+        argss.add(new Object[] { 1L });
+        argss.add(new Object[] { new BigDecimal("12.12") });
+        argss.add(new Object[] { UUID.randomUUID() });
+
+        check("SELECT ? FROM cache ORDER BY val", false, argss);
     }
 
     /**
@@ -105,45 +144,45 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
      *
      * @param qry Query.
      * @param loc Local flag.
-     * @param args Arugments.
-     * @param expCls Expected class.
+     * @param argss Arugments to be applied in different order.
      */
-    private void check(String qry, boolean loc, Object[] args, Class expCls) {
-        QueryCursorEx<List<?>> cur =
-            (QueryCursorEx<List<?>>)cache().query(new SqlFieldsQuery(qry).setLocal(loc).setArgs(args));
+    private void check(String qry, boolean loc, List<Object[]> argss) {
+        clearParserCache();
 
-        GridQueryFieldMetadata field = cur.fieldsMeta().get(0);
+        for (int i = 0; i < argss.size(); i++) {
+            for (Object[] args : argss) {
+                for (int j = 0; j < 2; j++) {
+                    SqlFieldsQuery qry0 = new SqlFieldsQuery(qry).setLocal(loc).setArgs(args);
 
-        cur.getAll();
+                    try (QueryCursorEx<List<?>> cur = (QueryCursorEx<List<?>>)grid(0).cache(CACHE_NAME).query(qry0)) {
+                        GridQueryFieldMetadata meta = cur.fieldsMeta().get(0);
 
-        assertEquals(expCls.getName(), field.fieldTypeName());
+                        cur.getAll();
 
-//        List<List<?>> rows = cache().query(new SqlFieldsQuery(qry).setLocal(loc).setArgs(args)).getAll();
-//
-//        assert !rows.isEmpty();
-//
-//        List<?> row = rows.get(0);
-//
-//        assert !row.isEmpty();
-//
-//        Object val = row.get(0);
-//
-//        if (expCls == null)
-//            assert val == null;
-//        else
-//            assertEquals(expCls, val.getClass());
+                        String errMsg = "Failure on i=" + i + ", j=" + j + ": " + meta.fieldTypeName();
+
+                        assertEquals(errMsg, Object.class.getName(), meta.fieldTypeName());
+                    }
+                }
+            }
+
+            argss.add(argss.remove(0));
+        }
     }
 
     /**
-     * @return Cache.
+     * Clear parser cache.
      */
-    private IgniteCache<InferenceKey, InferenceValue> cache() {
-        return grid(0).cache(CACHE_NAME);
+    private void clearParserCache() {
+        for (int i = 0; i < NODE_CNT; i++)
+            ((IgniteH2Indexing)grid(i).context().query().getIndexing()).parser().clearCache();
     }
+
 
     /**
      * Key class.
      */
+    @SuppressWarnings("unused")
     private static class InferenceKey {
         /** Key. */
         @QuerySqlField
@@ -160,6 +199,7 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
     /**
      * Value class.
      */
+    @SuppressWarnings("unused")
     private static class InferenceValue {
         /** Value. */
         @QuerySqlField
