@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -82,6 +83,9 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     /** Tracking partition files over all running snapshot processes. */
     private final ConcurrentMap<GroupPartitionId, AtomicInteger> trackMap = new ConcurrentHashMap<>();
 
+    /** Keep only the first page error. */
+    private final ConcurrentMap<GroupPartitionId, IgniteCheckedException> pageTrackErrors = new ConcurrentHashMap<>();
+
     /** Collection of backup stores indexed by [grpId, partId] key. */
     private final Map<GroupPartitionId, TemporaryStore> backupStores = new ConcurrentHashMap<>();
 
@@ -97,7 +101,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     /** Thread local with buffers for handling copy-on-write over {@link PageStore} events. */
     private ThreadLocal<ByteBuffer> threadPageBuff;
 
-    /** */
+    /** A byte array to store intermediate calculation results of process handling page writes. */
     private ThreadLocal<byte[]> threadTempArr;
 
     /** */
@@ -169,6 +173,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
         backupStores.clear();
         trackMap.clear();
+        pageTrackErrors.clear();
     }
 
     /** {@inheritDoc} */
@@ -275,10 +280,17 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
             // Use sync mode to execute provided task over partitons and corresponding deltas.
             for (GroupPartitionId grpPartId : grpPartIdSet) {
+                IgniteCheckedException pageErr = pageTrackErrors.get(grpPartId);
+
+                if (pageErr != null)
+                    throw pageErr;
+
                 final CacheConfiguration grpCfg = cctx.cache()
                     .cacheGroup(grpPartId.getGroupId())
                     .config();
+
                 final long size = backupCtx.partAllocatedPages.get(grpPartId);
+
 
                 task.handlePartition(grpPartId,
                     resolvePartitionFileCfg(grpCfg, grpPartId.getPartitionId()),
@@ -288,6 +300,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 // Stop page delta tracking for particular pair id.
                 ofNullable(trackMap.get(grpPartId))
                     .ifPresent(AtomicInteger::decrementAndGet);
+
                 U.log(log, "Partition file handled [pairId" + grpPartId + ']');
 
                 final Map<GroupPartitionId, Integer> offsets = backupCtx.deltaOffsetMap;
@@ -315,7 +328,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                     U.closeQuiet(backupStores.get(key));
             }
 
-            throw e;
+            throw new IgniteCheckedException(e);
         }
         finally {
             dbMgr.removeCheckpointListener(dbLsnr);
@@ -338,7 +351,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
             tmpPageBuff.flip();
 
-            // We can read an empty page as it isn't exist in the store (e.g. on first write request).
+            // We can read a page with zero bytes as it isn't exist in the store (e.g. on first write request).
             // Check the buffer contains only zero bytes and exit.
             if (isNewPage(tmpPageBuff))
                 return;
@@ -351,9 +364,17 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
             tmpPageBuff.clear();
         }
+        catch (IgniteDataIntegrityViolationException e) {
+            // Page can be readed with zero bytes only.
+            U.warn(log, "Ignore integrity violation checks [pairId=" + pairId + ", pageId=" + pageId + "]. " +
+                "Error message: " + e.getMessage());
+        }
         catch (Exception e) {
-            U.error(log, "An error occured while backuping page. Please, check configured backup store " +
-                "[pairId=" + pairId + ", pageId=" + pageId + ']', e);
+            U.error(log, "An error occured in the process of page backup " +
+                "[pairId=" + pairId + ", pageId=" + pageId + ']');
+
+            pageTrackErrors.putIfAbsent(pairId,
+                new IgniteCheckedException("Partition backup processing error [pageId=" + pageId + ']', e));
         }
     }
 
