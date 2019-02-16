@@ -1277,8 +1277,12 @@ public class GridReduceQueryExecutor {
 
                     Column col0;
 
-                    if (type == GridSqlType.UNKNOWN)
+                    if (type == GridSqlType.UNKNOWN) {
+                        // Special case for parameter being set at the top of the query (e.g. SELECT ? FROM ...).
+                        // Re-map it to STRING in the same way it is done in H2, because any argument can be cast
+                        // to string.
                         col0 = new Column(alias, Value.STRING);
+                    }
                     else {
                         col0 = new Column(
                             alias,
