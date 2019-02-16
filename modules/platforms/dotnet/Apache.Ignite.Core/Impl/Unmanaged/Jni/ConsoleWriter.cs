@@ -34,6 +34,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         public void Write(string message, bool isError)
         {
             // TODO: Just a test
+            // This works! Just filter out unwanted warnings!
+            // We need to do it conditionally somehow, only for tests, to avoid perf implications.
             if (!isError)
             {
                 Console.Out.Write(message);
