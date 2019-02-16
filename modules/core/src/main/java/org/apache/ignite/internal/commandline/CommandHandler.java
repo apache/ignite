@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.UUID;
@@ -1302,14 +1301,20 @@ public class CommandHandler {
 
         Map<String, VisorBaselineNode> srvs = res.getServers();
 
-        Optional<VisorBaselineNode> crdOpt = srvs.values().stream()
-            .min(Comparator.comparing(VisorBaselineNode::getOrder));
+        // 1) if we have a node with order == 1, then it's the CRD, otherwise
+        // 2) if we have a node with order == null, then CRD can't be evaluated, otherwise
+        // 3) the node with minimal order is CRD
 
-        String crdStr = crdOpt.map(
-            crd -> "ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder())
+        String crdStr = srvs.values().stream()
+            // sort: 1, null, 2, 3, ...
+            .min(Comparator.comparing(node1 -> node1.getOrder() != null ? node1.getOrder() << 1 : 3))
+            // check for not null
+            .filter(node1 -> node1.getOrder() != null)
+            // format
+            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder() + ")")
             .orElse("");
 
-        log("Current topology version: " + res.getTopologyVersion() + " (Coordinator: " + crdStr + ")");
+        log("Current topology version: " + res.getTopologyVersion() + crdStr);
         nl();
 
         if (F.isEmpty(baseline))
