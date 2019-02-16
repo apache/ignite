@@ -26,6 +26,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     /// </summary>
     internal sealed class ConsoleWriter : MarshalByRefObject
     {
+        /** Environment variable: whether to suppress stderr warnings from Java 11. */
+        public const string EnvIgniteNetSuppressJavaIllegalAccessWarnings =
+            "IGNITE_NET_SUPPRESS_JAVA_ILLEGAL_ACCESS_WARNINGS";
+
+        /** Flag: whether to suppress stderr warnings from Java 11. */
+        private readonly bool _suppressIllegalAccessWarnings;
+
+        public ConsoleWriter()
+        {
+            _suppressIllegalAccessWarnings =
+                Environment.GetEnvironmentVariable(EnvIgniteNetSuppressJavaIllegalAccessWarnings) == "true";
+        }
+
         /// <summary>
         /// Writes the specified message to console.
         /// </summary>
@@ -33,13 +46,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             Justification = "Only instance methods can be called across AppDomain boundaries.")]
         public void Write(string message, bool isError)
         {
-            // TODO: Just a test
-            // This works! Just filter out unwanted warnings!
-            // We need to do it conditionally somehow, only for tests, to avoid perf implications.
-            if (!isError)
-            {
-                Console.Out.Write(message);
-            }
+            var target = isError ? Console.Error : Console.Out;
+            target.Write(message);
         }
 
         /** <inheritdoc /> */
