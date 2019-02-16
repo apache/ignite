@@ -245,11 +245,11 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                cachePers.query(sql.setArgs(3));
+                cachePers.query(sql.setArgs(3)).getAll();
 
                 return null;
             }
-        }, IgniteException.class, "Invalid number of query parameters.");
+        }, CacheException.class, "Invalid number of query parameters");
     }
 
     /**

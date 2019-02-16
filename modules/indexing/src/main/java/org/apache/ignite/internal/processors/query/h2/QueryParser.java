@@ -396,6 +396,7 @@ public class QueryParser {
                     stmt0,
                     twoStepQry,
                     meta,
+                    prepared.getParameters().size(),
                     cacheIds,
                     mvccCacheId,
                     forUpdate
@@ -516,7 +517,12 @@ public class QueryParser {
             streamTbl = DmlAstUtils.gridTableForElement(insert.into()).dataTable();
         }
 
-        return new QueryParserResultDml(stmt, mvccEnabled, streamTbl);
+        return new QueryParserResultDml(
+            stmt,
+            prepared.getParameters().size(),
+            mvccEnabled,
+            streamTbl
+        );
     }
 
     /**

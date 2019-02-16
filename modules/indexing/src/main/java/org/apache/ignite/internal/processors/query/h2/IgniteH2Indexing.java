@@ -1267,9 +1267,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"StringEquality", "unchecked"})
-    @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-        GridQueryCancel cancel, boolean registerAsNewQry) {
+    @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
+        String schemaName,
+        SqlFieldsQuery qry,
+        @Nullable SqlClientContext cliCtx,
+        boolean keepBinary,
+        boolean failOnMultipleStmts,
+        MvccQueryTracker tracker,
+        GridQueryCancel cancel,
+        boolean registerAsNewQry
+    ) {
         boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
@@ -1278,16 +1285,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SqlFieldsQuery remainingQry = qry;
 
             while (remainingQry != null) {
+                // Parse.
                 QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts);
 
                 remainingQry = parseRes.remainingQuery();
 
+                // Get next command.
                 SqlFieldsQuery newQry = parseRes.query();
 
-                assert newQry.getSql() != null;
+                // Check if there is enough parameters.
+                int qryParamsCnt = F.isEmpty(newQry.getArgs()) ? 0 : newQry.getArgs().length;
 
+                if (qryParamsCnt < parseRes.parametersCount())
+                    throw new IgniteSQLException("Invalid number of query parameters [expected=" +
+                        parseRes.parametersCount() + ", actual=" + qryParamsCnt + ']');
+
+                // Check is cluster state is valid.
                 checkClusterState(parseRes);
 
+                // Do execute.
                 if (parseRes.isCommand()) {
                     // Execute command.
                     FieldsQueryCursor<List<?>> cmdRes = executeCommand(
