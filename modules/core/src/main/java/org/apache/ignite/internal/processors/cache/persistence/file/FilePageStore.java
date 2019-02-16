@@ -644,7 +644,9 @@ public class FilePageStore implements PageStore {
 
                         pageBuf.position(0);
 
-                        PageIO.setCrc(pageBuf, 0);
+                        if (calculateCrc && !skipCrc) {
+                            PageIO.setCrc(pageBuf, 0);
+                        }
 
                         continue;
                     }
