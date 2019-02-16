@@ -1293,12 +1293,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // Get next command.
                 SqlFieldsQuery newQry = parseRes.query();
 
-                // Check if there is enough parameters.
-                int qryParamsCnt = F.isEmpty(newQry.getArgs()) ? 0 : newQry.getArgs().length;
+                // Check if there is enough parameters. Batched statements are not checked at this point
+                // since they pass parameters differently.
+                if (!DmlUtils.isBatched(newQry)) {
+                    int qryParamsCnt = F.isEmpty(newQry.getArgs()) ? 0 : newQry.getArgs().length;
 
-                if (qryParamsCnt < parseRes.parametersCount())
-                    throw new IgniteSQLException("Invalid number of query parameters [expected=" +
-                        parseRes.parametersCount() + ", actual=" + qryParamsCnt + ']');
+                    if (qryParamsCnt < parseRes.parametersCount())
+                        throw new IgniteSQLException("Invalid number of query parameters [expected=" +
+                            parseRes.parametersCount() + ", actual=" + qryParamsCnt + ']');
+                }
 
                 // Check is cluster state is valid.
                 checkClusterState(parseRes);
