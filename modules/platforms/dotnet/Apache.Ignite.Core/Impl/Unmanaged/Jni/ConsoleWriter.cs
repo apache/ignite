@@ -33,8 +33,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             Justification = "Only instance methods can be called across AppDomain boundaries.")]
         public void Write(string message, bool isError)
         {
-            var target = isError ? Console.Error : Console.Out;
-            target.Write(message);
+            // TODO: Just a test
+            if (!isError)
+            {
+                Console.Out.Write(message);
+            }
         }
 
         /** <inheritdoc /> */
