@@ -27,6 +27,12 @@ export const component = {
     controller: class {
         /** @type {ClusterSecrets} */
         secrets;
+        /** @type {ng.ICompiledExpression} */
+        onLogin;
+        /** @type {ng.ICompiledExpression} */
+        onHide;
+        /** @type {ng.IFormController} */
+        form;
 
         login() {
             if (this.form.$invalid)

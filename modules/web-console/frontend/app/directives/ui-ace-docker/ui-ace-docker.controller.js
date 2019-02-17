@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteVersion', 'IgniteDockerGenerator', function($scope, Version, docker) {
+export default function controller($scope, Version, docker) {
     const ctrl = this;
 
     this.$onInit = () => {
@@ -36,4 +36,6 @@ export default ['$scope', 'IgniteVersion', 'IgniteDockerGenerator', function($sc
 
         $scope.$watch('cluster', clusterWatcher);
     };
-}];
+}
+
+controller.$inject = ['$scope', 'IgniteVersion', 'IgniteDockerGenerator'];

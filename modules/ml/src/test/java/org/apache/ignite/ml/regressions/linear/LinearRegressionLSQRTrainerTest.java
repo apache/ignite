@@ -123,7 +123,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
 
         LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
-        LinearRegressionModel originalModel = trainer.fit(
+        LinearRegressionModel originalMdl = trainer.fit(
             data,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
@@ -131,7 +131,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
         );
 
         LinearRegressionModel updatedOnSameDS = trainer.update(
-            originalModel,
+            originalMdl,
             data,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
@@ -139,17 +139,17 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
         );
 
         LinearRegressionModel updatedOnEmpyDS = trainer.update(
-            originalModel,
+            originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[coef.length]
         );
 
-        assertArrayEquals(originalModel.getWeights().getStorage().data(), updatedOnSameDS.getWeights().getStorage().data(), 1e-6);
-        assertEquals(originalModel.getIntercept(), updatedOnSameDS.getIntercept(), 1e-6);
+        assertArrayEquals(originalMdl.getWeights().getStorage().data(), updatedOnSameDS.getWeights().getStorage().data(), 1e-6);
+        assertEquals(originalMdl.getIntercept(), updatedOnSameDS.getIntercept(), 1e-6);
 
-        assertArrayEquals(originalModel.getWeights().getStorage().data(), updatedOnEmpyDS.getWeights().getStorage().data(), 1e-6);
-        assertEquals(originalModel.getIntercept(), updatedOnEmpyDS.getIntercept(), 1e-6);
+        assertArrayEquals(originalMdl.getWeights().getStorage().data(), updatedOnEmpyDS.getWeights().getStorage().data(), 1e-6);
+        assertEquals(originalMdl.getIntercept(), updatedOnEmpyDS.getIntercept(), 1e-6);
     }
 }

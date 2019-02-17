@@ -28,7 +28,14 @@ public interface MLLogger {
      * Logging verbose level.
      */
     enum VerboseLevel {
-        OFF, LOW, HIGH
+        /** Disabled. */
+        OFF,
+
+        /** Low. */
+        LOW,
+
+        /** High. */
+        HIGH
     }
 
     /**

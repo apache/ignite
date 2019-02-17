@@ -91,7 +91,7 @@ final class ClientUtils {
         Collection<E> col, BinaryOutputStream out,
         BiConsumer<BinaryOutputStream, E> elemWriter
     ) {
-        if (col == null || col.size() == 0)
+        if (col == null || col.isEmpty())
             out.writeInt(0);
         else {
             out.writeInt(col.size());

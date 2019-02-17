@@ -202,7 +202,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             final long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
             try {
-                pageIO.initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
+                pageIO.initNewPage(pageAddr, fullId.pageId(), mem.realPageSize(fullId.groupId()));
             }
             finally {
                 mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
@@ -261,7 +261,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                 try {
                     long pageAddr = mem.readLock(fullId.groupId(), fullId.pageId(), page);
 
-                    for (int j = PageIO.COMMON_HEADER_END; j < mem.pageSize(); j += 4)
+                    for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(fullId.groupId()); j += 4)
                         assertEquals(j + (int)fullId.pageId(), PageUtils.getInt(pageAddr, j));
 
                     mem.readUnlock(fullId.groupId(), fullId.pageId(), page);
@@ -305,7 +305,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                 PageIO.setPageId(pageAddr, fullId.pageId());
 
                 try {
-                    for (int j = PageIO.COMMON_HEADER_END; j < mem.pageSize(); j += 4)
+                    for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(fullId.groupId()); j += 4)
                         PageUtils.putInt(pageAddr, j, j + (int)fullId.pageId());
                 }
                 finally {
@@ -346,7 +346,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                     cp += cpEnd - cpStart;
                     tmpBuf.rewind();
 
-                    for (int j = PageIO.COMMON_HEADER_END; j < mem.pageSize(); j += 4)
+                    for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(fullId.groupId()); j += 4)
                         assertEquals(j + (int)fullId.pageId(), tmpBuf.getInt(j));
 
                     tmpBuf.rewind();

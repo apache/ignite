@@ -27,8 +27,8 @@ class Nodes {
     static $inject = ['$q', '$modal'];
 
     /**
-     * @param $q
-     * @param $modal
+     * @param {ng.IQService} $q
+     * @param {mgcrea.ngStrap.modal.IModalService} $modal
      */
     constructor($q, $modal) {
         this.$q = $q;

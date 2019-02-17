@@ -49,7 +49,7 @@ public class MvccWaitTxsRequest implements MvccMessage {
      * @param txs Transactions to wait for.
      */
     public MvccWaitTxsRequest(long futId, GridLongList txs) {
-        assert txs != null && txs.size() > 0 : txs;
+        assert txs != null && !txs.isEmpty() : txs;
 
         this.futId = futId;
         this.txs = txs;

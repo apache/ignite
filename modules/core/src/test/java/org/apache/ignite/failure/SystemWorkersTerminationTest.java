@@ -17,26 +17,24 @@
 
 package org.apache.ignite.failure;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Tests system critical workers termination.
  */
 public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
-    /** Handler latch. */
-    private static volatile CountDownLatch hndLatch;
+    /** */
+    private static volatile String failureHndThreadName;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -77,36 +75,28 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTermination() throws Exception {
-        Ignite ignite = ignite(0);
+    public void testSyntheticWorkerTermination() throws Exception {
+        IgniteEx ignite = grid(0);
 
-        ignite.cluster().active(true);
+        WorkersRegistry registry = ignite.context().workersRegistry();
 
-        WorkersRegistry registry = ((IgniteKernal)ignite).context().workersRegistry();
+        long fdTimeout = ignite.configuration().getFailureDetectionTimeout();
 
-        Collection<String> threadNames = new ArrayList<>(registry.names());
+        GridWorker worker = new GridWorker(ignite.name(), "test-worker", log, registry) {
+            @Override protected void body() throws InterruptedException {
+                Thread.sleep(fdTimeout / 2);
+            }
+        };
 
-        int cnt = 0;
+        IgniteThread thread = new IgniteThread(worker);
 
-        for (String threadName : threadNames) {
-            log.info("Worker termination: " + threadName);
+        failureHndThreadName = null;
 
-            hndLatch = new CountDownLatch(1);
+        thread.start();
 
-            GridWorker w = registry.worker(threadName);
+        thread.join();
 
-            Thread t = w.runner();
-
-            t.interrupt();
-
-            assertTrue(hndLatch.await(3, TimeUnit.SECONDS));
-
-            log.info("Worker is terminated: " + threadName);
-
-            cnt++;
-        }
-
-        assertEquals(threadNames.size(), cnt);
+        assertTrue(GridTestUtils.waitForCondition(() -> thread.getName().equals(failureHndThreadName), fdTimeout * 2));
     }
 
     /**
@@ -121,10 +111,11 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
     /**
      * Test failure handler.
      */
-    private class TestFailureHandler implements FailureHandler {
+    private class TestFailureHandler extends AbstractFailureHandler {
         /** {@inheritDoc} */
-        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-            hndLatch.countDown();
+        @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+            if (failureCtx.type() == FailureType.SYSTEM_WORKER_TERMINATION)
+                failureHndThreadName = Thread.currentThread().getName();
 
             return false;
         }

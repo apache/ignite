@@ -194,29 +194,31 @@ public class FilePageStore implements PageStore {
 
         long signature = hdr.getLong();
 
+        String prefix = "Failed to verify, file=" + cfgFile.getAbsolutePath() + "\" ";
+
         if (SIGNATURE != signature)
-            throw new IOException("Failed to verify store file (invalid file signature)" +
+            throw new IOException(prefix + "(invalid file signature)" +
                 " [expectedSignature=" + U.hexLong(SIGNATURE) +
                 ", actualSignature=" + U.hexLong(signature) + ']');
 
         int ver = hdr.getInt();
 
         if (version() != ver)
-            throw new IOException("Failed to verify store file (invalid file version)" +
+            throw new IOException(prefix + "(invalid file version)" +
                 " [expectedVersion=" + version() +
                 ", fileVersion=" + ver + "]");
 
         byte type = hdr.get();
 
         if (this.type != type)
-            throw new IOException("Failed to verify store file (invalid file type)" +
+            throw new IOException(prefix + "(invalid file type)" +
                 " [expectedFileType=" + this.type +
                 ", actualFileType=" + type + "]");
 
         int pageSize = hdr.getInt();
 
         if (dbCfg.getPageSize() != pageSize)
-            throw new IOException("Failed to verify store file (invalid page size)" +
+            throw new IOException(prefix + "(invalid page size)" +
                 " [expectedPageSize=" + dbCfg.getPageSize() +
                 ", filePageSize=" + pageSize + "]");
 
@@ -226,18 +228,15 @@ public class FilePageStore implements PageStore {
             fileSize = pageSize + headerSize();
 
         if ((fileSize - headerSize()) % pageSize != 0)
-            throw new IOException("Failed to verify store file (invalid file size)" +
+            throw new IOException(prefix + "(invalid file size)" +
                 " [fileSize=" + U.hexLong(fileSize) +
                 ", pageSize=" + U.hexLong(pageSize) + ']');
 
         return fileSize;
     }
 
-    /**
-     * @param delete {@code True} to delete file.
-     * @throws StorageException If failed in case of underlying I/O exception.
-     */
-    public void stop(boolean delete) throws StorageException {
+    /** {@inheritDoc} */
+    @Override public void stop(boolean delete) throws StorageException {
         lock.writeLock().lock();
 
         try {
@@ -262,13 +261,8 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     * Truncates and deletes partition file.
-     *
-     * @param tag New partition tag.
-     * @throws StorageException If failed in case of underlying I/O exception.
-     */
-    public void truncate(int tag) throws StorageException {
+    /** {@inheritDoc} */
+    @Override public void truncate(int tag) throws StorageException {
         init();
 
         lock.writeLock().lock();
@@ -296,10 +290,8 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     *
-     */
-    public void beginRecover() {
+    /** {@inheritDoc} */
+    @Override public void beginRecover() {
         lock.writeLock().lock();
 
         try {
@@ -310,10 +302,8 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     * @throws StorageException If failed in case of underlying I/O exception.
-     */
-    public void finishRecover() throws StorageException {
+    /** {@inheritDoc} */
+    @Override public void finishRecover() throws StorageException {
         lock.writeLock().lock();
 
         try {
@@ -648,7 +638,7 @@ public class FilePageStore implements PageStore {
                 fileIO.force();
         }
         catch (IOException e) {
-            throw new StorageException("Failed to fsync partition file [file=" + cfgFile.getAbsolutePath() + "]", e);
+            throw new StorageException("Failed to fsync partition file [file=" + cfgFile.getAbsolutePath() + ']', e);
         }
         finally {
             lock.writeLock().unlock();

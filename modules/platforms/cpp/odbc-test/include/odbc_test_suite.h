@@ -70,7 +70,7 @@ namespace ignite
 
             /**
              * Start additional with the specified name and config.
-             * 
+             *
              * @param cfg Config path.
              * @param name Instance name.
              */

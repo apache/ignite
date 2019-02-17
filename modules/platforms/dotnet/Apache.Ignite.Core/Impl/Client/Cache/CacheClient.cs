@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** <inheritDoc /> */
         public IQueryCursor<T> Query<T>(SqlFieldsQuery sqlFieldsQuery, Func<IBinaryRawReader, int, T> readerFunc)
         {
-            return DoOutInOp(ClientOp.QuerySqlFields, 
+            return DoOutInOp(ClientOp.QuerySqlFields,
                 w => WriteSqlFieldsQuery(w, sqlFieldsQuery, false),
                 s => GetFieldsCursorNoColumnNames(s, readerFunc));
         }
@@ -277,7 +277,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp(ClientOp.CacheGetAndRemove, w => w.WriteObjectDetached(key), 
+            return DoOutInOp(ClientOp.CacheGetAndRemove, w => w.WriteObjectDetached(key),
                 UnmarshalCacheResult<TV>);
         }
 
@@ -514,7 +514,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public CacheClientConfiguration GetConfiguration()
         {
             return DoOutInOp(ClientOp.CacheGetConfiguration, null,
-                s => new CacheClientConfiguration(s, _ignite.ServerVersion()));
+                s => new CacheClientConfiguration(s, _ignite.ServerVersion));
         }
 
         /** <inheritDoc /> */
@@ -574,7 +574,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private T DoOutInOp<T>(ClientOp opId, Action<BinaryWriter> writeAction,
             Func<IBinaryStream, T> readFunc)
         {
-            return _ignite.Socket.DoOutInOp(opId, stream => WriteRequest(writeAction, stream), 
+            return _ignite.Socket.DoOutInOp(opId, stream => WriteRequest(writeAction, stream),
                 readFunc, HandleError<T>);
         }
 
@@ -584,7 +584,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<BinaryWriter> writeAction,
             Func<IBinaryStream, T> readFunc)
         {
-            return _ignite.Socket.DoOutInOpAsync(opId, stream => WriteRequest(writeAction, stream), 
+            return _ignite.Socket.DoOutInOpAsync(opId, stream => WriteRequest(writeAction, stream),
                 readFunc, HandleError<T>);
         }
 

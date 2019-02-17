@@ -65,7 +65,7 @@ namespace ignite
                 // No-op.
             }
 
-            void ConnectionStringParser::ParseConnectionString(const char* str, size_t len, char delimeter,
+            void ConnectionStringParser::ParseConnectionString(const char* str, size_t len, char delimiter,
                 diagnostic::DiagnosticRecordStorage* diag)
             {
                 std::string connect_str(str, len);
@@ -75,7 +75,7 @@ namespace ignite
 
                 while (!connect_str.empty())
                 {
-                    size_t attr_begin = connect_str.rfind(delimeter);
+                    size_t attr_begin = connect_str.rfind(delimiter);
 
                     if (attr_begin == std::string::npos)
                         attr_begin = 0;

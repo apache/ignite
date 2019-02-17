@@ -22,7 +22,7 @@ export default class {
     static $inject = ['JavaTypes'];
 
     /**
-     * @param JavaTypes service.
+     * @param {import('./JavaTypes.service').default} JavaTypes
      */
     constructor(JavaTypes) {
         this.JavaTypes = JavaTypes;

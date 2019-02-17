@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -29,9 +28,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Cache lock future.
+ * Cache query lock future.
  */
-public final class GridDhtTxQueryEnlistFuture extends GridDhtTxAbstractEnlistFuture {
+public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture {
     /** Involved cache ids. */
     private final int[] cacheIds;
 
@@ -113,24 +112,6 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxAbstractEnlistFut
     @Override protected UpdateSourceIterator<?> createIterator() throws IgniteCheckedException {
         return cctx.kernalContext().query().prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry,
                 params, flags, pageSize, 0, tx.topologyVersionSnapshot(), mvccSnapshot, new GridQueryCancel());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        GridDhtTxQueryEnlistFuture future = (GridDhtTxQueryEnlistFuture)o;
-
-        return Objects.equals(futId, future.futId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return futId.hashCode();
     }
 
     /** {@inheritDoc} */

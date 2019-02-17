@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+/**
+ * @param {import('@uirouter/angularjs').StateProvider} $stateProvider
+ */
 function DefaultState($stateProvider) {
     const stateName = 'default-state';
 

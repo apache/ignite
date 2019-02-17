@@ -65,7 +65,7 @@ public abstract class LeafValuesComputer<T> implements Serializable {
             T stat = stats.get(id);
             if(stat != null) {
                 double leafVal = computeLeafValue(stat);
-                leaf.setValue(leafVal);
+                leaf.setVal(leafVal);
             }
         });
     }

@@ -302,7 +302,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forClients();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendMessages(ignite, grp, async);
     }
@@ -318,7 +318,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forClients();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendMessages(ignite, grp, async);
     }
@@ -334,7 +334,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forServers();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendMessages(ignite, grp, async);
     }
@@ -373,7 +373,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = gridCount() > 1 ? ignite.cluster().forRemotes() : ignite.cluster().forLocal();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         int messages = MSGS;
 
@@ -404,7 +404,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = gridCount() > 1 ? ignite.cluster().forRemotes() : ignite.cluster().forLocal();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendOrderedMessages(ignite, grp);
     }
@@ -417,7 +417,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forServers();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendOrderedMessages(ignite, grp);
     }
@@ -430,7 +430,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forClients();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendOrderedMessages(ignite, grp);
     }
@@ -443,7 +443,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forClients();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendOrderedMessages(ignite, grp);
     }

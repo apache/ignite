@@ -395,7 +395,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 cctx.cacheId(),
                 evtType,
                 key,
-                evtType == REMOVED && lsnr.oldValueRequired() ? oldVal : newVal,
+                (!internal && evtType == REMOVED && lsnr.oldValueRequired()) ? oldVal : newVal,
                 lsnr.oldValueRequired() ? oldVal : null,
                 lsnr.keepBinary(),
                 partId,

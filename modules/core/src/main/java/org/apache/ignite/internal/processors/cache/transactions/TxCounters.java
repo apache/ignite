@@ -17,21 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Collections;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCounters;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 
 /**
  * Values which should be tracked during transaction execution and applied on commit.
  */
 public class TxCounters {
     /** Size changes for cache partitions made by transaction */
-    private final ConcurrentMap<Integer, ConcurrentMap<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
-    /** Update counters for cache partitions in the end of transaction */
-    private Map<Integer, PartitionUpdateCounters> updCntrs;
+    private final Map<Integer, Map<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
+
+    /** Per-partition update counter accumulator. */
+    private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
+
+    /** Final update counters for cache partitions in the end of transaction */
+    private Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**
      * Accumulates size change for cache partition.
@@ -41,42 +45,85 @@ public class TxCounters {
      * @param delta Size delta.
      */
     public void accumulateSizeDelta(int cacheId, int part, long delta) {
-        ConcurrentMap<Integer, AtomicLong> partDeltas = sizeDeltas.get(cacheId);
-
-        if (partDeltas == null) {
-            ConcurrentMap<Integer, AtomicLong> partDeltas0 =
-                sizeDeltas.putIfAbsent(cacheId, partDeltas = new ConcurrentHashMap<>());
-
-            if (partDeltas0 != null)
-                partDeltas = partDeltas0;
-        }
-
-        AtomicLong accDelta = partDeltas.get(part);
-
-        if (accDelta == null) {
-            AtomicLong accDelta0 = partDeltas.putIfAbsent(part, accDelta = new AtomicLong());
-
-            if (accDelta0 != null)
-                accDelta = accDelta0;
-        }
+        AtomicLong accDelta = accumulator(sizeDeltas, cacheId, part);
 
         // here AtomicLong is used more as a container,
         // every instance is assumed to be accessed in thread-confined manner
         accDelta.set(accDelta.get() + delta);
     }
 
-    /** */
-    public void updateCounters(Map<Integer, PartitionUpdateCounters> updCntrs) {
+    /**
+     * @return Map of size changes for cache partitions made by transaction.
+     */
+    public Map<Integer, Map<Integer, AtomicLong>> sizeDeltas() {
+        return sizeDeltas;
+    }
+
+    /**
+     * @param updCntrs Final update counters.
+     */
+    public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
         this.updCntrs = updCntrs;
     }
 
-    /** */
-    public Map<Integer, PartitionUpdateCounters> updateCounters() {
-        return updCntrs != null ? Collections.unmodifiableMap(updCntrs) : Collections.emptyMap();
+    /**
+     * @return Final update counters.
+     */
+    public Collection<PartitionUpdateCountersMessage> updateCounters() {
+        return updCntrs;
     }
 
-    /** */
-    public Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas() {
-        return Collections.unmodifiableMap(sizeDeltas);
+    /**
+     * @return Accumulated update counters.
+     */
+    public Map<Integer, Map<Integer, AtomicLong>> accumulatedUpdateCounters() {
+        return updCntrsAcc;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param part Partition number.
+     */
+    public void incrementUpdateCounter(int cacheId, int part) {
+        accumulator(updCntrsAcc, cacheId, part).incrementAndGet();
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param part Partition number.
+     */
+    public void decrementUpdateCounter(int cacheId, int part) {
+        long acc = accumulator(updCntrsAcc, cacheId, part).decrementAndGet();
+
+        assert acc >= 0;
+    }
+
+    /**
+     * @param accMap Map to obtain accumulator from.
+     * @param cacheId Cache id.
+     * @param part Partition number.
+     * @return Accumulator.
+     */
+    private AtomicLong accumulator(Map<Integer, Map<Integer, AtomicLong>> accMap, int cacheId, int part) {
+        Map<Integer, AtomicLong> cacheAccs = accMap.get(cacheId);
+
+        if (cacheAccs == null) {
+            Map<Integer, AtomicLong> cacheAccs0 =
+                accMap.putIfAbsent(cacheId, cacheAccs = new ConcurrentHashMap<>());
+
+            if (cacheAccs0 != null)
+                cacheAccs = cacheAccs0;
+        }
+
+        AtomicLong acc = cacheAccs.get(part);
+
+        if (acc == null) {
+            AtomicLong accDelta0 = cacheAccs.putIfAbsent(part, acc = new AtomicLong());
+
+            if (accDelta0 != null)
+                acc = accDelta0;
+        }
+
+        return acc;
     }
 }

@@ -27,8 +27,17 @@ export default class UserNotificationsService {
     /** @type {ng.IQService} */
     $q;
 
+    /**
+     * @param {ng.IHttpService} $http    
+     * @param {mgcrea.ngStrap.modal.IModalService} $modal   
+     * @param {ng.IQService} $q       
+     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
+     */
     constructor($http, $modal, $q, Messages) {
-        Object.assign(this, {$http, $modal, $q, Messages});
+        this.$http = $http;
+        this.$modal = $modal;
+        this.$q = $q;
+        this.Messages = Messages;
 
         this.message = null;
         this.isShown = false;

@@ -82,7 +82,7 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
             assert future.tx.queryEnlisted() || future.cnt == 0;
 
             return new GridNearTxQueryEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
-                future.nearLockVer, future.cnt, future.tx.empty() && !future.tx.queryEnlisted());
+                future.nearLockVer, future.cnt, future.tx.empty() && !future.tx.queryEnlisted(), future.newDhtNodes);
         }
         catch (IgniteCheckedException e) {
             return new GridNearTxQueryEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId, future.nearLockVer, e);
@@ -90,29 +90,28 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
     }
 
     /**
-     * @param future Enlist future.
+     * @param fut Enlist future.
      * @return Enlist response.
      */
-    @NotNull private static GridNearTxQueryResultsEnlistResponse createResponse(GridDhtTxQueryResultsEnlistFuture future) {
+    @NotNull private static GridNearTxQueryResultsEnlistResponse createResponse(GridDhtTxQueryResultsEnlistFuture fut) {
         try {
-            future.get();
+            fut.get();
 
             GridCacheVersion ver = null;
             IgniteUuid id = null;
-            GridLongList updCntrs = null;
 
-            if (future.hasNearNodeUpdates) {
-                ver = future.cctx.tm().mappedVersion(future.nearLockVer);
-                id = future.futId;
-                updCntrs = future.nearUpdCntrs;
+            if (fut.hasNearNodeUpdates) {
+                ver = fut.cctx.tm().mappedVersion(fut.nearLockVer);
+
+                id = fut.futId;
             }
 
-            return new GridNearTxQueryResultsEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
-                future.nearLockVer, future.cnt, ver, id, updCntrs);
+            return new GridNearTxQueryResultsEnlistResponse(fut.cctx.cacheId(), fut.nearFutId, fut.nearMiniId,
+                fut.nearLockVer, fut.cnt, ver, id, fut.newDhtNodes);
         }
         catch (IgniteCheckedException e) {
-            return new GridNearTxQueryResultsEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
-                future.nearLockVer, e);
+            return new GridNearTxQueryResultsEnlistResponse(fut.cctx.cacheId(), fut.nearFutId, fut.nearMiniId,
+                fut.nearLockVer, e);
         }
     }
 

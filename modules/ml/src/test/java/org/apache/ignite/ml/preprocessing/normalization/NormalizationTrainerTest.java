@@ -17,16 +17,14 @@
 
 package org.apache.ignite.ml.preprocessing.normalization;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -34,26 +32,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Tests for {@link BinarizationTrainer}.
  */
-@RunWith(Parameterized.class)
-public class NormalizationTrainerTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions")
-    public static Iterable<Integer[]> data() {
-        return Arrays.asList(
-            new Integer[] {1},
-            new Integer[] {2},
-            new Integer[] {3},
-            new Integer[] {5},
-            new Integer[] {7},
-            new Integer[] {100},
-            new Integer[] {1000}
-        );
-    }
-
-    /** Number of partitions. */
-    @Parameterized.Parameter
-    public int parts;
-
+public class NormalizationTrainerTest extends TrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFit() {

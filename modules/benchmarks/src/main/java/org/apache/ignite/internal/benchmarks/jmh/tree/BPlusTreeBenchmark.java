@@ -137,7 +137,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
     public void tearDown() throws Exception {
         tree.destroy();
 
-        pageMem.stop();
+        pageMem.stop(true);
     }
 
     /**

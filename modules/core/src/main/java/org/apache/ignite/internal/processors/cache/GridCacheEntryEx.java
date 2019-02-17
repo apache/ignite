@@ -22,12 +22,13 @@ import java.util.List;
 import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -78,6 +79,11 @@ public interface GridCacheEntryEx {
      * @return {@code True} if local.
      */
     public boolean isLocal();
+
+    /**
+     * @return {@code True} if this is n entry from MVCC cache.
+     */
+    public boolean isMvcc();
 
     /**
      * @return {@code False} if entry belongs to cache map, {@code true} if this entry was created in colocated
@@ -346,13 +352,16 @@ public interface GridCacheEntryEx {
      * @param tx Cache transaction.
      * @param affNodeId Partitioned node iD.
      * @param val Value to set.
+     * @param entryProc Entry processor.
+     * @param invokeArgs Entry processor invoke arguments.
      * @param ttl0 TTL.
      * @param topVer Topology version.
-     * @param updateCntr Update counter.
      * @param mvccVer Mvcc version.
      * @param op Cache operation.
      * @param needHistory Whether to collect rows created or affected by the current tx.
      * @param noCreate Entry should not be created when enabled, e.g. SQL INSERT.
+     * @param filter Filter.
+     * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
@@ -362,21 +371,25 @@ public interface GridCacheEntryEx {
         @Nullable IgniteInternalTx tx,
         UUID affNodeId,
         CacheObject val,
+        EntryProcessor entryProc,
+        Object[] invokeArgs,
         long ttl0,
         AffinityTopologyVersion topVer,
-        @Nullable Long updateCntr,
         MvccSnapshot mvccVer,
         GridCacheOperation op,
         boolean needHistory,
-        boolean noCreate) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        boolean noCreate,
+        @Nullable CacheEntryPredicate filter,
+        boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Cache transaction.
      * @param affNodeId Partitioned node iD.
      * @param topVer Topology version.
-     * @param updateCntr Update counter.
      * @param mvccVer Mvcc version.
      * @param needHistory Whether to collect rows created or affected by the current tx.
+     * @param filter Filter.
+     * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
@@ -386,9 +399,10 @@ public interface GridCacheEntryEx {
         @Nullable IgniteInternalTx tx,
         UUID affNodeId,
         AffinityTopologyVersion topVer,
-        @Nullable Long updateCntr,
         MvccSnapshot mvccVer,
-        boolean needHistory) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        boolean needHistory,
+        @Nullable CacheEntryPredicate filter,
+        boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Transaction adapter.
@@ -1157,7 +1171,6 @@ public interface GridCacheEntryEx {
      * @param tx Transaction.
      * @param affNodeId Affinity node id.
      * @param topVer Topology version.
-     * @param updateCntr Update counter.
      * @param op Cache operation.
      * @param mvccVer Mvcc version.  @return Update result.
      * @throws IgniteCheckedException, If failed.
@@ -1167,7 +1180,6 @@ public interface GridCacheEntryEx {
         IgniteInternalTx tx,
         UUID affNodeId,
         AffinityTopologyVersion topVer,
-        Long updateCntr,
         List<GridCacheEntryInfo> entries,
         GridCacheOperation op,
         MvccSnapshot mvccVer)

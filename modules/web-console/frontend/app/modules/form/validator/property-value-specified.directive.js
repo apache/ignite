@@ -15,7 +15,15 @@
  * limitations under the License.
  */
 
-export default ['ignitePropertyValueSpecified', [() => {
+import _ from 'lodash';
+
+export default () => {
+    /**
+     * @param {ng.IScope} scope
+     * @param {JQLite} el
+     * @param {ng.IAttributes} attrs
+     * @param {[ng.INgModelController]} [ngModel]
+     */
     const link = (scope, el, attrs, [ngModel]) => {
         if (_.isUndefined(attrs.ignitePropertyValueSpecified) || !attrs.ignitePropertyValueSpecified)
             return;
@@ -28,4 +36,4 @@ export default ['ignitePropertyValueSpecified', [() => {
         link,
         require: ['ngModel']
     };
-}]];
+};

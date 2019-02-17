@@ -18,7 +18,10 @@
 import controller from './activities-user-dialog.controller';
 import templateUrl from './activities-user-dialog.tpl.pug';
 
-export default ['$modal', function($modal) {
+/**
+ * @param {mgcrea.ngStrap.modal.IModalService} $modal
+ */
+export default function service($modal) {
     return function({ show = true, user }) {
         const ActivitiesUserDialog = $modal({
             templateUrl,
@@ -33,4 +36,6 @@ export default ['$modal', function($modal) {
         return ActivitiesUserDialog.$promise
              .then(() => ActivitiesUserDialog);
     };
-}];
+}
+
+service.$inject = ['$modal'];

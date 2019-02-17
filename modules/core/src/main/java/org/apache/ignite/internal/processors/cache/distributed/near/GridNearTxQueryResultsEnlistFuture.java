@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -63,10 +62,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * A future tracking requests for remote nodes transaction enlisting and locking
  * of entries produced with complex DML queries requiring reduce step.
  */
-public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlistFuture {
-    /** */
-    private static final long serialVersionUID = 4339957209840477447L;
-
+public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractEnlistFuture {
     /** */
     public static final int DFLT_BATCH_SIZE = 1024;
 
@@ -302,15 +298,13 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
     }
 
     /**
-     *
      * @param primaryId Primary node id.
      * @param rows Rows.
      * @param dhtVer Dht version assigned at primary node.
      * @param dhtFutId Dht future id assigned at primary node.
-     * @param updCntrs Update counters.
      */
     private void processBatchLocalBackupKeys(UUID primaryId, List<Object> rows, GridCacheVersion dhtVer,
-        IgniteUuid dhtFutId, GridLongList updCntrs) {
+        IgniteUuid dhtFutId) {
         assert dhtVer != null;
         assert dhtFutId != null;
 
@@ -366,7 +360,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                 }
             }
 
-            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions(), updCntrs);
+            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions());
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -507,8 +501,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             Batch batch = batches.get(nodeId);
 
             if (batch != null && !F.isEmpty(batch.localBackupRows()) && res.dhtFutureId() != null)
-                processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId(),
-                    res.updateCounters());
+                processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId());
             else
                 sendNextBatches(nodeId);
         }

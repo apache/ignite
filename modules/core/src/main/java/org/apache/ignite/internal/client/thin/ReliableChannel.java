@@ -199,7 +199,7 @@ final class ReliableChannel implements AutoCloseable {
 
     /** */
     private void changeServer() {
-        if (backups.size() > 0) {
+        if (!backups.isEmpty()) {
             backups.addLast(primary);
 
             primary = backups.removeFirst();

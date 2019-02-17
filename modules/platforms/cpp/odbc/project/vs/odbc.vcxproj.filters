@@ -32,6 +32,12 @@
     <Filter Include="Code\ssl">
       <UniqueIdentifier>{857734a3-6b29-412a-b75e-7fcc9d3fef8c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\sql">
+      <UniqueIdentifier>{7f412a6b-279a-4a22-b87f-eafb1545a8d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\streaming">
+      <UniqueIdentifier>{a14eb935-4a95-4202-a83b-12e715cf1cf1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\odbc.cpp">
@@ -168,6 +174,27 @@
     </ClCompile>
     <ClCompile Include="..\..\src\nested_tx_mode.cpp">
       <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sql\sql_lexer.cpp">
+      <Filter>Code\sql</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sql\sql_parser.cpp">
+      <Filter>Code\sql</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sql\sql_set_streaming_command.cpp">
+      <Filter>Code\sql</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sql\sql_utils.cpp">
+      <Filter>Code\sql</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\streaming\streaming_batch.cpp">
+      <Filter>Code\streaming</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\streaming_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\streaming\streaming_context.cpp">
+      <Filter>Code\streaming</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -334,6 +361,36 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\nested_tx_mode.h">
       <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_lexer.h">
+      <Filter>Code\sql</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_parser.h">
+      <Filter>Code\sql</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_token.h">
+      <Filter>Code\sql</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_set_streaming_command.h">
+      <Filter>Code\sql</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_command.h">
+      <Filter>Code\sql</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_utils.h">
+      <Filter>Code\sql</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\internal_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_batch.h">
+      <Filter>Code\streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\streaming_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_context.h">
+      <Filter>Code\streaming</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

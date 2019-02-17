@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Tests distributed queries over set of partitions on unstable topology.
@@ -110,14 +111,15 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
             }
         }, RESTART_THREADS_CNT);
 
-        try {
-            fut2.get(60, TimeUnit.SECONDS);
-        } catch (IgniteFutureTimeoutCheckedException ignored) {
-            stop.set(true);
-        }
+        // Test duration.
+        U.sleep(60_000);
+
+        stop.set(true);
 
         try {
             fut.get();
+
+            fut2.get();
         } finally {
             log().info("Queries count: " + cnt.get());
 

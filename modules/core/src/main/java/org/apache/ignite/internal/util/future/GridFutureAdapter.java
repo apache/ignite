@@ -98,14 +98,15 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /** */
-    private boolean ignoreInterrupts;
+    private volatile boolean ignoreInterrupts;
 
     /** */
     @GridToStringExclude
     private volatile Object state = INIT;
 
     /**
-     * Determines whether the future will ignore interrupts.
+     * Determines whether the future will ignore interrupts while waiting for result in {@code get()} methods.
+     * This call should <i>happen before</i> subsequent {@code get()} in order to have guaranteed effect.
      */
     public void ignoreInterrupts() {
         ignoreInterrupts = true;
@@ -156,7 +157,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         A.ensure(timeout >= 0, "timeout cannot be negative: " + timeout);
         A.notNull(unit, "unit");
 
-        return get0(unit.toNanos(timeout));
+        return get0(ignoreInterrupts, unit.toNanos(timeout));
     }
 
     /**
@@ -197,12 +198,13 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /**
+     * @param ignoreInterrupts Whether to ignore interrupts.
      * @param nanosTimeout Timeout (nanoseconds).
      * @return Result.
      * @throws IgniteFutureTimeoutCheckedException If timeout reached before computation completed.
      * @throws IgniteCheckedException If error occurred.
      */
-    @Nullable private R get0(long nanosTimeout) throws IgniteCheckedException {
+    @Nullable private R get0(boolean ignoreInterrupts, long nanosTimeout) throws IgniteCheckedException {
         if (isDone() || !registerWaiter(Thread.currentThread()))
             return resolve();
 

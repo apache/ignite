@@ -2384,7 +2384,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         reuseList.addForRecycle(bag);
 
-        assert bag.size() == 0 : bag.size();
+        assert bag.isEmpty() : bag.size();
 
         return pagesCnt;
     }

@@ -145,6 +145,7 @@
     <Compile Include="Client\Cache\SqlQueryTest.cs" />
     <Compile Include="Client\Cache\SqlQueryTestBase.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
+    <Compile Include="Client\EndpointTest.cs" />
     <Compile Include="Client\RawSecureSocketTest.cs" />
     <Compile Include="Client\RawSocketTest.cs" />
     <Compile Include="Client\ClientConnectionTest.cs" />

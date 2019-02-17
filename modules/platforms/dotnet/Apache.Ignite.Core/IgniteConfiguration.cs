@@ -39,6 +39,8 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Encryption;
+    using Apache.Ignite.Core.Encryption.Keystore;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
@@ -205,6 +207,12 @@ namespace Apache.Ignite.Core
         /** Map from user-defined listener to it's id. */
         private Dictionary<object, int> _localEventListenerIds;
 
+        /** MVCC vacuum frequency. */
+        private long? _mvccVacuumFreq;
+
+        /** MVCC vacuum thread count. */
+        private int? _mvccVacuumThreadCnt;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -229,6 +237,16 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="AuthenticationEnabled"/> property.
         /// </summary>
         public const bool DefaultAuthenticationEnabled = false;
+
+        /// <summary>
+        /// Default value for <see cref="MvccVacuumFrequency"/> property.
+        /// </summary>
+        public const long DefaultMvccVacuumFrequency = 5000;
+
+        /// <summary>
+        /// Default value for <see cref="MvccVacuumThreadCount"/> property.
+        /// </summary>
+        public const int DefaultMvccVacuumThreadCount = 2;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -309,6 +327,8 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
             writer.WriteBooleanNullable(_authenticationEnabled);
+            writer.WriteLongNullable(_mvccVacuumFreq);
+            writer.WriteIntNullable(_mvccVacuumThreadCnt);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -351,6 +371,26 @@ namespace Apache.Ignite.Core
                     throw new InvalidOperationException("Unsupported discovery SPI: " + disco.GetType());
 
                 tcpDisco.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            var enc = EncryptionSpi;
+
+            if (enc != null)
+            {
+                writer.WriteBoolean(true);
+
+                var keystoreEnc = enc as KeystoreEncryptionSpi;
+                
+                if (keystoreEnc == null)
+                    throw new InvalidOperationException("Unsupported encryption SPI: " + enc.GetType());
+
+                writer.WriteString(keystoreEnc.MasterKeyName);
+                writer.WriteInt(keystoreEnc.KeySize);
+                writer.WriteString(keystoreEnc.KeyStorePath);
+                writer.WriteCharArray(
+                    keystoreEnc.KeyStorePassword == null ? null : keystoreEnc.KeyStorePassword.ToCharArray());
             }
             else
                 writer.WriteBoolean(false);
@@ -675,6 +715,8 @@ namespace Apache.Ignite.Core
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
             _authenticationEnabled = r.ReadBooleanNullable();
+            _mvccVacuumFreq = r.ReadLongNullable();
+            _mvccVacuumThreadCnt = r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -706,6 +748,9 @@ namespace Apache.Ignite.Core
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
+
+            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ? 
+                new KeystoreEncryptionSpi(r) : null;
 
             // Communication config
             CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
@@ -1035,6 +1080,12 @@ namespace Apache.Ignite.Core
         /// Null for default communication.
         /// </summary>
         public ICommunicationSpi CommunicationSpi { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the encryption service provider.
+        /// Null for disabled encryption.
+        /// </summary>
+        public IEncryptionSpi EncryptionSpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.
@@ -1550,6 +1601,26 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Time interval between MVCC vacuum runs in milliseconds.
+        /// </summary>
+        [DefaultValue(DefaultMvccVacuumFrequency)]
+        public long MvccVacuumFrequency
+        {
+            get { return _mvccVacuumFreq ?? DefaultMvccVacuumFrequency; }
+            set { _mvccVacuumFreq = value; }
+        }
+
+        /// <summary>
+        /// Number of MVCC vacuum threads.
+        /// </summary>
+        [DefaultValue(DefaultMvccVacuumThreadCount)]
+        public int MvccVacuumThreadCount
+        {
+            get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
+            set { _mvccVacuumThreadCnt = value; }
+        }
+
+        /// <summary>
         /// Gets or sets predefined failure handlers implementation.
         /// A failure handler handles critical failures of Ignite instance accordingly:
         /// <para><see cref="NoOpFailureHandler"/> -- do nothing.</para>
@@ -1568,6 +1639,7 @@ namespace Apache.Ignite.Core
         /// <para/>
         /// By default schema names are case-insensitive. Use quotes to enforce case sensitivity.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> SqlSchemas { get; set; }
     }
 }

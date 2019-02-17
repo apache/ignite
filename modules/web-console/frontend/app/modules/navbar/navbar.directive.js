@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['igniteNavbar', ['IgniteNavbar', (IgniteNavbar) => {
+export default function factory(IgniteNavbar) {
     function controller() {
         const ctrl = this;
 
@@ -27,4 +27,6 @@ export default ['igniteNavbar', ['IgniteNavbar', (IgniteNavbar) => {
         controller,
         controllerAs: 'navbar'
     };
-}]];
+}
+
+factory.$inject = ['IgniteNavbar'];

@@ -18,7 +18,7 @@
 import template from './ui-ace-pojos.pug';
 import controller from './ui-ace-pojos.controller';
 
-export default ['igniteUiAcePojos', [function() {
+export default function() {
     const link = ($scope, $el, $attrs, [igniteUiAceTabs]) => {
         if (igniteUiAceTabs.onLoad)
             $scope.onLoad = igniteUiAceTabs.onLoad;
@@ -43,4 +43,4 @@ export default ['igniteUiAcePojos', [function() {
         controllerAs: 'ctrl',
         require: ['?^igniteUiAceTabs']
     };
-}]];
+}

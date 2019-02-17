@@ -40,7 +40,7 @@ public class DecisionTreeDataTest {
 
     /** Use index. */
     @Parameterized.Parameter
-    public boolean useIndex;
+    public boolean useIdx;
 
     /** */
     @Test
@@ -48,7 +48,7 @@ public class DecisionTreeDataTest {
         double[][] features = new double[][]{{0}, {1}, {2}, {3}, {4}, {5}};
         double[] labels = new double[]{0, 1, 2, 3, 4, 5};
 
-        DecisionTreeData data = new DecisionTreeData(features, labels, useIndex);
+        DecisionTreeData data = new DecisionTreeData(features, labels, useIdx);
         DecisionTreeData filteredData = data.filter(obj -> obj[0] > 2);
 
         assertArrayEquals(new double[][]{{3}, {4}, {5}}, filteredData.getFeatures());
@@ -61,7 +61,7 @@ public class DecisionTreeDataTest {
         double[][] features = new double[][]{{4, 1}, {3, 3}, {2, 0}, {1, 4}, {0, 2}};
         double[] labels = new double[]{0, 1, 2, 3, 4};
 
-        DecisionTreeData data = new DecisionTreeData(features, labels, useIndex);
+        DecisionTreeData data = new DecisionTreeData(features, labels, useIdx);
 
         data.sort(0);
 

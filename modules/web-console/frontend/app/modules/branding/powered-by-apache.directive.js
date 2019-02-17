@@ -17,7 +17,10 @@
 
 import template from './powered-by-apache.pug';
 
-export default ['ignitePoweredByApache', ['IgniteBranding', (branding) => {
+/**
+ * @param {import('./branding.service').default} branding
+ */
+export default function factory(branding) {
     function controller() {
         const ctrl = this;
 
@@ -30,5 +33,7 @@ export default ['ignitePoweredByApache', ['IgniteBranding', (branding) => {
         controller,
         controllerAs: 'poweredBy'
     };
-}]];
+}
+
+factory.$inject = ['IgniteBranding'];
 

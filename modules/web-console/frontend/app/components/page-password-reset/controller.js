@@ -20,9 +20,9 @@ export default class {
 
     /**
      * @param {mgcrea.ngStrap.modal.IModalService} $modal
-     * @param $http
-     * @param {StateProvider} $state
-     * @param Messages
+     * @param {ng.IHttpService} $http
+     * @param {import('@uirouter/angularjs').StateService} $state
+     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
      */
     constructor($modal, $http, $state, Messages) {
         this.$http = $http;

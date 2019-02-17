@@ -24,6 +24,8 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -56,6 +58,12 @@ public class CacheQueryEvictDataLostTest extends GridCommonAbstractTest {
         ccfg.setIndexedTypes(Integer.class, TestData.class);
 
         cfg.setCacheConfiguration(ccfg);
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setMaxSize(256L * 1024 * 1024));
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }

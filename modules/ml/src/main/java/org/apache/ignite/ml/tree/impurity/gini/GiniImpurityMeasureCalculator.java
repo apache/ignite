@@ -39,22 +39,22 @@ public class GiniImpurityMeasureCalculator extends ImpurityMeasureCalculator<Gin
      * Constructs a new instance of Gini impurity measure calculator.
      *
      * @param lbEncoder Label encoder which defines integer value for every label class.
-     * @param useIndex Use index while calculate.
+     * @param useIdx Use index while calculate.
      */
-    public GiniImpurityMeasureCalculator(Map<Double, Integer> lbEncoder, boolean useIndex) {
-        super(useIndex);
+    public GiniImpurityMeasureCalculator(Map<Double, Integer> lbEncoder, boolean useIdx) {
+        super(useIdx);
         this.lbEncoder = lbEncoder;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public StepFunction<GiniImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
-        TreeDataIndex index = null;
+        TreeDataIndex idx = null;
         boolean canCalculate = false;
 
-        if (useIndex) {
-            index = data.createIndexByFilter(depth, filter);
-            canCalculate = index.rowsCount() > 0;
+        if (useIdx) {
+            idx = data.createIndexByFilter(depth, filter);
+            canCalculate = idx.rowsCount() > 0;
         }
         else {
             data = data.filter(filter);
@@ -62,47 +62,47 @@ public class GiniImpurityMeasureCalculator extends ImpurityMeasureCalculator<Gin
         }
 
         if (canCalculate) {
-            int rowsCnt = rowsCount(data, index);
-            int colsCnt = columnsCount(data, index);
+            int rowsCnt = rowsCount(data, idx);
+            int colsCnt = columnsCount(data, idx);
 
             StepFunction<GiniImpurityMeasure>[] res = new StepFunction[colsCnt];
 
             long right[] = new long[lbEncoder.size()];
             for (int i = 0; i < rowsCnt; i++) {
-                double lb = getLabelValue(data, index, 0, i);
+                double lb = getLabelValue(data, idx, 0, i);
                 right[getLabelCode(lb)]++;
             }
 
             for (int col = 0; col < res.length; col++) {
-                if(!useIndex)
+                if (!useIdx)
                     data.sort(col);
 
                 double[] x = new double[rowsCnt + 1];
                 GiniImpurityMeasure[] y = new GiniImpurityMeasure[rowsCnt + 1];
 
                 long[] left = new long[lbEncoder.size()];
-                long[] rightCopy = Arrays.copyOf(right, right.length);
+                long[] rightCp = Arrays.copyOf(right, right.length);
 
                 int xPtr = 0, yPtr = 0;
                 x[xPtr++] = Double.NEGATIVE_INFINITY;
                 y[yPtr++] = new GiniImpurityMeasure(
                     Arrays.copyOf(left, left.length),
-                    Arrays.copyOf(rightCopy, rightCopy.length)
+                    Arrays.copyOf(rightCp, rightCp.length)
                 );
 
                 for (int i = 0; i < rowsCnt; i++) {
-                    double lb = getLabelValue(data, index, col, i);
+                    double lb = getLabelValue(data, idx, col, i);
                     left[getLabelCode(lb)]++;
-                    rightCopy[getLabelCode(lb)]--;
+                    rightCp[getLabelCode(lb)]--;
 
-                    double featureVal = getFeatureValue(data, index, col, i);
-                    if (i < (rowsCnt - 1) && getFeatureValue(data, index, col, i + 1) == featureVal)
+                    double featureVal = getFeatureValue(data, idx, col, i);
+                    if (i < (rowsCnt - 1) && getFeatureValue(data, idx, col, i + 1) == featureVal)
                         continue;
 
                     x[xPtr++] = featureVal;
                     y[yPtr++] = new GiniImpurityMeasure(
                         Arrays.copyOf(left, left.length),
-                        Arrays.copyOf(rightCopy, rightCopy.length)
+                        Arrays.copyOf(rightCp, rightCp.length)
                     );
                 }
 

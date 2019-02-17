@@ -67,7 +67,7 @@ public class StripedExecutor implements ExecutorService {
      * @param poolName Pool name.
      * @param log Logger.
      * @param errHnd Critical failure handler.
-     * @param gridWorkerLsnr listener to link with every stripe worker.
+     * @param gridWorkerLsnr Listener to link with every stripe worker.
      */
     public StripedExecutor(
         int cnt,
@@ -487,10 +487,19 @@ public class StripedExecutor implements ExecutorService {
                 Runnable cmd;
 
                 try {
-                    cmd = take();
+                    blockingSectionBegin();
+
+                    try {
+                        cmd = take();
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
                     if (cmd != null) {
                         active = true;
+
+                        updateHeartbeat();
 
                         try {
                             cmd.run();
@@ -500,6 +509,8 @@ public class StripedExecutor implements ExecutorService {
                             completedCnt++;
                         }
                     }
+
+                    onIdle();
                 }
                 catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();

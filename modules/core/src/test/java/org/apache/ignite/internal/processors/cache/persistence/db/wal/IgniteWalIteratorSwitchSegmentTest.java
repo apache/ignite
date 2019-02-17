@@ -18,13 +18,18 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
+import java.nio.channels.Channel;
 import java.nio.file.Paths;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -40,8 +45,11 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -58,6 +66,8 @@ import org.junit.Assert;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /***
  * Test check correct switch segment if in the tail of segment have garbage.
@@ -159,7 +169,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
-    public void test() throws Exception {
+    public void testInvariantSwitchSegment() throws Exception {
         for (int serVer : checkSerializerVers) {
             for (Class walMgrClass : checkWalManagers) {
                 try {
@@ -171,6 +181,22 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                     U.delete(Paths.get(U.defaultWorkDirectory()));
                 }
             }
+        }
+    }
+
+    /**
+     * Test for check switch segment from work dir to archive dir during iteration.
+     *
+     * @throws Exception If some thing failed.
+     */
+    public void testSwitchReadingSegmentFromWorkToArchive() throws Exception {
+        for (int serVer : checkSerializerVers) {
+                try {
+                    checkSwitchReadingSegmentDuringIteration(FileWriteAheadLogManager.class, serVer);
+                }
+                finally {
+                    U.delete(Paths.get(U.defaultWorkDirectory()));
+                }
         }
     }
 
@@ -299,6 +325,101 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         Assert.assertEquals("Not all records read during iteration.", expectedRecords, actualRecords);
     }
 
+    /**
+     * @param walMgrClass WAL manager class.
+     * @param serVer WAL serializer version.
+     * @throws Exception If some thing failed.
+     */
+    private void checkSwitchReadingSegmentDuringIteration(Class walMgrClass, int serVer) throws Exception {
+        String workDir = U.defaultWorkDirectory();
+
+        T2<IgniteWriteAheadLogManager, RecordSerializer> initTup = initiate(walMgrClass, serVer, workDir);
+
+        IgniteWriteAheadLogManager walMgr = initTup.get1();
+
+        RecordSerializer recordSerializer = initTup.get2();
+
+        MetastoreDataRecord rec = new MetastoreDataRecord("0", new byte[100]);
+
+        int recSize = recordSerializer.size(rec);
+
+        // Add more record for rollover to the next segment.
+        int recordsToWrite = SEGMENT_SIZE / recSize + 100;
+
+        SegmentAware segmentAware = GridTestUtils.getFieldValue(walMgr, "segmentAware");
+
+        //guard from archivation before iterator would be created.
+        segmentAware.checkCanReadArchiveOrReserveWorkSegment(0);
+
+        for (int i = 0; i < recordsToWrite; i++)
+            walMgr.log(new MetastoreDataRecord(rec.key(), rec.value()));
+
+        walMgr.flush(null, true);
+
+        int expectedRecords = recordsToWrite;
+        AtomicInteger actualRecords = new AtomicInteger(0);
+
+        AtomicReference<String> startedSegmentPath = new AtomicReference<>();
+        AtomicReference<String> finishedSegmentPath = new AtomicReference<>();
+
+        CountDownLatch startedIteratorLatch = new CountDownLatch(1);
+        CountDownLatch finishedArchivedLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<Object> future = GridTestUtils.runAsync(
+            () -> {
+                // Check that switch segment works as expected and all record is reachable.
+                try (WALIterator it = walMgr.replay(null)) {
+                    Object handle = getFieldValueHierarchy(it,  "currWalSegment");
+
+                    FileInput in = getFieldValueHierarchy(handle, "in");
+                    Object delegate = getFieldValueHierarchy(in.io(), "delegate");
+                    Channel ch = getFieldValueHierarchy(delegate, "ch");
+                    String path = getFieldValueHierarchy(ch, "path");
+
+                    startedSegmentPath.set(path);
+
+                    startedIteratorLatch.countDown();
+
+                    while (it.hasNext()) {
+                        IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
+
+                        WALRecord rec0 = tup.get2();
+
+                        if (rec0.type() == METASTORE_DATA_RECORD)
+                            actualRecords.incrementAndGet();
+
+                        finishedArchivedLatch.await();
+                    }
+
+                    in = getFieldValueHierarchy(handle, "in");
+                    delegate = getFieldValueHierarchy(in.io(), "delegate");
+                    ch = getFieldValueHierarchy(delegate, "ch");
+                    path = getFieldValueHierarchy(ch, "path");
+
+                    finishedSegmentPath.set(path);
+                }
+
+                return null;
+            }
+        );
+
+        startedIteratorLatch.await();
+
+        segmentAware.releaseWorkSegment(0);
+
+        waitForCondition(() -> segmentAware.lastArchivedAbsoluteIndex() == 0, 5000);
+
+        finishedArchivedLatch.countDown();
+
+        future.get();
+
+        //should started iteration from work directory but finish from archive directory.
+        assertEquals(workDir + WORK_SUB_DIR + "/0000000000000000.wal", startedSegmentPath.get());
+        assertEquals(workDir + ARCHIVE_SUB_DIR + "/0000000000000000.wal", finishedSegmentPath.get());
+
+        Assert.assertEquals("Not all records read during iteration.", expectedRecords, actualRecords.get());
+    }
+
     /***
      * Initiate WAL manager.
      *
@@ -323,6 +444,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 cfg.setDataStorageConfiguration(
                     new DataStorageConfiguration()
                         .setWalSegmentSize(SEGMENT_SIZE)
+                        .setWalRecordIteratorBufferSize(SEGMENT_SIZE / 2)
                         .setWalMode(WALMode.FSYNC)
                         .setWalPath(workDir + WORK_SUB_DIR)
                         .setWalArchivePath(workDir + ARCHIVE_SUB_DIR)

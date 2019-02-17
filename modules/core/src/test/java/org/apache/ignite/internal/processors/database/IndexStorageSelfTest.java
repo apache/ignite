@@ -129,7 +129,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            mem.stop();
+            mem.stop(true);
         }
     }
 

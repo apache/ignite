@@ -33,6 +33,8 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,37 +43,23 @@ import org.jetbrains.annotations.NotNull;
  */
 public class LogisticRegressionSGDTrainer<P extends Serializable> extends SingleLabelDatasetTrainer<LogisticRegressionModel> {
     /** Update strategy. */
-    private UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
+    private UpdatesStrategy updatesStgy = new UpdatesStrategy<>(
+        new SimpleGDUpdateCalculator(0.2),
+        SimpleGDParameterUpdate::sumLocal,
+        SimpleGDParameterUpdate::avg
+    );
 
     /** Max number of iteration. */
-    private int maxIterations;
+    private int maxIterations = 100;
 
     /** Batch size. */
-    private int batchSize;
+    private int batchSize = 100;
 
     /** Number of local iterations. */
-    private int locIterations;
+    private int locIterations = 100;
 
     /** Seed for random generator. */
-    private long seed;
-
-    /**
-     * Constructs a new instance of linear regression SGD trainer.
-     *
-     * @param updatesStgy Update strategy.
-     * @param maxIterations Max number of iteration.
-     * @param batchSize Batch size.
-     * @param locIterations Number of local iterations.
-     * @param seed Seed for random generator.
-     */
-    public LogisticRegressionSGDTrainer(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations,
-        int batchSize, int locIterations, long seed) {
-        this.updatesStgy = updatesStgy;
-        this.maxIterations = maxIterations;
-        this.batchSize = batchSize;
-        this.locIterations = locIterations;
-        this.seed = seed;
-    }
+    private long seed = 1234L;
 
     /** {@inheritDoc} */
     @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -202,11 +190,22 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
     }
 
     /**
+     * Set up the regularization parameter.
+     *
+     * @param updatesStgy Update strategy.
+     * @return Trainer with new update strategy parameter value.
+     */
+    public LogisticRegressionSGDTrainer withUpdatesStgy(UpdatesStrategy updatesStgy) {
+        this.updatesStgy = updatesStgy;
+        return this;
+    }
+
+    /**
      * Get the update strategy.
      *
      * @return The property value.
      */
-    public UpdatesStrategy<? super MultilayerPerceptron, P> getUpdatesStgy() {
+    public UpdatesStrategy getUpdatesStgy() {
         return updatesStgy;
     }
 

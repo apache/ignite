@@ -25,7 +25,7 @@ const COLUMNS_DEFS = [
     {displayName: 'OS information', field: 'os', headerTooltip: 'OS information for node\'s host', minWidth: 125}
 ];
 
-export default ['$scope', '$animate', 'uiGridConstants', 'nodes', 'options', function($scope, $animate, uiGridConstants, nodes, options) {
+export default function controller($scope, $animate, uiGridConstants, nodes, options) {
     const $ctrl = this;
 
     const updateSelected = () => {
@@ -65,4 +65,6 @@ export default ['$scope', '$animate', 'uiGridConstants', 'nodes', 'options', fun
         },
         ...options.grid
     };
-}];
+}
+
+controller.$inject = ['$scope', '$animate', 'uiGridConstants', 'nodes', 'options'];

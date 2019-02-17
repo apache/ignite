@@ -51,11 +51,13 @@ public class PipelineTest extends TrainerTest {
             cacheMock.put(i, convertedRow);
         }
 
-        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-            new SimpleGDUpdateCalculator().withLearningRate(0.2),
-            SimpleGDParameterUpdate::sumLocal,
-            SimpleGDParameterUpdate::avg
-        ), 100000, 10, 100, 123L);
+        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+            .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
+                SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+            .withMaxIterations(100000)
+            .withLocIterations(100)
+            .withBatchSize(10)
+            .withSeed(123L);
 
         PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
             .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
@@ -87,12 +89,6 @@ public class PipelineTest extends TrainerTest {
                 convertedRow[j] = row[j];
             cacheMock.put(i, convertedRow);
         }
-
-        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-            new SimpleGDUpdateCalculator().withLearningRate(0.2),
-            SimpleGDParameterUpdate::sumLocal,
-            SimpleGDParameterUpdate::avg
-        ), 100000, 10, 100, 123L);
 
         PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
             .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
