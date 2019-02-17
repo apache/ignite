@@ -171,7 +171,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
-import static org.apache.ignite.internal.processors.query.h2.H2Utils.bindParameters;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.validateTypeDescriptor;
@@ -853,7 +852,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
         }
 
-        bindParameters(stmt, params);
+        H2Utils.bindParameters(stmt, params);
 
         return stmt;
     }
@@ -1268,9 +1267,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"StringEquality", "unchecked"})
-    @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-        GridQueryCancel cancel, boolean registerAsNewQry) {
+    @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
+        String schemaName,
+        SqlFieldsQuery qry,
+        @Nullable SqlClientContext cliCtx,
+        boolean keepBinary,
+        boolean failOnMultipleStmts,
+        MvccQueryTracker tracker,
+        GridQueryCancel cancel,
+        boolean registerAsNewQry
+    ) {
         boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
@@ -1279,16 +1285,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SqlFieldsQuery remainingQry = qry;
 
             while (remainingQry != null) {
+                // Parse.
                 QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts);
 
                 remainingQry = parseRes.remainingQuery();
 
+                // Get next command.
                 SqlFieldsQuery newQry = parseRes.query();
 
-                assert newQry.getSql() != null;
+                // Check if there is enough parameters. Batched statements are not checked at this point
+                // since they pass parameters differently.
+                if (!DmlUtils.isBatched(newQry)) {
+                    int qryParamsCnt = F.isEmpty(newQry.getArgs()) ? 0 : newQry.getArgs().length;
 
+                    if (qryParamsCnt < parseRes.parametersCount())
+                        throw new IgniteSQLException("Invalid number of query parameters [expected=" +
+                            parseRes.parametersCount() + ", actual=" + qryParamsCnt + ']');
+                }
+
+                // Check if cluster state is valid.
                 checkClusterState(parseRes);
 
+                // Execute.
                 if (parseRes.isCommand()) {
                     // Execute command.
                     FieldsQueryCursor<List<?>> cmdRes = executeCommand(
@@ -2284,6 +2302,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public ConnectionManager connections() {
         return connMgr;
+    }
+
+    /**
+     * @return Parser.
+     */
+    public QueryParser parser() {
+        return parser;
     }
 
     /**

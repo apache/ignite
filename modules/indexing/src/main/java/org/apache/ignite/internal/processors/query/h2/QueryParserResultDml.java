@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -28,6 +27,9 @@ import org.jetbrains.annotations.Nullable;
 public class QueryParserResultDml {
     /** Command. */
     private final GridSqlStatement stmt;
+
+    /** Number of parameters. */
+    private final int paramsCnt;
 
     /** MVCC enabled flag. */
     private final boolean mvccEnabled;
@@ -39,11 +41,18 @@ public class QueryParserResultDml {
      * Constructor.
      *
      * @param stmt Command.
+     * @param paramsCnt Number of parameters.
      * @param mvccEnabled Whether MVCC is enabled.
      * @param streamTbl Streamer table.
      */
-    public QueryParserResultDml(GridSqlStatement stmt, boolean mvccEnabled, @Nullable GridH2Table streamTbl) {
+    public QueryParserResultDml(
+        GridSqlStatement stmt,
+        int paramsCnt,
+        boolean mvccEnabled,
+        @Nullable GridH2Table streamTbl
+    ) {
         this.stmt = stmt;
+        this.paramsCnt = paramsCnt;
         this.mvccEnabled = mvccEnabled;
         this.streamTbl = streamTbl;
     }
@@ -74,5 +83,12 @@ public class QueryParserResultDml {
      */
     public boolean streamable() {
         return streamTbl != null;
+    }
+
+    /**
+     * @return Number of parameters.
+     */
+    public int parametersCount() {
+        return paramsCnt;
     }
 }

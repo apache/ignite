@@ -1270,13 +1270,29 @@ public class GridReduceQueryExecutor {
 
                 for (Map.Entry<String,?> e : colsMap.entrySet()) {
                     String alias = e.getKey();
-                    GridSqlType t = (GridSqlType)e.getValue();
+                    GridSqlType type = (GridSqlType)e.getValue();
 
                     assert !F.isEmpty(alias);
 
-                    Column c = new Column(alias, t.type(), t.precision(), t.scale(), t.displaySize());
+                    Column col0;
 
-                    cols.add(c);
+                    if (type == GridSqlType.UNKNOWN) {
+                        // Special case for parameter being set at the top of the query (e.g. SELECT ? FROM ...).
+                        // Re-map it to STRING in the same way it is done in H2, because any argument can be cast
+                        // to string.
+                        col0 = new Column(alias, Value.STRING);
+                    }
+                    else {
+                        col0 = new Column(
+                            alias,
+                            type.type(),
+                            type.precision(),
+                            type.scale(),
+                            type.displaySize()
+                        );
+                    }
+
+                    cols.add(col0);
                 }
 
                 data.columns = cols;
