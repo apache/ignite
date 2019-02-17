@@ -269,18 +269,17 @@ public class GridMapQueryExecutor {
 
         final int[] parts = qryParts == null ? partsMap == null ? null : partsMap.get(ctx.localNodeId()) : qryParts;
 
-        boolean distributedJoins = req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS);
-        boolean local = req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL);
-
         final GridDhtTxLocalAdapter tx;
 
         GridH2SelectForUpdateTxDetails txReq = req.txDetails();
 
-        final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
-        final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
-        final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
+        boolean distributedJoins = req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS);
+        boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
+        boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
+        boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
         final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY) && txReq == null;
-        final Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
+
+        Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
 
         final List<Integer> cacheIds = req.caches();
 
@@ -368,7 +367,6 @@ public class GridMapQueryExecutor {
                             parts,
                             req.pageSize(),
                             distributedJoins,
-                            local,
                             enforceJoinOrder,
                             false,
                             req.timeout(),
@@ -398,7 +396,6 @@ public class GridMapQueryExecutor {
             parts,
             req.pageSize(),
             distributedJoins,
-            local,
             enforceJoinOrder,
             replicated,
             req.timeout(),
@@ -423,8 +420,7 @@ public class GridMapQueryExecutor {
      * @param partsMap Partitions map for unstable topology.
      * @param parts Explicit partitions for current node.
      * @param pageSize Page size.
-     * @param distributeJoins Query distributed join mode.
-     * @param local Local flag.
+     * @param distributedJoins Query distributed join mode.
      * @param enforceJoinOrder Enforce join order H2 flag.
      * @param replicated Replicated only flag.
      * @param timeout Query timeout.
@@ -448,8 +444,7 @@ public class GridMapQueryExecutor {
         final Map<UUID, int[]> partsMap,
         final int[] parts,
         final int pageSize,
-        final boolean distributeJoins,
-        final boolean local,
+        final boolean distributedJoins,
         final boolean enforceJoinOrder,
         final boolean replicated,
         final int timeout,
@@ -500,9 +495,8 @@ public class GridMapQueryExecutor {
             // Prepare query context.
             DistributedJoinContext distributedJoinCtx = null;
 
-            if (distributeJoins && !replicated) {
+            if (distributedJoins && !replicated) {
                 distributedJoinCtx = new DistributedJoinContext(
-                    local,
                     topVer,
                     partsMap,
                     node.id(),

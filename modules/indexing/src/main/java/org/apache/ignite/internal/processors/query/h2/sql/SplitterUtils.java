@@ -56,50 +56,50 @@ public class SplitterUtils {
 
     /**
      * @param qry Select.
-     * @param params Parameters.
+     * @param paramsCnt Number of parameters.
      * @param paramIdxs Parameter indexes.
      */
-    public static void findParamsQuery(GridSqlQuery qry, Object[] params, TreeSet<Integer> paramIdxs) {
+    public static void findParamsQuery(GridSqlQuery qry, int paramsCnt, TreeSet<Integer> paramIdxs) {
         if (qry instanceof GridSqlSelect)
-            findParamsSelect((GridSqlSelect)qry, params, paramIdxs);
+            findParamsSelect((GridSqlSelect)qry, paramsCnt, paramIdxs);
         else {
             GridSqlUnion union = (GridSqlUnion)qry;
 
-            findParamsQuery(union.left(), params, paramIdxs);
-            findParamsQuery(union.right(), params, paramIdxs);
+            findParamsQuery(union.left(), paramsCnt, paramIdxs);
+            findParamsQuery(union.right(), paramsCnt, paramIdxs);
 
-            findParams(qry.limit(), params, paramIdxs);
-            findParams(qry.offset(), params, paramIdxs);
+            findParams(qry.limit(), paramsCnt, paramIdxs);
+            findParams(qry.offset(), paramsCnt, paramIdxs);
         }
     }
 
     /**
      * @param select Select.
-     * @param params Parameters.
+     * @param paramsCnt Number of parameters.
      * @param paramIdxs Parameter indexes.
      */
-    private static void findParamsSelect(GridSqlSelect select, Object[] params, TreeSet<Integer> paramIdxs) {
-        if (params.length == 0)
+    private static void findParamsSelect(GridSqlSelect select, int paramsCnt, TreeSet<Integer> paramIdxs) {
+        if (paramsCnt == 0)
             return;
 
         for (GridSqlAst el : select.columns(false))
-            findParams(el, params, paramIdxs);
+            findParams(el, paramsCnt, paramIdxs);
 
-        findParams(select.from(), params, paramIdxs);
-        findParams(select.where(), params, paramIdxs);
+        findParams(select.from(), paramsCnt, paramIdxs);
+        findParams(select.where(), paramsCnt, paramIdxs);
 
         // Don't search in GROUP BY and HAVING since they expected to be in select list.
 
-        findParams(select.limit(), params, paramIdxs);
-        findParams(select.offset(), params, paramIdxs);
+        findParams(select.limit(), paramsCnt, paramIdxs);
+        findParams(select.offset(), paramsCnt, paramIdxs);
     }
 
     /**
      * @param el Element.
-     * @param params Parameters.
+     * @param paramsCnt Number of parameters.
      * @param paramIdxs Parameter indexes.
      */
-    private static void findParams(@Nullable GridSqlAst el, Object[] params, TreeSet<Integer> paramIdxs) {
+    private static void findParams(@Nullable GridSqlAst el, int paramsCnt, TreeSet<Integer> paramIdxs) {
         if (el == null)
             return;
 
@@ -108,17 +108,17 @@ public class SplitterUtils {
             // Here we will set them to NULL.
             final int idx = ((GridSqlParameter)el).index();
 
-            if (params.length <= idx)
+            if (paramsCnt <= idx)
                 throw new IgniteException("Invalid number of query parameters. " +
                     "Cannot find " + idx + " parameter.");
 
             paramIdxs.add(idx);
         }
         else if (el instanceof GridSqlSubquery)
-            findParamsQuery(((GridSqlSubquery)el).subquery(), params, paramIdxs);
+            findParamsQuery(((GridSqlSubquery)el).subquery(), paramsCnt, paramIdxs);
         else {
             for (int i = 0; i < el.size(); i++)
-                findParams(el.child(i), params, paramIdxs);
+                findParams(el.child(i), paramsCnt, paramIdxs);
         }
     }
 

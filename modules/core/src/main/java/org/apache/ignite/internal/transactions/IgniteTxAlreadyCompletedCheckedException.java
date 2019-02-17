@@ -15,34 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
-
-import java.sql.PreparedStatement;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.transactions;
 
 /**
- *
+ * Exception thrown whenever Mvcc transaction has been finished before operation finished.
+ * E.g. rollback due to some reason.
  */
-public interface PreparedStatementEx extends PreparedStatement {
+public class IgniteTxAlreadyCompletedCheckedException extends TransactionCheckedException {
     /** */
-    static final AtomicInteger metaIdGenerator = new AtomicInteger();
-
-    /** Flag if at least one MVCC cache is used in this statement. */
-    static final int MVCC_STATE = metaIdGenerator.getAndIncrement();
-
-    /** First mvcc cache id of the involved caches. */
-    static final int MVCC_CACHE_ID = metaIdGenerator.getAndIncrement();
+    private static final long serialVersionUID = 0L;
 
     /**
-     * @param id Metadata key.
-     * @return Attached metadata.
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
      */
-    @Nullable <T> T meta(int id);
-
-    /**
-     * @param id Metadata key.
-     * @param metaObj  Metadata object.
-     */
-    void putMeta(int id, Object metaObj);
+    public IgniteTxAlreadyCompletedCheckedException(String msg) {
+        super(msg);
+    }
 }
