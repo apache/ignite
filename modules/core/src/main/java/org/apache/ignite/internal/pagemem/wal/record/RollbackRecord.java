@@ -81,6 +81,28 @@ public class RollbackRecord extends WALRecord {
         return range;
     }
 
+    /**
+     * Returns a number of overlapping update counters.
+     *
+     * @param from From counter (not inclusive).
+     * @param to To counter (inclusive).
+     */
+    public long overlap(long from, long to) {
+        long to0 = start + range;
+
+        // from lies within (start, to0]
+        if (start <= from && from < to0)
+            return Math.min(to0 - from, to - from);
+
+        // start lies within (from, to]
+        if (from <= start && start < to)
+            return Math.min(to - start, range);
+
+        return 0;
+    }
+
+
+
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.ROLLBACK_TX_RECORD;

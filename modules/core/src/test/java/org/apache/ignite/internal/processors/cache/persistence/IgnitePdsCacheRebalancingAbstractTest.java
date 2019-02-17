@@ -57,11 +57,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.junit.runners.MethodSorters;
 
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
@@ -69,7 +67,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
  * Test for rebalancing and persistence integration.
  */
 @RunWith(JUnit4.class)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAbstractTest {
     /** Default cache. */
     private static final String CACHE = "cache";
@@ -91,7 +88,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setConsistentId(gridName);
-        cfg.setFailureDetectionTimeout(100000000000L);
 
         cfg.setRebalanceThreadPoolSize(2);
 
@@ -191,8 +187,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      */
     protected abstract CacheConfiguration cacheConfiguration(String cacheName);
 
-    protected volatile boolean error;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
@@ -200,17 +194,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         cleanPersistenceDir();
     }
 
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        error = false;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        if (error)
-            System.exit(1);
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -594,89 +579,22 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         }
     }
 
-//    @Test
-//    public void testZzz() throws Exception {
-//        final Ignite ig = startGrids(4);
-//
-//        ig.cluster().active(true);
-//
-//        log.info("Checking data... " + ig.cache(CACHE).size());
-//
-//        Map<Integer, Long> cntrs = new HashMap<>();
-//
-//        for (int g = 0; g < 4; g++) {
-//            IgniteEx ig0 = grid(g);
-//
-//            for (GridDhtLocalPartition part : ig0.cachex(CACHE).context().topology().currentLocalPartitions()) {
-//                if (cntrs.containsKey(part.id()))
-//                    assertEquals(String.valueOf(part.id()), (long) cntrs.get(part.id()), part.updateCounter());
-//                else
-//                    cntrs.put(part.id(), part.updateCounter());
-//            }
-//
-//            for (int k0 = 0; k0 < 33950; k0++) {
-//                Object tmp = ig0.cache(CACHE).get(k0);
-//
-////                if (tmp == null)
-////                    log.info("DBG: Missing key: k=" + String.valueOf(k0) + " grid=" + grid(g).name());
-//
-//                assertEquals(String.valueOf(k0) + " " + g, k0, tmp);
-//            }
-//        }
-//
-//        assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
-//    }
-
-    @Test
-    public void testZPartitionCounterConsistencyOnUnstableTopology0() throws Exception {
-        try {
-            doTestPartitionCounterConsistencyOnUnstableTopology();
-        }
-        catch (Throwable t) {
-            error = true;
-        }
-    }
-
-    @Test
-    public void testZPartitionCounterConsistencyOnUnstableTopology1() throws Exception {
-        try {
-            doTestPartitionCounterConsistencyOnUnstableTopology();
-        }
-        catch (Throwable t) {
-            error = true;
-        }
-    }
-
-    @Test
-    public void testZPartitionCounterConsistencyOnUnstableTopology2() throws Exception {
-        try {
-            doTestPartitionCounterConsistencyOnUnstableTopology();
-        }
-        catch (Throwable t) {
-            error = true;
-        }
-    }
-
     /**
      * @throws Exception If failed
      */
-    private void doTestPartitionCounterConsistencyOnUnstableTopology() throws Exception {
+    @Test
+    public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
         final Ignite ig = startGrids(4);
 
         ig.cluster().active(true);
 
         int keys = 0;
 
-        List<Integer> keys0 = new ArrayList<>();
-
         try (IgniteDataStreamer<Object, Object> ds = ig.dataStreamer(CACHE)) {
             ds.allowOverwrite(true);
 
-            for (; keys < 10_000; keys++) {
+            for (; keys < 10_000; keys++)
                 ds.addData(keys, keys);
-
-                keys0.add(keys);
-            }
         }
 
         assertPartitionsSame(idleVerify(grid(0), CACHE));
@@ -716,11 +634,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             while (!fut.isDone()) {
                 int nextKeys = keys + 10;
 
-                for (;keys < nextKeys; keys++) {
+                for (;keys < nextKeys; keys++)
                     cache.put(keys, keys);
-
-                    keys0.add(keys);
-                }
             }
 
             fut.get();
@@ -739,15 +654,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         cntrs.put(part.id(), part.updateCounter());
                 }
 
-                for (int k0 = 0; k0 < keys; k0++) {
-                    Object tmp = ig0.cache(CACHE).get(k0);
-
-                    if (tmp == null) {
-                        log.info("DBG: missed " + String.valueOf(k0) + " " + grid(g).name());
-                    }
-
-                    assertEquals(String.valueOf(k0) + " " + g, k0, tmp);
-                }
+                for (int k0 = 0; k0 < keys; k0++)
+                    assertEquals(String.valueOf(k0) + " " + g, k0, ig0.cache(CACHE).get(k0));
             }
 
             assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());

@@ -645,18 +645,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     }
 
     /**
-     * @param partId Partition id.
-     *
-     * @return Counter or null if node is not partition owner.
-     */
-    protected @Nullable PartitionUpdateCounterImpl counter(int partId, String gridName) {
-        @Nullable GridDhtLocalPartition part = internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
-
-        return part == null ? null : (PartitionUpdateCounterImpl)part.dataStore().partUpdateCounter();
-    }
-
-
-    /**
      * @param skipCheckpointOnStop Skip checkpoint on stop.
      * @param name Grid instance.
      */

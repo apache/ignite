@@ -2287,9 +2287,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     *
-     * @param partId
-     * @param withReserveCntr {@code True} to compare reserve counters. Counters must be same after rebalance.
+     * @param partId Partition.
+     * @param withReserveCntr {@code True} to compare reserve counters. Because reserve counters are synced during
+     * PME invoking with {@code true} makes sense only after PME was finished.
      */
     protected void assertCountersSame(int partId, boolean withReserveCntr) throws AssertionFailedError {
         PartitionUpdateCounter cntr0 = null;
