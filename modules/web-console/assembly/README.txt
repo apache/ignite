@@ -35,19 +35,19 @@ Technical details
 	On Windows: `ignite-web-console-win.exe --server:port 3000`
 
 All available parameters with defaults:
-	Web Console host:			--server:host 0.0.0.0
-	Web Console port:			--server:port 80
-	Enable HTTPS:				--server:ssl false
-	HTTPS key:					--server:key "serve/keys/test.key"
-	HTTPS cetificate:			--server:cert "serve/keys/test.crt"
-	HTTPS passphrase:			--server:keyPassphrase "password"
-	MongoDB URL:				--mongodb:url mongodb://localhost/console
-	Mail service:				--mail:service "gmail"
-	Signature text:				--mail:sign "Kind regards, Apache Ignite Team"
-	Greeting text:				--mail:greeting "Apache Ignite Web Console"
-	Mail FROM:					--mail:from "Apache Ignite Web Console <someusername@somecompany.somedomain>"
-	User to send e-mail:		--mail:auth:user "someusername@somecompany.somedomain"
-	E-mail service password:	--mail:auth:pass ""
+	Web Console host:           --server:host 0.0.0.0
+	Web Console port:           --server:port 80
+	Enable HTTPS:               --server:ssl false
+	HTTPS key:                  --server:key "serve/keys/test.key"
+	HTTPS certificate:          --server:cert "serve/keys/test.crt"
+	HTTPS passphrase:           --server:keyPassphrase "password"
+	MongoDB URL:                --mongodb:url mongodb://localhost/console
+	Mail service:               --mail:service "gmail"
+	Signature text:             --mail:sign "Kind regards, Apache Ignite Team"
+	Greeting text:              --mail:greeting "Apache Ignite Web Console"
+	Mail FROM:                  --mail:from "Apache Ignite Web Console <someusername@somecompany.somedomain>"
+	User to send e-mail:        --mail:auth:user "someusername@somecompany.somedomain"
+	E-mail service password:    --mail:auth:pass ""
 
 Troubleshooting
 -------------------------------------

@@ -459,7 +459,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return new GridCacheUpdateTxResult(true, rawPut(val, ttl));
+        return new GridCacheUpdateTxResult(true, rawPut(val, ttl), null);
     }
 
     /** {@inheritDoc} */
@@ -545,7 +545,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
         val = null;
 
-        return new GridCacheUpdateTxResult(true, old);
+        return new GridCacheUpdateTxResult(true, old, null);
     }
 
     /** @inheritDoc */
@@ -877,5 +877,20 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public void onUnlock() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void lockEntry() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unlockEntry() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean lockedByCurrentThread() {
+        return false;
     }
 }

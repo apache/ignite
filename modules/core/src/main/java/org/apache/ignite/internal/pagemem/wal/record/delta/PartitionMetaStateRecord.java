@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public class PartitionMetaStateRecord extends WALRecord {
+public class PartitionMetaStateRecord extends WALRecord implements WalRecordCacheGroupAware {
     /** State. */
     private final byte state;
 
@@ -60,10 +61,8 @@ public class PartitionMetaStateRecord extends WALRecord {
         return state;
     }
 
-    /**
-     * @return Cache group ID.
-     */
-    public int groupId() {
+    /** {@inheritDoc} */
+    @Override public int groupId() {
         return grpId;
     }
 

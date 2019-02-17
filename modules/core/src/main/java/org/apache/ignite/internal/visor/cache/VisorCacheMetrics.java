@@ -55,6 +55,9 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Gets number of keys in the cache, possibly with {@code null} values. */
     private int keySize;
 
+    /** Number of non-{@code null} values in the cache as a long value. */
+    private long cacheSize;
+
     /** Total number of reads of the owning entity (either cache or entry). */
     private long reads;
 
@@ -223,6 +226,8 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
 
         size = m.getSize();
         keySize = m.getKeySize();
+
+        cacheSize = m.getCacheSize();
 
         reads = m.getCacheGets();
         writes = m.getCachePuts() + m.getCacheRemovals();
@@ -454,6 +459,13 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
      */
     public int getKeySize() {
         return keySize;
+    }
+
+    /**
+     * @return Number of non-{@code null} values in the cache as a long value.
+     */
+    public long getCacheSize() {
+        return cacheSize;
     }
 
     /**
@@ -694,6 +706,8 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeLong(rebalancingBytesRate);
 
         out.writeObject(qryMetrics);
+
+        out.writeLong(cacheSize);
     }
 
     /** {@inheritDoc} */
@@ -751,6 +765,9 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         rebalancingBytesRate = in.readLong();
 
         qryMetrics = (VisorQueryMetrics)in.readObject();
+
+        if (in.available() > 0)
+            cacheSize = in.readLong();
     }
 
     /** {@inheritDoc} */

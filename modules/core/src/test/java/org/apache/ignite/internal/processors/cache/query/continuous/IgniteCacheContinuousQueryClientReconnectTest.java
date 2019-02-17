@@ -119,6 +119,9 @@ public class IgniteCacheContinuousQueryClientReconnectTest extends IgniteClientR
      * @throws Exception If failed.
      */
     public void testReconnectClientAndLeftRouter() throws Exception {
+        if (!tcpDiscovery())
+            return;
+
         Ignite client = grid(serverCount());
 
         final Ignite srv = clientRouter(client);

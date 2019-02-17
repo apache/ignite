@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
@@ -72,7 +73,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -851,7 +851,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         }));
 
-        final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
+        final Map<Integer, Integer> map = new ConcurrentHashMap<>();
         final CountDownLatch latch = new CountDownLatch(2);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
@@ -907,7 +907,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
+        final Map<Integer, Integer> map = new ConcurrentHashMap<>();
         final CountDownLatch latch = new CountDownLatch(10);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
@@ -943,7 +943,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-        final Map<Object, Object> map = new ConcurrentHashMap8<>();
+        final Map<Object, Object> map = new ConcurrentHashMap<>();
         final CountDownLatch latch = new CountDownLatch(2);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
@@ -1106,7 +1106,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME).
             withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1000)));
 
-        final Map<Object, Object> map = new ConcurrentHashMap8<>();
+        final Map<Object, Object> map = new ConcurrentHashMap<>();
         final CountDownLatch latch = new CountDownLatch(2);
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();

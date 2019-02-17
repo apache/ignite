@@ -32,6 +32,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -122,18 +123,16 @@ public class AgentLauncher {
         return new TrustManager[] {
             new X509TrustManager() {
                 /** {@inheritDoc} */
-                @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return null;
+                @Override public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
                 }
 
                 /** {@inheritDoc} */
-                @Override public void checkClientTrusted(
-                    java.security.cert.X509Certificate[] certs, String authType) {
+                @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {
                 }
 
                 /** {@inheritDoc} */
-                @Override public void checkServerTrusted(
-                    java.security.cert.X509Certificate[] certs, String authType) {
+                @Override public void checkServerTrusted(X509Certificate[] certs, String authType) {
                 }
             }};
     }

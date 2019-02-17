@@ -109,7 +109,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testActiveClientReconnectToInActiveCluster() throws Exception {
+    public void testActiveClientReconnectToInactiveCluster() throws Exception {
         startNodes(null);
 
         info(">>>> star grid");
@@ -189,7 +189,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testInActiveClientReconnectToActiveCluster() throws Exception {
+    public void testInactiveClientReconnectToActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
         startNodes(activateLatch);
@@ -247,7 +247,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testInActiveClientReconnectToInActiveCluster() throws Exception {
+    public void testInActiveClientReconnectToInactiveCluster() throws Exception {
         startNodes(null);
 
         IgniteEx ig1 = grid(node1);

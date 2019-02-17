@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.util;
 
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Concurrent set implementation.
@@ -35,7 +35,7 @@ public class GridConcurrentHashSet<E> extends GridSetWrapper<E> {
      * load factor, and concurrencyLevel.
      */
     public GridConcurrentHashSet() {
-        super(new ConcurrentHashMap8<E, E>());
+        super(new ConcurrentHashMap<E, E>());
     }
 
     /**
@@ -48,7 +48,7 @@ public class GridConcurrentHashSet<E> extends GridSetWrapper<E> {
      *      elements is negative.
      */
     public GridConcurrentHashSet(int initCap) {
-        super(new ConcurrentHashMap8<E, E>(initCap));
+        super(new ConcurrentHashMap<E, E>(initCap));
     }
 
     /**
@@ -68,7 +68,7 @@ public class GridConcurrentHashSet<E> extends GridSetWrapper<E> {
      *      non-positive.
      */
     public GridConcurrentHashSet(int initCap, float loadFactor, int conLevel) {
-        super(new ConcurrentHashMap8<E, E>(initCap, loadFactor, conLevel));
+        super(new ConcurrentHashMap<E, E>(initCap, loadFactor, conLevel));
     }
 
     /**
@@ -80,7 +80,7 @@ public class GridConcurrentHashSet<E> extends GridSetWrapper<E> {
      * @param c Collection to add.
      */
     public GridConcurrentHashSet(Collection<E> c) {
-        super(new ConcurrentHashMap8<E, E>(c.size()));
+        super(new ConcurrentHashMap<E, E>(c.size()));
 
         addAll(c);
     }

@@ -169,13 +169,18 @@ public class AsyncFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
         throw new UnsupportedOperationException("AsynchronousFileChannel doesn't support mmap.");
     }
 
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
-        ch.force(false);
+        force(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force(boolean withMetadata) throws IOException {
+        ch.force(withMetadata);
     }
 
     /** {@inheritDoc} */

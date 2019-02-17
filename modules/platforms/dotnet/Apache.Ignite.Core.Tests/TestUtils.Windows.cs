@@ -78,7 +78,8 @@ namespace Apache.Ignite.Core.Tests
                             ? DataRegionConfiguration.DefaultMaxSize
                             : 256 * 1024 * 1024
                     }
-                }
+                },
+                WorkDirectory = WorkDir
             };
         }
 

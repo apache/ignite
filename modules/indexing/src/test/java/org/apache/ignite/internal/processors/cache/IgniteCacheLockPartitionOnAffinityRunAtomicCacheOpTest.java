@@ -94,7 +94,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
      * @param mode Atomicity mode.
      * @throws Exception If failed.
      */
-    private void createCache(String cacheName, CacheAtomicityMode mode) throws Exception {
+    protected void createCache(String cacheName, CacheAtomicityMode mode) throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(grid(0).name());
         ccfg.setName(cacheName);
 
@@ -109,17 +109,27 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        key.set(0);
-        createCache(ATOMIC_CACHE, CacheAtomicityMode.ATOMIC);
-        createCache(TRANSACT_CACHE, CacheAtomicityMode.TRANSACTIONAL);
+        createCaches();
 
         awaitPartitionMapExchange();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /** */
+    protected void createCaches() throws Exception {
+        key.set(0);
+        createCache(ATOMIC_CACHE, CacheAtomicityMode.ATOMIC);
+        createCache(TRANSACT_CACHE, CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /** */
+    protected void destroyCaches() throws Exception {
         grid(0).destroyCache(ATOMIC_CACHE);
         grid(0).destroyCache(TRANSACT_CACHE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        destroyCaches();
 
         super.afterTest();
     }

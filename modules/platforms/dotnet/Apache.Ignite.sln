@@ -9,13 +9,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Core.Tests.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite", "Apache.Ignite\Apache.Ignite.csproj", "{27F7F3C6-BDDE-43A9-B565-856F8395A04B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Examples", "Examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj", "{069FA680-3C4D-43A9-B84F-E67513B87827}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Examples", "examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj", "{069FA680-3C4D-43A9-B84F-E67513B87827}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6} = {4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}
 		{5B571661-17F4-4F29-8C7D-0EDB38CA9B55} = {5B571661-17F4-4F29-8C7D-0EDB38CA9B55}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.ExamplesDll", "Examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj", "{DFB08363-202E-412D-8812-349EF10A8702}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.ExamplesDll", "examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj", "{DFB08363-202E-412D-8812-349EF10A8702}"
 	ProjectSection(ProjectDependencies) = postProject
 		{27F7F3C6-BDDE-43A9-B565-856F8395A04B} = {27F7F3C6-BDDE-43A9-B565-856F8395A04B}
 	EndProjectSection
@@ -43,7 +43,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.NLog", "Apach
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.AspNet.Tests", "Apache.Ignite.AspNet.Tests\Apache.Ignite.AspNet.Tests.csproj", "{18EA4C71-A11D-4AB1-8042-418F7559D84F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Log4Net", "Apache.Ignite.log4net\Apache.Ignite.Log4Net.csproj", "{6F82D669-382E-4435-8092-68C4440146D8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Log4Net", "Apache.Ignite.Log4Net\Apache.Ignite.Log4Net.csproj", "{6F82D669-382E-4435-8092-68C4440146D8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.EntityFramework", "Apache.Ignite.EntityFramework\Apache.Ignite.EntityFramework.csproj", "{C558518A-C1A0-4224-AAA9-A8688474B4DC}"
 EndProject

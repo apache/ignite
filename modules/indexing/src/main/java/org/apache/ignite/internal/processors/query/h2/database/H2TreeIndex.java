@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -72,7 +73,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     private final List<InlineIndexHelper> inlineIdxs;
 
     /** Cache context. */
-    private GridCacheContext<?, ?> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /**
      * @param cctx Cache context.
@@ -85,6 +86,7 @@ public class H2TreeIndex extends GridH2IndexBase {
      */
     public H2TreeIndex(
         GridCacheContext<?, ?> cctx,
+        @Nullable H2RowCache rowCache,
         GridH2Table tbl,
         String name,
         boolean pk,
@@ -95,6 +97,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         assert segmentsCnt > 0 : segmentsCnt;
 
         this.cctx = cctx;
+
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
@@ -135,7 +138,8 @@ public class H2TreeIndex extends GridH2IndexBase {
                         page.isAllocated(),
                         cols,
                         inlineIdxs,
-                        computeInlineSize(inlineIdxs, inlineSize)) {
+                        computeInlineSize(inlineIdxs, inlineSize),
+                        rowCache) {
                         @Override public int compareValues(Value v1, Value v2) {
                             return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                         }
@@ -507,6 +511,21 @@ public class H2TreeIndex extends GridH2IndexBase {
         final IndexingQueryCacheFilter filter = partitionFilter(threadLocalFilter());
 
         return filter != null ? new PartitionFilterTreeRowClosure(filter) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void refreshColumnIds() {
+        super.refreshColumnIds();
+
+        if (inlineIdxs == null)
+            return;
+
+        List<InlineIndexHelper> inlineHelpers = getAvailableInlineColumns(indexColumns);
+
+        assert inlineIdxs.size() == inlineHelpers.size();
+
+        for (int pos = 0; pos < inlineHelpers.size(); ++pos)
+            inlineIdxs.set(pos, inlineHelpers.get(pos));
     }
 
     /**

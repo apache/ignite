@@ -91,14 +91,26 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /**
+     * Shorthand for {@code allocatePage(bag, true)}.
+     *
      * @param bag Reuse bag.
      * @return Allocated page.
      * @throws IgniteCheckedException If failed.
      */
     protected final long allocatePage(ReuseBag bag) throws IgniteCheckedException {
+        return allocatePage(bag, true);
+    }
+
+    /**
+     * @param bag Reuse Bag.
+     * @param useRecycled Use recycled page.
+     * @return Allocated page.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final long allocatePage(ReuseBag bag, boolean useRecycled) throws IgniteCheckedException {
         long pageId = bag != null ? bag.pollFreePage() : 0;
 
-        if (pageId == 0 && reuseList != null)
+        if (pageId == 0 && useRecycled && reuseList != null)
             pageId = reuseList.takeRecycledPage();
 
         if (pageId == 0)
@@ -124,7 +136,8 @@ public abstract class DataStructure implements PageLockListener {
      */
     protected final long acquirePage(long pageId) throws IgniteCheckedException {
         assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
-            PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID : U.hexLong(pageId);
+            PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID :
+            U.hexLong(pageId) + " flag=" + PageIdUtils.flag(pageId) + " part=" + PageIdUtils.partId(pageId);
 
         return pageMem.acquirePage(grpId, pageId);
     }

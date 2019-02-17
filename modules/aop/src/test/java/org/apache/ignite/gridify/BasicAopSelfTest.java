@@ -17,17 +17,15 @@
 
 package org.apache.ignite.gridify;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.gridify.Gridify;
 import org.apache.ignite.compute.gridify.GridifyArgument;
 import org.apache.ignite.compute.gridify.GridifyTaskSplitAdapter;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Tries to execute dummy gridified task. It should fail because grid is not started.
@@ -40,18 +38,14 @@ public class BasicAopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAop() throws Exception {
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    gridify();
+        try {
+            gridify();
 
-                    return null;
-                }
-            },
-            IgniteCheckedException.class,
-            "Grid is not locally started: null"
-        );
+            fail();
+        }
+        catch (Exception e) {
+            // No-op.
+        }
     }
 
     /**

@@ -16,77 +16,39 @@
  */
 
 import {Subject} from 'rxjs/Subject';
+import {BehaviorSubject} from 'rxjs/BehaviorSubject';
+import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/scan';
-import 'rxjs/add/operator/share';
-import 'rxjs/add/operator/publishReplay';
-import {reducer as listReducer} from '../reducer';
-import {reducer as configureBasicReducer} from '../../page-configure-basic/reducer';
-
-let devTools;
-const actions$ = new Subject();
-
-const replacer = (key, value) => {
-    if (value instanceof Map) {
-        return {
-            data: [...value],
-            __serializedType__: 'Map'
-        };
-    }
-    if (value instanceof Symbol) {
-        return {
-            data: String(value),
-            __serializedType__: 'Symbol'
-        };
-    }
-    return value;
-};
-
-const reviver = (key, value) => {
-    if (typeof value === 'object' && value !== null && '__serializedType__' in value) {
-        const data = value.data;
-        switch (value.__serializedType__) {
-            case 'Map':
-                return new Map(value.data);
-            default:
-                return data;
-        }
-    }
-    return value;
-};
-
-if (window.__REDUX_DEVTOOLS_EXTENSION__) {
-    devTools = window.__REDUX_DEVTOOLS_EXTENSION__.connect({
-        name: 'Ignite configuration',
-        serialize: {
-            replacer,
-            reviver
-        }
-    });
-    devTools.subscribe((e) => {
-        if (e.type === 'DISPATCH' && e.state) actions$.next(e);
-    });
-}
-
-const reducer = (state = {}, action) => {
-    if (action.type === 'DISPATCH') return JSON.parse(action.state, reviver);
-
-    const value = {
-        list: listReducer(state.list, action),
-        configureBasic: configureBasicReducer(state.configureBasic, action, state)
-    };
-
-    devTools && devTools.send(action, value);
-
-    return value;
-};
-
-const state$ = actions$.scan(reducer, void 0).publishReplay(1).refCount();
-
-state$.subscribe();
 
 export default class ConfigureState {
-    state$ = state$;
+    constructor() {
+        /** @type {Subject<{type: string}>} */
+        this.actions$ = new Subject();
+        this.state$ = new BehaviorSubject({});
+        this._combinedReducer = (state, action) => state;
+
+        const reducer = (state = {}, action) => {
+            try {
+                return this._combinedReducer(state, action);
+            } catch (e) {
+                console.error(e);
+                return state;
+            }
+        };
+        this.actions$.scan(reducer, {}).do((v) => this.state$.next(v)).subscribe();
+    }
+
+    addReducer(combineFn) {
+        const old = this._combinedReducer;
+        this._combinedReducer = (state, action) => combineFn(old(state, action), action);
+        return this;
+    }
+
     dispatchAction(action) {
-        actions$.next(action);
+        if (typeof action === 'function')
+            return action((a) => this.actions$.next(a), () => this.state$.getValue());
+
+        this.actions$.next(action);
+        return action;
     }
 }

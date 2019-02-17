@@ -21,8 +21,7 @@ import cols from './cols.directive.js';
 import row from './row.directive.js';
 
 export default angular
-    .module('list-editable-cols', [
-    ])
+    .module('list-editable-cols', [])
     .directive('listEditableCols', cols)
     .directive('listEditableItemView', row)
     .directive('listEditableItemEdit', row);

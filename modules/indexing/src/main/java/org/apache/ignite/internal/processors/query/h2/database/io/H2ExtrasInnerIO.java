@@ -111,7 +111,7 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> implements H2RowLin
 
         assert link != 0;
 
-        return ((H2Tree)tree).getRowFactory().getRow(link);
+        return ((H2Tree)tree).createRowFromLink(link);
     }
 
     /** {@inheritDoc} */

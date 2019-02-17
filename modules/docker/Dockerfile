@@ -15,32 +15,24 @@
 # limitations under the License.
 #
 
-# Start from a Java image.
-FROM openjdk:8
+# Start from Java 8 based on Alpine Linux image (~5Mb)
+FROM openjdk:8-jre-alpine
 
-# Ignite version
-ENV IGNITE_VERSION 2.3.0
-
-# Ignite home
-ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-${IGNITE_VERSION}-bin
-
-# Do not rely on anything provided by base image(s), but be explicit, if they are installed already it is noop then
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        unzip \
-        curl \
-    && rm -rf /var/lib/apt/lists/*
-
+# Settings
+ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric
 WORKDIR /opt/ignite
 
-RUN curl https://dist.apache.org/repos/dist/release/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip -o ignite.zip \
-    && unzip ignite.zip \
-    && rm ignite.zip
+# Add missing software
+RUN apk --update --no-cache add bash
+
+# Copy main binary archive
+COPY apache-ignite-fabric* apache-ignite-fabric
 
 # Copy sh files and set permission
-COPY ./run.sh $IGNITE_HOME/
+COPY run.sh $IGNITE_HOME/
 
-RUN chmod +x $IGNITE_HOME/run.sh
-
+# Entry point
 CMD $IGNITE_HOME/run.sh
 
+# Container port exposure
 EXPOSE 11211 47100 47500 49112

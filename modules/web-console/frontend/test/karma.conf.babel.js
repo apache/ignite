@@ -30,12 +30,14 @@ export default (config) => {
         // List of files / patterns to load in the browser.
         files: [
             'node_modules/babel-polyfill/dist/polyfill.js',
+            'node_modules/angular/angular.js',
+            'node_modules/angular-mocks/angular-mocks.js',
             'test/**/*.test.js',
             'app/**/*.spec.js'
         ],
 
         plugins: [
-            require('karma-phantomjs-launcher'),
+            require('karma-chrome-launcher'),
             require('karma-teamcity-reporter'),
             require('karma-mocha-reporter'),
             require('karma-webpack'),
@@ -57,7 +59,7 @@ export default (config) => {
         // Test results reporter to use
         // possible values: 'dots', 'progress'
         // available reporters: https://npmjs.org/browse/keyword/karma-reporter.
-        reporters: ['mocha'],
+        reporters: [process.env.TEST_REPORTER || 'mocha'],
 
         mochaReporter: {
             showDiff: true
@@ -78,7 +80,21 @@ export default (config) => {
 
         // start these browsers
         // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-        browsers: ['PhantomJS'],
+        browsers: ['ChromeHeadlessNoSandbox'],
+        customLaunchers: {
+            ChromeHeadlessNoSandbox: {
+                base: 'ChromeHeadless',
+                flags: ['--no-sandbox']
+            },
+            ChromeDebug: {
+                base: 'Chrome',
+                flags: [
+                    '--start-maximized',
+                    '--auto-open-devtools-for-tabs'
+                ],
+                debug: true
+            }
+        },
 
         // Continuous Integration mode
         // if true, Karma captures browsers, runs the tests and exits

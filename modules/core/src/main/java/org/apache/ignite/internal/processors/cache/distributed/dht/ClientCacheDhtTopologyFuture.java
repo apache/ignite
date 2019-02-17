@@ -27,8 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Topology future created for client cache start.
  */
-public class ClientCacheDhtTopologyFuture extends GridDhtTopologyFutureAdapter
-    implements GridDhtTopologyFuture {
+public class ClientCacheDhtTopologyFuture extends GridDhtTopologyFutureAdapter {
     /** */
     final AffinityTopologyVersion topVer;
 

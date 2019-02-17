@@ -21,14 +21,32 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.TransactionMetrics;
+import org.apache.ignite.transactions.TransactionState;
 
 /**
  * Tx metrics adapter.
  */
 public class TransactionMetricsAdapter implements TransactionMetrics, Externalizable {
+    /** Grid kernal context. */
+    private final GridKernalContext gridKernalCtx;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,20 +63,17 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     private volatile long rollbackTime;
 
     /**
-     *
+     * Create TransactionMetricsAdapter.
      */
     public TransactionMetricsAdapter() {
-
+        this(null);
     }
 
     /**
-     * @param m Transaction metrics to copy.
+     * @param ctx Kernal context.
      */
-    public TransactionMetricsAdapter(TransactionMetrics m) {
-        commitTime = m.commitTime();
-        rollbackTime = m.rollbackTime();
-        txCommits = m.txCommits();
-        txRollbacks = m.txRollbacks();
+    public TransactionMetricsAdapter(GridKernalContext ctx) {
+        gridKernalCtx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -81,6 +96,41 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
         return txRollbacks;
     }
 
+    /** {@inheritDoc} */
+    @Override public Map<String, String> getAllOwnerTransactions() {
+        return getNearTxs(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, String> getLongRunningOwnerTransactions(final int duration) {
+        return getNearTxs(duration);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTransactionsCommittedNumber() {
+        return gridKernalCtx.cache().context().txMetrics().txCommits();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTransactionsRolledBackNumber() {
+        return gridKernalCtx.cache().context().txMetrics().txRollbacks();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTransactionsHoldingLockNumber() {
+        return txHoldingLockNum();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLockedKeysNumber() {
+        return txLockedKeysNum();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOwnerTransactionsNumber() {
+        return nearTxNum();
+    }
+
     /**
      * Transaction commit callback.
      */
@@ -97,6 +147,146 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
         rollbackTime = U.currentTimeMillis();
 
         txRollbacks++;
+    }
+
+    /**
+     * Reset.
+     */
+    public void reset() {
+        commitTime = 0;
+        txCommits = 0;
+        rollbackTime = 0;
+        txRollbacks = 0;
+    }
+
+    /**
+     * @param duration Duration.
+     */
+    private Map<String, String> getNearTxs(long duration) {
+        final Collection<GridNearTxLocal> txs = nearTxs(duration);
+
+        final HashMap<String, String> res = new HashMap<>(txs.size());
+
+        for (GridNearTxLocal tx : txs)
+            res.put(tx.xid().toString(), composeTx(tx));
+
+        return res;
+    }
+
+    /**
+     * @param id Id.
+     */
+    private String composeNodeInfo(final UUID id) {
+        final ClusterNode node = gridKernalCtx.discovery().node(id);
+        if (node == null)
+            return "";
+
+        return String.format("%s %s",
+            node.id(),
+            node.hostNames());
+    }
+
+    /**
+     * @param ids Ids.
+     */
+    private String composeNodeInfo(final Set<UUID> ids) {
+        final GridStringBuilder sb = new GridStringBuilder();
+
+        sb.a("[");
+
+        String delim = "";
+
+        for (UUID id : ids) {
+            sb
+                .a(delim)
+                .a(composeNodeInfo(id));
+            delim = ", ";
+        }
+
+        sb.a("]");
+
+        return sb.toString();
+    }
+
+    /**
+     * @param tx Transaction.
+     */
+    private String composeTx(final GridNearTxLocal tx) {
+        final TransactionState txState = tx.state();
+
+        String top = txState + ", NEAR, ";
+
+        if (txState == TransactionState.PREPARING) {
+            final Map<UUID, Collection<UUID>> transactionNodes = tx.transactionNodes();
+            if (!F.isEmpty(transactionNodes)) {
+                final Set<UUID> primaryNodes = transactionNodes.keySet();
+                if (!F.isEmpty(primaryNodes))
+                    top += "PRIMARY: " + composeNodeInfo(primaryNodes) + ", ";
+            }
+        }
+
+        final Long duration = System.currentTimeMillis() - tx.startTime();
+
+        return top + "DURATION: " + duration;
+    }
+
+    /**
+     *
+     */
+    private Collection<GridNearTxLocal> nearTxs(long duration) {
+        final long start = System.currentTimeMillis();
+        IgniteClosure<IgniteInternalTx, GridNearTxLocal> c = new IgniteClosure<IgniteInternalTx, GridNearTxLocal>() {
+            @Override public GridNearTxLocal apply(IgniteInternalTx tx) {
+                return ((GridNearTxLocal)tx);
+            }
+        };
+
+        IgnitePredicate<IgniteInternalTx> pred = new IgnitePredicate<IgniteInternalTx>() {
+            @Override public boolean apply(IgniteInternalTx tx) {
+                return tx.local() && tx.near() && start - tx.startTime() >= duration;
+            }
+        };
+
+        return F.viewReadOnly(gridKernalCtx.cache().context().tm().activeTransactions(), c, pred);
+    }
+
+    /**
+     *
+     */
+    private long nearTxNum() {
+        IgnitePredicate<IgniteInternalTx> pred = new IgnitePredicate<IgniteInternalTx>() {
+            @Override public boolean apply(IgniteInternalTx tx) {
+                return tx.local() && tx.near();
+            }
+        };
+
+        return F.size(gridKernalCtx.cache().context().tm().activeTransactions(), pred);
+    }
+
+    /**
+     * Count total number of holding locks on local node.
+     */
+    private long txHoldingLockNum() {
+        long holdingLockCounter = 0;
+
+        IgniteTxManager tm = gridKernalCtx.cache().context().tm();
+        for (IgniteInternalTx tx : tm.activeTransactions()) {
+            if ((tx.optimistic() && tx.state() == TransactionState.ACTIVE) || tx.empty() || !tx.local())
+                continue;
+
+            holdingLockCounter++;
+        }
+
+        return holdingLockCounter;
+    }
+
+    /**
+     * Count total number of locked keys on local node.
+     */
+    private long txLockedKeysNum() {
+        GridCacheMvccManager mvccManager = gridKernalCtx.cache().context().mvcc();
+
+        return mvccManager.lockedKeys().size() + mvccManager.nearLockedKeys().size();
     }
 
     /** {@inheritDoc} */

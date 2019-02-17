@@ -30,6 +30,18 @@ module.exports.factory = function(mongo, cachesService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
+        router.get('/:_id', (req, res) => {
+            cachesService.get(req.currentUserId(), req.demo(), req.params._id)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        router.delete('/', (req, res) => {
+            cachesService.remove(req.body.ids)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
         /**
          * Save cache.
          */

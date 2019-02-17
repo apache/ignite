@@ -61,6 +61,7 @@ import org.apache.ignite.ml.math.impls.vector.VectorIterableTest;
 import org.apache.ignite.ml.math.impls.vector.VectorNormTest;
 import org.apache.ignite.ml.math.impls.vector.VectorToMatrixTest;
 import org.apache.ignite.ml.math.impls.vector.VectorViewTest;
+import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeapTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -120,7 +121,8 @@ import org.junit.runners.Suite;
     QRDecompositionTest.class,
     SingularValueDecompositionTest.class,
     QRDSolverTest.class,
-    DistanceTest.class
+    DistanceTest.class,
+    LSQROnHeapTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.

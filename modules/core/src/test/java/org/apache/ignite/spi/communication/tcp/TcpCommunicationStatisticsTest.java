@@ -30,7 +30,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -88,7 +91,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         @Override protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
             super.notifyListener(sndId, msg, msgC);
 
-            if (msg instanceof GridTestMessage)
+            if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridTestMessage)
                 latch.countDown();
         }
     }
@@ -130,13 +133,14 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testStatistics() throws Exception {
         startGrids(2);
 
         try {
             // Send custom message from node0 to node1.
-            grid(0).configuration().getCommunicationSpi().sendMessage(grid(1).cluster().localNode(),
-                new GridTestMessage());
+            grid(0).context().io().sendToGridTopic(grid(1).cluster().localNode(), GridTopic.TOPIC_IO_TEST, new GridTestMessage(), GridIoPolicy.PUBLIC_POOL);
+
 
             latch.await(10, TimeUnit.SECONDS);
 
@@ -180,8 +184,8 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
                 // Node1 sent exactly the same types and count of messages as node0 received.
                 assertEquals(msgsSentByType1, msgsReceivedByType0);
 
-                assertEquals(1, msgsSentByType0.get(GridTestMessage.class.getSimpleName()).longValue());
-                assertEquals(1, msgsReceivedByType1.get(GridTestMessage.class.getSimpleName()).longValue());
+                assertEquals(1, msgsSentByType0.get(GridTestMessage.class.getName()).longValue());
+                assertEquals(1, msgsReceivedByType1.get(GridTestMessage.class.getName()).longValue());
             }
         }
         finally {

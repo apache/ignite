@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.failure.FailureType;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -40,6 +41,14 @@ public interface GridNioServerListener<T> {
     public void onDisconnected(GridNioSession ses, @Nullable Exception e);
 
     /**
+     * Handle message sent.
+     *
+     * @param ses Session.
+     * @param msg Message.
+     */
+    void onMessageSent(GridNioSession ses, T msg);
+
+    /**
      * This method is called whenever a {@link GridNioParser} returns non-null value.
      *
      * @param ses Session on which message was received.
@@ -61,4 +70,9 @@ public interface GridNioServerListener<T> {
      * @param ses Session that is idle.
      */
     public void onSessionIdleTimeout(GridNioSession ses);
+
+    /**
+     * Called when critical failure occurs in server implementation.
+     */
+    public void onFailure(FailureType failureType, Throwable failure);
 }

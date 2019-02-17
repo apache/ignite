@@ -25,11 +25,12 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
+import org.apache.ignite.ml.optimization.LossFunctions;
 import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Tests for Multilayer perceptron.
+ * Tests for {@link MultilayerPerceptron}.
  */
 public class MLPTest {
     /**
@@ -65,12 +66,12 @@ public class MLPTest {
         mlp.setWeights(2, new DenseLocalOnHeapMatrix(new double[][] {{20.0, 20.0}}));
         mlp.setBiases(2, new DenseLocalOnHeapVector(new double[] {-30.0}));
 
-        Matrix input = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}}).transpose();
+        Matrix input = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}});
 
         Matrix predict = mlp.apply(input);
-        Vector truth = new DenseLocalOnHeapVector(new double[] {0.0, 1.0, 1.0, 0.0});
+        Matrix truth = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}});
 
-        TestUtils.checkIsInEpsilonNeighbourhood(predict.getRow(0), truth, 1E-4);
+        TestUtils.checkIsInEpsilonNeighbourhood(predict.getRow(0), truth.getRow(0), 1E-4);
     }
 
     /**
@@ -98,8 +99,8 @@ public class MLPTest {
 
         MultilayerPerceptron stackedMLP = mlp1.add(mlp2);
 
-        Matrix predict = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());
-        Matrix stackedPredict = stackedMLP.apply(new DenseLocalOnHeapMatrix(new double[][] {{1, 2, 3, 4}}).transpose());
+        Matrix predict = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
+        Matrix stackedPredict = stackedMLP.apply(new DenseLocalOnHeapMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
 
         Assert.assertEquals(predict, stackedPredict);
     }

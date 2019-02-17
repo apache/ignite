@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -177,4 +179,13 @@ public interface GridQueryTypeDescriptor {
      * @throws IgniteCheckedException, If failure happens.
      */
     public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException;
+
+    /**
+     * Sets defaults value for given key and value.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void setDefaults(Object key, Object val) throws IgniteCheckedException;
 }

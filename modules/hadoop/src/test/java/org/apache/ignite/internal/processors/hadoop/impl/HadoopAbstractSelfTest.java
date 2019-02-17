@@ -45,7 +45,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder singleTestIpFinder;
 
     /** REST port. */
     protected static final int REST_PORT = ConnectorConfiguration.DFLT_TCP_PORT;
@@ -112,6 +112,15 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        // IP finder should be re-created before each test,
+        // since predecessor grid shutdown does not guarantee finder's state cleanup.
+        singleTestIpFinder = new TcpDiscoveryVmIpFinder(true);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -125,7 +134,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
-        discoSpi.setIpFinder(IP_FINDER);
+        discoSpi.setIpFinder(singleTestIpFinder);
 
         if (igfsEnabled())
             cfg.setFileSystemConfiguration(igfsConfiguration());

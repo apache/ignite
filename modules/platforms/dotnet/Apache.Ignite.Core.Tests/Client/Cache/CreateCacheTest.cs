@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,10 +22,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
-#if !NETCOREAPP2_0
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client;
-#endif
     using Apache.Ignite.Core.Tests.Cache;
     using NUnit.Framework;
 
@@ -152,7 +150,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             AssertClientConfigsAreEqual(cfg, cache.GetConfiguration());
         }
 
-#if !NETCOREAPP2_0
         /// <summary>
         /// Tests cache creation from partial configuration.
         /// </summary>
@@ -184,7 +181,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             AssertExtensions.ReflectionEqual(cfg, cache.GetConfiguration());
         }
-#endif
 
         /// <summary>
         /// Tests cache creation from configuration.

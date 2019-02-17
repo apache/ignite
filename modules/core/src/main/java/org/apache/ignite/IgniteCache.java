@@ -1453,10 +1453,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * See {@link CacheConfiguration#getRebalanceDelay()} for more information on how to configure
      * rebalance re-partition delay.
      * <p>
-     * @return Future that will be completed when rebalancing is finished. Future.get() returns true
+     * @return Future that will be completed when rebalancing is finished. Future.get() returns {@code true}
      *      when rebalance was successfully finished.
      */
-    public IgniteFuture<?> rebalance();
+    public IgniteFuture<Boolean> rebalance();
 
     /**
      * Returns future that will be completed when all indexes for this cache are ready to use.

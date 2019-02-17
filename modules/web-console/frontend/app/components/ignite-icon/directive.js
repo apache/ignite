@@ -57,7 +57,7 @@ export default function() {
                 this.wrapper.innerHTML = `<svg><use xlink:href="${url}" href="${url}" /></svg>`;
 
                 Array.from(this.wrapper.childNodes[0].childNodes).forEach((n) => {
-                    this.$element[0].appendChild(n);
+                    this.$element.empty().append(n);
                 });
             }
         }

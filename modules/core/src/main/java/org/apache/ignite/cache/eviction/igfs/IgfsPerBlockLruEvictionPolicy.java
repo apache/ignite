@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,7 +38,6 @@ import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedDeque8.Node;
-import org.jsr166.LongAdder8;
 
 /**
  * IGFS eviction policy which evicts particular blocks.
@@ -67,7 +67,7 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
         new ConcurrentLinkedDeque8<>();
 
     /** Current size of all enqueued blocks in bytes. */
-    private final LongAdder8 curSize = new LongAdder8();
+    private final LongAdder curSize = new LongAdder();
 
     /**
      * Default constructor.

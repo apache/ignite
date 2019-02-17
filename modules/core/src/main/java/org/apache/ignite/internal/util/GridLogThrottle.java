@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Grid log throttle.
@@ -42,7 +42,7 @@ public class GridLogThrottle {
 
     /** Errors. */
     private static final ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /**
      * Sets system-wide log throttle timeout.

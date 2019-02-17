@@ -218,12 +218,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class 
         /// and populates <see cref="QueryEntities"/> according to provided query types.
+        /// This constructor is depricated, please use <see cref="CacheConfiguration(string, QueryEntity[])"/>
         /// </summary>
         /// <param name="name">Cache name.</param>
         /// <param name="queryTypes">
         /// Collection of types to be registered as query entities. These types should use 
         /// <see cref="QuerySqlFieldAttribute"/> to configure query fields and properties.
         /// </param>
+        [Obsolete("This constructor is deprecated, please use CacheConfiguration(string, QueryEntity[]) instead.")]
         public CacheConfiguration(string name, params Type[] queryTypes) : this(name)
         {
             QueryEntities = queryTypes.Select(type => new QueryEntity {ValueType = type}).ToArray();

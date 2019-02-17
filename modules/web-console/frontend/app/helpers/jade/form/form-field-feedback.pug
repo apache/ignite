@@ -15,18 +15,4 @@
     limitations under the License.
 
 mixin form-field-feedback(name, error, message)
-    -var __field = `${form}[${name}]`
-    -var __error = `${__field}.$error.${error}`
-    -var __pristine = `${__field}.$pristine`
-
-    i.fa.fa-exclamation-triangle.form-field-feedback(
-        ng-if=`!${__pristine} && ${__error}`
-        name=`{{ ${name} }}`
-
-        bs-tooltip
-        data-title=message
-
-        ignite-error=error
-        ignite-error-message=message
-        ignite-restore-input-focus
-    )
+    div(ng-message=error) #{message}

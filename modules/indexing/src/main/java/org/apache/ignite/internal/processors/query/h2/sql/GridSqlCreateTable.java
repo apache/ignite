@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * CREATE TABLE statement.
@@ -57,7 +58,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
     private CacheWriteSynchronizationMode writeSyncMode;
 
     /** Backups number for new cache. */
-    private int backups;
+    private Integer backups;
 
     /** Quietly ignore this command if table already exists. */
     private boolean ifNotExists;
@@ -184,14 +185,14 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /**
      * @return Backups number for new cache.
      */
-    public int backups() {
+    @Nullable public Integer backups() {
         return backups;
     }
 
     /**
      * @param backups Backups number for new cache.
      */
-    public void backups(int backups) {
+    public void backups(Integer backups) {
         this.backups = backups;
     }
 

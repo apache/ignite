@@ -32,6 +32,12 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOrderingEventTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTwoNodesTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerFailoverTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerClientSelfTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerRandomOperationsTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationNearEnabledTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationStoreEnabledTest;
@@ -123,6 +129,13 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
 
         suite.addTestSuite(CacheContinuousQueryConcurrentPartitionUpdateTest.class);
         suite.addTestSuite(CacheContinuousQueryEventBufferTest.class);
+
+        suite.addTestSuite(CacheContinuousWithTransformerReplicatedSelfTest.class);
+        suite.addTestSuite(CacheContinuousWithTransformerLocalSelfTest.class);
+        suite.addTestSuite(CacheContinuousWithTransformerPartitionedSelfTest.class);
+        suite.addTestSuite(CacheContinuousWithTransformerClientSelfTest.class);
+        suite.addTestSuite(CacheContinuousWithTransformerFailoverTest.class);
+        suite.addTestSuite(CacheContinuousWithTransformerRandomOperationsTest.class);
 
         return suite;
     }

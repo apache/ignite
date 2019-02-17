@@ -81,7 +81,7 @@ module.exports.factory = function(settings, mongo, spacesService, mailsService, 
 
         // Revert to your identity.
         router.put('/notifications', (req, res) => {
-            notificationsService.merge(req.user._id, req.body.message)
+            notificationsService.merge(req.user._id, req.body.message, req.body.isShown)
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

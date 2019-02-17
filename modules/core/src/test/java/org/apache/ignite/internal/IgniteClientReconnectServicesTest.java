@@ -65,7 +65,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
 
         assertEquals((Object)topVer, srvc.test());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         reconnectClientNode(client, srv, null);
 
@@ -88,7 +88,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         IgniteServices clnServices = client.services();
 
@@ -132,7 +132,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
 
         final IgniteServices services = client.services();
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
@@ -179,7 +179,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
 
         final IgniteServices services = client.services();
 
-        final Ignite srv = clientRouter(client);
+        final Ignite srv = ignite(0);
 
         services.deployClusterSingleton("testReconnectInProgress", new TestServiceImpl());
 

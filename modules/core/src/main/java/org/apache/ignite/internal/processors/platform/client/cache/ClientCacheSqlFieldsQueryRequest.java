@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -26,10 +28,11 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.plugin.security.SecurityException;
 
 /**
  * Sql query request.
@@ -95,21 +98,20 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
 
                 if (qry.getSchema() == null) {
                     String schema = QueryUtils.normalizeSchemaName(desc.cacheName(),
-                            desc.cacheConfiguration().getSqlSchema());
+                        desc.cacheConfiguration().getSqlSchema());
 
                     qry.setSchema(schema);
                 }
             }
 
-            List<FieldsQueryCursor<List<?>>> curs = ctx.kernalContext().query()
-                    .querySqlFieldsNoCache(qry, true, true);
+            List<FieldsQueryCursor<List<?>>> curs = ctx.kernalContext().query().querySqlFields(qry, true, true);
 
             assert curs.size() == 1;
 
             FieldsQueryCursor cur = curs.get(0);
 
             ClientCacheFieldsQueryCursor cliCur = new ClientCacheFieldsQueryCursor(
-                    cur, qry.getPageSize(), ctx);
+                cur, qry.getPageSize(), ctx);
 
             long cursorId = ctx.resources().put(cliCur);
 
@@ -119,6 +121,16 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
         }
         catch (Exception e) {
             ctx.decrementCursors();
+
+            SecurityException securityEx = X.cause(e, SecurityException.class);
+
+            if (securityEx != null) {
+                throw new IgniteClientException(
+                    ClientStatus.SECURITY_VIOLATION,
+                    "Client is not authorized to perform this operation",
+                    securityEx
+                );
+            }
 
             throw e;
         }

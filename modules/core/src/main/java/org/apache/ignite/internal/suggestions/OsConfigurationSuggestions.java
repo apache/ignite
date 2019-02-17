@@ -76,8 +76,18 @@ public class OsConfigurationSuggestions {
                     (dwcParamFlag && decParamFlag ? "s" : ""),
                     expected));
 
-            if ((value = readVmParam(SWAPPINESS)) != null && !value.equals(expected = "10"))
-                suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%s)", SWAPPINESS, expected));
+            if ((value = readVmParam(SWAPPINESS)) != null) {
+                try {
+                    double maxSwappiness = 10.0;
+
+                    if (Float.parseFloat(value) > maxSwappiness)
+                        suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%f or less)", SWAPPINESS,
+                                                      maxSwappiness));
+                }
+                catch (NumberFormatException ignored) {
+                    // OS param not parsable as a number
+                }
+            }
 
             if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && !value.equals(expected = "0"))
                 suggestions.add(String.format("Disable NUMA memory reclaim (set vm.%s=%s)", ZONE_RECLAIM_MODE,

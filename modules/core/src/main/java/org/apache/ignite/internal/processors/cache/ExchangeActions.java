@@ -50,6 +50,9 @@ public class ExchangeActions {
     private Map<String, CacheActionData> cachesToResetLostParts;
 
     /** */
+    private LocalJoinCachesContext locJoinCtx;
+
+    /** */
     private StateChangeRequest stateChangeReq;
 
     /**
@@ -146,7 +149,7 @@ public class ExchangeActions {
      */
     public Set<String> cachesToResetLostPartitions() {
         Set<String> caches = null;
-        
+
         if (cachesToResetLostParts != null)
             caches = new HashSet<>(cachesToResetLostParts.keySet());
 
@@ -194,14 +197,21 @@ public class ExchangeActions {
      * @return {@code True} if has deactivate request.
      */
     public boolean deactivate() {
-        return stateChangeReq != null && !stateChangeReq.activate();
+        return stateChangeReq != null && stateChangeReq.activeChanged() && !stateChangeReq.activate();
     }
 
     /**
      * @return {@code True} if has activate request.
      */
     public boolean activate() {
-        return stateChangeReq != null && stateChangeReq.activate();
+        return stateChangeReq != null && stateChangeReq.activeChanged() && stateChangeReq.activate();
+    }
+
+    /**
+     * @return {@code True} if has baseline topology change request.
+     */
+    public boolean changedBaseline() {
+        return stateChangeReq != null && !stateChangeReq.activeChanged();
     }
 
     /**
@@ -341,7 +351,22 @@ public class ExchangeActions {
             F.isEmpty(cacheGrpsToStart) &&
             F.isEmpty(cacheGrpsToStop) &&
             F.isEmpty(cachesToResetLostParts) &&
-            stateChangeReq == null;
+            stateChangeReq == null &&
+            locJoinCtx == null;
+    }
+
+    /**
+     * @param locJoinCtx Caches local join context.
+     */
+    public void localJoinContext(LocalJoinCachesContext locJoinCtx) {
+        this.locJoinCtx = locJoinCtx;
+    }
+
+    /**
+     * @return Caches local join context.
+     */
+    public LocalJoinCachesContext localJoinContext() {
+        return locJoinCtx;
     }
 
     /**
@@ -384,7 +409,7 @@ public class ExchangeActions {
     /**
      *
      */
-    static class CacheGroupActionData {
+    public static class CacheGroupActionData {
         /** */
         private final CacheGroupDescriptor desc;
 

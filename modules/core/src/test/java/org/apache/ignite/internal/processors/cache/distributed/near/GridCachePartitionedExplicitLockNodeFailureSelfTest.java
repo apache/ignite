@@ -37,6 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
@@ -125,7 +126,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
                         return true;
                     }
-                }, EVT_NODE_LEFT));
+                }, EVT_NODE_LEFT, EVT_NODE_FAILED));
         }
 
         stopGrid(idx);

@@ -545,6 +545,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             case GridBinaryMarshaller.LONG:
             case GridBinaryMarshaller.DOUBLE:
             case GridBinaryMarshaller.DATE:
+            case GridBinaryMarshaller.TIME:
                 totalLen = 9;
 
                 break;
@@ -843,6 +844,72 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         return reader(rCtx, null, forUnmarshal);
+    }
+
+    /**
+     * Compare two objects for DML operation.
+     *
+     * @param first First.
+     * @param second Second.
+     * @return Comparison result.
+     */
+    @SuppressWarnings("unchecked")
+    public static int compareForDml(Object first, Object second) {
+        boolean firstBinary = first instanceof BinaryObjectImpl;
+        boolean secondBinary = second instanceof BinaryObjectImpl;
+
+        if (firstBinary) {
+            if (secondBinary)
+                return compareForDml0((BinaryObjectImpl)first, (BinaryObjectImpl)second);
+            else
+                return 1; // Go to the right part.
+        }
+        else {
+            if (secondBinary)
+                return -1; // Go to the left part.
+            else
+                return ((Comparable)first).compareTo(second);
+        }
+    }
+
+    /**
+     * Internal DML comparison routine.
+     *
+     * @param first First item.
+     * @param second Second item.
+     * @return Comparison result.
+     */
+    private static int compareForDml0(BinaryObjectImpl first, BinaryObjectImpl second) {
+        int res = Integer.compare(first.typeId(), second.typeId());
+
+        if (res == 0) {
+            res = Integer.compare(first.hashCode(), second.hashCode());
+
+            if (res == 0) {
+                // Pessimistic case: need to perform binary comparison.
+                int firstDataStart = first.dataStartOffset();
+                int secondDataStart = second.dataStartOffset();
+
+                int firstLen = first.footerStartOffset() - firstDataStart;
+                int secondLen = second.footerStartOffset() - secondDataStart;
+
+                res = Integer.compare(firstLen, secondLen);
+
+                if (res == 0) {
+                    for (int i = 0; i < firstLen; i++) {
+                        byte firstByte = first.arr[firstDataStart + i];
+                        byte secondByte = second.arr[secondDataStart + i];
+
+                        res = Byte.compare(firstByte, secondByte);
+
+                        if (res != 0)
+                            break;
+                    }
+                }
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

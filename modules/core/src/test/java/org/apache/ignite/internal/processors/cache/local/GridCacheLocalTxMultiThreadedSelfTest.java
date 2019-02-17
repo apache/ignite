@@ -73,7 +73,7 @@ public class GridCacheLocalTxMultiThreadedSelfTest extends IgniteTxMultiThreaded
 
     /** {@inheritDoc} */
     @Override protected int threadCount() {
-        return 8;
+        return 2;
     }
 
     /** {@inheritDoc} */

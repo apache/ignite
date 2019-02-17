@@ -15,6 +15,15 @@
  * limitations under the License.
  */
 
+import merge from 'lodash/merge';
+import uniq from 'lodash/uniq';
+import map from 'lodash/map';
+import reduce from 'lodash/reduce';
+import isObject from 'lodash/isObject';
+import includes from 'lodash/includes';
+import isNil from 'lodash/isNil';
+import find from 'lodash/find';
+
 // Java built-in class names.
 import JAVA_CLASSES from '../data/java-classes.json';
 
@@ -46,8 +55,8 @@ export default class JavaTypes {
     static $inject = ['IgniteClusterDefaults', 'IgniteCacheDefaults', 'IgniteIGFSDefaults'];
 
     constructor(clusterDflts, cacheDflts, igfsDflts) {
-        this.enumClasses = _.uniq(this._enumClassesAcc(_.merge(clusterDflts, cacheDflts, igfsDflts), []));
-        this.shortEnumClasses = _.map(this.enumClasses, (cls) => this.shortClassName(cls));
+        this.enumClasses = uniq(this._enumClassesAcc(merge(clusterDflts, cacheDflts, igfsDflts), []));
+        this.shortEnumClasses = map(this.enumClasses, (cls) => this.shortClassName(cls));
 
         JAVA_CLASS_STRINGS.push({short: 'byte[]', full: 'byte[]', stringValue: '[B'});
     }
@@ -61,10 +70,10 @@ export default class JavaTypes {
      * @private
      */
     _enumClassesAcc(root, classes) {
-        return _.reduce(root, (acc, val, key) => {
+        return reduce(root, (acc, val, key) => {
             if (key === 'clsName')
                 acc.push(val);
-            else if (_.isObject(val))
+            else if (isObject(val))
                 this._enumClassesAcc(val, acc);
 
             return acc;
@@ -78,7 +87,7 @@ export default class JavaTypes {
      * @return {boolean}
      */
     nonEnum(clsName) {
-        return !_.includes(this.shortEnumClasses, clsName) && !_.includes(this.enumClasses, clsName);
+        return !includes(this.shortEnumClasses, clsName) && !includes(this.enumClasses, clsName);
     }
 
     /**
@@ -86,7 +95,7 @@ export default class JavaTypes {
      * @returns {boolean} 'true' if provided class name is a not Java built in class.
      */
     nonBuiltInClass(clsName) {
-        return _.isNil(_.find(JAVA_CLASSES, (clazz) => clsName === clazz.short || clsName === clazz.full));
+        return isNil(find(JAVA_CLASSES, (clazz) => clsName === clazz.short || clsName === clazz.full));
     }
 
     /**
@@ -94,7 +103,7 @@ export default class JavaTypes {
      * @returns {String} Full class name for java build-in types or source class otherwise.
      */
     fullClassName(clsName) {
-        const type = _.find(JAVA_CLASSES, (clazz) => clsName === clazz.short);
+        const type = find(JAVA_CLASSES, (clazz) => clsName === clazz.short);
 
         return type ? type.full : clsName;
     }
@@ -166,7 +175,7 @@ export default class JavaTypes {
      * @returns {boolean} 'true' if given value is one of Java reserved keywords.
      */
     isKeyword(value) {
-        return !!(value && _.includes(JAVA_KEYWORDS, value.toLowerCase()));
+        return !!(value && includes(JAVA_KEYWORDS, value.toLowerCase()));
     }
 
     /**
@@ -174,7 +183,7 @@ export default class JavaTypes {
      * @returns {boolean} 'true' if given class name is java primitive.
      */
     isPrimitive(clsName) {
-        return _.includes(JAVA_PRIMITIVES, clsName);
+        return includes(JAVA_PRIMITIVES, clsName);
     }
 
     /**

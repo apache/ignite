@@ -1408,5 +1408,22 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_txManager != null)
                 _txManager.StartTx();
         }
+
+        /** <inheritdoc /> */
+        public IQueryMetrics GetQueryMetrics()
+        {
+            return DoInOp((int)CacheOp.QueryMetrics, stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                return new QueryMetricsImpl(reader);
+            });
+        }
+
+        /** <inheritdoc /> */
+        public void ResetQueryMetrics()
+        {
+            DoOutInOp((int)CacheOp.ResetQueryMetrics);
+        }
     }
 }

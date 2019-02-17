@@ -172,6 +172,40 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="sslStreamFactory">
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute type="xs:string" name="certificatePath">
+                            <xs:annotation>
+                                <xs:documentation>Path to the certificate file (pfx).</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute type="xs:string" name="certificatePassword">
+                            <xs:annotation>
+                                <xs:documentation>Certificate file password.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute type="xs:boolean" name="checkCertificateRevocation">
+                            <xs:annotation>
+                                <xs:documentation>Whether to check certificate revocation.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute type="xs:boolean" name="skipServerCertificateValidation">
+                            <xs:annotation>
+                                <xs:documentation>Whether to skip server certificate validation.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute type="xs:string" name="sslProtocols">
+                            <xs:annotation>
+                                <xs:documentation>SSL protocols to use.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="host" type="xs:string" use="required">
                 <xs:annotation>
@@ -201,6 +235,16 @@
             <xs:attribute name="socketTimeout" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Socket operation timeout. Zero or negative for infinite timeout.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="userName" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Username to be used to connect to secured cluster.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="password" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Password to be used to connect to secured cluster.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>

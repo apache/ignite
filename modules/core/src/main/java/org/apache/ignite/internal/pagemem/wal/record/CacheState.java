@@ -30,6 +30,9 @@ public class CacheState {
     private long[] vals;
 
     /** */
+    private byte[] states;
+
+    /** */
     private int idx;
 
     /**
@@ -38,6 +41,7 @@ public class CacheState {
     public CacheState(int partsCnt) {
         parts = new int[partsCnt];
         vals = new long[partsCnt * 2];
+        states = new byte[partsCnt];
     }
 
     /**
@@ -46,6 +50,16 @@ public class CacheState {
      * @param cntr Partition counter.
      */
     public void addPartitionState(int partId, long size, long cntr) {
+        addPartitionState(partId, size, cntr, (byte)-1);
+    }
+
+    /**
+     * @param partId Partition ID to add.
+     * @param size Partition size.
+     * @param cntr Partition counter.
+     * @param state Partition state.
+     */
+    public void addPartitionState(int partId, long size, long cntr, byte state) {
         if (idx == parts.length)
             throw new IllegalStateException("Failed to add new partition to the partitions state " +
                 "(no enough space reserved) [partId=" + partId + ", reserved=" + parts.length + ']');
@@ -57,6 +71,8 @@ public class CacheState {
         }
 
         parts[idx] = partId;
+        states[idx] = state;
+
         vals[2 * idx] = size;
         vals[2 * idx + 1] = cntr;
 
@@ -93,6 +109,14 @@ public class CacheState {
      */
     public int partitionByIndex(int idx) {
         return parts[idx];
+    }
+
+    /**
+     * @param idx Index to get.
+     * @return State partition.
+     */
+    public byte stateByIndex(int idx) {
+        return states[idx];
     }
 
     /**

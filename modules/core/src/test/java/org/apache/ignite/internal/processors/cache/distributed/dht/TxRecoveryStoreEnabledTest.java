@@ -32,13 +32,14 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -65,7 +66,6 @@ public class TxRecoveryStoreEnabledTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
-        cfg.setDiscoverySpi(new TestDiscoverySpi());
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -81,6 +81,8 @@ public class TxRecoveryStoreEnabledTest extends GridCommonAbstractTest {
         ccfg.setWriteBehindEnabled(false);
 
         cfg.setCacheConfiguration(ccfg);
+
+        cfg.setFailureHandler(new StopNodeFailureHandler());
 
         return cfg;
     }
@@ -126,7 +128,7 @@ public class TxRecoveryStoreEnabledTest extends GridCommonAbstractTest {
                     IgniteConfiguration cfg = node0.configuration();
 
                     ((TestCommunicationSpi)cfg.getCommunicationSpi()).block();
-                    ((TestDiscoverySpi)cfg.getDiscoverySpi()).simulateNodeFailure();
+                    ((IgniteDiscoverySpi)cfg.getDiscoverySpi()).simulateNodeFailure();
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -195,16 +197,6 @@ public class TxRecoveryStoreEnabledTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
             // no-op.
-        }
-    }
-
-    /**
-     *
-     */
-    private static class TestDiscoverySpi extends TcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override protected void simulateNodeFailure() {
-            super.simulateNodeFailure();
         }
     }
 

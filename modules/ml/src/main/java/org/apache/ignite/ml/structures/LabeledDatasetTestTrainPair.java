@@ -53,21 +53,19 @@ public class LabeledDatasetTestTrainPair implements Serializable {
 
         final TreeSet<Integer> sortedTestIndices = getSortedIndices(datasetSize, testSize);
 
-
         LabeledVector[] testVectors = new LabeledVector[testSize];
         LabeledVector[] trainVectors = new LabeledVector[trainSize];
-
 
         int datasetCntr = 0;
         int trainCntr = 0;
         int testCntr = 0;
 
         for (Integer idx: sortedTestIndices){ // guarantee order as iterator
-            testVectors[testCntr] = dataset.getRow(idx);
+            testVectors[testCntr] = (LabeledVector)dataset.getRow(idx);
             testCntr++;
 
             for (int i = datasetCntr; i < idx; i++) {
-                trainVectors[trainCntr] = dataset.getRow(i);
+                trainVectors[trainCntr] = (LabeledVector)dataset.getRow(i);
                 trainCntr++;
             }
 
@@ -75,13 +73,13 @@ public class LabeledDatasetTestTrainPair implements Serializable {
         }
         if(datasetCntr < datasetSize){
             for (int i = datasetCntr; i < datasetSize; i++) {
-                trainVectors[trainCntr] = dataset.getRow(i);
+                trainVectors[trainCntr] = (LabeledVector)dataset.getRow(i);
                 trainCntr++;
             }
         }
 
-        test = new LabeledDataset(testVectors, testSize);
-        train = new LabeledDataset(trainVectors, trainSize);
+        test = new LabeledDataset(testVectors, dataset.colSize());
+        train = new LabeledDataset(trainVectors, dataset.colSize());
     }
 
     /** This method generates "random double, integer" pairs, sort them, gets first "testSize" elements and returns appropriate indices */

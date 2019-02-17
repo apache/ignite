@@ -25,11 +25,12 @@ import org.apache.ignite.internal.processors.cache.query.QueryCursorEx
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata
 import org.apache.ignite.lang.IgniteUuid
 import org.apache.ignite.spark.impl._
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types._
-import org.apache.spark.sql._
 import org.apache.spark._
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql._
+import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
 
@@ -91,8 +92,14 @@ class IgniteRDD[K, V] (
     override protected[spark] def getPreferredLocations(split: Partition): Seq[String] = {
         ensureCache()
 
-        ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
+        if (ic.ignite().configuration().getDiscoverySpi().isInstanceOf[TcpDiscoverySpi]) {
+          ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
             .map(_.asInstanceOf[TcpDiscoveryNode].socketAddresses()).flatten.map(_.getHostName).toList
+        }
+        else {
+          ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
+            .flatten(_.hostNames).toSeq
+        }
     }
 
     /**
@@ -314,32 +321,9 @@ class IgniteRDD[K, V] (
      * @return Spark schema.
      */
     private def buildSchema(fieldsMeta: java.util.List[GridQueryFieldMetadata]): StructType = {
-        new StructType(fieldsMeta.map(i ⇒ new StructField(i.fieldName(), dataType(i.fieldTypeName()), nullable = true))
+        new StructType(fieldsMeta.map(i ⇒
+            new StructField(i.fieldName(), IgniteRDD.dataType(i.fieldTypeName(), i.fieldName()), nullable = true))
             .toArray)
-    }
-
-    /**
-     * Gets Spark data type based on type name.
-     *
-     * @param typeName Type name.
-     * @return Spark data type.
-     */
-    private def dataType(typeName: String): DataType = typeName match {
-        case "java.lang.Boolean" ⇒ BooleanType
-        case "java.lang.Byte" ⇒ ByteType
-        case "java.lang.Short" ⇒ ShortType
-        case "java.lang.Integer" ⇒ IntegerType
-        case "java.lang.Long" ⇒ LongType
-        case "java.lang.Float" ⇒ FloatType
-        case "java.lang.Double" ⇒ DoubleType
-        case "java.math.BigDecimal" ⇒ DataTypes.createDecimalType()
-        case "java.lang.String" ⇒ StringType
-        case "java.util.Date" ⇒ DateType
-        case "java.sql.Date" ⇒ DateType
-        case "java.sql.Timestamp" ⇒ TimestampType
-        case "[B" ⇒ BinaryType
-
-        case _ ⇒ StructType(new Array[StructField](0))
     }
 
     /**
@@ -356,4 +340,57 @@ class IgniteRDD[K, V] (
             .map(_ ⇒ IgniteUuid.randomUuid()).find(node == null || aff.mapKeyToNode(_).eq(node))
             .getOrElse(IgniteUuid.randomUuid())
     }
+}
+
+object IgniteRDD {
+    /**
+      * Default decimal type.
+      */
+    private[spark] val DECIMAL = DecimalType(DecimalType.MAX_PRECISION, 3)
+
+    /**
+      * Gets Spark data type based on type name.
+      *
+      * @param typeName Type name.
+      * @return Spark data type.
+      */
+    def dataType(typeName: String, fieldName: String): DataType = typeName match {
+        case "java.lang.Boolean" ⇒ BooleanType
+        case "java.lang.Byte" ⇒ ByteType
+        case "java.lang.Short" ⇒ ShortType
+        case "java.lang.Integer" ⇒ IntegerType
+        case "java.lang.Long" ⇒ LongType
+        case "java.lang.Float" ⇒ FloatType
+        case "java.lang.Double" ⇒ DoubleType
+        case "java.math.BigDecimal" ⇒ DECIMAL
+        case "java.lang.String" ⇒ StringType
+        case "java.util.Date" ⇒ DateType
+        case "java.sql.Date" ⇒ DateType
+        case "java.sql.Timestamp" ⇒ TimestampType
+        case "[B" ⇒ BinaryType
+
+        case _ ⇒ StructType(new Array[StructField](0))
+    }
+
+    /**
+      * Converts java.util.Date to java.sql.Date as j.u.Date not supported by Spark SQL.
+      *
+      * @param input Any value.
+      * @return If input is java.util.Date returns java.sql.Date representation of given value, otherwise returns unchanged value.
+      */
+    def convertIfNeeded(input: Any): Any =
+        if (input == null)
+            input
+        else {
+            input match {
+                case timestamp: java.sql.Timestamp ⇒
+                    timestamp
+
+                //Spark SQL doesn't support java.util.Date see - https://spark.apache.org/docs/latest/sql-programming-guide.html#data-types
+                case date: java.util.Date ⇒
+                    new java.sql.Date(date.getTime)
+
+                case _ ⇒ input
+            }
+        }
 }

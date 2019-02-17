@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             var path = GetFullPath(javaFilePath);
 
-            var dotNetMembers = type.GetMembers()
+            var dotNetMembers = GetMembers(type)
                 .GroupBy(x => x.Name)
                 .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
 
@@ -88,6 +88,30 @@ namespace Apache.Ignite.Core.Tests.ApiParity
                 .Except(excludedMembers ?? Enumerable.Empty<string>());
 
             CheckParity(type, knownMissingMembers, knownMappings, javaMethods, dotNetMembers);
+        }
+
+        /// <summary>
+        /// Gets the members.
+        /// </summary>
+        private static IEnumerable<MemberInfo> GetMembers(Type type)
+        {
+            var types = new Stack<Type>();
+            types.Push(type);
+
+            while (types.Count > 0)
+            {
+                var t = types.Pop();
+
+                foreach (var m in t.GetMembers())
+                {
+                    yield return m;
+                }
+
+                foreach (var i in t.GetInterfaces())
+                {
+                    types.Push(i);
+                }
+            }
         }
 
         /// <summary>

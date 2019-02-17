@@ -37,113 +37,120 @@ using namespace ignite::impl::cache::query::continuous;
 using namespace ignite::impl::interop;
 using namespace ignite::binary;
 
+struct Operation
+{
+    enum Type
+    {
+            /** Operation: Clear. */
+            CLEAR = 1,
+
+            /** Operation: ClearAll. */
+            CLEAR_ALL = 2,
+
+            /** Operation: ContainsKey. */
+            CONTAINS_KEY = 3,
+
+            /** Operation: ContainsKeys. */
+            CONTAINS_KEYS = 4,
+
+            /** Operation: Get. */
+            GET = 5,
+
+            /** Operation: GetAll. */
+            GET_ALL = 6,
+
+            /** Operation: GetAndPut. */
+            GET_AND_PUT = 7,
+
+            /** Operation: GetAndPutIfAbsent. */
+            GET_AND_PUT_IF_ABSENT = 8,
+
+            /** Operation: GetAndRemove. */
+            GET_AND_REMOVE = 9,
+
+            /** Operation: GetAndReplace. */
+            GET_AND_REPLACE = 10,
+
+            /** Operation: Invoke. */
+            INVOKE = 12,
+
+            /** Operation: LoadCache */
+            LOAD_CACHE = 15,
+
+            /** Operation: LocalEvict. */
+            LOCAL_EVICT = 16,
+
+            /** Operation: LocalLoadCache */
+            LOC_LOAD_CACHE = 17,
+
+            /** Operation: LocalClear. */
+            LOCAL_CLEAR = 20,
+
+            /** Operation: LocalClearAll. */
+            LOCAL_CLEAR_ALL = 21,
+
+            /** Operation: LocalPeek. */
+            LOCAL_PEEK = 25,
+
+            /** Operation: Put. */
+            PUT = 26,
+
+            /** Operation: PutAll. */
+            PUT_ALL = 27,
+
+            /** Operation: PutIfAbsent. */
+            PUT_IF_ABSENT = 28,
+
+            /** Operation: CONTINUOUS query. */
+            QRY_CONTINUOUS = 29,
+
+            /** Operation: SCAN query. */
+            QRY_SCAN = 30,
+
+            /** Operation: SQL query. */
+            QRY_SQL = 31,
+
+            /** Operation: SQL fields query. */
+            QRY_SQL_FIELDS = 32,
+
+            /** Operation: TEXT query. */
+            QRY_TEXT = 33,
+
+            /** Operation: RemoveAll. */
+            REMOVE_ALL = 34,
+
+            /** Operation: Remove(K, V). */
+            REMOVE_2 = 35,
+
+            /** Operation: Remove(K). */
+            REMOVE_1 = 36,
+
+            /** Operation: Replace(K, V). */
+            REPLACE_2 = 37,
+
+            /** Operation: Replace(K, V, V). */
+            REPLACE_3 = 38,
+
+            /** Operation: Clear(). */
+            CLEAR_CACHE = 41,
+
+            /** Operation: RemoveAll(). */
+            REMOVE_ALL2 = 43,
+
+            /** Operation: Size(peekModes). */
+            SIZE = 48,
+
+            /** Operation: SizeLoc(peekModes). */
+            SIZE_LOC = 56,
+    };
+};
+
 namespace ignite
 {
     namespace impl
     {
         namespace cache
         {
-            /** Operation: Clear. */
-            const int32_t OP_CLEAR = 1;
-
-            /** Operation: ClearAll. */
-            const int32_t OP_CLEAR_ALL = 2;
-
-            /** Operation: ContainsKey. */
-            const int32_t OP_CONTAINS_KEY = 3;
-
-            /** Operation: ContainsKeys. */
-            const int32_t OP_CONTAINS_KEYS = 4;
-
-            /** Operation: Get. */
-            const int32_t OP_GET = 5;
-
-            /** Operation: GetAll. */
-            const int32_t OP_GET_ALL = 6;
-
-            /** Operation: GetAndPut. */
-            const int32_t OP_GET_AND_PUT = 7;
-
-            /** Operation: GetAndPutIfAbsent. */
-            const int32_t OP_GET_AND_PUT_IF_ABSENT = 8;
-
-            /** Operation: GetAndRemove. */
-            const int32_t OP_GET_AND_REMOVE = 9;
-
-            /** Operation: GetAndReplace. */
-            const int32_t OP_GET_AND_REPLACE = 10;
-
-            /** Operation: Invoke. */
-            const int32_t OP_INVOKE = 12;
-
-            /** Operation: LoadCache */
-            const int32_t OP_LOAD_CACHE = 15;
-
-            /** Operation: LocalEvict. */
-            const int32_t OP_LOCAL_EVICT = 16;
-
-            /** Operation: LocalLoadCache */
-            const int32_t OP_LOC_LOAD_CACHE = 17;
-
-            /** Operation: LocalClear. */
-            const int32_t OP_LOCAL_CLEAR = 20;
-
-            /** Operation: LocalClearAll. */
-            const int32_t OP_LOCAL_CLEAR_ALL = 21;
-
-            /** Operation: LocalPeek. */
-            const int32_t OP_LOCAL_PEEK = 25;
-
-            /** Operation: Put. */
-            const int32_t OP_PUT = 26;
-
-            /** Operation: PutAll. */
-            const int32_t OP_PUT_ALL = 27;
-
-            /** Operation: PutIfAbsent. */
-            const int32_t OP_PUT_IF_ABSENT = 28;
-
-            /** Operation: CONTINUOUS query. */
-            const int32_t OP_QRY_CONTINUOUS = 29;
-
-            /** Operation: SCAN query. */
-            const int32_t OP_QRY_SCAN = 30;
-
-            /** Operation: SQL query. */
-            const int32_t OP_QRY_SQL = 31;
-
-            /** Operation: SQL fields query. */
-            const int32_t OP_QRY_SQL_FIELDS = 32;
-
-            /** Operation: TEXT query. */
-            const int32_t OP_QRY_TEXT = 33;
-
-            /** Operation: RemoveAll. */
-            const int32_t OP_REMOVE_ALL = 34;
-
-            /** Operation: Remove(K, V). */
-            const int32_t OP_REMOVE_2 = 35;
-
-            /** Operation: Remove(K). */
-            const int32_t OP_REMOVE_1 = 36;
-
-            /** Operation: Replace(K, V). */
-            const int32_t OP_REPLACE_2 = 37;
-
-            /** Operation: Replace(K, V, V). */
-            const int32_t OP_REPLACE_3 = 38;
-
-            /** Operation: Clear(). */
-            const int32_t OP_CLEAR_CACHE = 41;
-
-            /** Operation: RemoveAll(). */
-            const int32_t OP_REMOVE_ALL2 = 43;
-
-            /** Operation: Size(peekModes). */
-            const int32_t OP_SIZE = 48;
-
-            /** Operation: SizeLoc(peekModes). */
-            const int32_t OP_SIZE_LOC = 48;
 
             CacheImpl::CacheImpl(char* name, SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                 InteropTarget(env, javaRef),
@@ -166,180 +173,180 @@ namespace ignite
 
             bool CacheImpl::ContainsKey(InputOperation& inOp, IgniteError& err)
             {
-                return OutOp(OP_CONTAINS_KEY, inOp, err);
+                return OutOp(Operation::CONTAINS_KEY, inOp, err);
             }
 
             bool CacheImpl::ContainsKeys(InputOperation& inOp, IgniteError& err)
             {
-                return OutOp(OP_CONTAINS_KEYS, inOp, err);
+                return OutOp(Operation::CONTAINS_KEYS, inOp, err);
             }
 
             void CacheImpl::LocalPeek(InputOperation& inOp, OutputOperation& outOp, int32_t peekModes, IgniteError& err)
             {
-                OutInOpX(OP_LOCAL_PEEK, inOp, outOp, err);
+                OutInOpX(Operation::LOCAL_PEEK, inOp, outOp, err);
             }
 
             void CacheImpl::Get(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOpX(OP_GET, inOp, outOp, err);
+                OutInOpX(Operation::GET, inOp, outOp, err);
             }
 
             void CacheImpl::GetAll(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOpX(OP_GET_ALL, inOp, outOp, err);
+                OutInOpX(Operation::GET_ALL, inOp, outOp, err);
             }
 
             void CacheImpl::Put(InputOperation& inOp, IgniteError& err)
             {
-                OutOp(OP_PUT, inOp, err);
+                OutOp(Operation::PUT, inOp, err);
             }
 
             void CacheImpl::PutAll(ignite::impl::InputOperation& inOp, IgniteError& err)
             {
-                OutOp(OP_PUT_ALL, inOp, err);
+                OutOp(Operation::PUT_ALL, inOp, err);
             }
 
             void CacheImpl::GetAndPut(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOpX(OP_GET_AND_PUT, inOp, outOp, err);
+                OutInOpX(Operation::GET_AND_PUT, inOp, outOp, err);
             }
 
             void CacheImpl::GetAndReplace(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOpX(OP_GET_AND_REPLACE, inOp, outOp, err);
+                OutInOpX(Operation::GET_AND_REPLACE, inOp, outOp, err);
             }
 
             void CacheImpl::GetAndRemove(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOpX(OP_GET_AND_REMOVE, inOp, outOp, err);
+                OutInOpX(Operation::GET_AND_REMOVE, inOp, outOp, err);
             }
 
             bool CacheImpl::PutIfAbsent(InputOperation& inOp, IgniteError& err)
             {
-                return OutOp(OP_PUT_IF_ABSENT, inOp, err);
+                return OutOp(Operation::PUT_IF_ABSENT, inOp, err);
             }
 
             void CacheImpl::GetAndPutIfAbsent(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOpX(OP_GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
+                OutInOpX(Operation::GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
             }
 
             bool CacheImpl::Replace(InputOperation& inOp, IgniteError& err)
             {
-                return OutOp(OP_REPLACE_2, inOp, err);
+                return OutOp(Operation::REPLACE_2, inOp, err);
             }
 
             bool CacheImpl::ReplaceIfEqual(InputOperation& inOp, IgniteError& err)
             {
-                return OutOp(OP_REPLACE_3, inOp, err);
+                return OutOp(Operation::REPLACE_3, inOp, err);
             }
 
             void CacheImpl::LocalEvict(InputOperation& inOp, IgniteError& err)
             {
-                OutOp(OP_LOCAL_EVICT, inOp, err);
+                OutOp(Operation::LOCAL_EVICT, inOp, err);
             }
 
             void CacheImpl::Clear(IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
-                OutOp(OP_CLEAR_CACHE, err);
+                OutOp(Operation::CLEAR_CACHE, err);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
             void CacheImpl::Clear(InputOperation& inOp, IgniteError& err)
             {
-                OutOp(OP_CLEAR, inOp, err);
+                OutOp(Operation::CLEAR, inOp, err);
             }
 
             void CacheImpl::ClearAll(InputOperation& inOp, IgniteError& err)
             {
-                OutOp(OP_CLEAR_ALL, inOp, err);
+                OutOp(Operation::CLEAR_ALL, inOp, err);
             }
 
             void CacheImpl::LocalClear(InputOperation& inOp, IgniteError& err)
             {
-                OutOp(OP_LOCAL_CLEAR, inOp, err);
+                OutOp(Operation::LOCAL_CLEAR, inOp, err);
             }
 
             void CacheImpl::LocalClearAll(InputOperation& inOp, IgniteError& err)
             {
-                OutOp(OP_LOCAL_CLEAR_ALL, inOp, err);
+                OutOp(Operation::LOCAL_CLEAR_ALL, inOp, err);
             }
 
             bool CacheImpl::Remove(InputOperation& inOp, IgniteError& err)
             {
-                return OutOp(OP_REMOVE_1, inOp, err);
+                return OutOp(Operation::REMOVE_1, inOp, err);
             }
 
             bool CacheImpl::RemoveIfEqual(InputOperation& inOp, IgniteError& err)
             {
-                return OutOp(OP_REMOVE_2, inOp, err);
+                return OutOp(Operation::REMOVE_2, inOp, err);
             }
 
             void CacheImpl::RemoveAll(InputOperation& inOp, IgniteError& err)
             {
-                OutOp(OP_REMOVE_ALL, inOp, err);
+                OutOp(Operation::REMOVE_ALL, inOp, err);
             }
 
             void CacheImpl::RemoveAll(IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
-                OutOp(OP_REMOVE_ALL2, err);
+                OutOp(Operation::REMOVE_ALL2, err);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
             int32_t CacheImpl::Size(int32_t peekModes, bool local, IgniteError& err)
             {
-                int32_t op = local ? OP_SIZE_LOC : OP_SIZE;
+                int32_t op = local ? Operation::SIZE_LOC : Operation::SIZE;
 
                 return static_cast<int32_t>(OutInOpLong(op, peekModes, err));
             }
 
             QueryCursorImpl* CacheImpl::QuerySql(const SqlQuery& qry, IgniteError& err)
             {
-                return QueryInternal(qry, OP_QRY_SQL, err);
+                return QueryInternal(qry, Operation::QRY_SQL, err);
             }
 
             QueryCursorImpl* CacheImpl::QueryText(const TextQuery& qry, IgniteError& err)
             {
-                return QueryInternal(qry, OP_QRY_TEXT, err);
+                return QueryInternal(qry, Operation::QRY_TEXT, err);
             }
 
             QueryCursorImpl* CacheImpl::QueryScan(const ScanQuery& qry, IgniteError& err)
             {
-                return QueryInternal(qry, OP_QRY_SCAN, err);
+                return QueryInternal(qry, Operation::QRY_SCAN, err);
             }
 
             void CacheImpl::Invoke(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOpX(OP_INVOKE, inOp, outOp, err);
+                OutInOpX(Operation::INVOKE, inOp, outOp, err);
             }
 
             QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError& err)
             {
-                return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
+                return QueryInternal(qry, Operation::QRY_SQL_FIELDS, err);
             }
 
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
                 const SqlQuery& initialQry, IgniteError& err)
             {
-                return QueryContinuous(qry, initialQry, OP_QRY_SQL, OP_QRY_CONTINUOUS, err);
+                return QueryContinuous(qry, initialQry, Operation::QRY_SQL, Operation::QRY_CONTINUOUS, err);
             }
 
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
                 const TextQuery& initialQry, IgniteError& err)
             {
-                return QueryContinuous(qry, initialQry, OP_QRY_TEXT, OP_QRY_CONTINUOUS, err);
+                return QueryContinuous(qry, initialQry, Operation::QRY_TEXT, Operation::QRY_CONTINUOUS, err);
             }
 
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
                 const ScanQuery& initialQry, IgniteError& err)
             {
-                return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
+                return QueryContinuous(qry, initialQry, Operation::QRY_SCAN, Operation::QRY_CONTINUOUS, err);
             }
 
             void CacheImpl::LoadCache(IgniteError& err)
@@ -358,7 +365,7 @@ namespace ignite
 
                 out.Synchronize();
 
-                InStreamOutLong(OP_LOAD_CACHE, *mem.Get(), err);
+                InStreamOutLong(Operation::LOAD_CACHE, *mem.Get(), err);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
@@ -379,7 +386,7 @@ namespace ignite
 
                 out.Synchronize();
 
-                InStreamOutLong(OP_LOC_LOAD_CACHE, *mem.Get(), err);
+                InStreamOutLong(Operation::LOC_LOAD_CACHE, *mem.Get(), err);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
@@ -396,7 +403,7 @@ namespace ignite
                 IgniteError& err)
             {
                 Dummy dummy;
-                return QueryContinuous(qry, dummy, -1, OP_QRY_CONTINUOUS, err);
+                return QueryContinuous(qry, dummy, -1, Operation::QRY_CONTINUOUS, err);
             }
 
             template <typename T>

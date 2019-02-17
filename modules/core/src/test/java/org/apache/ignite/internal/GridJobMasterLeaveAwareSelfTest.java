@@ -259,6 +259,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         // Now we stop master grid.
         stopGrid(lastGridIdx, true);
 
+        waitForTopology(GRID_CNT - 1);
+
         // Release communication SPI wait latches. As master node is stopped, job worker will receive and exception.
         for (int i = 0; i < lastGridIdx; i++)
             ((CommunicationSpi)grid(i).configuration().getCommunicationSpi()).releaseWaitLatch();

@@ -1,0 +1,44 @@
+#!/usr/bin/make -f
+# debian/rules for alien
+
+PACKAGE=$(shell dh_listpackages)
+DOC_DIR=$(shell ls usr/share/doc | grep -E "[0-9]")
+
+clean:
+	dh_testdir
+	dh_testroot
+	dh_clean -d
+
+binary-arch: clean
+	dh_testdir
+	dh_testroot
+	dh_prep
+	dh_installdirs
+
+	dh_installdocs
+	dh_installchangelogs
+
+# Copy the packages's files.
+	find . -maxdepth 1 -mindepth 1 -not -name debian -print0 | \
+		xargs -0 -r -i cp -a {} debian/$(PACKAGE)
+
+#
+# If you need to move files around in debian/$(PACKAGE) or do some
+# binary patching, do it here
+#
+# Fix doc directory
+	if [ "$(DOC_DIR)" != ""  ];\
+	then mv -v debian/$(PACKAGE)/usr/share/doc/$(DOC_DIR)/* debian/$(PACKAGE)/usr/share/doc/$(shell echo $(DOC_DIR) | sed -r 's|-[0-9].*||');\
+	rm -rf debian/$(PACKAGE)/usr/share/doc/$(DOC_DIR);\
+	fi;\
+
+# This has been known to break on some wacky binaries.
+	dh_compress
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-arch
+

@@ -17,10 +17,10 @@
 mixin ignite-form-field-bsdropdown({label, model, name, disabled, required, options, tip})
     .dropdown--ignite.ignite-form-field
         .btn-ignite.btn-ignite--primary-outline(
-            data-ng-model=model
+            ng-model=model
 
-            data-ng-required=required && `${required}`
-            data-ng-disabled=disabled && `${disabled}` || `!${options}.length`
+            ng-required=required && `${required}`
+            ng-disabled=disabled && `${disabled}` || `!${options}.length`
 
             bs-dropdown=''
 

@@ -19,13 +19,13 @@ package org.apache.ignite.scalar.examples
 
 import java.lang.{Integer => JavaInt}
 import java.util.ConcurrentModificationException
+import java.util.concurrent.ThreadLocalRandom
 import javax.cache.Cache
 
 import org.apache.ignite.IgniteCache
 import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
-import org.jsr166.ThreadLocalRandom8
 
 import scala.collection.JavaConversions._
 
@@ -202,7 +202,7 @@ object ScalarSnowflakeSchemaExample {
      * @return Random value from the input collection.
      */
     def rand[T](c: Iterable[_ <: T]): T = {
-        val n: Int = ThreadLocalRandom8.current.nextInt(c.size)
+        val n: Int = ThreadLocalRandom.current.nextInt(c.size)
 
         var i: Int = 0
 

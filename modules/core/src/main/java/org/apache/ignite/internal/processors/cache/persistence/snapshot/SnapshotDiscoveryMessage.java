@@ -29,5 +29,10 @@ public interface SnapshotDiscoveryMessage extends DiscoveryCustomMessage {
      *
      * @return True if exchange is needed, false in other case.
      */
-    boolean needExchange();
+    public boolean needExchange();
+
+    /**
+     *
+     */
+    public boolean needAssignPartitions();
 }

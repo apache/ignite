@@ -22,10 +22,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.util.GridUnsafe.encodeBase64;
 
 /**
  *
@@ -90,7 +89,7 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
 
             md.update(s.getBytes());
 
-            String hash = encodeBase64(md.digest());
+            String hash = Base64.getEncoder().encodeToString(md.digest());
 
             return ts + ":" + hash;
         }

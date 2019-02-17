@@ -31,6 +31,7 @@ import static org.junit.Assert.fail;
 
 /**
  * Common test for externalization.
+ * TODO: IGNITE-7325 remove this class from all test and change on ExternalizableTest
  */
 public abstract class ExternalizeTest<T extends Externalizable & Destroyable> {
     /** */

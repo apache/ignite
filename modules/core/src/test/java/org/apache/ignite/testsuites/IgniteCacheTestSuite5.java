@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
 import org.apache.ignite.IgniteCacheAffinitySelfTest;
 import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
+import org.apache.ignite.cache.affinity.AffinityDistributionLoggingTest;
 import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
 import org.apache.ignite.cache.affinity.local.LocalAffinityFunctionTest;
 import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
@@ -88,6 +89,8 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(AffinityClientNodeSelfTest.class);
         suite.addTestSuite(LocalAffinityFunctionTest.class);
         suite.addTestSuite(AffinityHistoryCleanupTest.class);
+
+        suite.addTestSuite(AffinityDistributionLoggingTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicProtocolTest.class);
 

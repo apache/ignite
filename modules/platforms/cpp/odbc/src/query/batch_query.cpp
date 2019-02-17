@@ -72,7 +72,7 @@ namespace ignite
                     res = MakeRequestExecuteBatch(processed, processed + currentPageSize, lastPage);
 
                     processed += currentPageSize;
-                } while (res == SqlResult::AI_SUCCESS && processed < rowNum);
+                } while ((res == SqlResult::AI_SUCCESS || res == SqlResult::AI_SUCCESS_WITH_INFO) && processed < rowNum);
 
                 params.SetParamsProcessed(static_cast<SqlUlen>(rowsAffected.size()));
 
@@ -187,7 +187,16 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
-                rowsAffected.insert(rowsAffected.end(), rsp.GetAffectedRows().begin(), rsp.GetAffectedRows().end());
+                const std::vector<int64_t>& rowsLastTime = rsp.GetAffectedRows();
+
+                for (size_t i = 0; i < rowsLastTime.size(); ++i)
+                {
+                    int64_t idx = static_cast<int64_t>(i + rowsAffected.size());
+
+                    params.SetParamStatus(idx, rowsLastTime[i] < 0 ? SQL_PARAM_ERROR : SQL_PARAM_SUCCESS);
+                }
+
+                rowsAffected.insert(rowsAffected.end(), rowsLastTime.begin(), rowsLastTime.end());
                 LOG_MSG("Affected rows list size: " << rowsAffected.size());
 
                 if (!rsp.GetErrorMessage().empty())

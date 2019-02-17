@@ -74,23 +74,6 @@
         ]
     },
     {
-      "title": "Summary",
-      "message": [
-          "<div class='col-xs-7'>",
-          " <img src='/images/summary.png' width='100%' />",
-          "</div>",
-          "<div class='col-xs-5'>",
-          " <ul>",
-          "  <li>Preview XML configuration</li>",
-          "  <li>Preview code configuration</li>",
-          "  <li>Preview Docker file</li>",
-          "  <li>Preview POM dependencies</li>",
-          "  <li>Download ready-to-use project</li>",
-          " </ul>",
-          "</div>"
-      ]
-    },
-    {
         "title": "SQL Queries",
         "message": [
             "<div class='col-xs-7'>",

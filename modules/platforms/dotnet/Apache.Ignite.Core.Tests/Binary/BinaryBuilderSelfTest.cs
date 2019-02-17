@@ -50,8 +50,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TestFixtureSetUp]
         public void SetUp()
         {
-            TestUtils.KillProcesses();
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration

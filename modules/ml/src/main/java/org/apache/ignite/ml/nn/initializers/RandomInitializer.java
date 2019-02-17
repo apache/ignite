@@ -28,7 +28,7 @@ public class RandomInitializer implements MLPInitializer {
     /**
      * RNG.
      */
-    Random rnd;
+    private final Random rnd;
 
     /**
      * Construct RandomInitializer from given RNG.
@@ -37,6 +37,22 @@ public class RandomInitializer implements MLPInitializer {
      */
     public RandomInitializer(Random rnd) {
         this.rnd = rnd;
+    }
+
+    /**
+     * Constructs RandomInitializer with the given seed.
+     *
+     * @param seed Seed.
+     */
+    public RandomInitializer(long seed) {
+        this.rnd = new Random(seed);
+    }
+
+    /**
+     * Constructs RandomInitializer with random seed.
+     */
+    public RandomInitializer() {
+        this.rnd = new Random();
     }
 
     /** {@inheritDoc} */

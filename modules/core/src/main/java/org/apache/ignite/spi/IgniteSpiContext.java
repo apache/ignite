@@ -31,6 +31,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -296,6 +297,12 @@ public interface IgniteSpiContext {
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /**
+     * @param node Node.
+     * @param discoData Disco data.
+     */
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData);
+
+    /**
      * Gets collection of authenticated subjects together with their permissions.
      *
      * @return Collection of authenticated subjects.
@@ -358,4 +365,15 @@ public interface IgniteSpiContext {
      * @return Current node attributes.
      */
     public Map<String, Object> nodeAttributes();
+
+    /**
+     * @return {@code True} if cluster supports communication error resolving.
+     */
+    public boolean communicationFailureResolveSupported();
+
+    /**
+     * @param node Problem node.
+     * @param err Error.
+     */
+    public void resolveCommunicationFailure(ClusterNode node, Exception err);
 }

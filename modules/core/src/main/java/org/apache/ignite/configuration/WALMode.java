@@ -25,11 +25,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum WALMode {
     /**
-     * Default mode: full-sync disk writes. These writes survive power loss scenarios. When a control is returned
+     * FSYNC mode: full-sync disk writes. These writes survive power loss scenarios. When a control is returned
      * from the transaction commit operation, the changes are guaranteed to be persisted to disk according to the
      * transaction write synchronization mode.
      */
-    DEFAULT,
+    FSYNC,
 
     /**
      * Log only mode: flushes application buffers. These writes survive process crash. When a control is returned
@@ -48,7 +48,16 @@ public enum WALMode {
      * {@link Ignite#active(boolean)} method. If an Ignite node is terminated in NONE mode abruptly, it is likely
      * that the data stored on disk is corrupted and work directory will need to be cleared for a node restart.
      */
-    NONE;
+    NONE,
+
+    /**
+     * Default mode: full-sync disk writes. These writes survive power loss scenarios. When a control is returned
+     * from the transaction commit operation, the changes are guaranteed to be persisted to disk according to the
+     * transaction write synchronization mode.
+     * @deprecated This mode is no longer default and left here only for API compatibility. It is equivalent to the
+     * {@code FSYNC} mode.
+     */
+    @Deprecated DEFAULT;
 
     /**
      * Enumerated values.

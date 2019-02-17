@@ -69,6 +69,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -178,7 +179,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         cacheName = "partitioned";
     }
@@ -189,7 +190,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         logOnly = false;
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**
@@ -630,8 +631,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         try {
             IgniteEx ctrlGrid = startGrid(0);
 
-            ctrlGrid.active(true);
-
             fork = true;
 
             IgniteEx cacheGrid = startGrid(1);
@@ -679,8 +678,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     public void testRecoveryLargeNoCheckpoint() throws Exception {
         try {
             IgniteEx ctrlGrid = startGrid(0);
-
-            ctrlGrid.active(true);
 
             fork = true;
 
@@ -737,8 +734,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         try {
             IgniteEx ctrlGrid = startGrid(0);
 
-            ctrlGrid.active(true);
-
             fork = true;
 
             IgniteEx cacheGrid = startGrid(1);
@@ -776,8 +771,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     public void testLargeRandomCrash() throws Exception {
         try {
             IgniteEx ctrlGrid = startGrid(0);
-
-            ctrlGrid.active(true);
 
             fork = true;
 
@@ -882,6 +875,279 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             for (int i = 0; i < 100; i++) {
                 assertEquals(new IndexedObject(i), cache1.get(i));
                 assertEquals(new IndexedObject(i), cache2.get(i));
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testMetastorage() throws Exception {
+        try {
+            int cnt = 5000;
+
+            IgniteEx ignite0 = (IgniteEx)startGrid("node1");
+            IgniteEx ignite1 = (IgniteEx)startGrid("node2");
+
+            ignite1.active(true);
+
+            GridCacheSharedContext<Object, Object> sharedCtx0 = ignite0.context().cache().context();
+            GridCacheSharedContext<Object, Object> sharedCtx1 = ignite1.context().cache().context();
+
+            MetaStorage storage0 = sharedCtx0.database().metaStorage();
+            MetaStorage storage1 = sharedCtx1.database().metaStorage();
+
+            assert storage0 != null;
+
+            for (int i = 0; i < cnt; i++) {
+                sharedCtx0.database().checkpointReadLock();
+
+                try {
+                    storage0.putData(String.valueOf(i), new byte[]{(byte)(i % 256), 2, 3});
+                }
+                finally {
+                    sharedCtx0.database().checkpointReadUnlock();
+                }
+
+                byte[] b1 = new byte[i + 3];
+                b1[0] = 1;
+                b1[1] = 2;
+                b1[2] = 3;
+
+                sharedCtx1.database().checkpointReadLock();
+
+                try {
+                    storage1.putData(String.valueOf(i), b1);
+                }
+                finally {
+                    sharedCtx1.database().checkpointReadUnlock();
+                }
+            }
+
+            for (int i = 0; i < cnt; i++) {
+                byte[] d1 = storage0.getData(String.valueOf(i));
+                assertEquals(3, d1.length);
+                assertEquals((byte)(i % 256), d1[0]);
+                assertEquals(2, d1[1]);
+                assertEquals(3, d1[2]);
+
+                byte[] d2 = storage1.getData(String.valueOf(i));
+                assertEquals(i + 3, d2.length);
+                assertEquals(1, d2[0]);
+                assertEquals(2, d2[1]);
+                assertEquals(3, d2[2]);
+            }
+
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testMetastorageLargeArray() throws Exception {
+        try {
+            int cnt = 5000;
+            int arraySize = 32_768;
+
+            IgniteEx ignite = (IgniteEx)startGrid("node1");
+
+            ignite.active(true);
+
+            GridCacheSharedContext<Object, Object> sharedCtx = ignite.context().cache().context();
+
+            MetaStorage storage = sharedCtx.database().metaStorage();
+
+            for (int i = 0; i < cnt; i++) {
+                byte[] b1 = new byte[arraySize];
+                for (int k = 0; k < arraySize; k++) {
+                    b1[k] = (byte) (k % 100);
+                }
+
+                sharedCtx.database().checkpointReadLock();
+
+                try {
+                    storage.putData(String.valueOf(i), b1);
+                }
+                finally {
+                    sharedCtx.database().checkpointReadUnlock();
+                }
+            }
+
+            for (int i = 0; i < cnt; i++) {
+                byte[] d2 = storage.getData(String.valueOf(i));
+                assertEquals(arraySize, d2.length);
+
+                for (int k = 0; k < arraySize; k++) {
+                    assertEquals((byte) (k % 100), d2[k]);
+                }
+            }
+
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testMetastorageRemove() throws Exception {
+        try {
+            int cnt = 400;
+
+            IgniteEx ignite0 = (IgniteEx)startGrid("node1");
+
+            ignite0.active(true);
+
+            GridCacheSharedContext<Object, Object> sharedCtx0 = ignite0.context().cache().context();
+
+            MetaStorage storage = sharedCtx0.database().metaStorage();
+
+            assert storage != null;
+
+            for (int i = 0; i < cnt; i++) {
+                sharedCtx0.database().checkpointReadLock();
+
+                try {
+                    storage.putData(String.valueOf(i), new byte[]{1, 2, 3});
+                }
+                finally {
+                    sharedCtx0.database().checkpointReadUnlock();
+                }
+            }
+
+            for (int i = 0; i < 10; i++) {
+                sharedCtx0.database().checkpointReadLock();
+
+                try {
+                    storage.removeData(String.valueOf(i));
+                }
+                finally {
+                    sharedCtx0.database().checkpointReadUnlock();
+                }
+            }
+
+            for (int i = 10; i < cnt; i++) {
+                byte[] d1 = storage.getData(String.valueOf(i));
+                assertEquals(3, d1.length);
+                assertEquals(1, d1[0]);
+                assertEquals(2, d1[1]);
+                assertEquals(3, d1[2]);
+            }
+
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testMetastorageUpdate() throws Exception {
+        try {
+            int cnt = 2000;
+
+            IgniteEx ignite0 = (IgniteEx)startGrid("node1");
+
+            ignite0.active(true);
+
+            GridCacheSharedContext<Object, Object> sharedCtx0 = ignite0.context().cache().context();
+
+            MetaStorage storage = sharedCtx0.database().metaStorage();
+
+            assert storage != null;
+
+            for (int i = 0; i < cnt; i++) {
+                sharedCtx0.database().checkpointReadLock();
+
+                try {
+                    storage.putData(String.valueOf(i), new byte[]{1, 2, 3});
+                }
+                finally {
+                    sharedCtx0.database().checkpointReadUnlock();
+                }
+            }
+
+            for (int i = 0; i < cnt; i++) {
+                sharedCtx0.database().checkpointReadLock();
+
+                try {
+                    storage.putData(String.valueOf(i), new byte[]{2, 2, 3, 4});
+                }
+                finally {
+                    sharedCtx0.database().checkpointReadUnlock();
+                }
+            }
+
+            for (int i = 0; i < cnt; i++) {
+                byte[] d1 = storage.getData(String.valueOf(i));
+                assertEquals(4, d1.length);
+                assertEquals(2, d1[0]);
+                assertEquals(2, d1[1]);
+                assertEquals(3, d1[2]);
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testMetastorageWalRestore() throws Exception {
+        try {
+            int cnt = 2000;
+
+            IgniteEx ignite0 = (IgniteEx)startGrid(0);
+
+            ignite0.active(true);
+
+            GridCacheSharedContext<Object, Object> sharedCtx0 = ignite0.context().cache().context();
+
+            MetaStorage storage = sharedCtx0.database().metaStorage();
+
+            assert storage != null;
+
+            for (int i = 0; i < cnt; i++) {
+                sharedCtx0.database().checkpointReadLock();
+
+                try {
+                    storage.putData(String.valueOf(i), new byte[]{1, 2, 3});
+                }
+                finally {
+                    sharedCtx0.database().checkpointReadUnlock();
+                }
+            }
+
+            for (int i = 0; i < cnt; i++) {
+                byte[] value = storage.getData(String.valueOf(i));
+                assert value != null;
+                assert value.length == 3;
+            }
+
+            stopGrid(0);
+
+            ignite0 = startGrid(0);
+
+            ignite0.active(true);
+
+            sharedCtx0 = ignite0.context().cache().context();
+
+            storage = sharedCtx0.database().metaStorage();
+
+            assert storage != null;
+
+            for (int i = 0; i < cnt; i++) {
+                byte[] value = storage.getData(String.valueOf(i));
+                assert value != null;
             }
         }
         finally {
@@ -1576,6 +1842,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                     return false;
                 }
+
+                assertTrue(Arrays.equals(data, (long[])val));
             }
 
             return true;

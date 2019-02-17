@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,8 +49,8 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static javax.cache.Cache.Entry;
@@ -879,7 +880,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     private class Flusher extends GridWorker {
         /** Queue to flush. */
-        private final ConcurrentLinkedDeque8<IgniteBiTuple<K, StatefulValue<K,V>>> queue;
+        private final FastSizeDeque<IgniteBiTuple<K, StatefulValue<K,V>>> queue;
 
         /** Flusher write map. */
         private final ConcurrentHashMap<K, StatefulValue<K,V>> flusherWriteMap;
@@ -894,7 +895,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         protected Thread thread;
 
         /** Cache flushing frequence in nanos. */
-        protected long cacheFlushFreqNanos = cacheFlushFreq * 1000;
+        protected long cacheFlushFreqNanos = cacheFlushFreq * 1000 * 1000;
 
         /** Writer lock. */
         private final Lock flusherWriterLock = new ReentrantLock();
@@ -917,7 +918,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 flusherWriteMap = null;
             }
             else {
-                queue = new ConcurrentLinkedDeque8<>();
+                queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
                 flusherWriteMap = new ConcurrentHashMap<>(initCap, 0.75f, concurLvl);
             }
         }
@@ -937,8 +938,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          */
         private void putToFlusherWriteCache(
             K key,
-            StatefulValue<K, V> newVal)
-            throws IgniteInterruptedCheckedException {
+            StatefulValue<K, V> newVal
+        ) throws IgniteInterruptedCheckedException {
             assert !writeCoalescing : "Unexpected write coalescing.";
 
             if (queue.sizex() > flusherCacheCriticalSize) {

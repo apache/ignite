@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.LongAdder;
 import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -30,7 +31,6 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.jsr166.LongAdder8;
 
 /**
  * Accenture cache store.
@@ -67,7 +67,7 @@ public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
 
             assert cache != null;
 
-            final LongAdder8 adder = new LongAdder8();
+            final LongAdder adder = new LongAdder();
 
             for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;

@@ -104,7 +104,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
         setExternalLoader = true;
         final Ignite ignite0 = startGrid(1);
 
-        executeContiniouseQuery(ignite0.cache("simple"));
+        executeContinuousQuery(ignite0.cache("simple"));
 
         log = new GridStringLogger();
         clientMode = true;
@@ -112,8 +112,10 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         startGrid(2);
 
-        assertTrue(log.toString().contains("Failed to unmarshal continuous query remote filter on client node. " +
-            "Can be ignored."));
+        String logStr = log.toString();
+
+        assertTrue(logStr.contains("Failed to unmarshal continuous query remote filter on client node. " +
+            "Can be ignored.") || logStr.contains("Failed to unmarshal continuous routine handler"));
     }
 
     /**
@@ -127,7 +129,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
         clientMode = false;
         final Ignite ignite0 = startGrid(1);
 
-        executeContiniouseQuery(ignite0.cache("simple"));
+        executeContinuousQuery(ignite0.cache("simple"));
 
         log = new GridStringLogger();
         clientMode = true;
@@ -149,15 +151,18 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
         setExternalLoader = true;
         final Ignite ignite0 = startGrid(1);
 
-        executeContiniouseQuery(ignite0.cache("simple"));
+        executeContinuousQuery(ignite0.cache("simple"));
 
         log = new GridStringLogger();
         setExternalLoader = false;
 
         startGrid(2);
 
-        assertTrue(log.toString().contains("class org.apache.ignite.IgniteCheckedException: " +
-            "Failed to find class with given class loader for unmarshalling"));
+        String logStr = log.toString();
+
+        assertTrue(logStr.contains("class org.apache.ignite.IgniteCheckedException: " +
+            "Failed to find class with given class loader for unmarshalling")
+            || logStr.contains("Failed to unmarshal continuous routine handler"));
     }
 
     /**
@@ -171,7 +176,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
         setExternalLoader = true;
         final Ignite ignite0 = startGrid(1);
 
-        executeContiniouseQuery(ignite0.cache("simple"));
+        executeContinuousQuery(ignite0.cache("simple"));
 
         log = new GridStringLogger();
 
@@ -185,7 +190,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      * @param cache Ignite cache.
      * @throws Exception If fail.
      */
-    private void executeContiniouseQuery(IgniteCache cache) throws Exception {
+    private void executeContinuousQuery(IgniteCache cache) throws Exception {
         ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
 
         qry.setLocalListener(

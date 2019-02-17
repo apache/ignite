@@ -907,5 +907,16 @@ namespace Apache.Ignite.Core.Cache
         /// and <see cref="IIgnite.ResetLostPartitions(IEnumerable{string})"/>.
         /// </summary>
         ICollection<int> GetLostPartitions();
+
+        /// <summary>
+        /// Gets query metrics.
+        /// </summary>
+        /// <returns>Query metrics.</returns>
+        IQueryMetrics GetQueryMetrics();
+
+        /// <summary>
+        /// Reset query metrics.
+        /// </summary>
+        void ResetQueryMetrics();
     }
 }

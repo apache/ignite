@@ -280,7 +280,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         fut.onDone("result");
 
-        assertEquals("result", chain.get(1));
+        assertEquals("result", exec == null ? chain.get(1) : chain.get());
 
         // Test exception re-thrown.
 

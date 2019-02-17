@@ -37,8 +37,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -51,7 +51,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Tests error recovery while node flushing
@@ -75,19 +74,19 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 30_000;
+        return 60_000;
     }
 
     /** {@inheritDoc} */
@@ -107,10 +106,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 .setDefaultDataRegionConfiguration(
                         new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
                 .setWalMode(this.walMode())
-                .setWalSegmentSize(50_000);
-
-        if (gridName.endsWith(String.valueOf(gridCount())))
-            memCfg.setFileIOFactory(new FailingFileIOFactory(canFail));
+                .setWalSegmentSize(512 * 1024)
+                .setWalBufferSize(512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -139,7 +136,6 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      * @throws Exception if failed.
      */
     public void failWhilePut(boolean failWhileStart) throws Exception {
-
         final Ignite grid = startGridsMultiThreaded(gridCount());
 
         IgniteWriteAheadLogManager wal = ((IgniteKernal)grid).context().cache().context().wal();
@@ -174,6 +170,12 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                     startGrid(gridCount());
 
+                    FileWriteAheadLogManager wal0 = (FileWriteAheadLogManager)grid(gridCount()).context().cache().context().wal();
+
+                    wal0.setFileIOFactory(new FailingFileIOFactory(canFail));
+
+                    grid.cluster().setBaselineTopology(grid.cluster().topologyVersion());
+
                     waitForRebalancing();
                 } catch (Exception expected) {
                     // There can be any exception. Do nothing.
@@ -194,7 +196,13 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         stopAllGrids();
 
+        canFail.set(false);
+
         Ignite grid0 = startGrids(gridCount() + 1);
+
+        FileWriteAheadLogManager wal0 = (FileWriteAheadLogManager)grid(gridCount()).context().cache().context().wal();
+
+        wal0.setFileIOFactory(new FailingFileIOFactory(canFail));
 
         grid0.active(true);
 
@@ -202,14 +210,6 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         for (int i = 0; i < ITRS; i++)
             assertEquals(cache.get(i), "testValue" + i);
-    }
-
-
-    /**
-     * @throws IgniteCheckedException
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**
@@ -243,15 +243,15 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 int writeAttempts = 2;
 
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (--writeAttempts == 0 && fail!= null && fail.get())
+                    if (--writeAttempts <= 0 && fail != null && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(srcBuf);
                 }
 
                 /** {@inheritDoc} */
-                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-                    return delegate.map(maxWalSegmentSize);
+                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    return delegate.map(sizeBytes);
                 }
             };
         }

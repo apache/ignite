@@ -18,12 +18,13 @@
 package org.apache.ignite.spark.examples;
 
 import org.apache.ignite.examples.spark.SharedRDDExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.Test;
 
 /**
  * SharedRDD  examples self test.
  */
-public class SharedRDDExampleSelfTest {
+public class SharedRDDExampleSelfTest extends GridAbstractExamplesTest {
     static final String[] EMPTY_ARGS = new String[0];
     /**
      * @throws Exception If failed.

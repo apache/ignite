@@ -24,5 +24,6 @@ button.btn-ignite.btn-ignite--link-dashed-secondary(
     bs-on-before-show='$ctrl.onShow'
     data-multiple='true'
     ng-transclude
+    ng-show='$ctrl.columnsMenu.length'
 )
     svg(ignite-icon='gear').icon

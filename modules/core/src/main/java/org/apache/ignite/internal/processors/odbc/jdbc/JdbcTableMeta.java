@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.Objects;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -78,5 +80,23 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(JdbcTableMeta.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        JdbcTableMeta meta = (JdbcTableMeta)o;
+
+        return F.eq(schemaName, meta.schemaName) && F.eq(tblName, meta.tblName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(schemaName, tblName);
     }
 }

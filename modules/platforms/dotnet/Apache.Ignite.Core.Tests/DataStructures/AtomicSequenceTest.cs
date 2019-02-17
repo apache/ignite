@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
     /// <summary>
     /// Atomic sequence test.
     /// </summary>
-    public class AtomicSequenceTest : IgniteTestBase
+    public class AtomicSequenceTest : SpringTestBase
     {
         /** */
         private const string AtomicSeqName = "testAtomicSeq";

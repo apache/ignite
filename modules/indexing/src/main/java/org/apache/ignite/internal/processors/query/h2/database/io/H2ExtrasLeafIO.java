@@ -123,7 +123,7 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkI
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
 
-        return ((H2Tree)tree).getRowFactory().getRow(link);
+        return ((H2Tree)tree).createRowFromLink(link);
     }
 
     /** {@inheritDoc} */

@@ -28,19 +28,36 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Discovery data related to cluster state.
+ * A pojo-object representing current cluster global state. The state includes cluster active flag and cluster
+ * baseline topology.
+ * <p>
+ * This object also captures a transitional cluster state, when one or more fields are changing. In this case,
+ * a {@code transitionReqId} field is set to a non-null value and {@code prevState} captures previous cluster state.
+ * A joining node catching the cluster in an intermediate state will observe {@code transitionReqId} field to be
+ * non-null, however the {@code prevState} will not be sent to the joining node.
+ *
+ * TODO https://issues.apache.org/jira/browse/IGNITE-7640 This class must be immutable, transitionRes must be set by calling finish().
  */
 public class DiscoveryDataClusterState implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Flag indicating if the cluster in in active state. */
     private final boolean active;
 
-    /** */
+    /** Current cluster baseline topology. */
+    @Nullable private final BaselineTopology baselineTopology;
+
+    /**
+     * Transition request ID. Set to a non-null value if the cluster is changing it's state.
+     * The ID is assigned on the initiating node.
+     */
     private final UUID transitionReqId;
 
-    /** Topology version for state change exchange. */
+    /**
+     * Topology version in the cluster when state change request was received by the coordinator.
+     * The exchange fired for the cluster state change will be on version {@code transitionTopVer.nextMinorVersion()}.
+     */
     @GridToStringInclude
     private final AffinityTopologyVersion transitionTopVer;
 
@@ -48,15 +65,26 @@ public class DiscoveryDataClusterState implements Serializable {
     @GridToStringExclude
     private final Set<UUID> transitionNodes;
 
-    /** Local flag for state transition result (global state is updated asynchronously by custom message). */
+    /**
+     * Local flag for state transition active state result (global state is updated asynchronously by custom message),
+     * {@code null} means that state change is not completed yet.
+     */
     private transient volatile Boolean transitionRes;
+
+    /**
+     * Previous cluster state if this state is a transition state and it was not received by a joining node.
+     */
+    private transient DiscoveryDataClusterState prevState;
+
+    /** Transition result error. */
+    private transient volatile Exception transitionError;
 
     /**
      * @param active Current status.
      * @return State instance.
      */
-    static DiscoveryDataClusterState createState(boolean active) {
-        return new DiscoveryDataClusterState(active, null, null, null);
+    static DiscoveryDataClusterState createState(boolean active, @Nullable BaselineTopology baselineTopology) {
+        return new DiscoveryDataClusterState(null, active, baselineTopology, null, null, null);
     }
 
     /**
@@ -66,28 +94,46 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param transitionNodes Nodes participating in state change exchange.
      * @return State instance.
      */
-    static DiscoveryDataClusterState createTransitionState(boolean active,
+    static DiscoveryDataClusterState createTransitionState(
+        DiscoveryDataClusterState prevState,
+        boolean active,
+        @Nullable BaselineTopology baselineTopology,
         UUID transitionReqId,
         AffinityTopologyVersion transitionTopVer,
-        Set<UUID> transitionNodes) {
+        Set<UUID> transitionNodes
+    ) {
         assert transitionReqId != null;
         assert transitionTopVer != null;
         assert !F.isEmpty(transitionNodes) : transitionNodes;
+        assert prevState != null;
 
-        return new DiscoveryDataClusterState(active, transitionReqId, transitionTopVer, transitionNodes);
+        return new DiscoveryDataClusterState(
+            prevState,
+            active,
+            baselineTopology,
+            transitionReqId,
+            transitionTopVer,
+            transitionNodes);
     }
 
     /**
+     * @param prevState Previous state. May be non-null only for transitional states.
      * @param active New state.
      * @param transitionReqId State change request ID.
      * @param transitionTopVer State change topology version.
      * @param transitionNodes Nodes participating in state change exchange.
      */
-    private DiscoveryDataClusterState(boolean active,
+    private DiscoveryDataClusterState(
+        DiscoveryDataClusterState prevState,
+        boolean active,
+        @Nullable BaselineTopology baselineTopology,
         @Nullable UUID transitionReqId,
         @Nullable AffinityTopologyVersion transitionTopVer,
-        @Nullable Set<UUID> transitionNodes) {
+        @Nullable Set<UUID> transitionNodes
+    ) {
+        this.prevState = prevState;
         this.active = active;
+        this.baselineTopology = baselineTopology;
         this.transitionReqId = transitionReqId;
         this.transitionTopVer = transitionTopVer;
         this.transitionNodes = transitionNodes;
@@ -108,11 +154,8 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param active New cluster state.
      */
     public void setTransitionResult(UUID reqId, boolean active) {
-        if (reqId.equals(transitionReqId)) {
-            assert transitionRes == null : this;
-
+        if (reqId.equals(transitionReqId))
             transitionRes = active;
-        }
     }
 
     /**
@@ -123,10 +166,17 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
-     * @return {@code True} if state change is in progress.
+     * @return {@code True} if any cluster state change is in progress (e.g. active state change, baseline change).
      */
     public boolean transition() {
         return transitionReqId != null;
+    }
+
+    /**
+     * @return {@code True} if cluster active state change is in progress, {@code false} otherwise.
+     */
+    public boolean activeStateChanging() {
+        return transition() && (prevState == null || (prevState.active != active));
     }
 
     /**
@@ -144,10 +194,58 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
+     * @return Baseline topology.
+     */
+    @Nullable public BaselineTopology baselineTopology() {
+        return baselineTopology;
+    }
+
+    /**
+     * @return {@code True} if baseline topology is set in the cluster. {@code False} otherwise.
+     */
+    public boolean hasBaselineTopology() {
+        return baselineTopology != null;
+    }
+
+    /**
      * @return Nodes participating in state change exchange.
      */
     public Set<UUID> transitionNodes() {
         return transitionNodes;
+    }
+
+    /**
+     * @return Transition error.
+     */
+    @Nullable public Exception transitionError() {
+        return transitionError;
+    }
+
+    /**
+     * @param ex Exception
+     */
+    public void transitionError(Exception ex) {
+        transitionError = ex;
+    }
+
+    /**
+     * Creates a non-transitional cluster state. This method effectively cleans all fields identifying the
+     * state as transitional and creates a new state with the state transition result.
+     *
+     * @param success Transition success status.
+     * @return Cluster state that finished transition.
+     */
+    public DiscoveryDataClusterState finish(boolean success) {
+        return success ?
+            new DiscoveryDataClusterState(
+                null,
+                active,
+                baselineTopology,
+                null,
+                null,
+                null
+            ) :
+            prevState;
     }
 
     /** {@inheritDoc} */

@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
     /// <summary>
     /// Atomic long test.
     /// </summary>
-    public class AtomicLongTest : IgniteTestBase
+    public class AtomicLongTest : SpringTestBase
     {
         /** */
         private const string AtomicLongName = "testAtomicLong";

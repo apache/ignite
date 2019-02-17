@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.LongAdder;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -41,7 +42,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -253,8 +253,8 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             CacheStore store = cctx.store().configuredStore();
 
-            long opened = ((LongAdder8)U.field(store, "opened")).sum();
-            long closed = ((LongAdder8)U.field(store, "closed")).sum();
+            long opened = ((LongAdder)U.field(store, "opened")).sum();
+            long closed = ((LongAdder)U.field(store, "closed")).sum();
 
             assert opened > 0;
             assert closed > 0;

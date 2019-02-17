@@ -35,6 +35,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -112,11 +113,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private TxRecordSerializer txRecordSerializer;
 
     /**
-     * @param cctx Cctx.
+     * @param cctx Cache shared context.
      */
     public RecordDataV1Serializer(GridCacheSharedContext cctx) {
         this.cctx = cctx;
-        this.txRecordSerializer = new TxRecordSerializer(cctx);
+        this.txRecordSerializer = new TxRecordSerializer();
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
     }
@@ -160,6 +161,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 DataRecord dataRec = (DataRecord)record;
 
                 return 4 + dataSize(dataRec);
+
+            case METASTORE_DATA_RECORD:
+                MetastoreDataRecord metastoreDataRec = (MetastoreDataRecord)record;
+
+                return  4 + metastoreDataRec.key().getBytes().length + 4 +
+                    (metastoreDataRec.value() != null ? metastoreDataRec.value().length : 0);
 
             case HEADER_RECORD:
                 return HEADER_RECORD_DATA_SIZE;
@@ -283,7 +290,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 0;
 
             case TX_RECORD:
-                return txRecordSerializer.sizeOfTxRecord((TxRecord)record);
+                return txRecordSerializer.size((TxRecord)record);
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -383,6 +390,31 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 res = new DataRecord(entries, 0L);
 
                 break;
+
+            case METASTORE_DATA_RECORD:
+                int strLen = in.readInt();
+
+                byte[] strBytes = new byte[strLen];
+
+                in.readFully(strBytes);
+
+                String key = new String(strBytes);
+
+                int valLen = in.readInt();
+
+                assert valLen >= 0;
+
+                byte[] val;
+
+                if (valLen > 0) {
+                    val = new byte[valLen];
+
+                    in.readFully(val);
+                }
+                else
+                    val = null;
+
+                return new MetastoreDataRecord(key, val);
 
             case HEADER_RECORD:
                 long magic = in.readLong();
@@ -783,13 +815,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case PART_META_UPDATE_STATE:
                 cacheId = in.readInt();
+
                 partId = in.readInt();
 
                 state = in.readByte();
 
                 long updateCntr = in.readLong();
 
-                res = new PartitionMetaStateRecord(cacheId, partId, GridDhtPartitionState.fromOrdinal(state), updateCntr);
+                GridDhtPartitionState partState = GridDhtPartitionState.fromOrdinal(state);
+
+                res = new PartitionMetaStateRecord(cacheId, partId, partState, updateCntr);
 
                 break;
 
@@ -804,7 +839,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 throw new EOFException("END OF SEGMENT");
 
             case TX_RECORD:
-                res = txRecordSerializer.readTxRecord(in);
+                res = txRecordSerializer.read(in);
 
                 break;
 
@@ -903,6 +938,29 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 for (DataEntry dataEntry : dataRec.writeEntries())
                     putDataEntry(buf, dataEntry);
+
+                break;
+
+            case METASTORE_DATA_RECORD:
+                MetastoreDataRecord metastoreDataRecord = (MetastoreDataRecord)rec;
+
+                byte[] strBytes = metastoreDataRecord.key().getBytes();
+
+                buf.putInt(strBytes.length);
+                buf.put(strBytes);
+                if (metastoreDataRecord.value() != null) {
+                    buf.putInt(metastoreDataRecord.value().length);
+                    buf.put(metastoreDataRecord.value());
+                }
+                else
+                    buf.putInt(0);
+
+                break;
+
+            case HEADER_RECORD:
+                buf.putLong(HeaderRecord.REGULAR_MAGIC);
+
+                buf.putInt(((HeaderRecord)rec).version());
 
                 break;
 
@@ -1294,7 +1352,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case TX_RECORD:
-                txRecordSerializer.writeTxRecord((TxRecord)rec, buf);
+                txRecordSerializer.write((TxRecord)rec, buf);
 
                 break;
 
@@ -1304,6 +1362,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             default:
                 throw new UnsupportedOperationException("Type: " + rec.type());
         }
+    }
+
+    /**
+     * Return shared cache context.
+     *
+     * @return Shared cache context.
+     */
+    public GridCacheSharedContext cctx() {
+        return cctx;
     }
 
     /**
@@ -1558,5 +1625,4 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         return size;
     }
-
 }

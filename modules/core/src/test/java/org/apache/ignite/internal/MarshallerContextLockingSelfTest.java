@@ -140,7 +140,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         public void executeTest(GridTestLog4jLogger log, GridKernalContext ctx) throws Exception {
             counter.incrementAndGet();
 
-            MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null);
+            MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null, null);
             marshallerContext.onMarshallerProcessorStarted(ctx, null);
 
             MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());

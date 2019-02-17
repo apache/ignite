@@ -231,6 +231,9 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     private int tmpArrOff;
 
+    /** Number of bytes of the boundary value, read from previous message. */
+    private int valReadBytes;
+
     /** */
     private int tmpArrBytes;
 
@@ -521,6 +524,17 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                 lastFinished = writeArrayLE(val, LONG_ARR_OFF, val.length, 8, 3);
             else
                 lastFinished = writeArray(val, LONG_ARR_OFF, val.length, val.length << 3);
+        else
+            writeInt(-1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeLongArray(long[] val, int len) {
+        if (val != null)
+            if (BIG_ENDIAN)
+                lastFinished = writeArrayLE(val, LONG_ARR_OFF, len, 8, 3);
+            else
+                lastFinished = writeArray(val, LONG_ARR_OFF, len, len << 3);
         else
             writeInt(-1);
     }
@@ -1321,7 +1335,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param bytes Length in bytes.
      * @return Whether array was fully written.
      */
-    private boolean writeArray(Object arr, long off, int len, int bytes) {
+    boolean writeArray(Object arr, long off, int len, int bytes) {
         assert arr != null;
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
         assert off > 0;
@@ -1368,7 +1382,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param shiftCnt Shift for length.
      * @return Whether array was fully written.
      */
-    private boolean writeArrayLE(Object arr, long off, int len, int typeSize, int shiftCnt) {
+    boolean writeArrayLE(Object arr, long off, int len, int typeSize, int shiftCnt) {
         assert arr != null;
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
         assert off > 0;
@@ -1442,7 +1456,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @return Array or special value if it was not fully read.
      */
     @SuppressWarnings("unchecked")
-    private <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
+    <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
         assert creator != null;
 
         if (tmpArr == null) {
@@ -1506,7 +1520,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @return Array or special value if it was not fully read.
      */
     @SuppressWarnings("unchecked")
-    private <T> T readArrayLE(ArrayCreator<T> creator, int typeSize, int lenShift, long off) {
+    <T> T readArrayLE(ArrayCreator<T> creator, int typeSize, int lenShift, long off) {
         assert creator != null;
 
         if (tmpArr == null) {
@@ -1532,14 +1546,30 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
             }
         }
 
-        int toRead = (tmpArrBytes - tmpArrOff) >> lenShift;
-        int remaining = buf.remaining() >> lenShift;
+        int toRead = tmpArrBytes - tmpArrOff - valReadBytes;
+        int remaining = buf.remaining();
 
-        lastFinished = toRead <= buf.remaining();
+        lastFinished = toRead <= remaining;
+
+        if (!lastFinished)
+            toRead = remaining;
+
+        int pos = buf.position();
+
+        for (int i = 0; i < toRead; i++) {
+            byte b = GridUnsafe.getByte(heapArr, baseOff + pos + i);
+
+            GridUnsafe.putByteField(tmpArr, off + tmpArrOff + (typeSize - valReadBytes - 1), b);
+
+            if (++valReadBytes == typeSize) {
+                valReadBytes = 0;
+                tmpArrOff += typeSize;
+            }
+        }
+
+        buf.position(pos + toRead);
 
         if (lastFinished) {
-            readArrayLE(typeSize, off, toRead);
-
             T arr = (T)tmpArr;
 
             tmpArr = null;
@@ -1548,43 +1578,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
             return arr;
         }
-        else {
-            for (int i = 0; i < remaining; i++) {
-                int pos = buf.position();
-
-                for (int j = 0; j < typeSize; j++) {
-                    byte b = GridUnsafe.getByte(heapArr, baseOff + pos + (typeSize - j - 1));
-
-                    GridUnsafe.putByteField(tmpArr, off + tmpArrOff + j, b);
-                }
-
-                buf.position(pos + typeSize);
-                tmpArrOff += typeSize;
-            }
-
-            tmpArrOff += buf.remaining();
-
+        else
             return null;
-        }
-    }
-
-    /**
-     * @param typeSize Primitive type size in bytes.
-     * @param off Offset.
-     * @param toRead To read.
-     */
-    private void readArrayLE(int typeSize, long off, int toRead) {
-        for (int i = 0; i < toRead; i++) {
-            int pos = buf.position();
-
-            for (int j = 0; j < typeSize; j++) {
-                byte b = GridUnsafe.getByte(heapArr, baseOff + pos + (typeSize - j - 1));
-
-                GridUnsafe.putByteField(tmpArr, off + tmpArrOff++, b);
-            }
-
-            buf.position(pos + typeSize);
-        }
     }
 
     /**
@@ -1796,7 +1791,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /**
      * Array creator.
      */
-    private interface ArrayCreator<T> {
+    interface ArrayCreator<T> {
         /**
          * @param len Array length or {@code -1} if array was not fully read.
          * @return New array.

@@ -128,6 +128,15 @@ public class IgniteSQLException extends IgniteException {
     }
 
     /**
+     * {@link SQLException#SQLState} getter.
+     *
+     * @return {@link SQLException#SQLState}.
+     */
+    public String sqlState() {
+        return sqlState;
+    }
+
+    /**
      * @return JDBC exception containing details from this instance.
      */
     public SQLException toJdbcException() {

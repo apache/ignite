@@ -21,13 +21,16 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.jsr166.LongAdder8;
 
 /**
  * Common functionality implementation for eviction policies with max size/max memory and batch eviction support.
  */
 public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, V>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 4358725333474509598L;
+
     /** Max memory size occupied by elements in container. */
     private volatile long maxMemSize;
 
@@ -38,7 +41,7 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
     private volatile int batchSize = 1;
 
     /** Memory size occupied by elements in container. */
-    protected final LongAdder8 memSize = new LongAdder8();
+    protected final LongAdder memSize = new LongAdder();
 
     /**
      * Shrinks backed container to maximum allowed size.

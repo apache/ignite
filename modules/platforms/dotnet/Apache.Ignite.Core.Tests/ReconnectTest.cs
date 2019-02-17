@@ -98,10 +98,8 @@ namespace Apache.Ignite.Core.Tests
             cache1[1] = 2;
             Assert.AreEqual(2, cache1[1]);
 
-            // Check that old cache instance does not work.
-            var cacheEx1 = Assert.Throws<InvalidOperationException>(() => cache.Get(1));
-            Assert.IsTrue(cacheEx1.Message.EndsWith("Failed to perform cache operation (cache is stopped): cache"), 
-                cacheEx1.Message);
+            // Check that old cache instance still works.
+            Assert.AreEqual(2, cache.Get(1));
         }
 
         /// <summary>

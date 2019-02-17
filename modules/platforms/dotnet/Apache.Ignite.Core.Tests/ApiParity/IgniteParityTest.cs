@@ -44,8 +44,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "orCreateCaches", // IGNITE-7100
             "destroyCaches",  // IGNITE-7100
 
-            "addCacheConfiguration", // IGNITE-7102
-
             // Data structures.
             "atomicStamped", // IGNITE-7104
             "countDownLatch", // IGNITE-1418

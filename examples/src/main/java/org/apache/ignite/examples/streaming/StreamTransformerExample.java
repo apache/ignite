@@ -19,7 +19,6 @@ package org.apache.ignite.examples.streaming;
 
 import java.util.List;
 import java.util.Random;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -34,9 +33,11 @@ import org.apache.ignite.stream.StreamTransformer;
  * Stream random numbers into the streaming cache.
  * To start the example, you should:
  * <ul>
- *     <li>Start a few nodes using {@link ExampleNodeStartup}.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
  *     <li>Start streaming using {@link StreamTransformerExample}.</li>
  * </ul>
+ * <p>
+ * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class StreamTransformerExample {
     /** Random number generator. */
@@ -44,6 +45,9 @@ public class StreamTransformerExample {
 
     /** Range within which to generate numbers. */
     private static final int RANGE = 1000;
+
+    /** Cache name. */
+    private static final String CACHE_NAME = "randomNumbers";
 
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
@@ -53,7 +57,7 @@ public class StreamTransformerExample {
             if (!ExamplesUtils.hasServerNodes(ignite))
                 return;
 
-            CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>("randomNumbers");
+            CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>(CACHE_NAME);
 
             // Index key and value.
             cfg.setIndexedTypes(Integer.class, Long.class);
@@ -65,17 +69,15 @@ public class StreamTransformerExample {
                     stmr.allowOverwrite(true);
 
                     // Configure data transformation to count random numbers added to the stream.
-                    stmr.receiver(new StreamTransformer<Integer, Long>() {
-                        @Override public Object process(MutableEntry<Integer, Long> e, Object... args) {
-                            // Get current count.
-                            Long val = e.getValue();
+                    stmr.receiver(StreamTransformer.from((e, arg) -> {
+                        // Get current count.
+                        Long val = e.getValue();
 
-                            // Increment count by 1.
-                            e.setValue(val == null ? 1L : val + 1);
+                        // Increment count by 1.
+                        e.setValue(val == null ? 1L : val + 1);
 
-                            return null;
-                        }
-                    });
+                        return null;
+                    }));
 
                     // Stream 10 million of random numbers into the streamer cache.
                     for (int i = 1; i <= 10_000_000; i++) {
@@ -99,7 +101,7 @@ public class StreamTransformerExample {
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
-                ignite.destroyCache(cfg.getName());
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

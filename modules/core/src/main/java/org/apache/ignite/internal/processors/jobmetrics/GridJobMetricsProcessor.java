@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.jobmetrics;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -24,7 +25,6 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL;
 
@@ -179,7 +179,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
 
         InternalMetrics m = this.metrics;
 
-        m.snapshotsQueues[ThreadLocalRandom8.current().nextInt(m.snapshotsQueues.length)].add(metrics);
+        m.snapshotsQueues[ThreadLocalRandom.current().nextInt(m.snapshotsQueues.length)].add(metrics);
 
         // Handle current and total idle times.
         long idleTimer0 = idleTimer;

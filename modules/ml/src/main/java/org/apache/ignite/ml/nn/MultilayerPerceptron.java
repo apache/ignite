@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,14 +35,15 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.architecture.TransformationLayerArchitecture;
 import org.apache.ignite.ml.nn.initializers.MLPInitializer;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
-import org.apache.ignite.ml.nn.updaters.SmoothParametrized;
+import org.apache.ignite.ml.optimization.SmoothParametrized;
 
 import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 
 /**
  * Class encapsulating logic of multilayer perceptron.
  */
-public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron> {
+public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron>,
+    Serializable {
     /**
      * This MLP architecture.
      */
@@ -68,7 +70,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         architecture = arch;
         below = null;
 
-        initLayers(initializer);
+        initLayers(initializer != null ? initializer : new RandomInitializer(new Random()));
     }
 
     /**
@@ -77,11 +79,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @param arch Architecture.
      */
     public MultilayerPerceptron(MLPArchitecture arch) {
-        layers = new ArrayList<>(arch.layersCount() + 1);
-        architecture = arch;
-        below = null;
-
-        initLayers(new RandomInitializer(new Random()));
+        this(arch, null);
     }
 
     /**
@@ -172,16 +170,15 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
     }
 
     /**
-     * Predict values on inputs given as columns in a given matrix.
+     * Makes a prediction for the given objects.
      *
-     * @param val Matrix containing inputs as columns.
-     * @return Matrix with predicted vectors stored in columns with column indexes corresponding to column indexes in
-     * the input matrix.
+     * @param val Matrix containing objects.
+     * @return Matrix with predicted vectors.
      */
     @Override public Matrix apply(Matrix val) {
         MLPState state = new MLPState(null);
-        forwardPass(val, state, false);
-        return state.activatorsOutput.get(state.activatorsOutput.size() - 1);
+        forwardPass(val.transpose(), state, false);
+        return state.activatorsOutput.get(state.activatorsOutput.size() - 1).transpose();
     }
 
     /**
@@ -389,7 +386,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
             if (hasBiases(layer))
                 db = dz.foldRows(Vector::sum).times(invBatchSize);
 
-            // Because we go from last layer, add each layer to the begining.
+            // Because we go from last layer, add each layer to the beginning.
             layersParameters.add(0, new MLPLayer(dw, db));
         }
 
@@ -555,7 +552,8 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @param nonlinearity Nonlinearity of current layer.
      * @return Gradients matrix.
      */
-    private Matrix differentiateNonlinearity(Matrix linearOut, IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
+    private Matrix differentiateNonlinearity(Matrix linearOut,
+        IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
         Matrix diff = linearOut.copy();
 
         diff.map(nonlinearity::differential);

@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.lang.reflect.Field;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -30,12 +36,6 @@ import org.h2.result.LazyResult;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Field;
-import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 
@@ -70,7 +70,7 @@ class MapQueryResult {
     private final ResultSet rs;
 
     /** */
-    private final String cacheName;
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
     private final GridCacheSqlQuery qry;
@@ -101,16 +101,16 @@ class MapQueryResult {
 
     /**
      * @param rs Result set.
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
      * @param lazyWorker Lazy worker.
      */
-    MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable String cacheName,
+    MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
         UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker) {
         this.h2 = h2;
-        this.cacheName = cacheName;
+        this.cctx = cctx;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
@@ -179,7 +179,7 @@ class MapQueryResult {
         if (closed)
             return true;
 
-        boolean readEvt = cacheName != null && h2.kernalContext().event().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+        boolean readEvt = cctx != null && cctx.name() != null && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
         page++;
 
@@ -222,7 +222,7 @@ class MapQueryResult {
                     "SQL fields query result set row read.",
                     EVT_CACHE_QUERY_OBJECT_READ,
                     CacheQueryType.SQL.name(),
-                    cacheName,
+                    cctx.name(),
                     null,
                     qry.query(),
                     null,
@@ -282,7 +282,7 @@ class MapQueryResult {
             U.closeQuiet(rs);
 
             if (lazyWorker != null)
-                lazyWorker.stop();
+                lazyWorker.stop(false);
         }
     }
 }

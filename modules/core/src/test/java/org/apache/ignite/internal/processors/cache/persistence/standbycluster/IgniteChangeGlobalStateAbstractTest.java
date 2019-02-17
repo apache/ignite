@@ -61,7 +61,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         nodes.clear();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
 
         startPrimaryNodes(primaryNodes());
 
@@ -84,7 +84,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         nodes.clear();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
     }
 
     /**
@@ -198,6 +198,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
         IgniteConfiguration cfg = getConfiguration(name);
 
         cfg.setConsistentId(node);
+        cfg.setAutoActivationEnabled(false);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(backUpIpFinder);
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import org.apache.ignite.IgniteCache;
@@ -32,13 +33,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -48,7 +48,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -60,16 +59,19 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     /** */
     private boolean flushByTimeout;
 
+    /** */
+    private AtomicBoolean canFail = new AtomicBoolean();
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -89,10 +91,9 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                  new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
-                .setFileIOFactory(new FailingFileIOFactory())
                 .setWalMode(WALMode.BACKGROUND)
-                .setWalBufferSize(128 * 1024)// Setting WAL Segment size to high values forces flushing by timeout.
-                .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
+                .setWalBufferSize(1024 * 1024)// Setting WAL Segment size to high values forces flushing by timeout.
+                .setWalSegmentSize(flushByTimeout ? 2 * 1024 * 1024 : 512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -125,12 +126,14 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     private void flushingErrorTest() throws Exception {
         final IgniteEx grid = startGrid(0);
 
-        IgniteWriteAheadLogManager wal = grid.context().cache().context().wal();
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)grid.context().cache().context().wal();
 
         boolean mmap = GridTestUtils.getFieldValue(wal, "mmap");
 
         if (mmap)
             return;
+
+        wal.setFileIOFactory(new FailingFileIOFactory(canFail));
 
         try {
             grid.active(true);
@@ -138,6 +141,8 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
 
             final int iterations = 100;
+
+            canFail.set(true);
 
             for (int i = 0; i < iterations; i++) {
                 Transaction tx = grid.transactions().txStart(
@@ -163,13 +168,6 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-    }
-
-    /**
      * Create File I/O which fails after second attempt to write to File
      */
     private static class FailingFileIOFactory implements FileIOFactory {
@@ -177,7 +175,15 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         private static final long serialVersionUID = 0L;
 
         /** Delegate factory. */
+        private AtomicBoolean fail;
+
+        /** */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
+
+        /** */
+        FailingFileIOFactory(AtomicBoolean fail) {
+            this.fail = fail;
+        }
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file) throws IOException {
@@ -192,17 +198,17 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
                 int writeAttempts = 2;
 
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (--writeAttempts == 0)
-                        throw new RuntimeException("Test exception. Unable to write to file.");
+
+                    if (--writeAttempts <= 0 && fail!= null && fail.get())
+                        throw new IOException("No space left on device");
 
                     return super.write(srcBuf);
                 }
 
                 /** {@inheritDoc} */
-                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-                    return delegate.map(maxWalSegmentSize);
+                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    return delegate.map(sizeBytes);
                 }
-
             };
         }
     }

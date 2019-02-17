@@ -34,6 +34,7 @@
 
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
+#include <iterator>
 
 namespace ignite
 {
@@ -98,7 +99,7 @@ namespace ignite
 
             res.reserve(skipped_trailing - skipped_leading);
 
-            std::copy(skipped_leading, skipped_trailing, std::back_insert_iterator<std::string>(res));
+            std::copy(skipped_leading, skipped_trailing, std::back_inserter(res));
 
             return res;
         }

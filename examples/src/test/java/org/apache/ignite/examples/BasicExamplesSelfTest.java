@@ -20,10 +20,7 @@ package org.apache.ignite.examples;
 import org.apache.ignite.examples.computegrid.ComputeBroadcastExample;
 import org.apache.ignite.examples.computegrid.ComputeCallableExample;
 import org.apache.ignite.examples.computegrid.ComputeClosureExample;
-import org.apache.ignite.examples.computegrid.ComputeReducerExample;
 import org.apache.ignite.examples.computegrid.ComputeRunnableExample;
-import org.apache.ignite.examples.computegrid.ComputeTaskMapExample;
-import org.apache.ignite.examples.computegrid.ComputeTaskSplitExample;
 import org.apache.ignite.examples.datastructures.IgniteExecutorServiceExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
@@ -59,12 +56,13 @@ public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
         IgniteExecutorServiceExample.main(EMPTY_ARGS);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReducerExample() throws Exception {
-        ComputeReducerExample.main(EMPTY_ARGS);
-    }
+//    TODO: IGNITE-711 next example(s) should be implemented for java 8 or testing method(s) should be removed if example(s) does not applicable for java 8.
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testReducerExample() throws Exception {
+//        ComputeReducerExample.main(EMPTY_ARGS);
+//    }
 
     /**
      * @throws Exception If failed.
@@ -73,17 +71,19 @@ public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
         ComputeRunnableExample.main(EMPTY_ARGS);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTaskMapExample() throws Exception {
-        ComputeTaskMapExample.main(EMPTY_ARGS);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTaskSplitExample() throws Exception {
-        ComputeTaskSplitExample.main(EMPTY_ARGS);
-    }
+//    TODO: IGNITE-711 next example(s) should be implemented for java 8
+//    or testing method(s) should be removed if example(s) does not applicable for java 8.
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTaskMapExample() throws Exception {
+//        ComputeTaskMapExample.main(EMPTY_ARGS);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTaskSplitExample() throws Exception {
+//        ComputeTaskSplitExample.main(EMPTY_ARGS);
+//    }
 }

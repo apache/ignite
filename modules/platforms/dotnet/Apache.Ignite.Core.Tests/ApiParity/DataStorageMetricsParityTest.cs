@@ -28,7 +28,17 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] MissingProperties =
         {
             // IGNITE-7305
-            "WalBuffPollSpinsRate"
+            "WalBuffPollSpinsRate",
+            "WalTotalSize",
+            "WalLastRollOverTime",
+            "CheckpointTotalTime",
+            "DirtyPages",
+            "PagesRead",
+            "PagesWritten",
+            "PagesReplaced",
+            "OffHeapSize",
+            "OffheapUsedSize",
+            "TotalAllocatedSize"
         };
 
         /// <summary>

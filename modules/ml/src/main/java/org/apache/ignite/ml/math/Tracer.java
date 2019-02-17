@@ -57,6 +57,7 @@ public class Tracer {
         return new ColorMapper() {
             /** {@inheritDoc} */
             @Override public Color apply(Double d) {
+                d = (d - min) / range;
                 int r = (int)Math.round(255 * d);
                 int g = 0;
                 int b = (int)Math.round(255 * (1 - d));
@@ -224,7 +225,18 @@ public class Tracer {
      * @throws IOException Thrown in case of any errors.
      */
     public static void showHtml(Matrix mtx) throws IOException {
-        showHtml(mtx, mkMatrixColorMapper(mtx));
+        showHtml(mtx, false);
+    }
+
+    /**
+     * Shows given matrix in the browser with D3-based visualization.
+     *
+     * @param mtx Matrix to show.
+     * @param useAsciiFallback Use ascii fallback is desktop or browser is unavailable.
+     * @throws IOException Thrown in case of any errors.
+     */
+    public static void showHtml(Matrix mtx, boolean useAsciiFallback) throws IOException {
+        showHtml(mtx, mkMatrixColorMapper(mtx), useAsciiFallback);
     }
 
     /**
@@ -235,20 +247,36 @@ public class Tracer {
      * @throws IOException Thrown in case of any errors.
      */
     public static void showHtml(Matrix mtx, ColorMapper cm) throws IOException {
-        // Read it every time so that we can change it at runtime.
-        String tmpl = fileToString("d3-matrix-template.html");
+        showHtml(mtx, cm, false);
+    }
 
-        String cls = mtx.getClass().getSimpleName();
+    /**
+     * Shows given matrix in the browser with D3-based visualization.
+     *
+     * @param mtx Matrix to show.
+     * @param cm Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
+     * @param useAsciiFallback Use ascii fallback is desktop or browser is unavailable.
+     * @throws IOException Thrown in case of any errors.
+     */
+    public static void showHtml(Matrix mtx, ColorMapper cm, boolean useAsciiFallback) throws IOException {
+        if (!isBrowseSupported() && useAsciiFallback)
+            showAscii(mtx);
+        else {
+            // Read it every time so that we can change it at runtime.
+            String tmpl = fileToString("d3-matrix-template.html");
 
-        double min = mtx.minValue();
-        double max = mtx.maxValue();
+            String cls = mtx.getClass().getSimpleName();
 
-        openHtmlFile(tmpl.
-            replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
-            replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min)) + ";\n").
-            replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max)) + ";\n").
-            replaceAll("/\\*@DATA@\\*/.*\n", "var data = " + mkJsArrayString(mtx, cm) + ";\n")
-        );
+            double min = mtx.minValue();
+            double max = mtx.maxValue();
+
+            openHtmlFile(tmpl.
+                replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
+                replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min)) + ";\n").
+                replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max)) + ";\n").
+                replaceAll("/\\*@DATA@\\*/.*\n", "var data = " + mkJsArrayString(mtx, cm) + ";\n")
+            );
+        }
     }
 
     /**
@@ -258,7 +286,18 @@ public class Tracer {
      * @throws IOException Thrown in case of any errors.
      */
     public static void showHtml(Vector vec) throws IOException {
-        showHtml(vec, mkVectorColorMapper(vec));
+        showHtml(vec, false);
+    }
+
+    /**
+     * Shows given vector in the browser with D3-based visualization.
+     *
+     * @param vec Vector to show.
+     * @param useAsciiFallback Use ascii fallback is desktop or browser is unavailable.
+     * @throws IOException Thrown in case of any errors.
+     */
+    public static void showHtml(Vector vec, boolean useAsciiFallback) throws IOException {
+        showHtml(vec, mkVectorColorMapper(vec), useAsciiFallback);
     }
 
     /**
@@ -283,20 +322,45 @@ public class Tracer {
      * @throws IOException Thrown in case of any errors.
      */
     public static void showHtml(Vector vec, ColorMapper cm) throws IOException {
-        // Read it every time so that we can change it at runtime.
-        String tmpl = fileToString("d3-vector-template.html");
+        showHtml(vec, cm, false);
+    }
 
-        String cls = vec.getClass().getSimpleName();
+    /**
+     * Shows given vector in the browser with D3-based visualization.
+     *
+     * @param vec Vector to show.
+     * @param cm Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
+     * @param useAsciiFallback Use ascii fallback is desktop or browser is unavailable.
+     * @throws IOException Thrown in case of any errors.
+     */
+    public static void showHtml(Vector vec, ColorMapper cm, boolean useAsciiFallback) throws IOException {
+        if (!isBrowseSupported() && useAsciiFallback)
+            showAscii(vec);
+        else {
+            // Read it every time so that we can change it at runtime.
+            String tmpl = fileToString("d3-vector-template.html");
 
-        double min = vec.minValue();
-        double max = vec.maxValue();
+            String cls = vec.getClass().getSimpleName();
 
-        openHtmlFile(tmpl.
-            replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
-            replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min)) + ";\n").
-            replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max)) + ";\n").
-            replaceAll("/\\*@DATA@\\*/.*\n", "var data = " + mkJsArrayString(vec, cm) + ";\n")
-        );
+            double min = vec.minValue();
+            double max = vec.maxValue();
+
+            openHtmlFile(tmpl.
+                replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
+                replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min)) + ";\n").
+                replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max)) + ";\n").
+                replaceAll("/\\*@DATA@\\*/.*\n", "var data = " + mkJsArrayString(vec, cm) + ";\n")
+            );
+        }
+    }
+
+    /**
+     * Returns {@code true} if browse can be used (to show HTML for example), otherwise returns {@code false}.
+     *
+     * @return {@code true} if browse can be used (to show HTML for example), otherwise returns {@code false}
+     */
+    private static boolean isBrowseSupported() {
+        return Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE);
     }
 
     /**

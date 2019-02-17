@@ -30,6 +30,6 @@ public class IgniteWalFlushDefaultSelfTest extends IgniteWalFlushMultiNodeFailov
 
     /** {@inheritDoc} */
     @Override protected WALMode walMode() {
-        return WALMode.DEFAULT;
+        return WALMode.FSYNC;
     }
 }

@@ -48,10 +48,16 @@ public class DiscoveryDataPacket implements Serializable {
     private Map<Integer, byte[]> joiningNodeData = new HashMap<>();
 
     /** */
+    private transient Map<Integer, Serializable> unmarshalledJoiningNodeData;
+
+    /** */
     private Map<Integer, byte[]> commonData = new HashMap<>();
 
     /** */
     private Map<UUID, Map<Integer, byte[]>> nodeSpecificData = new LinkedHashMap<>();
+
+    /** */
+    private transient boolean joiningNodeClient;
 
     /**
      * @param joiningNodeId Joining node id.
@@ -111,7 +117,7 @@ public class DiscoveryDataPacket implements Serializable {
             boolean clientNode,
             IgniteLogger log
     ) {
-        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId);
+        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (commonData != null && !commonData.isEmpty()) {
             Map<Integer, Serializable> unmarshCommonData = unmarshalData(commonData, marsh, clsLdr, clientNode, log);
@@ -151,17 +157,17 @@ public class DiscoveryDataPacket implements Serializable {
             boolean clientNode,
             IgniteLogger log
     ) {
-        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId);
+        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (joiningNodeData != null && !joiningNodeData.isEmpty()) {
-            Map<Integer, Serializable> unmarshJoiningNodeData = unmarshalData(
+            unmarshalledJoiningNodeData = unmarshalData(
                     joiningNodeData,
                     marsh,
                     clsLdr,
                     clientNode,
                     log);
 
-            dataBag.joiningNodeData(unmarshJoiningNodeData);
+            dataBag.joiningNodeData(unmarshalledJoiningNodeData);
         }
 
         return dataBag;
@@ -340,6 +346,18 @@ public class DiscoveryDataPacket implements Serializable {
      * (e.g. on nodes prior in cluster to the one where this method is called).
      */
     public DiscoveryDataBag bagForDataCollection() {
-        return new DiscoveryDataBag(joiningNodeId, commonData.keySet());
+        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, commonData.keySet(), joiningNodeClient);
+
+        if (unmarshalledJoiningNodeData != null)
+            dataBag.joiningNodeData(unmarshalledJoiningNodeData);
+
+        return dataBag;
+    }
+
+    /**
+     * @param joiningNodeClient Joining node is client flag.
+     */
+    public void joiningNodeClient(boolean joiningNodeClient) {
+        this.joiningNodeClient = joiningNodeClient;
     }
 }

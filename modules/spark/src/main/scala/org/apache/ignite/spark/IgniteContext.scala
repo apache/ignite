@@ -21,9 +21,11 @@ import org.apache.ignite._
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.ignite.spark.IgniteContext.setIgniteHome
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.SparkContext
 import org.apache.log4j.Logger
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 
 /**
  * Ignite context.
@@ -59,6 +61,14 @@ class IgniteContext(
 
     // Make sure to start Ignite on context creation.
     ignite()
+
+    //Stop local ignite instance on application end.
+    //Instances on workers will be stopped with executor stop(jvm exit).
+    sparkContext.addSparkListener(new SparkListener {
+        override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+            close()
+        }
+    })
 
     /**
      * Creates an instance of IgniteContext with the given spring configuration.
@@ -129,15 +139,7 @@ class IgniteContext(
      * @return
      */
     def ignite(): Ignite = {
-        val home = IgniteUtils.getIgniteHome
-
-        if (home == null && igniteHome != null) {
-            Logging.log.info("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
-
-            IgniteUtils.nullifyHomeDirectory()
-
-            System.setProperty(IgniteSystemProperties.IGNITE_HOME, igniteHome)
-        }
+        setIgniteHome(igniteHome)
 
         val igniteCfg = cfgClo()
 
@@ -159,7 +161,7 @@ class IgniteContext(
      * Stops supporting ignite instance. If ignite instance has been already stopped, this operation will be
      * a no-op.
      */
-    def close(shutdownIgniteOnWorkers: Boolean = false) = {
+    def close(shutdownIgniteOnWorkers: Boolean = false): Unit = {
         // additional check if called from driver
         if (sparkContext != null && shutdownIgniteOnWorkers) {
             // Get required number of executors with default equals to number of available executors.
@@ -180,7 +182,25 @@ class IgniteContext(
     private def doClose() = {
         val igniteCfg = cfgClo()
 
-        Ignition.stop(igniteCfg.getIgniteInstanceName, false)
+        if (Ignition.state(igniteCfg.getIgniteInstanceName) == IgniteState.STARTED)
+            Ignition.stop(igniteCfg.getIgniteInstanceName, false)
+    }
+}
+
+object IgniteContext {
+    def apply(sparkContext: SparkContext, cfgF: () ⇒ IgniteConfiguration, standalone: Boolean = true): IgniteContext =
+        new IgniteContext(sparkContext, cfgF, standalone)
+
+    def setIgniteHome(igniteHome: String): Unit = {
+        val home = IgniteUtils.getIgniteHome
+
+        if (home == null && igniteHome != null) {
+            Logging.log.info("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
+
+            IgniteUtils.nullifyHomeDirectory()
+
+            System.setProperty(IgniteSystemProperties.IGNITE_HOME, igniteHome)
+        }
     }
 }
 
@@ -189,7 +209,7 @@ class IgniteContext(
  *
  * @param clo Closure to wrap.
  */
-private class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
+class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
     @transient @volatile var res: IgniteConfiguration = null
 
     def apply(): IgniteConfiguration = {

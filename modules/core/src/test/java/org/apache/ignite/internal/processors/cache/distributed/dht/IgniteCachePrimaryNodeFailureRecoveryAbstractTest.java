@@ -481,7 +481,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
             @Override public boolean apply() {
                 GridDhtTxLocal locTx = null;
 
-                for (IgniteInternalTx tx : tm.txs()) {
+                for (IgniteInternalTx tx : tm.activeTransactions()) {
                     if (tx instanceof GridDhtTxLocal) {
                         assertNull("Only one tx is expected.", locTx);
 

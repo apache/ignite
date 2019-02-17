@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
@@ -35,7 +36,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
 import org.junit.Assert;
 
 /**
@@ -468,7 +468,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
         final List<String> msgs = Lists.newArrayList();
 
         for (int i = 0; i < 1000; i++)
-            msgs.add(String.valueOf(ThreadLocalRandom8.current().nextInt()));
+            msgs.add(String.valueOf(ThreadLocalRandom.current().nextInt()));
 
         return msgs;
     }

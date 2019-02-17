@@ -67,6 +67,11 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return memMetrics.getTotalAllocatedSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getDirtyPages() {
         return memMetrics.getDirtyPages();
     }
@@ -84,6 +89,26 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getPhysicalMemoryPages() {
         return memMetrics.getPhysicalMemoryPages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemorySize() {
+        return memMetrics.getPhysicalMemorySize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferPages() {
+        return memMetrics.getCheckpointBufferPages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize() {
+        return memMetrics.getCheckpointBufferSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getPageSize() {
+        return memMetrics.getPageSize();
     }
 
     /** {@inheritDoc} */
@@ -132,5 +157,30 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** {@inheritDoc} */
     @Override public String getSwapPath() {
         return dataRegCfg.getSwapPath();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesRead() {
+        return memMetrics.getPagesRead();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesWritten() {
+        return memMetrics.getPagesWritten();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesReplaced() {
+        return memMetrics.getPagesReplaced();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapSize() {
+        return memMetrics.getOffHeapSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffheapUsedSize() {
+        return memMetrics.getOffheapUsedSize();
     }
 }

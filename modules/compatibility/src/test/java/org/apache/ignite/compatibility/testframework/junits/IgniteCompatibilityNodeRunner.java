@@ -23,7 +23,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -31,6 +30,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
@@ -109,6 +109,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
             watchdog.interrupt();
         }
         catch (Throwable e) {
+            e.printStackTrace();
             X.println("Dumping classpath, error occurred: " + e);
             dumpClasspath();
             throw e;
@@ -137,9 +138,8 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
                 X.println("Ignite startup/Init closure/post configuration closure is probably hanging at");
 
-                for (StackTraceElement ste : mainThread.getStackTrace()) {
+                for (StackTraceElement ste : mainThread.getStackTrace())
                     X.println("\t" + ste.toString());
-                }
 
                 X.println("\nDumping classpath");
                 dumpClasspath();
@@ -157,14 +157,10 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
      * Dumps classpath to output stream.
      */
     private static void dumpClasspath() {
-        final ClassLoader clsLdr = IgniteCompatibilityNodeRunner.class.getClassLoader();
-        if (clsLdr instanceof URLClassLoader) {
-            URLClassLoader ldr = (URLClassLoader)clsLdr;
+        ClassLoader clsLdr = IgniteCompatibilityNodeRunner.class.getClassLoader();
 
-            for (URL url : ldr.getURLs()) {
-                X.println("Classpath url: [" + url.getPath() + "]");
-            }
-        }
+        for (URL url : CompatibilityTestsUtils.classLoaderUrls(clsLdr))
+            X.println("Classpath url: [" + url.getPath() + ']');
     }
 
     /**

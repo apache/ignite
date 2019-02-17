@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
  */
 public abstract class GridFilteredIterator<T> implements Iterator<T> {
     /** */
-    private final Iterator<? extends T> it;
+    protected final Iterator<? extends T> it;
 
     /** */
     private boolean hasNext;

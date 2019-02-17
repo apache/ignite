@@ -72,7 +72,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassName() throws Exception {
-        MarshallerContextImpl marshCtx = new MarshallerContextImpl(null);
+        MarshallerContextImpl marshCtx = new MarshallerContextImpl(null, null);
 
         marshCtx.onMarshallerProcessorStarted(ctx, null);
 
@@ -99,7 +99,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     public void testMultiplatformMappingsCollecting() throws Exception {
         String nonJavaClassName = "random.platform.Mapping";
 
-        MarshallerContextImpl marshCtx = new MarshallerContextImpl(null);
+        MarshallerContextImpl marshCtx = new MarshallerContextImpl(null, null);
 
         marshCtx.onMarshallerProcessorStarted(ctx, null);
 
@@ -157,7 +157,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     public void testOnUpdated() throws Exception {
         File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
-        MarshallerContextImpl ctx = new MarshallerContextImpl(null);
+        MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
 
         ctx.onMarshallerProcessorStarted(this.ctx, null);
 
@@ -188,7 +188,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      * if platform ids passed to marshaller cache were not sequential (like 0, 2).
      */
     public void testCacheStructure0() throws Exception {
-        MarshallerContextImpl ctx = new MarshallerContextImpl(null);
+        MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
 
         ctx.onMarshallerProcessorStarted(this.ctx, null);
 
@@ -221,7 +221,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      * if platform ids passed to marshaller context were sequential.
      */
     public void testCacheStructure1() throws Exception {
-        MarshallerContextImpl ctx = new MarshallerContextImpl(null);
+        MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
 
         ctx.onMarshallerProcessorStarted(this.ctx, null);
 

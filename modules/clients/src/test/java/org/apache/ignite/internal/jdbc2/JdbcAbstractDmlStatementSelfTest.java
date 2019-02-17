@@ -138,8 +138,10 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     @Override protected void afterTest() throws Exception {
         ((IgniteEx)ignite(0)).context().cache().dynamicDestroyCache(DEFAULT_CACHE_NAME, true, true, false);
 
-        conn.close();
-        assertTrue(conn.isClosed());
+        if (conn != null) {
+            conn.close();
+            assertTrue(conn.isClosed());
+        }
 
         cleanUpWorkingDir();
     }
@@ -150,7 +152,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     private void cleanUpWorkingDir() throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        deleteRecursively(U.resolveWorkDirectory(workDir, "marshaller", false));
+        U.delete(U.resolveWorkDirectory(workDir, "marshaller", false));
     }
 
     /**

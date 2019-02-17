@@ -50,7 +50,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -74,11 +74,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private static final String TOPIC_PREFIX = "QUERY";
 
     /** {request ID -> thread} */
-    private ConcurrentMap<Long, Thread> threads = new ConcurrentHashMap8<>();
+    private ConcurrentMap<Long, Thread> threads = new ConcurrentHashMap<>();
 
     /** {request ID -> future} */
     private ConcurrentMap<Long, GridCacheDistributedQueryFuture<?, ?, ?>> futs =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Received requests to cancel. */
     private Collection<CancelMessageId> cancelIds =

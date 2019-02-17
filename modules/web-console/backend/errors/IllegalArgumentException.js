@@ -22,7 +22,6 @@ const AppErrorException = require('./AppErrorException');
 class IllegalArgumentException extends AppErrorException {
     constructor(message) {
         super(message);
-        this.httpCode = 400;
     }
 }
 

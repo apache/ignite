@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.ClassCache;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +38,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -60,10 +60,10 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         "org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopShutdownHookManager";
 
     /** */
-    private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
+    private static final ClassLoader APP_CLS_LDR = HadoopClassLoader.class.getClassLoader();
 
     /** */
-    private static final Collection<URL> appJars = F.asList(APP_CLS_LDR.getURLs());
+    private static final Collection<URL> appJars = F.asList(IgniteUtils.classLoaderUrls(APP_CLS_LDR));
 
     /** Mutex for native libraries initialization. */
     private static final Object LIBS_MUX = new Object();
@@ -78,7 +78,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     private static volatile Collection<URL> hadoopJars;
 
     /** */
-    private static final Map<String, byte[]> bytesCache = new ConcurrentHashMap8<>();
+    private static final Map<String, byte[]> bytesCache = new ConcurrentHashMap<>();
 
     /** Class cache. */
     private final ConcurrentMap<String, Class> cacheMap = new ConcurrentHashMap<>();

@@ -41,7 +41,7 @@ public class GridDistributedTxMapping {
 
     /** Entries. */
     @GridToStringInclude
-    private Collection<IgniteTxEntry> entries;
+    private final Collection<IgniteTxEntry> entries;
 
     /** Explicit lock flag. */
     private boolean explicitLock;

@@ -1556,7 +1556,7 @@ public class JdbcResultSet implements ResultSet {
             throw new SQLException("Invalid column index: " + colIdx);
         }
         catch (ClassCastException ignored) {
-            throw new SQLException("Value is an not instance of " + cls.getName(), SqlStateCode.CONVERSION_FAILED);
+            throw new SQLException("Cannot convert to " + cls.getSimpleName().toLowerCase(), SqlStateCode.CONVERSION_FAILED);
         }
     }
 

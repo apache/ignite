@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This is an utility class for 'splitting' locking of some resources.
@@ -30,7 +30,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class GridKeyLock {
     /** Underlying locks. */
-    private final ConcurrentMap<Object, Sync> locks = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Object, Sync> locks = new ConcurrentHashMap<>();
 
     /**
      * @param key Key to lock.

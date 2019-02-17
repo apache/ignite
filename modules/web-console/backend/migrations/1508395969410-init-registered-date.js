@@ -18,10 +18,11 @@
 const _ = require('lodash');
 
 exports.up = function up(done) {
-    const accounts = this('Account');
+    const accountsModel = this('Account');
 
-    accounts.find({}).lean().exec()
-        .then((data) => _.forEach(data, (acc) => accounts.update({_id: acc._id}, {$set: {registered: acc.lastLogin}}, {upsert: true}).exec()))
+    accountsModel.find({}).lean().exec()
+        .then((accounts) => _.reduce(accounts, (start, account) => start
+            .then(() => accountsModel.update({_id: account._id}, {$set: {registered: account.lastLogin}}).exec()), Promise.resolve()))
         .then(() => done())
         .catch(done);
 };

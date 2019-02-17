@@ -29,6 +29,7 @@ git-patch-prop-local.sh
 **/dotnet/libs/
 *.classname*
 *.exe
+.mvn/
 
 #Visual Studio files
 *.[Oo]bj
@@ -57,6 +58,10 @@ git-patch-prop-local.sh
 ipch/
 [Oo]bj/
 [Bb]in
+!/bin
+!/modules/core/src/test/bin
+!/modules/sqlline/bin
+!/modules/web-console/web-agent/bin
 [Dd]ebug*/
 [Rr]elease*/
 packages

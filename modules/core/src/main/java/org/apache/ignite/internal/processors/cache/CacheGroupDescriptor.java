@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -61,6 +65,12 @@ public class CacheGroupDescriptor {
     /** Persistence enabled flag. */
     private final boolean persistenceEnabled;
 
+    /** WAL enabled state. */
+    private volatile boolean walEnabled;
+
+    /** Pending WAL change requests. */
+    private final LinkedList<WalStateProposeMessage> walChangeReqs;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param grpName Group name.
@@ -70,7 +80,10 @@ public class CacheGroupDescriptor {
      * @param deploymentId Deployment ID.
      * @param caches Cache group caches.
      * @param persistenceEnabled Persistence enabled flag.
+     * @param walEnabled Whether WAL is enabled.
+     * @param walChangeReqs Pending WAL change requests.
      */
+    @SuppressWarnings("unchecked")
     CacheGroupDescriptor(
         CacheConfiguration cacheCfg,
         @Nullable String grpName,
@@ -79,7 +92,9 @@ public class CacheGroupDescriptor {
         @Nullable AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
         Map<String, Integer> caches,
-        boolean persistenceEnabled) {
+        boolean persistenceEnabled,
+        boolean walEnabled,
+        @Nullable Collection<WalStateProposeMessage> walChangeReqs) {
         assert cacheCfg != null;
         assert grpId != 0;
 
@@ -91,6 +106,8 @@ public class CacheGroupDescriptor {
         this.cacheCfg = new CacheConfiguration<>(cacheCfg);
         this.caches = caches;
         this.persistenceEnabled = persistenceEnabled;
+        this.walEnabled = walEnabled;
+        this.walChangeReqs = walChangeReqs == null ? new LinkedList<>() : new LinkedList<>(walChangeReqs);
     }
 
     /**
@@ -105,6 +122,62 @@ public class CacheGroupDescriptor {
      */
     public IgniteUuid deploymentId() {
         return deploymentId;
+    }
+
+    /**
+     * @return {@code True} if WAL is enabled for cache group.
+     */
+    public boolean walEnabled() {
+        return walEnabled;
+    }
+
+    /**
+     * @param walEnabled {@code True} if WAL is enabled for cache group.
+     */
+    public void walEnabled(boolean walEnabled) {
+        this.walEnabled = walEnabled;
+    }
+
+    /**
+     * @return Pending WAL change requests.
+     */
+    public List<WalStateProposeMessage> walChangeRequests() {
+        return new ArrayList<>(walChangeReqs);
+    }
+
+    /**
+     * @return {@code True} whether there are pending WAL change requests.
+     */
+    public boolean hasWalChangeRequests() {
+        return !walChangeReqs.isEmpty();
+    }
+
+    /**
+     * @return Next pending WAL change request or {@code null} if none available.
+     */
+    @Nullable public WalStateProposeMessage nextWalChangeRequest() {
+        return walChangeReqs.isEmpty() ? null : walChangeReqs.getFirst();
+    }
+
+    /**
+     * Add pending WAL change request.
+     *
+     * @param msg Message.
+     * @return {@code True} if this is the very first enlisted message.
+     */
+    public boolean addWalChangeRequest(WalStateProposeMessage msg) {
+        boolean first = !hasWalChangeRequests();
+
+        walChangeReqs.addLast(msg);
+
+        return first;
+    }
+
+    /**
+     * Remove pending WAL change request.
+     */
+    public void removeWalChangeRequest() {
+        walChangeReqs.removeFirst();
     }
 
     /**

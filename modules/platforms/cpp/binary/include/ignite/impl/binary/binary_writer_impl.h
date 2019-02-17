@@ -605,7 +605,7 @@ namespace ignite
                  * @param val Value.
                  */
                 template<typename T>
-                void WriteElement(int32_t id, T val)
+                void WriteElement(int32_t id, const T& val)
                 {
                     CheckSession(id);
                                         
@@ -622,7 +622,7 @@ namespace ignite
                  * @param val Value.
                  */
                 template<typename K, typename V>
-                void WriteElement(int32_t id, K key, V val)
+                void WriteElement(int32_t id, const K& key, const V& val)
                 {
                     CheckSession(id);
 
@@ -645,7 +645,7 @@ namespace ignite
                  * @param val Object.
                  */
                 template<typename T>
-                void WriteObject(T val)
+                void WriteObject(const T& val)
                 {
                     CheckRawMode(true);
 

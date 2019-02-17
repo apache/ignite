@@ -108,6 +108,8 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoHangsPessimistic() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7324");
+
         assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
         doTest(PESSIMISTIC);

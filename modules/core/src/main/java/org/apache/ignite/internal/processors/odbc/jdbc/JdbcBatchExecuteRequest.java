@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -39,6 +40,12 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     private List<JdbcQuery> queries;
 
     /**
+     * Last stream batch flag - whether open streamers on current connection
+     * must be flushed and closed after this batch.
+     */
+    private boolean lastStreamBatch;
+
+    /**
      * Default constructor.
      */
     public JdbcBatchExecuteRequest() {
@@ -49,13 +56,14 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param schemaName Schema name.
      * @param queries Queries.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries) {
+    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean lastStreamBatch) {
         super(BATCH_EXEC);
 
-        assert !F.isEmpty(queries);
+        assert lastStreamBatch || !F.isEmpty(queries);
 
         this.schemaName = schemaName;
         this.queries = queries;
+        this.lastStreamBatch = lastStreamBatch;
     }
 
     /**
@@ -72,15 +80,29 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         return queries;
     }
 
+    /**
+     * @return Last stream batch flag.
+     */
+    public boolean isLastStreamBatch() {
+        return lastStreamBatch;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
         writer.writeString(schemaName);
-        writer.writeInt(queries.size());
 
-        for (JdbcQuery q : queries)
-            q.writeBinary(writer);
+        if (!F.isEmpty(queries)) {
+            writer.writeInt(queries.size());
+
+            for (JdbcQuery q : queries)
+                q.writeBinary(writer);
+        }
+        else
+            writer.writeInt(0);
+
+        writer.writeBoolean(lastStreamBatch);
     }
 
     /** {@inheritDoc} */
@@ -99,6 +121,14 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
             qry.readBinary(reader);
 
             queries.add(qry);
+        }
+
+        try {
+            if (reader.available() > 0)
+                lastStreamBatch = reader.readBoolean();
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException(e);
         }
     }
 

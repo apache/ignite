@@ -81,7 +81,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -116,7 +116,7 @@ public class IgfsDataManager extends IgfsManager {
     private DataInputBlocksWriter dataInputWriter = new DataInputBlocksWriter();
 
     /** Pending writes future. */
-    private ConcurrentMap<IgniteUuid, WriteCompletionFuture> pendingWrites = new ConcurrentHashMap8<>();
+    private ConcurrentMap<IgniteUuid, WriteCompletionFuture> pendingWrites = new ConcurrentHashMap<>();
 
     /** Affinity key generator. */
     private AtomicLong affKeyGen = new AtomicLong();
@@ -134,8 +134,8 @@ public class IgfsDataManager extends IgfsManager {
     private String dataCacheName;
 
     /** On-going remote reads futures. */
-    private final ConcurrentHashMap8<IgfsBlockKey, IgniteInternalFuture<byte[]>> rmtReadFuts =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap<IgfsBlockKey, IgniteInternalFuture<byte[]>> rmtReadFuts =
+        new ConcurrentHashMap<>();
 
     /**
      *
@@ -1599,7 +1599,7 @@ public class IgfsDataManager extends IgfsManager {
         private final IgniteUuid fileId;
 
         /** Pending acks. */
-        private final ConcurrentMap<Long, UUID> ackMap = new ConcurrentHashMap8<>();
+        private final ConcurrentMap<Long, UUID> ackMap = new ConcurrentHashMap<>();
 
         /** Lock for map-related conditions. */
         private final Lock lock = new ReentrantLock();

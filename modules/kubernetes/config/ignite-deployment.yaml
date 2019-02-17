@@ -35,7 +35,8 @@ spec:
         image: ignite-kube:v1
         ports:
         # Ports to open.
-        - containerPort: 11211 # REST port number.
         - containerPort: 47100 # communication SPI port number.
         - containerPort: 47500 # discovery SPI port number.
         - containerPort: 49112 # JMX port number.
+        - containerPort: 8080  # REST port number.
+        - containerPort: 10800 # SQL port number.

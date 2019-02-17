@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
+import {ListEditableColsController} from './cols.directive';
+
 /** @returns {ng.IDirective} */
 export default function() {
     return {
         require: '?^listEditableCols',
-        /** @param {PcListEditableColsController} ctrl */
+        /** @param {ListEditableColsController} ctrl */
         link(scope, el, attr, ctrl) {
             if (!ctrl || !ctrl.colDefs.length)
                 return;
