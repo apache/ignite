@@ -119,7 +119,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -869,31 +868,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private ResultSet executeSqlQuery(final Connection conn, final PreparedStatement stmt,
         int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
-        final MapQueryLazyWorker lazyWorker = MapQueryLazyWorker.currentWorker();
-
-        if (cancel != null) {
-            cancel.set(new Runnable() {
-                @Override public void run() {
-                    if (lazyWorker != null) {
-                        lazyWorker.submit(new Runnable() {
-                            @Override public void run() {
-                                cancelStatement(stmt);
-                            }
-                        });
-                    }
-                    else
-                        cancelStatement(stmt);
-                }
-            });
-        }
+        if (cancel != null)
+            cancel.set(() -> cancelStatement(stmt));
 
         Session ses = session(conn);
 
         if (timeoutMillis > 0)
             ses.setQueryTimeout(timeoutMillis);
-
-        if (lazyWorker != null)
-            ses.setLazyQueryExecution(true);
+        else
+            ses.setQueryTimeout(0);
 
         try {
             return stmt.executeQuery();
@@ -904,13 +887,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new QueryCancelledException();
 
             throw new IgniteCheckedException("Failed to execute SQL query. " + e.getMessage(), e);
-        }
-        finally {
-            if (timeoutMillis > 0)
-                ses.setQueryTimeout(0);
-
-            if (lazyWorker != null)
-                ses.setLazyQueryExecution(false);
         }
     }
 
@@ -991,20 +967,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             long time = U.currentTimeMillis() - start;
 
-            long longQryExecTimeout = ctx.config().getLongQueryWarningTimeout();
+            if (time > ctx.config().getLongQueryWarningTimeout()) {
+                // In lazy mode we have to use separate connection to gather plan to print warning.
+                // Otherwise the all tables are unlocked by this query.
+                try (Connection planConn = connMgr.connectionNoCache(conn.getSchema())) {
+                    ResultSet plan = executeSqlQuery(planConn, preparedStatementWithParams(planConn, "EXPLAIN " + sql,
+                        params, false), 0, null);
 
-            if (time > longQryExecTimeout) {
-                ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql,
-                    params, false), 0, null);
+                    plan.next();
 
-                plan.next();
+                    // Add SQL explain result message into log.
+                    String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
+                        ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
+                        (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
 
-                // Add SQL explain result message into log.
-                String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
-                    (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
-
-                LT.warn(log, msg);
+                    LT.warn(log, msg);
+                }
             }
 
             return rs;
@@ -2131,7 +2109,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
-        mapQryExec.cancelLazyWorkers();
+        mapQryExec.stop();
 
         qryCtxRegistry.clearSharedOnLocalNodeStop();
 
@@ -2285,8 +2263,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop() {
-        mapQryExec.cancelLazyWorkers();
-
         connMgr.onKernalStop();
     }
 

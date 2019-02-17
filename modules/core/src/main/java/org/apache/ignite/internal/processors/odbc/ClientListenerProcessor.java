@@ -284,9 +284,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     }
 
                     if (connCtx.handler().isCancellationCommand(cmdType)) {
-                        proceedMessageReceived(ses, msg);
-
                         CANCEL_COUNTER.incrementAndGet();
+
+                        proceedMessageReceived(ses, msg);
                     }
                     else {
                         connCtx.handler().registerRequest(reqId, cmdType);
