@@ -26,10 +26,6 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 
 /** Created by Ravil on 04/02/2019. */
 public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel> {
-
-    private final DiscreteNaiveBayesModel discreteModel;
-    private final int discreteFeatureFrom;
-    private final int discreteFeatureTo;
     /** Prior probabilities of each class */
     private double[] priorProbabilities;
     /** Labels. */
@@ -38,6 +34,9 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     private final GaussianNaiveBayesModel gaussianModel;
     private final int gaussianFeatureFrom;
     private final int gaussianFeatureTo;
+    private final DiscreteNaiveBayesModel discreteModel;
+    private final int discreteFeatureFrom;
+    private final int discreteFeatureTo;
 
     public CompoundNaiveBayesModel(Builder builder) {
         gaussianModel = builder.gaussianModel;
