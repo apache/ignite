@@ -758,7 +758,7 @@
                         <dependencies>
                             <dependency>
                                 <groupId>org.apache.ignite</groupId>
-                                <artifactId>ignite-build</artifactId>
+                                <artifactId>ignite-check</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>
