@@ -545,7 +545,7 @@ public class GridMapQueryExecutor {
 
                 H2Utils.setupConnection(
                     connWrp.connection(schemaName),
-                    distributeJoins,
+                    distributedJoins,
                     enforceJoinOrder,
                     lazy
                 );
