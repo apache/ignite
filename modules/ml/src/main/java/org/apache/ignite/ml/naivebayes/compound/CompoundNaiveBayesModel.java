@@ -26,29 +26,32 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 
 /** Created by Ravil on 04/02/2019. */
 public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel> {
-    /** Prior probabilities of each class */
+    /** Prior probabilities of each class. */
     private double[] priorProbabilities;
     /** Labels. */
     private double[] labels;
-
+    /** Gaussian Bayes model. */
     private final GaussianNaiveBayesModel gaussianModel;
+    /** Start feature index for Gaussian Bayes model. */
     private final int gaussianFeatureFrom;
+    /** End (exclusive) feature index for Gaussian Bayes model. */
     private final int gaussianFeatureTo;
+    /** Discrete Bayes model. */
     private final DiscreteNaiveBayesModel discreteModel;
+    /** Start feature index for Discrete Bayes model. */
     private final int discreteFeatureFrom;
+    /** End (exclusive) feature index for Discrete Bayes model. */
     private final int discreteFeatureTo;
 
     public CompoundNaiveBayesModel(Builder builder) {
+        priorProbabilities = builder.priorProbabilities;
+        labels = builder.labels;
         gaussianModel = builder.gaussianModel;
         gaussianFeatureFrom = builder.gaussianFeatureFrom;
         gaussianFeatureTo = builder.gaussianFeatureTo;
-
         discreteModel = builder.discreteModel;
         discreteFeatureFrom = builder.discreteFeatureFrom;
         discreteFeatureTo = builder.discreteFeatureTo;
-
-        priorProbabilities = builder.priorProbabilities;
-        labels = builder.labels;
     }
 
     /** {@inheritDoc} */
@@ -159,7 +162,6 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             if (gaussianModel != null && (gaussianFeatureFrom < 0 || gaussianFeatureTo < 0)) {
                 throw new IllegalArgumentException();
             }
-
             return new CompoundNaiveBayesModel(this);
         }
     }
