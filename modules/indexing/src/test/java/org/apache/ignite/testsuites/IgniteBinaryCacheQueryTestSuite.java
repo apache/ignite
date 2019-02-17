@@ -177,6 +177,8 @@ import org.apache.ignite.internal.processors.client.ClientConnectorConfiguration
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
+import org.apache.ignite.internal.processors.query.IgniteQueryTableLockAndConnectionPoolLazyModeOffTest;
+import org.apache.ignite.internal.processors.query.IgniteQueryTableLockAndConnectionPoolLazyModeOnTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDefaultValueTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlEntryCacheModeAgnosticTest;
@@ -193,7 +195,6 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTe
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
-import org.apache.ignite.internal.processors.query.LazyQuerySelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
@@ -300,7 +301,8 @@ import org.junit.runners.Suite;
     IgniteDynamicSqlRestoreTest.class,
 
     // Queries tests.
-    LazyQuerySelfTest.class,
+    IgniteQueryTableLockAndConnectionPoolLazyModeOnTest.class,
+    IgniteQueryTableLockAndConnectionPoolLazyModeOffTest.class,
     IgniteSqlSplitterSelfTest.class,
     SqlPushDownFunctionTest.class,
     IgniteSqlSegmentedIndexSelfTest.class,
