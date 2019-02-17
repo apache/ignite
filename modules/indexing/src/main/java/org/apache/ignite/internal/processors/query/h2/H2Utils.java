@@ -69,7 +69,6 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.Row;
@@ -102,7 +101,6 @@ import javax.cache.CacheException;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
 
 /**
  * H2 utility methods.
@@ -720,28 +718,6 @@ public class H2Utils {
     }
 
     /**
-     * Get optimized prepared statement.
-     *
-     * @param c Connection.
-     * @param qry Parsed query.
-     * @param params Query parameters.
-     * @param enforceJoinOrder Enforce join order.
-     * @return Optimized prepared command.
-     * @throws SQLException If failed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static Prepared optimize(Connection c, String qry, Object[] params, boolean distributedJoins,
-        boolean enforceJoinOrder) throws SQLException, IgniteCheckedException {
-        setupConnection(c, distributedJoins, enforceJoinOrder);
-
-        try (PreparedStatement s = c.prepareStatement(qry)) {
-            bindParameters(s, F.asList(params));
-
-            return prepared(s);
-        }
-    }
-
-    /**
      * @param arr Array.
      * @param off Offset.
      * @param cmp Comparator.
@@ -761,7 +737,7 @@ public class H2Utils {
      * @param mainCacheId Id of main cache.
      * @return Result.
      */
-    @Nullable public static List<Integer> collectCacheIds(
+    public static List<Integer> collectCacheIds(
         IgniteH2Indexing idx,
         @Nullable Integer mainCacheId,
         Collection<QueryTable> tbls
@@ -830,6 +806,7 @@ public class H2Utils {
      * @param forUpdate For update flag.
      * @param tbls Tables.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public static void checkQuery(
         IgniteH2Indexing idx,
         List<Integer> cacheIds,
