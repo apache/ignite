@@ -42,7 +42,7 @@ public class TxCounters {
     /** Final update counters for cache partitions in the end of transaction */
     private Collection<PartitionUpdateCountersMessage> updCntrs;
 
-    /** Map used for counter assigment for tx. */
+    /** Map used for counter assigment for tx. Will not contain entries which will not be updated. */
     private Map<T2<Integer, Integer>, Long> genCntrsMap;
 
     /** Counter tracking number of entries locked by tx. */
@@ -79,6 +79,7 @@ public class TxCounters {
         genCntrsMap = U.newHashMap(updCntrs.size());
 
         // TODO FIXME heavy memory usage due T2<> map key ?
+        // TODO several caches in single group optimize ?
         for (PartitionUpdateCountersMessage msg : updCntrs) {
             for (int i = 0; i < msg.size(); i++) {
                 int partId = msg.partition(i);
@@ -167,9 +168,12 @@ public class TxCounters {
     /**
      * @param cacheId Cache id.
      * @param partId Partition id.
+     *
+     * @return Counter or {@code null} if entry will not be updated.
      */
-    public long generateNextCounter(int cacheId, int partId) {
+    public @Nullable Long generateNextCounter(int cacheId, int partId) {
         // TODO FIXME gc pressure ?
-        return genCntrsMap.compute(new T2<>(cacheId, partId), (key, val) -> val + 1);
+        // TODO FIXME dispose of boxing.
+        return genCntrsMap.computeIfPresent(new T2<>(cacheId, partId), (key, val) -> val + 1);
     }
 }

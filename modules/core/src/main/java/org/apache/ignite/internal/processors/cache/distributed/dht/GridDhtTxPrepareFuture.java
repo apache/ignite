@@ -1314,6 +1314,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                     // TODO add test for transforms to WithFilter.
                     if (!locCache && entry != null && entry.op() != NOOP &&
+                        // Update counter shouldn't be incremented for no-op or CQ test will fail.
                         !(entry.op() == TRANSFORM && entry.entryProcessorCalculatedValue().get1() == NOOP))
                         counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
 

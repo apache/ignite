@@ -32,7 +32,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -108,7 +107,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.writes;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1754,8 +1752,10 @@ public class IgniteTxHandler {
                             tx.addWrite(entry, ctx.deploy().globalLoader());
 
                             if (txCounters != null) {
-                                entry.updateCounter(
-                                    txCounters.generateNextCounter(entry.cacheId(), entry.cached().partition()));
+                                Long cntr = txCounters.generateNextCounter(entry.cacheId(), entry.cached().partition());
+
+                                if (cntr != null) // Counter is null if entry is no-op.
+                                    entry.updateCounter(cntr);
                             }
 
                             if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))

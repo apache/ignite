@@ -1032,6 +1032,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             assert txCounters != null : "Must have counters for tx [nearXidVer=" + tx.nearXidVersion() + ']';
 
+            // Null must never be returned on primary node.
             nextCntr = txCounters.generateNextCounter(cacheId, id());
         }
 
