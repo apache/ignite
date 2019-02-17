@@ -110,7 +110,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
                 return new OnePhaseCommitTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
                     @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
                         if (idx == PRIMARY_COMMIT_ORDER[0]) {
-                            PartitionUpdateCounterImpl cntr = counter(PARTITION_ID, primary.name());
+                            PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, primary.name());
 
                             assertEquals(TOTAL, cntr.reserved());
 
@@ -154,7 +154,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
         // Check if holes are closed on rebalance.
-        PartitionUpdateCounterImpl cntr = counter(PARTITION_ID, primary.name());
+        PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, primary.name());
 
         assertTrue(cntr.gaps().isEmpty());
 
@@ -164,7 +164,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         awaitPartitionMapExchange();
 
-        cntr = counter(PARTITION_ID, primary.name());
+        cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, primary.name());
 
         assertEquals(TOTAL, cntr.reserved());
 
@@ -179,7 +179,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         awaitPartitionMapExchange();
 
-        cntr = counter(PARTITION_ID, grid0.name());
+        cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, grid0.name());
 
         assertEquals(TOTAL + addCnt, cntr.get());
 
@@ -203,7 +203,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
                     @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
                         if (idx == PRIMARY_COMMIT_ORDER[0]) {
                             // Check primary counter.
-                            PartitionUpdateCounterImpl cntr = counter(PARTITION_ID, primary.name());
+                            PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, primary.name());
                             assertNotNull(cntr);
 
                             assertEquals(TOTAL, cntr.reserved());
@@ -218,7 +218,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
                             // Check backup counter.
                             String backup = txTop.get(PARTITION_ID).get2().get(0).name();
 
-                            PartitionUpdateCounterImpl cntr2 = counter(PARTITION_ID, backup);
+                            PartitionUpdateCounterImpl cntr2 = (PartitionUpdateCounterImpl)counter(PARTITION_ID, backup);
                             assertNotNull(cntr2);
 
                             assertFalse("Illegal top map", primary.name().equals(backup));
@@ -251,7 +251,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         awaitPartitionMapExchange();
 
-        PartitionUpdateCounterImpl cntr2 = counter(PARTITION_ID, backupName);
+        PartitionUpdateCounterImpl cntr2 = (PartitionUpdateCounterImpl)counter(PARTITION_ID, backupName);
         assertNotNull(cntr2);
 
         assertEquals(TOTAL, cntr2.get());
