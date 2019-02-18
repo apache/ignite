@@ -117,4 +117,12 @@ public class QueryParserResult {
     public boolean isCommand() {
         return cmd != null;
     }
+
+    /**
+     * @return Number of parameters.
+     */
+    public int parametersCount() {
+        // Only SELECT and DML can have parameters.
+        return select != null ? select.parametersCount() : dml != null ? dml.parametersCount() : 0;
+    }
 }

@@ -32,7 +32,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -45,8 +44,6 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
@@ -69,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
@@ -92,122 +88,49 @@ public final class UpdatePlanBuilder {
      * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
      * if available.
      *
-     * @param prepared H2's {@link Prepared}.
-     * @param loc Local query flag.
+     * @param schemaName Schema name.
+     * @param stmt Statement.
+     * @param mvccEnabled MVCC enabled flag.
      * @param idx Indexing.
-     * @param conn Connection.
      * @param fieldsQry Original query.
      * @return Update plan.
      */
     @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForStatement(
-        Prepared prepared,
-        boolean loc,
+        String schemaName,
+        GridSqlStatement stmt,
+        boolean mvccEnabled,
         IgniteH2Indexing idx,
-        @Nullable Connection conn,
-        @Nullable SqlFieldsQuery fieldsQry,
-        boolean dmlInsideTxAllowed
-    )
-        throws IgniteCheckedException {
-        assert !prepared.isQuery();
-
-        GridSqlQueryParser parser = new GridSqlQueryParser(false);
-
-        GridSqlStatement stmt = parser.parse(prepared);
-
-
-        List<GridH2Table> tbls = extractTablesParticipateAtQuery(parser);
-
-        GridCacheContext prevCctx = null;
-        boolean mvccEnabled = false;
-
-        for (GridH2Table h2tbl : tbls) {
-            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl);
-
-            if (prevCctx == null) {
-                prevCctx = h2tbl.cacheContext();
-
-                assert prevCctx != null : h2tbl.cacheName() + " is not initted";
-
-                mvccEnabled = prevCctx.mvccEnabled();
-
-                if (!mvccEnabled && !dmlInsideTxAllowed && prevCctx.cache().context().tm().inUserTx()) {
-                    throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
-                        "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
-                        "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
-                        "\"IGNITE_ALLOW_DML_INSIDE_TRANSACTION\" [cacheName=" + prevCctx.name() + ']');
-                }
-            }
-            else if (h2tbl.cacheContext().mvccEnabled() != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(prevCctx, h2tbl.cacheContext());
-        }
-
+        @Nullable SqlFieldsQuery fieldsQry
+    ) throws IgniteCheckedException {
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
+            return planForInsert(schemaName, stmt, idx, mvccEnabled, fieldsQry);
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
-            return planForUpdate(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
+            return planForUpdate(schemaName, stmt, idx, mvccEnabled, fieldsQry);
         else
-            throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
+            throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-    }
-
-    /**
-     * Extract all tables participate at query
-     *
-     * @param parser Parser related to the query.
-     * @return List of tables participate at query.
-     * @throws IgniteSQLException in case query contains virtual tables.
-     */
-    private static List<GridH2Table> extractTablesParticipateAtQuery(GridSqlQueryParser parser) throws IgniteSQLException {
-        Collection<?> parserObjects = parser.objectsMap().values();
-
-        List<GridH2Table> tbls = new ArrayList<>(parserObjects.size());
-
-        // check all involved caches
-        for (Object o : parserObjects) {
-            if (o instanceof GridSqlMerge)
-                o = ((GridSqlMerge)o).into();
-            else if (o instanceof GridSqlInsert)
-                o = ((GridSqlInsert)o).into();
-            else if (o instanceof GridSqlUpdate)
-                o = ((GridSqlUpdate)o).target();
-            else if (o instanceof GridSqlDelete)
-                o = ((GridSqlDelete)o).from();
-
-            if (o instanceof GridSqlAlias)
-                o = GridSqlAlias.unwrap((GridSqlAst)o);
-
-            if (o instanceof GridSqlTable) {
-                GridH2Table h2tbl = ((GridSqlTable)o).dataTable();
-
-                if (h2tbl == null) { // Check for virtual tables.
-                    throw new IgniteSQLException("Operation not supported for table '" +
-                        ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                }
-
-                tbls.add(h2tbl);
-            }
-        }
-
-        return tbls;
     }
 
     /**
      * Prepare update plan for INSERT or MERGE.
      *
+     * @param schemaName Schema name.
      * @param stmt INSERT or MERGE statement.
-     * @param loc Local query flag.
      * @param idx Indexing.
      * @param mvccEnabled Mvcc flag.
-     * @param conn Connection.
      * @param fieldsQuery Original query.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private static UpdatePlan planForInsert(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
-        boolean mvccEnabled, @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery)
-        throws IgniteCheckedException {
+    private static UpdatePlan planForInsert(
+        String schemaName,
+        GridSqlStatement stmt,
+        IgniteH2Indexing idx,
+        boolean mvccEnabled,
+        @Nullable SqlFieldsQuery fieldsQuery
+    ) throws IgniteCheckedException {
         GridSqlQuery sel = null;
 
         GridSqlElement target;
@@ -329,9 +252,18 @@ public final class UpdatePlanBuilder {
 
         String selectSql = sel != null ? sel.getSQL() : null;
 
-        DmlDistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
-            checkPlanCanBeDistributed(idx, mvccEnabled, conn, fieldsQuery, loc, selectSql,
-            tbl.dataTable().cacheName()) : null;
+        DmlDistributedPlanInfo distributed = null;
+
+        if (rowsNum == 0 && !F.isEmpty(selectSql)) {
+            distributed = checkPlanCanBeDistributed(
+                idx,
+                mvccEnabled,
+                schemaName,
+                fieldsQuery,
+                selectSql,
+                tbl.dataTable().cacheName()
+            );
+        }
 
         UpdateMode mode = stmt instanceof GridSqlMerge ? UpdateMode.MERGE : UpdateMode.INSERT;
 
@@ -401,21 +333,19 @@ public final class UpdatePlanBuilder {
     /**
      * Prepare update plan for UPDATE or DELETE.
      *
+     * @param schemaName Schema name.
      * @param stmt UPDATE or DELETE statement.
-     * @param loc Local query flag.
      * @param idx Indexing.
-     * @param mvccEnabled Mvcc flag.
-     * @param conn Connection.
+     * @param mvccEnabled MVCC flag.
      * @param fieldsQuery Original query.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
     private static UpdatePlan planForUpdate(
+        String schemaName,
         GridSqlStatement stmt,
-        boolean loc,
         IgniteH2Indexing idx,
         boolean mvccEnabled,
-        @Nullable Connection conn,
         @Nullable SqlFieldsQuery fieldsQuery
     ) throws IgniteCheckedException {
         GridSqlElement target;
@@ -506,9 +436,18 @@ public final class UpdatePlanBuilder {
 
                 String selectSql = sel.getSQL();
 
-                DmlDistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
-                    checkPlanCanBeDistributed(idx, mvccEnabled, conn, fieldsQuery, loc, selectSql,
-                    tbl.dataTable().cacheName());
+                DmlDistributedPlanInfo distributed = null;
+
+                if (!F.isEmpty(selectSql)) {
+                    distributed = checkPlanCanBeDistributed(
+                        idx,
+                        mvccEnabled,
+                        schemaName,
+                        fieldsQuery,
+                        selectSql,
+                        tbl.dataTable().cacheName()
+                    );
+                }
 
                 return new UpdatePlan(
                     UpdateMode.UPDATE,
@@ -532,9 +471,18 @@ public final class UpdatePlanBuilder {
 
                 String selectSql = sel.getSQL();
 
-                DmlDistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
-                    checkPlanCanBeDistributed(idx, mvccEnabled, conn, fieldsQuery, loc, selectSql,
-                    tbl.dataTable().cacheName());
+                DmlDistributedPlanInfo distributed = null;
+
+                if (!F.isEmpty(selectSql)) {
+                    distributed = checkPlanCanBeDistributed(
+                        idx,
+                        mvccEnabled,
+                        schemaName,
+                        fieldsQuery,
+                        selectSql,
+                        tbl.dataTable().cacheName()
+                    );
+                }
 
                 return new UpdatePlan(
                     UpdateMode.DELETE,
@@ -914,31 +862,31 @@ public final class UpdatePlanBuilder {
      *
      * @param idx Indexing.
      * @param mvccEnabled Mvcc flag.
-     * @param conn Connection.
+     * @param schemaName Schema name.
      * @param fieldsQry Initial update query.
-     * @param loc Local query flag.
      * @param selectQry Derived select query.
      * @param cacheName Cache name.
      * @return distributed update plan info, or {@code null} if cannot be distributed.
      * @throws IgniteCheckedException if failed.
      */
-    private static DmlDistributedPlanInfo checkPlanCanBeDistributed(IgniteH2Indexing idx, boolean mvccEnabled,
-        Connection conn, SqlFieldsQuery fieldsQry, boolean loc, String selectQry, String cacheName)
+    private static DmlDistributedPlanInfo checkPlanCanBeDistributed(
+        IgniteH2Indexing idx,
+        boolean mvccEnabled,
+        String schemaName,
+        SqlFieldsQuery fieldsQry,
+        String selectQry,
+        String cacheName
+    )
         throws IgniteCheckedException {
-        if (loc || (!mvccEnabled && !isSkipReducerOnUpdateQuery(fieldsQry)) || DmlUtils.isBatched(fieldsQry))
+        if ((!mvccEnabled && !isSkipReducerOnUpdateQuery(fieldsQry)) || DmlUtils.isBatched(fieldsQry))
             return null;
 
-        assert conn != null;
-
-        try {
+        try (Connection conn = idx.connections().connectionNoCache(schemaName)) {
             // Get a new prepared statement for derived select query.
             try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
-                H2Utils.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
-
                 GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(
                     conn,
                     GridSqlQueryParser.prepared(stmt),
-                    fieldsQry.getArgs(),
                     fieldsQry.isCollocated(),
                     fieldsQry.isDistributedJoins(),
                     fieldsQry.isEnforceJoinOrder(),
@@ -946,13 +894,15 @@ public final class UpdatePlanBuilder {
                     idx
                 );
 
-                boolean distributed = !qry.isLocal() && qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
-                    !qry.mapQueries().get(0).hasSubQueries();
+                boolean distributed =
+                    !qry.isLocalSplit() &&                                                    // No split for local
+                    qry.hasCacheIds() &&                                                      // Over real caches
+                    qry.skipMergeTable() &&                                                   // No merge table
+                    qry.mapQueries().size() == 1 && !qry.mapQueries().get(0).hasSubQueries(); // One w/o subqueries
 
                 if (distributed) {
                     List<Integer> cacheIds = H2Utils.collectCacheIds(idx, CU.cacheId(cacheName), qry.tables());
 
-                    H2Utils.collectMvccEnabled(idx, cacheIds);
                     H2Utils.checkQuery(idx, cacheIds, qry.mvccEnabled(), qry.forUpdate(), qry.tables());
 
                     return new DmlDistributedPlanInfo(qry.isReplicatedOnly(), cacheIds, qry.derivedPartitions());
@@ -972,7 +922,7 @@ public final class UpdatePlanBuilder {
      * @param qry Query.
      * @return {@code true} if update can be distributed.
      */
-    public static boolean isSkipReducerOnUpdateQuery(SqlFieldsQuery qry) {
+    private static boolean isSkipReducerOnUpdateQuery(SqlFieldsQuery qry) {
         return qry != null && !qry.isLocal() &&
             qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isSkipReducerOnUpdate();
     }
