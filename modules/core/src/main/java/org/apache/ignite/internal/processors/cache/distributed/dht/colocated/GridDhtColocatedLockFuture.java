@@ -834,7 +834,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         cctx.topology().readLock();
 
         final GridDhtTopologyFuture fut;
-        final boolean finish; //Todo make pretty
+
+        final boolean finish;
 
         try {
             if (cctx.topology().stopping()) {
@@ -847,6 +848,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             }
 
             fut = cctx.topologyVersionFuture();
+
             finish = fut.isDone();
 
             if (finish) {
