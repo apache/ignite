@@ -43,6 +43,20 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * @return DiscoveryDataPacketCompression flag.
+     */
+    public boolean isDiscoveryDataPacketCompression() {
+        return getFlag(COMPRESS_DATA_PACKET);
+    }
+
+    /**
+     * @param discoveryDataPacketCompression
+     */
+    public void setDiscoveryDataPacketCompression(boolean discoveryDataPacketCompression) {
+        setFlag(COMPRESS_DATA_PACKET, discoveryDataPacketCompression);
+    }
+
+    /**
      * Gets previous node alive flag.<br>
      * {@code True} means node has connectivity to it's previous node in a ring.
      *

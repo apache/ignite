@@ -80,15 +80,16 @@ public class DiscoveryDataPacket implements Serializable {
      * @param marsh Marsh.
      * @param log Logger.
      */
-    public void marshalGridNodeData(DiscoveryDataBag bag, UUID nodeId, Marshaller marsh, IgniteLogger log) {
-        marshalData(bag.commonData(), commonData, marsh, log);
+    public void marshalGridNodeData(DiscoveryDataBag bag, UUID nodeId, Marshaller marsh, boolean isComressionEnabled,
+        int compressionLevel, IgniteLogger log) {
+        marshalData(bag.commonData(), commonData, marsh, isComressionEnabled, compressionLevel, log);
 
         Map<Integer, Serializable> locNodeSpecificData = bag.localNodeSpecificData();
 
         if (locNodeSpecificData != null) {
             Map<Integer, byte[]> marshLocNodeSpecificData = U.newHashMap(locNodeSpecificData.size());
 
-            marshalData(locNodeSpecificData, marshLocNodeSpecificData, marsh, log);
+            marshalData(locNodeSpecificData, marshLocNodeSpecificData, marsh, isComressionEnabled, compressionLevel, log);
 
             filterDuplicatedData(marshLocNodeSpecificData);
 
@@ -102,8 +103,9 @@ public class DiscoveryDataPacket implements Serializable {
      * @param marsh Marsh.
      * @param log Logger.
      */
-    public void marshalJoiningNodeData(DiscoveryDataBag bag, Marshaller marsh, IgniteLogger log) {
-        marshalData(bag.joiningNodeData(), joiningNodeData, marsh, log);
+    public void marshalJoiningNodeData(DiscoveryDataBag bag, Marshaller marsh, boolean isComressionEnabled,
+        int compressionLevel, IgniteLogger log) {
+        marshalData(bag.joiningNodeData(), joiningNodeData, marsh, isComressionEnabled, compressionLevel, log);
     }
 
     /**
@@ -116,12 +118,14 @@ public class DiscoveryDataPacket implements Serializable {
             Marshaller marsh,
             ClassLoader clsLdr,
             boolean clientNode,
+            boolean isComressionEnabled,
             IgniteLogger log
     ) {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (commonData != null && !commonData.isEmpty()) {
-            Map<Integer, Serializable> unmarshCommonData = unmarshalData(commonData, marsh, clsLdr, clientNode, log);
+            Map<Integer, Serializable> unmarshCommonData = unmarshalData(commonData, marsh, clsLdr, clientNode,
+                isComressionEnabled, log);
 
             dataBag.commonData(unmarshCommonData);
         }
@@ -135,7 +139,8 @@ public class DiscoveryDataPacket implements Serializable {
                 if (nodeBinData == null || nodeBinData.isEmpty())
                     continue;
 
-                Map<Integer, Serializable> unmarshData = unmarshalData(nodeBinData, marsh, clsLdr, clientNode, log);
+                Map<Integer, Serializable> unmarshData = unmarshalData(nodeBinData, marsh, clsLdr, clientNode,
+                    isComressionEnabled, log);
 
                 unmarshNodeSpecData.put(nodeBinEntry.getKey(), unmarshData);
             }
@@ -156,6 +161,7 @@ public class DiscoveryDataPacket implements Serializable {
             Marshaller marsh,
             ClassLoader clsLdr,
             boolean clientNode,
+            boolean isComressionEnabled,
             IgniteLogger log
     ) {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
@@ -166,6 +172,7 @@ public class DiscoveryDataPacket implements Serializable {
                     marsh,
                     clsLdr,
                     clientNode,
+                    isComressionEnabled,
                     log);
 
             dataBag.joiningNodeData(unmarshalledJoiningNodeData);
@@ -272,13 +279,16 @@ public class DiscoveryDataPacket implements Serializable {
             Marshaller marsh,
             ClassLoader clsLdr,
             boolean clientNode,
+            boolean isComressionEnabled,
             IgniteLogger log
     ) {
         Map<Integer, Serializable> res = U.newHashMap(src.size());
 
         for (Map.Entry<Integer, byte[]> binEntry : src.entrySet()) {
             try {
-                Serializable compData = marsh.unmarshal(binEntry.getValue(), clsLdr);
+                Serializable compData = isComressionEnabled ?
+                    U.unmarshalZip(marsh, binEntry.getValue(), clsLdr) :
+                    U.unmarshal(marsh, binEntry.getValue(), clsLdr);
                 res.put(binEntry.getKey(), compData);
             }
             catch (IgniteCheckedException e) {
@@ -307,6 +317,8 @@ public class DiscoveryDataPacket implements Serializable {
             Map<Integer, Serializable> src,
             Map<Integer, byte[]> target,
             Marshaller marsh,
+            boolean isComressionEnabled,
+            int compressionLevel,
             IgniteLogger log
     ) {
         //may happen if nothing was collected from components,
@@ -316,11 +328,28 @@ public class DiscoveryDataPacket implements Serializable {
 
         for (Map.Entry<Integer, Serializable> entry : src.entrySet()) {
             try {
-                target.put(entry.getKey(), marsh.marshal(entry.getValue()));
+                target.put(entry.getKey(), isComressionEnabled ?
+                    U.zip(U.marshal(marsh, entry.getValue()), compressionLevel) :
+                    U.marshal(marsh, entry.getValue()));
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to marshal discovery data " +
                         "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
+            }
+        }
+    }
+
+    /**
+     * @param log Logger.
+     */
+    public void unzipData(IgniteLogger log) {
+        for (Map.Entry<Integer, byte[]> entry : joiningNodeData.entrySet()) {
+            try {
+                entry.setValue(U.unzip(entry.getValue()));
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to marshal discovery data " +
+                    "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
             }
         }
     }
