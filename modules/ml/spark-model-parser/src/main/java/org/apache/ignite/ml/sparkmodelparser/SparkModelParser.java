@@ -17,15 +17,6 @@
 
 package org.apache.ignite.ml.sparkmodelparser;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -60,6 +51,10 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 /** Parser of Spark models. */
 public class SparkModelParser {
@@ -131,7 +126,6 @@ public class SparkModelParser {
             return parseDataWithMetadata(pathToMdlFile, pathToTreesMetadataFile, parsedSparkMdl);
         } else
             return parseData(pathToMdlFile, parsedSparkMdl);
-
     }
 
     /**
@@ -179,7 +173,6 @@ public class SparkModelParser {
         }
     }
 
-
     /**
      * Load model and its metadata from parquet files.
      *
@@ -189,7 +182,7 @@ public class SparkModelParser {
      * @return Instance of parsedSparkMdl model.
      */
     private static Model parseDataWithMetadata(String pathToMdl, String pathToMetaData,
-                                          SupportedSparkModels parsedSparkMdl) {
+        SupportedSparkModels parsedSparkMdl) {
         File mdlRsrc1 = IgniteUtils.resolveIgnitePath(pathToMdl);
         if (mdlRsrc1 == null)
             throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMdl + "]");
