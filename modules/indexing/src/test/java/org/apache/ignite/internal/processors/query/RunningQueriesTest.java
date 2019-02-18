@@ -95,9 +95,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     /** Restarts the grid if if the last test failed. */
     @Rule public final TestWatcher restarter = new TestWatcher() {
         /** {@inheritDoc} */
-        @Override protected void failed(Throwable e, Description ignored) {
+        @Override protected void failed(Throwable e, Description lastTest) {
             try {
-                log().error("Last test [name = \'" + ignored.getMethodName() + "\'] " +
+                log().error("Last test [name = \'" + lastTest.getMethodName() + "\'] " +
                     "failed with \"" + e.getMessage() + "\". Restarting the grid.");
 
                 stopAllGrids();
