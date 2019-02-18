@@ -1301,15 +1301,12 @@ public class CommandHandler {
 
         Map<String, VisorBaselineNode> srvs = res.getServers();
 
-        // 1) if we have a node with order == 1, then it's the CRD, otherwise
-        // 2) if we have a node with order == null, then CRD can't be evaluated, otherwise
-        // 3) the node with minimal order is CRD
+        // if task runs on a node with VisorBaselineNode of old version (V1) we'll get order=null for all nodes.
 
         String crdStr = srvs.values().stream()
-            // sort: 1, null, 2, 3, ...
-            .min(Comparator.comparing(node1 -> node1.getOrder() != null ? node1.getOrder() << 1 : 3))
+            .min(Comparator.comparing(node -> node.getOrder() != null ? node.getOrder() : 0))
             // check for not null
-            .filter(node1 -> node1.getOrder() != null)
+            .filter(node -> node.getOrder() != null)
             // format
             .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder() + ")")
             .orElse("");
