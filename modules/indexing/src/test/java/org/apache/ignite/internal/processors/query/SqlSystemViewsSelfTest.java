@@ -691,7 +691,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         List<List<?>> cacheSqlInfos = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
 
         List<?> expRow = asList(
-            "DEFAULT",           // SCHEMA_NAME
+            "default",           // SCHEMA_NAME
             "CACHE_SQL",         // TABLE_NAME
             "cache_sql",         // CACHE_NAME
             cacheSqlId,          // CACHE_ID
