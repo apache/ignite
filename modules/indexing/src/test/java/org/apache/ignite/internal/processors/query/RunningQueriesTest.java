@@ -97,8 +97,12 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         /** {@inheritDoc} */
         @Override protected void failed(Throwable e, Description lastTest) {
             try {
-                log().error("Last test [name = \'" + lastTest.getMethodName() + "\'] " +
-                    "failed with \"" + e.getMessage() + "\". Restarting the grid.");
+                log().error("Last test failed [name=" + lastTest.getMethodName() +
+                    ", reason=" + e.getMessage() + "]. Restarting the grid.");
+
+                // Release the indexing.
+                if (barrier != null)
+                    barrier.reset();
 
                 stopAllGrids();
 
@@ -107,8 +111,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
                 log().error("Grid restarted.");
             }
             catch (Exception restartFailure) {
-                throw new RuntimeException("Failed to recover after test failure, " +
-                    "test results of this test class are incorrect.",
+                throw new RuntimeException("Failed to recover after test failure [test=" + lastTest.getMethodName() +
+                    ", reason=" + e.getMessage() + "]. Subsequent test results of this test class are incorrect.",
                     restartFailure);
             }
         }
