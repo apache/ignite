@@ -3921,6 +3921,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 ctx0 = createOnCheckpointMarkBeginContext(curr, map, asyncLsnrFut);
 
+                // Invoke listeners to provide consistent state before any changes saved (meta info not saved yet).
+                for (DbCheckpointListener lsnr : lsnrs)
+                    lsnr.beforeCheckpointBegin(ctx0);
+
                 // Listeners must be invoked before we write checkpoint record to WAL.
                 for (DbCheckpointListener lsnr : lsnrs)
                     lsnr.onMarkCheckpointBegin(ctx0);

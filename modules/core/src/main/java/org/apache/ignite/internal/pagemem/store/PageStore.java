@@ -103,6 +103,11 @@ public interface PageStore {
     public void ensure() throws IgniteCheckedException;
 
     /**
+     * Size of page store header.
+     */
+    public int headerSize();
+
+    /**
      * @return Page store version.
      */
     public int version();

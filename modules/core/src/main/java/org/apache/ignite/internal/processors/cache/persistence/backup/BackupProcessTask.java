@@ -31,15 +31,13 @@ public interface BackupProcessTask {
     /**
      * @param grpPartId Cache group and partition pair identifiers.
      * @param file A representation of partiton file.
-     * @param offset Start point offset.
-     * @param count Count of bytes to handle.
+     * @param length Partiton size in bytes to handle.
      * @throws IgniteCheckedException If fails.
      */
     public void handlePartition(
         GroupPartitionId grpPartId,
         File file,
-        long offset,
-        long count
+        long length
     ) throws IgniteCheckedException;
 
     /**

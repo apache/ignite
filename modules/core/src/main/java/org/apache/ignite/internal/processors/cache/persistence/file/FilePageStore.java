@@ -161,10 +161,8 @@ public class FilePageStore implements PageStore {
         return cfgFile.exists() && cfgFile.length() > headerSize();
     }
 
-    /**
-     * Size of page store header.
-     */
-    public int headerSize() {
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
         return HEADER_SIZE;
     }
 

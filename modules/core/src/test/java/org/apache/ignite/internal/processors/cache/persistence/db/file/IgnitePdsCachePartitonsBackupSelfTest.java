@@ -48,7 +48,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -73,6 +73,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 
@@ -147,25 +148,21 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
 
         stopGrid(0);
 
-        final List<Map<String, Integer>> partsCRCSnapshots = new ArrayList<>();
-
-        partsCRCSnapshots.add(calculateCRC32Partitions(cacheWorkDir));
-
         IgniteEx ig0 = startGrid(0);
 
         final GridCacheSharedContext<?, ?> cctx1 = ig0.context().cache().context();
 
+        final List<Map<String, Integer>> partsCRCSnapshots = new ArrayList<>();
+
         ((GridCacheDatabaseSharedManager)cctx1.database()).addCheckpointListener(new DbCheckpointListener() {
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                // Partition files are in the consistent state. Calculate their CRCs before snapshot.
+                if (ctx.collectContextInfo())
+                    partsCRCSnapshots.add(calculateCRC32Partitions(cacheWorkDir));
+            }
+
             @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
-                if (ctx.needToSnapshot(DEFAULT_CACHE_NAME)) {
-                    try {
-                        // Partition files are in the consistent state. Calculate their CRCs before snapshot.
-                        partsCRCSnapshots.add(calculateCRC32Partitions(cacheWorkDir));
-                    }
-                    catch (IOException e) {
-                        throw new IgniteCheckedException(e);
-                    }
-                }
+                // No-op/
             }
 
             @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
@@ -188,7 +185,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
 
                     slowCopy.countDown();
 
-                    U.log(log, "New checkpoint finished succesfully.");
+                    U.log(log, "Parallel changes have made. The checkpoint finished succesfully.");
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -217,13 +214,12 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
                     @Override public void handlePartition(
                         GroupPartitionId grpPartId,
                         File file,
-                        long offset,
-                        long count
+                        long length
                     ) throws IgniteCheckedException {
                         try {
                             slowCopy.await();
 
-                            lastSavedPartId = copy(file, offset, count, mergeCacheDir);
+                            lastSavedPartId = copy(file, 0, length, mergeCacheDir);
                         }
                         catch (InterruptedException e) {
                             throw new IgniteCheckedException(e);
@@ -246,7 +242,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
 
                             pageBuff.clear();
 
-                            PageStore pageStore = pageStoreFactory.createPageStore(PageMemory.FLAG_DATA,
+                            PageStore pageStore = pageStoreFactory.createPageStore(FLAG_DATA,
                                 lastSavedPartId,
                                 AllocatedPageTracker.NO_OP,
                                 PageStoreWriteHandler.NO_OP);
@@ -266,16 +262,16 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
                                 int crc32 = FastCrc.calcCrc(new CRC32(), pageBuff, pageBuff.limit());
                                 int crc = PageIO.getCrc(pageBuff);
 
-                                // TODO remove debug
-                                U.log(log, "handle partition delta [pageId=" + pageId +
-                                    ", pageOffset=" + pageOffset +
-                                    ", partSize=" + pageStore.size() +
-                                    ", skipped=" + (pageOffset >= pageStore.size()) +
-                                    ", position=" + position +
-                                    ", size=" + size +
-                                    ", crcBuff=" + crc32 +
-                                    ", crcPage=" + crc +
-                                    ", part=" + file.getName() + ']');
+                                if (log.isDebugEnabled())
+                                    log.debug("handle partition delta [pageId=" + pageId +
+                                        ", pageOffset=" + pageOffset +
+                                        ", partSize=" + pageStore.size() +
+                                        ", skipped=" + (pageOffset >= pageStore.size()) +
+                                        ", position=" + position +
+                                        ", size=" + size +
+                                        ", crcBuff=" + crc32 +
+                                        ", crcPage=" + crc +
+                                        ", part=" + file.getName() + ']');
 
                                 pageBuff.rewind();
 
@@ -293,8 +289,32 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
                 });
 
         partsCRCSnapshots.add(calculateCRC32Partitions(mergeCacheDir));
-        assertEquals("Partitons the same before backup and before cp", partsCRCSnapshots.get(0), partsCRCSnapshots.get(1));
-        assertEquals("Partitons the same after backup and after merge", partsCRCSnapshots.get(1), partsCRCSnapshots.get(2));
+
+        assertEquals("Partitons the same after backup and after merge", partsCRCSnapshots.get(0), partsCRCSnapshots.get(1));
+    }
+
+    /** */
+    private void partitionCRCs(PageStore pageStore, int partId) throws IgniteCheckedException {
+        long pageId = PageIdUtils.pageId(partId, FLAG_DATA, 0);
+
+        ByteBuffer buf = ByteBuffer.allocate(pageStore.getPageSize())
+            .order(ByteOrder.nativeOrder());
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
+            buf.clear();
+
+            pageStore.read(pageId, buf, true);
+
+            sb.append("TT[pageId=")
+                .append(pageId)
+                .append(", crc=")
+                .append(PageIO.getCrc(buf))
+                .append("]\n");
+        }
+
+        System.out.println(sb.append("TT").append("[pages=").append(pageStore.pages()).append("]\n").toString());
     }
 
     /**
@@ -302,21 +322,26 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
      *
      * @param cacheDir Cache directory to iterate over partition files.
      * @return The map of [fileName, checksum].
-     * @throws IOException If fails.
+     * @throws IgniteCheckedException If fails.
      */
-    private static Map<String, Integer> calculateCRC32Partitions(File cacheDir) throws IOException {
+    private static Map<String, Integer> calculateCRC32Partitions(File cacheDir) throws IgniteCheckedException {
         assert cacheDir.isDirectory();
 
         Map<String, Integer> result = new HashMap<>();
 
-        try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-            p -> p.toFile().getName().startsWith(PART_FILE_PREFIX))
-        ) {
-            for (Path path : partFiles)
-                result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
-        }
+        try {
+            try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
+                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX))
+            ) {
+                for (Path path : partFiles)
+                    result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
+            }
 
-        return result;
+            return result;
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**

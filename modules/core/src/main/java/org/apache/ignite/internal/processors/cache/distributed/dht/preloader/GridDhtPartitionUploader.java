@@ -217,8 +217,7 @@ public class GridDhtPartitionUploader {
         @Override public void handlePartition(
             GroupPartitionId grpPartId,
             File file,
-            long offset,
-            long count
+            long length
         ) throws IgniteCheckedException {
             uploader.upload(file);
         }

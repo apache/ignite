@@ -201,13 +201,15 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
         try {
             dbLsnr = new DbCheckpointListener() {
-                @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                // #onMarkCheckpointBegin() is used to save meta information of partition (e.g. updateCounter, size).
+                // To get consistent partition state we should start to track all corresponding pages updates
+                // before GridCacheOffheapManager will saves meta to the #partitionMetaPageId() page.
+                @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
                     // Start tracking writes over remaining parts only from the next checkpoint.
-                    if (backupCtx.inited.get() && backupCtx.tracked.compareAndSet(false, true)) {
-                        // Safe iteration over copy-on-write collection.
-                        CopyOnWriteArraySet<GroupPartitionId> leftParts = backupCtx.remainPartIds;
+                    if (backupCtx.tracked.compareAndSet(false, true)) {
+                        backupCtx.remainPartIds = new CopyOnWriteArraySet<>(grpPartIdSet);
 
-                        for (GroupPartitionId key : leftParts) {
+                        for (GroupPartitionId key : backupCtx.remainPartIds) {
                             // Start track.
                             AtomicInteger cnt = trackMap.putIfAbsent(key, new AtomicInteger(1));
 
@@ -218,6 +220,10 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                             backupCtx.deltaOffsetMap.put(key, pageSize * backupStores.get(key).writtenPagesCount());
                         }
                     }
+                }
+
+                @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    // No-op.
                 }
 
                 @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
@@ -232,8 +238,6 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
                             allocationMap.prepareForSnapshot();
 
-                            U.log(log, "Total allocated: " + allocationMap.size());
-
                             backupCtx.idx = idx;
 
                             for (GroupPartitionId key : grpPartIdSet) {
@@ -241,13 +245,11 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
                                 assert allocRange != null : key;
 
-                                backupCtx.partAllocatedPages.put(key, pageSize * allocRange.getCurrAllocatedPageCnt());
+                                backupCtx.partAllocatedPages.put(key, allocRange.getCurrAllocatedPageCnt());
 
                                 // Set offsets with default zero values.
                                 backupCtx.deltaOffsetMap.put(key, 0);
                             }
-
-                            backupCtx.remainPartIds = new CopyOnWriteArraySet<>(grpPartIdSet);
                         }
                         finally {
                             rwlock.readLock().unlock();
@@ -289,13 +291,14 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                     .cacheGroup(grpPartId.getGroupId())
                     .config();
 
-                final long size = backupCtx.partAllocatedPages.get(grpPartId);
+                final PageStore store = ((FilePageStoreManager)cctx.pageStore())
+                    .getStore(grpPartId.getGroupId(), grpPartId.getPartitionId());
 
+                final long partSize = backupCtx.partAllocatedPages.get(grpPartId) * pageSize + store.headerSize();
 
                 task.handlePartition(grpPartId,
                     resolvePartitionFileCfg(grpCfg, grpPartId.getPartitionId()),
-                    0,
-                    size);
+                    partSize);
 
                 // Stop page delta tracking for particular pair id.
                 ofNullable(trackMap.get(grpPartId))
