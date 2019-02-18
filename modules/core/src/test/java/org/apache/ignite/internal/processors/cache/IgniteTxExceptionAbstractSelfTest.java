@@ -28,6 +28,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -222,6 +223,11 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         checkTransform(false, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
 
         checkTransform(true, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
+    }
+
+    static {
+        // t0d0 remove
+        System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
     }
 
     /**
@@ -507,8 +513,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void checkTransform(boolean putBefore, final Integer key) throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
-
         if (putBefore) {
             TestIndexingSpi.forceFail(false);
 
@@ -539,7 +543,10 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
             }
         }, CacheException.class, null);
 
-        assertTrue("Unexpected cause: " + e, e.getCause() instanceof TransactionHeuristicException);
+        Class<?> expCause = MvccFeatureChecker.forcedMvcc()
+            ? TransactionRollbackException.class : TransactionHeuristicException.class;
+
+        assertTrue("Unexpected cause: " + e, expCause.isInstance(e.getCause()));
 
         checkUnlocked(key);
     }
@@ -603,8 +610,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void checkRemove(boolean putBefore, final Integer key) throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
-
+        // t0d0 fix https://issues.apache.org/jira/browse/IGNITE-9470
         if (putBefore) {
             TestIndexingSpi.forceFail(false);
 
