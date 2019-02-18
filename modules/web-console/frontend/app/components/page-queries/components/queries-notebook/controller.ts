@@ -1499,7 +1499,7 @@ export class NotebookCtrl {
 
             _closeOldQuery(paragraph)
                 .catch((err) => paragraph.setError(err))
-                .finalize(() => paragraph.showLoading(false));
+                .finally(() => paragraph.showLoading(false));
         };
 
         /**
