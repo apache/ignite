@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+<<<<<<< Temporary merge branch 1
 import java.io.File;
-import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+=======
 import org.apache.ignite.Ignite;
+>>>>>>> Temporary merge branch 2
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -50,6 +52,12 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.Serializable;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A set of basic tests for caches with indexes.
