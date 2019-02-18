@@ -259,9 +259,10 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public boolean registerClassName(
-            byte platformId,
-            int typeId,
-            String clsName
+        byte platformId,
+        int typeId,
+        String clsName,
+        boolean failIfUnregistered
     ) throws IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
@@ -281,10 +282,10 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                 GridFutureAdapter<MappingExchangeResult> fut = transport.awaitMappingAcceptance(item, cache);
 
-                MappingExchangeResult res = fut.get();
-
-                if (!IgniteThread.currentThreadCanRequestBinaryMetadata() && !fut.isDone())
+                if (failIfUnregistered && !fut.isDone())
                     throw new UnregisteredBinaryTypeException(typeId, null, fut);
+
+                MappingExchangeResult res = fut.get();
 
                 return convertXchRes(res);
             }
@@ -297,7 +298,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
             GridFutureAdapter<MappingExchangeResult> fut = transport.proposeMapping(item, cache);
 
-            if (!IgniteThread.currentThreadCanRequestBinaryMetadata() && !fut.isDone())
+            if (failIfUnregistered && !fut.isDone())
                 throw new UnregisteredBinaryTypeException(typeId, null, fut);
 
             MappingExchangeResult res = fut.get();
