@@ -708,6 +708,11 @@ public class GridSqlQueryParser {
             // Other stuff can be cached because we will have separate instances in
             // different table filters anyways. Thus the semantics will be correct.
             if (tbl instanceof TableView) {
+                if (((TableView)tbl).isRecursive()) {
+                    throw new IgniteSQLException("Recursive CTE ('WITH RECURSIVE (...)') is not supported.",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+
                 Query qry = VIEW_QUERY.get((TableView) tbl);
 
                 res = new GridSqlSubquery(parseQuery(qry));
@@ -1893,7 +1898,8 @@ public class GridSqlQueryParser {
         if (stmt instanceof AlterTableAlterColumn)
             return parseAlterColumn((AlterTableAlterColumn)stmt);
 
-        throw new CacheException("Unsupported SQL statement: " + stmt);
+        throw new IgniteSQLException("Unsupported statement: " + stmt,
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
