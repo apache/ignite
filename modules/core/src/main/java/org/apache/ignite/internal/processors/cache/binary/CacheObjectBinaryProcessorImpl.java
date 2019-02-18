@@ -542,7 +542,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     GridFutureAdapter<MetadataUpdateResult> fut =
                         transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
 
-                    if (failIfUnregistered)
+                    if (failIfUnregistered && !fut.isDone())
                         throw new UnregisteredBinaryTypeException(typeId, mergedMeta, fut);
 
                     fut.get();

@@ -283,6 +283,9 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                 MappingExchangeResult res = fut.get();
 
+                if (!IgniteThread.currentThreadCanRequestBinaryMetadata() && !fut.isDone())
+                    throw new UnregisteredBinaryTypeException(typeId, null, fut);
+
                 return convertXchRes(res);
             }
         }
@@ -294,7 +297,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
             GridFutureAdapter<MappingExchangeResult> fut = transport.proposeMapping(item, cache);
 
-            if (!IgniteThread.currentThreadCanRequestBinaryMetadata())
+            if (!IgniteThread.currentThreadCanRequestBinaryMetadata() && !fut.isDone())
                 throw new UnregisteredBinaryTypeException(typeId, null, fut);
 
             MappingExchangeResult res = fut.get();
