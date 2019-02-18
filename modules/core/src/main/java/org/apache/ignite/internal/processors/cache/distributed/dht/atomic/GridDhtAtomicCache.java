@@ -2551,13 +2551,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         int cnt = req.size() - dhtUpdRes.processedEntriesCount();
 
-        Map<UUID, CacheContinuousQueryListener> lsnrs = ctx.continuousQueries().updateListeners(!ctx.userCache(), false);
-
         boolean retval = sndPrevVal || req.returnValue();
 
         GridDrType drType = replicate ? DR_PRIMARY : DR_NONE;
 
-        if (cnt > 1) {
+        if (cnt >= 1) {
+            Map<UUID, CacheContinuousQueryListener> lsnrs = ctx.continuousQueries().updateListeners(!ctx.userCache(), false);
+
+            boolean needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM ||
+                !F.isEmptyOrNulls(req.filter());
+
             Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure>> byPart = new HashMap<>();
 
             for (int i = dhtUpdRes.processedEntriesCount(); i < req.size(); i++) {
@@ -2582,6 +2585,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer;
                     Object writeVal = op == TRANSFORM ? req.entryProcessor(i) : req.writeValue(i);
 
+                    // Possibly read value from store.
+                    boolean readFromStore = !req.skipStore() && needVal && (ctx.readThrough() &&
+                        (op == GridCacheOperation.TRANSFORM || ctx.loadPreviousValue()));
+
                     AtomicCacheBatchUpdateClosure c = new AtomicCacheBatchUpdateClosure(
                         i,
                         entry,
@@ -2590,7 +2597,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         req.operation(),
                         writeVal,
                         req.invokeArguments(),
-                        !req.skipStore(),
+                        readFromStore,
                         writeThrough() && !req.skipStore(),
                         req.keepBinary(),
                         expiry,
@@ -2621,9 +2628,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     for (Map.Entry<CacheSearchRow, AtomicCacheBatchUpdateClosure> e : map.entrySet()) {
                         AtomicCacheBatchUpdateClosure c = e.getValue();
-
-                        boolean needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM
-                            || !F.isEmptyOrNulls(req.filter());
 
                         Object writeVal = op == TRANSFORM ? req.entryProcessor(c.reqIdx) : req.writeValue(c.reqIdx);
 

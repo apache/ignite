@@ -886,10 +886,26 @@ public interface IgniteCacheOffheapManager {
          */
         public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c) throws IgniteCheckedException;
 
+        /**
+         * @param cctx Cache context.
+         * @param key Key.
+         * @return Cache search row.
+         * @throws IgniteCheckedException If failed.
+         */
         public CacheSearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
 
+        /**
+         * @return Rows comparator.
+         * @throws IgniteCheckedException If failed.
+         */
         public Comparator<CacheSearchRow> rowsComparator() throws IgniteCheckedException;
 
+        /**
+         * @param cctx Cache context.
+         * @param rows Rows sorted according to cache tree sort order..
+         * @param map Update closures map.
+         * @throws IgniteCheckedException If failed.
+         */
         public void invokeAll(GridCacheContext cctx,
             Collection<? extends CacheSearchRow> rows,
             Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map)
