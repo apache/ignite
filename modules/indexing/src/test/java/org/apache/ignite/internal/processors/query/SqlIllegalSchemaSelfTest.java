@@ -31,14 +31,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for illegal SQL schemas in node and cache configurations.
  */
 @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
-@RunWith(JUnit4.class)
 public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

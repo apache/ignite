@@ -30,8 +30,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -39,7 +37,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Simple cache test.
  */
-@RunWith(JUnit4.class)
 @Ignore("https://issues.apache.org/jira/browse/IGNITE-7388")
 public class IgniteMvccTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
@@ -56,13 +53,6 @@ public class IgniteMvccTxTimeoutAbstractTest extends GridCommonAbstractTest {
      */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(GRID_COUNT, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */

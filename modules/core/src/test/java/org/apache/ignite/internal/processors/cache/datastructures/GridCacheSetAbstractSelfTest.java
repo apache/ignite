@@ -28,7 +28,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -54,8 +53,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -66,7 +63,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Cache set tests.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstractTest {
     /** */
     protected static final String SET_NAME = "testSet";
@@ -115,7 +111,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                 return;
             }
-            catch (AssertionFailedError e) {
+            catch (AssertionError e) {
                 if (i == MAX_CHECK - 1)
                     throw e;
 
@@ -552,7 +548,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                 assertSetIteratorsCleared();
             }
-            catch (AssertionFailedError e) {
+            catch (AssertionError e) {
                 if (i == 9)
                     throw e;
 
@@ -574,7 +570,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             try {
                 assertSetIteratorsCleared();
             }
-            catch (AssertionFailedError e) {
+            catch (AssertionError e) {
                 if (i == 9)
                     throw e;
 

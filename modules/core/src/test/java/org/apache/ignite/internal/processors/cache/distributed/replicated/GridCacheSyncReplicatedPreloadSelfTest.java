@@ -28,8 +28,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -39,7 +37,6 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 /**
  * Multithreaded tests for replicated cache preloader.
  */
-@RunWith(JUnit4.class)
 public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * Constructs test.

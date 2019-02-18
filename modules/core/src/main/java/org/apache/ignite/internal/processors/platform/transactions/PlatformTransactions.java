@@ -305,6 +305,8 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                         writer.writeInt(tx.isolation().ordinal());
 
                         writer.writeLong(tx.timeout());
+                        
+                        writer.writeString(tx.label());
                     }
                 });
 

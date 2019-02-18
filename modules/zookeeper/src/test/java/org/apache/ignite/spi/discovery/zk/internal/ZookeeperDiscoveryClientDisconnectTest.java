@@ -33,6 +33,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
@@ -60,6 +61,16 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  * Tests for Zookeeper SPI discovery.
  */
 public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySpiTestBase {
+    /** */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        // we reduce fealure detection tp speedup failure detection on catch(Exception) clause in createTcpClient().
+        cfg.setFailureDetectionTimeout(2000);
+
+        return cfg;
+    }
+
     /**
      * Test reproduces failure in case of client resolution failure
      * {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi#createTcpClient} from server side, further
@@ -405,6 +416,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
     public void testReconnectServersRestart_2() throws Exception {
         reconnectServersRestart(3);
     }
+
     /**
      * @throws Exception If failed.
      */
@@ -440,6 +452,51 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
         waitForTopology(20);
 
         evts.clear();
+    }
+
+    /**
+     * Checks that a client will reconnect after previous cluster data was cleaned.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReconnectServersRestart_4() throws Exception {
+        startGrid(0);
+
+        helper.clientMode(true);
+
+        IgniteEx client = startGrid(1);
+
+        helper.clientMode(false);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        client.events().localListen(event -> {
+            latch.countDown();
+
+            return true;
+        }, EVT_CLIENT_NODE_DISCONNECTED);
+
+        waitForTopology(2);
+
+        stopGrid(0);
+
+        evts.clear();
+
+        // Waiting for client starts to reconnect and create join request.
+        assertTrue("Failed to wait for client node disconnected.", latch.await(10, SECONDS));
+
+        // Restart cluster twice for incrementing internal order. (alive zk-nodes having lower order and containing
+        // client join request will be removed). See {@link ZookeeperDiscoveryImpl#cleanupPreviousClusterData}.
+        startGrid(0);
+
+        stopGrid(0);
+
+        evts.clear();
+
+        startGrid(0);
+
+        waitForTopology(2);
     }
 
     /**

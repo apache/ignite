@@ -47,8 +47,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
@@ -61,7 +59,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     /** */
     private static final long INIT_REGION_SIZE = 20 << 20;

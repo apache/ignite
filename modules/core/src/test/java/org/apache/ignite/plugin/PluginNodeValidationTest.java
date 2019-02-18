@@ -27,13 +27,10 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test node validation on join by plugin.
  */
-@RunWith(JUnit4.class)
 public class PluginNodeValidationTest extends GridCommonAbstractTest {
 
     /** */

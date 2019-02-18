@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
@@ -180,7 +182,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @return {@code True} if this simple SQL query like 'SELECT A, B, C from SOME_TABLE' without any conditions
      *      and expressions.
      */
-    @Override public boolean simpleQuery() {
+    @Override public boolean skipMergeTable() {
         boolean simple = !distinct &&
             from instanceof GridSqlTable &&
             where == null &&
@@ -388,5 +390,27 @@ public class GridSqlSelect extends GridSqlQuery {
      */
     public int havingColumn() {
         return havingCol;
+    }
+
+    /**
+     * Collect aliases from FROM part.
+     *
+     * @param aliases Table aliases in FROM.
+     */
+    public void collectFromAliases(Set<GridSqlAlias> aliases) {
+        GridSqlAst from = from();
+
+        if (from == null)
+            return;
+
+        while (from instanceof GridSqlJoin) {
+            GridSqlElement right = ((GridSqlJoin)from).rightTable();
+
+            aliases.add((GridSqlAlias)right);
+
+            from = ((GridSqlJoin)from).leftTable();
+        }
+
+        aliases.add((GridSqlAlias)from);
     }
 }

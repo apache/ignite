@@ -409,7 +409,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else if (task instanceof ClientCacheChangeDummyDiscoveryMessage) {
             ClientCacheChangeDummyDiscoveryMessage task0 = (ClientCacheChangeDummyDiscoveryMessage)task;
 
-            sharedCtx.affinity().processClientCachesChanges(task0);
+            sharedCtx.affinity().processClientCachesRequests(task0);
         }
         else if (task instanceof ClientCacheUpdateTimeout) {
             ClientCacheUpdateTimeout task0 = (ClientCacheUpdateTimeout)task;
@@ -1388,7 +1388,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ctx.kernalContext().continuous().onCacheStop(ctx);
 
-            ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx);
+            ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx, destroy);
+
+            ctx.kernalContext().coordinators().onCacheStop(ctx);
 
             ctx.group().stopCache(ctx, destroy);
 
@@ -1545,7 +1547,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         pluginMgr.validate();
 
-        if (!recoveryMode && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+        if (!recoveryMode && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && grp.affinityNode())
             sharedCtx.coordinators().ensureStarted();
 
         sharedCtx.jta().registerCache(cfg);
@@ -2380,7 +2382,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheContext.finishRecovery(cacheStartVer, updatedDescriptor);
 
-        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && groupContext.affinityNode())
             sharedCtx.coordinators().ensureStarted();
 
         onKernalStart(cacheContext.cache());
@@ -4513,18 +4515,40 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If check failed.
      */
     private void checkTransactionConfiguration(ClusterNode rmt) throws IgniteCheckedException {
-        TransactionConfiguration txCfg = rmt.attribute(ATTR_TX_CONFIG);
+        TransactionConfiguration rmtTxCfg = rmt.attribute(ATTR_TX_CONFIG);
 
-        if (txCfg != null) {
+        if (rmtTxCfg != null) {
             TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
 
-            if (locTxCfg.isTxSerializableEnabled() != txCfg.isTxSerializableEnabled())
-                throw new IgniteCheckedException("Serializable transactions enabled mismatch " +
-                    "(fix txSerializableEnabled property or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
-                    "system property) [rmtNodeId=" + rmt.id() +
-                    ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
-                    ", rmtTxSerializableEnabled=" + txCfg.isTxSerializableEnabled() + ']');
+            checkDeadlockDetectionConfig(rmt, rmtTxCfg, locTxCfg);
+
+            checkSerializableEnabledConfig(rmt, rmtTxCfg, locTxCfg);
         }
+    }
+
+    /** */
+    private void checkDeadlockDetectionConfig(ClusterNode rmt, TransactionConfiguration rmtTxCfg,
+        TransactionConfiguration locTxCfg) {
+        boolean locDeadlockDetectionEnabled = locTxCfg.getDeadlockTimeout() > 0;
+        boolean rmtDeadlockDetectionEnabled = rmtTxCfg.getDeadlockTimeout() > 0;
+
+        if (locDeadlockDetectionEnabled != rmtDeadlockDetectionEnabled) {
+            U.warn(log, "Deadlock detection is enabled on one node and disabled on another. " +
+                "Disabled detection on one node can lead to undetected deadlocks. [rmtNodeId=" + rmt.id() +
+                ", locDeadlockTimeout=" + locTxCfg.getDeadlockTimeout() +
+                ", rmtDeadlockTimeout=" + rmtTxCfg.getDeadlockTimeout());
+        }
+    }
+
+    /** */
+    private void checkSerializableEnabledConfig(ClusterNode rmt, TransactionConfiguration rmtTxCfg,
+        TransactionConfiguration locTxCfg) throws IgniteCheckedException {
+        if (locTxCfg.isTxSerializableEnabled() != rmtTxCfg.isTxSerializableEnabled())
+            throw new IgniteCheckedException("Serializable transactions enabled mismatch " +
+                "(fix txSerializableEnabled property or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                "system property) [rmtNodeId=" + rmt.id() +
+                ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
+                ", rmtTxSerializableEnabled=" + rmtTxCfg.isTxSerializableEnabled() + ']');
     }
 
     /**
@@ -5613,6 +5637,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             onKernalStopCaches(true);
 
             stopCaches(true);
+
+            sharedCtx.coordinators().stopTxLog();
 
             sharedCtx.database().cleanupRestoredCaches();
         }

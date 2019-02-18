@@ -98,8 +98,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -111,7 +109,6 @@ import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
@@ -2099,8 +2096,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoForceKeysRequests() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10604", MvccFeatureChecker.forcedMvcc());
-
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
             @Override public CacheConfiguration[] apply(String s) {
                 return null;

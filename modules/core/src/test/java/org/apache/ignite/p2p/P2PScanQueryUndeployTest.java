@@ -45,11 +45,8 @@ import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /** */
-@RunWith(JUnit4.class)
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     /** Predicate classname. */
     private static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.AlwaysTruePredicate";

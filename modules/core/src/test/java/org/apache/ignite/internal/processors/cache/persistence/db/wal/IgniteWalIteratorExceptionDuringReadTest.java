@@ -37,13 +37,10 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstractTest {
     /** */
     private static final int WAL_SEGMENT_SIZE = 1024 * 1024 * 20;

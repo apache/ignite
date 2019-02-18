@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
@@ -67,15 +66,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
 /**
  * Tests for running queries.
  */
-@RunWith(JUnit4.class)
 public class RunningQueriesTest extends AbstractIndexingCommonTest {
     /** Timeout in sec. */
     private static final long TIMEOUT_IN_SEC = 5;
@@ -112,6 +108,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName(DEFAULT_CACHE_NAME)
             .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))
+            .setIndexedTypes(Integer.class,Integer.class)
         );
 
         cache.put(100000, 0);
@@ -245,7 +242,32 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         });
 
         assertNoRunningQueries();
+    }
 
+    /**
+     * Check cluster wide query id generation.
+     *
+     * @throws Exception Exception in case of failure.
+     */
+    @Test
+    public void testClusterWideQueryIdGeneration() throws Exception {
+        newBarrier(1);
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100; i++) {
+            FieldsQueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("SELECT * FROM Integer WHERE 1 = 1"));
+
+            Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
+
+            assertEquals(1, runningQueries.size());
+
+            GridRunningQueryInfo r = runningQueries.iterator().next();
+
+            assertEquals(ignite.context().localNodeId() + "_" + r.id(), r.globalQueryId());
+
+            cursor.close();
+        }
     }
 
     /**
@@ -531,43 +553,6 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Check tracking running queries for stream batching.
-     *
-     * @throws Exception in case of failure.
-     */
-    @Test
-    public void testJdbcStreamBatchUpdate() throws Exception {
-        try (Connection conn = GridTestUtils.connect(ignite, null); Statement stmt = conn.createStatement()) {
-            conn.setSchema("\"default\"");
-
-            newBarrier(1);
-
-            final int BATCH_SIZE = 10;
-
-            stmt.executeUpdate("SET STREAMING ON BATCH_SIZE " + BATCH_SIZE);
-
-            newBarrier(2);
-
-            for (int i = 0; i < BATCH_SIZE; i++)
-                stmt.addBatch("insert into Integer (_key, _val) values (" + i + "," + i + ")");
-
-            for (int i = 0; i < BATCH_SIZE; i++) {
-                assertWaitingOnBarrier();
-
-                awaitTimeouted();
-
-                assertWaitingOnBarrier();
-
-                Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
-
-                assertEquals(1, runningQueries.size());
-
-                awaitTimeouted();
-            }
-        }
-    }
-
-    /**
      * Check tracking running queries for stream COPY command.
      *
      * @throws SQLException If failed.
@@ -658,18 +643,6 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      * Blocking indexing processor.
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
-        /** {@inheritDoc} */
-        @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
-            super.checkStatementStreamable(nativeStmt);
-
-            try {
-                barrier.await();
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        }
-
         /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
             @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts,

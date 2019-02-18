@@ -39,8 +39,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  */
 public class DecisionTreeFromSparkExample {
     /** Path to Spark DT model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/dt/data" +
-        "/part-00000-86bc0f70-df49-48b3-8356-9a26f9a6eb0f-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/dt";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {

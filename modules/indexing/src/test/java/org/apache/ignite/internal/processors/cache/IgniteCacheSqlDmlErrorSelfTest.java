@@ -29,13 +29,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Negative java API tests for dml queries (insert, merge, update).
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
     /** Dummy cache, just cache api entry point. */
     private static IgniteCache<?, ?> cache;

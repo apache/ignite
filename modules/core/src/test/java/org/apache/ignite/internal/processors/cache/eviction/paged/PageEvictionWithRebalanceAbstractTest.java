@@ -25,13 +25,10 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class PageEvictionWithRebalanceAbstractTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
@@ -44,7 +41,7 @@ public abstract class PageEvictionWithRebalanceAbstractTest extends PageEviction
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10448")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
     @Test
     public void testEvictionWithRebalanceMvcc() throws Exception {
         checkEvictionWithRebalance(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
