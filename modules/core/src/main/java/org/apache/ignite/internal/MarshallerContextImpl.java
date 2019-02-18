@@ -308,6 +308,12 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
+    @Override
+    public boolean registerClassName(byte platformId, int typeId, String clsName) {
+        throw new UnsupportedOperationException("registerClassName");
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName)
         throws IgniteCheckedException
     {

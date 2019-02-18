@@ -143,8 +143,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             @Override public boolean registerClassName(
                 byte platformId,
                 int typeId,
-                String clsName,
-                boolean failIfUnregistered
+                String clsName
             ) {
                 return true;
             }

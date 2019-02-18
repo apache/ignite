@@ -364,6 +364,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         /** {@inheritDoc} */
         @Override
+        @Deprecated
         public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
             return registerClassName(platformId, typeId, clsName, false);
         }
