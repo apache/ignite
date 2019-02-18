@@ -1139,8 +1139,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         ClusterMetricsImpl original = getField(node, "metrics");
 
-        setField(node, "metrics", new MockedClusterMetrics(original));
-        ;
+        setField(node, "metrics", new MockedClusterMetrics(original));;
 
         List<?> durationMetrics = execSql(ign,
             "SELECT " +
@@ -1259,7 +1258,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         fld.setAccessible(true);
 
-        return (T)fld.get(target);
+        return (T) fld.get(target);
     }
 
     /**

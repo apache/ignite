@@ -17,9 +17,6 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
@@ -43,6 +40,10 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Tests for bagging algorithm.

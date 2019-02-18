@@ -17,17 +17,6 @@
 
 package org.apache.ignite.ml.sparkmodelparser;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.Scanner;
-import java.util.TreeMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -62,6 +51,11 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.*;
 
 /** Parser of Spark models. */
 public class SparkModelParser {

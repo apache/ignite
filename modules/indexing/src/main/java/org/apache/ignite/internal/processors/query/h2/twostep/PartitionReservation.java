@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Partition reservation for specific query.

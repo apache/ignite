@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
