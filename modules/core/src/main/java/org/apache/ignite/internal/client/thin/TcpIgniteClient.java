@@ -363,6 +363,12 @@ public class TcpIgniteClient implements IgniteClient {
         }
 
         /** {@inheritDoc} */
+        @Override
+        public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+            return registerClassName(platformId, typeId, clsName, false);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName) {
             if (platformId != MarshallerPlatformIds.JAVA_ID)
                 throw new IllegalArgumentException("platformId");
