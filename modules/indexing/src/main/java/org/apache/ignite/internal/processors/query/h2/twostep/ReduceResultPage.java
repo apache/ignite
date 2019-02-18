@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.RandomAccess;
+import java.util.UUID;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
@@ -25,15 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.value.Value;
-
-import javax.cache.CacheException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.UUID;
 
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray;
 
@@ -73,9 +73,11 @@ public class ReduceResultPage {
             Collection<?> plainRows = res.plainRows();
 
             if (plainRows != null) {
+                assert plainRows instanceof RandomAccess : "instance of " + plainRows.getClass();
+
                 rowsInPage = plainRows.size();
 
-                if (rowsInPage == 0 || ((ArrayList<Value[]>)plainRows).get(0).length == res.columns())
+                if (rowsInPage == 0 || ((List<Value[]>)plainRows).get(0).length == res.columns())
                     rows = (Iterator<Value[]>)plainRows.iterator();
                 else {
                     // If it's a result of SELECT FOR UPDATE (we can tell by difference in number

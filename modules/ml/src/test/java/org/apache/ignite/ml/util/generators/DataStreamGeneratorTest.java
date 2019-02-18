@@ -158,6 +158,8 @@ public class DataStreamGeneratorTest {
         checkDataset(N / 2, b3, v -> (Double)v.label() < 0);
     }
 
+
+
     /** */
     private void checkDataset(int sampleSize, DatasetBuilder<Vector, Double> datasetBuilder,
         Predicate<LabeledVector> labelCheck) throws Exception {

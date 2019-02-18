@@ -66,11 +66,6 @@ mixin chart-settings
         .col-xs-2
             +result-toolbar
 
-mixin notebook-error
-    h2 Failed to load notebook
-    label.col-sm-12 Notebook not accessible any more. Go back to notebooks list.
-    button.h3.btn.btn-primary(ui-sref='default-state') Leave Notebook
-
 mixin query-settings
     div
         .form-field--inline(
@@ -496,8 +491,10 @@ div
                         readonly='true'
                     )
 
-    div(ng-if='notebookLoadFailed' style='text-align: center')
-        +notebook-error
+    .notebook-failed--block(ng-if='notebookLoadFailed')
+        no-data
+            h2 Failed to load notebook
+            label.col-sm-12 Notebook not accessible any more. Go back to notebooks list.
 
     div(ng-if='notebook' ignite-loading='sqlLoading' ignite-loading-text='{{ loadingText }}' ignite-loading-position='top')
         .docs-body.paragraphs
