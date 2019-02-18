@@ -492,7 +492,12 @@ public final class IgniteSystemProperties {
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
-    /** Force all SQL queries to be processed lazily regardless of what clients request. */
+    /**
+     *  Force all SQL queries to be processed lazily regardless of what clients request.
+     *
+     * @deprecated Since version 2.8.
+     */
+    @Deprecated
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
     /** Disable SQL system views. */
@@ -1115,6 +1120,11 @@ public final class IgniteSystemProperties {
      * Limit the maximum number of objects in memory during the recovery procedure.
      */
     public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
+
+    /**
+     * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
+     */
+    public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
 
     /**
      * Enforces singleton.

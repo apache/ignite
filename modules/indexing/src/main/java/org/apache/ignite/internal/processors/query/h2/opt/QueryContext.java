@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -43,9 +42,6 @@ public class QueryContext {
 
     /** */
     private final PartitionReservation reservations;
-
-    /** */
-    private MapQueryLazyWorker lazyWorker;
 
     /**
      * Constructor.
@@ -108,23 +104,6 @@ public class QueryContext {
      */
     public IndexingQueryFilter filter() {
         return filter;
-    }
-
-    /**
-     * @return Lazy worker, if any, or {@code null} if none.
-     */
-    public MapQueryLazyWorker lazyWorker() {
-        return lazyWorker;
-    }
-
-    /**
-     * @param lazyWorker Lazy worker, if any, or {@code null} if none.
-     * @return {@code this}.
-     */
-    public QueryContext lazyWorker(MapQueryLazyWorker lazyWorker) {
-        this.lazyWorker = lazyWorker;
-
-        return this;
     }
 
     /** {@inheritDoc} */
