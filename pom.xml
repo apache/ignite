@@ -726,51 +726,6 @@
                 </plugins>
             </build>
         </profile>
-
-        <profile>
-            <!-- The checkstyle-plugin configuration is based on multi module project.
-            See: https://maven.apache.org/plugins/maven-checkstyle-plugin/examples/multi-module-config.html
-            -->
-            <id>checkstyle</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-checkstyle-plugin</artifactId>
-                        <version>3.0.0</version>
-                        <executions>
-                            <execution>
-                                <id>check-style</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <phase>validate</phase>
-                                <configuration>
-                                    <consoleOutput>true</consoleOutput>
-                                    <logViolationsToConsole>true</logViolationsToConsole>
-                                    <failsOnError>true</failsOnError>
-                                    <failOnViolation>true</failOnViolation>
-                                    <configLocation>ignite-check/checkstyle.xml</configLocation>
-                                    <suppressionsLocation>ignite-check/checkstyle-suppressions.xml</suppressionsLocation>
-                                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.ignite</groupId>
-                                <artifactId>ignite-check</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>com.puppycrawl.tools</groupId>
-                                <artifactId>checkstyle</artifactId>
-                                <version>8.17</version>
-                            </dependency>
-                        </dependencies>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 
     <build>
