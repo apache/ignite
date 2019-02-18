@@ -42,18 +42,14 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteClusterActivateDeactivateTest {
     /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {
@@ -111,15 +107,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         activateCachesRestore(5, true);
     }
 
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testReActivateSimple_5_Servers_4_Clients_FromServer() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10750");
-
-        super.testReActivateSimple_5_Servers_4_Clients_FromServer();
-    }
-
     /**
      * Test deactivation on cluster that is not yet activated.
      *
@@ -127,9 +114,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateInactiveCluster() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10582");
-
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration<>("test_cache_1")
                 .setGroupName("test_cache")
@@ -368,9 +352,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateDuringEvictionAndRebalance() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10786");
-
         IgniteEx srv = (IgniteEx) startGrids(3);
 
         srv.cluster().active(true);

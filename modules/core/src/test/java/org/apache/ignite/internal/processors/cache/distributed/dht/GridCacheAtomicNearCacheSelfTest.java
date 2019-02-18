@@ -46,8 +46,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -58,7 +56,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 /**
  * Tests near cache with various atomic cache configuration.
  */
-@RunWith(JUnit4.class)
 public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;

@@ -38,13 +38,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final int PAGE_SIZE = 8 * 1024;

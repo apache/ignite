@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -278,6 +279,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
+    /** Default SO_LINGER to set for socket, 0 means enabled with 0 timeout. */
+    public static final int DFLT_SO_LINGER = 5;
+
     /** Default connection recovery timeout in ms. */
     public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
 
@@ -370,6 +374,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** Maximum message acknowledgement timeout. */
     private long maxAckTimeout = DFLT_MAX_ACK_TIMEOUT;
+
+    /** Default SO_LINGER to use for socket. Set negative to disable, non-negative to enable, default is {@DFLT_SO_LINGER }. */
+    private int soLinger = DFLT_SO_LINGER;
 
     /** IP finder clean frequency. */
     protected long ipFinderCleanFreq = DFLT_IP_FINDER_CLEAN_FREQ;
@@ -919,6 +926,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
+     * Sets SO_LINGER to use for all created sockets.
+     * <p>
+     * If not specified, default is {@link #DFLT_SO_LINGER}
+     * </p>
+    */
+    @IgniteSpiConfiguration(optional = true)
+    public void setSoLinger(int soLinger) {
+        this.soLinger = soLinger;
+    }
+
+    /**
      * Sets maximum network timeout to use for network operations.
      * <p>
      * If not specified, default is {@link #DFLT_NETWORK_TIMEOUT}.
@@ -1253,6 +1271,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
+     * Gets SO_LINGER timeout for socket.
+     *
+     * @return SO_LINGER timeout for socket.
+     */
+    public int getSoLinger() {
+        return soLinger;
+    }
+
+    /**
      * Gets network timeout.
      *
      * @return Network timeout.
@@ -1539,6 +1566,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             sock.bind(new InetSocketAddress(locHost, 0));
 
             sock.setTcpNoDelay(true);
+
+            sock.setSoLinger(getSoLinger() >= 0, getSoLinger());
 
             return sock;
         } catch (IOException e) {
@@ -2222,6 +2251,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** {@inheritDoc} */
+    @Override public boolean allNodesSupport(IgniteFeatures feature) {
+        if (impl == null)
+            return false;
+
+        return impl.allNodesSupport(feature);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean knownNode(UUID nodeId) {
         return getNode0(nodeId) != null;
     }
@@ -2245,7 +2282,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * <strong>FOR TEST ONLY!!!</strong>
      */
     public int clientWorkerCount() {
-        return ((ServerImpl)impl).clientMsgWorkers.size();
+        return ((ServerImpl)impl).clientWorkersCount();
     }
 
     /**

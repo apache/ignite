@@ -29,13 +29,10 @@ import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUti
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLocalFileSystemV1;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test file systems for the working directory multi-threading support.
  */
-@RunWith(JUnit4.class)
 public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
     /** the number of threads */
     private static final int THREAD_COUNT = 3;

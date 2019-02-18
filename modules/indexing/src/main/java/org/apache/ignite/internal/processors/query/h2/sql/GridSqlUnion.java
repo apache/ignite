@@ -136,10 +136,10 @@ public class GridSqlUnion extends GridSqlQuery {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean simpleQuery() {
+    @Override public boolean skipMergeTable() {
         return unionType() == SelectUnion.UnionType.UNION_ALL && sort().isEmpty() &&
             offset() == null && limit() == null &&
-            left().simpleQuery() && right().simpleQuery();
+            left().skipMergeTable() && right().skipMergeTable();
     }
 
     /**

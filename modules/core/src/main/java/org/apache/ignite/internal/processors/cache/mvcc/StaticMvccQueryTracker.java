@@ -66,14 +66,4 @@ public class StaticMvccQueryTracker implements MvccQueryTracker {
     @Override public void onDone() {
         // No-op.
     }
-
-    /** {@inheritDoc} */
-    @Override public long onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        return MVCC_TRACKER_ID_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long id() {
-        return MVCC_TRACKER_ID_NA;
-    }
 }

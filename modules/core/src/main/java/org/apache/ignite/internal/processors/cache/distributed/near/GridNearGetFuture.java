@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -389,6 +390,11 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         try {
                             if (localDhtGet(key, part, topVer, isNear))
                                 break;
+                        }
+                        catch (IgniteException ex) {
+                            onDone(ex);
+
+                            return saved;
                         }
                         finally {
                             cctx.releaseForFastLocalGet(part, topVer);

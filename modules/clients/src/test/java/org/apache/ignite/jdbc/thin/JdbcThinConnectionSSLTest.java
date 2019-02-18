@@ -35,14 +35,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * SSL connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
-@RunWith(JUnit4.class)
 public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /** Client key store path. */
     private static final String CLI_KEY_STORE_PATH = U.getIgniteHome() +

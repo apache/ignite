@@ -52,8 +52,6 @@ import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.util.SerializationUtils;
 
 import static org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper.CANT_BE_COMPARE;
@@ -61,7 +59,6 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
 /**
  * Simple tests for {@link InlineIndexHelper}.
  */
-@RunWith(JUnit4.class)
 public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
     /** */
     private static final int CACHE_ID = 42;

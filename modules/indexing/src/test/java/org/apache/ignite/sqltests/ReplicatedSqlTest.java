@@ -21,13 +21,10 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Includes all base sql test plus tests that make sense in replicated mode.
  */
-@RunWith(JUnit4.class)
 public class ReplicatedSqlTest extends BaseSqlTest {
     /** Name of the department table created in partitioned mode. */
     private String DEP_PART_TAB = "DepartmentPart";

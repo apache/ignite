@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -62,13 +62,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * A set of tests that check correctness of logical recovery performed during node start.
  */
-@RunWith(JUnit4.class)
 public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final int[] EVTS_DISABLED = {};
@@ -262,8 +259,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRecoveryWithMvccCaches() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10582");
-
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 1, CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)

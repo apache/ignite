@@ -525,6 +525,21 @@ namespace Apache.Ignite.AspNet.Tests
             {
                 throw new NotImplementedException();
             }
+
+            public void PreloadPartition(int partition)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task PreloadPartitionAsync(int partition)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool LocalPreloadPartition(int partition)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

@@ -26,13 +26,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstract
 import org.apache.ignite.testsuites.IgniteCloudTestSuite;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * TcpDiscoveryCloudIpFinder test.
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoveryCloudIpFinderSelfTest extends
     TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryCloudIpFinder> {
     /**
@@ -77,8 +74,8 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      *
      * @throws Exception If any error occurs.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9444")
+    @Test
     public void testRackspace() throws Exception {
         testCloudProvider("rackspace-cloudservers-us");
     }

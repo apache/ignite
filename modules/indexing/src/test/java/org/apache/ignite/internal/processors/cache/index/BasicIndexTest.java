@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -49,13 +50,10 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * A set of basic tests for caches with indexes.
  */
-@RunWith(JUnit4.class)
 public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     private Collection<QueryIndex> indexes = Collections.emptyList();
@@ -94,6 +92,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
                     .setKeyType(Key.class.getName())
                     .setValueType(Val.class.getName())
                     .setFields(fields)
+                    .setKeyFields(new HashSet<>(Arrays.asList("keyStr", "keyLong", "keyPojo")))
                     .setIndexes(indexes)
             ))
             .setSqlIndexMaxInlineSize(inlineSize);

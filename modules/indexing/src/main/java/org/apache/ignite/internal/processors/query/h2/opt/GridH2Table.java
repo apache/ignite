@@ -35,8 +35,9 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
@@ -61,7 +62,6 @@ import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * H2 Table implementation.
@@ -107,9 +107,6 @@ public class GridH2Table extends TableBase {
     private final LongAdder size = new LongAdder();
 
     /** */
-    private final H2RowFactory rowFactory;
-
-    /** */
     private volatile boolean rebuildFromHashInProgress;
 
     /** Identifier. */
@@ -129,16 +126,19 @@ public class GridH2Table extends TableBase {
      *
      * @param createTblData Table description.
      * @param desc Row descriptor.
-     * @param rowFactory Row factory.
-     * @param idxsFactory Indexes factory.
+     * @param tblDesc Indexes factory.
      * @param cacheInfo Cache context info.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2RowFactory rowFactory,
-        GridH2SystemIndexFactory idxsFactory, GridCacheContextInfo cacheInfo) {
+    public GridH2Table(
+        CreateTableData createTblData,
+        GridH2RowDescriptor desc,
+        H2TableDescriptor tblDesc,
+        GridCacheContextInfo cacheInfo
+    ) {
         super(createTblData);
 
-        assert idxsFactory != null;
+        assert tblDesc != null;
 
         this.desc = desc;
         this.cacheInfo = cacheInfo;
@@ -146,14 +146,12 @@ public class GridH2Table extends TableBase {
         affKeyCol = calculateAffinityKeyColumn();
         affKeyColIsKey = affKeyCol != null && desc.isKeyColumn(affKeyCol.column.getColumnId());
 
-        this.rowFactory = rowFactory;
-
         identifier = new QueryTable(getSchema().getName(), getName());
 
         identifierStr = identifier.schema() + "." + identifier.table();
 
         // Indexes must be created in the end when everything is ready.
-        idxs = idxsFactory.createSystemIndexes(this);
+        idxs = tblDesc.createSystemIndexes(this);
 
         assert idxs != null;
 
@@ -172,9 +170,9 @@ public class GridH2Table extends TableBase {
 
         // Add scan index at 0 which is required by H2.
         if (hasHashIndex)
-            idxs.add(0, new GridH2PrimaryScanIndex(this, index(1), index(0)));
+            idxs.add(0, new H2TableScanIndex(this, index(1), index(0)));
         else
-            idxs.add(0, new GridH2PrimaryScanIndex(this, index(0), null));
+            idxs.add(0, new H2TableScanIndex(this, index(0), null));
 
         pkIndexPos = hasHashIndex ? 2 : 1;
 
@@ -197,7 +195,7 @@ public class GridH2Table extends TableBase {
 
         // If explicit affinity key field is not set, then use _KEY.
         if (affKeyFieldName == null)
-            return indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+            return indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
 
         // If explicit affinity key field is set, but is not found in the table, do not use anything.
         if (!doesColumnExist(affKeyFieldName))
@@ -207,7 +205,7 @@ public class GridH2Table extends TableBase {
 
         // If affinity key column is either _KEY or it's alias (QueryEntity.keyFieldName), normalize it to _KEY.
         if (desc.isKeyColumn(colId))
-            return indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+            return indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
 
         // Otherwise use column as is.
         return indexColumn(colId, SortOrder.ASCENDING);
@@ -550,8 +548,8 @@ public class GridH2Table extends TableBase {
     public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2KeyValueRowOnheap row0 = (GridH2KeyValueRowOnheap)desc.createRow(row);
-        GridH2KeyValueRowOnheap prevRow0 = prevRow != null ? (GridH2KeyValueRowOnheap)desc.createRow(prevRow) :
+        H2CacheRow row0 = (H2CacheRow)desc.createRow(row);
+        H2CacheRow prevRow0 = prevRow != null ? (H2CacheRow)desc.createRow(prevRow) :
             null;
 
         row0.prepareValuesCache();
@@ -570,7 +568,7 @@ public class GridH2Table extends TableBase {
                 if (prevRowAvailable)
                     replaced = pk().putx(row0);
                 else {
-                    prevRow0 = (GridH2KeyValueRowOnheap)pk().put(row0);
+                    prevRow0 = (H2CacheRow)pk().put(row0);
 
                     replaced = prevRow0 != null;
                 }
@@ -610,7 +608,7 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     public boolean remove(CacheDataRow row) throws IgniteCheckedException {
-        GridH2Row row0 = desc.createRow(row);
+        H2CacheRow row0 = desc.createRow(row);
 
         lock(false);
 
@@ -648,7 +646,7 @@ public class GridH2Table extends TableBase {
      * @param row Row to add to index.
      * @param prevRow Previous row state, if any.
      */
-    private void addToIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row prevRow) {
+    private void addToIndex(GridH2IndexBase idx, H2CacheRow row, H2CacheRow prevRow) {
         boolean replaced = idx.putx(row);
 
         // Row was not replaced, need to remove manually.
@@ -974,13 +972,6 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * @return Data store.
-     */
-    public H2RowFactory rowFactory() {
-        return rowFactory;
-    }
-
-    /**
      * Creates proxy index for given target index.
      * Proxy index refers to alternative key and val columns.
      *
@@ -1112,7 +1103,7 @@ public class GridH2Table extends TableBase {
                 size --;
             }
 
-            assert size > DEFAULT_COLUMNS_COUNT;
+            assert size > QueryUtils.DEFAULT_COLUMNS_COUNT;
 
             Column[] newCols = new Column[size];
 
@@ -1168,9 +1159,9 @@ public class GridH2Table extends TableBase {
             StackTraceElement elem = elems[2];
 
             if (F.eq(elem.getClassName(), Insert.class.getName()) && F.eq(elem.getMethodName(), "prepare")) {
-                Column[] columns0 = new Column[safeColumns0.length - 3];
+                Column[] columns0 = new Column[safeColumns0.length - QueryUtils.DEFAULT_COLUMNS_COUNT];
 
-                System.arraycopy(safeColumns0, 3, columns0, 0, columns0.length);
+                System.arraycopy(safeColumns0, QueryUtils.DEFAULT_COLUMNS_COUNT, columns0, 0, columns0.length);
 
                 return columns0;
             }

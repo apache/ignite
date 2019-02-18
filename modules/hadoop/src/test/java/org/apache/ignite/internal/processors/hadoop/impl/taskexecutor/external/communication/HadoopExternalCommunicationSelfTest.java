@@ -38,13 +38,10 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests Hadoop external communication component.
  */
-@RunWith(JUnit4.class)
 @Ignore("https://issues.apache.org/jira/browse/IGNITE-404")
 public class HadoopExternalCommunicationSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */

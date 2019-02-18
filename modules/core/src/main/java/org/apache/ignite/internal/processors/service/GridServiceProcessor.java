@@ -566,7 +566,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                 if (failedFuts == null)
                     failedFuts = new ArrayList<>();
 
-                GridServiceDeploymentFuture<String> fut = new GridServiceDeploymentFuture<>(cfg);
+                GridServiceDeploymentFuture<String> fut = new GridServiceDeploymentFuture<>(cfg, cfg.getName());
 
                 fut.onDone(err);
 
@@ -700,7 +700,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
         throws IgniteCheckedException {
         String name = cfg.getName();
 
-        GridServiceDeploymentFuture<String> fut = new GridServiceDeploymentFuture<>(cfg);
+        GridServiceDeploymentFuture<String> fut = new GridServiceDeploymentFuture<>(cfg, name);
 
         GridServiceDeploymentFuture<String> old = depFuts.putIfAbsent(name, fut);
 

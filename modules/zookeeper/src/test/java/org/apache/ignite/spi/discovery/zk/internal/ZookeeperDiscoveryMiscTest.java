@@ -31,7 +31,10 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.SecurityCredentialsAttrFilterPredicate;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -59,6 +62,19 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJ
  * Tests for Zookeeper SPI discovery.
  */
 public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
+    /** */
+    private CacheConfiguration ccfg;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (ccfg != null)
+            cfg.setCacheConfiguration(ccfg);
+
+        return cfg;
+    }
+
     /**
      * Verifies that node attributes returned through public API are presented in standard form.
      *
@@ -320,6 +336,24 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     }
 
     /**
+     * Checks ZookeeperDiscovery call {@link org.apache.ignite.internal.GridComponent#validateNode(ClusterNode)}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNodeValidation() throws Exception {
+        ccfg = new CacheConfiguration("validate-test-cache");
+        ccfg.setAffinity(new ValidationTestAffinity());
+
+        startGrid(0);
+
+        ccfg = new CacheConfiguration("validate-test-cache");
+        ccfg.setAffinity(new ValidationTestAffinity());
+
+        checkStartFail(1, "Failed to add node to topology because it has the same hash code");
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test
@@ -327,16 +361,18 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         auth = ZkTestNodeAuthenticator.factory(getTestIgniteInstanceName(1),
             getTestIgniteInstanceName(5));
 
+        String expErr = "Authentication failed";
+
         startGrid(0);
 
         checkTestSecuritySubject(1);
 
         {
             helper.clientMode(false);
-            checkStartFail(1);
+            checkStartFail(1, expErr);
 
             helper.clientMode(true);
-            checkStartFail(1);
+            checkStartFail(1, expErr);
 
             helper.clientMode(false);
         }
@@ -357,7 +393,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         checkTestSecuritySubject(1);
 
-        checkStartFail(1);
+        checkStartFail(1, expErr);
 
         helper.clientMode(false);
 
@@ -373,19 +409,20 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         checkTestSecuritySubject(4);
 
-        checkStartFail(1);
-        checkStartFail(5);
+        checkStartFail(1, expErr);
+        checkStartFail(5, expErr);
 
         helper.clientMode(true);
 
-        checkStartFail(1);
-        checkStartFail(5);
+        checkStartFail(1, expErr);
+        checkStartFail(5, expErr);
     }
 
     /**
      * @param nodeIdx Node index.
+     * @param expMsg Expected error message.
      */
-    private void checkStartFail(final int nodeIdx) {
+    private void checkStartFail(final int nodeIdx, String expMsg) {
         Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(nodeIdx);
@@ -397,7 +434,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         IgniteSpiException spiErr = X.cause(err, IgniteSpiException.class);
 
         assertNotNull(spiErr);
-        assertTrue(spiErr.getMessage().contains("Authentication failed"));
+        assertTrue(spiErr.getMessage(), spiErr.getMessage().contains(expMsg));
     }
 
     /**
@@ -444,6 +481,16 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         startGrid(3);
 
         waitForTopology(5);
+    }
+
+    /**
+     *
+     */
+    private static class ValidationTestAffinity extends RendezvousAffinityFunction {
+        /** {@inheritDoc} */
+        @Override public Object resolveNodeHash(ClusterNode node) {
+            return 0;
+        }
     }
 
     /** */

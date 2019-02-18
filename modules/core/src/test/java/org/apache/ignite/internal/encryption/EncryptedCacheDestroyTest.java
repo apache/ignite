@@ -24,14 +24,11 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEY_PREFIX;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

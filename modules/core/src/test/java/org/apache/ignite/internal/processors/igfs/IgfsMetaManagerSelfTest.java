@@ -36,8 +36,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -50,7 +48,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsInherite
 /**
  * {@link IgfsMetaManager} test case.
  */
-@RunWith(JUnit4.class)
 public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     /** Meta-information cache name. */
     private static final String META_CACHE_NAME = "replicated";

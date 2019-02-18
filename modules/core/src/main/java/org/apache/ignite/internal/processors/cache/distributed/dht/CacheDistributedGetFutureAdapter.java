@@ -410,7 +410,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
             this.keys = keys;
             this.topVer = topVer;
             this.postProcessingClos = CU.createBackupPostProcessingClosure(
-                topVer, log, cctx, null, expiryPlc, readThrough, skipVals);
+                topVer, log, cctx, null, expiryPlc, readThrough && cctx.readThroughConfigured(), skipVals);
         }
 
         /**

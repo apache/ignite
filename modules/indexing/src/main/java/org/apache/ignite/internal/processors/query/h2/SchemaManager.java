@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -57,6 +56,7 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCach
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewRunningQueries;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -168,6 +168,7 @@ public class SchemaManager {
         views.add(new SqlSystemViewCaches(ctx));
         views.add(new SqlSystemViewCacheGroups(ctx));
         views.add(new SqlSystemViewCacheGroupsIOStatistics(ctx));
+        views.add(new SqlSystemViewRunningQueries(ctx));
         views.add(new SqlSystemViewTables(ctx, this));
 
         return views;
@@ -444,9 +445,7 @@ public class SchemaManager {
 
         GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
 
-        H2RowFactory rowFactory = tbl.rowFactory(rowDesc);
-
-        GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql, rowDesc, rowFactory, tbl);
+        GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql, rowDesc, tbl);
 
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
             createInitialUserIndex(schemaName, tbl, usrIdx);
