@@ -580,6 +580,11 @@ public interface IgniteCacheOffheapManager {
     public void preloadPartition(int part) throws IgniteCheckedException;
 
     /**
+     * @return {@code True} if current thread holds busy lock for current cache group.
+     */
+    public boolean busyLockedByCurrentThread();
+
+    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {

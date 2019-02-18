@@ -62,6 +62,13 @@ public class GridSpinBusyLock {
     }
 
     /**
+     * @return {@code True} if current thread holds busy lock.
+     */
+    public boolean busyLockedByCurrentThread() {
+        return lock.readLockedByCurrentThread();
+    }
+
+    /**
      * Leaves "busy" state.
      */
     public void leaveBusy() {
