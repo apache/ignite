@@ -623,9 +623,6 @@
                     </executions>
                 </plugin>
 
-                <!-- The checkstyle-plugin configuration is based on multi module project.
-                 See: https://maven.apache.org/plugins/maven-checkstyle-plugin/examples/multi-module-config.html
-                 -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
@@ -649,11 +646,6 @@
                         </execution>
                     </executions>
                     <dependencies>
-                        <dependency>
-                            <groupId>org.apache.ignite</groupId>
-                            <artifactId>ignite-check</artifactId>
-                            <version>${project.version}</version>
-                        </dependency>
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
@@ -1095,33 +1087,33 @@
                 </plugins>
             </build>
 
-              <dependencyManagement>
-				<dependencies>
-					<dependency>
-						<groupId>org.apache.hadoop</groupId>
-						<artifactId>hadoop-common</artifactId>
-						<exclusions>
-							<exclusion>
-								<!-- This dependency is not available with java 9.-->
-								<groupId>jdk.tools</groupId>
-								<artifactId>jdk.tools</artifactId>
-							</exclusion>
-						</exclusions>
-					</dependency>
- 					<dependency>
-						<groupId>org.apache.hadoop</groupId>
-						<artifactId>hadoop-common</artifactId>
-						<type>test-jar</type>
-						<exclusions>
-							<exclusion>
-								<!-- This dependency is not available with java 9.-->
-								<groupId>jdk.tools</groupId>
-								<artifactId>jdk.tools</artifactId>
-							</exclusion>
-						</exclusions>
-					</dependency>
-				</dependencies>
-			</dependencyManagement>
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-common</artifactId>
+                        <exclusions>
+                            <exclusion>
+                                <!-- This dependency is not available with java 9.-->
+                                <groupId>jdk.tools</groupId>
+                                <artifactId>jdk.tools</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-common</artifactId>
+                        <type>test-jar</type>
+                        <exclusions>
+                            <exclusion>
+                                <!-- This dependency is not available with java 9.-->
+                                <groupId>jdk.tools</groupId>
+                                <artifactId>jdk.tools</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
 
         </profile>
 
