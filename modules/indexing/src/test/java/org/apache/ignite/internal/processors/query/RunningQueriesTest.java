@@ -66,7 +66,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
@@ -88,6 +91,28 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
     /** Node count. */
     private static final int NODE_CNT = 2;
+
+    /** Restarts the grid if if the last test failed. */
+    @Rule public final TestWatcher restarter = new TestWatcher() {
+        /** {@inheritDoc} */
+        @Override protected void failed(Throwable e, Description ignored) {
+            try {
+                log().error("Last test [name = \'" + ignored.getMethodName() + "\'] " +
+                    "failed with \"" + e.getMessage() + "\". Restarting the grid.");
+
+                stopAllGrids();
+
+                beforeTestsStarted();
+
+                log().error("Grid restarted.");
+            }
+            catch (Exception restartFailure) {
+                throw new RuntimeException("Failed to recover after test failure, " +
+                    "test results of this test class are incorrect.",
+                    restartFailure);
+            }
+        }
+    };
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
