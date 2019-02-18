@@ -360,6 +360,11 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
+    @Override public int getSegments() {
+        return segments.length;
+    }
+
+    /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
         synchronized (segmentsLock) {
             if (started)

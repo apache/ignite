@@ -130,9 +130,9 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
 
         ignite.close();
 
-        ignite = startGrid(0);
-
         pushOutDiskCache();
+
+        ignite = startGrid(0);
 
         cache = ignite.getOrCreateCache(CACHE_NAME);
 
