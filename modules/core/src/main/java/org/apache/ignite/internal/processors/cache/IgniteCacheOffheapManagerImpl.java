@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -445,6 +447,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         OffheapInvokeClosure c)
         throws IgniteCheckedException {
         dataStore(part).invoke(cctx, key, c);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void invokeAll(
+        GridCacheContext cctx,
+        GridDhtLocalPartition part,
+        Collection<? extends CacheSearchRow> rows,
+        Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map)
+        throws IgniteCheckedException {
+        dataStore(part).invokeAll(cctx, rows, map);
     }
 
     /** {@inheritDoc} */
@@ -1635,6 +1647,32 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             invoke0(cctx, new SearchRow(cacheId, key), c);
         }
 
+        /** {@inheritDoc} */
+        @Override public SearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key) {
+            return new SearchRow(grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID, key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Comparator<CacheSearchRow> rowsComparator() {
+            return dataTree.rowsComparator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void invokeAll(GridCacheContext cctx, Collection<? extends CacheSearchRow> rows, Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map) throws IgniteCheckedException {
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+            try {
+                dataTree.invokeAll(rows.iterator(), CacheDataRowAdapter.RowData.NO_KEY, map::get);
+
+                for (Map.Entry<? extends CacheSearchRow, ? extends OffheapInvokeClosure> e : map.entrySet())
+                    finishInvoke(cctx, e.getKey().key(), e.getValue());
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+
         /**
          * @param cctx Cache context.
          * @param row Search row.
@@ -1651,34 +1689,45 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 dataTree.invoke(row, CacheDataRowAdapter.RowData.NO_KEY, c);
 
-                switch (c.operationType()) {
-                    case PUT: {
-                        assert c.newRow() != null : c;
-
-                        CacheDataRow oldRow = c.oldRow();
-
-                        finishUpdate(cctx, c.newRow(), oldRow);
-
-                        break;
-                    }
-
-                    case REMOVE: {
-                        CacheDataRow oldRow = c.oldRow();
-
-                        finishRemove(cctx, row.key(), oldRow);
-
-                        break;
-                    }
-
-                    case NOOP:
-                        break;
-
-                    default:
-                        assert false : c.operationType();
-                }
+                finishInvoke(cctx, row.key(), c);
             }
             finally {
                 busyLock.leaveBusy();
+            }
+        }
+
+        /**
+         * @param cctx Cache context.
+         * @param key Key.
+         * @param c Closure.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void finishInvoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c)
+            throws IgniteCheckedException {
+            switch (c.operationType()) {
+                case PUT: {
+                    assert c.newRow() != null : c;
+
+                    CacheDataRow oldRow = c.oldRow();
+
+                    finishUpdate(cctx, c.newRow(), oldRow);
+
+                    break;
+                }
+
+                case REMOVE: {
+                    CacheDataRow oldRow = c.oldRow();
+
+                    finishRemove(cctx, key, oldRow);
+
+                    break;
+                }
+
+                case NOOP:
+                    break;
+
+                default:
+                    assert false : c.operationType();
             }
         }
 

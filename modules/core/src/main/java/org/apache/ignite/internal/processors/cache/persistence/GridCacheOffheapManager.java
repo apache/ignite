@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -2098,6 +2100,31 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate = init0(false);
 
             delegate.invoke(cctx, key, c);
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheSearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            return delegate.createSearchRow(cctx, key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Comparator<CacheSearchRow> rowsComparator() throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            return delegate.rowsComparator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void invokeAll(GridCacheContext cctx,
+            Collection<? extends CacheSearchRow> rows,
+            Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map) throws IgniteCheckedException {
+            assert ctx.database().checkpointLockIsHeldByThread();
+
+            CacheDataStore delegate = init0(false);
+
+            delegate.invokeAll(cctx, rows, map);
         }
 
         /** {@inheritDoc} */

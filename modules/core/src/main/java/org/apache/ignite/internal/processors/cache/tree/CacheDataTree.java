@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -47,6 +48,8 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
+import java.util.Comparator;
+
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
@@ -74,6 +77,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
     /** */
     private final CacheGroupContext grp;
+
+    /** */
+    private final Comparator<CacheSearchRow> rowsComparator;
 
     /**
      * @param grp Cache group.
@@ -107,6 +113,19 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         this.rowStore = rowStore;
         this.grp = grp;
+
+        rowsComparator = new Comparator<CacheSearchRow>() {
+            @Override public int compare(CacheSearchRow row1, CacheSearchRow row2) {
+                try {
+                    return compareKeyBytes(
+                        row1.key().valueBytes(grp.cacheObjectContext()),
+                        row2.key().valueBytes(grp.cacheObjectContext()));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            };
+        };
 
         assert !grp.dataRegion().config().isPersistenceEnabled() || grp.shared().database().checkpointLockIsHeldByThread();
 
@@ -410,6 +429,13 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     }
 
     /**
+     * @return Search rows comparator.
+     */
+    public Comparator<CacheSearchRow> rowsComparator() {
+        return rowsComparator;
+    }
+
+    /**
      * @param key Key.
      * @param link Link.
      * @return Compare result.
@@ -491,6 +517,10 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         byte[] bytes1 = other.key().valueBytes(grp.cacheObjectContext());
         byte[] bytes2 = key.valueBytes(grp.cacheObjectContext());
 
+        return compareKeyBytes(bytes1, bytes2);
+    }
+
+    private static int compareKeyBytes(byte[] bytes1, byte[] bytes2) {
         int lenCmp = Integer.compare(bytes1.length, bytes2.length);
 
         if (lenCmp != 0)

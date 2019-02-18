@@ -124,7 +124,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridDhtLocalPartition localPartition() {
+    @Override public GridDhtLocalPartition localPartition() {
         return locPart;
     }
 
@@ -698,7 +698,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @throws GridCacheEntryRemovedException If removed.
      */
     @SuppressWarnings({"ManualArrayToCollectionCopy"})
-    protected Collection<ReaderId> checkReadersLocked() throws GridCacheEntryRemovedException {
+    public Collection<ReaderId> checkReadersLocked() throws GridCacheEntryRemovedException {
         assert lockedByCurrentThread();
 
         checkObsolete();

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
@@ -186,6 +188,12 @@ public interface IgniteCacheOffheapManager {
      * @throws IgniteCheckedException If failed.
      */
     public void invoke(GridCacheContext cctx, KeyCacheObject key, GridDhtLocalPartition part, OffheapInvokeClosure c)
+        throws IgniteCheckedException;
+
+    public void invokeAll(GridCacheContext cctx,
+        GridDhtLocalPartition part,
+        Collection<? extends CacheSearchRow> rows,
+        Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map)
         throws IgniteCheckedException;
 
     /**
@@ -877,6 +885,15 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c) throws IgniteCheckedException;
+
+        public CacheSearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
+
+        public Comparator<CacheSearchRow> rowsComparator() throws IgniteCheckedException;
+
+        public void invokeAll(GridCacheContext cctx,
+            Collection<? extends CacheSearchRow> rows,
+            Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map)
+            throws IgniteCheckedException;
 
         /**
          *
