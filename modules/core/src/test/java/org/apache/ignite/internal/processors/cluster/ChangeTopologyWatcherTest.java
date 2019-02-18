@@ -106,7 +106,9 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        Set<Object> nodeLeftBaseline = ignite0.cluster().currentBaselineTopology().stream().map(BaselineNode::consistentId).collect(Collectors.toSet());
+        Set<Object> nodeLeftBaseline = ignite0.cluster().currentBaselineTopology().stream()
+            .map(BaselineNode::consistentId)
+            .collect(Collectors.toSet());
 
         assertEquals(initBaseline, nodeLeftBaseline);
 

@@ -99,7 +99,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
                     .listen((IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>)future -> {
 
                         if (exchangeManager.lastFinishedFuture().hasLostPartitions()) {
-                            log.warning("Baseline won't be changed cause lost partitions was detected");
+                            log.warning("Baseline won't be changed cause the lost partitions were detected");
 
                             return;
                         }

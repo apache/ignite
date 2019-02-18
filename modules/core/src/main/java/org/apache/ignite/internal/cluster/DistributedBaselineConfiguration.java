@@ -42,7 +42,7 @@ public class DistributedBaselineConfiguration {
     /** Default auto-adjust timeout for in-memory grid. */
     private static final int DEFAULT_IN_MEMORY_TIMEOUT = 0;
     /** Message of baseline auto-adjust configuration. */
-    private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%s' ms";
+    private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%d' ms";
     /** Value of manual baseline control or auto adjusting baseline. */
     private volatile DistributedBooleanProperty baselineAutoAdjustEnabled =
         detachedBooleanProperty("baselineAutoAdjustEnabled", false);
@@ -67,7 +67,7 @@ public class DistributedBaselineConfiguration {
 
                 long timeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
 
-                //set default value.
+                //It set default value locally only.
                 baselineAutoAdjustEnabled.localUpdate(getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, true));
                 baselineAutoAdjustTimeout.localUpdate(timeout);
 
