@@ -40,11 +40,26 @@ public interface MarshallerContext {
      * @return {@code True} if mapping was registered successfully.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean registerClassName(
+    public default boolean registerClassName(
         byte platformId,
         int typeId,
         String clsName,
         boolean failIfUnregistered
+    ) throws IgniteCheckedException {
+        return registerClassName(platformId, typeId, clsName);
+    }
+
+    /**
+     * Same as {@link MarshallerContext#registerClassName(byte, int, java.lang.String, boolean)} but with shortened
+     * parameters list.
+     *
+     * @deprecated Use {@link MarshallerContext#registerClassName(byte, int, java.lang.String, boolean)} instead.
+     */
+    @Deprecated
+    public boolean registerClassName(
+        byte platformId,
+        int typeId,
+        String clsName
     ) throws IgniteCheckedException;
 
     /**
