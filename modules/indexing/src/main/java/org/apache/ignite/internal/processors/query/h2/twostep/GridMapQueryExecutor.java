@@ -594,21 +594,6 @@ public class GridMapQueryExecutor {
                             qryResults.queryCancel(qryIdx),
                             dataPageScanEnabled);
 
-                        int count = rs.getMetaData().getColumnCount();
-
-                        while (rs.next()) {
-                            StringBuilder s = new StringBuilder();
-
-                            for (int i = 1; i <= count; i ++)
-                                s.append(rs.getObject(i)).append(" ");
-
-                            s.append("\n");
-
-                            log.warning("qryId:" + qr.queryRequestId() + ", columns: " + s.toString());
-                        }
-
-                        rs.beforeFirst();
-
                         if (inTx) {
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
                                 ctx.localNodeId(),

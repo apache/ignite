@@ -140,7 +140,7 @@ public class GridReduceQueryExecutor {
     private IgniteLogger log;
 
     /** */
-    private static final AtomicLong qryIdGen = new AtomicLong();
+    private final AtomicLong qryIdGen = new AtomicLong();
 
     /** */
     private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap<>();
@@ -754,12 +754,8 @@ public class GridReduceQueryExecutor {
                 else
                     spec = pspec;
 
-                log.info("Start Query " + qryReqId);
-
                 if (send(nodes, req, spec, false)) {
                     awaitAllReplies(r, nodes, cancel);
-
-                    log.info("query with Id=" + qryReqId + " finished");
 
                     if (r.hasErrorOrRetry()) {
                         CacheException err = r.exception();
