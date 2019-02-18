@@ -42,10 +42,14 @@ import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.util.IntArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -109,10 +113,13 @@ public class ReducePartitionMapper {
             if (isReplicatedOnly)
                 nodes = replicatedUnstableDataNodes(cacheIds, qryId);
             else {
-                partsMap = qryMap = partitionedUnstableDataNodes(cacheIds, parts, qryId);
+                partsMap = partitionedUnstableDataNodes(cacheIds, parts, qryId);
 
                 if (partsMap != null)
                     nodes = partsMap.keySet();
+
+                if (parts != null)
+                    qryMap = partsMap;
             }
         }
         else {
@@ -413,7 +420,20 @@ public class ReducePartitionMapper {
                 nodeToParts.computeIfAbsent(node, n -> new HashSet<>()).add(p);
         }
 
-        return processPartitionsMapping(nodeToParts);
+        return processPartitionsMappingTest(nodeToParts);
+    }
+
+    /** */
+    @NotNull private Map<ClusterNode, IntArray> processPartitionsMappingTest(Map<ClusterNode, Set<Integer>> nodeToParts) {
+        Map<Integer, List<ClusterNode>> partToNodes = nodeToParts.entrySet().stream()
+            .flatMap(e -> e.getValue().stream().map(p -> new IgniteBiTuple<>(e.getKey(), p)))
+            .collect(groupingBy(IgniteBiTuple::get2, mapping(IgniteBiTuple::get1, toList())));
+
+        Map<ClusterNode, IntArray> res = new HashMap<>();
+
+        partToNodes.forEach((key, value) -> res.computeIfAbsent(F.rand(value), n -> new IntArray()).add(key));
+
+        return res;
     }
 
     /**

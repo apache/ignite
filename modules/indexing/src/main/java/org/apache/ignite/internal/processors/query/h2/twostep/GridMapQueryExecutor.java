@@ -97,7 +97,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_FORCE_LAZY_RESULT_SET;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
-
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
@@ -597,6 +596,8 @@ public class GridMapQueryExecutor {
                     if (lazy)
                         stopAndUnregisterCurrentLazyWorker();
 
+                    log.warning(reserved.error());
+
                     sendRetry(node, reqId, segmentId, reserved.error());
 
                     return;
@@ -688,6 +689,21 @@ public class GridMapQueryExecutor {
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
 
                         rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qr.queryCancel(qryIdx), dataPageScanEnabled);
+
+                        int count = rs.getMetaData().getColumnCount();
+
+                        while (rs.next()) {
+                            StringBuilder s = new StringBuilder();
+
+                            for (int i = 1; i <= count; i ++)
+                                s.append(rs.getObject(i)).append(" ");
+
+                            s.append("\n");
+
+                            log.warning("qryId:" + qr.queryRequestId() + ", columns: " + s.toString());
+                        }
+
+                        rs.beforeFirst();
 
                         if (inTx) {
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(

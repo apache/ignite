@@ -2107,7 +2107,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public final boolean isEmpty() throws IgniteCheckedException {
-        checkDestroyed();
+        if (destroyed.get())
+            return true;
 
         for (;;) {
             TreeMetaData treeMeta = treeMeta();
@@ -2118,7 +2119,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 long rootAddr = readLock(rootId, rootPage);
 
                 if (rootAddr == 0) {
-                    checkDestroyed();
+                    if (destroyed.get())
+                        return true;
 
                     continue;
                 }

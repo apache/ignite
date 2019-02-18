@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -46,12 +45,21 @@ public class PartitionReservation {
     }
 
     /**
+     * Constructor for failed reservation.
+     *
+     * @param err Error message.
+     */
+    public PartitionReservation(String err) {
+        this(null, err);
+    }
+
+    /**
      * Base constructor.
      *
      * @param reserved Reserved partitions.
      * @param err Error message.
      */
-    public PartitionReservation(@NotNull List<GridReservable> reserved, @Nullable String err) {
+    private PartitionReservation(@Nullable List<GridReservable> reserved, @Nullable String err) {
         this.reserved = reserved;
         this.err = err;
     }
@@ -74,7 +82,7 @@ public class PartitionReservation {
      * Release partitions.
      */
     public void release() {
-        if (!releaseGuard.compareAndSet(false, true))
+        if (reserved == null || !releaseGuard.compareAndSet(false, true))
             return;
 
         for (int i = 0; i < reserved.size(); i++)

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheMode;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
@@ -101,7 +100,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
      */
     @Test
     public void testPutAllGetAll_ClientServer_Backups1_RestartRandomSrv_SqlDml() throws Exception {
-        putAllGetAll(RestartMode.RESTART_RND_SRV, 3, 1, 1, DFLT_PARTITION_COUNT,
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 3, 1, 1, 5,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
     }
 
