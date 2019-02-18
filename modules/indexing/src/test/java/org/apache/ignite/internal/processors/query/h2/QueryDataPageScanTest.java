@@ -366,7 +366,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                     .setLazy(true)
                     .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled)
                     .setArgs(1, expNestedLoops, DirectPageScanIndexing.expectedDataPageScanEnabled)
-                    .setPageSize(keysCnt / 2) // Must be less than keysCnt.
+                    .setPageSize(keysCnt / 10) // Must be less than keysCnt.
             )
         ) {
             int nestedLoops = 0;

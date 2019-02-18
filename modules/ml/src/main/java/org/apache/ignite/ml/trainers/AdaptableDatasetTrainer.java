@@ -96,9 +96,10 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     /** {@inheritDoc} */
     @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
         FeatureLabelExtractor<K, V, L> extractor) {
-        M fit = wrapped.fit(
-            datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
-            extractor.andThen(afterExtractor));
+        M fit = wrapped.
+            withEnvironmentBuilder(envBuilder)
+            .fit(datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
+                extractor.andThen(afterExtractor));
 
         return new AdaptableDatasetModel<>(before, fit, after);
     }
@@ -112,10 +113,11 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     @Override protected <K, V> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(
         AdaptableDatasetModel<I, O, IW, OW, M> mdl, DatasetBuilder<K, V> datasetBuilder,
         FeatureLabelExtractor<K, V, L> extractor) {
-        M updated = wrapped.updateModel(
-            mdl.innerModel(),
-            datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
-            extractor.andThen(afterExtractor));
+        M updated = wrapped.withEnvironmentBuilder(envBuilder)
+            .updateModel(
+                mdl.innerModel(),
+                datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
+                extractor.andThen(afterExtractor));
 
         return mdl.withInnerModel(updated);
     }

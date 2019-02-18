@@ -23,13 +23,11 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /** */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-10444")
 public class CacheMvccTxFastFinishTest extends CacheTxFastFinishTest {
     /** {@inheritDoc} */
     @Override protected void fastFinishTx(Ignite ignite) {

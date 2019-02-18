@@ -409,7 +409,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else if (task instanceof ClientCacheChangeDummyDiscoveryMessage) {
             ClientCacheChangeDummyDiscoveryMessage task0 = (ClientCacheChangeDummyDiscoveryMessage)task;
 
-            sharedCtx.affinity().processClientCachesChanges(task0);
+            sharedCtx.affinity().processClientCachesRequests(task0);
         }
         else if (task instanceof ClientCacheUpdateTimeout) {
             ClientCacheUpdateTimeout task0 = (ClientCacheUpdateTimeout)task;
@@ -1388,7 +1388,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ctx.kernalContext().continuous().onCacheStop(ctx);
 
-            ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx);
+            ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx, destroy);
 
             ctx.kernalContext().coordinators().onCacheStop(ctx);
 

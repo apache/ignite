@@ -91,7 +91,6 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     /**
      * Tests that SQL queries involving actual network IO are executed in dedicated pool.
      * @throws Exception If failed.
-     * @see GridCacheTwoStepQuery#isLocal()
      */
     @Test
     public void testSqlQueryUsesDedicatedThreadPool() throws Exception {
