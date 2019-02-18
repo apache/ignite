@@ -243,7 +243,8 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                             for (GroupPartitionId key : grpPartIdSet) {
                                 PagesAllocationRange allocRange = allocationMap.get(key);
 
-                                assert allocRange != null : key;
+                                assert allocRange != null :
+                                    "Pages not allocated [pairId=" + key + ", backupCtx=" + backupCtx + ']';
 
                                 backupCtx.partAllocatedPages.put(key, allocRange.getCurrAllocatedPageCnt());
 

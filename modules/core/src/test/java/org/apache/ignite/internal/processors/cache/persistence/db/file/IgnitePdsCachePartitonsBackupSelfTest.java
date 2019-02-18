@@ -80,7 +80,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /** */
 public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int CACHE_PARTS_COUNT = 1;
+    private static final int CACHE_PARTS_COUNT = 8;
 
     /** */
     private static final int PAGE_SIZE = 1024;
@@ -140,7 +140,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
 
         ignite.cluster().active(true);
 
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 1024; i++)
             ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
         File cacheWorkDir = ((FilePageStoreManager)ignite.context().cache().context().pageStore())
@@ -176,7 +176,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    for (int i = 2; i < 4; i++)
+                    for (int i = 1024; i < 2048; i++)
                         ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
                     CheckpointFuture cpFut = cctx1.database().forceCheckpoint("the next one");
