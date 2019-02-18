@@ -56,7 +56,7 @@ public class GridCacheTwoStepQuery {
     private final List<Integer> cacheIds;
 
     /** */
-    private final boolean local;
+    private final boolean locSplit;
 
     /** */
     private final PartitionResult derivedPartitions;
@@ -87,7 +87,7 @@ public class GridCacheTwoStepQuery {
         PartitionResult derivedPartitions,
         List<Integer> cacheIds,
         boolean mvccEnabled,
-        boolean local
+        boolean locSplit
     ) {
         this.originalSql = originalSql;
         this.paramsCnt = paramsCnt;
@@ -101,7 +101,7 @@ public class GridCacheTwoStepQuery {
         this.derivedPartitions = derivedPartitions;
         this.cacheIds = cacheIds;
         this.mvccEnabled = mvccEnabled;
-        this.local = local;
+        this.locSplit = locSplit;
     }
 
     /**
@@ -163,6 +163,13 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
+     * @return Whether cache IDs exist.
+     */
+    public boolean hasCacheIds() {
+        return !F.isEmpty(cacheIds);
+    }
+
+    /**
      * @return Original query SQL.
      */
     public String originalSql() {
@@ -173,7 +180,14 @@ public class GridCacheTwoStepQuery {
      * @return {@code True} If query is local.
      */
     public boolean isLocal() {
-        return local;
+        return F.isEmpty(cacheIds) || locSplit;
+    }
+
+    /**
+     * @return {@code True} if this is local query with split.
+     */
+    public boolean isLocalSplit() {
+        return locSplit;
     }
 
     /**
