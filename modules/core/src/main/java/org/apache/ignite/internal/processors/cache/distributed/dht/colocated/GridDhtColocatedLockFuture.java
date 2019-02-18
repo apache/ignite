@@ -807,8 +807,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     this.topVer = topVer;
             }
 
-            // Todo Lost here
             trackable = true;
+
             cctx.mvcc().addFuture(this);
 
             map(keys, false, true);
@@ -833,8 +833,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         // We must acquire topology snapshot from the topology version future.
         cctx.topology().readLock();
 
-        final GridDhtTopologyFuture fut;
-        final boolean finish; //Todo make pretty
+        final boolean finish;
 
         try {
             if (cctx.topology().stopping()) {
@@ -846,7 +845,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 return;
             }
 
-            fut = cctx.topologyVersionFuture();
+            GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+
             finish = fut.isDone();
 
             if (finish) {
@@ -883,6 +883,19 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 if (!remap)
                     cctx.mvcc().addFuture(this);
             }
+            else {
+                cctx.time().waitAsync(fut, tx == null ? 0 : tx.remainingTime(), (e, timedOut) -> {
+                    if (errorOrTimeoutOnTopologyVersion(e, timedOut))
+                        return;
+
+                    try {
+                        mapOnTopology(remap, c);
+                    }
+                    finally {
+                        cctx.shared().txContextReset();
+                    }
+                });
+            }
         }
         finally {
             cctx.topology().readUnlock();
@@ -895,19 +908,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 c.run();
 
             markInitialized();
-        }
-        else {
-            cctx.time().waitAsync(fut, tx == null ? 0 : tx.remainingTime(), (e, timedOut) -> {
-                if (errorOrTimeoutOnTopologyVersion(e, timedOut))
-                    return;
-
-                try {
-                    mapOnTopology(remap, c);
-                }
-                finally {
-                    cctx.shared().txContextReset();
-                }
-            });
         }
     }
 
