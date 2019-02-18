@@ -507,7 +507,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * IGNITE-11091
      * @throws Exception If can't start ignite node.
      */
     @Test
@@ -544,6 +543,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
     /**
      * Check if index exists in Collection of GridCacheSqlMetadata.
+     *
      * @param metadata Metadata from grid.
      * @param idxName Index name.
      * @return True if index exists in metadata, otherwise false.
