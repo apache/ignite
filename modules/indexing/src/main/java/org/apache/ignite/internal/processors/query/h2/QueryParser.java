@@ -112,7 +112,7 @@ public class QueryParser {
      *
      * @param schemaName schema name.
      * @param qry query to parse.
-     * @param remainingAllowed Whether multiple statements are allowed.
+     * @param remainingAllowed Whether multiple statements are allowed.            
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
     public QueryParserResult parse(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
@@ -144,7 +144,7 @@ public class QueryParser {
 
         QueryParserCacheEntry cached = cache.get(cachedKey);
 
-        if (cached != null)
+        if (cached != null) 
             return new QueryParserResult(qry, null, cached.select(), cached.dml(), cached.command());
 
         // Try parting as native command.
@@ -171,7 +171,7 @@ public class QueryParser {
      *
      * @param schemaName Schema name.
      * @param qry which sql text to parse.
-     * @param remainingAllowed Whether multiple statements are allowed.
+     * @param remainingAllowed Whether multiple statements are allowed.              
      * @return Command or {@code null} if cannot parse this query.
      */
     @SuppressWarnings("IfMayBeConditional")
@@ -207,10 +207,10 @@ public class QueryParser {
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.lastCommandSql());
 
             SqlFieldsQuery remainingQry = null;
-
+            
             if (!F.isEmpty(parser.remainingSql())) {
                 checkRemainingAllowed(remainingAllowed);
-
+                
                 remainingQry = cloneFieldsQuery(qry).setSql(parser.remainingSql()).setArgs(qry.getArgs());
             }
 
@@ -243,7 +243,7 @@ public class QueryParser {
      *
      * @param schemaName Schema name.
      * @param qry Query.
-     * @param remainingAllowed Whether multiple statements are allowed.
+     * @param remainingAllowed Whether multiple statements are allowed.              
      * @return Parsing result.
      */
     @SuppressWarnings("IfMayBeConditional")
@@ -283,10 +283,10 @@ public class QueryParser {
 
             // Get remaining query and check if it is allowed.
             SqlFieldsQuery remainingQry = null;
-
+            
             if (!F.isEmpty(prep.remainingSql())) {
                 checkRemainingAllowed(remainingAllowed);
-
+                
                 remainingQry = cloneFieldsQuery(qry).setSql(prep.remainingSql());
             }
 
@@ -419,13 +419,13 @@ public class QueryParser {
 
     /**
      * Throw exception is multiple statements are not allowed.
-     *
+     * 
      * @param allowed Whether multiple statements are allowed.
      */
     private static void checkRemainingAllowed(boolean allowed) {
         if (allowed)
-            return;
-
+            return; 
+        
         throw new IgniteSQLException("Multiple statements queries are not supported.",
             IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }

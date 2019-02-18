@@ -19,11 +19,11 @@
 
     <h1 class="page-title">Source: Cursor.js</h1>
 
+    
 
 
 
-
-
+    
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/*
@@ -211,9 +211,9 @@ class Cursor {
      * @ignore
      */
     async _read(buffer) {
-        const rowCountForNewCluster = buffer.readInteger();
-        this._values = new Array(rowCountForNewCluster);
-        for (let i = 0; i &lt; rowCountForNewCluster; i++) {
+        const rowCount = buffer.readInteger();
+        this._values = new Array(rowCount);
+        for (let i = 0; i &lt; rowCount; i++) {
             this._values[i] = await this._readRow(buffer);
         }
         this._hasNext = buffer.readBoolean();
