@@ -1304,9 +1304,9 @@ public class CommandHandler {
         // if task runs on a node with VisorBaselineNode of old version (V1) we'll get order=null for all nodes.
 
         String crdStr = srvs.values().stream()
-            .min(Comparator.comparing(node -> node.getOrder() != null ? node.getOrder() : 0))
             // check for not null
             .filter(node -> node.getOrder() != null)
+            .min(Comparator.comparing(VisorBaselineNode::getOrder))
             // format
             .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder() + ")")
             .orElse("");
