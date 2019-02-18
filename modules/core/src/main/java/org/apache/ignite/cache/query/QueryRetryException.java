@@ -15,34 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.cache.query;
 
-import java.sql.PreparedStatement;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.IgniteException;
 
 /**
- *
+ * The exception is thrown if a query was cancelled or timed out while executing.
  */
-public interface PreparedStatementEx extends PreparedStatement {
+public class QueryRetryException extends IgniteException {
     /** */
-    static final AtomicInteger metaIdGenerator = new AtomicInteger();
-
-    /** Flag if at least one MVCC cache is used in this statement. */
-    static final int MVCC_STATE = metaIdGenerator.getAndIncrement();
-
-    /** First mvcc cache id of the involved caches. */
-    static final int MVCC_CACHE_ID = metaIdGenerator.getAndIncrement();
+    private static final long serialVersionUID = 0L;
 
     /**
-     * @param id Metadata key.
-     * @return Attached metadata.
+     * @param tableName Table name.
      */
-    @Nullable <T> T meta(int id);
-
-    /**
-     * @param id Metadata key.
-     * @param metaObj  Metadata object.
-     */
-    void putMeta(int id, Object metaObj);
+    public QueryRetryException(String tableName) {
+        super("Table was modified concurrently (please retry the query): " + tableName);
+    }
 }
