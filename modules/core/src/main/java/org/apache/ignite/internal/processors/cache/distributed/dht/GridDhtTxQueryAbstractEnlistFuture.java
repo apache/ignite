@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -73,8 +74,8 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult res) {
-        if(res.success())
+    @Override protected void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult res, EnlistOperation op) {
+        if(res.success() && op != EnlistOperation.LOCK)
             cnt++;
     }
 }

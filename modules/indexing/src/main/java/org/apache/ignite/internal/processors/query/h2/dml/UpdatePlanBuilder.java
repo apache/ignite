@@ -891,7 +891,8 @@ public final class UpdatePlanBuilder {
                     fieldsQry.isDistributedJoins(),
                     fieldsQry.isEnforceJoinOrder(),
                     false,
-                    idx
+                    idx,
+                    false
                 );
 
                 boolean distributed =

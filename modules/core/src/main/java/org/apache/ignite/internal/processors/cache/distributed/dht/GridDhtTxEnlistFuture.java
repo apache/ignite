@@ -116,7 +116,7 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
     }
 
     /** {@inheritDoc} */
-    @Override protected void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult txRes) {
+    @Override protected void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult txRes, EnlistOperation op) {
         assert txRes.invokeResult() == null || needRes;
 
         res.success(txRes.success());

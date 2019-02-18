@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -61,13 +68,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.rewriteQueryForUpdateIfNeeded;
 
 /**
  * Parser module. Splits incoming request into a series of parsed results.
@@ -115,8 +116,8 @@ public class QueryParser {
      * @param remainingAllowed Whether multiple statements are allowed.            
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
-    public QueryParserResult parse(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
-        QueryParserResult res = parse0(schemaName, qry, remainingAllowed);
+    public QueryParserResult parse(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed, boolean ignoreForUpdate) {
+        QueryParserResult res = parse0(schemaName, qry, remainingAllowed, ignoreForUpdate);
 
         checkQueryType(qry, res.isSelect());
 
@@ -129,9 +130,10 @@ public class QueryParser {
      * @param schemaName schema name.
      * @param qry query to parse.
      * @param remainingAllowed Whether multiple statements are allowed.
+     * @param ignoreForUpdate Flag whether to ignore SELECT FOR UPDATE clause in implicit transactions.
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
-    private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
+    private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed, boolean ignoreForUpdate) {
         // First, let's check if we already have a two-step query for this statement...
         QueryParserCacheKey cachedKey = new QueryParserCacheKey(
             schemaName,
@@ -139,20 +141,21 @@ public class QueryParser {
             qry.isCollocated(),
             qry.isDistributedJoins(),
             qry.isEnforceJoinOrder(),
-            qry.isLocal()
+            qry.isLocal(),
+            ignoreForUpdate
         );
 
         QueryParserCacheEntry cached = cache.get(cachedKey);
 
-        if (cached != null) 
+        if (cached != null)
             return new QueryParserResult(qry, null, cached.select(), cached.dml(), cached.command());
 
-        // Try parting as native command.
+        // Try to parse as a native command.
         QueryParserResult parseRes = parseNative(schemaName, qry, remainingAllowed);
 
         // Otherwise parse with H2.
         if (parseRes == null)
-            parseRes = parseH2(schemaName, qry, remainingAllowed);
+            parseRes = parseH2(schemaName, qry, remainingAllowed, ignoreForUpdate);
 
         // Add to cache if not multi-statement.
         if (parseRes.remainingQuery() == null) {
@@ -231,7 +234,8 @@ public class QueryParser {
 
             int code = IgniteQueryErrorCode.PARSING;
 
-            if (e instanceof SqlParseException)                code = ((SqlParseException)e).code();
+            if (e instanceof SqlParseException)
+                code = ((SqlParseException)e).code();
 
             throw new IgniteSQLException("Failed to parse DDL statement: " + sql + ": " + e.getMessage(),
                 code, e);
@@ -243,11 +247,17 @@ public class QueryParser {
      *
      * @param schemaName Schema name.
      * @param qry Query.
-     * @param remainingAllowed Whether multiple statements are allowed.              
+     * @param remainingAllowed Whether multiple statements are allowed.
+     * @param ignoreForUpdate Flag whether to ignore SELECT FOR UPDATE clause in implicit transactions.
      * @return Parsing result.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private QueryParserResult parseH2(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
+    private QueryParserResult parseH2(
+        String schemaName,
+        SqlFieldsQuery qry,
+        boolean remainingAllowed,
+        boolean ignoreForUpdate
+    ) {
         Connection c = connMgr.connectionForThread().connection(schemaName);
 
         // For queries that are explicitly local, we rely on the flag specified in the query
@@ -347,6 +357,8 @@ public class QueryParser {
 
             GridSqlStatement stmt0 = parser.parse(prepared);
 
+            rewriteQueryForUpdateIfNeeded(stmt0, ignoreForUpdate);
+
             List<Integer> cacheIds = parser.cacheIds();
             Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
 
@@ -384,7 +396,8 @@ public class QueryParser {
                         newQry.isDistributedJoins(),
                         newQry.isEnforceJoinOrder(),
                         locSplit,
-                        idx
+                        idx,
+                        ignoreForUpdate
                     );
                 }
 

@@ -155,8 +155,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
                 // Wait for previous future.
                 assert fut instanceof GridNearTxAbstractEnlistFuture
                     || fut instanceof GridDhtTxAbstractEnlistFuture
-                    || fut instanceof CompoundLockFuture
-                    || fut instanceof GridNearTxSelectForUpdateFuture : fut;
+                    || fut instanceof CompoundLockFuture : fut;
 
                 // Terminate this future if parent future is terminated by rollback.
                 if (!fut.isDone()) {

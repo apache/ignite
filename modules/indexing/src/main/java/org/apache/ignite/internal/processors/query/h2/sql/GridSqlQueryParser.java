@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,7 +42,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteUuid;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.CommandInterface;
@@ -610,49 +608,45 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * @param p Statement to rewrite, if needed.
-     * @param inTx Whether there is an active transaction.
-     * @return Query with {@code key} and {@code val} columns appended to the list of columns,
-     *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
+     * @param stmt Statement to rewrite, if needed.
+     * @param ignoreForUpdate Whether to ignore SELECT FOR UPDATE clause.
      */
-    @NotNull public static String rewriteQueryForUpdateIfNeeded(Prepared p, boolean inTx) {
-        GridSqlStatement gridStmt = new GridSqlQueryParser(false).parse(p);
-        return rewriteQueryForUpdateIfNeeded(gridStmt, inTx);
+    @NotNull public static void rewriteQueryForUpdateIfNeeded(GridSqlStatement stmt, boolean ignoreForUpdate) {
+        // We have checked above that it's not an UNION query, so it's got to be SELECT.
+        if (stmt instanceof GridSqlSelect) {
+            GridSqlSelect sel = (GridSqlSelect)stmt;
+
+            if (sel.isForUpdate() && !ignoreForUpdate)
+                appendKeyColumn(sel);
+
+            // We need to remove this flag for final flag we'll feed to H2.
+            sel.forUpdate(false);
+        }
     }
 
     /**
-     * @param stmt Statement to rewrite, if needed.
-     * @param inTx Whether there is an active transaction.
-     * @return Query with {@code key} and {@code val} columns appended to the list of columns,
-     *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
+     * Appends _Key column to SELECT. This column is used for SELECT FOR UPDATE statements.
+     *
+     * @param sel Select statement.
      */
-    @NotNull public static String rewriteQueryForUpdateIfNeeded(GridSqlStatement stmt, boolean inTx) {
-        // We have checked above that it's not an UNION query, so it's got to be SELECT.
-        assert stmt instanceof GridSqlSelect;
+    static void appendKeyColumn(GridSqlSelect sel) {
+        // It is need to append _KEY column to map query to lock selected rows.
+        GridSqlAst from = sel.from();
 
-        GridSqlSelect sel = (GridSqlSelect)stmt;
+        GridSqlTable tbl = from instanceof GridSqlTable ? (GridSqlTable)from :
+            ((GridSqlAlias)from).child();
 
-        // How'd we get here otherwise?
-        assert sel.isForUpdate();
+        GridH2Table gridTbl = tbl.dataTable();
 
-        if (inTx) {
-            GridSqlAst from = sel.from();
+        Column h2KeyCol = gridTbl.getColumn(QueryUtils.KEY_COL);
 
-            GridSqlTable gridTbl = from instanceof GridSqlTable ? (GridSqlTable)from :
-                ((GridSqlAlias)from).child();
+        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
+        keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
 
-            GridH2Table tbl = gridTbl.dataTable();
+        sel.addColumn(keyCol, true);
 
-            Column keyCol = tbl.getColumn(0);
-
-            sel.addColumn(new GridSqlAlias("_key_" + IgniteUuid.vmId(),
-                new GridSqlColumn(keyCol, null, keyCol.getName()), true), true);
-        }
-
-        // We need to remove this flag for final flag we'll feed to H2.
+        // Clear flag for query - we'll run it as a plain query.
         sel.forUpdate(false);
-
-        return sel.getSQL();
     }
 
     /**
@@ -807,6 +801,14 @@ public class GridSqlQueryParser {
 
             if (SELECT_IS_GROUP_QUERY.get(select))
                 throw new IgniteSQLException("SELECT FOR UPDATE with aggregates and/or GROUP BY is not supported.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (select.isDistinct())
+                throw new IgniteSQLException("DISTINCT clause is not supported for SELECT FOR UPDATE.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (SplitterUtils.hasSubQueries(res))
+                throw new IgniteSQLException("Sub queries are not supported for SELECT FOR UPDATE.",
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 

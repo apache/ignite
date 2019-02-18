@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -267,8 +266,9 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      *
      * @param key Entry key.
      * @param res Update result.
+     * @param op Operation.
      */
-    protected abstract void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult res);
+    protected abstract void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult res, EnlistOperation op);
 
     /**
      *
@@ -295,8 +295,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 // Wait for previous future.
                 assert fut instanceof GridNearTxAbstractEnlistFuture
                     || fut instanceof GridDhtTxAbstractEnlistFuture
-                    || fut instanceof CompoundLockFuture
-                    || fut instanceof GridNearTxSelectForUpdateFuture : fut;
+                    || fut instanceof CompoundLockFuture : fut;
 
                 // Terminate this future if parent future is terminated by rollback.
                 if (!fut.isDone()) {
@@ -641,7 +640,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         assert updRes != null && updRes.updateFuture() == null;
 
-        onEntryProcessed(entry.key(), updRes);
+        onEntryProcessed(entry.key(), updRes, op);
 
         if (!updRes.success()
             || updRes.filtered()

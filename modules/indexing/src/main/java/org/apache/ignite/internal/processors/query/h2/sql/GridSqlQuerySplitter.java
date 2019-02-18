@@ -59,6 +59,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin.RIG
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlPlaceholder.EMPTY;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery.LIMIT_CHILD;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery.OFFSET_CHILD;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.appendKeyColumn;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect.FROM_CHILD;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect.WHERE_CHILD;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect.childIndexForColumn;
@@ -183,6 +184,7 @@ public class GridSqlQuerySplitter {
      * @param enforceJoinOrder Enforce join order.
      * @param locSplit Whether this is a split for local query.
      * @param idx Indexing.
+     * @param ignoreForUpdate Flag whether to ignore SELECT FOR UPDATE statement in the case of implicit transactions.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
@@ -194,7 +196,8 @@ public class GridSqlQuerySplitter {
         boolean distributedJoins,
         boolean enforceJoinOrder,
         boolean locSplit,
-        IgniteH2Indexing idx
+        IgniteH2Indexing idx,
+        boolean ignoreForUpdate
     ) throws SQLException, IgniteCheckedException {
         SplitterContext.set(distributedJoins);
 
@@ -206,7 +209,8 @@ public class GridSqlQuerySplitter {
                 distributedJoins,
                 enforceJoinOrder,
                 locSplit,
-                idx
+                idx,
+                ignoreForUpdate
             );
         }
         finally {
@@ -222,6 +226,7 @@ public class GridSqlQuerySplitter {
      * @param enforceJoinOrder Enforce join order.
      * @param locSplit Whether this is a split for local query.
      * @param idx Indexing.
+     * @param ignoreForUpdate Flag whether to ignore SELECT FOR UPDATE statement in the case of implicit transactions.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
@@ -233,7 +238,8 @@ public class GridSqlQuerySplitter {
         boolean distributedJoins,
         boolean enforceJoinOrder,
         boolean locSplit,
-        IgniteH2Indexing idx
+        IgniteH2Indexing idx,
+        boolean ignoreForUpdate
     ) throws SQLException, IgniteCheckedException {
         // Here we will just do initial query parsing. Do not use optimized
         // subqueries because we do not have unique FROM aliases yet.
@@ -264,10 +270,12 @@ public class GridSqlQuerySplitter {
         // the REDUCE query optimization.
         qry = GridSqlQueryParser.parseQuery(prepare(conn, qry.getSQL(), false, enforceJoinOrder), true);
 
-        boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
+        boolean forUpdate = !ignoreForUpdate && GridSqlQueryParser.isForUpdateQuery(prepared);
 
         // Do the actual query split. We will update the original query AST, need to be careful.
         splitter.splitQuery(qry, forUpdate);
+
+        String normalizedOriginalSql = qry.getSQL();
 
         assert !F.isEmpty(splitter.mapSqlQrys): "map"; // We must have at least one map query.
         assert splitter.rdcSqlQry != null: "rdc"; // We must have a reduce query.
@@ -310,7 +318,8 @@ public class GridSqlQuerySplitter {
             splitter.extractor.mergeMapQueries(splitter.mapSqlQrys),
             cacheIds,
             mvccEnabled,
-            locSplit
+            locSplit,
+            normalizedOriginalSql
         );
     }
 
@@ -348,15 +357,13 @@ public class GridSqlQuerySplitter {
             model.forceSplit();
 
         // Split the query model into multiple map queries and a single reduce query.
-        splitQueryModel(model);
+        splitQueryModel(model, forUpdate);
 
         // Get back the updated query from the fake parent. It will be our reduce query.
         qry = fakeQryParent.subquery();
 
-        // Reset SELECT FOR UPDATE flag for reduce query.
-        if (forUpdate) {
-            assert qry instanceof GridSqlSelect;
-
+        // Always reset SELECT FOR UPDATE flag for reduce query.
+        if (qry instanceof GridSqlSelect) {
             GridSqlSelect sel = (GridSqlSelect)qry;
 
             sel.forUpdate(false);
@@ -1107,12 +1114,13 @@ public class GridSqlQuerySplitter {
 
     /**
      * @param model Query model.
+     * @param forUpdate SELECT FOR UPDATE flag.
      */
-    private void splitQueryModel(SplitterQueryModel model) throws IgniteCheckedException {
+    private void splitQueryModel(SplitterQueryModel model, boolean forUpdate) throws IgniteCheckedException {
         switch (model.type()) {
             case SELECT:
                 if (model.needSplit()) {
-                    splitSelect(model.parent(), model.childIndex());
+                    splitSelect(model.parent(), model.childIndex(), forUpdate);
 
                     break;
                 }
@@ -1120,7 +1128,7 @@ public class GridSqlQuerySplitter {
                 // Intentional fallthrough to go deeper.
             case UNION:
                 for (int i = 0; i < model.childModelsCount(); i++)
-                    splitQueryModel(model.childModel(i));
+                    splitQueryModel(model.childModel(i), false);
 
                 break;
 
@@ -1134,12 +1142,20 @@ public class GridSqlQuerySplitter {
      *
      * @param parent Parent AST element.
      * @param childIdx Index of child select.
+     * @param forUpdate SELECT FOR UPDATE flag.
      */
-    private void splitSelect(GridSqlAst parent, int childIdx) throws IgniteCheckedException {
+    private void splitSelect(GridSqlAst parent, int childIdx, boolean forUpdate) throws IgniteCheckedException {
         if (++splitId > 99)
             throw new CacheException("Too complex query to process.");
 
         final GridSqlSelect mapQry = parent.child(childIdx);
+
+        // Append extra key column to SELECT FOR UPDATE queries.
+        if (forUpdate)
+            appendKeyColumn(mapQry);
+
+        // Always reset this flag to false to prevent H2 locking.
+        mapQry.forUpdate(false);
 
         final int visibleCols = mapQry.visibleColumns();
 
