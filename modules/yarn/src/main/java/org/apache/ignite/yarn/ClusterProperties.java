@@ -200,26 +200,26 @@ public class ClusterProperties {
      * @return Memory overhead for requested memory.
      */
     public double memoryOverHeadPerNode() {
-		return memOverHeadPerNode;
-	}
+        return memOverHeadPerNode;
+    }
 
     /**
      * Sets memory overhead requested to YARN.
      *
      * @param memOverHeadPerNode Memory over head per node.
      */
-	public void memoryOverHeadPerNode(double memOverHeadPerNode) {
-		this.memOverHeadPerNode = memOverHeadPerNode;
-	}
-	
-	/**
-	 * @return Provide the total memory requested to ResourceManagers (memoryPerNode + memoryOverheadPerNode).
-	 */
-	public double totalMemoryPerNode(){
-		return memoryPerNode() + memoryOverHeadPerNode();
-	}
+    public void memoryOverHeadPerNode(double memOverHeadPerNode) {
+        this.memOverHeadPerNode = memOverHeadPerNode;
+    }
 
-	/**
+    /**
+     * @return Provide the total memory requested to ResourceManagers (memoryPerNode + memoryOverheadPerNode).
+     */
+    public double totalMemoryPerNode() {
+        return memoryPerNode() + memoryOverHeadPerNode();
+    }
+
+    /**
      * @return Instance count limit.
      */
     public double instances() {
@@ -319,7 +319,7 @@ public class ClusterProperties {
      * @return Cluster properties.
      */
     private static ClusterProperties fromProperties(Properties props) {
-    	ClusterProperties prop = new ClusterProperties();
+        ClusterProperties prop = new ClusterProperties();
 
         prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, props, DEFAULT_CLUSTER_NAME);
 

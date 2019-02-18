@@ -642,8 +642,8 @@
                                 <logViolationsToConsole>true</logViolationsToConsole>
                                 <failsOnError>true</failsOnError>
                                 <failOnViolation>true</failOnViolation>
-                                <configLocation>ignite-check/checkstyle.xml</configLocation>
-                                <suppressionsLocation>ignite-check/checkstyle-suppressions.xml</suppressionsLocation>
+                                <configLocation>../checkstyle/checkstyle.xml</configLocation>
+                                <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
                                 <includeTestSourceDirectory>true</includeTestSourceDirectory>
                             </configuration>
                         </execution>
@@ -1311,6 +1311,7 @@
 
         <profile>
             <id>checkstyle</id>
+
             <build>
                 <plugins>
                     <plugin>

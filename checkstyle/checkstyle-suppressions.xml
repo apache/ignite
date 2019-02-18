@@ -20,5 +20,4 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <suppressions>
     <suppress checks="." files=".*/generated/.*\.java"/>
-    <suppress checks="MagicNumberCheck" files=".*/src/test/.*\.java"/>
 </suppressions>

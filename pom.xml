@@ -43,7 +43,6 @@
 
     <modules>
         <module>modules/apache-license-gen</module>
-        <module>modules/check</module>
         <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/compress</module>
