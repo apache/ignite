@@ -63,6 +63,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        // we reduce fealure detection tp speedup failure detection on catch(Exception) clause in createTcpClient().
         cfg.setFailureDetectionTimeout(2000);
         cfg.setClientFailureDetectionTimeout(2000);
 
@@ -395,6 +396,106 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
             log.info("Reconnect finished.");
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
+    @Test
+    public void testReconnectServersRestart_1() throws Exception {
+        reconnectServersRestart(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
+    @Test
+    public void testReconnectServersRestart_2() throws Exception {
+        reconnectServersRestart(3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReconnectServersRestart_3() throws Exception {
+        startGrid(0);
+
+        helper.clientMode(true);
+
+        startGridsMultiThreaded(10, 10);
+
+        stopGrid(getTestIgniteInstanceName(0), true, false);
+
+        final int srvIdx = ThreadLocalRandom.current().nextInt(10);
+
+        final AtomicInteger idx = new AtomicInteger();
+
+        info("Restart nodes.");
+
+        // Test concurrent start when there are disconnected nodes from previous cluster.
+        GridTestUtils.runMultiThreaded(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                int threadIdx = idx.getAndIncrement();
+
+                helper.clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
+
+                startGrid(threadIdx);
+
+                return null;
+            }
+        }, 10, "start-node");
+
+        waitForTopology(20);
+
+        evts.clear();
+    }
+
+    /**
+     * Checks that a client will reconnect after previous cluster data was cleaned.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReconnectServersRestart_4() throws Exception {
+        startGrid(0);
+
+        helper.clientMode(true);
+
+        IgniteEx client = startGrid(1);
+
+        helper.clientMode(false);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        client.events().localListen(event -> {
+            latch.countDown();
+
+            return true;
+        }, EVT_CLIENT_NODE_DISCONNECTED);
+
+        waitForTopology(2);
+
+        stopGrid(0);
+
+        evts.clear();
+
+        // Waiting for client starts to reconnect and create join request.
+        assertTrue("Failed to wait for client node disconnected.", latch.await(10, SECONDS));
+
+        // Restart cluster twice for incrementing internal order. (alive zk-nodes having lower order and containing
+        // client join request will be removed). See {@link ZookeeperDiscoveryImpl#cleanupPreviousClusterData}.
+        startGrid(0);
+
+        stopGrid(0);
+
+        evts.clear();
+
+        startGrid(0);
+
+        waitForTopology(2);
     }
 
     /**
