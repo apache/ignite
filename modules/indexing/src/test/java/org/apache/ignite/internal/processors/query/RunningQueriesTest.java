@@ -84,7 +84,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     private static final long TIMEOUT_IN_MS = TIMEOUT_IN_SEC * 1000;
 
     /** Barrier. */
-    private static CyclicBarrier barrier;
+    private static volatile CyclicBarrier barrier;
 
     /** Ignite. */
     private static IgniteEx ignite;
