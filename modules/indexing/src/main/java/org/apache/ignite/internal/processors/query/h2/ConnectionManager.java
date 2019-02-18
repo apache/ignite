@@ -315,9 +315,9 @@ public class ConnectionManager {
         // Is statement still valid?
         if (
             stmt.isClosed() ||                                 // Closed.
-                stmt.unwrap(JdbcStatement.class).isCancelled() ||  // Cancelled.
-                GridSqlQueryParser.prepared(stmt).needRecompile() // Outdated (schema has been changed concurrently).
-            )
+            stmt.unwrap(JdbcStatement.class).isCancelled() ||  // Cancelled.
+            GridSqlQueryParser.prepared(stmt).needRecompile() // Outdated (schema has been changed concurrently).
+        )
             return null;
 
         return stmt;

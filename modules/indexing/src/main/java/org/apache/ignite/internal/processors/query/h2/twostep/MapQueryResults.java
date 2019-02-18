@@ -148,8 +148,9 @@ class MapQueryResults {
     }
 
     /**
-     * Wrap MapQueryResult#close to synchronize close vs cancel. We have do it because connection returns to pool after
-     * close ResultSet but the whole MapQuery (that may contains several queries) may be canceled later.
+     * Wrap MapQueryResult#close to synchronize close vs cancel.
+     * We have do it because connection returns to pool after close ResultSet but the whole MapQuery
+     * (that may contains several queries) may be canceled later.
      *
      * @param idx Map query (result) index.
      */

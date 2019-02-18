@@ -493,7 +493,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
     /**
-     * Force all SQL queries to be processed lazily regardless of what clients request.
+     *  Force all SQL queries to be processed lazily regardless of what clients request.
      *
      * @deprecated Since version 2.8.
      */

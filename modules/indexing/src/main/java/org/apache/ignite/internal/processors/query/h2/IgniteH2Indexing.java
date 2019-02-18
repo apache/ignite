@@ -1367,9 +1367,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             try {
                 if (!loc)
-                    return executeUpdateDistributed(schemaName, dml, qry, cancel);
+                    return executeUpdateDistributed(schemaName, dml , qry, cancel);
                 else {
-                    UpdateResult updRes = executeUpdate(schemaName, dml, qry, true, filter, cancel);
+                    UpdateResult updRes = executeUpdate(schemaName, dml , qry, true, filter, cancel);
 
                     return Collections.singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @SuppressWarnings("NullableProblems")

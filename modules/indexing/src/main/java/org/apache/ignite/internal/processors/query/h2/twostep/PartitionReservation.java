@@ -50,7 +50,7 @@ public class PartitionReservation {
      * @param reserved Reserved partitions.
      * @param err Error message.
      */
-    public PartitionReservation(@Nullable List<GridReservable> reserved, @Nullable String err) {
+    public  PartitionReservation(@Nullable List<GridReservable> reserved, @Nullable String err) {
         this.reserved = reserved;
         this.err = err;
     }

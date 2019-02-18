@@ -49,8 +49,9 @@ import org.junit.Test;
  */
 public class BaggingTest extends TrainerTest {
     /**
-     * Dependency of weights of first model in ensemble after training in {@link BaggingTest#testNaiveBaggingLogRegression()}.
-     * This dependency is tested to ensure that it is fully determined by provided seeds.
+     * Dependency of weights of first model in ensemble after training in
+     * {@link BaggingTest#testNaiveBaggingLogRegression()}. This dependency is tested to ensure that it is
+     * fully determined by provided seeds.
      */
     private static Map<Integer, Vector> firstModelWeights;
 

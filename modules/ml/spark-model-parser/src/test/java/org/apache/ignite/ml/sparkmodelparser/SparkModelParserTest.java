@@ -230,8 +230,7 @@ public class SparkModelParserTest {
                 url.getPath() + File.separator + "gbt", SupportedSparkModels.DECISION_TREE
             );
             fail("Expected IllegalArgumentException exception");
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("The metadata file contains incorrect model metadata."));
         }
     }

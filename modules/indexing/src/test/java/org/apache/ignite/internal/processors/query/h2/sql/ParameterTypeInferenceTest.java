@@ -120,12 +120,12 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
     private void check(String qry, boolean loc) {
         List<Object[]> argss = new ArrayList<>();
 
-        argss.add(new Object[] {null});
-        argss.add(new Object[] {"STRING"});
-        argss.add(new Object[] {1});
-        argss.add(new Object[] {1L});
-        argss.add(new Object[] {new BigDecimal("12.12")});
-        argss.add(new Object[] {UUID.randomUUID()});
+        argss.add(new Object[] { null });
+        argss.add(new Object[] { "STRING" });
+        argss.add(new Object[] { 1 });
+        argss.add(new Object[] { 1L });
+        argss.add(new Object[] { new BigDecimal("12.12") });
+        argss.add(new Object[] { UUID.randomUUID() });
 
         clearParserCache();
 
@@ -157,6 +157,7 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODE_CNT; i++)
             ((IgniteH2Indexing)grid(i).context().query().getIndexing()).parser().clearCache();
     }
+
 
     /**
      * Key class.

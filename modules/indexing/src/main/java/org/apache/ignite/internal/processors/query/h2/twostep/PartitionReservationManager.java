@@ -146,7 +146,7 @@ public class PartitionReservationManager {
 
                             if (partState != OWNING)
                                 return new PartitionReservation(reserved,
-                                    String.format("Failed to reserve partitions for " +
+                                        String.format("Failed to reserve partitions for " +
                                         "query (partition of REPLICATED cache is not in OWNING state) [" +
                                         "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
                                         "cacheName=%s, part=%s, partFound=%s, partState=%s]",
@@ -182,7 +182,7 @@ public class PartitionReservationManager {
                                 ignoreLostPartitionIfPossible(cctx, part);
                             else {
                                 return new PartitionReservation(reserved,
-                                    String.format("Failed to reserve partitions " +
+                                        String.format("Failed to reserve partitions " +
                                         "for query (partition of PARTITIONED cache is not found or not in OWNING " +
                                         "state) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
                                         "cacheName=%s, part=%s, partFound=%s, partState=%s]",
@@ -201,7 +201,7 @@ public class PartitionReservationManager {
 
                         if (!part.reserve()) {
                             return new PartitionReservation(reserved,
-                                String.format("Failed to reserve partitions for query " +
+                                    String.format("Failed to reserve partitions for query " +
                                     "(partition of PARTITIONED cache cannot be reserved) [" +
                                     "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
                                     "cacheName=%s, part=%s, partFound=%s, partState=%s]",
@@ -229,7 +229,7 @@ public class PartitionReservationManager {
                                 ignoreLostPartitionIfPossible(cctx, part);
                             else {
                                 return new PartitionReservation(reserved,
-                                    String.format("Failed to reserve partitions for " +
+                                        String.format("Failed to reserve partitions for " +
                                         "query (partition of PARTITIONED cache is not in OWNING state after " +
                                         "reservation) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, " +
                                         "cacheId=%s, cacheName=%s, part=%s, partState=%s]",

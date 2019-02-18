@@ -355,7 +355,7 @@ public class H2Utils {
      * @param enforceJoinOrder Enforce join order of tables.
      */
     public static void setupConnection(Connection conn, boolean distributedJoins, boolean enforceJoinOrder) {
-        setupConnection(conn, distributedJoins, enforceJoinOrder, false);
+        setupConnection(conn,distributedJoins, enforceJoinOrder, false);
     }
 
     /**
