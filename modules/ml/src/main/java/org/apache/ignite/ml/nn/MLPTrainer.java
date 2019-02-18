@@ -17,10 +17,6 @@
 
 package org.apache.ignite.ml.nn;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -28,6 +24,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
@@ -39,6 +36,11 @@ import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalcul
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.MultiLabelDatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Multilayer perceptron trainer based on partition based {@link Dataset}.
@@ -377,5 +379,11 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
                 res[j * rows.length + i] = data[j * totalRows + rows[i]];
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MLPTrainer<P> withEnvironmentBuilder(
+        LearningEnvironmentBuilder envBuilder) {
+        return (MLPTrainer<P>)super.withEnvironmentBuilder(envBuilder);
     }
 }

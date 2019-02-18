@@ -278,8 +278,8 @@ public class GridNioRecoveryDescriptor {
     }
 
     /**
-     * @throws InterruptedException If interrupted.
      * @return {@code True} if reserved.
+     * @throws InterruptedException If interrupted.
      */
     public boolean reserve() throws InterruptedException {
         synchronized (this) {

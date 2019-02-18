@@ -107,7 +107,6 @@ queries-notebook {
     }
 
     .empty-caches {
-        color: $ignite-placeholder-color;
         display: flex;
         padding: 10px;
         align-items: center;
@@ -151,6 +150,17 @@ queries-notebook {
         margin-right: -5px;
 
         overflow-y: auto;
+    }
+
+    .notebook-failed--block {
+        text-align: center;
+        display: flex;
+        min-height: 200px;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 30px;
+        background: white;
+        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
     }
 }
 
