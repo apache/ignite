@@ -29,13 +29,10 @@ import org.apache.ignite.testsuites.IgniteS3TestSuite;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Abstract TcpDiscoveryS3IpFinder to test with different ways of setting AWS credentials.
  */
-@RunWith(JUnit4.class)
 public abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
     /** Bucket endpoint */

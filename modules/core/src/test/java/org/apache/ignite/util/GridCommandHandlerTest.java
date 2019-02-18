@@ -21,6 +21,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
@@ -63,7 +66,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.Command;
+import org.apache.ignite.internal.commandline.CommandArgFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -104,8 +109,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
@@ -125,7 +128,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Command line handler test.
  */
-@RunWith(JUnit4.class)
 public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /** System out. */
     protected PrintStream sysOut;
@@ -151,6 +153,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        GridTestUtils.cleanIdleVerifyLogFiles();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
 
@@ -160,7 +169,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         sysOut = System.out;
 
-        testOut = new ByteArrayOutputStream(128 * 1024);
+        testOut = new ByteArrayOutputStream(1024 * 1024);
     }
 
     /** {@inheritDoc} */
@@ -259,7 +268,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        if(!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0))) {
+        if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0))) {
             // Add force to avoid interactive confirmation.
             args.add(CMD_AUTO_CONFIRMATION);
         }
@@ -347,6 +356,78 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--baseline"));
 
         assertEquals(1, ignite.cluster().currentBaselineTopology().size());
+    }
+
+    /**
+     * Test baseline collect works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineCollectCrd() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        assertFalse(ignite.cluster().active());
+
+        ignite.cluster().active(true);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+
+        String crdStr = findCrdInfo();
+
+        assertEquals("(Coordinator: ConsistentId=" +
+            grid(0).cluster().localNode().consistentId() + ", Order=1)", crdStr);
+
+        stopGrid(0);
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+
+        crdStr = findCrdInfo();
+
+        assertEquals("(Coordinator: ConsistentId=" +
+            grid(1).cluster().localNode().consistentId() + ", Order=2)", crdStr);
+
+        startGrid(0);
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+
+        crdStr = findCrdInfo();
+
+        assertEquals("(Coordinator: ConsistentId=" +
+            grid(1).cluster().localNode().consistentId() + ", Order=2)", crdStr);
+
+        stopGrid(1);
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11211"));
+
+        crdStr = findCrdInfo();
+
+        assertEquals("(Coordinator: ConsistentId=" +
+            grid(0).cluster().localNode().consistentId() + ", Order=4)", crdStr);
+
+    }
+
+    /**
+     * @return utility information about coordinator
+     */
+    private String findCrdInfo() {
+        String outStr = testOut.toString();
+
+        int i = outStr.indexOf("(Coordinator: ConsistentId=");
+
+        assertTrue(i != -1);
+
+        String crdStr = outStr.substring(i);
+
+        return crdStr.substring(0, crdStr.indexOf('\n'));
     }
 
     /**
@@ -935,9 +1016,29 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "help"));
 
+        String output = testOut.toString();
+
         for (CacheCommand cmd : CacheCommand.values()) {
-            if (cmd != HELP)
-                assertTrue(cmd.text(), testOut.toString().contains(cmd.toString()));
+            if (cmd != HELP) {
+                assertTrue(cmd.text(), output.contains(cmd.toString()));
+
+                for (CommandArg arg : CommandArgFactory.getArgs(cmd))
+                    assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCorrectCacheOptionsNaming() throws Exception {
+        Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
+
+        for(CacheCommand cmd : CacheCommand.values()) {
+            for (CommandArg arg : CommandArgFactory.getArgs(cmd))
+                assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
     }
 
@@ -1008,6 +1109,63 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
         assertTrue(testOut.toString().contains("found 2 conflict partitions"));
+    }
+
+    /**
+     * Tests that empty partitions with non-zero update counter are not included into the idle_verify dump.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheIdleVerifyDumpSkipZerosUpdateCounters() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(2);
+
+        ignite.cluster().active(true);
+
+        int emptyPartId = 31;
+
+        // Less than parts number for ability to check skipZeros flag.
+        createCacheAndPreload(ignite, emptyPartId);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skip-zeros", DEFAULT_CACHE_NAME));
+
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        String zeroUpdateCntrs = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertTrue(zeroUpdateCntrs.contains("idle_verify check has finished, found " + emptyPartId + " partitions"));
+        assertTrue(zeroUpdateCntrs.contains("1 partitions was skipped"));
+        assertTrue(zeroUpdateCntrs.contains("idle_verify check has finished, no conflicts have been found."));
+
+        assertSort(emptyPartId, zeroUpdateCntrs);
+
+        testOut.reset();
+
+        // The result of the following cache operations is that
+        // the size of the 32-th partition is equal to zero and update counter is equal to 2.
+        ignite.cache(DEFAULT_CACHE_NAME).put(emptyPartId, emptyPartId);
+
+        ignite.cache(DEFAULT_CACHE_NAME).remove(emptyPartId, emptyPartId);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skip-zeros", DEFAULT_CACHE_NAME));
+
+        fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        String nonZeroUpdateCntrs = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertTrue(nonZeroUpdateCntrs.contains("idle_verify check has finished, found " + 31 + " partitions"));
+        assertTrue(nonZeroUpdateCntrs.contains("1 partitions was skipped"));
+        assertTrue(nonZeroUpdateCntrs.contains("idle_verify check has finished, no conflicts have been found."));
+
+        assertSort(31, zeroUpdateCntrs);
+
+        assertEquals(zeroUpdateCntrs, nonZeroUpdateCntrs);
     }
 
     /**
@@ -1223,6 +1381,83 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             checkExceptionMessageOnReport(unstableId);
     }
 
+    /** */
+    @Test
+    public void testCacheIdleVerifyCrcWithCorruptedPartition() throws Exception {
+        testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--check-crc");
+
+        String out = testOut.toString();
+
+        assertTrue(out.contains("idle_verify failed on 1 node."));
+        assertTrue(out.contains("See log for additional information."));
+    }
+
+    /** */
+    @Test
+    public void testCacheIdleVerifyDumpCrcWithCorruptedPartition() throws Exception {
+        testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump", "--check-crc");
+
+        String parts[] = testOut.toString().split("VisorIdleVerifyDumpTask successfully written output to '");
+
+        assertEquals(2, parts.length);
+
+        String dumpFile = parts[1].split("\\.")[0] + ".txt";
+
+        for (String line : Files.readAllLines(new File(dumpFile).toPath()))
+            System.out.println(line);
+
+        String outputStr = testOut.toString();
+
+        assertTrue(outputStr.contains("idle_verify failed on 1 node."));
+        assertTrue(outputStr.contains("idle_verify check has finished, no conflicts have been found."));
+    }
+
+    /** */
+    private void corruptPartition(File partitionsDir) throws IOException {
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
+
+        for(File partFile : partitionsDir.listFiles((d, n) -> n.startsWith("part"))) {
+            try (RandomAccessFile raf = new RandomAccessFile(partFile, "rw")) {
+                byte[] buf = new byte[1024];
+
+                rand.nextBytes(buf);
+
+                raf.seek(4096 * 2 + 1);
+
+                raf.write(buf);
+            }
+        }
+    }
+
+    /** */
+    private void testCacheIdleVerifyWithCorruptedPartition(String... args) throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        createCacheAndPreload(ignite, 1000);
+
+        Serializable consistId = ignite.configuration().getConsistentId();
+
+        File partitionsDir = U.resolveWorkDirectory(
+            ignite.configuration().getWorkDirectory(),
+            "db/" + consistId + "/cache-" + DEFAULT_CACHE_NAME,
+            false
+        );
+
+        stopGrid(0);
+
+        corruptPartition(partitionsDir);
+
+        startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute(args));
+    }
+
     /**
      * Creates default cache and preload some data entries.
      *
@@ -1253,9 +1488,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             assertTrue(dumpWithConflicts.contains("Idle verify failed on nodes:"));
 
-            assertTrue(dumpWithConflicts.contains("Node ID: " + unstableNodeId + "\n" +
-                "Exception message:\n" +
-                "Node has left grid: " + unstableNodeId));
+            assertTrue(dumpWithConflicts.contains("Node ID: " + unstableNodeId));
         }
         else
             fail("Should be found dump with conflicts");
@@ -1303,7 +1536,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertNotNull(memorySysCacheCtx);
 
         corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s0",
-                "default-volatile-ds-group"), true, false);
+            "default-volatile-ds-group"), true, false);
 
         corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s" + parts / 2,
             "default-volatile-ds-group"), false, true);
@@ -1416,7 +1649,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--excludeCaches", "shared_grp"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--exclude-caches", "shared_grp"));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
@@ -1461,7 +1694,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--excludeCaches", DEFAULT_CACHE_NAME
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--exclude-caches", DEFAULT_CACHE_NAME
             + "," + DEFAULT_CACHE_NAME + "_second"));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
@@ -1614,7 +1847,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "seq"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "--seq"));
 
         assertTrue(testOut.toString().contains("testSeq"));
         assertTrue(testOut.toString().contains("testSeq2"));
@@ -1640,7 +1873,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "groups"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "--groups"));
 
         assertTrue(testOut.toString().contains("G100"));
     }

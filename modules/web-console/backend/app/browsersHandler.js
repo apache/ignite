@@ -130,7 +130,12 @@ module.exports = {
             clusterChanged(account, cluster) {
                 const socks = this._browserSockets.get(account);
 
-                _.forEach(socks, (sock) => sock.emit('cluster:changed', cluster));
+                _.forEach(socks, (sock) => {
+                    if (sock)
+                        sock.emit('cluster:changed', cluster);
+                    else
+                        console.log(`Fount closed socket [account=${account}, cluster=${cluster}]`);
+                });
             }
 
             pushInitialData(sock) {
@@ -238,6 +243,8 @@ module.exports = {
 
                 this.registerVisorTask('queryFetch', internalVisor('query.VisorQueryNextPageTask'), 'org.apache.ignite.lang.IgniteBiTuple', 'java.lang.String', 'java.lang.Integer');
                 this.registerVisorTask('queryFetchX2', internalVisor('query.VisorQueryNextPageTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
+
+                this.registerVisorTask('queryFetchFirstPage', internalVisor('query.VisorQueryFetchFirstPageTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
 
                 this.registerVisorTask('queryClose', internalVisor('query.VisorQueryCleanupTask'), 'java.util.Map', 'java.util.UUID', 'java.util.Set');
                 this.registerVisorTask('queryCloseX2', internalVisor('query.VisorQueryCleanupTask'), internalVisor('query.VisorQueryCleanupTaskArg'));

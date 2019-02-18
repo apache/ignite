@@ -26,8 +26,8 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * This class represents a parallel composition of trainers.
@@ -54,10 +54,9 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
      * Construct an instance of this class from a list of trainers.
      *
      * @param trainers Trainers.
-     * @param <M> Type of model.
      * @param <T> Type of trainer.
      */
-    public <M extends IgniteModel<I, O>, T extends DatasetTrainer<? extends IgniteModel<I, O>, L>> TrainersParallelComposition(
+    public <T extends DatasetTrainer<? extends IgniteModel<I, O>, L>> TrainersParallelComposition(
         List<T> trainers) {
         this.trainers = trainers.stream().map(CompositionUtils::unsafeCoerce).collect(Collectors.toList());
     }
@@ -82,9 +81,11 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteModel<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
         List<IgniteSupplier<IgniteModel<I, O>>> tasks = trainers.stream()
-            .map(tr -> (IgniteSupplier<IgniteModel<I, O>>)(() -> tr.fit(datasetBuilder, featureExtractor, lbExtractor)))
+            .map(tr -> (IgniteSupplier<IgniteModel<I, O>>)(() -> tr.fit(datasetBuilder,
+                CompositionUtils.asFeatureExtractor(extractor),
+                CompositionUtils.asLabelExtractor(extractor))))
             .collect(Collectors.toList());
 
         List<IgniteModel<I, O>> mdls = environment.parallelismStrategy().submit(tasks).stream()
@@ -96,7 +97,7 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteModel<I, List<O>> update(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
         ModelsParallelComposition<I, O> typedMdl = (ModelsParallelComposition<I, O>)mdl;
 
         assert typedMdl.submodels().size() == trainers.size();
@@ -104,7 +105,9 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
 
         for (int i = 0; i < trainers.size(); i++) {
             int j = i;
-            tasks.add(() -> trainers.get(j).update(typedMdl.submodels().get(j), datasetBuilder, featureExtractor, lbExtractor));
+            tasks.add(() -> trainers.get(j).update(typedMdl.submodels().get(j), datasetBuilder,
+                CompositionUtils.asFeatureExtractor(extractor),
+                CompositionUtils.asLabelExtractor(extractor)));
         }
 
         List<IgniteModel<I, O>> mdls = environment.parallelismStrategy().submit(tasks).stream()
@@ -138,7 +141,7 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
      * @return Updated model.
      */
     @Override protected <K, V> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
         // Never called.
         throw new IllegalStateException();
     }

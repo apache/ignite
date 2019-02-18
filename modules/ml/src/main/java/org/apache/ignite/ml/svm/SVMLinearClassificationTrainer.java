@@ -18,9 +18,11 @@
 package org.apache.ignite.ml.svm;
 
 import java.util.Random;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -30,6 +32,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -56,25 +59,24 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @return Model.
      */
     @Override public <K, V> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+        DatasetBuilder<K, V> datasetBuilder,
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
         assert datasetBuilder != null;
 
         IgniteBiFunction<K, V, Double> patchedLbExtractor = (k, v) ->  {
-            final Double lb = lbExtractor.apply(k, v);
+            final Double lb = extractor.extractLabel(k, v);
             if (lb == 0.0)
                 return -1.0;
             else
@@ -82,7 +84,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
         };
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            featureExtractor,
+            CompositionUtils.asFeatureExtractor(extractor),
             patchedLbExtractor
         );
 

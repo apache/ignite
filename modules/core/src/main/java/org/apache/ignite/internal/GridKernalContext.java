@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
@@ -212,6 +213,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Global metastorage.
      */
     public DistributedMetaStorage distributedMetastorage();
+
+    /**
+     * Gets distributed configuration processor.
+     *
+     * @return Distributed configuration processor.
+     */
+    public DistributedConfigurationProcessor distributedConfiguration();
 
     /**
      * Gets task session processor.

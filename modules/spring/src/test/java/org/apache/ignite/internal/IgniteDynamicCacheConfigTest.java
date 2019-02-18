@@ -29,13 +29,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for dynamic cache start from config file.
  */
-@RunWith(JUnit4.class)
 public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "TestDynamicCache";

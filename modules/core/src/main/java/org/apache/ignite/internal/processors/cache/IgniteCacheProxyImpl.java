@@ -496,7 +496,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
         final CacheQuery<R> qry = ctx.queries().createScanQuery(
-            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal());
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), scanQry.isDataPageScanEnabled());
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -798,6 +798,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 return query((ScanQuery)qry, null, projection(qry.isLocal()));
 
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
         }
         catch (Exception e) {
             if (e instanceof CacheException)

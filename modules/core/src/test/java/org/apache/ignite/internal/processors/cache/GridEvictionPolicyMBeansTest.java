@@ -28,13 +28,10 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for the eviction policy JMX beans registered by the kernal.
  */
-@RunWith(JUnit4.class)
 public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
     /** Create test and auto-start the grid */
     public GridEvictionPolicyMBeansTest() {
@@ -43,7 +40,7 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
         super.beforeTestsStarted();
     }

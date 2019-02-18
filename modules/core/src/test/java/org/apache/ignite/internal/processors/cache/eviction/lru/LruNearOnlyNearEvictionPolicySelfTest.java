@@ -29,8 +29,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -43,7 +41,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  * LRU near eviction tests for NEAR_ONLY distribution mode (GG-8884).
  */
-@RunWith(JUnit4.class)
 public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_COUNT = 2;

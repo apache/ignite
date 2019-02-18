@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Lookup class name based JTA integration test using PARTITIONED cache.
@@ -37,10 +38,9 @@ public class GridPartitionedCacheJtaLookupClassNameSelfTest extends AbstractCach
         cfg.getTransactionConfiguration().setTxManagerLookupClassName(TestTmLookup.class.getName());
     }
 
-    /**
-     *
-     */
+    /** */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
+    @Test
     public void testIncompatibleTmLookup() {
         final IgniteEx ignite = grid(0);
 

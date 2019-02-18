@@ -24,8 +24,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import java.util.Collection;
 
@@ -37,7 +35,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Attribute validation self test.
  */
-@RunWith(JUnit4.class)
 public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean client;

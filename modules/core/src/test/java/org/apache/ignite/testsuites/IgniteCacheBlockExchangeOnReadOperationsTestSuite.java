@@ -23,14 +23,13 @@ import java.util.List;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnGetAllTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnScanTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnSingleGetTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(IgniteCacheBlockExchangeOnReadOperationsTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheBlockExchangeOnReadOperationsTestSuite {
     /**
      * @return IgniteCache test suite.
@@ -51,13 +50,5 @@ public class IgniteCacheBlockExchangeOnReadOperationsTestSuite {
         suite.add(CacheBlockOnScanTest.class);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

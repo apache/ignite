@@ -17,27 +17,23 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigVariationsQueryTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheConfigVariationQueryTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        return new ConfigVariationsTestSuiteBuilder(
-            "Cache Config Variations Query Test Suite",
-            IgniteCacheConfigVariationsQueryTest.class)
+    /** */
+    public static List<Class<?>> suite() {
+        return new ConfigVariationsTestSuiteBuilder(IgniteCacheConfigVariationsQueryTest.class)
             .withBasicCacheParams()
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()
-            .build();
+            .classes();
     }
 }

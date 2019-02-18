@@ -57,14 +57,13 @@ import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindSto
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreAtomicTest;
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreNonCoalescingTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(IgniteCacheMvccTestSuite3.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheMvccTestSuite3 {
     /**
      * @return IgniteCache test suite.
@@ -132,13 +131,5 @@ public class IgniteCacheMvccTestSuite3 {
         suite.add(GridCacheReplicatedMvccTxTimeoutSelfTest.class);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

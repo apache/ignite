@@ -42,13 +42,10 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test SQLSTATE codes propagation with (any) Ignite JDBC driver.
  */
-@RunWith(JUnit4.class)
 public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final String CACHE_STORE_TEMPLATE = "cache_store";

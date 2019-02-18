@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -2140,7 +2141,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if it is possible to directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
-        return !config().isOnheapCacheEnabled() && !readers && expiryPlc == null;
+        return mvccEnabled() || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null);
     }
 
     /**
@@ -2319,6 +2320,15 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (isNear())
             near().dht().context().statisticsEnabled = statisticsEnabled;
+    }
+
+    /**
+     * @param tx Transaction.
+     * @return {@code True} if it is need to notify continuous query listeners.
+     */
+    public boolean hasContinuousQueryListeners(@Nullable IgniteInternalTx tx) {
+        return grp.sharedGroup() ? grp.hasContinuousQueryCaches() :
+            contQryMgr.notifyContinuousQueries(tx) && !F.isEmpty(contQryMgr.updateListeners(false, false));
     }
 
     /** {@inheritDoc} */

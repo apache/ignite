@@ -19,15 +19,13 @@ package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 import static org.apache.ignite.testsuites.IgnitePdsCompressionTestSuite.enableCompressionByDefault;
 
-/**
- */
-@RunWith(IgnitePdsCompressionTestSuite2.DynamicSuite.class)
+/** */
+@RunWith(DynamicSuite.class)
 public class IgnitePdsCompressionTestSuite2 {
     /**
      * @return Suite.
@@ -39,13 +37,5 @@ public class IgnitePdsCompressionTestSuite2 {
         IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

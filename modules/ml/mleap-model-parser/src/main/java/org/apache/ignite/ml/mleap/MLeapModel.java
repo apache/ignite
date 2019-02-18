@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.mleap;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,6 +30,8 @@ import ml.combust.mleap.runtime.frame.Row;
 import ml.combust.mleap.runtime.frame.Transformer;
 import ml.combust.mleap.runtime.javadsl.LeapFrameBuilder;
 import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.math.primitives.vector.NamedVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import scala.collection.immutable.Set;
 import scala.collection.immutable.Stream;
 import scala.util.Try;
@@ -38,7 +39,7 @@ import scala.util.Try;
 /**
  * MLeap model imported and wrapped to be compatible with Apache Ignite infrastructure.
  */
-public class MLeapModel implements Model<HashMap<String, Double>, Double> {
+public class MLeapModel implements Model<NamedVector, Double> {
     /** MLeap model (transformer in terms of MLeap). */
     private final Transformer transformer;
 
@@ -57,23 +58,25 @@ public class MLeapModel implements Model<HashMap<String, Double>, Double> {
      */
     public MLeapModel(Transformer transformer, List<String> schema, String outputFieldName) {
         this.transformer = transformer;
-        this.schema = schema;
+        this.schema = new ArrayList<>(schema);
         this.outputFieldName = outputFieldName;
     }
 
-    // TODO: IGNITE-10834 Add NamedVectors to replace HashMap in Model.
     /** {@inheritDoc} */
-    @Override public Double predict(HashMap<String, Double> input) {
+    @Override public Double predict(NamedVector input) {
         LeapFrameBuilder builder = new LeapFrameBuilder();
         List<StructField> structFields = new ArrayList<>();
 
-        for (String fieldName : input.keySet())
+        List<Object> values = new ArrayList<>();
+        for (String fieldName : input.getKeys()) {
             structFields.add(new StructField(fieldName, ScalarType.Double()));
+            values.add(input.get(fieldName));
+        }
 
         StructType schema = builder.createSchema(structFields);
 
         List<Row> rows = new ArrayList<>();
-        rows.add(builder.createRowFromIterable(new ArrayList<>(input.values())));
+        rows.add(builder.createRowFromIterable(values));
 
         DefaultLeapFrame inputFrame = builder.createFrame(schema, rows);
 
@@ -94,7 +97,7 @@ public class MLeapModel implements Model<HashMap<String, Double>, Double> {
             .boxed()
             .collect(Collectors.toMap(schema::get, i -> input[i]));
 
-        return predict(new HashMap<>(vec));
+        return predict(VectorUtils.of(vec));
     }
 
     /**

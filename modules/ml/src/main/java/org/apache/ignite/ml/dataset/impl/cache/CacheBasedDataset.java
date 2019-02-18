@@ -78,6 +78,9 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** Learning environment builder. */
     private final LearningEnvironmentBuilder envBuilder;
 
+    /** Upstream keep binary. */
+    private final boolean upstreamKeepBinary;
+
     /**
      * Constructs a new instance of dataset based on Ignite Cache, which is used as {@code upstream} and as reliable storage for
      * partition {@code context} as well.
@@ -98,7 +101,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
         IgniteCache<Integer, C> datasetCache,
         LearningEnvironmentBuilder envBuilder,
         PartitionDataBuilder<K, V, C, D> partDataBuilder,
-        UUID datasetId) {
+        UUID datasetId,
+        boolean upstreamKeepBinary) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
@@ -107,6 +111,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
         this.partDataBuilder = partDataBuilder;
         this.envBuilder = envBuilder;
         this.datasetId = datasetId;
+        this.upstreamKeepBinary = upstreamKeepBinary;
     }
 
     /** {@inheritDoc} */
@@ -127,7 +132,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 datasetCacheName,
                 datasetId,
                 partDataBuilder,
-                env
+                env,
+                upstreamKeepBinary
             );
 
 
@@ -160,7 +166,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 datasetCacheName,
                 datasetId,
                 partDataBuilder,
-                env
+                env,
+                upstreamKeepBinary
             );
             return data != null ? map.apply(data, env) : null;
         }, reduce, identity);

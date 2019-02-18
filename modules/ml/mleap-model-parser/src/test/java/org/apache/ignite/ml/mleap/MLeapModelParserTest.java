@@ -23,6 +23,7 @@ import org.apache.ignite.ml.inference.builder.SingleModelBuilder;
 import org.apache.ignite.ml.inference.builder.SyncModelBuilder;
 import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
 import org.apache.ignite.ml.inference.reader.ModelReader;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -60,7 +61,7 @@ public class MLeapModelParserTest {
             input.put("imp_square_feet", 1.0);
             input.put("imp_review_scores_rating", 1.0);
 
-            double prediction = mdl.predict(input);
+            double prediction = mdl.predict(VectorUtils.of(input));
 
             assertEquals(95.3919, prediction, 1e-5);
         }

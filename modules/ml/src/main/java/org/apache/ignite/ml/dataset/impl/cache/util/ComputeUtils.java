@@ -188,7 +188,8 @@ public class ComputeUtils {
         UpstreamTransformerBuilder transformerBuilder,
         String datasetCacheName, UUID datasetId,
         PartitionDataBuilder<K, V, C, D> partDataBuilder,
-        LearningEnvironment env) {
+        LearningEnvironment env,
+        boolean isKeepBinary) {
 
         PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
             .cluster()
@@ -202,6 +203,9 @@ public class ComputeUtils {
             C ctx = learningCtxCache.get(part);
 
             IgniteCache<K, V> upstreamCache = ignite.cache(upstreamCacheName);
+
+            if (isKeepBinary)
+                upstreamCache = upstreamCache.withKeepBinary();
 
             ScanQuery<K, V> qry = new ScanQuery<>();
             qry.setLocal(true);
@@ -260,6 +264,7 @@ public class ComputeUtils {
      * @param transformerBuilder Upstream transformer builder.
      * @param ctxBuilder Partition {@code context} builder.
      * @param envBuilder Environment builder.
+     * @param isKeepBinary Support of binary objects.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
@@ -273,12 +278,16 @@ public class ComputeUtils {
         PartitionContextBuilder<K, V, C> ctxBuilder,
         LearningEnvironmentBuilder envBuilder,
         int retries,
-        int interval) {
+        int interval,
+        boolean isKeepBinary) {
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
             LearningEnvironment env = envBuilder.buildForWorker(part);
 
             IgniteCache<K, V> locUpstreamCache = locIgnite.cache(upstreamCacheName);
+
+            if (isKeepBinary)
+                locUpstreamCache = locUpstreamCache.withKeepBinary();
 
             ScanQuery<K, V> qry = new ScanQuery<>();
             qry.setLocal(true);
@@ -312,33 +321,6 @@ public class ComputeUtils {
 
             return part;
         }, retries, interval);
-    }
-
-    /**
-     * Initializes partition {@code context} by loading it from a partition {@code upstream}.
-     *
-     * @param ignite Ignite instance.
-     * @param upstreamCacheName Name of an {@code upstream} cache.
-     * @param filter Filter for {@code upstream} data.
-     * @param transformerBuilder Builder of transformer of upstream data.
-     * @param datasetCacheName Name of a partition {@code context} cache.
-     * @param ctxBuilder Partition {@code context} builder.
-     * @param envBuilder Environment builder.
-     * @param retries Number of retries for the case when one of partitions not found on the node.
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     * @param <C> Type of a partition {@code context}.
-     */
-    public static <K, V, C extends Serializable> void initContext(
-        Ignite ignite,
-        String upstreamCacheName,
-        IgniteBiPredicate<K, V> filter,
-        UpstreamTransformerBuilder transformerBuilder,
-        String datasetCacheName,
-        PartitionContextBuilder<K, V, C> ctxBuilder,
-        LearningEnvironmentBuilder envBuilder,
-        int retries) {
-        initContext(ignite, upstreamCacheName, transformerBuilder, filter, datasetCacheName, ctxBuilder, envBuilder, retries, 0);
     }
 
     /**

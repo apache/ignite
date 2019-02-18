@@ -25,8 +25,10 @@ import org.jetbrains.annotations.Nullable;
 public enum VisorNodeBaselineStatus {
     /** */
     NODE_IN_BASELINE,
+
     /** */
     NODE_NOT_IN_BASELINE,
+
     /** */
     BASELINE_NOT_AVAILABLE;
 

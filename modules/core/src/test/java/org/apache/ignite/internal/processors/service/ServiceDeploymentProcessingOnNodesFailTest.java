@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly on a node failed.
  *
  * {@inheritDoc}
  */
-@RunWith(JUnit4.class)
 public class ServiceDeploymentProcessingOnNodesFailTest extends ServiceDeploymentProcessingOnNodesLeftTest {
     /** {@inheritDoc} */
     @Override protected boolean failNode() {

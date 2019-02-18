@@ -34,15 +34,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 
 /**
  * Test to check decimal columns.
  */
-@RunWith(JUnit4.class)
 public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     /** */
     private static final int PRECISION = 9;

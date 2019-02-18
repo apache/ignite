@@ -34,15 +34,12 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for cache query metrics.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     protected int gridCnt;

@@ -59,6 +59,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -199,9 +200,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
-
-    /** */
-    private final Object interruptLock = new Object();
 
     /**
      * Partition map futures.
@@ -764,7 +762,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         stopErr = cctx.kernalContext().clientDisconnected() ?
             new IgniteClientDisconnectedCheckedException(cctx.kernalContext().cluster().clientReconnectFuture(),
                 "Client node disconnected: " + cctx.igniteInstanceName()) :
-            new IgniteCheckedException("Node is stopping: " + cctx.igniteInstanceName());
+            new NodeStoppingException("Node is stopping: " + cctx.igniteInstanceName());
 
         // Stop exchange worker
         U.cancel(exchWorker);
@@ -815,13 +813,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         busyLock.writeLock().lock();
 
         exchFuts.clear();
-    }
-
-    /**
-     * @return Interrupt lock.
-     */
-    public Object interruptLock() {
-        return interruptLock;
     }
 
     /**
@@ -2202,6 +2193,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * For testing only.
+     *
+     * @return Current version to wait for.
+     */
+    public AffinityTopologyVersion mergeExchangesTestWaitVersion() {
+        return exchMergeTestWaitVer;
+    }
+
+    /**
      * @param curFut Current exchange future.
      * @param msg Message.
      * @return {@code True} if node is stopping.
@@ -2628,7 +2628,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         GridDhtPartitionsExchangeFuture fut0 = (GridDhtPartitionsExchangeFuture)task;
 
                         if (resVer.compareTo(fut0.initialVersion()) >= 0) {
-                            fut0.finishMerged(resVer);
+                            fut0.finishMerged(resVer, exchFut);
 
                             futQ.remove(fut0);
                         }
@@ -2636,13 +2636,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             break;
                     }
                 }
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            synchronized (interruptLock) {
-                super.cancel();
             }
         }
 
