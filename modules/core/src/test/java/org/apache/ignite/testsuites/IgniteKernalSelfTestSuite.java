@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.cache.NodeWithFilterRestartTest;
 import org.apache.ignite.internal.ClusterMetricsSelfTest;
 import org.apache.ignite.internal.GridCommunicationSelfTest;
 import org.apache.ignite.internal.GridDiscoveryEventSelfTest;
@@ -95,6 +96,7 @@ import org.junit.runners.Suite;
     LongJVMPauseDetectorTest.class,
     ClusterMetricsSelfTest.class,
     DeploymentRequestOfUnknownClassProcessingTest.class,
+    NodeWithFilterRestartTest.class
 })
 public class IgniteKernalSelfTestSuite {
 }
