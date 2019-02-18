@@ -18,7 +18,8 @@
 package org.apache.ignite.ml.clustering.gmm;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -30,7 +31,6 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -63,6 +63,20 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     private int maxCountOfInitTries = 3;
 
     /**
+     * Maximum count of clusters that can be achieved.
+     */
+    private int maxCountOfClusters = 2;
+
+    /** Maximum divergence between maximum of likelihood of vector in dataset and other for anomalies identification. */
+    private double maxLikelihoodDivergence = 5;
+
+    /** Minimum required anomalies in terms of maxLikelihoodDivergence for creating new cluster. */
+    private double minElementsForNewCluster = 300;
+
+    /** Min cluster probability. */
+    private double minClusterProbability = 0.05;
+
+    /**
      * Creates an instance of GmmTrainer.
      */
     public GmmTrainer() {
@@ -79,6 +93,15 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         this.maxCountOfIterations = maxCountOfIterations;
     }
 
+    /**
+     * Creates an instance of GmmTrainer.
+     *
+     * @param countOfComponents Count of components.
+     */
+    public GmmTrainer(int countOfComponents) {
+        this.countOfComponents = countOfComponents;
+    }
+
     /** {@inheritDoc} */
     @Override public <K, V> GmmModel fit(DatasetBuilder<K, V> datasetBuilder,
         FeatureLabelExtractor<K, V, Double> extractor) {
@@ -91,11 +114,13 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @param numberOfComponents Number of components.
      * @return trainer.
      */
-    public GmmTrainer withCountOfComponents(int numberOfComponents) {
+    public GmmTrainer withInitialCountOfComponents(int numberOfComponents) {
         A.ensure(numberOfComponents > 0, "Number of components in GMM cannot equal 0");
 
         this.countOfComponents = numberOfComponents;
         initialMeans = null;
+        if (countOfComponents > maxCountOfClusters)
+            maxCountOfClusters = countOfComponents;
         return this;
     }
 
@@ -110,6 +135,8 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
 
         this.initialMeans = means.toArray(new Vector[means.size()]);
         this.countOfComponents = means.size();
+        if (countOfComponents > maxCountOfClusters)
+            maxCountOfClusters = countOfComponents;
         return this;
     }
 
@@ -154,13 +181,128 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     }
 
     /**
+     * Sets maximum number of clusters in GMM.
+     *
+     * @param maxCountOfClusters Max count of clusters.
+     * @return trainer.
+     */
+    public GmmTrainer withMaxCountOfClusters(int maxCountOfClusters) {
+        A.ensure(maxCountOfClusters >= countOfComponents, "Max count of components should be greater than " +
+            "initial count of components or equal to it");
+
+        this.maxCountOfClusters = maxCountOfClusters;
+        return this;
+    }
+
+    /**
+     * Sets maximum divergence between maximum of likelihood of vector in dataset and other for anomalies
+     * identification.
+     *
+     * @param maxLikelihoodDivergence Max likelihood divergence.
+     * @return trainer.
+     */
+    public GmmTrainer withMaxLikelihoodDivergence(double maxLikelihoodDivergence) {
+        A.ensure(maxLikelihoodDivergence > 0, "Max likelihood divergence should be > 0");
+
+        this.maxLikelihoodDivergence = maxLikelihoodDivergence;
+        return this;
+    }
+
+    /**
+     * Sets minimum required anomalies in terms of maxLikelihoodDivergence for creating new cluster.
+     *
+     * @param minElementsForNewCluster Min elements for new cluster.
+     * @return trainer.
+     */
+    public GmmTrainer withMinElementsForNewCluster(int minElementsForNewCluster) {
+        A.ensure(minElementsForNewCluster > 0, "Min elements for new cluster should be > 0");
+
+        this.minElementsForNewCluster = minElementsForNewCluster;
+        return this;
+    }
+
+    /**
+     * Sets minimum requred probability for cluster. If cluster has probability value less than this value then this
+     * cluster will be eliminated.
+     *
+     * @param minClusterProbability Min cluster probability.
+     * @return trainer.
+     */
+    public GmmTrainer withMinClusterProbability(double minClusterProbability) {
+        this.minClusterProbability = minClusterProbability;
+        return this;
+    }
+
+    /**
      * Trains model based on the specified data.
      *
      * @param dataset Dataset.
      * @return GMM model.
      */
     private Optional<GmmModel> fit(Dataset<EmptyContext, GmmPartitionData> dataset) {
-        return init(dataset).map(model -> updateModel(dataset, model));
+        return init(dataset).map(model -> {
+            GmmModel currentModel = model;
+
+            do {
+                UpdateResult updateResult = updateModel(dataset, currentModel);
+                currentModel = updateResult.model;
+
+                double minCompProb = currentModel.componentsProbs().minElement().get();
+                if (countOfComponents >= maxCountOfClusters || minCompProb < minClusterProbability)
+                    break;
+
+                double maxXProb = updateResult.maxProbInDataset;
+                NewComponentStatisticsAggregator newMeanAdder = NewComponentStatisticsAggregator.computeNewMean(dataset,
+                    maxXProb, maxLikelihoodDivergence, currentModel);
+
+                Vector newMean = newMeanAdder.mean();
+                if (newMeanAdder.rowCountForNewCluster() < minElementsForNewCluster)
+                    break;
+
+                countOfComponents += 1;
+                Vector[] newMeans = new Vector[countOfComponents];
+                for (int i = 0; i < currentModel.countOfComponents(); i++)
+                    newMeans[i] = currentModel.distributions().get(i).mean();
+                newMeans[countOfComponents - 1] = newMean;
+
+                initialMeans = newMeans;
+
+                Optional<GmmModel> newModelOpt = init(dataset);
+                if (newModelOpt.isPresent())
+                    currentModel = newModelOpt.get();
+                else
+                    break;
+            }
+            while (true);
+
+            return filterModel(currentModel);
+        });
+    }
+
+    /**
+     * Remove clusters with probability value < minClusterProbability
+     *
+     * @param model Model.
+     * @return filtered model.
+     */
+    private GmmModel filterModel(GmmModel model) {
+        List<Double> componentProbs = new ArrayList<>();
+        List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
+
+        Vector originalComponentProbs = model.componentsProbs();
+        List<MultivariateGaussianDistribution> originalDistr = model.distributions();
+        for (int i = 0; i < model.countOfComponents(); i++) {
+            double prob = originalComponentProbs.get(i);
+            if (prob > minClusterProbability) {
+                componentProbs.add(prob);
+                distributions.add(originalDistr.get(i));
+            }
+        }
+
+        return new GmmModel(
+            VectorUtils.of(componentProbs.toArray(new Double[0])),
+            distributions
+        );
     }
 
     /**
@@ -170,11 +312,12 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
      * @param model Model.
      * @return updated model.
      */
-    @NotNull private GmmModel updateModel(Dataset<EmptyContext, GmmPartitionData> dataset, GmmModel model) {
+    @NotNull private UpdateResult updateModel(Dataset<EmptyContext, GmmPartitionData> dataset, GmmModel model) {
         boolean isConverged = false;
         int countOfIterations = 0;
+        double maxProbInDataset = Double.NEGATIVE_INFINITY;
         while (!isConverged) {
-            MeanWithClusterProbAggregator.AggregatedStats stats = MeanWithClusterProbAggregator.aggreateStats(dataset);
+            MeanWithClusterProbAggregator.AggregatedStats stats = MeanWithClusterProbAggregator.aggreateStats(dataset, countOfComponents);
             Vector clusterProbs = stats.clusterProbabilities();
             Vector[] newMeans = stats.means().toArray(new Vector[countOfComponents]);
 
@@ -189,9 +332,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
                 countOfIterations += 1;
                 isConverged = isConverged(model, newModel) || countOfIterations > maxCountOfIterations;
                 model = newModel;
-
-                if (!isConverged)
-                    dataset.compute(data -> GmmPartitionData.updatePcxi(data, clusterProbs, components));
+                maxProbInDataset = GmmPartitionData.updatePcxiAndComputeLikelihood(dataset, clusterProbs, components);
             }
             catch (SingularMatrixException | IllegalArgumentException e) {
                 String msg = "Cannot construct non-singular covariance matrix by data. " +
@@ -201,7 +342,27 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
             }
         }
 
-        return model;
+        return new UpdateResult(model, maxProbInDataset);
+    }
+
+    /**
+     * Result of current model update by EM-algorithm.
+     */
+    private static class UpdateResult {
+        /** Model. */
+        private final GmmModel model;
+
+        /** Max likelihood in dataset. */
+        private final double maxProbInDataset;
+
+        /**
+         * @param model Model.
+         * @param maxProbInDataset Max likelihood in dataset.
+         */
+        public UpdateResult(GmmModel model, double maxProbInDataset) {
+            this.model = model;
+            this.maxProbInDataset = maxProbInDataset;
+        }
     }
 
     /**
@@ -216,27 +377,21 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
         while (true) {
             try {
                 if (initialMeans == null) {
-                    List<List<Vector>> randomMeansSets = Stream.of(dataset.compute(
+                    List<Vector> randomMeansSets = Stream.of(dataset.compute(
                         selectNRandomXsMapper(countOfComponents),
                         GmmTrainer::selectNRandomXsReducer
-                    )).map(this::asList).collect(Collectors.toList());
+                    )).flatMap(Stream::of).collect(Collectors.toList());
+
+                    Collections.sort(randomMeansSets, Comparator.comparingDouble(Vector::getLengthSquared));
+                    Collections.shuffle(randomMeansSets, environment.randomNumbersGenerator());
 
                     A.ensure(
-                        randomMeansSets.stream().mapToInt(List::size).sum() >= countOfComponents,
+                        randomMeansSets.size() >= countOfComponents,
                         "There is not enough data in dataset for select N random means"
                     );
 
-                    initialMeans = new Vector[countOfComponents];
-                    int j = 0;
-                    for (int i = 0; i < countOfComponents; ) {
-                        List<Vector> randomMeansPart = randomMeansSets.get(j);
-                        if (!randomMeansPart.isEmpty()) {
-                            initialMeans[i] = randomMeansPart.remove(0);
-                            i++;
-                        }
-
-                        j = (j + 1) % randomMeansSets.size();
-                    }
+                    initialMeans = randomMeansSets.subList(0, countOfComponents)
+                        .toArray(new Vector[countOfComponents]);
                 }
 
                 dataset.compute(data -> GmmPartitionData.estimateLikelihoodClusters(data, initialMeans));
@@ -269,17 +424,6 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
                     throw new RuntimeException(msg, e);
             }
         }
-    }
-
-    /**
-     * @param vectors Array of vectors.
-     * @return list of vectors.
-     */
-    private LinkedList<Vector> asList(Vector... vectors) {
-        LinkedList<Vector> res = new LinkedList<>();
-        for (Vector v : vectors)
-            res.addFirst(v);
-        return res;
     }
 
     /**
@@ -330,10 +474,9 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     @Override protected <K, V> GmmModel updateModel(GmmModel mdl, DatasetBuilder<K, V> datasetBuilder,
         FeatureLabelExtractor<K, V, Double> extractor) {
 
-        try (Dataset<EmptyContext, GmmPartitionData> dataset = datasetBuilder.build(
-            LearningEnvironmentBuilder.defaultBuilder(),
+        try (Dataset<EmptyContext, GmmPartitionData> dataset = datasetBuilder.build(envBuilder,
             new EmptyContextBuilder<>(),
-            new GmmPartitionData.Builder<>(extractor, countOfComponents)
+            new GmmPartitionData.Builder<>(extractor, maxCountOfClusters)
         )) {
             if (mdl != null) {
                 if (initialMeans != null)

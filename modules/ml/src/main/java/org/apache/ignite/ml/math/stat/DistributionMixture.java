@@ -31,9 +31,6 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * @param <C> distributions mixture component class.
  */
 public abstract class DistributionMixture<C extends Distribution> implements Distribution {
-    /** */
-    private static final double EPS = 1e-5;
-
     /** Component probabilities. */
     private final Vector componentProbs;
 
@@ -51,7 +48,7 @@ public abstract class DistributionMixture<C extends Distribution> implements Dis
      */
     public DistributionMixture(Vector componentProbs, List<C> distributions) {
         A.ensure(DoubleStream.of(componentProbs.asArray()).allMatch(v -> v > 0), "All distribution components should be greater than zero");
-        A.ensure(Math.abs(componentProbs.sum() - 1.) < EPS, "Components distribution should be nomalized");
+        componentProbs = componentProbs.divide(componentProbs.sum());
 
         A.ensure(!distributions.isEmpty(), "Distribution mixture should have at least one component");
 
