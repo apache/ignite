@@ -108,10 +108,8 @@ public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
      * Do not annotate with BeforeClass in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @BeforeClass} annotation.
      */
-    // TODO IGNITE-11240 consider adding @Deprecated annotation after start/stop grid is made more convenient.
+    // TODO IGNITE-11240 consider adding @Deprecated annotation and notice when start/stop grid is made more convenient.
     protected void beforeTestsStarted() throws Exception {
         // No-op.
     }
@@ -123,10 +121,8 @@ public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
      * Do not annotate with AfterClass in overriding methods.</p>
      *
      * @throws Exception If failed.
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @AfterClass} annotation.
      */
-    // TODO IGNITE-11240 consider adding @Deprecated annotation after start/stop grid is made more convenient.
+    // TODO IGNITE-11240 consider adding @Deprecated annotation and notice when start/stop grid is made more convenient.
     protected void afterTestsStopped() throws Exception {
         // No-op.
     }
