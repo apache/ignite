@@ -17,12 +17,11 @@
 
 package org.apache.ignite.ml.sparkmodelparser;
 
+import java.io.File;
+import java.net.URL;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.io.File;
-import java.net.URL;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertTrue;
@@ -231,7 +230,8 @@ public class SparkModelParserTest {
                 url.getPath() + File.separator + "gbt", SupportedSparkModels.DECISION_TREE
             );
             fail("Expected IllegalArgumentException exception");
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("The metadata file contains incorrect model metadata."));
         }
     }

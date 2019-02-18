@@ -17,6 +17,17 @@
 
 package org.apache.ignite.ml.sparkmodelparser;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Scanner;
+import java.util.TreeMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -51,11 +62,6 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.*;
 
 /** Parser of Spark models. */
 public class SparkModelParser {
@@ -109,7 +115,8 @@ public class SparkModelParser {
 
         try {
             validateMetadata(pathToMetadata, parsedSparkMdl);
-        } catch (FileNotFoundException e) {
+        }
+        catch (FileNotFoundException e) {
             throw new IllegalArgumentException("Directory should contain json file with model metadata " +
                 "with name part-00000 [directory_path=" + pathToMetadata + "]");
         }
@@ -145,14 +152,16 @@ public class SparkModelParser {
      * @param pathToMetadata Path to metadata.
      * @param parsedSparkMdl Parsed spark model.
      */
-    private static void validateMetadata(String pathToMetadata, SupportedSparkModels parsedSparkMdl) throws FileNotFoundException {
+    private static void validateMetadata(String pathToMetadata,
+        SupportedSparkModels parsedSparkMdl) throws FileNotFoundException {
         File metadataFile = IgniteUtils.resolveIgnitePath(pathToMetadata + File.separator + "part-00000");
         if (metadataFile != null) {
             Scanner sc = new Scanner(metadataFile);
             boolean isInvalid = true;
             while (sc.hasNextLine()) {
                 final String line = sc.nextLine();
-                if (line.contains(parsedSparkMdl.getMdlClsNameInSpark())) isInvalid = false;
+                if (line.contains(parsedSparkMdl.getMdlClsNameInSpark()))
+                    isInvalid = false;
             }
 
             if (isInvalid)
@@ -215,7 +224,7 @@ public class SparkModelParser {
      * @return Instance of parsedSparkMdl model.
      */
     private static Model parseDataWithMetadata(String pathToMdl, String pathToMetaData,
-                                          SupportedSparkModels parsedSparkMdl) {
+        SupportedSparkModels parsedSparkMdl) {
         File mdlRsrc1 = IgniteUtils.resolveIgnitePath(pathToMdl);
         if (mdlRsrc1 == null)
             throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMdl + "]");
@@ -273,12 +282,12 @@ public class SparkModelParser {
             final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
 
             while (null != (pages = r.readNextRowGroup())) {
-                final int rows = (int) pages.getRowCount();
+                final int rows = (int)pages.getRowCount();
                 final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
                 centers = new DenseVector[rows];
 
                 for (int i = 0; i < rows; i++) {
-                    final SimpleGroup g = (SimpleGroup) recordReader.read();
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
                     // final int clusterIdx = g.getInteger(0, 0);
 
                     Group clusterCenterCoeff = g.getGroup(1, 0).getGroup(3, 0);
@@ -294,7 +303,8 @@ public class SparkModelParser {
                 }
             }
 
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             System.out.println("Error reading parquet file.");
             e.printStackTrace();
         }
@@ -334,7 +344,7 @@ public class SparkModelParser {
      * @param lbMapper          Label mapper.
      */
     @Nullable private static Model parseAndBuildGDBModel(String pathToMdl, String pathToMdlMetaData,
-                                                         IgniteFunction<Double, Double> lbMapper) {
+        IgniteFunction<Double, Double> lbMapper) {
         double[] treeWeights = null;
         final Map<Integer, Double> treeWeightsByTreeID = new HashMap<>();
 
@@ -347,13 +357,14 @@ public class SparkModelParser {
                 final long rows = pagesMetaData.getRowCount();
                 final RecordReader recordReader = colIO.getRecordReader(pagesMetaData, new GroupRecordConverter(schema));
                 for (int i = 0; i < rows; i++) {
-                    final SimpleGroup g = (SimpleGroup) recordReader.read();
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
                     int treeId = g.getInteger(0, 0);
                     double treeWeight = g.getDouble(2, 0);
                     treeWeightsByTreeID.put(treeId, treeWeight);
                 }
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             System.out.println("Error reading parquet file with MetaData by the path: " + pathToMdlMetaData);
             e.printStackTrace();
         }
@@ -371,15 +382,16 @@ public class SparkModelParser {
                 final long rows = pages.getRowCount();
                 final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
                 for (int i = 0; i < rows; i++) {
-                    final SimpleGroup g = (SimpleGroup) recordReader.read();
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
                     final int treeID = g.getInteger(0, 0);
-                    final SimpleGroup nodeDataGroup = (SimpleGroup) g.getGroup(1, 0);
+                    final SimpleGroup nodeDataGroup = (SimpleGroup)g.getGroup(1, 0);
                     NodeData nodeData = extractNodeDataFromParquetRow(nodeDataGroup);
 
                     if (nodesByTreeId.containsKey(treeID)) {
                         Map<Integer, NodeData> nodesByNodeId = nodesByTreeId.get(treeID);
                         nodesByNodeId.put(nodeData.id, nodeData);
-                    } else {
+                    }
+                    else {
                         TreeMap<Integer, NodeData> nodesByNodeId = new TreeMap<>();
                         nodesByNodeId.put(nodeData.id, nodeData);
                         nodesByTreeId.put(treeID, nodesByNodeId);
@@ -391,7 +403,8 @@ public class SparkModelParser {
             nodesByTreeId.forEach((key, nodes) -> models.add(buildDecisionTreeModel(nodes)));
 
             return new GDBTrainer.GDBModel(models, new WeightedPredictionsAggregator(treeWeights), lbMapper);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             System.out.println("Error reading parquet file.");
             e.printStackTrace();
         }
@@ -428,16 +441,17 @@ public class SparkModelParser {
                 final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
 
                 for (int i = 0; i < rows; i++) {
-                    final SimpleGroup g = (SimpleGroup) recordReader.read();
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
                     final int treeID = g.getInteger(0, 0);
-                    final SimpleGroup nodeDataGroup = (SimpleGroup) g.getGroup(1, 0);
+                    final SimpleGroup nodeDataGroup = (SimpleGroup)g.getGroup(1, 0);
 
                     NodeData nodeData = extractNodeDataFromParquetRow(nodeDataGroup);
 
                     if (nodesByTreeId.containsKey(treeID)) {
                         Map<Integer, NodeData> nodesByNodeId = nodesByTreeId.get(treeID);
                         nodesByNodeId.put(nodeData.id, nodeData);
-                    } else {
+                    }
+                    else {
                         TreeMap<Integer, NodeData> nodesByNodeId = new TreeMap<>();
                         nodesByNodeId.put(nodeData.id, nodeData);
                         nodesByTreeId.put(treeID, nodesByNodeId);
@@ -447,7 +461,8 @@ public class SparkModelParser {
             List<IgniteModel<Vector, Double>> models = new ArrayList<>();
             nodesByTreeId.forEach((key, nodes) -> models.add(buildDecisionTreeModel(nodes)));
             return models;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             System.out.println("Error reading parquet file.");
             e.printStackTrace();
         }
@@ -472,13 +487,14 @@ public class SparkModelParser {
                 final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
 
                 for (int i = 0; i < rows; i++) {
-                    final SimpleGroup g = (SimpleGroup) recordReader.read();
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
                     NodeData nodeData = extractNodeDataFromParquetRow(g);
                     nodes.put(nodeData.id, nodeData);
                 }
             }
             return buildDecisionTreeModel(nodes);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             System.out.println("Error reading parquet file.");
             e.printStackTrace();
         }
@@ -493,7 +509,7 @@ public class SparkModelParser {
     private static DecisionTreeNode buildDecisionTreeModel(Map<Integer, NodeData> nodes) {
         DecisionTreeNode mdl = null;
         if (!nodes.isEmpty()) {
-            NodeData rootNodeData = (NodeData) ((NavigableMap) nodes).firstEntry().getValue();
+            NodeData rootNodeData = (NodeData)((NavigableMap)nodes).firstEntry().getValue();
             mdl = buildTree(nodes, rootNodeData);
             return mdl;
         }
@@ -507,7 +523,7 @@ public class SparkModelParser {
      * @param rootNodeData Root node data.
      */
     @NotNull private static DecisionTreeNode buildTree(Map<Integer, NodeData> nodes,
-                                                       NodeData rootNodeData) {
+        NodeData rootNodeData) {
         return rootNodeData.isLeafNode ? new DecisionTreeLeafNode(rootNodeData.prediction) : new DecisionTreeConditionalNode(rootNodeData.featureIdx,
             rootNodeData.threshold,
             buildTree(nodes, nodes.get(rootNodeData.rightChildId)),
@@ -532,8 +548,9 @@ public class SparkModelParser {
             nodeData.featureIdx = -1;
             nodeData.threshold = -1;
             nodeData.isLeafNode = true;
-        } else {
-            final SimpleGroup splitGrp = (SimpleGroup) g.getGroup(7, 0);
+        }
+        else {
+            final SimpleGroup splitGrp = (SimpleGroup)g.getGroup(7, 0);
             nodeData.featureIdx = splitGrp.getInteger(0, 0);
             nodeData.threshold = splitGrp.getGroup(1, 0).getGroup(0, 0).getDouble(0, 0);
         }
@@ -582,12 +599,13 @@ public class SparkModelParser {
                 final long rows = pages.getRowCount();
                 final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
                 for (int i = 0; i < rows; i++) {
-                    final SimpleGroup g = (SimpleGroup) recordReader.read();
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
                     interceptor = readSVMInterceptor(g);
                     coefficients = readSVMCoefficients(g);
                 }
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             System.out.println("Error reading parquet file.");
             e.printStackTrace();
         }
@@ -614,13 +632,14 @@ public class SparkModelParser {
                 final long rows = pages.getRowCount();
                 final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
                 for (int i = 0; i < rows; i++) {
-                    final SimpleGroup g = (SimpleGroup) recordReader.read();
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
                     interceptor = readLinRegInterceptor(g);
                     coefficients = readLinRegCoefficients(g);
                 }
             }
 
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             System.out.println("Error reading parquet file.");
             e.printStackTrace();
         }
@@ -647,13 +666,14 @@ public class SparkModelParser {
                 final long rows = pages.getRowCount();
                 final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
                 for (int i = 0; i < rows; i++) {
-                    final SimpleGroup g = (SimpleGroup) recordReader.read();
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
                     interceptor = readInterceptor(g);
                     coefficients = readCoefficients(g);
                 }
             }
 
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             System.out.println("Error reading parquet file.");
             e.printStackTrace();
         }
@@ -728,9 +748,9 @@ public class SparkModelParser {
     private static double readInterceptor(SimpleGroup g) {
         double interceptor;
 
-        final SimpleGroup interceptVector = (SimpleGroup) g.getGroup(2, 0);
-        final SimpleGroup interceptVectorVal = (SimpleGroup) interceptVector.getGroup(3, 0);
-        final SimpleGroup interceptVectorValElement = (SimpleGroup) interceptVectorVal.getGroup(0, 0);
+        final SimpleGroup interceptVector = (SimpleGroup)g.getGroup(2, 0);
+        final SimpleGroup interceptVectorVal = (SimpleGroup)interceptVector.getGroup(3, 0);
+        final SimpleGroup interceptVectorValElement = (SimpleGroup)interceptVectorVal.getGroup(0, 0);
 
         interceptor = interceptVectorValElement.getDouble(0, 0);
 

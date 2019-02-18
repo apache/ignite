@@ -66,7 +66,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     private static final int RMT_NODES_CNT = 3;
 
     /** */
-    private static final long HANG_TIMEOUT =  15 * 60 * 1000;
+    private static final long HANG_TIMEOUT = 15 * 60 * 1000;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -153,6 +153,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
     /**
      * beforeTest is not user to save the time fot muted tests.
+     *
      * @throws Exception On error.
      */
     private void startTestGrid() throws Exception {
@@ -200,6 +201,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
     /**
      * OOM on reduce. See IGNITE-9933
+     *
      * @throws Exception On error.
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9933")
@@ -223,6 +225,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
     /**
      * OOM on reduce. See IGNITE-9933
+     *
      * @throws Exception On error.
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9933")
@@ -287,7 +290,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         checkQueryExpectOOM("SELECT id, sum(val) from test GROUP BY id", false, true);
     }
-
 
     /**
      * @param sql Query.

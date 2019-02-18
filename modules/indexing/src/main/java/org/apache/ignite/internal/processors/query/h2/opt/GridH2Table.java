@@ -100,9 +100,8 @@ public class GridH2Table extends TableBase {
     private volatile boolean destroyed;
 
     /**
-     * Map of sessions locks.
-     * Session -> EXCLUSIVE_LOCK (-1L) - for exclusive locks.
-     * Session -> (table version) - for shared locks.
+     * Map of sessions locks. Session -> EXCLUSIVE_LOCK (-1L) - for exclusive locks. Session -> (table version) - for
+     * shared locks.
      */
     private final ConcurrentMap<Session, SessionLock> sessions = new ConcurrentHashMap<>();
 

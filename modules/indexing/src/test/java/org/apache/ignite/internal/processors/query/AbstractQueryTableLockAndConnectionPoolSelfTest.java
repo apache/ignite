@@ -270,22 +270,22 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
         // Do many concurrent queries.
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
-                while(!end.get()) {
+                while (!end.get()) {
                     try {
                         FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQuery(
                             "SELECT pers.id, pers.name " +
-                            "FROM (SELECT DISTINCT p.id, p.name " +
-                            "FROM \"pers\".PERSON as p) as pers " +
-                            "JOIN \"pers\".PERSON p on p.id = pers.id " +
-                            "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
-                            "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
+                                "FROM (SELECT DISTINCT p.id, p.name " +
+                                "FROM \"pers\".PERSON as p) as pers " +
+                                "JOIN \"pers\".PERSON p on p.id = pers.id " +
+                                "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
+                                "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
                             .setLazy(lazy())
                             .setPageSize(PAGE_SIZE_SMALL));
 
                         cursor.getAll();
                     }
                     catch (Exception e) {
-                        if(X.cause(e, QueryRetryException.class) == null) {
+                        if (X.cause(e, QueryRetryException.class) == null) {
                             log.error("Unexpected exception", e);
 
                             fail("Unexpected exception. " + e);
@@ -324,7 +324,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
         // Do many concurrent queries.
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
-                while(!end.get()) {
+                while (!end.get()) {
                     try {
                         FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQuery(
                             "SELECT pers.id, pers.name FROM \"pers\".PERSON")
@@ -337,7 +337,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                         if (e.getMessage().contains("Failed to parse query. Column \"PERS.ID\" not found")) {
                             // Swallow exception when column is dropped.
                         }
-                        else if(X.cause(e, QueryRetryException.class) == null) {
+                        else if (X.cause(e, QueryRetryException.class) == null) {
                             log.error("Unexpected exception", e);
 
                             fail("Unexpected exception. " + e);
@@ -352,7 +352,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             }
         }, qryThreads, "usr-qry");
 
-
         long tEnd = U.currentTimeMillis() + TEST_DUR;
 
         while (U.currentTimeMillis() < tEnd) {
@@ -366,8 +365,8 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     }
 
     /**
-     * Test release reserved partition after query complete.
-     * In case partitions not released the `awaitPartitionMapExchange` fails by timeout.
+     * Test release reserved partition after query complete. In case partitions not released the
+     * `awaitPartitionMapExchange` fails by timeout.
      *
      * @param pageSize Results page size.
      * @throws Exception If failed.
@@ -507,7 +506,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             assertBaseQueryResults(rows);
         }
 
-
         // Test full iteration.
         {
             List<List<?>> rows = new ArrayList<>();
@@ -529,7 +527,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             for (int i = 0; i < 30; i++)
                 iter.next();
         }
-
 
         // Test execution of multiple queries at a time.
         List<Iterator<List<?>>> iters = new ArrayList<>();
@@ -623,10 +620,10 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
 
         FieldsQueryCursor<List<?>> cursor0 = execute(node, new SqlFieldsQuery(
             "SELECT pers.id, pers.name " +
-            "FROM (SELECT DISTINCT p.id, p.name " +
+                "FROM (SELECT DISTINCT p.id, p.name " +
                 "FROM \"pers\".PERSON as p) as pers " +
-            "JOIN \"pers\".PERSON p on p.id = pers.id " +
-            "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
+                "JOIN \"pers\".PERSON p on p.id = pers.id " +
+                "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
                 "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
             .setPageSize(PAGE_SIZE_SMALL));
 
@@ -757,7 +754,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     private FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
         return ((IgniteEx)node).context().query().querySqlFields(qry.setLazy(lazy()), false);
     }
-
 
     /**
      * @return Lazy mode.

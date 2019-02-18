@@ -2747,7 +2747,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             GridCacheSharedContext cctx,
             CacheGroupDescriptor grpDesc,
             AffinityTopologyVersion topVer
-            ) throws IgniteCheckedException {
+        ) throws IgniteCheckedException {
             return create(cctx, grpDesc, topVer, null);
         }
 

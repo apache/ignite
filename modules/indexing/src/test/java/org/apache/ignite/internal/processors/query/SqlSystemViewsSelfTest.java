@@ -1138,8 +1138,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         setField(node, "metricsProvider", null);
 
         ClusterMetricsImpl original = getField(node, "metrics");
-        
-        setField(node, "metrics", new MockedClusterMetrics(original));;
+
+        setField(node, "metrics", new MockedClusterMetrics(original));
+        ;
 
         List<?> durationMetrics = execSql(ign,
             "SELECT " +
@@ -1247,8 +1248,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
     /**
      * Get field value using reflection.
-     * 
-     * @param target object containing the field. 
+     *
+     * @param target object containing the field.
      * @param fieldName name of the field.
      */
     private static <T> T getField(Object target, String fieldName) throws Exception {
@@ -1258,12 +1259,12 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         fld.setAccessible(true);
 
-        return (T) fld.get(target);
+        return (T)fld.get(target);
     }
 
     /**
      * Set field using reflection.
-     * 
+     *
      * @param target object containing the field.
      * @param fieldName name of the field.
      * @param val new field value.

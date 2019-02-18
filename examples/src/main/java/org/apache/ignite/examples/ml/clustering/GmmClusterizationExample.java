@@ -35,8 +35,6 @@ import org.apache.ignite.ml.util.generators.primitives.scalar.GaussRandomProduce
 import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
 
-import java.util.UUID;
-
 /**
  * Example of using GMM clusterization algorithm. Gaussian Mixture Algorithm (GMM, see {@link GmmModel}, {@link
  * GmmTrainer}) can be used for input dataset data distribution representation as mixture of multivariance gaussians.
@@ -58,8 +56,8 @@ public class GmmClusterizationExample {
             System.out.println(">>> Ignite grid started.");
 
             long seed = 0;
-            IgniteCache<UUID, LabeledVector<Double>> dataCache = ignite.getOrCreateCache(
-                new CacheConfiguration<UUID, LabeledVector<Double>>("GMM_EXAMPLE_CACHE")
+            IgniteCache<Integer, LabeledVector<Double>> dataCache = ignite.getOrCreateCache(
+                new CacheConfiguration<Integer, LabeledVector<Double>>("GMM_EXAMPLE_CACHE")
                     .setAffinity(new RendezvousAffinityFunction(false, 10))
             );
 

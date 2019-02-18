@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.internal.GridKernalContext;
@@ -30,14 +37,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
@@ -147,7 +146,7 @@ public class PartitionReservationManager {
 
                             if (partState != OWNING)
                                 return new PartitionReservation(reserved,
-                                        String.format("Failed to reserve partitions for " +
+                                    String.format("Failed to reserve partitions for " +
                                         "query (partition of REPLICATED cache is not in OWNING state) [" +
                                         "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
                                         "cacheName=%s, part=%s, partFound=%s, partState=%s]",
@@ -183,7 +182,7 @@ public class PartitionReservationManager {
                                 ignoreLostPartitionIfPossible(cctx, part);
                             else {
                                 return new PartitionReservation(reserved,
-                                        String.format("Failed to reserve partitions " +
+                                    String.format("Failed to reserve partitions " +
                                         "for query (partition of PARTITIONED cache is not found or not in OWNING " +
                                         "state) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
                                         "cacheName=%s, part=%s, partFound=%s, partState=%s]",
@@ -202,7 +201,7 @@ public class PartitionReservationManager {
 
                         if (!part.reserve()) {
                             return new PartitionReservation(reserved,
-                                    String.format("Failed to reserve partitions for query " +
+                                String.format("Failed to reserve partitions for query " +
                                     "(partition of PARTITIONED cache cannot be reserved) [" +
                                     "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
                                     "cacheName=%s, part=%s, partFound=%s, partState=%s]",
@@ -230,7 +229,7 @@ public class PartitionReservationManager {
                                 ignoreLostPartitionIfPossible(cctx, part);
                             else {
                                 return new PartitionReservation(reserved,
-                                        String.format("Failed to reserve partitions for " +
+                                    String.format("Failed to reserve partitions for " +
                                         "query (partition of PARTITIONED cache is not in OWNING state after " +
                                         "reservation) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, " +
                                         "cacheId=%s, cacheName=%s, part=%s, partState=%s]",

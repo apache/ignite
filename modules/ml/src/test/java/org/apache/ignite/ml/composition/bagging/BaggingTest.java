@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
@@ -41,18 +44,13 @@ import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Tests for bagging algorithm.
  */
 public class BaggingTest extends TrainerTest {
     /**
-     * Dependency of weights of first model in ensemble after training in
-     * {@link BaggingTest#testNaiveBaggingLogRegression()}. This dependency is tested to ensure that it is
-     * fully determined by provided seeds.
+     * Dependency of weights of first model in ensemble after training in {@link BaggingTest#testNaiveBaggingLogRegression()}.
+     * This dependency is tested to ensure that it is fully determined by provided seeds.
      */
     private static Map<Integer, Vector> firstModelWeights;
 

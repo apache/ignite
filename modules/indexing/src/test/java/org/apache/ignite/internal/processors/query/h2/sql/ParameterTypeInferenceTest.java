@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -31,12 +36,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Test type inference for SQL parameters.
@@ -121,12 +120,12 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
     private void check(String qry, boolean loc) {
         List<Object[]> argss = new ArrayList<>();
 
-        argss.add(new Object[] { null });
-        argss.add(new Object[] { "STRING" });
-        argss.add(new Object[] { 1 });
-        argss.add(new Object[] { 1L });
-        argss.add(new Object[] { new BigDecimal("12.12") });
-        argss.add(new Object[] { UUID.randomUUID() });
+        argss.add(new Object[] {null});
+        argss.add(new Object[] {"STRING"});
+        argss.add(new Object[] {1});
+        argss.add(new Object[] {1L});
+        argss.add(new Object[] {new BigDecimal("12.12")});
+        argss.add(new Object[] {UUID.randomUUID()});
 
         clearParserCache();
 
@@ -158,7 +157,6 @@ public class ParameterTypeInferenceTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODE_CNT; i++)
             ((IgniteH2Indexing)grid(i).context().query().getIndexing()).parser().clearCache();
     }
-
 
     /**
      * Key class.

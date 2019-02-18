@@ -37,7 +37,7 @@ class Cursor implements CursorInterface
     private $valueIndex;
     private $rewinds;
     private $index;
-    
+
     public function __construct(BinaryCommunicator $communicator, int $operation, MessageBuffer $buffer, $keyType = null, $valueType = null)
     {
         $this->communicator = $communicator;
@@ -57,18 +57,18 @@ class Cursor implements CursorInterface
     {
         return $this->values[$this->valueIndex];
     }
-    
+
     public function key()
     {
         return $this->index;
     }
-    
-    public function next() 
+
+    public function next()
     {
         $this->valueIndex++;
         $this->index++;
     }
-    
+
     public function rewind(): void
     {
         $this->rewinds++;
@@ -156,9 +156,9 @@ class Cursor implements CursorInterface
 
     private function read(MessageBuffer $buffer): void
     {
-        $rowCount = $buffer->readInteger();
+        $rowCountForNewCluster = $buffer->readInteger();
         $this->values = [];
-        for ($i = 0; $i < $rowCount; $i++) {
+        for ($i = 0; $i < $rowCountForNewCluster; $i++) {
             array_push($this->values, $this->readRow($buffer));
         }
         $this->hasNext = $buffer->readBoolean();
