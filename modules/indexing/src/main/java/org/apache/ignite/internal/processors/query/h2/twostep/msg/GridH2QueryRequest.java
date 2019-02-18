@@ -69,9 +69,10 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     public static final int FLAG_ENFORCE_JOIN_ORDER = 1 << 1;
 
     /**
-     * Restrict distributed joins range-requests to local index segments. Range requests to other nodes will not be sent.
+     * Unused. Keep for backward compatibility.
      */
-    public static final int FLAG_IS_LOCAL = 1 << 2;
+    @SuppressWarnings("unused")
+    public static final int FLAG_UNUSED = 1 << 2;
 
     /**
      * If it is an EXPLAIN command.
@@ -431,10 +432,10 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
-     * @param txDetails TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable.
+     * @param txReq TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable.
      */
-    public void txDetails(GridH2SelectForUpdateTxDetails txDetails) {
-        this.txReq = txDetails;
+    public void txDetails(GridH2SelectForUpdateTxDetails txReq) {
+        this.txReq = txReq;
     }
 
     /**

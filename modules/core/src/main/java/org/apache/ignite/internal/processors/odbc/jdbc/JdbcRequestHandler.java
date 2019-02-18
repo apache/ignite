@@ -906,8 +906,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         IgniteBiTuple<Integer, String> firstErr, GridQueryCancel cancel) throws QueryCancelledException {
         try {
             if (cliCtx.isStream()) {
-                List<Long> cnt = ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(),
-                    qry.batchedArguments());
+                List<Long> cnt = ctx.query().streamBatchedUpdateQuery(
+                    qry.getSchema(),
+                    cliCtx,
+                    qry.getSql(),
+                    qry.batchedArguments()
+                );
 
                 for (int i = 0; i < cnt.size(); i++)
                     updCntsAcc.add(cnt.get(i).intValue());
