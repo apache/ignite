@@ -280,7 +280,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
                 while (!stop.get()) {
                     stopGrid(gridIdx, true);
 
-                    Thread.sleep(100L);
+                    Thread.sleep(1000L);
 
                     startGrid(gridIdx);
 
@@ -294,7 +294,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         long start = System.currentTimeMillis();
 
-        long duration = GridTestUtils.SF.applyLB(30_000, 5_000);
+        long duration = GridTestUtils.SF.applyLB(15_000, 5_000);
 
         try {
             for (int i = 0; System.currentTimeMillis() < start + duration; i++) {
