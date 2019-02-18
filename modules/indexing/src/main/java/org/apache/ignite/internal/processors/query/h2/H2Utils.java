@@ -69,7 +69,6 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.Row;
@@ -102,13 +101,15 @@ import javax.cache.CacheException;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
 
 /**
  * H2 utility methods.
  */
 public class H2Utils {
+    /** Dummy metadata for update result. */
+    public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
+        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
+
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
@@ -356,10 +357,26 @@ public class H2Utils {
      * @param enforceJoinOrder Enforce join order of tables.
      */
     public static void setupConnection(Connection conn, boolean distributedJoins, boolean enforceJoinOrder) {
+        setupConnection(conn,distributedJoins, enforceJoinOrder, false);
+    }
+
+    /**
+     * @param conn Connection to use.
+     * @param distributedJoins If distributed joins are enabled.
+     * @param enforceJoinOrder Enforce join order of tables.
+     * @param lazy Lazy query execution mode.
+     */
+    public static void setupConnection(
+        Connection conn,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean lazy
+    ) {
         Session s = session(conn);
 
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
+        s.setLazyQueryExecution(lazy);
     }
 
     /**
@@ -717,28 +734,6 @@ public class H2Utils {
     }
 
     /**
-     * Get optimized prepared statement.
-     *
-     * @param c Connection.
-     * @param qry Parsed query.
-     * @param params Query parameters.
-     * @param enforceJoinOrder Enforce join order.
-     * @return Optimized prepared command.
-     * @throws SQLException If failed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static Prepared optimize(Connection c, String qry, Object[] params, boolean distributedJoins,
-        boolean enforceJoinOrder) throws SQLException, IgniteCheckedException {
-        setupConnection(c, distributedJoins, enforceJoinOrder);
-
-        try (PreparedStatement s = c.prepareStatement(qry)) {
-            bindParameters(s, F.asList(params));
-
-            return prepared(s);
-        }
-    }
-
-    /**
      * @param arr Array.
      * @param off Offset.
      * @param cmp Comparator.
@@ -758,7 +753,7 @@ public class H2Utils {
      * @param mainCacheId Id of main cache.
      * @return Result.
      */
-    @Nullable public static List<Integer> collectCacheIds(
+    public static List<Integer> collectCacheIds(
         IgniteH2Indexing idx,
         @Nullable Integer mainCacheId,
         Collection<QueryTable> tbls
@@ -775,9 +770,7 @@ public class H2Utils {
                 if (tbl != null) {
                     checkAndStartNotStartedCache(idx.kernalContext(), tbl);
 
-                    int cacheId = tbl.cacheId();
-
-                    caches0.add(cacheId);
+                    caches0.add(tbl.cacheId());
                 }
             }
         }
@@ -814,7 +807,7 @@ public class H2Utils {
                 cctx0 = cctx;
             }
             else if (cctx.mvccEnabled() != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(cctx0, cctx);
+                MvccUtils.throwAtomicityModesMismatchException(cctx0.config(), cctx.config());
         }
 
         return mvccEnabled;
@@ -829,6 +822,7 @@ public class H2Utils {
      * @param forUpdate For update flag.
      * @param tbls Tables.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public static void checkQuery(
         IgniteH2Indexing idx,
         List<Integer> cacheIds,
