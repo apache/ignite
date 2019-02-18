@@ -28,7 +28,9 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
@@ -52,8 +54,9 @@ import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
@@ -76,35 +79,31 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /** */
 public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int CACHE_PARTS_COUNT = 8;
+    private static final int CACHE_PARTS_COUNT = 1;
 
     /** */
     private static final int PAGE_SIZE = 1024;
 
     /** */
-    private static final FileIOFactory ioFactory = new RandomAccessFileIOFactory();
-
-    /** */
     private static final DataStorageConfiguration memCfg = new DataStorageConfiguration()
-        .setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024)
-                .setPersistenceEnabled(true)
-        )
+        .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setMaxSize(100L * 1024 * 1024)
+            .setPersistenceEnabled(true))
         .setPageSize(PAGE_SIZE)
         .setWalMode(WALMode.LOG_ONLY);
+
+    /** */
+    private static final FilePageStoreFactory pageStoreFactory =
+        new FileVersionCheckingFactory(new RandomAccessFileIOFactory(), new RandomAccessFileIOFactory(), memCfg);
 
     /** */
     private static final CacheConfiguration<Integer, Integer> defaultCacheCfg =
         new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
-            .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false)
                 .setPartitions(CACHE_PARTS_COUNT));
-
-    /** */
-    private FilePageStoreFactory pageStoreFactory = new FileVersionCheckingFactory(ioFactory, ioFactory, memCfg);
 
     /** Directory to store temporary files on testing cache backup process. */
     private File mergeTempDir;
@@ -136,28 +135,43 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testCopyCachePartitonFiles() throws Exception {
-        IgniteEx ig0 = startGrid(0);
+        IgniteEx ignite = startGrid(0);
 
-        ig0.cluster().active(true);
+        ignite.cluster().active(true);
 
-        for (int i = 0; i < 1024; i++)
-            ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
+        for (int i = 0; i < 2; i++)
+            ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        ig0.context().cache().context().database()
-            .waitForCheckpoint("save cache data to partition files");
-
-        File cacheWorkDir = ((FilePageStoreManager)ig0.context().cache().context().pageStore())
+        File cacheWorkDir = ((FilePageStoreManager)ignite.context().cache().context().pageStore())
             .cacheWorkDir(defaultCacheCfg);
 
-        Map<String, Integer> exeptedCacheCRCParts = calculateCRC32Partitions(cacheWorkDir);
+        stopGrid(0);
 
-        GridCacheSharedContext<?, ?> cctx1 = ig0.context().cache().context();
+        final List<Map<String, Integer>> partsCRCSnapshots = new ArrayList<>();
 
-        File mergeCacheDir = U.resolveWorkDirectory(
-            mergeTempDir.getAbsolutePath(),
-            cacheDirName(defaultCacheCfg),
-            true
-        );
+        partsCRCSnapshots.add(calculateCRC32Partitions(cacheWorkDir));
+
+        IgniteEx ig0 = startGrid(0);
+
+        final GridCacheSharedContext<?, ?> cctx1 = ig0.context().cache().context();
+
+        ((GridCacheDatabaseSharedManager)cctx1.database()).addCheckpointListener(new DbCheckpointListener() {
+            @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                if (ctx.needToSnapshot(DEFAULT_CACHE_NAME)) {
+                    try {
+                        // Partition files are in the consistent state. Calculate their CRCs before snapshot.
+                        partsCRCSnapshots.add(calculateCRC32Partitions(cacheWorkDir));
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException(e);
+                    }
+                }
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                // No-op.
+            }
+        });
 
         final CountDownLatch slowCopy = new CountDownLatch(1);
 
@@ -165,7 +179,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    for (int i = 1024; i < 2048; i++)
+                    for (int i = 2; i < 4; i++)
                         ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
                     CheckpointFuture cpFut = cctx1.database().forceCheckpoint("the next one");
@@ -184,6 +198,12 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
 
         final ByteBuffer pageBuff = ByteBuffer.allocate(PAGE_SIZE)
             .order(ByteOrder.nativeOrder());
+
+        final File mergeCacheDir = U.resolveWorkDirectory(
+            mergeTempDir.getAbsolutePath(),
+            cacheDirName(defaultCacheCfg),
+            true
+        );
 
         cctx1.storeBackup()
             .backup(
@@ -250,6 +270,7 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
                                 U.log(log, "handle partition delta [pageId=" + pageId +
                                     ", pageOffset=" + pageOffset +
                                     ", partSize=" + pageStore.size() +
+                                    ", skipped=" + (pageOffset >= pageStore.size()) +
                                     ", position=" + position +
                                     ", size=" + size +
                                     ", crcBuff=" + crc32 +
@@ -271,9 +292,9 @@ public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTes
                     }
                 });
 
-        Map<String, Integer> snapshottedCacheParts = calculateCRC32Partitions(mergeCacheDir);
-
-        assertEquals(exeptedCacheCRCParts, snapshottedCacheParts);
+        partsCRCSnapshots.add(calculateCRC32Partitions(mergeCacheDir));
+        assertEquals("Partitons the same before backup and before cp", partsCRCSnapshots.get(0), partsCRCSnapshots.get(1));
+        assertEquals("Partitons the same after backup and after merge", partsCRCSnapshots.get(1), partsCRCSnapshots.get(2));
     }
 
     /**

@@ -72,7 +72,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + ".delta";
 
     /** */
-    private static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [id=%s, grpId=%s, parts=%s]";
+    public static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [id=%s, grpId=%s, parts=%s]";
 
     /** Base working directory for saving copied pages. */
     private final File backupWorkDir;

@@ -148,7 +148,7 @@ public class FileTemporaryStore implements TemporaryStore {
                     int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
 
                     // TODO remove debug
-                    System.out.println("onPageWrite pageId=" + pageId +
+                    System.out.println("onPageWrite [pageId=" + pageId +
                         ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
                         ", part=" + file.getName() +
                         ", fileSize=" + fileIO.size() +
