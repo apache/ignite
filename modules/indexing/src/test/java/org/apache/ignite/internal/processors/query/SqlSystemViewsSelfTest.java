@@ -648,7 +648,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
 
         for (int i = 0; i < 500; i++)
-            execSql("INSERT INTO DEFAULT.TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
+            execSql("INSERT INTO \"default\".TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
 
         String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO";
 

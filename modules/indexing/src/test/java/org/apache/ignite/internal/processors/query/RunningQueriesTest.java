@@ -408,9 +408,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE TABLE tst_idx_drop(id long PRIMARY KEY, cnt integer)"));
 
-        ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX tst_idx_drop_idx ON default.tst_idx_drop(cnt)"));
+        ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX tst_idx_drop_idx ON tst_idx_drop(cnt)"));
 
-        testQueryDDL("DROP INDEX default.tst_idx_drop_idx");
+        testQueryDDL("DROP INDEX tst_idx_drop_idx");
     }
 
     /**
@@ -424,7 +424,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE TABLE tst_idx_create(id long PRIMARY KEY, cnt integer)"));
 
-        testQueryDDL("CREATE INDEX tst_idx_create_idx ON default.tst_idx_create(cnt)");
+        testQueryDDL("CREATE INDEX tst_idx_create_idx ON tst_idx_create(cnt)");
     }
 
     /**
@@ -438,7 +438,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE TABLE tst_drop(id long PRIMARY KEY, cnt integer)"));
 
-        testQueryDDL("DROP TABLE default.tst_drop");
+        testQueryDDL("DROP TABLE tst_drop");
     }
 
     /**
