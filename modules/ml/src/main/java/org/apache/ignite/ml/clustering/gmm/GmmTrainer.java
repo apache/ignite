@@ -17,13 +17,6 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -42,6 +35,14 @@ import org.apache.ignite.ml.structures.DatasetRow;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 /**
  * Traner for GMM model.
@@ -77,6 +78,15 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     public GmmTrainer(int countOfComponents, int maxCountOfIterations) {
         this.countOfComponents = countOfComponents;
         this.maxCountOfIterations = maxCountOfIterations;
+    }
+
+    /**
+     * Creates an instance of GmmTrainer.
+     *
+     * @param countOfComponents Count of components.
+     */
+    public GmmTrainer(int countOfComponents) {
+        this.countOfComponents = countOfComponents;
     }
 
     /** {@inheritDoc} */
