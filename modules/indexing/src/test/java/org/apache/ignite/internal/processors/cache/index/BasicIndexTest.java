@@ -29,11 +29,10 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import java.io.Serializable;
 import org.junit.Test;
 
 /**
@@ -510,7 +508,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
     /**
      * IGNITE-11091
-     * @throws Exception if can't start ignite node
+     * @throws Exception If can't start ignite node.
      */
     @Test
     public void testCaseSensitiveIndexNamesInGridCacheQueryManager() throws Exception {
@@ -518,35 +516,20 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         String idxName1 = "test_v1_IDX";
 
-        String idxName2 = "test_v1_idx";
+        String idxName2 = idxName1.toLowerCase();
 
         Ignite ignite = startGrids(1);
 
         ignite.cluster().active(true);
 
-        class TestValue implements Serializable {
-            /**
-             * @param v1 Value 1.
-             */
-            private TestValue(int v1) {
-                this.v1 = v1;
-            }
-
-            @QuerySqlField
-            private final int v1;
-        }
-
-        CacheConfiguration ccfg = new CacheConfiguration()
-                .setName("testIndexesCache")
-                .setSqlSchema("PUBLIC")
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setIndexedTypes(Integer.class, TestValue.class);
+        CacheConfiguration ccfg = new CacheConfiguration("testIndexesCache");
+        ccfg.setIndexedTypes(Integer.class, Person.class);
 
         IgniteCache cache = ignite.createCache(ccfg);
 
-        cache.query(new SqlFieldsQuery("CREATE INDEX \""+idxName1+"\" on \"1TESTVALUE\" (v1)")).getAll();
+        cache.query(new SqlFieldsQuery("CREATE INDEX \""+idxName1+"\" on \"PERSON\" (name)")).getAll();
 
-        cache.query(new SqlFieldsQuery("CREATE INDEX \""+idxName2+"\" on \"1TESTVALUE\" (v1)")).getAll();
+        cache.query(new SqlFieldsQuery("CREATE INDEX \""+idxName2+"\" on \"PERSON\" (name)")).getAll();
 
         GridCacheQueryManager cmgr = ((IgniteCacheProxy)cache).context().queries();
 
@@ -556,14 +539,14 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertTrue("Index " + idxName1 + " not found in meta v2", indexExists(cmgr.sqlMetadataV2(), idxName1));
 
-        assertTrue("Index " + idxName1 + " not found in meta v2", indexExists(cmgr.sqlMetadataV2(), idxName2));
+        assertTrue("Index " + idxName2 + " not found in meta v2", indexExists(cmgr.sqlMetadataV2(), idxName2));
     }
 
     /**
-     *
-     * @param metadata metadata from grid
-     * @param idxName index name
-     * @return true if index exists in metadata, otherwise false;
+     * Check if index exists in Collection of GridCacheSqlMetadata.
+     * @param metadata Metadata from grid.
+     * @param idxName Index name.
+     * @return True if index exists in metadata, otherwise false.
      */
     private boolean indexExists(Collection<GridCacheSqlMetadata> metadata, String idxName) {
         for (GridCacheSqlMetadata meta : metadata) {
