@@ -683,9 +683,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         for (WithSystemProperty[] props : allProps) {
             for (WithSystemProperty prop : props) {
-                String oldVal = prop.value() == null
-                    ? System.clearProperty(prop.key())
-                    : System.setProperty(prop.key(), prop.value());
+                String oldVal = System.setProperty(prop.key(), prop.value());
 
                 sysProps.add(0, new T2<>(prop.key(), oldVal));
             }

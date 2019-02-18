@@ -22,27 +22,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_GETALL_AS_ARRAY;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /** */
+@WithSystemProperty(key = IGNITE_REST_GETALL_AS_ARRAY, value = "true")
 public class JettyRestProcessorGetAllAsArrayTest extends JettyRestProcessorCommonSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_REST_GETALL_AS_ARRAY, "true");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_REST_GETALL_AS_ARRAY);
-    }
-
     /**
      * @throws Exception If failed.
      */

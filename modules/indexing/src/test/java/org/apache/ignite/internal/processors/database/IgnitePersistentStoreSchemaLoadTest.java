@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -43,6 +44,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 /**
  *
  */
+@WithSystemProperty(key = IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, value = "true")
 public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String TMPL_NAME = "test_cache*";
@@ -110,8 +112,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -122,8 +122,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
     }
 
     /** */

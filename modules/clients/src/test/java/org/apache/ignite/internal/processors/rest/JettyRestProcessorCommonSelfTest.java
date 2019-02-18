@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -25,41 +27,22 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 
 /**
  * Base class for testing Jetty REST protocol.
  */
+@WithSystemProperty(key = IGNITE_JETTY_PORT, value = "8091")
 public abstract class JettyRestProcessorCommonSelfTest extends AbstractRestProcessorSelfTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
 
-    /** REST port. */
-    private static final int DFLT_REST_PORT = 8091;
-
     /** JSON to java mapper. */
     protected static final ObjectMapper JSON_MAPPER = new GridJettyObjectMapper();
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_JETTY_PORT, Integer.toString(restPort()));
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_JETTY_PORT);
-    }
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -69,8 +52,8 @@ public abstract class JettyRestProcessorCommonSelfTest extends AbstractRestProce
     /**
      * @return Port to use for rest. Needs to be changed over time because Jetty has some delay before port unbind.
      */
-    protected int restPort() {
-        return DFLT_REST_PORT;
+    protected final int restPort() {
+        return Integer.getInteger(IGNITE_JETTY_PORT);
     }
 
     /**

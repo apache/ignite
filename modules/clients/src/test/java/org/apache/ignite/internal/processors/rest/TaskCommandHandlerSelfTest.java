@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -41,11 +40,13 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandH
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_MAX_TASK_RESULTS;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -55,6 +56,7 @@ import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
 /**
  * Test for {@code GridTaskCommandHandler}
  */
+@WithSystemProperty(key = IGNITE_REST_MAX_TASK_RESULTS, value = "10")
 public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
@@ -66,22 +68,7 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     public static final int BINARY_PORT = 11212;
 
     /** */
-    private static final int MAX_TASK_RESULTS = 10;
-
-    /** */
     private GridClient client;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_REST_MAX_TASK_RESULTS, String.valueOf(MAX_TASK_RESULTS));
-
-        startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_REST_MAX_TASK_RESULTS);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -176,8 +163,10 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         ConcurrentLinkedHashMap taskDesc = U.field(taskHnd, "taskDescs");
 
+        int maxTaskResults = Integer.getInteger(IGNITE_REST_MAX_TASK_RESULTS);
+
         assertTrue("Task result map size exceeded max value [mapSize=" + taskDesc.sizex() + ", " +
-            "maxSize=" + MAX_TASK_RESULTS + ']', taskDesc.sizex() <= MAX_TASK_RESULTS);
+            "maxSize=" + maxTaskResults + ']', taskDesc.sizex() <= maxTaskResults);
     }
 
     /**
