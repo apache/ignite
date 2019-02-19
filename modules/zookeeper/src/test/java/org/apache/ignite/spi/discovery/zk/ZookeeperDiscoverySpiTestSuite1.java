@@ -47,6 +47,7 @@ import org.junit.runners.Suite;
     ZookeeperDiscoveryTopologyChangeAndReconnectTest.class,
     ZookeeperDiscoveryCommunicationFailureTest.class,
     ZookeeperDiscoveryClientDisconnectTest.class,
+    ZookeeperDiscoveryClientReconnectTest.class,
     ZookeeperDiscoverySplitBrainTest.class,
     ZookeeperDiscoveryCustomEventsTest.class,
     ZookeeperDiscoveryMiscTest.class,
