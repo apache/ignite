@@ -268,6 +268,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** */
     private void clsRule(Statement base) throws Throwable {
+        // t0d0 cleanup extra unneeded facilities
 //        GridAbstractTestWithAssumption src = () ->
 //        {
             try {
