@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.curator.utils.PathUtils;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -421,7 +422,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
-    @Override public void excludeNode(UUID nodeId, @Nullable String warning) {
+    @Override public void failNode(UUID nodeId, @Nullable String warning) {
         impl.failNode(nodeId, warning);
     }
 
@@ -622,8 +623,26 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
         /** {@inheritDoc} */
         @Override public void excludeNode(String nodeId) {
-            impl.failNode(UUID.fromString(nodeId), "Node excluded, node=" + nodeId +
-                    ", using JMX interface, initiator=" + getLocalNodeId());
+            UUID node;
+
+            try {
+                node = UUID.fromString(nodeId);
+            } catch (IllegalArgumentException e) {
+                U.error(log, e);
+
+                return;
+            }
+
+            String msg = "Node excluded, node=" + nodeId +
+                ", using JMX interface, initiator=" + getLocalNodeId();
+
+            try {
+                U.warn(log, msg);
+
+                ignite.cluster().stopNodes(Collections.singletonList(node));
+            } catch (IgniteException ignore) {
+                impl.failNode(node, msg);
+            }
         }
 
         /** {@inheritDoc} */
