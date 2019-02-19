@@ -485,18 +485,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     GridFutureAdapter<MetadataUpdateResult> fut =
                         transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
 
+                    if (failIfUnregistered && !fut.isDone())
+                        throw new UnregisteredBinaryTypeException(typeId, fut);
+
                     fut.get();
                 }
+
                 return;
             }
 
             if (failIfUnregistered)
-                throw new UnregisteredBinaryTypeException(
-                    "Attempted to update binary metadata inside a critical synchronization block (will be " +
-                        "automatically retried). This exception must not be wrapped to any other exception class. " +
-                        "If you encounter this exception outside of EntryProcessor, please report to Apache Ignite " +
-                        "dev-list.",
-                    typeId, mergedMeta);
+                throw new UnregisteredBinaryTypeException(typeId, mergedMeta);
 
             long t0 = System.nanoTime();
 
