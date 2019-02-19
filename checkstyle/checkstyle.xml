@@ -22,22 +22,10 @@
     <module name="FileTabCharacter"/>
 
     <module name="TreeWalker">
-        <!-- Block Checks. See: http://checkstyle.sourceforge.net/config_blocks.html -->
-
-        <!-- Annotations Checks. See: http://checkstyle.sourceforge.net/config_annotation.html -->
-
         <!-- Import Checks. See: http://checkstyle.sourceforge.net/config_imports.html -->
         <module name="UnusedImports"/>
 
         <!--Modifiers Checks. See: http://checkstyle.sourceforge.net/config_modifier.html-->
         <module name="ModifierOrder"/>
-
-        <!-- Class Design Checks. See: http://checkstyle.sourceforge.net/config_design.html -->
-
-        <!-- Coding Checks. See: http://checkstyle.sourceforge.net/config_coding.html -->
-
-        <!-- Miscellaneous Checks. See: http://checkstyle.sourceforge.net/config_misc.html -->
-
-        <!-- Size Violation Checks. See: http://checkstyle.sourceforge.net/config_sizes.html -->
     </module>
 </module>
