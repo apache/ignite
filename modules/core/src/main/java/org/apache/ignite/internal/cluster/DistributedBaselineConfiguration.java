@@ -42,13 +42,13 @@ public class DistributedBaselineConfiguration {
     /** Message of baseline auto-adjust configuration. */
     private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%d' ms";
     /** Value of manual baseline control or auto adjusting baseline. */
-    private volatile DistributedBooleanProperty baselineAutoAdjustEnabled =
+    private final DistributedBooleanProperty baselineAutoAdjustEnabled =
         detachedBooleanProperty("baselineAutoAdjustEnabled", false);
 
     /**
      * Value of time which we would wait before the actual topology change since last discovery event(node join/exit).
      */
-    private volatile DistributedLongProperty baselineAutoAdjustTimeout =
+    private final DistributedLongProperty baselineAutoAdjustTimeout =
         detachedLongProperty("baselineAutoAdjustTimeout", -1L);
 
     /**
@@ -58,17 +58,18 @@ public class DistributedBaselineConfiguration {
     public DistributedBaselineConfiguration(
         IgniteConfiguration cfg,
         GridInternalSubscriptionProcessor isp,
-        IgniteLogger log) {
+        IgniteLogger log
+    ) {
+        boolean persistenceEnabled = cfg != null && CU.isPersistenceEnabled(cfg);
+
+        long timeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
+
+        //It set default value locally only.
+        baselineAutoAdjustEnabled.localUpdate(getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, true));
+        baselineAutoAdjustTimeout.localUpdate(timeout);
+
         isp.registerDistributedConfigurationListener(
             dispatcher -> {
-                boolean persistenceEnabled = cfg != null && CU.isPersistenceEnabled(cfg);
-
-                long timeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
-
-                //It set default value locally only.
-                baselineAutoAdjustEnabled.localUpdate(getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, true));
-                baselineAutoAdjustTimeout.localUpdate(timeout);
-
                 dispatcher.registerProperty(baselineAutoAdjustEnabled);
                 dispatcher.registerProperty(baselineAutoAdjustTimeout);
 

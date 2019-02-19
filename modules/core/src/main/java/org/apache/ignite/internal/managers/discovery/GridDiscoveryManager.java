@@ -791,7 +791,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                                 BaselineTopology newBlt = BaselineTopology.build(bltNodes, newBltId);
 
-                                UUID transitionId = oldState.transition() ? oldState.transitionRequestId() : node.id();
+                                UUID transitionId = node.id();
 
                                 ChangeGlobalStateMessage changeGlobalStateMsg = new ChangeGlobalStateMessage(
                                     transitionId,

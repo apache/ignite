@@ -313,7 +313,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         // Start first node as inactive if persistence is enabled.
         boolean activeOnStart = inMemoryMode && ctx.config().isActiveOnStart();
 
-        globalState = DiscoveryDataClusterState.createState(activeOnStart, null);
+        BaselineTopology blt = null;//activeOnStart ? BaselineTopology.build(Collections.singleton(ctx.discovery().localNode()), 0) : null;
+
+        globalState = DiscoveryDataClusterState.createState(activeOnStart, blt);
 
         ctx.event().addLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }

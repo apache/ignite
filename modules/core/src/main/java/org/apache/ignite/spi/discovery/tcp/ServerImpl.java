@@ -568,7 +568,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
                         Collections.unmodifiableList(top));
 
-                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
+                    lastCustomEvtLsnrFut = lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
                 }
             }
         }
@@ -1530,7 +1530,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
-            lsnr.onDiscovery(type, topVer, node, top, hist, null);
+            IgniteFuture<?> fut = lsnr.onDiscovery(type, topVer, node, top, hist, null);
+
+            if (type == EVT_NODE_JOINED || type == EVT_NODE_LEFT || type == EVT_NODE_FAILED)
+                lastCustomEvtLsnrFut = fut;
         }
         else {
             if (log.isDebugEnabled())
