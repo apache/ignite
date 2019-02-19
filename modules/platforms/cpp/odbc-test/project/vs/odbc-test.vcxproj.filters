@@ -154,9 +154,6 @@
     <ClCompile Include="..\..\..\odbc\src\config\config_tools.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\odbc\src\ssl\ssl_mode.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\diagnostic\diagnostic_record_storage.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
@@ -170,6 +167,27 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\nested_tx_mode.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sql_parsing_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\sql\sql_lexer.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\sql\sql_parser.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\sql\sql_set_streaming_command.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\sql\sql_utils.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\streaming_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\ssl_mode.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
   </ItemGroup>

@@ -198,7 +198,6 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public boolean equals(Object obj) {
             if (obj == null || !obj.getClass().equals(InternalFutureListener.class))
                 return false;

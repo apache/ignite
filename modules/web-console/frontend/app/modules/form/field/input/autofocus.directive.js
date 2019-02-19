@@ -15,7 +15,17 @@
  * limitations under the License.
  */
 
-export default ['igniteFormFieldInputAutofocus', ['$timeout', ($timeout) => {
+import _ from 'lodash';
+
+/**
+ * @param {ng.ITimeoutService} $timeout
+ */
+export default function factory($timeout) {
+    /**
+     * @param {ng.IScope} scope
+     * @param {JQLite} el
+     * @param {ng.IAttributes} attrs
+     */
     const link = (scope, el, attrs) => {
         if (_.isUndefined(attrs.igniteFormFieldInputAutofocus) || attrs.igniteFormFieldInputAutofocus !== 'true')
             return;
@@ -27,4 +37,6 @@ export default ['igniteFormFieldInputAutofocus', ['$timeout', ($timeout) => {
         restrict: 'A',
         link
     };
-}]];
+}
+
+factory.$inject = ['$timeout'];

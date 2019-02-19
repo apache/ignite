@@ -24,10 +24,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -38,9 +36,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
  */
 public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private boolean daemon;
 
     /** {@inheritDoc} */
@@ -48,8 +43,6 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDaemon(daemon);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
     }
@@ -64,6 +57,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalOnDaemonNode1() throws Exception {
         marshalOnDaemonNode(true);
     }
@@ -71,6 +65,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalOnDaemonNode2() throws Exception {
         marshalOnDaemonNode(false);
     }

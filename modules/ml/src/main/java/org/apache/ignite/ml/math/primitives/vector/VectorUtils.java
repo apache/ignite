@@ -18,10 +18,14 @@
 package org.apache.ignite.ml.math.primitives.vector;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingNamedVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 
@@ -40,14 +44,45 @@ public class VectorUtils {
     }
 
     /**
+     * Create new vector of specified size n with specified value.
+     *
+     * @param val Value.
+     * @param n Size;
+     * @return New vector of specified size n with specified value.
+     */
+    public static DenseVector fill(double val, int n) {
+        return (DenseVector)new DenseVector(n).assign(val);
+    }
+
+    /**
+     * Wrap specified value into vector.
+     *
+     * @param val Value to wrap.
+     * @return Specified value wrapped into vector.
+     */
+    public static Vector num2Vec(double val) {
+        return fill(val, 1);
+    }
+
+    /**
      * Turn number into a local Vector of given size with one-hot encoding.
      *
      * @param num Number to turn into vector.
      * @param vecSize Vector size of output vector.
      * @return One-hot encoded number.
      */
-    public static Vector num2Vec(int num, int vecSize) {
-        return num2Vec(num, vecSize, false);
+    public static Vector oneHot(int num, int vecSize) {
+        return oneHot(num, vecSize, false);
+    }
+
+    /**
+     * Turn number to 1-sized array.
+     *
+     * @param val Value to wrap in array.
+     * @return Number wrapped in 1-sized array.
+     */
+    public static double[] num2Arr(double val) {
+        return new double[] {val};
     }
 
     /**
@@ -58,7 +93,7 @@ public class VectorUtils {
      * @param isDistributed Flag indicating if distributed vector should be created.
      * @return One-hot encoded number.
      */
-    public static Vector num2Vec(int num, int vecSize, boolean isDistributed) {
+    public static Vector oneHot(int num, int vecSize, boolean isDistributed) {
         Vector res = new DenseVector(vecSize);
         return res.setX(num, 1);
     }
@@ -185,5 +220,89 @@ public class VectorUtils {
                 answer.set(i, values[i]);
 
         return answer;
+    }
+
+    /**
+     * Creates named vector based on map of keys and values.
+     *
+     * @param values Values.
+     * @return Named vector.
+     */
+    public static NamedVector of(Map<String, Double> values) {
+        SparseVector vector = new SparseVector(values.size(), StorageConstants.RANDOM_ACCESS_MODE);
+        for (int i = 0; i < values.size(); i++)
+            vector.set(i, Double.NaN);
+
+        Map<String, Integer> dict = new HashMap<>();
+        int idx = 0;
+        for (Map.Entry<String, Double> e : values.entrySet()) {
+            dict.put(e.getKey(), idx);
+            vector.set(idx, e.getValue());
+            idx++;
+        }
+
+        return new DelegatingNamedVector(vector, dict);
+    }
+
+    /**
+     * Concatenates two given vectors.
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector v1, Vector v2) {
+        int size1 = v1.size();
+        int size2 = v2.size();
+        double[] vals = new double[size1 + size2];
+        System.arraycopy(v1.asArray(), 0, vals, 0, size1);
+        System.arraycopy(v2.asArray(), 0, vals, size1, size2);
+
+        return new DenseVector(vals);
+    }
+
+    /**
+     * Concatenates given vectors.
+     *
+     * @param v1 First vector.
+     * @param vs Other vectors.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector v1, Vector... vs) {
+        Vector res = v1;
+        for (Vector v : vs)
+            res = concat(res, v);
+        return res;
+    }
+
+    /**
+     * Concatenates given vectors.
+     *
+     * @param vs Other vectors.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector... vs) {
+        Vector res = vs.length == 0 ? new DenseVector() : vs[0];
+        for (int i = 1; i < vs.length; i++) {
+            Vector v = vs[i];
+            res = concat(res, v);
+        }
+        return res;
+    }
+
+    /**
+     * Get projector from index mapping.
+     *
+     * @param mapping Index mapping.
+     * @return Projector.
+     */
+    public static IgniteFunction<Vector, Vector> getProjector(int[] mapping) {
+        return v -> {
+            Vector res = zeroes(mapping.length);
+            for (int i = 0; i < mapping.length; i++)
+                res.set(i, v.get(mapping[i]));
+
+            return res;
+        };
     }
 }

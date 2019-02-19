@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Queue multi node tests.
@@ -110,6 +111,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
@@ -125,6 +127,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutPollCollocated() throws Exception {
         try {
             final String queueName = UUID.randomUUID().toString();
@@ -227,7 +230,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testAddAll() throws Exception {
         try {
             String queueName = UUID.randomUUID().toString();
@@ -256,6 +259,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
@@ -279,6 +283,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTake() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
@@ -298,6 +303,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddMultinode() throws Exception {
         testAddMultinode(true);
 
@@ -361,6 +367,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddPollMultinode() throws Exception {
         testAddPollMultinode(true);
 
@@ -465,6 +472,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         final String queueName = UUID.randomUUID().toString();
 
@@ -513,6 +521,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();

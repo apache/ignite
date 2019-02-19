@@ -34,13 +34,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 /**
  * Test that checks indexes handling on H2 side.
  */
 public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
-    private final static int CLIENT = 2;
+    private static final int CLIENT = 2;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -75,6 +76,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     /**
      * Test that after index creation index is used by queries.
      */
+    @Test
     public void testCreateIndex() throws Exception {
         IgniteCache<KeyClass, ValueClass> cache = cache();
 
@@ -85,6 +87,9 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
         // Test that local queries on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
+            if (ignite(i).configuration().isClientMode())
+                continue;
+
             List<List<?>> locRes = ignite(i).cache("cache").query(new SqlFieldsQuery("explain select \"id\" from " +
                 "\"cache\".\"ValueClass\" where \"field1\" = 'A'").setLocal(true)).getAll();
 
@@ -111,6 +116,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     /**
      * Test that creating an index with duplicate name yields an error.
      */
+    @Test
     public void testCreateIndexWithDuplicateName() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
@@ -128,6 +134,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     /**
      * Test that creating an index with duplicate name does not yield an error with {@code IF NOT EXISTS}.
      */
+    @Test
     public void testCreateIndexIfNotExists() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
@@ -141,6 +148,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     /**
      * Test that after index drop there are no attempts to use it, and data state remains intact.
      */
+    @Test
     public void testDropIndex() {
         IgniteCache<KeyClass, ValueClass> cache = cache();
 
@@ -155,6 +163,9 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
         // Test that no local queries on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
+            if (ignite(i).configuration().isClientMode())
+                continue;
+
             List<List<?>> locRes = ignite(i).cache("cache").query(new SqlFieldsQuery("explain select \"id\" from " +
                 "\"cache\".\"ValueClass\" where \"field1\" = 'A'").setLocal(true)).getAll();
 
@@ -173,6 +184,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     /**
      * Test that dropping a non-existent index yields an error.
      */
+    @Test
     public void testDropMissingIndex() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
@@ -186,6 +198,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     /**
      * Test that dropping a non-existent index does not yield an error with {@code IF EXISTS}.
      */
+    @Test
     public void testDropMissingIndexIfExists() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
@@ -195,6 +208,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     /**
      * Test that changes in cache affect index, and vice versa.
      */
+    @Test
     public void testIndexState() {
         IgniteCache<KeyClass, ValueClass> cache = cache();
 

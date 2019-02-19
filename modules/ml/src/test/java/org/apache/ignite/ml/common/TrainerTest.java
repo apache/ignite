@@ -18,7 +18,9 @@
 package org.apache.ignite.ml.common;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -28,7 +30,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class TrainerTest {
     /** Number of parts to be tested. */
-    private static final int[] partsToBeTested = new int[]{1, 2, 3, 4, 5, 7, 100};
+    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 13};
 
     /** Parameters. */
     @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
@@ -36,7 +38,7 @@ public class TrainerTest {
         List<Integer[]> res = new ArrayList<>();
 
         for (int part : partsToBeTested)
-            res.add(new Integer[]{part});
+            res.add(new Integer[] {part});
 
         return res;
     }
@@ -1158,4 +1160,31 @@ public class TrainerTest {
         {3, 9.959296741639132, -9.762961500922069},
         {3, 9.882357321966778, -9.069477551120192}
     };
+
+    /** xor truth table. */
+    protected static final double[][] xor = {
+        {0.0, 0.0, 0.0},
+        {0.0, 1.0, 1.0},
+        {1.0, 0.0, 1.0},
+        {1.0 ,1.0, 0.0}
+    };
+
+    /**
+     * Create cache mock.
+     *
+     * @param vals Values for cache mock.
+     * @return Cache mock.
+     */
+    protected Map<Integer, Double[]> getCacheMock(double[][] vals) {
+        Map<Integer, Double[]> cacheMock = new HashMap<>();
+
+        for (int i = 0; i < vals.length; i++) {
+            double[] row = vals[i];
+            Double[] convertedRow = new Double[row.length];
+            for (int j = 0; j < row.length; j++)
+                convertedRow[j] = row[j];
+            cacheMock.put(i, convertedRow);
+        }
+        return cacheMock;
+    }
 }

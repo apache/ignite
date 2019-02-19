@@ -76,11 +76,11 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PagesListNodeIO io = PageIO.getPageIO(PageIO.T_PAGE_LIST_NODE, ioVer);
 
-        io.initNewPage(pageAddr, pageId(), pageMem.pageSize());
+        io.initNewPage(pageAddr, pageId(), pageMem.realPageSize(groupId()));
         io.setPreviousId(pageAddr, prevPageId);
 
         if (addDataPageId != 0L) {
-            int cnt = io.addPage(pageAddr, addDataPageId, pageMem.pageSize());
+            int cnt = io.addPage(pageAddr, addDataPageId, pageMem.realPageSize(groupId()));
 
             assert cnt == 0 : cnt;
         }

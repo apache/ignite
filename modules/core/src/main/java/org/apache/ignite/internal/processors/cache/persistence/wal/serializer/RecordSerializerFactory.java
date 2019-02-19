@@ -28,6 +28,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * Factory for creating {@link RecordSerializer}.
  */
 public interface RecordSerializerFactory {
+    /** Latest serializer version to use. */
+    static final int LATEST_SERIALIZER_VERSION = 2;
     /**
      * Factory method for creation {@link RecordSerializer}.
      *

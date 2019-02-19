@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System.IO;
+    using System.Net;
     using System.Security.Authentication;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
@@ -46,18 +47,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             return new IgniteClientConfiguration(base.GetClientConfiguration())
             {
-                Port = 11110,
+                Endpoints = new[] {IPAddress.Loopback + ":11110"},
                 SslStreamFactory = new SslStreamFactory
                 {
                     CertificatePath = Path.Combine("Config", "Client", "thin-client-cert.pfx"),
                     CertificatePassword = "123456",
                     SkipServerCertificateValidation = true,
                     CheckCertificateRevocation = true,
-#if !NETCOREAPP2_0
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1
                     SslProtocols = SslProtocols.Tls
 #else
                     SslProtocols = SslProtocols.Tls12
-#endif                
+#endif
                 }
             };
         }

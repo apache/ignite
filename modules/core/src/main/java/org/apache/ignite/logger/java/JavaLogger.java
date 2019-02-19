@@ -405,7 +405,6 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
      * @param <T> Class type.
      * @return First found handler of specified class type or {@code null} if that handler isn't configured.
      */
-    @SuppressWarnings("unchecked")
     private static <T> T findHandler(Logger log, Class<T> cls) {
         while (log != null) {
             for (Handler hnd : log.getHandlers()) {

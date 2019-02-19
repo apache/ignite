@@ -47,11 +47,13 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
+import org.junit.Test;
 
+import static org.apache.ignite.ml.TestUtils.testEnvBuilder;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link Evaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
+ * Tests for {@link BinaryClassificationEvaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
  * Step_8_CV_with_Param_Grid example.
  */
 public class EvaluatorTest extends GridCommonAbstractTest {
@@ -67,11 +69,6 @@ public class EvaluatorTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -83,6 +80,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBasic() throws InterruptedException {
         AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
         AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
@@ -129,6 +127,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBasic2() throws InterruptedException {
         AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
         AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
@@ -162,6 +161,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBasic3() throws InterruptedException {
         AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
         AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
@@ -195,12 +195,12 @@ public class EvaluatorTest extends GridCommonAbstractTest {
 
     /** */
     private void assertResults(CrossValidationResult res, List<double[]> scores, double accuracy, double accuracy2) {
-        assertTrue(res.toString().length() > 0);
+        assertTrue(!res.toString().isEmpty());
         assertEquals("Best maxDeep", 1.0, res.getBest("maxDeep"));
         assertEquals("Best minImpurityDecrease", 0.0, res.getBest("minImpurityDecrease"));
-        assertArrayEquals("Best score", new double[] {0.6666666666666666, 0.4, 0}, res.getBestScore(), 0);
+        assertArrayEquals("Best score", new double[] {0.6666666666666666, 0.6, 0}, res.getBestScore(), 0);
         assertEquals("Best hyper params size", 2, res.getBestHyperParams().size());
-        assertEquals("Best average score", 0.35555555555555557, res.getBestAvgScore());
+        assertEquals("Best average score", 0.4222222222222222, res.getBestAvgScore());
 
         assertEquals("Scores amount", 18, scores.size());
 
@@ -259,7 +259,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 lbExtractor
             );
 
-            actualAccuracy.set(Evaluator.evaluate(
+            actualAccuracy.set(BinaryClassificationEvaluator.evaluate(
                 cache,
                 split.getTestFilter(),
                 bestMdl,
@@ -268,7 +268,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 new Accuracy<>()
             ));
 
-            actualAccuracy2.set(Evaluator.evaluate(
+            actualAccuracy2.set(BinaryClassificationEvaluator.evaluate(
                 cache,
                 bestMdl,
                 preprocessor,
@@ -286,21 +286,26 @@ public class EvaluatorTest extends GridCommonAbstractTest {
 
             IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
                 .withEncoderType(EncoderType.STRING_ENCODER)
-                .encodeFeature(1)
-                .encodeFeature(6) // <--- Changed index here
-                .fit(ignite,
+                .withEncodedFeature(1)
+                .withEncodedFeature(6) // <--- Changed index here
+                .fit(
+                    testEnvBuilder(123L),
+                    ignite,
                     cache,
                     featureExtractor
                 );
 
             IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
-                .fit(ignite,
+                .fit(
+                    testEnvBuilder(124L),
+                    ignite,
                     cache,
                     strEncoderPreprocessor
                 );
 
             IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
                 .fit(
+                    testEnvBuilder(125L),
                     ignite,
                     cache,
                     imputingPreprocessor
@@ -309,6 +314,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
             return new NormalizationTrainer<Integer, Object[]>()
                 .withP(2)
                 .fit(
+                    testEnvBuilder(126L),
                     ignite,
                     cache,
                     minMaxScalerPreprocessor

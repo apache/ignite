@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -75,6 +76,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
      * @throws Exception If failed.
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
+    @Test
     public void testNoWriteThrough() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 

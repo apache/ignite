@@ -84,7 +84,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
     private final Map<GridLocalEventListener, Set<Integer>> evtLsnrs = new HashMap<>();
 
     /** */
-    @SuppressWarnings("deprecation")
     private final Collection<GridMessageListener> msgLsnrs = new ArrayList<>();
 
     /** */
@@ -327,14 +326,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @param node Destination node.
      * @param msg Message.
      */
-    @SuppressWarnings("deprecation")
     public void triggerMessage(ClusterNode node, Object msg) {
         for (GridMessageListener lsnr : msgLsnrs)
             lsnr.onMessage(node.id(), msg, GridIoPolicy.SYSTEM_POOL);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
         try {
             addMessageListener(TOPIC_COMM_USER,
@@ -349,25 +346,21 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @param topic Listener's topic.
      * @param lsnr Listener to add.
      */
-    @SuppressWarnings({"TypeMayBeWeakened", "deprecation"})
     public void addMessageListener(GridTopic topic, GridMessageListener lsnr) {
         addMessageListener(lsnr, ((Object)topic).toString());
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void addMessageListener(GridMessageListener lsnr, String topic) {
         msgLsnrs.add(lsnr);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public boolean removeMessageListener(GridMessageListener lsnr, String topic) {
         return msgLsnrs.remove(lsnr);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
         try {
             removeMessageListener(TOPIC_COMM_USER,
@@ -383,7 +376,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @param lsnr Listener to remove.
      * @return Whether or not the lsnr was removed.
      */
-    @SuppressWarnings("deprecation")
     public boolean removeMessageListener(GridTopic topic, @Nullable GridMessageListener lsnr) {
         return removeMessageListener(lsnr, ((Object)topic).toString());
     }
@@ -492,7 +484,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) {
         V v = get(cacheName, key);
 
@@ -681,9 +672,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({
-            "SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
-            "OverlyStrongTypeCast"})
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridIoUserMessage ioMsg = (GridIoUserMessage)msg;
 

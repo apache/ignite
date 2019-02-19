@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 /**
  * Test reveals issue of null values in SQL query resultset columns that correspond to compound key.
@@ -94,7 +95,7 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testCacheInitializationFailure() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {

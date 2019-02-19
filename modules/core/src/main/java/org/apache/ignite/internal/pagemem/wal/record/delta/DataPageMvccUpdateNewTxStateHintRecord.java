@@ -50,7 +50,7 @@ public class DataPageMvccUpdateNewTxStateHintRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         DataPageIO io = PageIO.getPageIO(pageAddr);
 
-        io.updateNewTxState(pageAddr, itemId, pageMem.pageSize(), txState);
+        io.updateNewTxState(pageAddr, itemId, pageMem.realPageSize(groupId()), txState);
     }
 
     /** {@inheritDoc} */

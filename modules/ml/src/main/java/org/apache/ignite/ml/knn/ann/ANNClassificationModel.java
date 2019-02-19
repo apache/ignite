@@ -50,7 +50,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
     /**
      * Build the model based on a candidates set.
      * @param centers The candidates set.
-     * @param centroindsStat
+     * @param centroindsStat The stat about centroids.
      */
     public ANNClassificationModel(LabeledVectorSet<ProbableLabel, LabeledVector> centers,
         ANNClassificationTrainer.CentroidStat centroindsStat) {
@@ -69,7 +69,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector v) {
+    @Override public Double predict(Vector v) {
             List<LabeledVector> neighbors = findKNearestNeighbors(v);
             return classify(neighbors, v, stgy);
     }

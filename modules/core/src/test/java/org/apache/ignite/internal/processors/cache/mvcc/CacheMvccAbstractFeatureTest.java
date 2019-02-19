@@ -58,10 +58,10 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     private static final String CACHE_NAME = "Person";
 
     /** */
-    private Ignite node;
+    private static Ignite node;
 
     /** {@inheritDoc} */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 
@@ -78,16 +78,14 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        node = null;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
         ccfg.setIndexedTypes(Integer.class, Person.class);
 
@@ -173,7 +171,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
             int idx;
 
             do {
-                idx = (int) (Math.random() * 100) + 1;
+                idx = (int) (Math.random() * 100);
             }
             while (!keys.add(idx));
         }
@@ -276,7 +274,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     }
 
     /** */
-    final static Comparator<Cache.Entry<Integer, Person>> ENTRY_CMP =
+    static final Comparator<Cache.Entry<Integer, Person>> ENTRY_CMP =
         new Comparator<Cache.Entry<Integer, Person>>() {
         @Override public int compare(Cache.Entry<Integer, Person> o1, Cache.Entry<Integer, Person> o2) {
             return o1.getKey().compareTo(o2.getKey());

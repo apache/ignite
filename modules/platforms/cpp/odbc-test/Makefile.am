@@ -27,6 +27,8 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/common/include \
     -I@top_srcdir@/common/os/linux/include \
     -I@top_srcdir@/binary/include \
+    -I@top_srcdir@/network/include \
+    -I@top_srcdir@/network/os/linux/include \
     -I@top_srcdir@/odbc/include \
     -I@top_srcdir@/jni/include \
     -I@top_srcdir@/jni/os/linux/include \
@@ -36,7 +38,8 @@ AM_CPPFLAGS = \
     -I$(JAVA_HOME)/include/linux \
     -DIGNITE_IMPL \
     -D__STDC_LIMIT_MACROS \
-    -D__STDC_CONSTANT_MACROS
+    -D__STDC_CONSTANT_MACROS \
+    -DBOOST_TEST_DYN_LINK
 
 AM_CXXFLAGS = \
     -Wall \
@@ -47,7 +50,10 @@ ignite_odbc_tests_LDADD = \
     -ldl \
     -lodbc \
     -lpthread \
-    -lboost_regex
+    -lboost_thread \
+    -lboost_system \
+    -lboost_chrono \
+    -lboost_unit_test_framework
 
 ignite_odbc_tests_LDFLAGS = \
     -static-libtool-libs
@@ -87,6 +93,8 @@ ignite_odbc_tests_SOURCES = \
     src/types_test.cpp \
     src/transaction_test.cpp \
     src/authentication_test.cpp \
+    src/sql_parsing_test.cpp \
+    src/streaming_test.cpp \
     ../odbc/src/log.cpp \
     ../odbc/src/cursor.cpp \
     ../odbc/src/diagnostic/diagnostic_record.cpp \
@@ -96,7 +104,11 @@ ignite_odbc_tests_SOURCES = \
     ../odbc/src/config/connection_info.cpp \
     ../odbc/src/config/connection_string_parser.cpp \
     ../odbc/src/app/application_data_buffer.cpp \
-    ../odbc/src/ssl/ssl_mode.cpp \
+    ../odbc/src/ssl_mode.cpp \
+    ../odbc/src/sql/sql_parser.cpp \
+    ../odbc/src/sql/sql_lexer.cpp \
+    ../odbc/src/sql/sql_set_streaming_command.cpp \
+    ../odbc/src/sql/sql_utils.cpp \
     ../odbc/src/row.cpp \
     ../odbc/src/protocol_version.cpp \
     ../odbc/src/column.cpp \

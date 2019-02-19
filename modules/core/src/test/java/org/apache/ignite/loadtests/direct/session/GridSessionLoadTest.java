@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Session load test.
@@ -59,7 +60,7 @@ public class GridSessionLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testSessionLoad() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

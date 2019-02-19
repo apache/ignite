@@ -17,7 +17,8 @@
 
 #include <ignite/impl/thin/cache/cache_client_proxy.h>
 
-#include "impl/cache/cache_client_impl.h"
+#include <ignite/impl/thin/cache/cache_client_proxy.h>
+#include <impl/cache/cache_client_impl.h>
 
 using namespace ignite::impl::thin;
 using namespace cache;
@@ -55,9 +56,29 @@ namespace ignite
                     GetCacheImpl(impl).Get(key, value);
                 }
 
+                void CacheClientProxy::PutAll(const Writable& pairs)
+                {
+                    GetCacheImpl(impl).PutAll(pairs);
+                }
+
+                void CacheClientProxy::GetAll(const Writable & keys, Readable & pairs)
+                {
+                    GetCacheImpl(impl).GetAll(keys, pairs);
+                }
+
+                bool CacheClientProxy::Replace(const WritableKey& key, const Writable& value)
+                {
+                    return GetCacheImpl(impl).Replace(key, value);
+                }
+
                 bool CacheClientProxy::ContainsKey(const WritableKey & key)
                 {
                     return GetCacheImpl(impl).ContainsKey(key);
+                }
+
+                bool CacheClientProxy::ContainsKeys(const Writable & keys)
+                {
+                    return GetCacheImpl(impl).ContainsKeys(keys);
                 }
 
                 int64_t CacheClientProxy::GetSize(int32_t peekModes)
@@ -80,6 +101,16 @@ namespace ignite
                     return GetCacheImpl(impl).Remove(key);
                 }
 
+                bool CacheClientProxy::Remove(const WritableKey& key, const Writable& val)
+                {
+                    return GetCacheImpl(impl).Remove(key, val);
+                }
+
+                void CacheClientProxy::RemoveAll(const Writable & keys)
+                {
+                    return GetCacheImpl(impl).RemoveAll(keys);
+                }
+
                 void CacheClientProxy::RemoveAll()
                 {
                     GetCacheImpl(impl).RemoveAll();
@@ -93,6 +124,42 @@ namespace ignite
                 void CacheClientProxy::Clear()
                 {
                     GetCacheImpl(impl).Clear();
+                }
+
+                void CacheClientProxy::ClearAll(const Writable& keys)
+                {
+                    GetCacheImpl(impl).ClearAll(keys);
+                }
+
+                bool CacheClientProxy::Replace(const WritableKey& key, const Writable& oldVal, const Writable& newVal)
+                {
+                    return GetCacheImpl(impl).Replace(key, oldVal, newVal);
+                }
+
+                void CacheClientProxy::GetAndPut(const WritableKey& key, const Writable& valIn, Readable& valOut)
+                {
+                    GetCacheImpl(impl).GetAndPut(key, valIn, valOut);
+                }
+
+                void CacheClientProxy::GetAndRemove(const WritableKey& key, Readable& valOut)
+                {
+                    GetCacheImpl(impl).GetAndRemove(key, valOut);
+                }
+
+                void CacheClientProxy::GetAndReplace(const WritableKey& key, const Writable& valIn, Readable& valOut)
+                {
+                    GetCacheImpl(impl).GetAndReplace(key, valIn, valOut);
+                }
+
+                bool CacheClientProxy::PutIfAbsent(const WritableKey& key, const Writable& val)
+                {
+                    return GetCacheImpl(impl).PutIfAbsent(key, val);
+                }
+
+                void CacheClientProxy::GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn,
+                    Readable& valOut)
+                {
+                    GetCacheImpl(impl).GetAndPutIfAbsent(key, valIn, valOut);
                 }
             }
         }

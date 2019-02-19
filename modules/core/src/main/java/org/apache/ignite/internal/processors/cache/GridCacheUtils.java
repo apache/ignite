@@ -65,12 +65,10 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
@@ -103,6 +101,7 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -330,18 +329,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Query mapped filter. */
-    public static final IgnitePredicate<GridDistributedTxMapping> FILTER_QUERY_MAPPING = new P1<GridDistributedTxMapping>() {
-
-        @Override public boolean apply(GridDistributedTxMapping m) {
-            return m.queryUpdate();
-        }
-
-        @Override public String toString() {
-            return "FILTER_QUERY_MAPPING";
-        }
-    };
-
     /** Transaction entry to key. */
     private static final IgniteClosure tx2key = new C1<IgniteTxEntry, Object>() {
         @Override public Object apply(IgniteTxEntry e) {
@@ -455,7 +442,6 @@ public class GridCacheUtils {
      */
     public static <K, V> IgniteClosure<Integer, IgnitePredicate<Cache.Entry<K, V>>[]> factory() {
         return new IgniteClosure<Integer, IgnitePredicate<Cache.Entry<K, V>>[]>() {
-            @SuppressWarnings({"unchecked"})
             @Override public IgnitePredicate<Cache.Entry<K, V>>[] apply(Integer len) {
                 return (IgnitePredicate<Cache.Entry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
             }
@@ -527,7 +513,6 @@ public class GridCacheUtils {
     /**
      * @return Empty filter.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] empty() {
         return (IgnitePredicate<Cache.Entry<K, V>>[])EMPTY_FILTER;
     }
@@ -535,7 +520,6 @@ public class GridCacheUtils {
     /**
      * @return Empty filter.
      */
-    @SuppressWarnings({"unchecked"})
     public static CacheEntryPredicate[] empty0() {
         return EMPTY_FILTER0;
     }
@@ -550,7 +534,6 @@ public class GridCacheUtils {
     /**
      * @return Closure which converts transaction entry xid to XID version.
      */
-    @SuppressWarnings( {"unchecked"})
     public static IgniteClosure<IgniteInternalTx, GridCacheVersion> tx2xidVersion() {
         return (IgniteClosure<IgniteInternalTx, GridCacheVersion>)tx2xidVer;
     }
@@ -566,7 +549,6 @@ public class GridCacheUtils {
     /**
      * @return Closure that converts entry info to key.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgniteClosure<GridCacheEntryInfo, K> info2Key() {
         return (IgniteClosure<GridCacheEntryInfo, K>)info2key;
     }
@@ -793,7 +775,6 @@ public class GridCacheUtils {
      * @return Buffer that contains obtained byte array.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    @SuppressWarnings("unchecked")
     public static byte[] marshal(GridCacheContext ctx, Object obj)
         throws IgniteCheckedException {
         assert ctx != null;
@@ -1150,6 +1131,17 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @param grpName Group name.
+     * @return Group ID.
+     */
+    public static int cacheGroupId(String cacheName, @Nullable String grpName) {
+        assert cacheName != null;
+
+        return grpName != null ? CU.cacheId(grpName) : CU.cacheId(cacheName);
+    }
+
+    /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
      * @return {@code True} in this is IGFS data or meta cache.
@@ -1291,7 +1283,7 @@ public class GridCacheUtils {
      * @param e Ignite checked exception.
      * @return CacheException runtime exception, never null.
      */
-    @NotNull public static RuntimeException convertToCacheException(IgniteCheckedException e) {
+    public static @NotNull RuntimeException convertToCacheException(IgniteCheckedException e) {
         IgniteClientDisconnectedCheckedException disconnectedErr =
             e.getCause(IgniteClientDisconnectedCheckedException.class);
 
@@ -1306,7 +1298,7 @@ public class GridCacheUtils {
 
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
-        else if (e instanceof ClusterTopologyServerNotFoundException)
+        else if (e.hasCause(ClusterTopologyServerNotFoundException.class))
             return new CacheServerNotFoundException(e.getMessage(), e);
         else if (e instanceof SchemaOperationException)
             return new CacheException(e.getMessage(), e);
@@ -1574,7 +1566,7 @@ public class GridCacheUtils {
     /**
      * @return default TX configuration if system cache is used or current grid TX config otherwise.
      */
-    public static TransactionConfiguration transactionConfiguration(final @Nullable GridCacheContext sysCacheCtx,
+    public static TransactionConfiguration transactionConfiguration(@Nullable final GridCacheContext sysCacheCtx,
         final IgniteConfiguration cfg) {
         return sysCacheCtx != null && sysCacheCtx.systemTx()
             ? DEFAULT_TX_CFG
@@ -1744,7 +1736,7 @@ public class GridCacheUtils {
         boolean readThrough,
         boolean skipVals
     ) {
-        if (!readThrough || skipVals ||
+        if (cctx.mvccEnabled() || !readThrough || skipVals ||
             (key != null && !cctx.affinity().backupsByKey(key, topVer).contains(cctx.localNode())))
             return null;
 
@@ -1785,7 +1777,7 @@ public class GridCacheUtils {
                     }
                     finally {
                         if (entry != null)
-                            entry.touch(topVer);
+                            entry.touch();
 
                         cctx.shared().database().checkpointReadUnlock();
                     }
@@ -1898,6 +1890,17 @@ public class GridCacheUtils {
         }
 
         return false;
+    }
+
+    /**
+     * @param pageSize Page size.
+     * @param encSpi Encryption spi.
+     * @return Page size without encryption overhead.
+     */
+    public static int encryptedPageSize(int pageSize, EncryptionSpi encSpi) {
+        return pageSize
+            - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
+            - encSpi.blockSize(); /* For CRC. */
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.ml.regressions.linear;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Optional;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -34,6 +35,7 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -44,17 +46,17 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     /** Update strategy. */
     private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
-    /** Max number of iteration. */
+    /** Max amount of iterations. */
     private int maxIterations = 1000;
 
     /** Batch size. */
     private int batchSize = 10;
 
-    /** Number of local iterations. */
+    /** Amount of local iterations. */
     private int locIterations = 100;
 
     /** Seed for random generator. */
-    private long seed = System.currentTimeMillis();
+    private long seed = 1234L;
 
     /**
      * Constructs a new instance of linear regression SGD trainer.
@@ -83,14 +85,19 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
 
     /** {@inheritDoc} */
     @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        FeatureLabelExtractor<K, V, Double> extractor) {
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        FeatureLabelExtractor<K, V, Double> extractor) {
+
+        assert updatesStgy != null;
+
+        IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
+        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
 
@@ -157,12 +164,12 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(LinearRegressionModel mdl) {
+    @Override public boolean isUpdateable(LinearRegressionModel mdl) {
         return true;
     }
 
     /**
-     * Set up the max number of iterations before convergence.
+     * Set up the max amount of iterations before convergence.
      *
      * @param maxIterations The parameter value.
      * @return Model with new max number of iterations before convergence parameter value.
@@ -203,5 +210,50 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     public LinearRegressionSGDTrainer<P> withSeed(long seed) {
         this.seed = seed;
         return this;
+    }
+
+    /**
+     * Get the update strategy.
+     *
+     * @return The property value.
+     */
+    public UpdatesStrategy<? super MultilayerPerceptron, P> getUpdatesStgy() {
+        return updatesStgy;
+    }
+
+    /**
+     * Get the max amount of iterations.
+     *
+     * @return The property value.
+     */
+    public int getMaxIterations() {
+        return maxIterations;
+    }
+
+    /**
+     * Get the batch size.
+     *
+     * @return The property value.
+     */
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    /**
+     * Get the amount of local iterations.
+     *
+     * @return The property value.
+     */
+    public int getLocIterations() {
+        return locIterations;
+    }
+
+    /**
+     * Get the seed for random generator.
+     *
+     * @return The property value.
+     */
+    public long getSeed() {
+        return seed;
     }
 }

@@ -15,20 +15,28 @@
  * limitations under the License.
  */
 
+import angular from 'angular';
+import _ from 'lodash';
 import templateUrl from 'views/templates/agent-download.tpl.pug';
 
 export default class AgentModal {
     static $inject = ['$rootScope', '$state', '$modal', 'IgniteMessages'];
 
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {import('@uirouter/angularjs').StateService} $state
+     * @param {mgcrea.ngStrap.modal.IModalService} $modal
+     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
+     */
     constructor($root, $state, $modal, Messages) {
         const self = this;
 
         this.$root = $root;
-        self.$state = $state;
-        self.Messages = Messages;
+        this.$state = $state;
+        this.Messages = Messages;
 
         // Pre-fetch modal dialogs.
-        self.modal = $modal({
+        this.modal = $modal({
             templateUrl,
             show: false,
             backdrop: 'static',
@@ -37,7 +45,7 @@ export default class AgentModal {
             controllerAs: 'ctrl'
         });
 
-        $root.$on('user', (event, user) => self.user = user);
+        $root.$on('user', (event, user) => this.user = user);
     }
 
     hide() {
@@ -63,14 +71,12 @@ export default class AgentModal {
      * @param {String} [backText]
      */
     agentDisconnected(backText, backState) {
-        const self = this;
+        this.backText = backText;
+        this.backState = backState;
 
-        self.backText = backText;
-        self.backState = backState;
+        this.status = 'agentMissing';
 
-        self.status = 'agentMissing';
-
-        self.modal.$promise.then(self.modal.show);
+        this.modal.$promise.then(() => this.modal.show());
     }
 
     /**
@@ -78,14 +84,12 @@ export default class AgentModal {
      * @param {String} [backText]
      */
     clusterDisconnected(backText, backState) {
-        const self = this;
+        this.backText = backText;
+        this.backState = backState;
 
-        self.backText = backText;
-        self.backState = backState;
+        this.status = 'nodeMissing';
 
-        self.status = 'nodeMissing';
-
-        self.modal.$promise.then(self.modal.show);
+        this.modal.$promise.then(() => this.modal.show());
     }
 
     get securityToken() {

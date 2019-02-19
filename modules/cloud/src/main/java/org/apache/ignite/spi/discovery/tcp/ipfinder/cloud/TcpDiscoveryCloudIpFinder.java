@@ -135,7 +135,7 @@ import org.jclouds.location.reference.LocationConstants;
  */
 public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
     /* JCloud default connection timeout. */
-    private final static String JCLOUD_CONNECTION_TIMEOUT = "10000"; //10 secs
+    private static final String JCLOUD_CONNECTION_TIMEOUT = "10000"; //10 secs
 
     /* Cloud provider. */
     private String provider;

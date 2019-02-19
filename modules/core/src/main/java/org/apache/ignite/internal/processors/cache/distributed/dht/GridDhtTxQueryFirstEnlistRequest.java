@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -88,7 +87,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
      * @param batchId Batch id.
      * @param keys Keys.
      * @param vals Values.
-     * @param updCntrs Update counters.
      */
     GridDhtTxQueryFirstEnlistRequest(int cacheId,
         IgniteUuid dhtFutId,
@@ -103,9 +101,8 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
         EnlistOperation op,
         int batchId,
         List<KeyCacheObject> keys,
-        List<Message> vals,
-        GridLongList updCntrs) {
-        super(cacheId, dhtFutId, lockVer, op, batchId, snapshot.operationCounter(), keys, vals, updCntrs);
+        List<Message> vals) {
+        super(cacheId, dhtFutId, lockVer, op, batchId, snapshot.operationCounter(), keys, vals);
         this.cacheId = cacheId;
         this.subjId = subjId;
         this.topVer = topVer;
@@ -187,11 +184,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
     }
 
     /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 156;
     }
@@ -260,7 +252,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -346,7 +338,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
                 reader.incrementState();
 
             case 19:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

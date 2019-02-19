@@ -54,7 +54,7 @@ public class VectorAttributesTest {
         new Specification(new SparseLocalVectorRandomAccess(1)),
         new Specification(new VectorizedViewMatrix(new DenseMatrix(1, 1), 0, 0, 1, 1),
             DenseVector.class, "isDense",
-            "isRandomAccess", "isDistributed")); // TODO: IGNTIE-5723, find out why "isSequentialAccess" fails here
+            "isRandomAccess", "isDistributed")); // TODO: IGNITE-5723, find out why "isSequentialAccess" fails here
 
     /** */
     @Test

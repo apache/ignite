@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -57,6 +58,9 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** */
     private boolean recovery;
 
+    /** */
+    private volatile boolean useMvccCaching;
+
     /** {@inheritDoc} */
     @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
@@ -67,6 +71,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         this.recovery = recovery;
 
         tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
+
+        useMvccCaching = cacheCtx.mvccEnabled() && (cacheCtx.isDrEnabled() || cacheCtx.hasContinuousQueryListeners(tx));
     }
 
     /** {@inheritDoc} */
@@ -148,7 +154,10 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         cacheCtx.topology().readLock();
 
         if (cacheCtx.topology().stopping()) {
-            fut.onDone(new CacheStoppedException(cacheCtx.name()));
+            fut.onDone(
+                cctx.cache().isCacheRestarting(cacheCtx.name())?
+                    new IgniteCacheRestartingException(cacheCtx.name()):
+                    new CacheStoppedException(cacheCtx.name()));
 
             return null;
         }
@@ -296,14 +305,26 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled(GridCacheSharedContext cctx) {
+    @Override public boolean mvccEnabled() {
         GridCacheContext ctx0 = cacheCtx;
 
         return ctx0 != null && ctx0.mvccEnabled();
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public boolean useMvccCaching(int cacheId) {
+        assert cacheCtx == null || cacheCtx.cacheId() == cacheId;
+
+        return useMvccCaching;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recovery() {
+        return recovery;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
         return S.toString(IgniteTxImplicitSingleStateImpl.class, this);
     }
 }

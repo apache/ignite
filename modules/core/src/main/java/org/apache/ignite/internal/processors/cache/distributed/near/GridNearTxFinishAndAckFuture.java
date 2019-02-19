@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.transactions.TransactionState;
 
 /**
  *
@@ -37,6 +35,8 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
      * @param finishFut Finish future.
      */
     GridNearTxFinishAndAckFuture(NearTxFinishFuture finishFut) {
+        finishFut.listen(this::onFinishFutureDone);
+
         this.finishFut = finishFut;
     }
 
@@ -51,90 +51,39 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    public void finish(boolean commit, boolean clearThreadMap, boolean onTimeout) {
-        finishFut.finish(commit, clearThreadMap, onTimeout);
-
-        if (finishFut.commit()) {
-            finishFut.listen((IgniteInClosure)new IgniteInClosure<NearTxFinishFuture>() {
-                @Override public void apply(final NearTxFinishFuture fut) {
-                    GridNearTxLocal tx = fut.tx();
-
-                    IgniteInternalFuture<Void> ackFut = null;
-
-                    MvccQueryTracker tracker = tx.mvccQueryTracker();
-
-                    MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
-
-                    if (tracker != null)
-                        ackFut = tracker.onDone(tx, commit);
-                    else if (mvccSnapshot != null) {
-                        if (commit)
-                            ackFut = tx.context().coordinators().ackTxCommit(mvccSnapshot);
-                        else
-                            tx.context().coordinators().ackTxRollback(mvccSnapshot);
-                    }
-
-                    if (ackFut != null) {
-                        ackFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                            @Override public void apply(IgniteInternalFuture<Void> ackFut) {
-                                Exception err = null;
-
-                                try {
-                                    fut.get();
-
-                                    ackFut.get();
-                                }
-                                catch (Exception e) {
-                                    err = e;
-                                }
-                                catch (Error e) {
-                                    onDone(e);
-
-                                    throw e;
-                                }
-
-                                if (err != null)
-                                    onDone(err);
-                                else
-                                    onDone(fut.tx());
-                            }
-                        });
-                    }
-                    else
-                        finishWithFutureResult(fut);
-                }
-            });
-        }
-        else {
-            finishFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                @Override public void apply(IgniteInternalFuture fut) {
-                    finishWithFutureResult(fut);
-                }
-            });
-        }
+    @Override public void onNodeStop(IgniteCheckedException e) {
+        finishFut.onNodeStop(e);
     }
 
     /** {@inheritDoc} */
-    @Override public void onNodeStop(IgniteCheckedException e) {
-        super.onDone(finishFut.tx(), e);
+    @Override public void finish(boolean commit, boolean clearThreadMap, boolean onTimeout) {
+        finishFut.finish(commit, clearThreadMap, onTimeout);
     }
 
-    /**
-     * @param fut Future.
-     */
-    private void finishWithFutureResult(IgniteInternalFuture<IgniteInternalTx> fut) {
-        try {
-            onDone(fut.get());
-        }
-        catch (IgniteCheckedException | RuntimeException e) {
-            onDone(e);
-        }
-        catch (Error e) {
-            onDone(e);
+    /** */
+    private void onFinishFutureDone(IgniteInternalFuture<IgniteInternalTx> fut) {
+        GridNearTxLocal tx = tx(); Throwable err = fut.error();
 
-            throw e;
+        if (tx.state() == TransactionState.COMMITTED)
+            tx.context().coordinators().ackTxCommit(tx.mvccSnapshot())
+                .listen(fut0 -> onDone(tx, addSuppressed(err, fut0.error())));
+        else {
+            tx.context().coordinators().ackTxRollback(tx.mvccSnapshot());
+
+            onDone(tx, err);
         }
+    }
+
+    /** */
+    private Throwable addSuppressed(Throwable to, Throwable ex) {
+        if (ex == null)
+            return to;
+        else if (to == null)
+            return ex;
+        else
+            to.addSuppressed(ex);
+
+        return to;
     }
 
     /** {@inheritDoc} */

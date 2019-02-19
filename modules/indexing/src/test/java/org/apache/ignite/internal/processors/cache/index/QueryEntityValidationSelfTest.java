@@ -29,13 +29,12 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for query entity validation.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
+public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -49,6 +48,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValueTypeNull() throws Exception {
         QueryEntity entity = new QueryEntity();
 
@@ -60,6 +60,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     /**
      * Test failure if index type is null.
      */
+    @Test
     public void testIndexTypeNull() throws Exception {
         QueryEntity entity = new QueryEntity();
 
@@ -90,6 +91,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     /**
      * Test duplicated index name.
      */
+    @Test
     public void testIndexNameDuplicate() {
         QueryEntity entity = new QueryEntity();
 
@@ -125,6 +127,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     /**
      * Test multiple key columns with JDK key type.
      */
+    @Test
     public void testMultipleColumnsJdkKey() {
         QueryEntity entity = new QueryEntity();
 
@@ -141,6 +144,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     /**
      * Test multiple value columns with JDK value type.
      */
+    @Test
     public void testMultipleColumnsJdkValue() {
         QueryEntity entity = new QueryEntity();
 
@@ -155,6 +159,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     /**
      * Test that type of specified key column matches that of query entity key.
      */
+    @Test
     public void testJdkKeyColumnTypeMismatch() {
         QueryEntity entity = new QueryEntity();
 
@@ -172,6 +177,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     /**
      * Test that type of specified key column matches that of query entity key.
      */
+    @Test
     public void testJdkValueColumnTypeMismatch() {
         QueryEntity entity = new QueryEntity();
 

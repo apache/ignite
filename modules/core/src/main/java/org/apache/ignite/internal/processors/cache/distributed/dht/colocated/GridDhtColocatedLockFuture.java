@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -152,7 +153,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile int done;
 
     /** Trackable flag (here may be non-volatile). */
@@ -537,7 +537,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
+    @SuppressWarnings({"IfMayBeConditional"})
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -778,7 +778,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
                 if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)) {
-                    Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
+                    Throwable err = null;
+
+                    // Before cache validation, make sure that this topology future is already completed.
+                    try {
+                        fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        err = fut.error();
+                    }
+
+                    if (err == null)
+                        err = fut.validateCache(cctx, recovery, read, null, keys);
 
                     if (err != null) {
                         onDone(err);
@@ -820,7 +831,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         try {
             if (cctx.topology().stopping()) {
-                onDone(new CacheStoppedException(cctx.name()));
+                onDone(
+                    cctx.shared().cache().isCacheRestarting(cctx.name())?
+                        new IgniteCacheRestartingException(cctx.name()):
+                        new CacheStoppedException(cctx.name()));
 
                 return;
             }
@@ -1073,7 +1087,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         keepBinary,
                                         clientFirst,
                                         false,
-                                        cctx.deploymentEnabled());
+                                        cctx.deploymentEnabled(),
+                                        inTx() ? tx.label() : null);
 
                                     mapping.request(req);
                                 }

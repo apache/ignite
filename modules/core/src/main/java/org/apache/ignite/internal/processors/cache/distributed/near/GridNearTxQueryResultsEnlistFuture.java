@@ -22,15 +22,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -42,11 +45,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -63,10 +64,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * A future tracking requests for remote nodes transaction enlisting and locking
  * of entries produced with complex DML queries requiring reduce step.
  */
-public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlistFuture {
-    /** */
-    private static final long serialVersionUID = 4339957209840477447L;
-
+public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractEnlistFuture {
     /** */
     public static final int DFLT_BATCH_SIZE = 1024;
 
@@ -201,12 +199,10 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
                 KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple)cur).getKey());
 
-                List<ClusterNode> nodes = cctx.affinity().nodesByKey(key, topVer);
+                ClusterNode node = cctx.affinity().primaryByPartition(key.partition(), topVer);
 
-                ClusterNode node;
-
-                if (F.isEmpty(nodes) || ((node = nodes.get(0)) == null))
-                    throw new ClusterTopologyCheckedException("Failed to get primary node " +
+                if (node == null)
+                    throw new ClusterTopologyServerNotFoundException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
                 if (!sequential)
@@ -230,8 +226,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                     break;
                 }
 
-                batch.add(op.isDeleteOrLock() ? key : cur,
-                    op != EnlistOperation.LOCK && cctx.affinityNode() && (cctx.isReplicated() || nodes.indexOf(cctx.localNode()) > 0));
+                batch.add(op.isDeleteOrLock() ? key : cur, !node.isLocal() && isLocalBackup(op, key));
 
                 if (batch.size() == batchSize)
                     res = markReady(res, batch);
@@ -288,6 +283,16 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
     }
 
     /** */
+    private boolean isLocalBackup(EnlistOperation op, KeyCacheObject key) {
+        if (!cctx.affinityNode() || op == EnlistOperation.LOCK)
+            return false;
+        else if (cctx.isReplicated())
+            return true;
+
+        return cctx.topology().nodes(key.partition(), tx.topologyVersion()).contains(cctx.localNode());
+    }
+
+    /** */
     private ArrayList<Batch> markReady(ArrayList<Batch> batches, Batch batch) {
         if (!batch.ready()) {
             batch.ready(true);
@@ -302,15 +307,13 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
     }
 
     /**
-     *
      * @param primaryId Primary node id.
      * @param rows Rows.
      * @param dhtVer Dht version assigned at primary node.
      * @param dhtFutId Dht future id assigned at primary node.
-     * @param updCntrs Update counters.
      */
     private void processBatchLocalBackupKeys(UUID primaryId, List<Object> rows, GridCacheVersion dhtVer,
-        IgniteUuid dhtFutId, GridLongList updCntrs) {
+        IgniteUuid dhtFutId) {
         assert dhtVer != null;
         assert dhtFutId != null;
 
@@ -353,7 +356,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                     -1,
                     this.tx.subjectId(),
                     this.tx.taskNameHash(),
-                    false);
+                    false,
+                    tx.label());
 
                 dhtTx.mvccSnapshot(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
                     mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion()));
@@ -366,7 +370,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                 }
             }
 
-            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions(), updCntrs);
+            cctx.tm().txHandler().mvccEnlistBatch(dhtTx, cctx, it.operation(), keys, vals,
+                mvccSnapshot.withoutActiveTransactions(), null, -1);
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -507,8 +512,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             Batch batch = batches.get(nodeId);
 
             if (batch != null && !F.isEmpty(batch.localBackupRows()) && res.dhtFutureId() != null)
-                processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId(),
-                    res.updateCounters());
+                processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId());
             else
                 sendNextBatches(nodeId);
         }
@@ -526,13 +530,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
             topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer));
 
-            processFailure(topEx, null);
-
-            batches.remove(nodeId);
-
-            if (batches.isEmpty()) // Wait for all pending requests.
-                onDone();
-
+            onDone(topEx);
         }
 
         if (log.isDebugEnabled())
@@ -554,17 +552,11 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         if (err == null && res.error() != null)
             err = res.error();
 
-        if (X.hasCause(err, ClusterTopologyCheckedException.class))
-            tx.removeMapping(nodeId);
+        if (res != null)
+            tx.mappings().get(nodeId).addBackups(res.newDhtNodes());
 
-        if (err != null)
-            processFailure(err, null);
-
-        if (ex != null) {
-            batches.remove(nodeId);
-
-            if (batches.isEmpty()) // Wait for all pending requests.
-                onDone();
+        if (err != null) {
+            onDone(err);
 
             return false;
         }
@@ -573,7 +565,17 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
         RES_UPD.getAndAdd(this, res.result());
 
-        return true;
+        tx.hasRemoteLocks(true);
+
+        return !isDone();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<UUID> pendingResponseNodes() {
+        return batches.entrySet().stream()
+            .filter(e -> e.getValue().ready())
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
     }
 
     /** {@inheritDoc} */
@@ -666,5 +668,4 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             this.ready = ready;
         }
     }
-
 }

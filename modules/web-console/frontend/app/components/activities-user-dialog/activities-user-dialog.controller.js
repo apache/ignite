@@ -22,6 +22,12 @@ export default class ActivitiesCtrl {
         const $ctrl = this;
 
         $ctrl.user = user;
-        $ctrl.data = _.map(user.activitiesDetail, (amount, action) => ({ action, amount }));
+        $ctrl.data = _.map(user.activitiesDetail, (amount, action) => ({action, amount}));
+
+        $ctrl.columnDefs = [
+            { displayName: 'Description', field: 'action', enableFiltering: false, cellFilter: 'translate', minWidth: 120, width: '43%'},
+            { displayName: 'Action', field: 'action', enableFiltering: false, minWidth: 120, width: '43%'},
+            { displayName: 'Visited', field: 'amount', enableFiltering: false, minWidth: 80}
+        ];
     }
 }

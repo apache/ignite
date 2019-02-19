@@ -28,13 +28,12 @@ import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * The highest accuracy in the previous example ({@link Step_6_KNN}) is the result of
@@ -48,95 +47,88 @@ import org.apache.ignite.thread.IgniteThread;
  * <p>
  * Then, it trains the model based on the processed data using decision tree classification.</p>
  * <p>
- * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
+ * Finally, this example uses {@link BinaryClassificationEvaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_7_Split_train_test {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 7 (split to train and test) example started.");
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_7_Split_train_test.class.getSimpleName(), () -> {
-                try {
-                    IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+            try {
+                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-                    // Defines first preprocessor that extracts features from an upstream data.
-                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
-                    IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                        = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+                // Defines first preprocessor that extracts features from an upstream data.
+                // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
+                IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
+                    = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
-                    IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
-                        .split(0.75);
+                TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
+                    .split(0.75);
 
-                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
-                        .withEncoderType(EncoderType.STRING_ENCODER)
-                        .encodeFeature(1)
-                        .encodeFeature(6) // <--- Changed index here.
-                        .fit(ignite,
-                            dataCache,
-                            featureExtractor
+                IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                    .withEncoderType(EncoderType.STRING_ENCODER)
+                    .withEncodedFeature(1)
+                    .withEncodedFeature(6) // <--- Changed index here.
+                    .fit(ignite,
+                        dataCache,
+                        featureExtractor
+                );
+
+                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                    .fit(ignite,
+                        dataCache,
+                        strEncoderPreprocessor
                     );
 
-                    IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
-                        .fit(ignite,
-                            dataCache,
-                            strEncoderPreprocessor
-                        );
-
-                    IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
-                        .fit(
-                            ignite,
-                            dataCache,
-                            imputingPreprocessor
-                        );
-
-                    IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
-                        .withP(1)
-                        .fit(
-                            ignite,
-                            dataCache,
-                            minMaxScalerPreprocessor
-                        );
-
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
-
-                    // Train decision tree model.
-                    DecisionTreeNode mdl = trainer.fit(
+                IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                    .fit(
                         ignite,
                         dataCache,
-                        split.getTrainFilter(),
-                        normalizationPreprocessor,
-                        lbExtractor
+                        imputingPreprocessor
                     );
 
-                    System.out.println("\n>>> Trained model: " + mdl);
-
-                    double accuracy = Evaluator.evaluate(
+                IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                    .withP(1)
+                    .fit(
+                        ignite,
                         dataCache,
-                        split.getTestFilter(),
-                        mdl,
-                        normalizationPreprocessor,
-                        lbExtractor,
-                        new Accuracy<>()
+                        minMaxScalerPreprocessor
                     );
 
-                    System.out.println("\n>>> Accuracy " + accuracy);
-                    System.out.println("\n>>> Test Error " + (1 - accuracy));
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
-                    System.out.println(">>> Tutorial step 7 (split to train and test) example completed.");
-                }
-                catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-            });
+                // Train decision tree model.
+                DecisionTreeNode mdl = trainer.fit(
+                    ignite,
+                    dataCache,
+                    split.getTrainFilter(),
+                    normalizationPreprocessor,
+                    lbExtractor
+                );
 
-            igniteThread.start();
+                System.out.println("\n>>> Trained model: " + mdl);
 
-            igniteThread.join();
+                double accuracy = BinaryClassificationEvaluator.evaluate(
+                    dataCache,
+                    split.getTestFilter(),
+                    mdl,
+                    normalizationPreprocessor,
+                    lbExtractor,
+                    new Accuracy<>()
+                );
+
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
+
+                System.out.println(">>> Tutorial step 7 (split to train and test) example completed.");
+            }
+            catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

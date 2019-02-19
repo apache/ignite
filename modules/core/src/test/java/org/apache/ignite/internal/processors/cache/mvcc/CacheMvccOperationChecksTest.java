@@ -26,15 +26,15 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -42,26 +42,17 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /** Empty Class[]. */
-    private final static Class[] E = new Class[]{};
+    private static final Class[] E = new Class[]{};
 
     /** {@inheritDoc} */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
     }
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testClearOperationsUnsupported() throws Exception {
         checkOperationUnsupported("clear", m("Clear"), E);
 
@@ -80,6 +71,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLoadOperationsUnsupported() throws Exception {
         checkOperationUnsupported("loadCache", m("Load"), t(IgniteBiPredicate.class, Object[].class),
             P, new Object[]{ 1 });
@@ -97,6 +89,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLockOperationsUnsupported() throws Exception {
         checkOperationUnsupported("lock", m("Lock"), t(Object.class), 1);
 
@@ -106,14 +99,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testPeekOperationsUnsupported() throws Exception {
-        checkOperationUnsupported("localPeek", m("Peek"), t(Object.class, CachePeekMode[].class), 1,
-            new CachePeekMode[]{CachePeekMode.NEAR});
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
+    @Test
     public void testEvictOperationsUnsupported() throws Exception {
         checkOperationUnsupported("localEvict", m("Evict"), t(Collection.class), Collections.singleton(1));
     }
@@ -121,6 +107,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWithExpiryPolicyUnsupported() throws Exception {
         checkOperationUnsupported("withExpiryPolicy", m("withExpiryPolicy"), t(ExpiryPolicy.class),
             EternalExpiryPolicy.factoryOf().create());
@@ -158,11 +145,10 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
             final CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>("cache");
 
             cfg.setCacheMode(cacheMode());
-            cfg.setAtomicityMode(TRANSACTIONAL);
+            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
             try (IgniteCache<Integer, String> cache = node.createCache(cfg)) {
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
-                    @SuppressWarnings("unchecked")
                     @Override public Void call() throws Exception {
                         try {
                             Object o = U.invoke(null, cache, mtdName, paramTypes, args);
@@ -193,7 +179,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      *
      */
-    private final static IgniteBiPredicate<Object, Object> P = new IgniteBiPredicate<Object, Object>() {
+    private static final IgniteBiPredicate<Object, Object> P = new IgniteBiPredicate<Object, Object>() {
         @Override public boolean apply(Object o, Object o2) {
             return false;
         }

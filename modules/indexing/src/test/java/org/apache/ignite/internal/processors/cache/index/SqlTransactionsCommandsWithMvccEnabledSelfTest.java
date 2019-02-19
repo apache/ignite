@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +40,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionState;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Tests to check behavior regarding transactions started via SQL.
@@ -52,22 +51,16 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(commonConfiguration(0).setMvccEnabled(true));
+        startGrid(commonConfiguration(0));
 
         super.execute(node(), "CREATE TABLE INTS(k int primary key, v int) WITH \"wrap_value=false,cache_name=ints," +
-            "atomicity=transactional\"");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+            "atomicity=transactional_snapshot\"");
     }
 
     /**
      * Test that BEGIN opens a transaction.
      */
+    @Test
     public void testBegin() {
         execute(node(), "BEGIN");
 
@@ -79,6 +72,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that COMMIT commits a transaction.
      */
+    @Test
     public void testCommit() {
         execute(node(), "BEGIN WORK");
 
@@ -98,6 +92,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that COMMIT without a transaction yields nothing.
      */
+    @Test
     public void testCommitNoTransaction() {
         execute(node(), "COMMIT");
     }
@@ -105,6 +100,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that ROLLBACK without a transaction yields nothing.
      */
+    @Test
     public void testRollbackNoTransaction() {
         execute(node(), "ROLLBACK");
     }
@@ -112,6 +108,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that ROLLBACK rolls back a transaction.
      */
+    @Test
     public void testRollback() {
         execute(node(), "BEGIN TRANSACTION");
 
@@ -131,6 +128,8 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that attempting to perform various SQL operations within non SQL transaction yields an exception.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
+    @Test
     public void testSqlOperationsWithinNonSqlTransaction() {
         assertSqlOperationWithinNonSqlTransactionThrows("COMMIT");
 
@@ -181,7 +180,6 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that attempting to perform a cache API operation from within an SQL transaction fails.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkCacheOperationThrows(final String opName, final Object... args) {
         execute(node(), "BEGIN");
 
@@ -230,8 +228,8 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
 
                     return null;
                 }
-            }, IgniteCheckedException.class,
-                "SQL queries and cache operations may not be used in the same transaction.");
+            }, UnsupportedOperationException.class,
+                "operations are not supported on transactional caches when MVCC is enabled.");
         }
         finally {
             try {
@@ -261,107 +259,8 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
             return arg.getClass();
     }
 
-    /**
-     * Test that attempting to perform a cache PUT operation from within an SQL transaction fails.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testCacheOperationsFromSqlTransaction() {
-        checkCacheOperationThrows("get", 1);
-
-        checkCacheOperationThrows("getAsync", 1);
-
-        checkCacheOperationThrows("getEntry", 1);
-
-        checkCacheOperationThrows("getEntryAsync", 1);
-
-        checkCacheOperationThrows("getAndPut", 1, 1);
-
-        checkCacheOperationThrows("getAndPutAsync", 1, 1);
-
-        checkCacheOperationThrows("getAndPutIfAbsent", 1, 1);
-
-        checkCacheOperationThrows("getAndPutIfAbsentAsync", 1, 1);
-
-        checkCacheOperationThrows("getAndReplace", 1, 1);
-
-        checkCacheOperationThrows("getAndReplaceAsync", 1, 1);
-
-        checkCacheOperationThrows("getAndRemove", 1);
-
-        checkCacheOperationThrows("getAndRemoveAsync", 1);
-
-        checkCacheOperationThrows("containsKey", 1);
-
-        checkCacheOperationThrows("containsKeyAsync", 1);
-
-        checkCacheOperationThrows("put", 1, 1);
-
-        checkCacheOperationThrows("putAsync", 1, 1);
-
-        checkCacheOperationThrows("putIfAbsent", 1, 1);
-
-        checkCacheOperationThrows("putIfAbsentAsync", 1, 1);
-
-        checkCacheOperationThrows("remove", 1);
-
-        checkCacheOperationThrows("removeAsync", 1);
-
-        checkCacheOperationThrows("remove", 1, 1);
-
-        checkCacheOperationThrows("removeAsync", 1, 1);
-
-        checkCacheOperationThrows("replace", 1, 1);
-
-        checkCacheOperationThrows("replaceAsync", 1, 1);
-
-        checkCacheOperationThrows("replace", 1, 1, 1);
-
-        checkCacheOperationThrows("replaceAsync", 1, 1, 1);
-
-        checkCacheOperationThrows("getAll", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("containsKeys", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("getEntries", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("putAll", Collections.singletonMap(1, 1));
-
-        checkCacheOperationThrows("removeAll", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("getAllAsync", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("containsKeysAsync", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("getEntriesAsync", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("putAllAsync", Collections.singletonMap(1, 1));
-
-        checkCacheOperationThrows("removeAllAsync", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("invoke", 1, ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invoke", 1, CACHE_ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAsync", 1, ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAsync", 1, CACHE_ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAll", Collections.singletonMap(1, CACHE_ENTRY_PROC), X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAll", Collections.singleton(1), CACHE_ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAll", Collections.singleton(1), ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAllAsync", Collections.singletonMap(1, CACHE_ENTRY_PROC),
-            X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAllAsync", Collections.singleton(1), CACHE_ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAllAsync", Collections.singleton(1), ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-    }
-
     /** */
-    private final static EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
+    private static final EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
         new EntryProcessor<Integer, Integer, Object>() {
         @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
         throws EntryProcessorException {
@@ -370,7 +269,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     };
 
     /** */
-    private final static CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
+    private static final CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
         new CacheEntryProcessor<Integer, Integer, Object>() {
             @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
                 throws EntryProcessorException {

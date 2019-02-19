@@ -28,12 +28,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -43,9 +42,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /** */
     public static final int PARTS = 1024;
-
-    /** */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -69,12 +65,6 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         long sz = 100 * 1024 * 1024;
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setPageSize(1024)
@@ -95,6 +85,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRentingStateRepairAfterRestart() throws Exception {
         try {
             IgniteEx g0 = startGrid(0);

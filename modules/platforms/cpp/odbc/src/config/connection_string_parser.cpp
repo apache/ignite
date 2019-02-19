@@ -20,8 +20,7 @@
 #include "ignite/common/utils.h"
 
 #include "ignite/odbc/utility.h"
-#include "ignite/odbc/odbc_error.h"
-#include "ignite/odbc/ssl/ssl_mode.h"
+#include "ignite/odbc/ssl_mode.h"
 #include "ignite/odbc/config/connection_string_parser.h"
 #include "ignite/odbc/config/config_tools.h"
 #include "ignite/odbc/nested_tx_mode.h"
@@ -65,7 +64,7 @@ namespace ignite
                 // No-op.
             }
 
-            void ConnectionStringParser::ParseConnectionString(const char* str, size_t len, char delimeter,
+            void ConnectionStringParser::ParseConnectionString(const char* str, size_t len, char delimiter,
                 diagnostic::DiagnosticRecordStorage* diag)
             {
                 std::string connect_str(str, len);
@@ -75,7 +74,7 @@ namespace ignite
 
                 while (!connect_str.empty())
                 {
-                    size_t attr_begin = connect_str.rfind(delimeter);
+                    size_t attr_begin = connect_str.rfind(delimiter);
 
                     if (attr_begin == std::string::npos)
                         attr_begin = 0;

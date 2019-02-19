@@ -27,13 +27,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -42,18 +40,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setConsistentId(gridName);
-
-        cfg.setMvccEnabled(true);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
@@ -83,8 +74,6 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9394");
-
         cleanPersistenceDir();
 
         super.beforeTest();
@@ -102,6 +91,7 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart1() throws Exception {
        restart1(3, 3);
     }
@@ -109,6 +99,7 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart2() throws Exception {
         restart1(1, 3);
     }
@@ -116,6 +107,7 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart3() throws Exception {
         restart1(3, 1);
     }
@@ -170,7 +162,7 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
         ccfg.setBackups(2);
 
         return ccfg;

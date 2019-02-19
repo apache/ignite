@@ -23,9 +23,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -57,7 +55,6 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
      * @param future Enlist future.
      * @return Enlist response.
      */
-    @SuppressWarnings("unchecked")
     public static <T extends GridNearTxQueryEnlistResponse> T createResponse(IgniteInternalFuture<?> future) {
         assert future != null;
 
@@ -82,7 +79,7 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
             assert future.tx.queryEnlisted() || future.cnt == 0;
 
             return new GridNearTxQueryEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
-                future.nearLockVer, future.cnt, future.tx.empty() && !future.tx.queryEnlisted());
+                future.nearLockVer, future.cnt, future.tx.empty() && !future.tx.queryEnlisted(), future.newDhtNodes);
         }
         catch (IgniteCheckedException e) {
             return new GridNearTxQueryEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId, future.nearLockVer, e);
@@ -90,29 +87,28 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
     }
 
     /**
-     * @param future Enlist future.
+     * @param fut Enlist future.
      * @return Enlist response.
      */
-    @NotNull private static GridNearTxQueryResultsEnlistResponse createResponse(GridDhtTxQueryResultsEnlistFuture future) {
+    @NotNull private static GridNearTxQueryResultsEnlistResponse createResponse(GridDhtTxQueryResultsEnlistFuture fut) {
         try {
-            future.get();
+            fut.get();
 
             GridCacheVersion ver = null;
             IgniteUuid id = null;
-            GridLongList updCntrs = null;
 
-            if (future.hasNearNodeUpdates) {
-                ver = future.cctx.tm().mappedVersion(future.nearLockVer);
-                id = future.futId;
-                updCntrs = future.nearUpdCntrs;
+            if (fut.hasNearNodeUpdates) {
+                ver = fut.cctx.tm().mappedVersion(fut.nearLockVer);
+
+                id = fut.futId;
             }
 
-            return new GridNearTxQueryResultsEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
-                future.nearLockVer, future.cnt, ver, id, updCntrs);
+            return new GridNearTxQueryResultsEnlistResponse(fut.cctx.cacheId(), fut.nearFutId, fut.nearMiniId,
+                fut.nearLockVer, fut.cnt, ver, id, fut.newDhtNodes);
         }
         catch (IgniteCheckedException e) {
-            return new GridNearTxQueryResultsEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
-                future.nearLockVer, e);
+            return new GridNearTxQueryResultsEnlistResponse(fut.cctx.cacheId(), fut.nearFutId, fut.nearMiniId,
+                fut.nearLockVer, e);
         }
     }
 
@@ -127,22 +123,19 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
         GridNearTxQueryEnlistResponse res = createResponse(fut);
 
         if (res.removeMapping()) {
-            // TODO IGNITE-9133
-            tx.rollbackDhtLocalAsync().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
-                    try {
-                        cctx.io().send(nearNodeId, res, cctx.ioPolicy());
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(fut.log, "Failed to send near enlist response [" +
-                            "tx=" + CU.txString(tx) +
-                            ", node=" + nearNodeId +
-                            ", res=" + res + ']', e);
+            cctx.tm().forgetTx(tx);
 
-                        throw new GridClosureException(e);
-                    }
-                }
-            });
+            try {
+                cctx.io().send(nearNodeId, res, cctx.ioPolicy());
+            }
+            catch (IgniteCheckedException e) {
+                U.error(fut.log, "Failed to send near enlist response [" +
+                    "tx=" + CU.txString(tx) +
+                    ", node=" + nearNodeId +
+                    ", res=" + res + ']', e);
+
+                throw new GridClosureException(e);
+            }
 
             return;
         }

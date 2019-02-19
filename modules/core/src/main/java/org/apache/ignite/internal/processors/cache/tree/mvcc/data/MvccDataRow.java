@@ -33,10 +33,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_MASK;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
 
 /**
  *
@@ -44,35 +45,39 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 public class MvccDataRow extends DataRow {
     /** Mvcc coordinator version. */
     @GridToStringInclude
-    protected long mvccCrd;
+    private long mvccCrd;
 
     /** Mvcc counter. */
     @GridToStringInclude
-    protected long mvccCntr;
+    private long mvccCntr;
 
     /** Mvcc operation counter. */
     @GridToStringInclude
-    protected int mvccOpCntr;
+    private int mvccOpCntr;
 
     /** Mvcc tx state. */
     @GridToStringInclude
-    protected byte mvccTxState;
+    private byte mvccTxState;
 
     /** New mvcc coordinator version. */
     @GridToStringInclude
-    protected long newMvccCrd;
+    private long newMvccCrd;
 
     /** New mvcc counter. */
     @GridToStringInclude
-    protected long newMvccCntr;
+    private long newMvccCntr;
 
     /** New mvcc operation counter. */
     @GridToStringInclude
-    protected int newMvccOpCntr;
+    private int newMvccOpCntr;
 
     /** New mvcc tx state. */
     @GridToStringInclude
-    protected byte newMvccTxState;
+    private byte newMvccTxState;
+
+    /** Key absent before tx flag. */
+    @GridToStringInclude
+    private boolean keyAbsentFlag;
 
     /**
      * @param link Link.
@@ -90,29 +95,42 @@ public class MvccDataRow extends DataRow {
      * @param crdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
      * @param mvccOpCntr Mvcc operation counter.
+     * @param skipVer Skip version flag.
      */
-    public MvccDataRow(CacheGroupContext grp,
+    public MvccDataRow(
+        CacheGroupContext grp,
         int hash,
         long link,
         int part,
         RowData rowData,
         long crdVer,
         long mvccCntr,
-        int mvccOpCntr) {
-        super(grp, hash, link, part, rowData);
+        int mvccOpCntr,
+        boolean skipVer
+    ) {
+        super(grp, hash, link, part, rowData, skipVer);
 
         assert MvccUtils.mvccVersionIsValid(crdVer, mvccCntr, mvccOpCntr);
 
         assert rowData == RowData.LINK_ONLY
-            || this.mvccCrd == crdVer && this.mvccCntr == mvccCntr && this.mvccOpCntr == mvccOpCntr :
+            || mvccCoordinatorVersion() == crdVer && mvccCounter() == mvccCntr && mvccOperationCounter() == mvccOpCntr :
         "mvccVer=" + new MvccVersionImpl(crdVer, mvccCntr, mvccOpCntr) +
-            ", dataMvccVer=" + new MvccVersionImpl(this.mvccCrd, this.mvccCntr, this.mvccOpCntr) ;
+            ", dataMvccVer=" + new MvccVersionImpl(mvccCoordinatorVersion(), mvccCounter(), mvccOperationCounter()) ;
 
         if (rowData == RowData.LINK_ONLY) {
             this.mvccCrd = crdVer;
             this.mvccCntr = mvccCntr;
             this.mvccOpCntr = mvccOpCntr;
         }
+
+        assert (mvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0: mvccOpCntr;
+    }
+
+    /**
+     * 
+     */
+    public MvccDataRow() {
+        super(0);
     }
 
     /**
@@ -133,6 +151,8 @@ public class MvccDataRow extends DataRow {
         this.mvccCntr = mvccVer.counter();
         this.mvccOpCntr = mvccVer.operationCounter();
 
+        assert (mvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0 : mvccOpCntr;
+
         if (newMvccVer == null) {
             newMvccCrd = MVCC_CRD_COUNTER_NA;
             newMvccCntr = MVCC_COUNTER_NA;
@@ -142,6 +162,8 @@ public class MvccDataRow extends DataRow {
             newMvccCrd = newMvccVer.coordinatorVersion();
             newMvccCntr = newMvccVer.counter();
             newMvccOpCntr = newMvccVer.operationCounter();
+
+            assert (newMvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0 : newMvccOpCntr;
         }
     }
 
@@ -153,10 +175,12 @@ public class MvccDataRow extends DataRow {
 
         int withHint = PageUtils.getInt(addr, off + 16);
 
-        mvccOpCntr = withHint & ~MVCC_HINTS_MASK;
+        mvccOpCntr = withHint & MVCC_OP_COUNTER_MASK;
         mvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
 
         assert MvccUtils.mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
+
+        keyAbsentFlag = (withHint & MVCC_KEY_ABSENT_BEFORE_MASK) != 0;
 
         // xid_max.
         newMvccCrd = PageUtils.getLong(addr, off + 20);
@@ -164,10 +188,13 @@ public class MvccDataRow extends DataRow {
 
         withHint = PageUtils.getInt(addr, off + 36);
 
-        newMvccOpCntr = withHint & ~MVCC_HINTS_MASK;
+        newMvccOpCntr = withHint & MVCC_OP_COUNTER_MASK;
         newMvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
 
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
+
+        if (newMvccCrd != MVCC_CRD_COUNTER_NA)
+            keyAbsentFlag = (withHint & MVCC_KEY_ABSENT_BEFORE_MASK) != 0;
 
         return MVCC_INFO_SIZE;
     }
@@ -184,11 +211,13 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
+        assert (mvccCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+
         return mvccOpCntr;
     }
 
     /** {@inheritDoc} */
-    public byte mvccTxState() {
+    @Override public byte mvccTxState() {
         return mvccTxState;
     }
 
@@ -214,6 +243,8 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public void newMvccVersion(long crd, long cntr, int opCntr) {
+        assert (opCntr & ~MVCC_OP_COUNTER_MASK) == 0 : opCntr;
+
         newMvccCrd = crd;
         newMvccCntr = cntr;
         newMvccOpCntr = opCntr;
@@ -224,6 +255,8 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public void mvccVersion(long crd, long cntr, int opCntr) {
+        assert (opCntr & ~MVCC_OP_COUNTER_MASK) == 0 : opCntr;
+
         mvccCrd = crd;
         mvccCntr = cntr;
         mvccOpCntr = opCntr;
@@ -244,6 +277,20 @@ public class MvccDataRow extends DataRow {
      */
     public void newMvccTxState(byte newMvccTxState) {
         this.newMvccTxState = newMvccTxState;
+    }
+
+    /**
+     * @return {@code True} if key absent before.
+     */
+    protected boolean keyAbsentBeforeFlag() {
+        return keyAbsentFlag;
+    }
+
+    /**
+     * @param flag {@code True} if key is absent before.
+     */
+    protected void keyAbsentBeforeFlag(boolean flag) {
+        keyAbsentFlag = flag;
     }
 
     /** {@inheritDoc} */

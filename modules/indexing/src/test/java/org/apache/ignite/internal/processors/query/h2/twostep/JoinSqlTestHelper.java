@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
@@ -25,7 +28,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
  */
 public class JoinSqlTestHelper {
     /** */
-    private static final int ORG_COUNT = 100;
+    static final String ORG = "org";
+
+    /** */
+    static final int ORG_COUNT = 100;
 
     /** */
     private static final int PERSON_PER_ORG_COUNT = 10;
@@ -36,6 +42,30 @@ public class JoinSqlTestHelper {
         "and lower(org.name) = lower(?)";
 
     /**
+     * @return Query entity for Organization.
+     */
+    static Collection<QueryEntity> organizationQueryEntity() {
+        QueryEntity entity = new QueryEntity(String.class, Organization.class);
+
+        entity.setKeyFieldName("ID");
+        entity.getFields().put("ID", String.class.getName());
+
+        return Collections.singletonList(entity);
+    }
+
+    /**
+     * @return Query entity for Organization.
+     */
+    static Collection<QueryEntity> personQueryEntity() {
+        QueryEntity entity = new QueryEntity(String.class, Person.class);
+
+        entity.setKeyFieldName("ID");
+        entity.getFields().put("ID", String.class.getName());
+
+        return Collections.singletonList(entity);
+    }
+
+    /**
      * Populate organization cache with test data
      * @param cache @{IgniteCache}
      */
@@ -43,11 +73,9 @@ public class JoinSqlTestHelper {
         for (int i = 0; i < ORG_COUNT; i++) {
             Organization org = new Organization();
 
-            org.setId("org" + i);
-
             org.setName("Organization #" + i);
 
-            cache.put(org.getId(), org);
+            cache.put(ORG + i, org);
         }
     }
 
@@ -59,22 +87,16 @@ public class JoinSqlTestHelper {
         int personId = 0;
 
         for (int i = 0; i < ORG_COUNT; i++) {
-            Organization org = new Organization();
-
-            org.setId("org" + i);
-
-            org.setName("Organization #" + i);
+            String orgId = ORG + i;
 
             for (int j = 0; j < PERSON_PER_ORG_COUNT; j++) {
                 Person prsn = new Person();
 
-                prsn.setId("pers" + personId);
-
-                prsn.setOrgId(org.getId());
+                prsn.setOrgId(orgId);
 
                 prsn.setName("Person name #" + personId);
 
-                cache.put(prsn.getId(), prsn);
+                cache.put("pers" + personId, prsn);
 
                 personId++;
             }
@@ -87,25 +109,11 @@ public class JoinSqlTestHelper {
     public static class Person {
         /** */
         @QuerySqlField(index = true)
-        private String id;
-
-        /** */
-        @QuerySqlField(index = true)
         private String orgId;
 
         /** */
         @QuerySqlField(index = true)
         private String name;
-
-        /** */
-        public String getId() {
-            return id;
-        }
-
-        /** */
-        public void setId(String id) {
-            this.id = id;
-        }
 
         /** */
         public String getOrgId() {
@@ -134,21 +142,11 @@ public class JoinSqlTestHelper {
     public static class Organization {
         /** */
         @QuerySqlField(index = true)
-        private String id;
-
-        /** */
-        @QuerySqlField(index = true)
         private String name;
 
-        /** */
-        public void setId(String id) {
-            this.id = id;
-        }
-
-        /** */
-        public String getId() {
-            return id;
-        }
+        /** Debt capital. */
+        @QuerySqlField
+        private Integer debtCapital;
 
         /** */
         public String getName() {
@@ -158,6 +156,20 @@ public class JoinSqlTestHelper {
         /** */
         public void setName(String name) {
             this.name = name;
+        }
+
+        /**
+         * @return Debt capital.
+         */
+        public Integer debtCapital() {
+            return debtCapital;
+        }
+
+        /**
+         * @param debtCapital Debt capital.
+         */
+        public void debtCapital(Integer debtCapital) {
+            this.debtCapital = debtCapital;
         }
     }
 }

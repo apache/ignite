@@ -37,5 +37,5 @@ public @interface GridToStringOrder {
     /**
      * Numeric order value.
      */
-    @SuppressWarnings({"JavaDoc"}) int value();
+    int value();
 }

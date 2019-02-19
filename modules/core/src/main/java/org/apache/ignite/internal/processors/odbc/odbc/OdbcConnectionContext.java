@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
@@ -25,11 +28,11 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnecti
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-
-import java.util.HashSet;
-import java.util.Set;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 
 /**
  * ODBC Connection Context.
@@ -47,7 +50,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.3.2: added multiple statements support. */
     public static final ClientListenerProtocolVersion VER_2_3_2 = ClientListenerProtocolVersion.create(2, 3, 2);
 
-    /** Version 2.5.0: added authentication and transactions. */
+    /** Version 2.5.0: added authentication. */
     public static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
     /** Version 2.7.0: added precision and scale. */
@@ -58,6 +61,9 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
+
+    /** Session. */
+    private final GridNioSession ses;
 
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -71,6 +77,9 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Request handler. */
     private OdbcRequestHandler handler = null;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
         SUPPORTED_VERS.add(VER_2_5_0);
@@ -83,15 +92,19 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /**
      * Constructor.
      * @param ctx Kernal Context.
+     * @param ses Session.
      * @param busyLock Shutdown busy lock.
-     * @param connId
+     * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId, int maxCursors) {
+    public OdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId, int maxCursors) {
         super(ctx, connId);
 
+        this.ses = ses;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
+
+        log = ctx.log(getClass());
     }
 
     /** {@inheritDoc} */
@@ -140,7 +153,20 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         AuthorizationContext actx = authenticate(user, passwd);
 
-        handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
+        ClientListenerResponseSender sender = new ClientListenerResponseSender() {
+            @Override public void send(ClientListenerResponse resp) {
+                if (resp != null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Async response: [resp=" + resp.status() + ']');
+
+                    byte[] outMsg = parser.encode(resp);
+
+                    ses.send(outMsg);
+                }
+            }
+        };
+
+        handler = new OdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
             replicatedOnly, collocated, lazy, skipReducerOnUpdate, actx, nestedTxMode, ver);
 
         parser = new OdbcMessageParser(ctx, ver);
@@ -161,5 +187,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         handler.onDisconnect();
+
+        super.onDisconnected();
     }
 }

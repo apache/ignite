@@ -22,6 +22,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -34,7 +35,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
     private boolean needWritePointer;
 
     /** Read record filter. */
-    private IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter;
+    private @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter;
 
     /**
      * Marshalled mode flag.
@@ -56,7 +57,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
      */
     public RecordSerializerFactoryImpl(
         GridCacheSharedContext cctx,
-        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
+        @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
     ) {
         this.cctx = cctx;
         this.recordDeserializeFilter = readTypeFilter;
@@ -77,11 +78,8 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
                     recordDeserializeFilter);
 
             case 2:
-                RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(
-                    new RecordDataV1Serializer(cctx));
-
                 return new RecordV2Serializer(
-                    dataV2Serializer,
+                    new RecordDataV2Serializer(cctx),
                     needWritePointer,
                     marshalledMode,
                     skipPositionCheck,
@@ -117,7 +115,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
 
     /** {@inheritDoc} */
     @Override public RecordSerializerFactoryImpl recordDeserializeFilter(
-        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
+        @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
     ) {
         this.recordDeserializeFilter = readTypeFilter;
 

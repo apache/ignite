@@ -58,14 +58,14 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector v) {
+    @Override public Double predict(Vector v) {
         if (!datasets.isEmpty()) {
             List<LabeledVector> neighbors = findKNearestNeighbors(v);
 
             return classify(neighbors, v, stgy);
-        } else {
-            throw new IllegalStateException("The train kNN dataset is null");
         }
+        else
+            throw new IllegalStateException("The train kNN dataset is null");
     }
 
     /** */
@@ -91,6 +91,7 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
         return Arrays.asList(getKClosestVectors(neighborsToFilter, getDistances(v, neighborsToFilter)));
     }
 
+    /** */
     private List<LabeledVector> findKNearestNeighborsInDataset(Vector v,
         Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
         List<LabeledVector> neighborsFromPartitions = dataset.compute(data -> {
@@ -137,10 +138,10 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
     /**
      * Copy parameters from other model and save all datasets from it.
      *
-     * @param model Model.
+     * @param mdl Model.
      */
-    public void copyStateFrom(KNNClassificationModel model) {
-        this.copyParametersFrom(model);
-        datasets.addAll(model.datasets);
+    public void copyStateFrom(KNNClassificationModel mdl) {
+        this.copyParametersFrom(mdl);
+        datasets.addAll(mdl.datasets);
     }
 }

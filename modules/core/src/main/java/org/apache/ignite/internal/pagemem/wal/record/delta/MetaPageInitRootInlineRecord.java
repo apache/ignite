@@ -51,7 +51,7 @@ public class MetaPageInitRootInlineRecord extends MetaPageInitRootRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.initRoot(pageAddr, rootId, pageMem.pageSize());
+        io.initRoot(pageAddr, rootId, pageMem.realPageSize(groupId()));
         io.setInlineSize(pageAddr, inlineSize);
     }
 

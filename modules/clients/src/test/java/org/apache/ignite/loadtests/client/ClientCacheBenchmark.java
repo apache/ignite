@@ -96,7 +96,6 @@ public class ClientCacheBenchmark {
      * @param printResults Whether to print results.
      * @throws GridClientException If failed.
      */
-    @SuppressWarnings("NullableProblems")
     public void run(boolean printResults) throws GridClientException {
         Collection<TestThread> workers = new ArrayList<>(threadCnt);
 

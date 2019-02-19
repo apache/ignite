@@ -20,13 +20,13 @@ package org.apache.ignite.ml.tree.randomforest.data;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Tree root class.
  */
-public class TreeRoot implements Model<Vector, Double> {
+public class TreeRoot implements IgniteModel<Vector, Double> {
     /** Serial version uid. */
     private static final long serialVersionUID = 531797299171329057L;
 
@@ -48,8 +48,8 @@ public class TreeRoot implements Model<Vector, Double> {
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector vector) {
-        return node.apply(vector);
+    @Override public Double predict(Vector vector) {
+        return node.predict(vector);
     }
 
     /** */

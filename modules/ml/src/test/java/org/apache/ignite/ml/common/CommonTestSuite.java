@@ -28,7 +28,8 @@ import org.junit.runners.Suite;
     LocalModelsTest.class,
     CollectionsTest.class,
     ExternalizeTest.class,
-    ModelTest.class
+    ModelTest.class,
+    KeepBinaryTest.class
 })
 public class CommonTestSuite {
 }

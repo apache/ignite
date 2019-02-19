@@ -26,7 +26,7 @@ import java.nio.MappedByteBuffer;
  */
 public class FileIODecorator extends AbstractFileIO {
     /** File I/O delegate */
-    private final FileIO delegate;
+    protected final FileIO delegate;
 
     /**
      *
@@ -34,6 +34,21 @@ public class FileIODecorator extends AbstractFileIO {
      */
     public FileIODecorator(FileIO delegate) {
         this.delegate = delegate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFileSystemBlockSize() {
+        return delegate.getFileSystemBlockSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSparseSize() {
+        return delegate.getSparseSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int punchHole(long pos, int len) {
+        return delegate.punchHole(pos, len);
     }
 
     /** {@inheritDoc} */

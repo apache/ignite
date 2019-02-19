@@ -46,7 +46,6 @@ public class GridRestResponse implements Externalizable {
     public static final int STATUS_SECURITY_CHECK_FAILED = 3;
 
     /** Success status. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private int successStatus = STATUS_SUCCESS;
 
     /** Session token. */

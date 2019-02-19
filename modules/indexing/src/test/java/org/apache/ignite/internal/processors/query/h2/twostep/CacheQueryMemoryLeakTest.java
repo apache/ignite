@@ -31,22 +31,16 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /** */
-public class CacheQueryMemoryLeakTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class CacheQueryMemoryLeakTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)igniteCfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         if (igniteInstanceName.equals("client"))
             igniteCfg.setClientMode(true);
@@ -64,6 +58,7 @@ public class CacheQueryMemoryLeakTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testResultIsMultipleOfPage() throws Exception {
         IgniteEx srv = (IgniteEx)startGrid("server");
         Ignite client = startGrid("client");

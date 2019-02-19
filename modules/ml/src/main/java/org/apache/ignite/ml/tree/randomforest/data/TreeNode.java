@@ -17,16 +17,15 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Decision tree node class.
  */
-public class TreeNode implements Model<Vector, Double>, Serializable {
+public class TreeNode implements IgniteModel<Vector, Double> {
     /** Serial version uid. */
     private static final long serialVersionUID = -8546263332508653661L;
 
@@ -51,7 +50,7 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
     private int featureId;
 
     /** Value. */
-    private double value;
+    private double val;
 
     /** Type. */
     private Type type;
@@ -76,23 +75,23 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
      */
     public TreeNode(long id, int treeId) {
         this.id = new NodeId(treeId, id);
-        this.value = -1;
+        this.val = -1;
         this.type = Type.UNKNOWN;
         this.impurity = Double.POSITIVE_INFINITY;
         this.depth = 1;
     }
 
     /** {@inheritDoc} */
-    public Double apply(Vector features) {
+    @Override public Double predict(Vector features) {
         assert type != Type.UNKNOWN;
 
         if (type == Type.LEAF)
-            return value;
+            return val;
         else {
-            if (features.get(featureId) <= value)
-                return left.apply(features);
+            if (features.get(featureId) <= val)
+                return left.predict(features);
             else
-                return right.apply(features);
+                return right.predict(features);
         }
     }
 
@@ -109,7 +108,7 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
             case LEAF:
                 return id;
             default:
-                if (features.get(featureId) <= value)
+                if (features.get(featureId) <= val)
                     return left.predictNextNodeKey(features);
                 else
                     return right.predictNextNodeKey(features);
@@ -120,12 +119,12 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
      * Convert node to conditional node.
      *
      * @param featureId Feature id.
-     * @param value Value.
+     * @param val Value.
      */
-    public List<TreeNode> toConditional(int featureId, double value) {
+    public List<TreeNode> toConditional(int featureId, double val) {
         assert type == Type.UNKNOWN;
 
-        toLeaf(value);
+        toLeaf(val);
         left = new TreeNode(2 * id.nodeId(), id.treeId());
         right = new TreeNode(2 * id.nodeId() + 1, id.treeId());
         this.type = Type.CONDITIONAL;
@@ -138,12 +137,12 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
     /**
      * Convert node to leaf.
      *
-     * @param value Value.
+     * @param val Value.
      */
-    public void toLeaf(double value) {
+    public void toLeaf(double val) {
         assert type == Type.UNKNOWN;
 
-        this.value = value;
+        this.val = val;
         this.type = Type.LEAF;
 
         this.left = null;
@@ -156,8 +155,8 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
     }
 
     /** */
-    public void setValue(double value) {
-        this.value = value;
+    public void setVal(double val) {
+        this.val = val;
     }
 
     /** */

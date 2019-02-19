@@ -56,7 +56,7 @@ public class HitRateMetricsSandbox extends JFrame {
         });
 
         new Timer(100, new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
+            @Override public void actionPerformed(ActionEvent evt) {
                 rateLb.setText(Double.toString(metrics.getRate()));
             }
         }).start();

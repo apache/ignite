@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.junit.Test;
+
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -30,6 +32,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommittedTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(OPTIMISTIC, READ_COMMITTED);
     }
@@ -37,6 +40,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableReadTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -44,6 +48,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(OPTIMISTIC, SERIALIZABLE);
     }
@@ -51,6 +56,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommittedTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(PESSIMISTIC, READ_COMMITTED);
     }
@@ -58,6 +64,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableReadTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -65,6 +72,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializableTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(PESSIMISTIC, SERIALIZABLE);
     }
@@ -72,6 +80,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommittedTxTopologyChange() throws Exception {
         testTopologyChange(OPTIMISTIC, READ_COMMITTED);
     }
@@ -79,6 +88,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableReadTxTopologyChange() throws Exception {
         testTopologyChange(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -86,6 +96,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableTxTopologyChange() throws Exception {
         testTopologyChange(OPTIMISTIC, SERIALIZABLE);
     }
@@ -93,6 +104,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommittedTxTopologyChange() throws Exception {
         testTopologyChange(PESSIMISTIC, READ_COMMITTED);
     }
@@ -100,6 +112,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableReadTxTopologyChange() throws Exception {
         testTopologyChange(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -107,6 +120,7 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializableTxTopologyChange() throws Exception {
         testTopologyChange(PESSIMISTIC, SERIALIZABLE);
     }

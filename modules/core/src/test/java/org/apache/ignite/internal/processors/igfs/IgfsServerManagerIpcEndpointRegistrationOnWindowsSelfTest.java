@@ -24,7 +24,11 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.internal.util.ipc.loopback.IpcServerTcpEndpoint;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Tests for {@link IgfsServerManager} that checks shmem IPC endpoint registration
@@ -32,10 +36,15 @@ import org.apache.ignite.testframework.GridTestUtils;
  */
 public class IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
     extends IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testShmemEndpointsRegistration() throws Exception {
+    /** */
+    @Before
+    public void init() {
+        Assume.assumeTrue("Test is intended to run only on Windows.", U.isWindows());
+    }
+
+    /** */
+    @Test
+    public void testShmemEndpointsRegistration() {
         Throwable e = GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 IgniteConfiguration cfg = gridConfiguration();

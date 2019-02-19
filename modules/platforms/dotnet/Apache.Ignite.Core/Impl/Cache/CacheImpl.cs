@@ -1129,7 +1129,9 @@ namespace Apache.Ignite.Core.Impl.Cache
                 writer.WriteBoolean(qry.EnforceJoinOrder);
                 writer.WriteBoolean(qry.Lazy); // Lazy flag.
                 writer.WriteInt((int) qry.Timeout.TotalMilliseconds);
+#pragma warning disable 618
                 writer.WriteBoolean(qry.ReplicatedOnly);
+#pragma warning restore 618
                 writer.WriteBoolean(qry.Colocated);
                 writer.WriteString(qry.Schema); // Schema
             });
@@ -1445,6 +1447,24 @@ namespace Apache.Ignite.Core.Impl.Cache
         public void ResetQueryMetrics()
         {
             DoOutInOp((int)CacheOp.ResetQueryMetrics);
+        }
+
+        /** <inheritdoc /> */
+        public void PreloadPartition(int partition)
+        {
+            DoOutInOp((int)CacheOp.PreloadPartition, partition);
+        }
+
+        /** <inheritdoc /> */
+        public Task PreloadPartitionAsync(int partition)
+        {
+            return DoOutOpAsync(CacheOp.PreloadPartitionAsync, w => w.WriteInt(partition));
+        }
+
+        /** <inheritdoc /> */
+        public bool LocalPreloadPartition(int partition)
+        {
+            return DoOutOp(CacheOp.LocalPreloadPartition, w => w.WriteInt(partition));
         }
     }
 }

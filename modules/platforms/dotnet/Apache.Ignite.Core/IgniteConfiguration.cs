@@ -39,6 +39,8 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Encryption;
+    using Apache.Ignite.Core.Encryption.Keystore;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
@@ -164,6 +166,9 @@ namespace Apache.Ignite.Core
         private TimeSpan? _clientFailureDetectionTimeout;
 
         /** */
+        private TimeSpan? _sysWorkerBlockedTimeout;
+
+        /** */
         private int? _publicThreadPoolSize;
 
         /** */
@@ -205,6 +210,24 @@ namespace Apache.Ignite.Core
         /** Map from user-defined listener to it's id. */
         private Dictionary<object, int> _localEventListenerIds;
 
+        /** MVCC vacuum frequency. */
+        private long? _mvccVacuumFreq;
+
+        /** MVCC vacuum thread count. */
+        private int? _mvccVacuumThreadCnt;
+
+        /** */
+        private bool? _initBaselineAutoAdjustEnabled;
+
+        /** Initial value of time which we would wait before the actual topology change since last discovery event. */
+        private long? _initBaselineAutoAdjustTimeout;
+
+        /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
+        private long? _initBaselineAutoAdjustMaxTimeout;
+
+        /** SQL query history size. */
+        private int? _sqlQueryHistorySize;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -229,6 +252,36 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="AuthenticationEnabled"/> property.
         /// </summary>
         public const bool DefaultAuthenticationEnabled = false;
+
+        /// <summary>
+        /// Default value for <see cref="MvccVacuumFrequency"/> property.
+        /// </summary>
+        public const long DefaultMvccVacuumFrequency = 5000;
+
+        /// <summary>
+        /// Default value for <see cref="MvccVacuumThreadCount"/> property.
+        /// </summary>
+        public const int DefaultMvccVacuumThreadCount = 2;
+
+        /// <summary>
+        /// Default value for <see cref="InitBaselineAutoAdjustEnabled"/> property.
+        /// </summary>
+        public const bool DefaultInitBaselineAutoAdjustEnabled = false;
+
+        /// <summary>
+        /// Default value for <see cref="InitBaselineAutoAdjustTimeout"/> property.
+        /// </summary>
+        public const long DefaultInitBaselineAutoAdjustTimeout = 0;
+
+        /// <summary>
+        /// Default value for <see cref="InitBaselineAutoAdjustMaxTimeout"/> property.
+        /// </summary>
+        public const long DefaultInitBaselineAutoAdjustMaxTimeout = 0;
+
+        /// <summary>
+        /// Default value for <see cref="SqlQueryHistorySize"/> property.
+        /// </summary>
+        public const int DefaultSqlQueryHistorySize = 1000;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -309,6 +362,13 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
             writer.WriteBooleanNullable(_authenticationEnabled);
+            writer.WriteLongNullable(_mvccVacuumFreq);
+            writer.WriteIntNullable(_mvccVacuumThreadCnt);
+            writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
+            writer.WriteBooleanNullable(_initBaselineAutoAdjustEnabled);
+            writer.WriteLongNullable(_initBaselineAutoAdjustTimeout);
+            writer.WriteLongNullable(_initBaselineAutoAdjustMaxTimeout);
+            writer.WriteIntNullable(_sqlQueryHistorySize);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -351,6 +411,26 @@ namespace Apache.Ignite.Core
                     throw new InvalidOperationException("Unsupported discovery SPI: " + disco.GetType());
 
                 tcpDisco.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            var enc = EncryptionSpi;
+
+            if (enc != null)
+            {
+                writer.WriteBoolean(true);
+
+                var keystoreEnc = enc as KeystoreEncryptionSpi;
+
+                if (keystoreEnc == null)
+                    throw new InvalidOperationException("Unsupported encryption SPI: " + enc.GetType());
+
+                writer.WriteString(keystoreEnc.MasterKeyName);
+                writer.WriteInt(keystoreEnc.KeySize);
+                writer.WriteString(keystoreEnc.KeyStorePath);
+                writer.WriteCharArray(
+                    keystoreEnc.KeyStorePassword == null ? null : keystoreEnc.KeyStorePassword.ToCharArray());
             }
             else
                 writer.WriteBoolean(false);
@@ -434,7 +514,8 @@ namespace Apache.Ignite.Core
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
                 writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
-                writer.WriteLong((long) TransactionConfiguration.DefaultDefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DeadlockTimeout.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
@@ -675,6 +756,13 @@ namespace Apache.Ignite.Core
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
             _authenticationEnabled = r.ReadBooleanNullable();
+            _mvccVacuumFreq = r.ReadLongNullable();
+            _mvccVacuumThreadCnt = r.ReadIntNullable();
+            _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
+            _initBaselineAutoAdjustEnabled = r.ReadBooleanNullable();
+            _initBaselineAutoAdjustTimeout = r.ReadLongNullable();
+            _initBaselineAutoAdjustMaxTimeout = r.ReadLongNullable();
+            _sqlQueryHistorySize = r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -706,6 +794,9 @@ namespace Apache.Ignite.Core
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
+
+            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ?
+                new KeystoreEncryptionSpi(r) : null;
 
             // Communication config
             CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
@@ -751,7 +842,8 @@ namespace Apache.Ignite.Core
                     DefaultTransactionIsolation = (TransactionIsolation) r.ReadInt(),
                     DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt()),
-                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong())
+                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong()),
+                    DeadlockTimeout = TimeSpan.FromMilliseconds(r.ReadLong())
                 };
             }
 
@@ -1035,6 +1127,12 @@ namespace Apache.Ignite.Core
         /// Null for default communication.
         /// </summary>
         public ICommunicationSpi CommunicationSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the encryption service provider.
+        /// Null for disabled encryption.
+        /// </summary>
+        public IEncryptionSpi EncryptionSpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.
@@ -1324,6 +1422,15 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Gets or sets the timeout for blocked system workers detection.
+        /// </summary>
+        public TimeSpan? SystemWorkerBlockedTimeout
+        {
+            get { return _sysWorkerBlockedTimeout; }
+            set { _sysWorkerBlockedTimeout = value; }
+        }
+
+        /// <summary>
         /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/>
         /// and <see cref="TcpCommunicationSpi"/> for client nodes.
         /// </summary>
@@ -1550,6 +1657,37 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Time interval between MVCC vacuum runs in milliseconds.
+        /// </summary>
+        [DefaultValue(DefaultMvccVacuumFrequency)]
+        public long MvccVacuumFrequency
+        {
+            get { return _mvccVacuumFreq ?? DefaultMvccVacuumFrequency; }
+            set { _mvccVacuumFreq = value; }
+        }
+
+        /// <summary>
+        /// Number of MVCC vacuum threads.
+        /// </summary>
+        [DefaultValue(DefaultMvccVacuumThreadCount)]
+        public int MvccVacuumThreadCount
+        {
+            get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
+            set { _mvccVacuumThreadCnt = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the value indicating the number of SQL query history elements to keep in memory.
+        /// Zero or negative value disables the history.
+        /// </summary>
+        [DefaultValue(DefaultSqlQueryHistorySize)]
+        public int SqlQueryHistorySize
+        {
+            get { return _sqlQueryHistorySize ?? DefaultSqlQueryHistorySize; }
+            set { _sqlQueryHistorySize = value; }
+        }
+
+        /// <summary>
         /// Gets or sets predefined failure handlers implementation.
         /// A failure handler handles critical failures of Ignite instance accordingly:
         /// <para><see cref="NoOpFailureHandler"/> -- do nothing.</para>
@@ -1568,6 +1706,37 @@ namespace Apache.Ignite.Core
         /// <para/>
         /// By default schema names are case-insensitive. Use quotes to enforce case sensitivity.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> SqlSchemas { get; set; }
+
+        /// <summary>
+        /// Initial value of manual baseline control or auto adjusting baseline.
+        /// </summary>
+        [DefaultValue(DefaultInitBaselineAutoAdjustEnabled)]
+        public bool InitBaselineAutoAdjustEnabled
+        {
+            get { return _initBaselineAutoAdjustEnabled ?? DefaultInitBaselineAutoAdjustEnabled; }
+            set { _initBaselineAutoAdjustEnabled = value; }
+        }
+
+        /// <summary>
+        /// Initial value of time which we would wait before the actual topology change since last discovery event.
+        /// </summary>
+        [DefaultValue(DefaultInitBaselineAutoAdjustTimeout)]
+        public long InitBaselineAutoAdjustTimeout
+        {
+            get { return _initBaselineAutoAdjustTimeout ?? DefaultInitBaselineAutoAdjustTimeout; }
+            set { _initBaselineAutoAdjustTimeout = value; }
+        }
+
+        /// <summary>
+        /// Initial value of time which we would wait from the first discovery event in the chain(node join/exit).
+        /// </summary>
+        [DefaultValue(DefaultInitBaselineAutoAdjustMaxTimeout)]
+        public long InitBaselineAutoAdjustMaxTimeout
+        {
+            get { return _initBaselineAutoAdjustMaxTimeout ?? DefaultInitBaselineAutoAdjustMaxTimeout; }
+            set { _initBaselineAutoAdjustMaxTimeout = value; }
+        }
     }
 }

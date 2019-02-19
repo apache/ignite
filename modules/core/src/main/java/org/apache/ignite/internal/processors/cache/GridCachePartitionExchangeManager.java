@@ -22,7 +22,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +34,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -66,8 +67,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
@@ -88,6 +87,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridClientPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -108,6 +110,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -132,6 +135,8 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 
@@ -174,10 +179,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Nullable private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /** */
-    private final AtomicReference<GridDhtTopologyFuture> lastFinishedFut = new AtomicReference<>();
+    private final AtomicReference<GridDhtPartitionsExchangeFuture> lastFinishedFut = new AtomicReference<>();
 
     /** */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts =
+        new ConcurrentSkipListMap<>();
+
+    /** */
+    private final ConcurrentNavigableMap<AffinityTopologyVersion, AffinityTopologyVersion> lastAffTopVers =
         new ConcurrentSkipListMap<>();
 
     /**
@@ -186,13 +195,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      *
      * Should not be used to determine latest rebalanced topology.
      */
-    private volatile AffinityTopologyVersion rebTopVer = AffinityTopologyVersion.NONE;
+    private volatile AffinityTopologyVersion rebTopVer = NONE;
 
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
-
-    /** */
-    private final Object interruptLock = new Object();
 
     /**
      * Partition map futures.
@@ -346,6 +352,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             return;
                         }
                     }
+                    else if (exchangeInProgress()) {
+                        if (log.isInfoEnabled())
+                            log.info("Ignore single message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
+
+                        return;
+                    }
 
                     if (!crdInitFut.isDone() && !msg.restoreState()) {
                         GridDhtPartitionExchangeId exchId = msg.exchangeId();
@@ -372,6 +384,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(0, GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
+                    if (msg.exchangeId() == null) {
+                        GridDhtPartitionsExchangeFuture currentExchange = lastTopologyFuture();
+
+                        if (currentExchange != null && currentExchange.addOrMergeDelayedFullMessage(node, msg)) {
+                            if (log.isInfoEnabled())
+                                log.info("Delay process full message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
+
+                            return;
+                        }
+                    }
+
                     processFullPartitionUpdate(node, msg);
                 }
             });
@@ -412,9 +435,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                     return;
                                 }
+                                else
+                                    U.error(log, "Unsupported message type: " + m.getClass().getName());
                             }
 
-                            U.error(log, "Unsupported message type: " + m.getClass().getName());
+                            U.warn(log, "Cache group with id=" + m.groupId() + " is stopped or absent");
                         }
                         finally {
                             leaveBusy();
@@ -736,7 +761,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         stopErr = cctx.kernalContext().clientDisconnected() ?
             new IgniteClientDisconnectedCheckedException(cctx.kernalContext().cluster().clientReconnectFuture(),
                 "Client node disconnected: " + cctx.igniteInstanceName()) :
-            new IgniteInterruptedCheckedException("Node is stopping: " + cctx.igniteInstanceName());
+            new IgniteCheckedException("Node is stopping: " + cctx.igniteInstanceName());
 
         // Stop exchange worker
         U.cancel(exchWorker);
@@ -762,6 +787,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (AffinityReadyFuture f : readyFuts.values())
             f.onDone(stopErr);
 
+        GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
+
+        if (lastFut != null)
+            lastFut.onDone(stopErr);
+
         if (!cctx.kernalContext().clientNode()) {
             for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++)
                 cctx.io().removeOrderedHandler(true, rebalanceTopic(cnt));
@@ -782,13 +812,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         busyLock.writeLock().lock();
 
         exchFuts.clear();
-    }
-
-    /**
-     * @return Interrupt lock.
-     */
-    public Object interruptLock() {
-        return interruptLock;
     }
 
     /**
@@ -875,13 +898,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param fut Finished future.
      */
-    public void lastFinishedFuture(GridDhtTopologyFuture fut) {
+    public void lastFinishedFuture(GridDhtPartitionsExchangeFuture fut) {
         assert fut != null && fut.isDone() : fut;
 
         while (true) {
-            GridDhtTopologyFuture cur = lastFinishedFut.get();
+            GridDhtPartitionsExchangeFuture cur = lastFinishedFut.get();
 
-            if (cur == null || fut.topologyVersion().compareTo(cur.topologyVersion()) > 0) {
+            if (fut.topologyVersion() != null && (cur == null || fut.topologyVersion().compareTo(cur.topologyVersion()) > 0)) {
                 if (lastFinishedFut.compareAndSet(cur, fut))
                     break;
             }
@@ -897,9 +920,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Nullable public IgniteInternalFuture<AffinityTopologyVersion> affinityReadyFuture(AffinityTopologyVersion ver) {
         GridDhtPartitionsExchangeFuture lastInitializedFut0 = lastInitializedFut;
 
-        if (lastInitializedFut0 != null && lastInitializedFut0.initialVersion().compareTo(ver) == 0) {
-            if (log.isDebugEnabled())
-                log.debug("Return lastInitializedFut for topology ready future " +
+        if (lastInitializedFut0 != null && lastInitializedFut0.initialVersion().compareTo(ver) == 0
+            && lastInitializedFut0.changedAffinity()) {
+            if (log.isTraceEnabled())
+                log.trace("Return lastInitializedFut for topology ready future " +
                     "[ver=" + ver + ", fut=" + lastInitializedFut0 + ']');
 
             return lastInitializedFut0;
@@ -908,10 +932,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         AffinityTopologyVersion topVer = exchFuts.readyTopVer();
 
         if (topVer.compareTo(ver) >= 0) {
-            if (log.isDebugEnabled())
-                log.debug("Return finished future for topology ready future [ver=" + ver + ", topVer=" + topVer + ']');
+            if (log.isTraceEnabled())
+                log.trace("Return finished future for topology ready future [ver=" + ver + ", topVer=" + topVer + ']');
 
-            return null;
+            return new GridFinishedFuture<>(topVer);
         }
 
         GridFutureAdapter<AffinityTopologyVersion> fut = F.addIfAbsent(readyFuts, ver,
@@ -923,8 +947,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         topVer = exchFuts.readyTopVer();
 
         if (topVer.compareTo(ver) >= 0) {
-            if (log.isDebugEnabled())
-                log.debug("Completing created topology ready future " +
+            if (log.isTraceEnabled())
+                log.trace("Completing created topology ready future " +
                     "[ver=" + topVer + ", topVer=" + topVer + ", fut=" + fut + ']');
 
             fut.onDone(topVer);
@@ -967,6 +991,48 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public boolean hasPendingExchange() {
         return exchWorker.hasPendingExchange();
+    }
+
+    /**
+     *
+     * @param topVer Topology version.
+     * @return Last topology version before the provided one when affinity was modified.
+     */
+    public AffinityTopologyVersion lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
+        if (topVer.topologyVersion() <= 0)
+            return topVer;
+
+        AffinityTopologyVersion lastAffTopVer = lastAffTopVers.get(topVer);
+
+        return lastAffTopVer != null ? lastAffTopVer : topVer;
+    }
+
+    /**
+     *
+     * @param topVer Topology version.
+     * @param lastAffTopVer Last topology version before the provided one when affinity was modified.
+     * @return {@code True} if data was modified.
+     */
+    public boolean lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer, AffinityTopologyVersion lastAffTopVer) {
+        assert lastAffTopVer.compareTo(topVer) <= 0;
+
+        if (lastAffTopVer.topologyVersion() <= 0 || lastAffTopVer.equals(topVer))
+            return false;
+
+        while (true) {
+            AffinityTopologyVersion old = lastAffTopVers.putIfAbsent(topVer, lastAffTopVer);
+
+            if (old == null)
+                return true;
+
+            if (lastAffTopVer.compareTo(old) < 0) {
+                if (lastAffTopVers.replace(topVer, old, lastAffTopVer))
+                    return true;
+            }
+            else
+                return false;
+        }
+
     }
 
     /**
@@ -1020,19 +1086,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Partition refresh callback.
+     * Partition refresh callback for selected cache groups.
      * For coordinator causes {@link GridDhtPartitionsFullMessage FullMessages} send,
      * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
+     *
+     * @param grps Cache groups for partitions refresh.
      */
-    public void refreshPartitions() {
+    public void refreshPartitions(@NotNull Collection<CacheGroupContext> grps) {
         // TODO https://issues.apache.org/jira/browse/IGNITE-6857
         if (cctx.snapshot().snapshotOperationInProgress()) {
+            if (log.isDebugEnabled())
+                log.debug("Schedule resend parititions due to snapshot in progress");
+
             scheduleResendPartitions();
 
             return;
         }
 
-        ClusterNode oldest = cctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
+        if (grps.isEmpty()) {
+            if (log.isDebugEnabled())
+                log.debug("Skip partitions refresh, there are no cache groups for partition refresh.");
+
+            return;
+        }
+
+        ClusterNode oldest = cctx.discovery().oldestAliveServerNode(NONE);
 
         if (oldest == null) {
             if (log.isDebugEnabled())
@@ -1041,8 +1119,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             return;
         }
 
-        if (log.isDebugEnabled())
-            log.debug("Refreshing partitions [oldest=" + oldest.id() + ", loc=" + cctx.localNodeId() + ']');
+        if (log.isDebugEnabled()) {
+            log.debug("Refreshing partitions [oldest=" + oldest.id() + ", loc=" + cctx.localNodeId() +
+                ", cacheGroups= " + grps + ']');
+        }
 
         // If this is the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
@@ -1060,36 +1140,65 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             // No need to send to nodes which did not finish their first exchange.
             AffinityTopologyVersion rmtTopVer =
-                lastFut != null ? (lastFut.isDone() ? lastFut.topologyVersion() : lastFut.initialVersion()) : AffinityTopologyVersion.NONE;
+                lastFut != null ?
+                    (lastFut.isDone() ? lastFut.topologyVersion() : lastFut.initialVersion())
+                    : AffinityTopologyVersion.NONE;
 
             Collection<ClusterNode> rmts = cctx.discovery().remoteAliveNodesWithCaches(rmtTopVer);
 
             if (log.isDebugEnabled())
                 log.debug("Refreshing partitions from oldest node: " + cctx.localNodeId());
 
-            sendAllPartitions(rmts, rmtTopVer);
+            sendAllPartitions(rmts, rmtTopVer, grps);
         }
         else {
             if (log.isDebugEnabled())
                 log.debug("Refreshing local partitions from non-oldest node: " +
                     cctx.localNodeId());
 
-            sendLocalPartitions(oldest, null);
+            sendLocalPartitions(oldest, null, grps);
         }
     }
 
     /**
+     * Partition refresh callback.
+     * For coordinator causes {@link GridDhtPartitionsFullMessage FullMessages} send,
+     * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
+     */
+    public void refreshPartitions() { refreshPartitions(cctx.cache().cacheGroups()); }
+
+    /**
      * @param nodes Nodes.
      * @param msgTopVer Topology version. Will be added to full message.
+     * @param grps Selected cache groups.
      */
-    private void sendAllPartitions(Collection<ClusterNode> nodes,
-        AffinityTopologyVersion msgTopVer) {
-        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, false, null, null, null, null);
+    private void sendAllPartitions(
+        Collection<ClusterNode> nodes,
+        AffinityTopologyVersion msgTopVer,
+        Collection<CacheGroupContext> grps
+    ) {
+        long time = System.currentTimeMillis();
+
+        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, false, null, null, null, null, grps);
 
         m.topologyVersion(msgTopVer);
 
-        if (log.isDebugEnabled())
-            log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
+        if (log.isInfoEnabled()) {
+            long latency = System.currentTimeMillis() - time;
+
+            if (latency > 50 || log.isDebugEnabled()) {
+                log.info("Finished full message creation [msgTopVer=" + msgTopVer + ", groups=" + grps +
+                    ", latency=" + latency + "ms]");
+            }
+        }
+
+        if (log.isTraceEnabled())
+            log.trace("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", cacheGroups=" + grps +
+                ", msg=" + m + ']');
+
+        time = System.currentTimeMillis();
+
+        Collection<ClusterNode> failedNodes = U.newHashSet(nodes.size());
 
         for (ClusterNode node : nodes) {
             try {
@@ -1098,19 +1207,34 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
             }
             catch (ClusterTopologyCheckedException ignore) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send partition update to node because it left grid (will ignore) [node=" +
-                        node.id() + ", msg=" + m + ']');
+                if (log.isDebugEnabled()) {
+                    log.debug("Failed to send partition update to node because it left grid (will ignore) " +
+                        "[node=" + node.id() + ", msg=" + m + ']');
+                }
             }
             catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to send partitions full message [node=" + node + ", err=" + e + ']');
+                failedNodes.add(node);
+
+                U.warn(log, "Failed to send partitions full message [node=" + node + ", err=" + e + ']', e);
+            }
+        }
+
+        if (log.isInfoEnabled()) {
+            long latency = System.currentTimeMillis() - time;
+
+            if (latency > 50 || log.isDebugEnabled()) {
+                log.info("Finished sending full message [msgTopVer=" + msgTopVer + ", groups=" + grps +
+                    (failedNodes.isEmpty() ? "" : (", skipped=" + U.nodeIds(failedNodes))) +
+                    ", latency=" + latency + "ms]");
             }
         }
     }
 
     /**
+     * Creates partitions full message for all cache groups.
+     *
      * @param compress {@code True} if possible to compress message (properly work only if prepareMarshall/
-     *     finishUnmarshall methods are called).
+     * finishUnmarshall methods are called).
      * @param newCntrMap {@code True} if possible to use {@link CachePartitionFullCountersMap}.
      * @param exchId Non-null exchange ID if message is created for exchange.
      * @param lastVer Last version.
@@ -1126,18 +1250,43 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
         @Nullable IgniteDhtPartitionsToReloadMap partsToReload
     ) {
-        final GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
-            lastVer,
-            exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE,
-            partHistSuppliers,
-            partsToReload
-            );
+        Collection<CacheGroupContext> grps = cctx.cache().cacheGroups();
+
+        return createPartitionsFullMessage(compress, newCntrMap, exchId, lastVer, partHistSuppliers, partsToReload, grps);
+    }
+
+    /**
+     * Creates partitions full message for selected cache groups.
+     *
+     * @param compress {@code True} if possible to compress message (properly work only if prepareMarshall/
+     *     finishUnmarshall methods are called).
+     * @param newCntrMap {@code True} if possible to use {@link CachePartitionFullCountersMap}.
+     * @param exchId Non-null exchange ID if message is created for exchange.
+     * @param lastVer Last version.
+     * @param partHistSuppliers Partition history suppliers map.
+     * @param partsToReload Partitions to reload map.
+     * @param grps Selected cache groups.
+     * @return Message.
+     */
+    public GridDhtPartitionsFullMessage createPartitionsFullMessage(
+        boolean compress,
+        boolean newCntrMap,
+        @Nullable final GridDhtPartitionExchangeId exchId,
+        @Nullable GridCacheVersion lastVer,
+        @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
+        @Nullable IgniteDhtPartitionsToReloadMap partsToReload,
+        Collection<CacheGroupContext> grps
+    ) {
+        AffinityTopologyVersion ver = exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE;
+
+        final GridDhtPartitionsFullMessage m =
+            new GridDhtPartitionsFullMessage(exchId, lastVer, ver, partHistSuppliers, partsToReload);
 
         m.compress(compress);
 
         final Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData = new HashMap<>();
 
-        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+        for (CacheGroupContext grp : grps) {
             if (!grp.isLocal()) {
                 if (exchId != null) {
                     AffinityTopologyVersion startTopVer = grp.localStartVersion();
@@ -1150,14 +1299,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 GridDhtPartitionFullMap locMap = grp.topology().partitionMap(true);
 
-                if (locMap != null) {
-                    addFullPartitionsMap(m,
-                        dupData,
-                        compress,
-                        grp.groupId(),
-                        locMap,
-                        affCache.similarAffinityKey());
-                }
+                if (locMap != null)
+                    addFullPartitionsMap(m, dupData, compress, grp.groupId(), locMap, affCache.similarAffinityKey());
 
                 m.addPartitionSizes(grp.groupId(), grp.topology().globalPartSizes());
 
@@ -1178,14 +1321,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
             GridDhtPartitionFullMap map = top.partitionMap(true);
 
-            if (map != null) {
-                addFullPartitionsMap(m,
-                    dupData,
-                    compress,
-                    top.groupId(),
-                    map,
-                    top.similarAffinityKey());
-            }
+            if (map != null)
+                addFullPartitionsMap(m, dupData, compress, top.groupId(), map, top.similarAffinityKey());
 
             if (exchId != null) {
                 CachePartitionFullCountersMap cntrsMap = top.fullUpdateCounters();
@@ -1245,16 +1382,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param node Destination cluster node.
      * @param id Exchange ID.
+     * @param grps Cache groups for send partitions.
      */
-    private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) {
-        GridDhtPartitionsSingleMessage m = createPartitionsSingleMessage(id,
-            cctx.kernalContext().clientNode(),
-            false,
-            false,
-            null);
+    private void sendLocalPartitions(
+        ClusterNode node,
+        @Nullable GridDhtPartitionExchangeId id,
+        @NotNull Collection<CacheGroupContext> grps
+    ) {
+        GridDhtPartitionsSingleMessage m =
+            createPartitionsSingleMessage(id,
+                cctx.kernalContext().clientNode(),
+                false,
+                node.version().compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0,
+                null,
+                grps);
 
-        if (log.isDebugEnabled())
-            log.debug("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
+        if (log.isTraceEnabled())
+            log.trace("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
 
         try {
             cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
@@ -1270,6 +1414,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Creates partitions single message for all cache groups.
+     *
      * @param exchangeId Exchange ID.
      * @param clientOnlyExchange Client exchange flag.
      * @param sndCounters {@code True} if need send partition update counters.
@@ -1283,6 +1429,29 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean newCntrMap,
         ExchangeActions exchActions
     ) {
+        Collection<CacheGroupContext> grps = cctx.cache().cacheGroups();
+
+        return createPartitionsSingleMessage(exchangeId, clientOnlyExchange, sndCounters, newCntrMap, exchActions, grps);
+    }
+
+    /**
+     * Creates partitions single message for selected cache groups.
+     *
+     * @param exchangeId Exchange ID.
+     * @param clientOnlyExchange Client exchange flag.
+     * @param sndCounters {@code True} if need send partition update counters.
+     * @param newCntrMap {@code True} if possible to use {@link CachePartitionPartialCountersMap}.
+     * @param grps Selected cache groups.
+     * @return Message.
+     */
+    public GridDhtPartitionsSingleMessage createPartitionsSingleMessage(
+        @Nullable GridDhtPartitionExchangeId exchangeId,
+        boolean clientOnlyExchange,
+        boolean sndCounters,
+        boolean newCntrMap,
+        ExchangeActions exchActions,
+        Collection<CacheGroupContext> grps
+    ) {
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
             cctx.versions().last(),
@@ -1290,7 +1459,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         Map<Object, T2<Integer, GridPartitionStateMap>> dupData = new HashMap<>();
 
-        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+        for (CacheGroupContext grp : grps) {
             if (!grp.isLocal() && (exchActions == null || !exchActions.cacheGroupStopping(grp.groupId()))) {
                 GridDhtPartitionMap locMap = grp.topology().localPartitionMap();
 
@@ -1439,30 +1608,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Exchange done [topVer=" + topVer + ", err=" + err + ']');
 
-        if (err == null) {
+        if (err == null)
             exchFuts.readyTopVer(topVer);
 
-            for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
-                if (entry.getKey().compareTo(topVer) <= 0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Completing created topology ready future " +
-                            "[ver=" + topVer + ", fut=" + entry.getValue() + ']');
-
-                    entry.getValue().onDone(topVer);
-                }
-            }
-        }
-        else {
-            for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
-                if (entry.getKey().compareTo(initTopVer) <= 0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Completing created topology ready future with error " +
-                            "[ver=" + entry.getKey() + ", fut=" + entry.getValue() + ']');
-
-                    entry.getValue().onDone(err);
-                }
-            }
-        }
+        completeAffReadyFuts(err == null ? topVer : initTopVer, err);
 
         ExchangeFutureSet exchFuts0 = exchFuts;
 
@@ -1477,6 +1626,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (skipped > 10)
                     fut.cleanUp();
+            }
+        }
+    }
+
+    /** */
+    private void completeAffReadyFuts(AffinityTopologyVersion topVer, @Nullable Throwable err) {
+        for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
+            if (entry.getKey().compareTo(topVer) <= 0) {
+                if (err == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Completing created topology ready future " +
+                            "[ver=" + topVer + ", fut=" + entry.getValue() + ']');
+
+                    entry.getValue().onDone(topVer);
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Completing created topology ready future with error " +
+                            "[ver=" + entry.getKey() + ", fut=" + entry.getValue() + ']');
+
+                    entry.getValue().onDone(err);
+                }
             }
         }
     }
@@ -1499,7 +1670,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param node Sender cluster node.
      * @param msg Message.
      */
-    private void processFullPartitionUpdate(ClusterNode node, GridDhtPartitionsFullMessage msg) {
+    public void processFullPartitionUpdate(ClusterNode node, GridDhtPartitionsFullMessage msg) {
         if (!enterBusy())
             return;
 
@@ -1532,8 +1703,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
                 }
 
-                if (!cctx.kernalContext().clientNode() && updated)
+                if (!cctx.kernalContext().clientNode() && updated) {
+                    if (log.isDebugEnabled())
+                        log.debug("Refresh partitions due to topology update");
+
                     refreshPartitions();
+                }
 
                 boolean hasMovingParts = false;
 
@@ -1566,8 +1741,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         try {
             if (msg.exchangeId() == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received local partition update [nodeId=" + node.id() + ", parts=" +
+                if (log.isTraceEnabled())
+                    log.trace("Received local partition update [nodeId=" + node.id() + ", parts=" +
                         msg + ']');
 
                 boolean updated = false;
@@ -1595,14 +1770,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
                 }
 
-                if (updated)
+                if (updated) {
+                    if (log.isDebugEnabled())
+                        log.debug("Partitions have been scheduled to resend [reason=Single update from " + node.id() + "]");
+
                     scheduleResendPartitions();
+                }
             }
             else {
                 GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId());
 
-                if (log.isDebugEnabled())
-                    log.debug("Notifying exchange future about single message: " + exchFut);
+                if (log.isTraceEnabled())
+                    log.trace("Notifying exchange future about single message: " + exchFut);
 
                 if (msg.client()) {
                     AffinityTopologyVersion initVer = exchFut.initialVersion();
@@ -1713,8 +1892,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         dumpPendingObjects(exchTopVer, diagCtx);
 
-        for (CacheGroupContext grp : cctx.cache().cacheGroups())
-            grp.preloader().dumpDebugInfo();
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            GridCachePreloader preloader = grp.preloader();
+
+            if (preloader != null)
+                preloader.dumpDebugInfo();
+        }
 
         cctx.affinity().dumpDebugInfo();
 
@@ -2009,6 +2192,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * For testing only.
+     *
+     * @return Current version to wait for.
+     */
+    public AffinityTopologyVersion mergeExchangesTestWaitVersion() {
+        return exchMergeTestWaitVer;
+    }
+
+    /**
      * @param curFut Current exchange future.
      * @param msg Message.
      * @return {@code True} if node is stopping.
@@ -2111,15 +2303,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         break;
                     }
 
-                    ClusterNode node = evt.eventNode();
-
-                    if ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) &&
-                        node.equals(cctx.coordinators().currentCoordinator())) {
+                    if (!fut.changedAffinity()) {
                         if (log.isInfoEnabled())
-                            log.info("Stop merge, need exchange for mvcc coordinator failure: " + node);
+                            log.info("Stop merge, no-affinity exchange found: " + evt);
 
                         break;
                     }
+
+                    ClusterNode node = evt.eventNode();
 
                     if (!curFut.context().supportsMergeExchanges(node)) {
                         if (log.isInfoEnabled())
@@ -2227,6 +2418,92 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         this.exchMergeTestWaitVer = null;
+    }
+
+    /**
+     * Invokes {@link GridWorker#updateHeartbeat()} for exchange worker.
+     */
+    public void exchangerUpdateHeartbeat() {
+        exchWorker.updateHeartbeat();
+    }
+
+    /**
+     * Invokes {@link GridWorker#blockingSectionBegin()} for exchange worker.
+     * Should be called from exchange worker thread.
+     */
+    public void exchangerBlockingSectionBegin() {
+        if (currentThreadIsExchanger())
+            exchWorker.blockingSectionBegin();
+    }
+
+    /**
+     * Invokes {@link GridWorker#blockingSectionEnd()} for exchange worker.
+     * Should be called from exchange worker thread.
+     */
+    public void exchangerBlockingSectionEnd() {
+        if (currentThreadIsExchanger())
+            exchWorker.blockingSectionEnd();
+    }
+
+    /** */
+    private boolean currentThreadIsExchanger() {
+        return exchWorker != null && Thread.currentThread() == exchWorker.runner();
+    }
+
+    /**
+     * @return {@code True} If there is any exchange future in progress.
+     */
+    private boolean exchangeInProgress() {
+        if (exchWorker.hasPendingServerExchange())
+            return true;
+
+        GridDhtPartitionsExchangeFuture current = lastTopologyFuture();
+
+        if (current == null)
+            return false;
+
+        GridDhtTopologyFuture finished = lastFinishedFut.get();
+
+        if (finished == null || finished.result().compareTo(current.initialVersion()) < 0) {
+            ClusterNode triggeredBy = current.firstEvent().eventNode();
+
+            if (current.partitionChangesInProgress() && !triggeredBy.isClient())
+                return true;
+       }
+
+        return false;
+    }
+
+    /** */
+    public boolean affinityChanged(AffinityTopologyVersion from, AffinityTopologyVersion to) {
+        if (lastAffinityChangedTopologyVersion(to).compareTo(from) >= 0)
+            return false;
+
+        Collection<GridDhtPartitionsExchangeFuture> history = exchFuts.values();
+
+        boolean fromFound = false;
+
+        for (GridDhtPartitionsExchangeFuture fut : history) {
+            if (!fromFound) {
+                int cmp = fut.initialVersion().compareTo(from);
+
+                if (cmp > 0) // We don't have history, so return true for safety
+                    return true;
+                else if (cmp == 0)
+                    fromFound = true;
+                else if (fut.isDone() && fut.topologyVersion().compareTo(from) >= 0)
+                    return true; // Temporary solution for merge exchange case
+            }
+            else {
+                if (fut.changedAffinity())
+                    return true;
+
+                if (fut.initialVersion().compareTo(to) >= 0)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -2350,7 +2627,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         GridDhtPartitionsExchangeFuture fut0 = (GridDhtPartitionsExchangeFuture)task;
 
                         if (resVer.compareTo(fut0.initialVersion()) >= 0) {
-                            fut0.finishMerged();
+                            fut0.finishMerged(resVer, exchFut);
 
                             futQ.remove(fut0);
                         }
@@ -2358,13 +2635,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             break;
                     }
                 }
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            synchronized (interruptLock) {
-                super.cancel();
             }
         }
 
@@ -2461,7 +2731,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     err = e;
             }
             catch (Throwable e) {
-                err = e;
+                if (!(stop && X.hasCause(e, IgniteInterruptedCheckedException.class)))
+                    err = e;
             }
             finally {
                 if (err == null && !stop && !reconnectNeeded)
@@ -2471,6 +2742,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                else
+                    // In case of reconnectNeeded == true, prevent general-case termination handling.
+                    cancel();
             }
         }
 
@@ -2483,6 +2757,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             long cnt = 0;
 
             while (!isCancelled()) {
+                onIdle();
+
                 cnt++;
 
                 CachePartitionExchangeWorkerTask task = null;
@@ -2505,7 +2781,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         timeout = cctx.gridConfig().getNetworkTimeout();
 
                     // After workers line up and before preloading starts we initialize all futures.
-                    if (log.isDebugEnabled()) {
+                    if (log.isTraceEnabled()) {
                         Collection<IgniteInternalFuture> unfinished = new HashSet<>();
 
                         for (GridDhtPartitionsExchangeFuture fut : exchFuts.values()) {
@@ -2513,14 +2789,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 unfinished.add(fut);
                         }
 
-                        log.debug("Before waiting for exchange futures [futs" + unfinished + ", worker=" + this + ']');
+                        log.trace("Before waiting for exchange futures [futs" + unfinished + ", worker=" + this + ']');
                     }
 
                     // Take next exchange future.
                     if (isCancelled())
                         Thread.currentThread().interrupt();
 
+                    updateHeartbeat();
+
                     task = futQ.poll(timeout, MILLISECONDS);
+
+                    updateHeartbeat();
 
                     if (task == null)
                         continue; // Main while loop.
@@ -2547,9 +2827,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (isCancelled())
                             break;
 
-                        if (task instanceof RebalanceReassignExchangeTask) {
+                        if (task instanceof RebalanceReassignExchangeTask)
                             exchId = ((RebalanceReassignExchangeTask) task).exchangeId();
-                        }
                         else if (task instanceof ForceRebalanceExchangeTask) {
                             forcePreload = true;
 
@@ -2574,6 +2853,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 crd = newCrd = !srvNodes.isEmpty() && srvNodes.get(0).isLocal();
                             }
 
+                            if (!exchFut.changedAffinity()) {
+                                GridDhtPartitionsExchangeFuture lastFut = lastFinishedFut.get();
+
+                                if (lastFut != null) {
+                                    if (!lastFut.changedAffinity()) {
+                                        // If lastFut corresponds to merged exchange, it is essential to use
+                                        // topologyVersion() instead of initialVersion() - nodes joined in this PME
+                                        // will have DiscoCache only for the last version.
+                                        AffinityTopologyVersion lastAffVer = cctx.exchange()
+                                            .lastAffinityChangedTopologyVersion(lastFut.topologyVersion());
+
+                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(),
+                                            lastAffVer);
+                                    }
+                                    else
+                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(),
+                                            lastFut.topologyVersion());
+                                }
+                            }
+
+                            exchFut.timeBag().finishGlobalStage("Waiting in exchange queue");
+
                             exchFut.init(newCrd);
 
                             int dumpCnt = 0;
@@ -2595,19 +2896,32 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
 
                                 try {
-                                    resVer = exchFut.get(curTimeout > 0 && !txRolledBack ?
-                                            Math.min(curTimeout, dumpTimeout) : dumpTimeout, TimeUnit.MILLISECONDS);
+                                    long exchTimeout = curTimeout > 0 && !txRolledBack
+                                        ? Math.min(curTimeout, dumpTimeout)
+                                        : dumpTimeout;
+
+                                    blockingSectionBegin();
+
+                                    try {
+                                        resVer = exchFut.get(exchTimeout, TimeUnit.MILLISECONDS);
+                                    } finally {
+                                        blockingSectionEnd();
+                                    }
+
+                                    onIdle();
 
                                     break;
                                 }
                                 catch (IgniteFutureTimeoutCheckedException ignored) {
+                                    updateHeartbeat();
+
                                     if (nextDumpTime <= U.currentTimeMillis()) {
                                         U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
                                             "topVer=" + exchFut.initialVersion() +
                                             ", node=" + cctx.localNodeId() + "]. " +
                                             (curTimeout <= 0 && !txRolledBack ? "Consider changing " +
-                                                    "TransactionConfiguration.txTimeoutOnPartitionMapSynchronization" +
-                                                    " to non default value to avoid this message. " : "") +
+                                            "TransactionConfiguration.txTimeoutOnPartitionMapExchange" +
+                                            " to non default value to avoid this message. " : "") +
                                             "Dumping pending objects that might be the cause: ");
 
                                         try {
@@ -2636,8 +2950,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             removeMergedFutures(resVer, exchFut);
 
-                            if (log.isDebugEnabled())
-                                log.debug("After waiting for exchange future [exchFut=" + exchFut + ", worker=" +
+                            if (log.isTraceEnabled())
+                                log.trace("After waiting for exchange future [exchFut=" + exchFut + ", worker=" +
                                     this + ']');
 
                             if (exchFut.exchangeId().nodeId().equals(cctx.localNodeId()))
@@ -2654,20 +2968,24 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     continue;
 
                                 if (grp.preloader().rebalanceRequired(rebTopVer, exchFut))
-                                    rebTopVer = AffinityTopologyVersion.NONE;
+                                    rebTopVer = NONE;
 
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
 
-                            if (!cctx.kernalContext().clientNode() && changed && !hasPendingServerExchange())
+                            if (!cctx.kernalContext().clientNode() && changed && !hasPendingServerExchange()) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Refresh partitions due to mapping was changed");
+
                                 refreshPartitions();
+                            }
                         }
 
                         // Schedule rebalance if force rebalance or force reassign occurs.
                         if (exchFut == null)
-                            rebTopVer = AffinityTopologyVersion.NONE;
+                            rebTopVer = NONE;
 
-                        if (!cctx.kernalContext().clientNode() && rebTopVer.equals(AffinityTopologyVersion.NONE)) {
+                        if (!cctx.kernalContext().clientNode() && rebTopVer.equals(NONE)) {
                             assignsMap = new HashMap<>();
 
                             IgniteCacheSnapshotManager snp = cctx.snapshot();
@@ -2698,7 +3016,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         busy = false;
                     }
 
-                    if (assignsMap != null && rebTopVer.equals(AffinityTopologyVersion.NONE)) {
+                    if (assignsMap != null && rebTopVer.equals(NONE)) {
                         int size = assignsMap.size();
 
                         NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
@@ -2823,11 +3141,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /** Timeout ID. */
         private final IgniteUuid timeoutId = IgniteUuid.randomUuid();
 
+        /** Logger. */
+        protected final IgniteLogger log;
+
         /** Timeout start time. */
         private final long createTime = U.currentTimeMillis();
 
         /** Started flag. */
         private AtomicBoolean started = new AtomicBoolean();
+
+        /**
+         *
+         */
+        private ResendTimeoutObject() {
+            this.log = cctx.logger(getClass());
+        }
 
         /** {@inheritDoc} */
         @Override public IgniteUuid timeoutId() {
@@ -2847,8 +3175,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         return;
 
                     try {
-                        if (started.compareAndSet(false, true))
+                        if (started.compareAndSet(false, true)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Refresh partitions due to scheduled timeout");
+
                             refreshPartitions();
+                        }
                     }
                     finally {
                         busyLock.readLock().unlock();
@@ -2881,7 +3213,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /** */
         private final AtomicReference<AffinityTopologyVersion> readyTopVer =
-            new AtomicReference<>(AffinityTopologyVersion.NONE);
+            new AtomicReference<>(NONE);
 
         /**
          * Creates ordered, not strict list set.
@@ -2889,20 +3221,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param histSize Max history size.
          */
         private ExchangeFutureSet(int histSize) {
-            super(new Comparator<GridDhtPartitionsExchangeFuture>() {
-                @Override public int compare(
-                    GridDhtPartitionsExchangeFuture f1,
-                    GridDhtPartitionsExchangeFuture f2
-                ) {
-                    AffinityTopologyVersion t1 = f1.exchangeId().topologyVersion();
-                    AffinityTopologyVersion t2 = f2.exchangeId().topologyVersion();
+            super((f1, f2) -> {
+                AffinityTopologyVersion t1 = f1.exchangeId().topologyVersion();
+                AffinityTopologyVersion t2 = f2.exchangeId().topologyVersion();
 
-                    assert t1.topologyVersion() > 0;
-                    assert t2.topologyVersion() > 0;
+                assert t1.topologyVersion() > 0;
+                assert t2.topologyVersion() > 0;
 
-                    // Reverse order.
-                    return t2.compareTo(t1);
-                }
+                // Reverse order.
+                return t2.compareTo(t1);
             }, /*not strict*/false);
 
             this.histSize = histSize;
@@ -2987,14 +3314,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             ClusterNode node = cctx.node(nodeId);
 
             if (node == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received message from failed node [node=" + nodeId + ", msg=" + msg + ']');
+                if (log.isTraceEnabled())
+                    log.trace("Received message from failed node [node=" + nodeId + ", msg=" + msg + ']');
 
                 return;
             }
 
-            if (log.isDebugEnabled())
-                log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
+            if (log.isTraceEnabled())
+                log.trace("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
 
             onMessage(node, msg);
         }

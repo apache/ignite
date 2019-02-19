@@ -41,7 +41,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -547,7 +546,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         if (rmtCls == null) {
             if (!optional && starting)
                 throw new IgniteSpiException("Remote SPI with the same name is not configured" + tipStr +
-                    " [name=" + name + ", loc=" + locCls + ']');
+                    " [name=" + name + ", loc=" + locCls + ", locNode=" + spiCtx.localNode() + ", rmt=" + rmtCls +
+                    ", rmtNode=" + node + ']');
 
             sb.a(format(">>> Remote SPI with the same name is not configured: " + name, locCls));
         }

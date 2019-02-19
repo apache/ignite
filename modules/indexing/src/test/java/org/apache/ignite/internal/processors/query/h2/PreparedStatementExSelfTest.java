@@ -18,15 +18,17 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.junit.Test;
 
 /**
  *
  */
-public class PreparedStatementExSelfTest extends GridCommonAbstractTest {
+public class PreparedStatementExSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoringMeta() throws Exception {
         PreparedStatement stmt = stmt();
 
@@ -40,6 +42,7 @@ public class PreparedStatementExSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoringMoreMetaKeepsExisting() throws Exception {
         PreparedStatement stmt = stmt();
 

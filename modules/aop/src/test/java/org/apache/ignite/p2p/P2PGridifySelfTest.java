@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
@@ -174,6 +175,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.PRIVATE);
     }
@@ -183,6 +185,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.ISOLATED);
     }
@@ -192,6 +195,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.CONTINUOUS);
     }
@@ -201,6 +205,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.SHARED);
     }
@@ -210,6 +215,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testResourcePrivateMode() throws Exception {
         processTestGridifyResource(DeploymentMode.PRIVATE);
     }
@@ -219,6 +225,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testResourceIsolatedMode() throws Exception {
         processTestGridifyResource(DeploymentMode.ISOLATED);
     }
@@ -228,6 +235,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testResourceContinuousMode() throws Exception {
         processTestGridifyResource(DeploymentMode.CONTINUOUS);
     }
@@ -237,6 +245,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testResourceSharedMode() throws Exception {
         processTestGridifyResource(DeploymentMode.SHARED);
     }

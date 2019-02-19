@@ -54,8 +54,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryLocalListener;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
@@ -78,6 +78,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
 
 /**
  * Continuous query handler.
@@ -144,7 +145,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient boolean skipPrimaryCheck;
 
     /** */
-    private boolean locCache;
+    private transient boolean locOnly;
 
     /** */
     private boolean keepBinary;
@@ -184,6 +185,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /** */
     private transient UUID routineId;
+
+    /** Local update counters values on listener start. Used for skipping events fired before the listener start. */
+    private transient volatile Map<Integer, T2<Long, Long>> locInitUpdCntrs;
 
     /** */
     private transient GridKernalContext ctx;
@@ -247,10 +251,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /**
-     * @param locCache Local cache.
+     * @param locOnly Local only.
      */
-    public void localCache(boolean locCache) {
-        this.locCache = locCache;
+    public void localOnly(boolean locOnly) {
+        this.locOnly = locOnly;
     }
 
     /**
@@ -305,6 +309,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.initUpdCntrsPerNode = cntrsPerNode;
         this.initUpdCntrs = cntrs;
         this.initTopVer = topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, T2<Long, Long>> updateCounters() {
+        return locInitUpdCntrs;
     }
 
     /** {@inheritDoc} */
@@ -368,6 +377,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
                 if (cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                    //noinspection unchecked
                     ctx.event().record(new CacheQueryExecutedEvent<>(
                         ctx.discovery().localNode(),
                         "Continuous query executed.",
@@ -384,6 +394,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         taskName()
                     ));
                 }
+            }
+
+            @Override public void onRegister() {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx != null && !cctx.isLocal())
+                    locInitUpdCntrs = toCountersMap(cctx.topology().localUpdateCounters(false));
             }
 
             @Override public boolean keepBinary() {
@@ -404,6 +421,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                 // Check that cache stopped.
                 if (cctx == null)
+                    return;
+
+                if (!needNotify(false, cctx, -1, -1,  evt))
                     return;
 
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
@@ -513,8 +533,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (skipCtx == null)
                     skipCtx = new CounterSkipContext(part, cntr, topVer);
 
+                if (!needNotify(true, cctx, part, cntr, null))
+                    return skipCtx;
+
                 if (loc) {
-                    assert !locCache;
+                    assert !locOnly;
 
                     final Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, skipCtx.entry());
 
@@ -583,6 +606,42 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             private String taskName() {
                 return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
             }
+
+            @Override public boolean isPrimaryOnly() {
+                return locOnly && !skipPrimaryCheck;
+            }
+
+            /**
+             * Checks whether it is need to notify listeners.
+             *
+             * @param skipEvt {@code True} if this is a skip counter event.
+             * @param cctx Cache context.
+             * @param part Partition id.
+             * @param cntr Update counter.
+             * @param evt CQ event.
+             * @return {@code True} if notification should happen immediately, or {@code false} if it should be delayed.
+             */
+            private boolean needNotify(boolean skipEvt,
+                GridCacheContext cctx,
+                int part,
+                long cntr,
+                CacheContinuousQueryEvent evt) {
+                assert !skipEvt || evt == null;
+                assert skipEvt || part == -1 && cntr == -1; // part == -1 && cntr == -1 means skip counter.
+
+                if (!cctx.mvccEnabled() || cctx.isLocal())
+                    return true;
+
+                assert locInitUpdCntrs != null;
+
+                cntr = skipEvt ? cntr : evt.getPartitionUpdateCounter();
+                part = skipEvt ? part : evt.partitionId();
+
+                T2<Long, Long> initCntr = locInitUpdCntrs.get(part);
+
+                // Do not notify listener if entry was updated before the query is started.
+                return initCntr == null || cntr >= initCntr.get2();
+            }
         };
 
         CacheContinuousQueryManager mgr = manager(ctx);
@@ -641,7 +700,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (!cctx.isLocal()) {
             AffinityTopologyVersion topVer = initTopVer;
 
-            cacheContext(ctx).affinity().affinityReadyFuture(topVer).get();
+            cacheContext(ctx).shared().exchange().affinityReadyFuture(topVer).get();
 
             for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
                 getOrCreatePartitionRecovery(ctx, partId, topVer);
@@ -860,7 +919,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans = getTransformer();
 
             if (loc) {
-                if (!locCache) {
+                if (!locOnly) {
                     Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
 
                     notifyLocalListener(evts, trans);
@@ -901,6 +960,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
 
         if (recordIgniteEvt && notify) {
+            //noinspection unchecked
             ctx.event().record(new CacheQueryReadEvent<>(
                 ctx.discovery().localNode(),
                 "Continuous query executed.",
@@ -1207,7 +1267,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheName = U.readString(in);
         topic = in.readObject();
@@ -1310,7 +1369,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(ContinuousQueryAsyncClosure.class, this);
         }
     }

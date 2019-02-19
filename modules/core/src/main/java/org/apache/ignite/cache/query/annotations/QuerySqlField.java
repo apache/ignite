@@ -41,7 +41,7 @@ public @interface QuerySqlField {
      * during updates, but makes select operations faster.
      * <p>
      * When indexing SPI and indexed field is
-     * of type {@code com.vividsolutions.jts.geom.Geometry} (or any subclass of this class) then Ignite will
+     * of type {@code org.locationtech.jts.geom.Geometry} (or any subclass of this class) then Ignite will
      * consider this index as spatial providing performance boost for spatial queries.
      *
      * @return {@code True} if index must be created for this field in database.

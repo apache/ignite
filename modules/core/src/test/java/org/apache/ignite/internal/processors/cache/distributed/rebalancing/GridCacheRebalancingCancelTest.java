@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -31,10 +32,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test cases for checking cancellation rebalancing process if some events occurs.
@@ -43,14 +42,9 @@ public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
     /** */
     private static final String DHT_PARTITIONED_CACHE = "cacheP";
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration dfltCfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)dfltCfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         dfltCfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
@@ -62,6 +56,7 @@ public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
      *
      * @throws Exception Exception.
      */
+    @Test
     public void testClientNodeJoinAtRebalancing() throws Exception {
         final IgniteEx ignite0 = startGrid(0);
 
@@ -71,6 +66,7 @@ public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
                 .setRebalanceMode(CacheRebalanceMode.ASYNC)
                 .setBackups(1)
                 .setRebalanceOrder(2)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setAffinity(new RendezvousAffinityFunction(false)));
 
         for (int i = 0; i < 2048; i++)

@@ -30,6 +30,7 @@ import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogram;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogramsComputer;
@@ -109,5 +110,10 @@ public class RandomForestClassifierTrainer
     /** {@inheritDoc} */
     @Override protected LeafValuesComputer<ObjectHistogram<BootstrappedVector>> createLeafStatisticsAggregator() {
         return new ClassifierLeafValuesComputer(lblMapping);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RandomForestClassifierTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (RandomForestClassifierTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 }

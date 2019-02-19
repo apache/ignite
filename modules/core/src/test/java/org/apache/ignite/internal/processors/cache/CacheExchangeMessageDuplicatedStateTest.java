@@ -39,10 +39,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
@@ -50,9 +48,6 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
  *
  */
 public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String AFF1_CACHE1 = "a1c1";
 
@@ -74,8 +69,6 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setClientMode(client);
 
@@ -146,6 +139,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExchangeMessages() throws Exception {
         ignite(0);
 

@@ -28,6 +28,7 @@ import java.net.URLClassLoader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import org.apache.commons.codec.binary.Hex;
@@ -228,6 +229,8 @@ final class GridUriDeploymentFileProcessor {
         if (files == null)
             return true;
 
+        Arrays.sort(files);
+
         for (File visited : files) {
             if (visited.isFile()) {
                 if (!addFileDigest(visited, digest, log))
@@ -328,7 +331,6 @@ final class GridUriDeploymentFileProcessor {
      * @throws org.apache.ignite.spi.IgniteSpiException Thrown if it's impossible to open file.
      * @return List of tasks from descriptor.
      */
-    @SuppressWarnings({"ClassLoader2Instantiation"})
     private static GridUriDeploymentFileProcessorResult processWithDescriptorFile(GridUriDeploymentSpringDocument doc,
         File file, String uri, IgniteLogger log) throws IgniteSpiException {
         ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);

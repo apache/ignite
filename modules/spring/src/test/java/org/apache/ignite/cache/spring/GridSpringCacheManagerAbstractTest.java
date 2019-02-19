@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Spring cache test.
@@ -61,6 +62,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleKey() throws Exception {
         for (int i = 0; i < 3; i++) {
             assertEquals("value" + i, svc.simpleKey(i));
@@ -80,6 +82,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleKeyNullValue() throws Exception {
         for (int i = 0; i < 3; i++) {
             assertNull(svc.simpleKeyNullValue(i));
@@ -99,6 +102,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComplexKey() throws Exception {
         for (int i = 0; i < 3; i++) {
             assertEquals("value" + i + "suffix" + i, svc.complexKey(i, "suffix" + i));
@@ -118,6 +122,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComplexKeyNullValue() throws Exception {
         for (int i = 0; i < 3; i++) {
             assertNull(svc.complexKeyNullValue(i, "suffix" + i));
@@ -137,6 +142,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleKeyPut() throws Exception {
         IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
 
@@ -158,6 +164,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleKeyPutNullValue() throws Exception {
         IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
 
@@ -179,6 +186,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComplexKeyPut() throws Exception {
         IgniteCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
 
@@ -200,6 +208,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComplexKeyPutNullValue() throws Exception {
         IgniteCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
 
@@ -221,6 +230,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleKeyEvict() throws Exception {
         IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
 
@@ -245,6 +255,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComplexKeyEvict() throws Exception {
         IgniteCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
 
@@ -269,6 +280,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictAll() throws Exception {
         IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
 
@@ -289,6 +301,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCache() throws Exception {
         for (int i = 0; i < 3; i++) {
             assertEquals("value" + i, dynamicSvc.cacheable(i));
@@ -311,6 +324,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCachePut() throws Exception {
         for (int i = 0; i < 3; i++) {
             assertEquals("value" + i, dynamicSvc.cachePut(i));
@@ -333,6 +347,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCacheEvict() throws Exception {
         CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -360,6 +375,7 @@ public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCacheEvictAll() throws Exception {
         CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 

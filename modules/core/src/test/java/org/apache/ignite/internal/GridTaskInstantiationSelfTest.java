@@ -32,6 +32,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests instantiation of various task types (defined as private inner class, without default constructor, non-public
@@ -49,6 +50,7 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If an error occurs.
      */
+    @Test
     public void testTasksInstantiation() throws Exception {
         grid().compute().execute(PrivateClassTask.class, null);
 

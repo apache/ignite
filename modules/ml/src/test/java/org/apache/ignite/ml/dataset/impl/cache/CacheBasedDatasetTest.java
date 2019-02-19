@@ -33,13 +33,15 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link CacheBasedDataset}.
@@ -75,6 +77,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
      * computations on dataset. Reservation means that partitions won't be unloaded from the node before computation is
      * completed.
      */
+    @Test
     public void testPartitionExchangeDuringComputeCall() {
         int partitions = 4;
 
@@ -83,8 +86,9 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
         CacheBasedDataset<Integer, String, Long, SimpleDatasetData> dataset = builder.build(
-            (upstream, upstreamSize) -> upstreamSize,
-            (upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
+            TestUtils.testEnvBuilder(),
+            (env, upstream, upstreamSize) -> upstreamSize,
+            (env, upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
         );
 
         assertEquals("Upstream cache name from dataset",
@@ -130,6 +134,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
      * computations on dataset. Reservation means that partitions won't be unloaded from the node before computation is
      * completed.
      */
+    @Test
     public void testPartitionExchangeDuringComputeWithCtxCall() {
         int partitions = 4;
 
@@ -138,8 +143,9 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
         CacheBasedDataset<Integer, String, Long, SimpleDatasetData> dataset = builder.build(
-            (upstream, upstreamSize) -> upstreamSize,
-            (upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
+            TestUtils.testEnvBuilder(),
+            (env, upstream, upstreamSize) -> upstreamSize,
+            (env, upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
         );
 
         assertTrue("Before computation all partitions should not be reserved",

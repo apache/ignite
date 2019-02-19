@@ -103,7 +103,6 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
         return queue.unlinkx((Node<EvictableEntry<K, V>>)meta);
     }

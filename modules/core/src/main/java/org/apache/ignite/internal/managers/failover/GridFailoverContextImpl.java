@@ -101,7 +101,7 @@ public class GridFailoverContextImpl implements FailoverContext {
     }
 
     /** {@inheritDoc} */
-    public int partition() {
+    @Override public int partition() {
         return partId;
     }
 

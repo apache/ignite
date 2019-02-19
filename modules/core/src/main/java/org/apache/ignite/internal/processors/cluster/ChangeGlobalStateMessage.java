@@ -25,6 +25,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentActions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -65,11 +66,18 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @GridToStringExclude
     private transient ExchangeActions exchangeActions;
 
+    /** Services deployment actions to be processed on services deployment process. */
+    @GridToStringExclude
+    @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
+
     /**
      * @param reqId State change request ID.
      * @param initiatingNodeId Node initiated state change.
      * @param storedCfgs Configurations read from persistent store.
      * @param activate New cluster state.
+     * @param baselineTopology Baseline topology.
+     * @param forceChangeBaselineTopology Force change baseline topology flag.
+     * @param timestamp Timestamp.
      */
     public ChangeGlobalStateMessage(
         UUID reqId,
@@ -78,8 +86,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         boolean activate,
         BaselineTopology baselineTopology,
         boolean forceChangeBaselineTopology,
-        long timestamp
-    ) {
+        long timestamp) {
         assert reqId != null;
         assert initiatingNodeId != null;
 
@@ -113,6 +120,20 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         assert exchangeActions != null && !exchangeActions.empty() : exchangeActions;
 
         this.exchangeActions = exchangeActions;
+    }
+
+    /**
+     * @return Services deployment actions to be processed on services deployment process.
+     */
+    @Nullable public ServiceDeploymentActions servicesDeploymentActions() {
+        return serviceDeploymentActions;
+    }
+
+    /**
+     * @param serviceDeploymentActions Services deployment actions to be processed on services deployment process.
+     */
+    public void servicesDeploymentActions(ServiceDeploymentActions serviceDeploymentActions) {
+        this.serviceDeploymentActions = serviceDeploymentActions;
     }
 
     /** {@inheritDoc} */

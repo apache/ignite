@@ -21,7 +21,6 @@ const DEMO_NOTEBOOK = {
     paragraphs: [
         {
             name: 'Query with refresh rate',
-            cacheName: 'CarCache',
             qryType: 'query',
             pageSize: 100,
             limit: 0,
@@ -39,7 +38,6 @@ const DEMO_NOTEBOOK = {
         },
         {
             name: 'Simple query',
-            cacheName: 'CarCache',
             qryType: 'query',
             pageSize: 100,
             limit: 0,
@@ -54,7 +52,6 @@ const DEMO_NOTEBOOK = {
         },
         {
             name: 'Query with aggregates',
-            cacheName: 'ParkingCache',
             qryType: 'query',
             pageSize: 100,
             limit: 0,
@@ -80,6 +77,11 @@ const DEMO_NOTEBOOK = {
 export default class NotebookData {
     static $inject = ['$rootScope', '$http', '$q'];
 
+    /**
+     * @param {ng.IRootScopeService} $root 
+     * @param {ng.IHttpService} $http 
+     * @param {ng.IQService} $q    
+     */
     constructor($root, $http, $q) {
         this.demo = $root.IgniteDemoMode;
 

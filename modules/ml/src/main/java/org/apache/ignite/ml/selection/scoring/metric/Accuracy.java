@@ -45,4 +45,9 @@ public class Accuracy<L> implements Metric<L> {
 
         return 1.0 * correctCnt / totalCnt;
     }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return "accuracy";
+    }
 }

@@ -37,7 +37,6 @@ public class PlatformNativeException extends PlatformException implements Extern
     /**
      * {@link java.io.Externalizable} support.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public PlatformNativeException() {
         // No-op.
     }

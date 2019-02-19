@@ -23,16 +23,15 @@
 
 #include <ignite/common/fixed_size_array.h>
 
+#include <ignite/network/network.h>
+
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/environment.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
-#include "ignite/odbc/ssl/ssl_mode.h"
-#include "ignite/odbc/ssl/ssl_gateway.h"
-#include "ignite/odbc/ssl/secure_socket_client.h"
-#include "ignite/odbc/system/tcp_socket_client.h"
+#include "ignite/odbc/ssl_mode.h"
 #include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/config/connection_string_parser.h"
@@ -59,13 +58,14 @@ namespace ignite
             env(env),
             socket(),
             timeout(0),
-            loginTimeout(SocketClient::DEFALT_CONNECT_TIMEOUT),
+            loginTimeout(DEFAULT_CONNECT_TIMEOUT),
             autoCommit(true),
             parser(),
             config(),
-            info(config)
+            info(config),
+            streamingContext()
         {
-            // No-op.
+            streamingContext.SetConnection(*this);
         }
 
         Connection::~Connection()
@@ -130,6 +130,37 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
         }
 
+        SqlResult::Type Connection::InitSocket()
+        {
+            ssl::SslMode::Type sslMode = config.GetSslMode();
+
+            if (sslMode == ssl::SslMode::DISABLE)
+            {
+                socket.reset(network::ssl::MakeTcpSocketClient());
+
+                return SqlResult::AI_SUCCESS;
+            }
+
+            try
+            {
+                network::ssl::EnsureSslLoaded();
+            }
+            catch (const IgniteError &err)
+            {
+                LOG_MSG("Can not load OpenSSL library: " << err.GetText());
+
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                                "Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?).");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            socket.reset(network::ssl::MakeSecureSocketClient(
+                config.GetSslCertFile(), config.GetSslKeyFile(), config.GetSslCaFile()));
+
+            return SqlResult::AI_SUCCESS;
+        }
+
         SqlResult::Type Connection::InternalEstablish(const config::Configuration& cfg)
         {
             using ssl::SslMode;
@@ -149,26 +180,6 @@ namespace ignite
 
                 return SqlResult::AI_ERROR;
             }
-
-            SslMode::Type sslMode = config.GetSslMode();
-
-            if (sslMode != SslMode::DISABLE)
-            {
-                bool loaded = ssl::SslGateway::GetInstance().LoadAll();
-
-                if (!loaded)
-                {
-                    AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
-                        "Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?).");
-
-                    return SqlResult::AI_ERROR;
-                }
-
-                socket.reset(new ssl::SecureSocketClient(config.GetSslCertFile(),
-                    config.GetSslKeyFile(), config.GetSslCaFile()));
-            }
-            else
-                socket.reset(new system::TcpSocketClient());
 
             bool connected = TryRestoreConnection();
 
@@ -281,7 +292,7 @@ namespace ignite
 
                 LOG_MSG("Sent: " << res);
 
-                if (res < 0 || res == SocketClient::WaitResult::TIMEOUT)
+                if (res < 0 || res == network::SocketClient::WaitResult::TIMEOUT)
                 {
                     Close();
 
@@ -352,7 +363,7 @@ namespace ignite
                 int res = socket->Receive(buffer + received, remain, timeout);
                 LOG_MSG("Receive res: " << res << " remain: " << remain);
 
-                if (res < 0 || res == SocketClient::WaitResult::TIMEOUT)
+                if (res < 0 || res == network::SocketClient::WaitResult::TIMEOUT)
                 {
                     Close();
 
@@ -375,7 +386,7 @@ namespace ignite
             return config;
         }
 
-        bool Connection::IsAutoCommit()
+        bool Connection::IsAutoCommit() const
         {
             return autoCommit;
         }
@@ -670,8 +681,10 @@ namespace ignite
                 if (!rsp.GetError().empty())
                     constructor << "Additional info: " << rsp.GetError() << " ";
 
-                constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
-                            << "driver protocol version introduced in version: " << protocolVersion.ToString() << ".";
+                constructor << "Current version of the protocol, used by the server node is " 
+                            << rsp.GetCurrentVer().ToString() << ", "
+                            << "driver protocol version introduced in version "
+                            << protocolVersion.ToString() << ".";
 
                 AddStatusRecord(SqlState::S08004_CONNECTION_REJECTED, constructor.str());
 
@@ -700,7 +713,12 @@ namespace ignite
             CollectAddresses(config, addrs);
 
             if (socket.get() == 0)
-                socket.reset(new system::TcpSocketClient());
+            {
+                SqlResult::Type res = InitSocket();
+
+                if (res != SqlResult::AI_SUCCESS)
+                    return false;
+            }
 
             bool connected = false;
 
@@ -710,7 +728,14 @@ namespace ignite
 
                 for (uint16_t port = addr.port; port <= addr.port + addr.range; ++port)
                 {
-                    connected = socket->Connect(addr.host.c_str(), port, loginTimeout, *this);
+                    try
+                    {
+                        connected = socket->Connect(addr.host.c_str(), port, loginTimeout);
+                    }
+                    catch (const IgniteError& err)
+                    {
+                        LOG_MSG("Error while trying connect to " << addr.host << ":" << addr.port <<", " << err.GetText());
+                    }
 
                     if (connected)
                     {

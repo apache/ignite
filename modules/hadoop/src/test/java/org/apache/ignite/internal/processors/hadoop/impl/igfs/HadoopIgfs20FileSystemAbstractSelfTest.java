@@ -80,6 +80,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -378,6 +379,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStatus() throws Exception {
         Path file1 = new Path("/file1");
 
@@ -408,6 +410,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTimes() throws Exception {
         Path file = new Path("/file1");
 
@@ -451,6 +454,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateCheckParameters() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -461,6 +465,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateBase() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path dir = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -487,6 +492,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateCheckOverwrite() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path dir = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -517,6 +523,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteIfNoSuchPath() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path dir = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -527,6 +534,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteSuccessfulIfPathIsOpenedToRead() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "myFile");
@@ -560,6 +568,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteIfFilePathExists() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "myFile");
@@ -575,6 +584,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteIfDirectoryPathExists() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path dir = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -590,6 +600,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteFailsIfNonRecursive() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path someDir3 = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -614,6 +625,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteRecursively() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path someDir3 = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -632,6 +644,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeleteRecursivelyFromRoot() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path someDir3 = new Path(fsHome, "/someDir1/someDir2/someDir3");
@@ -654,6 +667,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetPermissionCheckDefaultPermission() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "/tmp/my");
@@ -670,6 +684,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetPermissionCheckNonRecursiveness() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "/tmp/my");
@@ -691,6 +706,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("OctalInteger")
+    @Test
     public void testSetPermission() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "/tmp/my");
@@ -710,6 +726,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetPermissionIfOutputStreamIsNotClosed() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "myFile");
@@ -727,6 +744,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwnerCheckParametersPathIsNull() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "/tmp/my");
@@ -746,6 +764,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwnerCheckParametersUserIsNull() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "/tmp/my");
@@ -765,6 +784,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwnerCheckParametersGroupIsNull() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "/tmp/my");
@@ -784,6 +804,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwner() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "/tmp/my");
@@ -802,6 +823,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwnerIfOutputStreamIsNotClosed() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "myFile");
@@ -818,6 +840,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetOwnerCheckNonRecursiveness() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "/tmp/my");
@@ -840,6 +863,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOpenCheckParametersPathIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -849,6 +873,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOpenNoSuchPath() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "someFile");
@@ -861,6 +886,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOpenIfPathIsAlreadyOpened() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "someFile");
@@ -878,6 +904,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOpen() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "someFile");
@@ -901,6 +928,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAppendIfPathPointsToDirectory() throws Exception {
         final Path fsHome = new Path(primaryFsUri);
         final Path dir = new Path(fsHome, "/tmp");
@@ -920,6 +948,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAppendIfFileIsAlreadyBeingOpenedToWrite() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "someFile");
@@ -943,6 +972,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAppend() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path file = new Path(fsHome, "someFile");
@@ -974,6 +1004,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameCheckParametersSrcPathIsNull() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "someFile");
@@ -988,6 +1019,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameCheckParametersDstPathIsNull() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path file = new Path(fsHome, "someFile");
@@ -1006,6 +1038,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameIfSrcPathDoesNotExist() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path srcFile = new Path(fsHome, "srcFile");
@@ -1025,6 +1058,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameIfSrcPathIsAlreadyBeingOpenedToWrite() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path srcFile = new Path(fsHome, "srcFile");
@@ -1061,6 +1095,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameFileIfDstPathExists() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         final Path srcFile = new Path(fsHome, "srcFile");
@@ -1089,6 +1124,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameFile() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path srcFile = new Path(fsHome, "/tmp/srcFile");
@@ -1106,6 +1142,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameIfSrcPathIsAlreadyBeingOpenedToRead() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path srcFile = new Path(fsHome, "srcFile");
@@ -1141,6 +1178,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameDirectoryIfDstPathExists() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path srcDir = new Path(fsHome, "/tmp/");
@@ -1174,6 +1212,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRenameDirectory() throws Exception {
         Path fsHome = new Path(primaryFsUri);
         Path dir = new Path(fsHome, "/tmp/");
@@ -1191,6 +1230,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testListStatusIfPathIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1200,6 +1240,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testListStatusIfPathDoesNotExist() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1213,6 +1254,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testListStatus() throws Exception {
         Path igfsHome = new Path(primaryFsUri);
 
@@ -1256,6 +1298,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMkdirsIfPathIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1267,6 +1310,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMkdirsIfPermissionIsNull() throws Exception {
         Path dir = new Path("/tmp");
 
@@ -1277,6 +1321,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
     /** @throws Exception If failed. */
     @SuppressWarnings("OctalInteger")
+    @Test
     public void testMkdirs() throws Exception {
         Path fsHome = new Path(primaryFileSystemUriPath());
         Path dir = new Path(fsHome, "/tmp/staging");
@@ -1296,6 +1341,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetFileStatusIfPathIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1305,6 +1351,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetFileStatusIfPathDoesNotExist() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1314,6 +1361,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetFileBlockLocationsIfFileStatusIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1324,6 +1372,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetFileBlockLocationsIfFileStatusReferenceNotExistingPath() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1333,6 +1382,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetFileBlockLocations() throws Exception {
         Path igfsHome = new Path(primaryFsUri);
 
@@ -1371,6 +1421,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testZeroReplicationFactor() throws Exception {
         // This test doesn't make sense for any mode except of PRIMARY.
         if (mode == PRIMARY) {
@@ -1404,6 +1455,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedCreate() throws Exception {
         Path dir = new Path(new Path(primaryFsUri), "/dir");
 
@@ -1479,6 +1531,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedAppend() throws Exception {
         Path dir = new Path(new Path(primaryFsUri), "/dir");
 
@@ -1555,6 +1608,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedOpen() throws Exception {
         final byte[] dataChunk = new byte[256];
 
@@ -1627,6 +1681,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedMkdirs() throws Exception {
         final Path dir = new Path(new Path("igfs:///"), "/dir");
 
@@ -1707,6 +1762,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testMultithreadedDelete() throws Exception {
         final Path dir = new Path(new Path(primaryFsUri), "/dir");
 
@@ -1780,6 +1836,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testConsistency() throws Exception {
         // Default buffers values
         checkConsistency(-1, 1, -1, -1, 1, -1);
@@ -1805,6 +1862,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         final Path igfsHome = new Path(primaryFsUri);
 
@@ -1850,6 +1908,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testClientReconnectMultithreaded() throws Exception {
         final ConcurrentLinkedQueue<FileSystem> q = new ConcurrentLinkedQueue<>();
 

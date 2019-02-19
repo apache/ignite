@@ -259,7 +259,7 @@
         &--postfix::after {
             content: attr(data-postfix);
             display: inline-flex;
-            place-self: center;
+            align-self: center;
             margin-left: 10px;
         }
 
@@ -401,6 +401,7 @@
         float: none;
         width: auto;
         height: auto;
+        position: static;
 
         text-align: left;
         line-height: 14px;

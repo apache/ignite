@@ -32,6 +32,7 @@ import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -164,7 +165,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     }
 
     /** {@inheritDoc} */
-    public boolean equals(Object other) {
+    @Override public boolean equals(Object other) {
         if (other == this)
             return true;
 
@@ -201,11 +202,16 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
         BinaryType meta;
 
+        IgniteThread.onForbidBinaryMetadataRequestSectionEntered();
+
         try {
             meta = rawType();
         }
         catch (BinaryObjectException ignore) {
             meta = null;
+        }
+        finally {
+            IgniteThread.onForbidBinaryMetadataRequestSectionLeft();
         }
 
         if (meta == null || !S.INCLUDE_SENSITIVE)
@@ -241,7 +247,6 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @param ctx Reader context.
      * @param handles Handles for already traversed objects.
      */
-    @SuppressWarnings("unchecked")
     private void appendValue(Object val, SB buf, BinaryReaderHandles ctx,
         IdentityHashMap<BinaryObject, Integer> handles) {
         if (val instanceof byte[])

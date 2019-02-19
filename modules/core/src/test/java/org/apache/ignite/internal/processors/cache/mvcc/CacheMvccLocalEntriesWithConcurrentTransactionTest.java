@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  *
@@ -34,6 +35,7 @@ public class CacheMvccLocalEntriesWithConcurrentTransactionTest extends CacheMvc
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLocalEntries() throws Exception {
         doTestConsistency(clo);
     }

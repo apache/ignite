@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -41,11 +43,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,18 +54,11 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundIdentityFuture<Long> implements
-    GridCacheVersionedFuture<Long> {
-    /** */
-    private static final long serialVersionUID = -6069985059301497282L;
-
+public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoundIdentityFuture<T> implements
+    GridCacheVersionedFuture<T> {
     /** Done field updater. */
     private static final AtomicIntegerFieldUpdater<GridNearTxAbstractEnlistFuture> DONE_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridNearTxAbstractEnlistFuture.class, "done");
-
-    /** Done field updater. */
-    private static final AtomicReferenceFieldUpdater<GridNearTxAbstractEnlistFuture, Throwable> EX_UPD =
-        AtomicReferenceFieldUpdater.newUpdater(GridNearTxAbstractEnlistFuture.class, Throwable.class, "ex");
 
     /** Cache context. */
     @GridToStringExclude
@@ -102,11 +96,6 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
     /** */
     @SuppressWarnings("unused")
     @GridToStringExclude
-    protected volatile Throwable ex;
-
-    /** */
-    @SuppressWarnings("unused")
-    @GridToStringExclude
     private volatile int done;
 
     /** Timeout object. */
@@ -117,10 +106,11 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
      * @param cctx Cache context.
      * @param tx Transaction.
      * @param timeout Timeout.
+     * @param rdc Compound future reducer.
      */
     public GridNearTxAbstractEnlistFuture(
-        GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout) {
-        super(CU.longReducer());
+        GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout, @Nullable IgniteReducer<T, T> rdc) {
+        super(rdc);
 
         assert cctx != null;
         assert tx != null;
@@ -153,7 +143,7 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
         else if (timeout > 0)
             timeoutObj = new LockTimeoutObject();
 
-        while(true) {
+        while (true) {
             IgniteInternalFuture<?> fut = tx.lockFuture();
 
             if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT) {
@@ -226,7 +216,18 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
                 if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)) {
-                    Throwable err = fut.validateCache(cctx, false, false, null, null);
+                    Throwable err = null;
+
+                    // Before cache validation, make sure that this topology future is already completed.
+                    try {
+                        fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        err = fut.error();
+                    }
+
+                    if (err == null)
+                        err = fut.validateCache(cctx, false, false, null, null);
 
                     if (err != null) {
                         onDone(err);
@@ -267,6 +268,8 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
 
         if (node.isLocal())
             tx.colocatedLocallyMapped(true);
+
+        checkCompleted();
     }
 
     /**
@@ -300,21 +303,24 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
             throw new IgniteCheckedException("Future is done.");
     }
 
-
-
     /**
      */
     private void mapOnTopology() {
-        cctx.topology().readLock();
+        cctx.topology().readLock(); boolean topLocked = true;
 
         try {
             if (cctx.topology().stopping()) {
-                onDone(new CacheStoppedException(cctx.name()));
+                onDone(
+                    cctx.shared().cache().isCacheRestarting(cctx.name())?
+                        new IgniteCacheRestartingException(cctx.name()):
+                        new CacheStoppedException(cctx.name()));
 
                 return;
             }
 
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+
+            cctx.topology().readUnlock(); topLocked = false;
 
             if (fut.isDone()) {
                 Throwable err = fut.validateCache(cctx, false, false, null, null);
@@ -327,8 +333,7 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
 
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
-                if (tx != null)
-                    tx.topologyVersion(topVer);
+                tx.topologyVersion(topVer);
 
                 if (this.topVer == null)
                     this.topVer = topVer;
@@ -336,51 +341,31 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
                 map(false);
             }
             else {
-                fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                        try {
-                            fut.get();
-
+                cctx.time().waitAsync(fut, tx.remainingTime(), (e, timedOut) -> {
+                    try {
+                        if (e != null || timedOut)
+                            onDone(timedOut ? tx.timeoutException() : e);
+                        else
                             mapOnTopology();
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
-                        }
-                        finally {
-                            cctx.shared().txContextReset();
-                        }
+                    }
+                    finally {
+                        cctx.shared().txContextReset();
                     }
                 });
             }
         }
         finally {
-            cctx.topology().readUnlock();
+            if (topLocked)
+                cctx.topology().readUnlock();
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean processFailure(Throwable err, IgniteInternalFuture<Long> fut) {
-        if (ex != null || !EX_UPD.compareAndSet(this, null, err))
-            ex.addSuppressed(err);
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err, boolean cancelled) {
+    @Override public boolean onDone(@Nullable T res, @Nullable Throwable err, boolean cancelled) {
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
 
         cctx.tm().txContext(tx);
-
-        Throwable ex0 = ex;
-
-        if (ex0 != null) {
-            if (err != null)
-                ex0.addSuppressed(err);
-
-            err = ex0;
-        }
 
         if (!cancelled && err == null)
             tx.clearLockFuture(this);
@@ -388,14 +373,14 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
             tx.setRollbackOnly();
 
         synchronized (this) {
-            boolean done = super.onDone(res, err, cancelled);
-
-            assert done;
-
             GridDhtTxAbstractEnlistFuture localFuture0 = localEnlistFuture;
 
             if (localFuture0 != null && (err != null || cancelled))
                 localFuture0.onDone(cancelled ? new IgniteFutureCancelledCheckedException("Future was cancelled: " + localFuture0) : err);
+
+            boolean done = super.onDone(res, err, cancelled);
+
+            assert done;
 
             // Clean up.
             cctx.mvcc().removeVersionedFuture(this);
@@ -471,6 +456,11 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
      * @param topLocked Whether topology was already locked.
      */
     protected abstract void map(boolean topLocked);
+
+    /**
+     * @return Nodes from which current future waits responses.
+     */
+    public abstract Set<UUID> pendingResponseNodes();
 
     /**
      * Lock request timeout object.

@@ -21,10 +21,12 @@ package org.apache.ignite.examples;
 //import org.apache.ignite.internal.util.typedef.internal.*;
 
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Ignore;
 
 /**
  * IGFS examples self test.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-711")
 public class IgfsExamplesSelfTest extends GridAbstractExamplesTest {
     /** IGFS config with shared memory IPC. */
     private static final String IGFS_SHMEM_CFG = "modules/core/src/test/config/igfs-shmem.xml";

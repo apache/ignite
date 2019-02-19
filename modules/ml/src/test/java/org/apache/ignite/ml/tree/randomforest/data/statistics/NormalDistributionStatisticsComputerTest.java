@@ -54,13 +54,14 @@ public class NormalDistributionStatisticsComputerTest {
         new BootstrappedVector(VectorUtils.of(9, 0, 11, 2, 13, 3, 15), 0., null),
     });
 
+    /** Normal Distribution Statistics Computer. */
     private NormalDistributionStatisticsComputer computer = new NormalDistributionStatisticsComputer();
 
     /** */
     @Test
     public void computeStatsOnPartitionTest() {
-        List<NormalDistributionStatistics> result = computer.computeStatsOnPartition(partition, meta);
-        NormalDistributionStatistics[] expected = new NormalDistributionStatistics[] {
+        List<NormalDistributionStatistics> res = computer.computeStatsOnPartition(partition, meta);
+        NormalDistributionStatistics[] exp = new NormalDistributionStatistics[] {
             new NormalDistributionStatistics(0, 9, 285, 45, 10),
             new NormalDistributionStatistics(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
             new NormalDistributionStatistics(2, 11, 505, 65, 10),
@@ -70,15 +71,15 @@ public class NormalDistributionStatisticsComputerTest {
             new NormalDistributionStatistics(6, 15, 1185, 105, 10),
         };
 
-        assertEquals(expected.length, result.size());
-        for (int i = 0; i < expected.length; i++) {
-            NormalDistributionStatistics expectedStat = expected[i];
-            NormalDistributionStatistics resultStat = result.get(i);
-            assertEquals(expectedStat.mean(), resultStat.mean(), 0.01);
-            assertEquals(expectedStat.variance(), resultStat.variance(), 0.01);
-            assertEquals(expectedStat.std(), resultStat.std(), 0.01);
-            assertEquals(expectedStat.min(), resultStat.min(), 0.01);
-            assertEquals(expectedStat.max(), resultStat.max(), 0.01);
+        assertEquals(exp.length, res.size());
+        for (int i = 0; i < exp.length; i++) {
+            NormalDistributionStatistics expStat = exp[i];
+            NormalDistributionStatistics resStat = res.get(i);
+            assertEquals(expStat.mean(), resStat.mean(), 0.01);
+            assertEquals(expStat.variance(), resStat.variance(), 0.01);
+            assertEquals(expStat.std(), resStat.std(), 0.01);
+            assertEquals(expStat.min(), resStat.min(), 0.01);
+            assertEquals(expStat.max(), resStat.max(), 0.01);
         }
     }
 
@@ -105,8 +106,8 @@ public class NormalDistributionStatisticsComputerTest {
             new NormalDistributionStatistics(0, 9, 285, 45, 10)
         );
 
-        List<NormalDistributionStatistics> result = computer.reduceStats(left, right, meta);
-        NormalDistributionStatistics[] expected = new NormalDistributionStatistics[] {
+        List<NormalDistributionStatistics> res = computer.reduceStats(left, right, meta);
+        NormalDistributionStatistics[] exp = new NormalDistributionStatistics[] {
             new NormalDistributionStatistics(0, 15, 1470, 150, 20),
             new NormalDistributionStatistics(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
             new NormalDistributionStatistics(2, 13, 1310, 150, 20),
@@ -116,15 +117,15 @@ public class NormalDistributionStatisticsComputerTest {
             new NormalDistributionStatistics(0, 15, 1470, 150, 20)
         };
 
-        assertEquals(expected.length, result.size());
-        for (int i = 0; i < expected.length; i++) {
-            NormalDistributionStatistics expectedStat = expected[i];
-            NormalDistributionStatistics resultStat = result.get(i);
-            assertEquals(expectedStat.mean(), resultStat.mean(), 0.01);
-            assertEquals(expectedStat.variance(), resultStat.variance(), 0.01);
-            assertEquals(expectedStat.std(), resultStat.std(), 0.01);
-            assertEquals(expectedStat.min(), resultStat.min(), 0.01);
-            assertEquals(expectedStat.max(), resultStat.max(), 0.01);
+        assertEquals(exp.length, res.size());
+        for (int i = 0; i < exp.length; i++) {
+            NormalDistributionStatistics expStat = exp[i];
+            NormalDistributionStatistics resStat = res.get(i);
+            assertEquals(expStat.mean(), resStat.mean(), 0.01);
+            assertEquals(expStat.variance(), resStat.variance(), 0.01);
+            assertEquals(expStat.std(), resStat.std(), 0.01);
+            assertEquals(expStat.min(), resStat.min(), 0.01);
+            assertEquals(expStat.max(), resStat.max(), 0.01);
         }
     }
 }

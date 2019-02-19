@@ -39,6 +39,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -96,6 +98,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllAsyncFailover() throws Exception {
         putAllAsyncFailover(5, 10);
     }
@@ -103,6 +106,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllAsyncFailoverManyThreads() throws Exception {
         putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
     }
@@ -110,6 +114,8 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9759")
+    @Test
     public void testAsyncFailover() throws Exception {
         IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 

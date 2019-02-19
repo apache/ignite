@@ -32,9 +32,17 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link ImpurityHistogram}.
+ */
 public class ImpurityHistogramTest {
-    protected static final int COUNT_OF_CLASSES = 3;
-    protected static final Map<Double, Integer> lblMapping = new HashMap<>();
+    /** Count of classes. */
+    private static final int COUNT_OF_CLASSES = 3;
+
+    /** Lbl mapping. */
+    static final Map<Double, Integer> lblMapping = new HashMap<>();
+
+    /** Random generator. */
     protected Random rnd = new Random();
 
     static {
@@ -42,28 +50,41 @@ public class ImpurityHistogramTest {
             lblMapping.put((double)i, i);
     }
 
-    protected void checkBucketIds(Set<Integer> bucketIdsSet, Integer[] expected) {
+    /** */
+    void checkBucketIds(Set<Integer> bucketIdsSet, Integer[] exp) {
         Integer[] bucketIds = new Integer[bucketIdsSet.size()];
         bucketIdsSet.toArray(bucketIds);
-        assertArrayEquals(expected, bucketIds);
+        assertArrayEquals(exp, bucketIds);
     }
 
-    protected void checkCounters(ObjectHistogram<BootstrappedVector> hist, double[] expected) {
+    /** */
+    void checkCounters(ObjectHistogram<BootstrappedVector> hist, double[] exp) {
         double[] counters = hist.buckets().stream().mapToDouble(x -> hist.getValue(x).get()).toArray();
-        assertArrayEquals(expected, counters, 0.01);
+        assertArrayEquals(exp, counters, 0.01);
     }
 
-    protected BootstrappedVector randomVector(int countOfFeatures, int countOfSampes, boolean isClassification) {
-        double[] features = DoubleStream.generate(() -> rnd.nextDouble()).limit(countOfFeatures).toArray();
-        int[] counters = IntStream.generate(() -> rnd.nextInt(10)).limit(countOfSampes).toArray();
+    /**
+     * Generates random vector.
+     *
+     * @param isClassification Is classification.
+     */
+    BootstrappedVector randomVector(boolean isClassification) {
+        double[] features = DoubleStream.generate(() -> rnd.nextDouble()).limit(2).toArray();
+        int[] counters = IntStream.generate(() -> rnd.nextInt(10)).limit(1).toArray();
         double lbl = isClassification ? Math.abs(rnd.nextInt() % COUNT_OF_CLASSES) : rnd.nextDouble();
         return new BootstrappedVector(VectorUtils.of(features), lbl, counters);
     }
 
-    protected <T extends Histogram<BootstrappedVector, T>> void checkSums(T expected, List<T> partitions) {
+    /**
+     * Check sums.
+     *
+     * @param exp Expected value.
+     * @param partitions Partitions.
+     */
+    <T extends Histogram<BootstrappedVector, T>> void checkSums(T exp, List<T> partitions) {
         T leftSum = partitions.stream().reduce((x,y) -> x.plus(y)).get();
         T rightSum = partitions.stream().reduce((x,y) -> y.plus(x)).get();
-        assertTrue(expected.isEqualTo(leftSum));
-        assertTrue(expected.isEqualTo(rightSum));
+        assertTrue(exp.isEqualTo(leftSum));
+        assertTrue(exp.isEqualTo(rightSum));
     }
 }

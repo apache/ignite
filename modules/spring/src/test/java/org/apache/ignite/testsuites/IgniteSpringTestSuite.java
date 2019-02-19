@@ -17,12 +17,13 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerMultiJvmSelfTest;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerSelfTest;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerSpringBeanSelfTest;
 import org.apache.ignite.cache.spring.SpringCacheManagerContextInjectionTest;
 import org.apache.ignite.cache.spring.SpringCacheTest;
+import org.apache.ignite.encryption.SpringEncryptedCacheRestartClientTest;
+import org.apache.ignite.encryption.SpringEncryptedCacheRestartTest;
 import org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest;
 import org.apache.ignite.internal.IgniteSpringBeanTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest;
@@ -39,64 +40,62 @@ import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
 import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
 import org.apache.ignite.spring.injection.GridServiceInjectionSpringResourceTest;
 import org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest;
-import org.apache.ignite.testframework.IgniteTestSuite;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSpringBeanSelfTest;
 import org.apache.ignite.transactions.spring.SpringTransactionManagerContextInjectionTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Spring tests.
  */
-public class IgniteSpringTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new IgniteTestSuite("Spring Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridSpringBeanSerializationSelfTest.class,
+    IgniteSpringBeanTest.class,
+    GridFactorySelfTest.class,
 
-        suite.addTestSuite(GridSpringBeanSerializationSelfTest.class);
-        suite.addTestSuite(IgniteSpringBeanTest.class);
-        suite.addTestSuite(GridFactorySelfTest.class);
+    IgniteResourceSelfTestSuite.class,
 
-        suite.addTest(IgniteResourceSelfTestSuite.suite());
+    IgniteExcludeInConfigurationTest.class,
 
-        suite.addTestSuite(IgniteExcludeInConfigurationTest.class);
+    // Tests moved to this suite since they require Spring functionality.
+    GridP2PUserVersionChangeSelfTest.class,
 
-        // Tests moved to this suite since they require Spring functionality.
-        suite.addTestSuite(GridP2PUserVersionChangeSelfTest.class);
+    GridSpringCacheManagerSelfTest.class,
+    GridSpringCacheManagerSpringBeanSelfTest.class,
 
-        suite.addTestSuite(GridSpringCacheManagerSelfTest.class);
-        suite.addTestSuite(GridSpringCacheManagerSpringBeanSelfTest.class);
+    IgniteDynamicCacheConfigTest.class,
 
-        suite.addTestSuite(IgniteDynamicCacheConfigTest.class);
+    IgniteStartFromStreamConfigurationTest.class,
 
-        suite.addTestSuite(IgniteStartFromStreamConfigurationTest.class);
+    CacheSpringStoreSessionListenerSelfTest.class,
 
-        suite.addTestSuite(CacheSpringStoreSessionListenerSelfTest.class);
+    CacheJdbcBlobStoreFactorySelfTest.class,
+    CacheJdbcPojoStoreFactorySelfTest.class,
+    CachePojoStoreXmlSelfTest.class,
+    CachePojoStoreXmlWithSqlEscapeSelfTest.class,
 
-        suite.addTestSuite(CacheJdbcBlobStoreFactorySelfTest.class);
-        suite.addTestSuite(CacheJdbcPojoStoreFactorySelfTest.class);
-        suite.addTestSuite(CachePojoStoreXmlSelfTest.class);
-        suite.addTestSuite(CachePojoStoreXmlWithSqlEscapeSelfTest.class);
+    GridSpringTransactionManagerSelfTest.class,
+    GridSpringTransactionManagerSpringBeanSelfTest.class,
 
-        suite.addTestSuite(GridSpringTransactionManagerSelfTest.class);
-        suite.addTestSuite(GridSpringTransactionManagerSpringBeanSelfTest.class);
+    GridServiceInjectionSpringResourceTest.class,
+    IgniteSpringBeanSpringResourceInjectionTest.class,
 
-        suite.addTestSuite(GridServiceInjectionSpringResourceTest.class);
-        suite.addTestSuite(IgniteSpringBeanSpringResourceInjectionTest.class);
+    GridTransformSpringInjectionSelfTest.class,
 
-        suite.addTestSuite(GridTransformSpringInjectionSelfTest.class);
+    SpringCacheManagerContextInjectionTest.class,
+    SpringTransactionManagerContextInjectionTest.class,
 
-        suite.addTestSuite(SpringCacheManagerContextInjectionTest.class);
-        suite.addTestSuite(SpringTransactionManagerContextInjectionTest.class);
+    SpringCacheTest.class,
 
-        suite.addTestSuite(SpringCacheTest.class);
+    SpringEncryptedCacheRestartTest.class,
+    SpringEncryptedCacheRestartClientTest.class,
 
-        //suite.addTestSuite(GridSpringCacheManagerMultiJvmSelfTest.class);
+    //GridSpringCacheManagerMultiJvmSelfTest.class,
+    GridSpringCacheManagerMultiJvmSelfTest.class,
 
-        //suite.addTestSuite(GridCommandLineLoaderTest.class);
-
-        return suite;
-    }
+    GridCommandLineLoaderTest.class,
+})
+public class IgniteSpringTestSuite {
 }

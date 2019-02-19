@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.junit.Test;
 
 /**
  * Index rebuild after node restart test.
@@ -40,16 +41,16 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration serverConfiguration(int idx, boolean filter) throws Exception {
         return super.serverConfiguration(idx, filter)
-            .setMvccVacuumTimeInterval(Integer.MAX_VALUE)
-            .setMvccEnabled(true);
+            .setMvccVacuumFrequency(Integer.MAX_VALUE);
     }
 
     /** {@inheritDoc} */
+    @Test
     public void testIndexRebuild() throws Exception {
         IgniteEx srv = startServer();
 
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +
-            "atomicity=transactional\"");
+            "atomicity=transactional_snapshot\"");
 
         execute(srv, "CREATE INDEX IDX ON T(v)");
 
@@ -85,7 +86,7 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
      * @throws IgniteCheckedException if failed.
      */
     private static void lockVersion(IgniteEx node) throws IgniteCheckedException {
-        node.context().coordinators().requestSnapshotAsync().get();
+        node.context().coordinators().requestReadSnapshotAsync().get();
     }
 
     /** {@inheritDoc} */

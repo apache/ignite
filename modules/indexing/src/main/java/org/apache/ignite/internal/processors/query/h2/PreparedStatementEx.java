@@ -28,8 +28,11 @@ public interface PreparedStatementEx extends PreparedStatement {
     /** */
     static final AtomicInteger metaIdGenerator = new AtomicInteger();
 
-    /** */
-    static final int INVOLVED_CACHES = metaIdGenerator.getAndIncrement();
+    /** Flag if at least one MVCC cache is used in this statement. */
+    static final int MVCC_STATE = metaIdGenerator.getAndIncrement();
+
+    /** First mvcc cache id of the involved caches. */
+    static final int MVCC_CACHE_ID = metaIdGenerator.getAndIncrement();
 
     /**
      * @param id Metadata key.

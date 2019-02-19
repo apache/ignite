@@ -29,11 +29,9 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -46,9 +44,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTest {
     /** Test duration. */
     private static final long DURATION = 8 * 60 * 60 * 1000;
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final AtomicInteger idx = new AtomicInteger();
@@ -84,18 +79,13 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
 
         c.setCacheConfiguration(cc);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
         return c;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoad() throws Exception {
         startGrid();
 

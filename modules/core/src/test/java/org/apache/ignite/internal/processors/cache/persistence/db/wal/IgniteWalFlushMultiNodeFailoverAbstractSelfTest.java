@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import java.nio.MappedByteBuffer;
+import java.nio.file.OpenOption;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
@@ -40,20 +41,15 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-
-import java.nio.file.OpenOption;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+import org.junit.Assume;
+import org.junit.Test;
 
 /**
  * Tests error recovery while node flushing
@@ -75,6 +71,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10550", MvccFeatureChecker.forcedMvcc());
+
         super.beforeTest();
 
         stopAllGrids();
@@ -145,6 +143,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testFailWhileStart() throws Exception {
         failWhilePut(true);
     }
@@ -154,6 +153,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testFailAfterStart() throws Exception {
         failWhilePut(false);
     }
@@ -171,7 +171,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         for (int i = 0; i < ITRS; i++) {
             while (!Thread.currentThread().isInterrupted()) {
                 try (Transaction tx = grid.transactions().txStart(
-                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
+                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
                     cache.put(i, "testValue" + i);
 
                     tx.commit();
@@ -232,8 +232,6 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     private void setFileIOFactory(IgniteWriteAheadLogManager wal) {
         if (wal instanceof FileWriteAheadLogManager)
             ((FileWriteAheadLogManager)wal).setFileIOFactory(new FailingFileIOFactory(canFail));
-        else if (wal instanceof FsyncModeFileWriteAheadLogManager)
-            ((FsyncModeFileWriteAheadLogManager)wal).setFileIOFactory(new FailingFileIOFactory(canFail));
         else
             fail(wal.getClass().toString());
     }
@@ -254,11 +252,6 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         /** */
         FailingFileIOFactory(AtomicBoolean fail) {
             this.fail = fail;
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
         }
 
         /** {@inheritDoc} */

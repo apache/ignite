@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractD
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -55,8 +56,8 @@ public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public void insertDataRow(CacheDataRow row) throws IgniteCheckedException {
-        super.insertDataRow(row);
+    @Override public void insertDataRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        super.insertDataRow(row, statHolder);
 
         assert row.key().partition() == PageIdUtils.partId(row.link()) :
             "Constructed a link with invalid partition ID [partId=" + row.key().partition() +

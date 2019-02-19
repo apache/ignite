@@ -76,7 +76,7 @@ public class MLPTrainerMnistTest {
             trainingSet,
             1,
             (k, v) -> VectorUtils.of(v.getPixels()),
-            (k, v) -> VectorUtils.num2Vec(v.getLabel(), 10).getStorage().data()
+            (k, v) -> VectorUtils.oneHot(v.getLabel(), 10).getStorage().data()
         );
         System.out.println("Training completed in " + (System.currentTimeMillis() - start) + "ms");
 
@@ -85,7 +85,7 @@ public class MLPTrainerMnistTest {
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(10_000)) {
             Matrix input = new DenseMatrix(new double[][]{e.getPixels()});
-            Matrix outputMatrix = mdl.apply(input);
+            Matrix outputMatrix = mdl.predict(input);
 
             int predicted = (int) VectorUtils.vec2Num(outputMatrix.getRow(0));
 

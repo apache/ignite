@@ -41,6 +41,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -114,6 +115,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRequestedMappingIsStoredInFS() throws Exception {
         Ignite srv1 = startGrid(0);
 
@@ -151,6 +153,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoNodesDieOnRequest() throws Exception {
         Ignite srv1 = startGrid(0);
 
@@ -181,6 +184,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testOneNodeDiesOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(1);
 
@@ -216,6 +220,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testTwoNodesDieOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(2);
 
@@ -252,6 +257,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testAllNodesDieOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(3);
 

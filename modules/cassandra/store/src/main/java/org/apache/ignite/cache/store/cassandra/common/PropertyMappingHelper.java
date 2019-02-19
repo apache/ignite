@@ -125,23 +125,77 @@ public class PropertyMappingHelper {
         if (String.class.equals(clazz))
             return row.getString(col);
 
-        if (Integer.class.equals(clazz) || int.class.equals(clazz))
+        if (Integer.class.equals(clazz))
+            return row.isNull(col) ? null : row.getInt(col);
+
+        if (int.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "int value used in domain object model");
+            }
+
             return row.getInt(col);
+        }
 
-        if (Short.class.equals(clazz) || short.class.equals(clazz))
+        if (Short.class.equals(clazz))
+            return row.isNull(col) ? null : row.getShort(col);
+
+        if (short.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "short value used in domain object model");
+            }
+
             return row.getShort(col);
+        }
 
-        if (Long.class.equals(clazz) || long.class.equals(clazz))
+        if (Long.class.equals(clazz))
+            return row.isNull(col) ? null : row.getLong(col);
+
+        if (long.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "long value used in domain object model");
+            }
+
             return row.getLong(col);
+        }
 
-        if (Double.class.equals(clazz) || double.class.equals(clazz))
+        if (Double.class.equals(clazz))
+            return row.isNull(col) ? null : row.getDouble(col);
+
+        if (double.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "double value used in domain object model");
+            }
+
             return row.getDouble(col);
+        }
 
-        if (Boolean.class.equals(clazz) || boolean.class.equals(clazz))
+        if (Boolean.class.equals(clazz))
+            return row.isNull(col) ? null : row.getBool(col);
+
+        if (boolean.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "boolean value used in domain object model");
+            }
+
             return row.getBool(col);
+        }
 
-        if (Float.class.equals(clazz) || float.class.equals(clazz))
+        if (Float.class.equals(clazz))
+            return row.isNull(col) ? null : row.getFloat(col);
+
+        if (float.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "float value used in domain object model");
+            }
+
             return row.getFloat(col);
+        }
 
         if (ByteBuffer.class.equals(clazz))
             return row.getBytes(col);

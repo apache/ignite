@@ -45,7 +45,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
     private static final long serialVersionUID = -4984067145908187508L;
 
     /**
-     * Computes histograms for each features.
+     * Computes histograms for each feature.
      *
      * @param roots Random forest roots.
      * @param histMeta Histograms meta.
@@ -168,7 +168,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
          * @param other Other instance.
          */
         public NodeImpurityHistograms<S> plus(NodeImpurityHistograms<S> other) {
-            assert nodeId == other.nodeId;
+            assert nodeId.equals(other.nodeId);
             NodeImpurityHistograms<S> res = new NodeImpurityHistograms<>(nodeId);
             addTo(this.perFeatureStatistics, res.perFeatureStatistics);
             addTo(other.perFeatureStatistics, res.perFeatureStatistics);
@@ -183,9 +183,9 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
          */
         private void addTo(Map<Integer, S> from, Map<Integer, S> to) {
             from.forEach((key, hist) -> {
-                if(!to.containsKey(key)) {
+                if (!to.containsKey(key))
                     to.put(key, hist);
-                } else {
+                else {
                     S sumOfHists = to.get(key).plus(hist);
                     to.put(key, sumOfHists);
                 }

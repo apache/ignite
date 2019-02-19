@@ -29,6 +29,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
 
 /**
  *
@@ -44,6 +45,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testConcurrentUpdatesSingleLock() throws Exception {
         final int numPairs = 100;
         final Pair[] data = new Pair[numPairs];
@@ -139,6 +141,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testConcurrentUpdatesMultipleLocks() throws Exception {
         final int numPairs = 100;
         final Pair[] data = new Pair[numPairs];
@@ -225,6 +228,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLockUpgradeMultipleLocks() throws Exception {
         final int numPairs = 100;
         final Pair[] data = new Pair[numPairs];
@@ -312,6 +316,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testTagIdUpdateWait() throws Exception {
         checkTagIdUpdate(true);
     }
@@ -319,6 +324,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testTagIdUpdateContinuous() throws Exception {
         checkTagIdUpdate(false);
     }

@@ -18,16 +18,25 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 /**
  * Tests transaction labels.
  */
-public class TxLabelTest extends GridCacheAbstractSelfTest {
+public class TxLabelTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(0).getOrCreateCache(defaultCacheConfiguration());
+    }
+
     /**
      * Tests transaction labels.
      */
+    @Test
     public void testLabel() {
         testLabel0(grid(0), "lbl0");
         testLabel0(grid(0), "lbl1");
@@ -54,10 +63,5 @@ public class TxLabelTest extends GridCacheAbstractSelfTest {
 
             tx.commit();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
     }
 }

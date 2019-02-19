@@ -26,7 +26,6 @@ import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -45,14 +44,12 @@ public class ANNClassificationTest extends TrainerTest {
             .withK(10)
             .withMaxIterations(10)
             .withEpsilon(1e-4)
-            .withDistance(new EuclideanDistance())
-            .withSeed(1234L);
+            .withDistance(new EuclideanDistance());
 
         Assert.assertEquals(10, trainer.getK());
         Assert.assertEquals(10, trainer.getMaxIterations());
         TestUtils.assertEquals(1e-4, trainer.getEpsilon(), PRECISION);
         Assert.assertEquals(new EuclideanDistance(), trainer.getDistance());
-        Assert.assertEquals(1234L, trainer.getSeed());
 
         NNClassificationModel mdl = trainer.fit(
             cacheMock,
@@ -84,7 +81,7 @@ public class ANNClassificationTest extends TrainerTest {
             .withEpsilon(1e-4)
             .withDistance(new EuclideanDistance());
 
-        ANNClassificationModel originalMdl = (ANNClassificationModel) trainer.withSeed(1234L).fit(
+        ANNClassificationModel originalMdl = (ANNClassificationModel) trainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -93,23 +90,32 @@ public class ANNClassificationTest extends TrainerTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
-        ANNClassificationModel updatedOnSameDataset = trainer.withSeed(1234L).update(originalMdl,
+        ANNClassificationModel updatedOnSameDataset = (ANNClassificationModel) trainer.update(originalMdl,
             cacheMock, parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
-        );
+        ).withK(3)
+            .withDistanceMeasure(new EuclideanDistance())
+            .withStrategy(NNStrategy.SIMPLE);
 
-        ANNClassificationModel updatedOnEmptyDataset = trainer.withSeed(1234L).update(originalMdl,
+        ANNClassificationModel updatedOnEmptyDataset = (ANNClassificationModel) trainer.update(originalMdl,
             new HashMap<Integer, double[]>(), parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
-        );
+        ).withK(3)
+            .withDistanceMeasure(new EuclideanDistance())
+            .withStrategy(NNStrategy.SIMPLE);
 
-        Vector v1 = VectorUtils.of(550, 550);
-        Vector v2 = VectorUtils.of(-550, -550);
-        TestUtils.assertEquals(originalMdl.apply(v1), updatedOnSameDataset.apply(v1), PRECISION);
-        TestUtils.assertEquals(originalMdl.apply(v2), updatedOnSameDataset.apply(v2), PRECISION);
-        TestUtils.assertEquals(originalMdl.apply(v1), updatedOnEmptyDataset.apply(v1), PRECISION);
-        TestUtils.assertEquals(originalMdl.apply(v2), updatedOnEmptyDataset.apply(v2), PRECISION);
+        Assert.assertNotNull(updatedOnSameDataset.getCandidates());
+
+        Assert.assertTrue(updatedOnSameDataset.toString().contains(NNStrategy.SIMPLE.name()));
+        Assert.assertTrue(updatedOnSameDataset.toString(true).contains(NNStrategy.SIMPLE.name()));
+        Assert.assertTrue(updatedOnSameDataset.toString(false).contains(NNStrategy.SIMPLE.name()));
+
+        Assert.assertNotNull(updatedOnEmptyDataset.getCandidates());
+
+        Assert.assertTrue(updatedOnEmptyDataset.toString().contains(NNStrategy.SIMPLE.name()));
+        Assert.assertTrue(updatedOnEmptyDataset.toString(true).contains(NNStrategy.SIMPLE.name()));
+        Assert.assertTrue(updatedOnEmptyDataset.toString(false).contains(NNStrategy.SIMPLE.name()));
     }
 }

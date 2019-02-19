@@ -79,18 +79,17 @@ commonParams="-cfg ${SCRIPT_DIR}/../config/ignite-localhost-config.xml -nn ${nod
   -jdbc jdbc:ignite:thin://auto.find/ -t ${t} -sm ${sm} \
   --clientNodesAfterId 100 \
   -sn IgniteNode -cl \
-  --range 1000000 --mvcc-contention-range 10000 \
-  --atomic-mode TRANSACTIONAL"
+  --range 1000000 --mvcc-contention-range 10000"
 
 # Run configuration which contains all benchmarks.
 # Note that each benchmark is set to run for 300 seconds (5 min) with warm-up set to 60 seconds (1 minute).
 CONFIGS="\
-${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-1-backup-0-mvcc-off -b 0 --sqlRange 1, \
-${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-1-backup-0-mvcc-on -b 0 --sqlRange 1 --mvcc, \
+${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-1-backup-0-mvcc-off -b 0 --sqlRange 1 --atomic-mode TRANSACTIONAL, \
+${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-1-backup-0-mvcc-on -b 0 --sqlRange 1 --atomic-mode TRANSACTIONAL_SNAPSHOT, \
   \
-${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-25-backup-0-mvcc-off -b 0 --sqlRange 25, \
-${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-25-backup-0-mvcc-on -b 0 --sqlRange 25 --mvcc, \
+${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-25-backup-0-mvcc-off -b 0 --sqlRange 25 --atomic-mode TRANSACTIONAL, \
+${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-25-backup-0-mvcc-on -b 0 --sqlRange 25 --atomic-mode TRANSACTIONAL_SNAPSHOT, \
   \
-${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-1000-backup-0-mvcc-off -b 0 --sqlRange 1000, \
-${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-1000-backup-0-mvcc-on -b 0 --sqlRange 1000 --mvcc \
+${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-1000-backup-0-mvcc-off -b 0 --sqlRange 1000 --atomic-mode TRANSACTIONAL, \
+${commonParams} -dn MvccUpdateContentionBenchmark -ds ${ver}sql-update-batch-1000-backup-0-mvcc-on -b 0 --sqlRange 1000 --atomic-mode TRANSACTIONAL_SNAPSHOT \
 "

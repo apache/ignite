@@ -50,7 +50,7 @@ public class KNNRegressionModel extends KNNClassificationModel {
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector v) {
+    @Override public Double predict(Vector v) {
         List<LabeledVector> neighbors = findKNearestNeighbors(v);
 
         return predictYBasedOn(neighbors, v);
@@ -72,18 +72,20 @@ public class KNNRegressionModel extends KNNClassificationModel {
     private double weightedRegression(List<LabeledVector> neighbors, Vector v) {
         double sum = 0.0;
         double div = 0.0;
-        for (LabeledVector<Vector, Double> neighbor : neighbors) {
+        for (LabeledVector<Double> neighbor : neighbors) {
             double distance = distanceMeasure.compute(v, neighbor.features());
             sum += neighbor.label() * distance;
             div += distance;
         }
+        if (div == 0.0) // when all neighbours are equal to the given point
+            return simpleRegression(neighbors);
         return sum / div;
     }
 
     /** */
     private double simpleRegression(List<LabeledVector> neighbors) {
         double sum = 0.0;
-        for (LabeledVector<Vector, Double> neighbor : neighbors)
+        for (LabeledVector<Double> neighbor : neighbors)
             sum += neighbor.label();
         return sum / (double)k;
     }

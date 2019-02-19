@@ -17,11 +17,10 @@
 
 package org.apache.ignite.ml.knn;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
@@ -32,34 +31,13 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link KNNRegressionTrainer}.
  */
-@RunWith(Parameterized.class)
-public class KNNRegressionTest {
-    /** Number of parts to be tested. */
-    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7, 100};
-
-    /** Number of partitions. */
-    @Parameterized.Parameter
-    public int parts;
-
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
-    public static Iterable<Integer[]> data() {
-        List<Integer[]> res = new ArrayList<>();
-
-        for (int part : partsToBeTested)
-            res.add(new Integer[] {part});
-
-        return res;
-    }
-
+public class KNNRegressionTest extends TrainerTest {
     /** */
     @Test
     public void testSimpleRegressionWithOneNeighbour() {
@@ -82,8 +60,8 @@ public class KNNRegressionTest {
             .withStrategy(NNStrategy.SIMPLE);
 
         Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
-        System.out.println(knnMdl.apply(vector));
-        Assert.assertEquals(15, knnMdl.apply(vector), 1E-12);
+        System.out.println(knnMdl.predict(vector));
+        Assert.assertEquals(15, knnMdl.predict(vector), 1E-12);
     }
 
     /** */
@@ -129,9 +107,9 @@ public class KNNRegressionTest {
 
         Vector vector = new DenseVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
 
-        Assert.assertNotNull(knnMdl.apply(vector));
+        Assert.assertNotNull(knnMdl.predict(vector));
 
-        Assert.assertEquals(67857, knnMdl.apply(vector), 2000);
+        Assert.assertEquals(67857, knnMdl.predict(vector), 2000);
 
         Assert.assertTrue(knnMdl.toString().contains(stgy.name()));
         Assert.assertTrue(knnMdl.toString(true).contains(stgy.name()));
@@ -172,7 +150,7 @@ public class KNNRegressionTest {
         );
 
         Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
-        assertEquals(originalMdl.apply(vector), updatedOnSameDataset.apply(vector));
-        assertEquals(originalMdl.apply(vector), updatedOnEmptyDataset.apply(vector));
+        assertEquals(originalMdl.predict(vector), updatedOnSameDataset.predict(vector));
+        assertEquals(originalMdl.predict(vector), updatedOnEmptyDataset.predict(vector));
     }
 }

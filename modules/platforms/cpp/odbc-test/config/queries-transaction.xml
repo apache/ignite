@@ -27,6 +27,15 @@
     <import resource="queries-default.xml"/>
 
     <bean parent="queries.cfg">
-        <property name="mvccEnabled" value="true"/>
+        <property name="cacheConfiguration">
+            <list>
+                <bean parent="test-type-template">
+                    <property name="atomicityMode" value="TRANSACTIONAL_SNAPSHOT"/>
+                </bean>
+                <bean parent="complex-type-template">
+                    <property name="atomicityMode" value="TRANSACTIONAL_SNAPSHOT"/>
+                </bean>
+            </list>
+        </property>
     </bean>
 </beans>

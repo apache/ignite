@@ -34,8 +34,8 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -48,7 +48,6 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.dml.UpdateMode.BULK_LOAD;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Update plan - where to take data to update cache from and how to construct new keys and values, if needed.
@@ -259,8 +258,8 @@ public final class UpdatePlan {
         // column order preserves their precedence for correct update of nested properties.
         Column[] tblCols = tbl.getColumns();
 
-        // First 3 columns are _key, _val and _ver. Skip 'em.
-        for (int i = DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
+        // First 2 columns are _key and _val Skip 'em.
+        for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
             if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
                 continue;
 
@@ -332,8 +331,8 @@ public final class UpdatePlan {
             throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
         // Skip key and value - that's why we start off with 3rd column
-        for (int i = 0; i < tbl.getColumns().length - DEFAULT_COLUMNS_COUNT; i++) {
-            Column c = tbl.getColumn(i + DEFAULT_COLUMNS_COUNT);
+        for (int i = 0; i < tbl.getColumns().length - QueryUtils.DEFAULT_COLUMNS_COUNT; i++) {
+            Column c = tbl.getColumn(i + QueryUtils.DEFAULT_COLUMNS_COUNT);
 
             if (rowDesc.isKeyValueOrVersionColumn(c.getColumnId()))
                 continue;
@@ -485,20 +484,20 @@ public final class UpdatePlan {
     /**
      * Create iterator for transaction.
      *
-     * @param idx Indexing.
+     * @param connMgr Connection manager.
      * @param cur Cursor.
      * @return Iterator.
      */
-    public UpdateSourceIterator<?> iteratorForTransaction(IgniteH2Indexing idx, QueryCursor<List<?>> cur) {
+    public UpdateSourceIterator<?> iteratorForTransaction(ConnectionManager connMgr, QueryCursor<List<?>> cur) {
         switch (mode) {
             case MERGE:
-                return new InsertIterator(idx, cur, this, EnlistOperation.UPSERT);
+                return new InsertIterator(connMgr, cur, this, EnlistOperation.UPSERT);
             case INSERT:
-                return new InsertIterator(idx, cur, this, EnlistOperation.INSERT);
+                return new InsertIterator(connMgr, cur, this, EnlistOperation.INSERT);
             case UPDATE:
-                return new UpdateIterator(idx, cur, this, EnlistOperation.UPDATE);
+                return new UpdateIterator(connMgr, cur, this, EnlistOperation.UPDATE);
             case DELETE:
-                return new DeleteIterator(idx, cur, this, EnlistOperation.DELETE);
+                return new DeleteIterator(connMgr, cur, this, EnlistOperation.DELETE);
 
             default:
                 throw new IllegalArgumentException(String.valueOf(mode));
@@ -535,7 +534,7 @@ public final class UpdatePlan {
      * @return Cache context.
      */
     public GridCacheContext cacheContext() {
-        return tbl.cache();
+        return tbl.cacheContext();
     }
 
     /**
@@ -608,7 +607,7 @@ public final class UpdatePlan {
     private abstract static class AbstractIterator extends GridCloseableIteratorAdapterEx<Object>
         implements UpdateSourceIterator<Object> {
         /** */
-        private final IgniteH2Indexing idx;
+        private final ConnectionManager connMgr;
 
         /** */
         private final QueryCursor<List<?>> cur;
@@ -623,16 +622,17 @@ public final class UpdatePlan {
         private final EnlistOperation op;
 
         /** */
-        private volatile ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn;
+        private volatile ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn;
 
         /**
-         * @param idx Indexing.
+         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private AbstractIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
-            this.idx = idx;
+        private AbstractIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+            EnlistOperation op) {
+            this.connMgr = connMgr;
             this.cur = cur;
             this.plan = plan;
             this.op = op;
@@ -647,7 +647,7 @@ public final class UpdatePlan {
 
         /** {@inheritDoc} */
         @Override public void beforeDetach() {
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn = idx.detach();
+            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn0 = conn = connMgr.detachThreadConnection();
 
             if (isClosed())
                 conn0.recycle();
@@ -657,7 +657,7 @@ public final class UpdatePlan {
         @Override protected void onClose() {
             cur.close();
 
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn;
+            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn0 = conn;
 
             if (conn0 != null)
                 conn0.recycle();
@@ -683,13 +683,14 @@ public final class UpdatePlan {
         private static final long serialVersionUID = -4949035950470324961L;
 
         /**
-         * @param idx Indexing.
+         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private UpdateIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
-            super(idx, cur, plan, op);
+        private UpdateIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+            EnlistOperation op) {
+            super(connMgr, cur, plan, op);
         }
 
         /** {@inheritDoc} */
@@ -706,13 +707,14 @@ public final class UpdatePlan {
         private static final long serialVersionUID = -4949035950470324961L;
 
         /**
-         * @param idx Indexing.
+         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private DeleteIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
-            super(idx, cur, plan, op);
+        private DeleteIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+            EnlistOperation op) {
+            super(connMgr, cur, plan, op);
         }
 
         /** {@inheritDoc} */
@@ -727,13 +729,14 @@ public final class UpdatePlan {
         private static final long serialVersionUID = -4949035950470324961L;
 
         /**
-         * @param idx Indexing.
+         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private InsertIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
-            super(idx, cur, plan, op);
+        private InsertIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+            EnlistOperation op) {
+            super(connMgr, cur, plan, op);
         }
 
         /** {@inheritDoc} */

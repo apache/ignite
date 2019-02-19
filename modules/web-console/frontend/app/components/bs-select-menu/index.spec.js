@@ -18,7 +18,7 @@
 import 'mocha';
 import {assert} from 'chai';
 import angular from 'angular';
-import componentModule from './index.js';
+import componentModule from './index';
 
 suite('bs-select-menu', () => {
     /** @type {ng.IScope} */

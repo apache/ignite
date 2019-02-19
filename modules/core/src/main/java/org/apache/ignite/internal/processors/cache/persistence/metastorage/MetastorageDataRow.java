@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
 /**
@@ -49,7 +50,7 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storable {
     /**
      * @return Key.
      */
-    public String key() {
+    @Override public String key() {
         return key;
     }
 
@@ -62,7 +63,7 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storable {
     /** {@inheritDoc} */
     @Override
     public int partition() {
-        return 0;
+        return MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID ? PageIdAllocator.OLD_METASTORE_PARTITION: PageIdAllocator.METASTORE_PARTITION;
     }
 
     /** {@inheritDoc} */

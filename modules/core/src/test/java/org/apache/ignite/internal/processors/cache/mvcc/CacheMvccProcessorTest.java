@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -28,13 +31,14 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeWithPersistence() throws Exception {
         persistence = true;
 
@@ -44,8 +48,9 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeWithoutPersistence() throws Exception {
-        persistence = true;
+        persistence = false;
 
         checkTreeOperations();
     }
@@ -58,16 +63,24 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
 
         grid.cluster().active(true);
 
+        grid.createCache(new CacheConfiguration<>("test").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT));
+
         MvccProcessorImpl mvccProcessor = mvccProcessor(grid);
 
         assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
 
-        mvccProcessor.updateState(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
-        mvccProcessor.updateState(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
-        mvccProcessor.updateState(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA), TxState.COMMITTED);
-        mvccProcessor.updateState(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA), TxState.ABORTED);
-        mvccProcessor.updateState(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA), TxState.ABORTED);
-        mvccProcessor.updateState(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
+        grid.context().cache().context().database().checkpointReadLock();
+        try {
+            mvccProcessor.updateState(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
+            mvccProcessor.updateState(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
+            mvccProcessor.updateState(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA), TxState.COMMITTED);
+            mvccProcessor.updateState(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA), TxState.ABORTED);
+            mvccProcessor.updateState(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA), TxState.ABORTED);
+            mvccProcessor.updateState(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
+        }
+        finally {
+            grid.context().cache().context().database().checkpointReadUnlock();
+        }
 
         if (persistence) {
             stopGrid(0, false);

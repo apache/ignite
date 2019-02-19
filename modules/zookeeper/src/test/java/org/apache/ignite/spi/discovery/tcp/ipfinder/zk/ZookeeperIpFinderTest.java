@@ -37,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.Timeout;
 
 /**
@@ -142,6 +143,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneIgniteNodeIsAlone() throws Exception {
         startGrid(0);
 
@@ -153,6 +155,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoIgniteNodesFindEachOther() throws Exception {
         // start one node
         startGrid(0);
@@ -176,6 +179,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThreeNodesWithThreeDifferentConfigMethods() throws Exception {
         // start one node
         startGrid(0);
@@ -207,6 +211,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFourNodesStartingAndStopping() throws Exception {
         // start one node
         startGrid(0);
@@ -254,6 +259,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFourNodesWithDuplicateRegistrations() throws Exception {
         allowDuplicateRegistrations = true;
 
@@ -277,6 +283,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFourNodesWithNoDuplicateRegistrations() throws Exception {
         allowDuplicateRegistrations = false;
 
@@ -300,6 +307,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFourNodesRestartLastSeveralTimes() throws Exception {
         allowDuplicateRegistrations = false;
 
@@ -336,6 +344,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFourNodesKillRestartZookeeper() throws Exception {
         allowDuplicateRegistrations = false;
 

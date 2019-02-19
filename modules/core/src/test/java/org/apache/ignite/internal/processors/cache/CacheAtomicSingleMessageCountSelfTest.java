@@ -38,9 +38,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -49,9 +48,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests single / transform messages being sent between nodes in ATOMIC mode.
  */
 public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTest {
-    /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Starting grid index. */
     private int idx;
 
@@ -59,12 +55,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setForceServerMode(true);
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         CacheConfiguration cCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -85,6 +76,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleMessage() throws Exception {
         startGrids(2);
 
@@ -117,6 +109,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTransformMessage() throws Exception {
         startGrids(2);
 
@@ -159,6 +152,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleFilterMessage() throws Exception {
         startGrids(2);
 

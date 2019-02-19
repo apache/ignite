@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.DataType;
+import org.junit.Test;
 
 /**
  * Tests for CREATE/DROP TABLE.
@@ -136,6 +137,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that {@code CREATE TABLE} actually creates new cache, H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTable() throws Exception {
         doTestCreateTable(CACHE_NAME, null, null, null);
     }
@@ -144,6 +146,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that {@code CREATE TABLE} actually creates new cache, H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTableWithCacheGroup() throws Exception {
         doTestCreateTable(CACHE_NAME, "MyGroup", null, null);
     }
@@ -152,6 +155,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that {@code CREATE TABLE} actually creates new cache, H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTableWithCacheGroupAndLegacyParamName() throws Exception {
         doTestCreateTable(CACHE_NAME, "MyGroup", null, null, true);
     }
@@ -161,6 +165,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTableWithWriteSyncMode() throws Exception {
         doTestCreateTable(CACHE_NAME + "_async", null, null, CacheWriteSynchronizationMode.FULL_ASYNC);
     }
@@ -170,6 +175,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTableReplicated() throws Exception {
         doTestCreateTable("REPLICATED", null, CacheMode.REPLICATED, CacheWriteSynchronizationMode.FULL_SYNC);
     }
@@ -179,6 +185,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTablePartitioned() throws Exception {
         doTestCreateTable("PARTITIONED", null, CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC);
     }
@@ -188,6 +195,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTableReplicatedCaseInsensitive() throws Exception {
         doTestCreateTable("replicated", null, CacheMode.REPLICATED, CacheWriteSynchronizationMode.FULL_SYNC);
     }
@@ -197,6 +205,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTablePartitionedCaseInsensitive() throws Exception {
         doTestCreateTable("partitioned", null, CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC);
     }
@@ -206,6 +215,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * H2 table and type descriptor on all nodes, when no cache template name is given.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTableNoTemplate() throws Exception {
         doTestCreateTable(null, null, CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC);
     }
@@ -213,6 +223,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test behavior depending on table name case sensitivity.
      */
+    @Test
     public void testTableNameCaseSensitivity() {
         doTestTableNameCaseSensitivity("Person", false);
 
@@ -223,6 +234,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
      * @throws Exception if failed.
      */
+    @Test
     public void testFullSyncWriteMode() throws Exception {
         doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_SYNC,
             "write_synchronization_mode=full_sync");
@@ -232,6 +244,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
      * @throws Exception if failed.
      */
+    @Test
     public void testPrimarySyncWriteMode() throws Exception {
         doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.PRIMARY_SYNC,
             "write_synchronization_mode=primary_sync");
@@ -241,6 +254,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
      * @throws Exception if failed.
      */
+    @Test
     public void testFullAsyncWriteMode() throws Exception {
         doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_ASYNC,
             "write_synchronization_mode=full_async");
@@ -249,6 +263,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test behavior only in case of cache name override.
      */
+    @Test
     public void testCustomCacheName() {
         doTestCustomNames("cname", null, null);
     }
@@ -256,6 +271,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test behavior only in case of key type name override.
      */
+    @Test
     public void testCustomKeyTypeName() {
         doTestCustomNames(null, "keytype", null);
     }
@@ -263,6 +279,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test behavior only in case of value type name override.
      */
+    @Test
     public void testCustomValueTypeName() {
         doTestCustomNames(null, null, "valtype");
     }
@@ -270,6 +287,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test behavior only in case of cache and key type name override.
      */
+    @Test
     public void testCustomCacheAndKeyTypeName() {
         doTestCustomNames("cname", "keytype", null);
     }
@@ -277,6 +295,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test behavior only in case of cache and value type name override.
      */
+    @Test
     public void testCustomCacheAndValueTypeName() {
         doTestCustomNames("cname", null, "valtype");
     }
@@ -284,6 +303,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test behavior only in case of key and value type name override.
      */
+    @Test
     public void testCustomKeyAndValueTypeName() {
         doTestCustomNames(null, "keytype", "valtype");
     }
@@ -291,6 +311,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test behavior only in case of cache, key, and value type name override.
      */
+    @Test
     public void testCustomCacheAndKeyAndValueTypeName() {
         doTestCustomNames("cname", "keytype", "valtype");
     }
@@ -299,7 +320,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that attempting to create a cache with a pre-existing name yields an error.
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testDuplicateCustomCacheName() throws Exception {
         client().getOrCreateCache("new");
 
@@ -316,9 +337,19 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testPlainKey() throws Exception {
+        doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_SYNC);
+    }
+
+    /**
      * Test that repeating type names for key and value types are simply ignored if they match those of inferred types.
      * @throws Exception if failed.
      */
+    @Test
     public void testRedundantKeyAndValueTypeNames() throws Exception {
         execute("CREATE TABLE Ints(k int primary key, v int) WITH \"key_type=java.lang.Integer," +
             "value_type=java.lang.Integer,cache_name=ints\"");
@@ -471,7 +502,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param checkedTblName Table name to expect in error message.
      * @param cmd Command to execute.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertCommandThrowsTableNotFound(String checkedTblName, final String cmd) {
         final Throwable e = GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -494,10 +524,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param checkedTblName Table name to expect in error message.
      * @param cmd Command to execute.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertDdlCommandThrowsTableNotFound(String checkedTblName, final String cmd) {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @SuppressWarnings("ConstantConditions")
             @Override public Object call() throws Exception {
                 execute(cmd);
 
@@ -526,6 +554,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testBackups() throws Exception {
         String cacheName = "BackupTestCache";
 
@@ -647,6 +676,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to specify negative number of backups yields exception.
      */
+    @Test
     public void testNegativeBackups() {
         assertCreateTableWithParamsThrows("bAckUPs = -5  ", "\"BACKUPS\" cannot be negative: -5");
     }
@@ -654,6 +684,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to omit mandatory value of BACKUPS parameter yields an error.
      */
+    @Test
     public void testEmptyBackups() {
         assertCreateTableWithParamsThrows(" bAckUPs =  ", "Parameter value cannot be empty: BACKUPS");
     }
@@ -661,6 +692,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to omit mandatory value of ATOMICITY parameter yields an error.
      */
+    @Test
     public void testEmptyAtomicity() {
         assertCreateTableWithParamsThrows("AtomicitY=  ", "Parameter value cannot be empty: ATOMICITY");
     }
@@ -668,6 +700,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that providing an invalid value of ATOMICITY parameter yields an error.
      */
+    @Test
     public void testInvalidAtomicity() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
             "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL or ATOMIC): InvalidValue");
@@ -676,6 +709,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to omit mandatory value of CACHEGROUP parameter yields an error.
      */
+    @Test
     public void testEmptyCacheGroup() {
         assertCreateTableWithParamsThrows("cache_group=", "Parameter value cannot be empty: CACHE_GROUP");
     }
@@ -683,6 +717,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to omit mandatory value of WRITE_SYNCHRONIZATION_MODE parameter yields an error.
      */
+    @Test
     public void testEmptyWriteSyncMode() {
         assertCreateTableWithParamsThrows("write_synchronization_mode=",
             "Parameter value cannot be empty: WRITE_SYNCHRONIZATION_MODE");
@@ -691,6 +726,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to provide invalid value of WRITE_SYNCHRONIZATION_MODE parameter yields an error.
      */
+    @Test
     public void testInvalidWriteSyncMode() {
         assertCreateTableWithParamsThrows("write_synchronization_mode=invalid",
             "Invalid value of \"WRITE_SYNCHRONIZATION_MODE\" parameter " +
@@ -702,6 +738,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      *     contains {@code IF NOT EXISTS} clause.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTableIfNotExists() throws Exception {
         execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -716,7 +753,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that attempting to {@code CREATE TABLE} that already exists yields an error.
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testCreateExistingTable() throws Exception {
         execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -738,6 +775,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * yields an error.
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateTableWithWrongColumnNameAsKey() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -751,9 +789,33 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that {@code DROP TABLE} executed at client node actually removes specified cache and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testDropTableFromClient() throws Exception {
+        execute(grid(0),"CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"template=cache\"");
+
+        execute(client(), "DROP TABLE \"Person\"");
+
+        for (int i = 0; i < 4; i++) {
+            IgniteEx node = grid(i);
+
+            assertNull(node.cache("Person"));
+
+            QueryTypeDescriptorImpl desc = type(node, "Person", "Person");
+
+            assertNull(desc);
+        }
+    }
+
+    /**
      * Test that {@code DROP TABLE} actually removes specified cache and type descriptor on all nodes.
      * @throws Exception if failed.
      */
+    @Test
     public void testDropTable() throws Exception {
         execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -776,7 +838,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that attempting to execute {@code DROP TABLE} via API of cache being dropped yields an error.
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testCacheSelfDrop() throws Exception {
         execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -801,6 +863,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropMissingTableIfExists() throws Exception {
         execute("DROP TABLE IF EXISTS \"City\"");
     }
@@ -809,7 +872,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that attempting to {@code DROP TABLE} that does not exist yields an error.
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testDropMissingTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -824,7 +887,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Check that {@code DROP TABLE} for caches not created with {@code CREATE TABLE} yields an error.
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testDropNonDynamicTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -837,23 +900,16 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that attempting to destroy via cache API a cache created via SQL yields an error.
+     * Test that attempting to destroy via cache API a cache created via SQL finishes successfully.
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testDestroyDynamicSqlCache() throws Exception {
         execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             "\"template=cache\"");
 
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                client().destroyCache(cacheName("Person"));
-
-                return null;
-            }
-        }, CacheException.class,
-        "Only cache created with cache API may be removed with direct call to destroyCache");
+        client().destroyCache(cacheName("Person"));
     }
 
     /**
@@ -861,7 +917,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * SQL flag does not match that of cache with the same name that is already started, yields an error.
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testSqlFlagCompatibilityCheck() throws Exception {
         execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar, \"name\" varchar, \"surname\" varchar, " +
             "\"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH \"template=cache\"");
@@ -882,7 +938,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Tests index name conflict check in discovery thread.
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testIndexNameConflictCheckDiscovery() throws Exception {
         execute(grid(0), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
 
@@ -900,7 +956,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 e.setValueType("City");
 
                 queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null, null, null,
-                    null, CacheAtomicityMode.ATOMIC, null, 10, false);
+                    null, CacheAtomicityMode.ATOMIC, null, 10, false, false);
 
                 return null;
             }
@@ -908,10 +964,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Tests table name conflict check in {@link DdlStatementsProcessor}.
+     * Tests table name conflict check in {@link CommandProcessor}.
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testTableNameConflictCheckSql() throws Exception {
         execute(grid(0), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
 
@@ -927,6 +983,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testAffinityKey() throws Exception {
         execute("CREATE TABLE \"City\" (\"name\" varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
             "\"affinity_key='name'\"");
@@ -988,6 +1045,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
+    @Test
     public void testDataRegion() throws Exception {
         // Empty region name.
         GridTestUtils.assertThrows(log, new Callable<Void>() {
@@ -1012,7 +1070,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test various cases of affinity key column specification.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testAffinityKeyCaseSensitivity() {
         execute("CREATE TABLE \"A\" (\"name\" varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
             "\"affinity_key='name'\"");
@@ -1074,7 +1132,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Tests that attempting to specify an affinity key that actually is a value column yields an error.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testAffinityKeyNotKeyColumn() {
         // Error arises because user has specified case sensitive affinity column name
         GridTestUtils.assertThrows(null, new Callable<Object>() {
@@ -1089,7 +1147,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Tests that attempting to specify an affinity key that actually is a value column yields an error.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testAffinityKeyNotFound() {
         // Error arises because user has specified case sensitive affinity column name
         GridTestUtils.assertThrows(null, new Callable<Object>() {
@@ -1104,6 +1162,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Tests behavior on sequential create and drop of a table and its index.
      */
+    @Test
     public void testTableAndIndexRecreate() {
         execute("drop table if exists \"PUBLIC\".t");
 
@@ -1147,6 +1206,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testQueryLocalWithRecreate() throws Exception {
         execute("CREATE TABLE A(id int primary key, name varchar, surname varchar) WITH \"cache_name=cache," +
             "template=replicated\"");
@@ -1180,6 +1240,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that it's impossible to create tables with same name regardless of key/value wrapping settings.
      */
+    @Test
     public void testWrappedAndUnwrappedKeyTablesInteroperability() {
         {
             execute("create table a (id int primary key, x varchar)");
@@ -1245,6 +1306,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that it's possible to create tables with matching key and/or value primitive types.
      */
+    @Test
     public void testDynamicTablesInteroperability() {
         execute("create table a (id int primary key, x varchar) with \"wrap_value=false\"");
 
@@ -1266,6 +1328,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that when key or value has more than one column, wrap=false is forbidden.
      */
+    @Test
     public void testWrappingAlwaysOnWithComplexObjects() {
         assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id, c)) with \"wrap_key=false\"",
             "WRAP_KEY cannot be false when composite primary key exists.");
@@ -1278,6 +1341,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test behavior when neither key nor value should be wrapped.
      * @throws SQLException if failed.
      */
+    @Test
     public void testNoWrap() throws SQLException {
         doTestKeyValueWrap(false, false, false);
     }
@@ -1286,6 +1350,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test behavior when only key is wrapped.
      * @throws SQLException if failed.
      */
+    @Test
     public void testKeyWrap() throws SQLException {
         doTestKeyValueWrap(true, false, false);
     }
@@ -1294,6 +1359,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test behavior when only value is wrapped.
      * @throws SQLException if failed.
      */
+    @Test
     public void testValueWrap() throws SQLException {
         doTestKeyValueWrap(false, true, false);
     }
@@ -1302,6 +1368,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test behavior when both key and value is wrapped.
      * @throws SQLException if failed.
      */
+    @Test
     public void testKeyAndValueWrap() throws SQLException {
         doTestKeyValueWrap(true, true, false);
     }
@@ -1311,6 +1378,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Key and value are UUID.
      * @throws SQLException if failed.
      */
+    @Test
     public void testUuidNoWrap() throws SQLException {
         doTestKeyValueWrap(false, false, true);
     }
@@ -1320,6 +1388,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Key and value are UUID.
      * @throws SQLException if failed.
      */
+    @Test
     public void testUuidKeyWrap() throws SQLException {
         doTestKeyValueWrap(true, false, true);
     }
@@ -1329,6 +1398,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Key and value are UUID.
      * @throws SQLException if failed.
      */
+    @Test
     public void testUuidValueWrap() throws SQLException {
         doTestKeyValueWrap(false, true, true);
     }
@@ -1338,6 +1408,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Key and value are UUID.
      * @throws SQLException if failed.
      */
+    @Test
     public void testUuidKeyAndValueWrap() throws SQLException {
         doTestKeyValueWrap(true, true, true);
     }
@@ -1474,7 +1545,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         assertEquals(cacheName, type.tableName());
         assertEquals(affKeyFieldName, type.affinityKey());
 
-        GridH2Table tbl = ((IgniteH2Indexing)queryProcessor(client()).getIndexing()).dataTable("PUBLIC", cacheName);
+        GridH2Table tbl =
+            ((IgniteH2Indexing)queryProcessor(client()).getIndexing()).schemaManager().dataTable("PUBLIC", cacheName);
 
         assertNotNull(tbl);
 
@@ -1498,7 +1570,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param params Engine parameters.
      * @param expErrMsg Expected error message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertCreateTableWithParamsThrows(final String params, String expErrMsg) {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1514,7 +1585,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param cmd Command.
      * @param expErrMsg Expected error message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertDdlCommandThrows(final String cmd, String expErrMsg) {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1526,11 +1596,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that {@link IgniteH2Indexing#tables(String)} method
-     * only returns tables belonging to given cache.
+     * Test that tables method only returns tables belonging to given cache.
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testGetTablesForCache() throws Exception {
         try {
             execute("create table t1(id int primary key, name varchar)");
@@ -1540,7 +1610,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             String cacheName = cacheName("T1");
 
-            Collection<H2TableDescriptor> col = GridTestUtils.invoke(h2Idx, "tables", cacheName);
+            Collection<H2TableDescriptor> col = h2Idx.schemaManager().tablesForCache(cacheName);
 
             assertNotNull(col);
 
@@ -1627,7 +1697,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @return Configuration.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+    @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.commonConfiguration(idx);
 
         DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration().setName(DATA_REGION_NAME);

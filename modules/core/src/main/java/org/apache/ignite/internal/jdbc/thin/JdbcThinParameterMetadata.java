@@ -86,7 +86,6 @@ public class JdbcThinParameterMetadata implements ParameterMetaData {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Parameters metadata is not a wrapper for " + iface.getName());

@@ -35,17 +35,20 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
+import org.apache.ignite.internal.stat.IndexPageType;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
  * Base format for all the page types.
@@ -77,10 +80,13 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  *
  * 7. It is almost always preferable to read or write (especially write) page contents using
  *    static methods on {@link PageHandler}. To just initialize new page use
- *    {@link PageHandler#initPage(PageMemory, int, long, PageIO, IgniteWriteAheadLogManager, PageLockListener)}
+ *    {@link PageHandler#initPage(PageMemory, int, long, PageIO, IgniteWriteAheadLogManager, PageLockListener, IoStatisticsHolder)}
  *    method with needed IO instance.
  */
 public abstract class PageIO {
+    /** */
+    private static PageIO testIO;
+
     /** */
     private static BPlusInnerIO<?> innerTestIO;
 
@@ -130,28 +136,25 @@ public abstract class PageIO {
     public static final int ROTATED_ID_PART_OFF = PAGE_ID_OFF + 8;
 
     /** */
-    private static final int RESERVED_BYTE_OFF = ROTATED_ID_PART_OFF + 1;
+    private static final int COMPRESSION_TYPE_OFF = ROTATED_ID_PART_OFF + 1;
 
     /** */
-    private static final int RESERVED_SHORT_OFF = RESERVED_BYTE_OFF + 1;
+    private static final int COMPRESSED_SIZE_OFF = COMPRESSION_TYPE_OFF + 1;
 
     /** */
-    private static final int RESERVED_INT_OFF = RESERVED_SHORT_OFF + 2;
+    private static final int COMPACTED_SIZE_OFF = COMPRESSED_SIZE_OFF + 2;
 
     /** */
-    private static final int RESERVED_2_OFF = RESERVED_INT_OFF + 4;
+    private static final int RESERVED_SHORT_OFF = COMPACTED_SIZE_OFF + 2;
+
+    /** */
+    private static final int RESERVED_2_OFF = RESERVED_SHORT_OFF + 2;
 
     /** */
     private static final int RESERVED_3_OFF = RESERVED_2_OFF + 8;
 
     /** */
     public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+rotatedIdPart(1)+reserved(1+2+4+2*8)
-
-    /** */
-    public static final int MVCC_HINTS_MASK = 0xC0000000;
-
-    /** */
-    public static final int MVCC_HINTS_BIT_OFF = 30;
 
     /* All the page types. */
 
@@ -299,7 +302,7 @@ public abstract class PageIO {
     }
 
     /**
-     * @param pageAddr Page addres.
+     * @param pageAddr Page address.
      * @return Page type.
      */
     public static int getType(long pageAddr) {
@@ -384,6 +387,54 @@ public abstract class PageIO {
         PageUtils.putUnsignedByte(pageAddr, ROTATED_ID_PART_OFF, rotatedIdPart);
 
         assert getRotatedIdPart(pageAddr) == rotatedIdPart;
+    }
+
+    /**
+     * @param page Page buffer.
+     * @param compressType Compression type.
+     */
+    public static void setCompressionType(ByteBuffer page, byte compressType) {
+        page.put(COMPRESSION_TYPE_OFF, compressType);
+    }
+
+    /**
+     * @param page Page buffer.
+     * @return Compression type.
+     */
+    public static byte getCompressionType(ByteBuffer page) {
+        return page.get(COMPRESSION_TYPE_OFF);
+    }
+
+    /**
+     * @param page Page buffer.
+     * @param compressedSize Compressed size.
+     */
+    public static void setCompressedSize(ByteBuffer page, short compressedSize) {
+        page.putShort(COMPRESSED_SIZE_OFF, compressedSize);
+    }
+
+    /**
+     * @param page Page buffer.
+     * @return Compressed size.
+     */
+    public static short getCompressedSize(ByteBuffer page) {
+        return page.getShort(COMPRESSED_SIZE_OFF);
+    }
+
+    /**
+     * @param page Page buffer.
+     * @param compactedSize Compacted size.
+     */
+    public static void setCompactedSize(ByteBuffer page, short compactedSize) {
+        page.putShort(COMPACTED_SIZE_OFF, compactedSize);
+    }
+
+    /**
+     * @param page Page buffer.
+     * @return Compacted size.
+     */
+    public static short getCompactedSize(ByteBuffer page) {
+        return page.getShort(COMPACTED_SIZE_OFF);
     }
 
     /**
@@ -492,6 +543,15 @@ public abstract class PageIO {
     }
 
     /**
+     * Registers IO for testing.
+     *
+     * @param io Page IO.
+     */
+    public static void registerTest(PageIO io) {
+        testIO = io;
+    }
+
+    /**
      * @return Type.
      */
     public final int getType() {
@@ -509,6 +569,8 @@ public abstract class PageIO {
      * @param pageAddr Page address.
      * @param pageId Page ID.
      * @param pageSize Page size.
+     *
+     * @see EncryptionSpi#encryptedSize(int)
      */
     public void initNewPage(long pageAddr, long pageId, int pageSize) {
         setType(pageAddr, getType());
@@ -516,7 +578,8 @@ public abstract class PageIO {
         setPageId(pageAddr, pageId);
         setCrc(pageAddr, 0);
 
-        PageUtils.putLong(pageAddr, ROTATED_ID_PART_OFF, 0L); // 1 + reserved(1+2+4)
+        // rotated(1) + compress_type(1) + compressed_size(2) + compacted_size(2) + reserved(2)
+        PageUtils.putLong(pageAddr, ROTATED_ID_PART_OFF, 0L);
         PageUtils.putLong(pageAddr, RESERVED_2_OFF, 0L);
         PageUtils.putLong(pageAddr, RESERVED_3_OFF, 0L);
     }
@@ -539,12 +602,20 @@ public abstract class PageIO {
     }
 
     /**
+     * @param page Page.
+     * @return Page IO.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static <Q extends PageIO> Q getPageIO(ByteBuffer page) throws IgniteCheckedException {
+        return getPageIO(getType(page), getVersion(page));
+    }
+
+    /**
      * @param type IO Type.
      * @param ver IO Version.
      * @return Page IO.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public static <Q extends PageIO> Q getPageIO(int type, int ver) throws IgniteCheckedException {
         switch (type) {
             case T_DATA:
@@ -575,6 +646,11 @@ public abstract class PageIO {
                 return (Q)SimpleDataPageIO.VERSIONS.forVersion(ver);
 
             default:
+                if (testIO != null) {
+                    if (testIO.type == type && testIO.ver == ver)
+                        return (Q)testIO;
+                }
+
                 return (Q)getBPlusIO(type, ver);
         }
     }
@@ -597,7 +673,6 @@ public abstract class PageIO {
      * @return IO for either inner or leaf B+Tree page.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public static <Q extends BPlusIO<?>> Q getBPlusIO(int type, int ver) throws IgniteCheckedException {
         if (type >= T_H2_EX_REF_LEAF_START && type <= T_H2_EX_REF_LEAF_END)
             return (Q)h2ExtraLeafIOs.get(type - T_H2_EX_REF_LEAF_START).forVersion(ver);
@@ -703,6 +778,44 @@ public abstract class PageIO {
     }
 
     /**
+     * @param pageAddr Address of page.
+     * @return Index page type.
+     */
+    public static IndexPageType deriveIndexPageType(long pageAddr) {
+        int pageIoType = PageIO.getType(pageAddr);
+        switch (pageIoType) {
+            case PageIO.T_DATA_REF_INNER:
+            case PageIO.T_DATA_REF_MVCC_INNER:
+            case PageIO.T_H2_REF_INNER:
+            case PageIO.T_H2_MVCC_REF_INNER:
+            case PageIO.T_CACHE_ID_AWARE_DATA_REF_INNER:
+            case PageIO.T_CACHE_ID_DATA_REF_MVCC_INNER:
+                return IndexPageType.INNER;
+
+            case PageIO.T_DATA_REF_LEAF:
+            case PageIO.T_DATA_REF_MVCC_LEAF:
+            case PageIO.T_H2_REF_LEAF:
+            case PageIO.T_H2_MVCC_REF_LEAF:
+            case PageIO.T_CACHE_ID_AWARE_DATA_REF_LEAF:
+            case PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF:
+                return IndexPageType.LEAF;
+
+            default:
+                if ((PageIO.T_H2_EX_REF_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_LEAF_END) ||
+                    (PageIO.T_H2_EX_REF_MVCC_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_LEAF_END)
+                )
+                    return IndexPageType.LEAF;
+
+                if ((PageIO.T_H2_EX_REF_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_INNER_END) ||
+                    (PageIO.T_H2_EX_REF_MVCC_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_INNER_END)
+                )
+                    return IndexPageType.INNER;
+        }
+
+        return IndexPageType.NOT_INDEX;
+    }
+
+    /**
      * @param type Type to test.
      * @return {@code True} if data page.
      */
@@ -716,6 +829,21 @@ public abstract class PageIO {
      * @param sb Sb.
      */
     protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException;
+
+    /**
+     * @param page Page.
+     * @param out Output buffer.
+     * @param pageSize Page size.
+     */
+    protected final void copyPage(ByteBuffer page, ByteBuffer out, int pageSize) {
+        assert out.position() == 0;
+        assert pageSize <= out.remaining();
+        assert pageSize == page.remaining();
+
+        page.mark();
+        out.put(page).flip();
+        page.reset();
+    }
 
     /**
      * @param addr Address.

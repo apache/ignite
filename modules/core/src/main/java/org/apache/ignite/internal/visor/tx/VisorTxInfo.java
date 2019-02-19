@@ -191,12 +191,12 @@ public class VisorTxInfo extends VisorDataTransferObject {
     }
 
     /** */
-    public @Nullable IgniteUuid getNearXid() {
+    @Nullable public IgniteUuid getNearXid() {
         return nearXid;
     }
 
     /** */
-    public @Nullable Collection<UUID> getMasterNodeIds() {
+    @Nullable public Collection<UUID> getMasterNodeIds() {
         return masterNodeIds;
     }
 

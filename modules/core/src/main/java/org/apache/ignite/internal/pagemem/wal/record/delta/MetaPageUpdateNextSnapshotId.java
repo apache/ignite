@@ -23,26 +23,27 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaI
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * @deprecated Will be removed at 3.0. See IGNITE-11139.
  */
+@Deprecated
 public class MetaPageUpdateNextSnapshotId extends PageDeltaRecord {
     /** */
-    private final long nextSnapshotId;
+    private final long nextSnapshotTag;
 
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageUpdateNextSnapshotId(int grpId, long pageId, long nextSnapshotId) {
+    public MetaPageUpdateNextSnapshotId(int grpId, long pageId, long nextSnapshotTag) {
         super(grpId, pageId);
 
-        this.nextSnapshotId = nextSnapshotId;
+        this.nextSnapshotTag = nextSnapshotTag;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PageMetaIO io = PageMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.setNextSnapshotTag(pageAddr, nextSnapshotId);
+        io.setNextSnapshotTag(pageAddr, nextSnapshotTag);
     }
 
     /** {@inheritDoc} */
@@ -54,7 +55,7 @@ public class MetaPageUpdateNextSnapshotId extends PageDeltaRecord {
      * @return Root ID.
      */
     public long nextSnapshotId() {
-        return nextSnapshotId;
+        return nextSnapshotTag;
     }
 
     /** {@inheritDoc} */

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
@@ -38,6 +39,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjection_byGridClientNode() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -49,6 +51,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecute() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -60,6 +63,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -71,6 +75,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityExecute() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -82,6 +87,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityExecuteAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -93,6 +99,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNode() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -104,6 +111,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodesByIds() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -115,6 +123,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodesByFilter() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -126,6 +135,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRefreshNodeById() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -137,6 +147,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRefreshNodeByIdAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -148,6 +159,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRefreshNodeByIp() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -159,6 +171,7 @@ public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRefreshNodeByIpAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

@@ -23,15 +23,21 @@ import org.apache.ignite.ml.composition.CompositionTestSuite;
 import org.apache.ignite.ml.dataset.DatasetTestSuite;
 import org.apache.ignite.ml.environment.EnvironmentTestSuite;
 import org.apache.ignite.ml.genetic.GAGridTestSuite;
+import org.apache.ignite.ml.inference.InferenceTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
+import org.apache.ignite.ml.multiclass.MultiClassTestSuite;
 import org.apache.ignite.ml.nn.MLPTestSuite;
+import org.apache.ignite.ml.pipeline.PipelineTestSuite;
 import org.apache.ignite.ml.preprocessing.PreprocessingTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.apache.ignite.ml.selection.SelectionTestSuite;
 import org.apache.ignite.ml.structures.StructuresTestSuite;
 import org.apache.ignite.ml.svm.SVMTestSuite;
 import org.apache.ignite.ml.tree.DecisionTreeTestSuite;
+import org.apache.ignite.ml.tree.randomforest.RandomForestTreeTestSuite;
+import org.apache.ignite.ml.util.UtilTestSuite;
+import org.apache.ignite.ml.util.generators.DataStreamGeneratorTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -45,18 +51,25 @@ import org.junit.runners.Suite;
     RegressionsTestSuite.class,
     SVMTestSuite.class,
     ClusteringTestSuite.class,
-    DecisionTreeTestSuite.class,
     KNNTestSuite.class,
-    MLPTestSuite.class,
-    DatasetTestSuite.class,
+    PipelineTestSuite.class,
     PreprocessingTestSuite.class,
     GAGridTestSuite.class,
-    SelectionTestSuite.class,
     CompositionTestSuite.class,
     EnvironmentTestSuite.class,
     StructuresTestSuite.class,
-    CommonTestSuite.class
+    CommonTestSuite.class,
+    MultiClassTestSuite.class,
+    DataStreamGeneratorTestSuite.class,
+    UtilTestSuite.class,
+    RandomForestTreeTestSuite.class,
+
+    /** JUnit 3 tests. */
+    DecisionTreeTestSuite.class,
+    MLPTestSuite.class,
+    InferenceTestSuite.class,
+    DatasetTestSuite.class,
+    SelectionTestSuite.class
 })
 public class IgniteMLTestSuite {
-    // No-op.
 }

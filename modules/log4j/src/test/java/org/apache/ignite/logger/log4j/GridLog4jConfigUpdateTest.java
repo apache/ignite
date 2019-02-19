@@ -21,14 +21,17 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Date;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.helpers.FileWatchdog;
+import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Checking that Log4j configuration is updated when its source file is changed.
  */
-public class GridLog4jConfigUpdateTest extends TestCase {
+public class GridLog4jConfigUpdateTest {
     /** Path to log4j configuration with INFO enabled. */
     private static final String LOG_CONFIG_INFO = "modules/log4j/src/test/config/log4j-info.xml";
 
@@ -51,7 +54,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * String-accepting constructor is used.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
     public void testConfigChangeStringConstructor() throws Exception {
         checkConfigUpdate(new Log4JLoggerSupplier() {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
@@ -64,7 +67,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * String-accepting constructor is used.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
     public void testConfigChangeStringConstructorDefaultDelay() throws Exception {
         checkConfigUpdate(new Log4JLoggerSupplier() {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
@@ -77,7 +80,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * File-accepting constructor is used.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
     public void testConfigChangeFileConstructor() throws Exception {
         checkConfigUpdate(new Log4JLoggerSupplier() {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
@@ -90,7 +93,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * File-accepting constructor is used.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
     public void testConfigChangeUrlConstructor() throws Exception {
         checkConfigUpdate(new Log4JLoggerSupplier() {
             @Override public Log4JLogger get(File cfgFile) throws Exception {

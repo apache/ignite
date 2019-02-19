@@ -505,7 +505,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
 
     /** {@inheritDoc} */
     @Override public HadoopIgfsStreamDelegate create(final IgfsPath path, final boolean overwrite,
-        final boolean colocate, final int replication, final long blockSize, final @Nullable Map<String, String> props)
+        final boolean colocate, final int replication, final long blockSize, @Nullable final Map<String, String> props)
         throws IgniteCheckedException {
         try {
             return IgfsUserContext.doAs(user, new IgniteOutClosure<HadoopIgfsStreamDelegate>() {
@@ -527,7 +527,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
 
     /** {@inheritDoc} */
     @Override public HadoopIgfsStreamDelegate append(final IgfsPath path, final boolean create,
-        final @Nullable Map<String, String> props) throws IgniteCheckedException {
+        @Nullable final Map<String, String> props) throws IgniteCheckedException {
         try {
             return IgfsUserContext.doAs(user, new IgniteOutClosure<HadoopIgfsStreamDelegate>() {
                 @Override public HadoopIgfsStreamDelegate apply() {

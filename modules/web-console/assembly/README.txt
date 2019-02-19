@@ -41,22 +41,50 @@ Technical details
     On Windows: `ignite-web-console-win.exe --server:port 3000`
 
 All available parameters with defaults:
-    Web Console host:           --server:host 0.0.0.0
-    Web Console port:           --server:port 80
-    Enable HTTPS:               --server:ssl false
-    HTTPS key:                  --server:key "serve/keys/test.key"
-    HTTPS certificate:          --server:cert "serve/keys/test.crt"
-    HTTPS passphrase:           --server:keyPassphrase "password"
-    MongoDB URL:                --mongodb:url mongodb://localhost/console
-    Mail service:               --mail:service "gmail"
-    Signature text:             --mail:sign "Kind regards, Apache Ignite Team"
-    Greeting text:              --mail:greeting "Apache Ignite Web Console"
-    Mail FROM:                  --mail:from "Apache Ignite Web Console <someusername@somecompany.somedomain>"
-    User to send e-mail:        --mail:auth:user "someusername@somecompany.somedomain"
-    E-mail service password:    --mail:auth:pass ""
+    Web Console host:                              --server:host 0.0.0.0
+    Web Console port:                              --server:port 80
 
-Sample usage:
-    `ignite-web-console-win.exe --mail:auth:user "my_user@gmail.com"  --mail:auth:pass "my_password"`
+    Enable HTTPS:                                  --server:ssl false
+    Disable self registration:                     --server:disable:signup false
+
+    MongoDB URL:                                   --mongodb:url mongodb://localhost/console
+
+    Enable account activation:                     --activation:enabled false
+    Activation timeout(milliseconds):              --activation:timeout 1800000
+    Activation send email throttle (milliseconds): --activation:sendTimeout 180000
+
+    Mail service:                                  --mail:service "gmail"
+    Signature text:                                --mail:sign "Kind regards, Apache Ignite Team"
+    Greeting text:                                 --mail:greeting "Apache Ignite Web Console"
+    Mail FROM:                                     --mail:from "Apache Ignite Web Console <someusername@somecompany.somedomain>"
+    User to send e-mail:                           --mail:auth:user "someusername@somecompany.somedomain"
+    E-mail service password:                       --mail:auth:pass ""
+
+SSL options has no default values:
+    --server:key "path to file with server.key"
+    --server:cert "path to file with server.crt"
+    --server:ca "path to file with ca.crt"
+    --server:passphrase "Password for key"
+    --server:ciphers "Comma separated ciphers list"
+    --server:secureProtocol "The TLS protocol version to use"
+    --server:clientCertEngine "Name of an OpenSSL engine which can provide the client certificate"
+    --server:pfx "Path to PFX or PKCS12 encoded private key and certificate chain"
+    --server:crl "Path to file with CRLs (Certificate Revocation Lists)"
+    --server:dhparam "Diffie Hellman parameters"
+    --server:ecdhCurve "A string describing a named curve"
+    --server:maxVersion "Optional the maximmu TLS version to allow"
+    --server:minVersion "Optional the minimum TLS version to allow"
+    --server:secureOptions "Optional OpenSSL options"
+    --server:sessionIdContext "Opaque identifier used by servers to ensure session state is not shared between applications"
+    --server:honorCipherOrder "true or false"
+    --server:requestCert "Set to true to specify whether a server should request a certificate from a connecting client"
+    --server:rejectUnauthorized "Set to true to automatically reject clients with invalid certificates"
+
+Documentation for SSL options: https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
+
+Sample usages:
+    `ignite-web-console-win.exe --mail:auth:user "my_user@gmail.com" --mail:auth:pass "my_password"`
+    `ignite-web-console-win.exe --server:port 11443 --server:ssl true --server:requestCert true --server:key "server.key" --server:cert "server.crt" --server:ca "ca.crt" --server:passphrase "my_password"`
 
 Advanced configuration of SMTP for Web Console.
 -------------------------------------
@@ -89,9 +117,11 @@ In case of non GMail SMTP server it may require to change options in "settings.j
 Troubleshooting
 -------------------------------------
 1. On Windows check that MongoDB is not blocked by Antivirus/Firewall/Smartscreen.
-2. Root permission is required to bind to 80 port under Mac OS X and Linux, but you may always start Web Console on another port if you don't have such permission.
+2. Root permission is required to bind to 80 port under macOS and Linux, but you may always start Web Console
+   on another port if you don't have such permission.
 3. For extended debug output start Web Console as following:
-	On Linux execute command in terminal: `DEBUG=mongodb-* ./ignite-web-console-linux`
-	On Windows execute two commands in terminal:
-		`SET DEBUG=mongodb-*`
-		`ignite-web-console-win.exe`
+     On Linux execute command in terminal: `DEBUG=mongodb-* ./ignite-web-console-linux`
+     On macOS execute command in terminal: `DEBUG=mongodb-* ./ignite-web-console-macos`
+     On Windows execute two commands in terminal:
+         `SET DEBUG=mongodb-*`
+         `ignite-web-console-win.exe`

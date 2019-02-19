@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -59,7 +58,6 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 
@@ -196,9 +194,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         if (keyLockFut != null)
             keyLockFut.onDone(e);
-
-        if (mvccVerFut != null)
-            mvccVerFut.onDone();
     }
 
     /** {@inheritDoc} */
@@ -232,7 +227,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (GridNearOptimisticSerializableTxPrepareFuture.this) {
@@ -275,7 +269,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     private boolean onComplete() {
         Throwable err0 = err;
 
-        if (err0 == null || tx.needCheckBackup())
+        if ((!tx.onePhaseCommit() || tx.mappings().get(cctx.localNodeId()) == null) &&
+            (err0 == null || tx.needCheckBackup()))
             tx.state(PREPARED);
 
         if (super.onDone(tx, err0)) {
@@ -349,29 +344,19 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         boolean hasNearCache = false;
 
-        MvccCoordinator mvccCrd = null;
-
         for (IgniteTxEntry write : writes) {
             map(write, topVer, mappings, txMapping, remap, topLocked);
 
-            GridCacheContext cctx = write.context();
-
-            if (cctx.isNear())
+            if (write.context().isNear())
                 hasNearCache = true;
-
-            if (cctx.mvccEnabled() && mvccCrd == null) {
-                mvccCrd = cctx.affinity().mvccCoordinator(topVer);
-
-                if (mvccCrd == null) {
-                    onDone(noCoordinatorError(topVer));
-
-                    return;
-                }
-            }
         }
 
-        for (IgniteTxEntry read : reads)
+        for (IgniteTxEntry read : reads) {
             map(read, topVer, mappings, txMapping, remap, topLocked);
+
+            if (read.context().isNear())
+                hasNearCache = true;
+        }
 
         if (keyLockFut != null)
             keyLockFut.onAllKeysAdded();
@@ -382,8 +367,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             return;
         }
-
-        assert !tx.txState().mvccEnabled(cctx) || mvccCrd != null || F.isEmpty(writes);
 
         tx.addEntryMapping(mappings.values());
 
@@ -396,15 +379,11 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         MiniFuture locNearEntriesFut = null;
 
-        int lockCnt = keyLockFut != null ? 1 : 0;
-
         // Create futures in advance to have all futures when process {@link GridNearTxPrepareResponse#clientRemapVersion}.
         for (GridDistributedTxMapping m : mappings.values()) {
             assert !m.empty();
 
             MiniFuture fut = new MiniFuture(this, m, ++miniId);
-
-            lockCnt++;
 
             add((IgniteInternalFuture)fut);
 
@@ -414,13 +393,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 locNearEntriesFut = fut;
 
                 add((IgniteInternalFuture)new MiniFuture(this, m, ++miniId));
-
-                lockCnt++;
             }
         }
-
-        if (mvccCrd != null)
-            initMvccVersionFuture(lockCnt, remap);
 
         Collection<IgniteInternalFuture<?>> futs = (Collection)futures();
 
@@ -584,7 +558,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             tx.taskNameHash(),
             m.clientFirst(),
             txNodes.size() == 1,
-            tx.activeCachesDeploymentEnabled());
+            tx.activeCachesDeploymentEnabled(),
+            tx.txState().recovery());
 
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)
@@ -605,7 +580,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         final MiniFuture fut,
         final boolean nearEntries) {
         IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = nearEntries ?
-            cctx.tm().txHandler().prepareNearTxLocal(req) :
+            cctx.tm().txHandler().prepareNearTxLocal(tx, req) :
             cctx.tm().txHandler().prepareColocatedTx(tx, req);
 
         prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
@@ -810,7 +785,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         private GridDistributedTxMapping m;
 
         /** Flag to signal some result being processed. */
-        @SuppressWarnings("UnusedDeclaration")
         private volatile int rcvRes;
 
         /**
@@ -884,7 +858,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
          * @param res Result callback.
          * @param updateMapping Update mapping flag.
          */
-        @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+        @SuppressWarnings({"unchecked"})
         void onResult(final GridNearTxPrepareResponse res, boolean updateMapping) {
             if (isDone())
                 return;
@@ -986,9 +960,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
                         // Finish this mini future (need result only on client node).
                         onDone(parent.cctx.kernalContext().clientNode() ? res : null);
-
-                        if (parent.mvccVerFut != null)
-                            parent.mvccVerFut.onLockReceived();
                     }
                 }
             }
