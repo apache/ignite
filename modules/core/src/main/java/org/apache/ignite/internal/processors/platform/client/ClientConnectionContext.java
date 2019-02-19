@@ -76,7 +76,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     private ClientListenerProtocolVersion currentVer;
 
     /** Last reported affinity topology version. */
-    private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion;
+    private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
 
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
