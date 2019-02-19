@@ -40,8 +40,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>ignite-parent</artifactId>
-        <groupId>org.apache.ignite</groupId>
+        <artifactId>community-parent</artifactId>
+        <groupId>org.gridgain</groupId>
         <version>1</version>
         <relativePath>../../parent/pom.xml</relativePath>
     </parent>
@@ -53,19 +53,19 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-slf4j</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -95,7 +95,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>

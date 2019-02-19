@@ -41,7 +41,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.ignite</groupId>
+        <groupId>org.gridgain</groupId>
         <artifactId>ignite-cassandra</artifactId>
         <version>8.7.0-SNAPSHOT</version>
         <relativePath>..</relativePath>
@@ -62,7 +62,7 @@
     <dependencies>
         <dependency>
             <artifactId>ignite-cassandra-store</artifactId>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
         </dependency>
 
         <!-- Kryo and required dependencies -->

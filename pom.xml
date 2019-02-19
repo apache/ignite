@@ -41,8 +41,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
+        <groupId>org.gridgain</groupId>
+        <artifactId>community-parent</artifactId>
         <version>1</version>
         <relativePath>parent</relativePath>
     </parent>
@@ -217,7 +217,7 @@
                         <inherited>false</inherited>
                         <dependencies>
                             <dependency>
-                                <groupId>org.apache.ignite</groupId>
+                                <groupId>org.gridgain</groupId>
                                 <artifactId>ignite-tools</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
@@ -301,7 +301,7 @@
                         <inherited>false</inherited>
                         <dependencies>
                             <dependency>
-                                <groupId>org.apache.ignite</groupId>
+                                <groupId>org.gridgain</groupId>
                                 <artifactId>ignite-tools</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
