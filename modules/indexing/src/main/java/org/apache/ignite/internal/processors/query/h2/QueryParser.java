@@ -147,7 +147,7 @@ public class QueryParser {
         if (cached != null) 
             return new QueryParserResult(qry, null, cached.select(), cached.dml(), cached.command());
 
-        // Try parting as native command.
+        // Try parsing as native command.
         QueryParserResult parseRes = parseNative(schemaName, qry, remainingAllowed);
 
         // Otherwise parse with H2.

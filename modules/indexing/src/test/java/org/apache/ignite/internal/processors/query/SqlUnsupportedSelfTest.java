@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
- * Tests for ignite SQL system views.
+ * Tests for unsupported SQL statements.
  */
 public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
@@ -37,6 +37,8 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
         super.beforeTest();
 
         cleanPersistenceDir();
+
+        startGrid(getConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -44,6 +46,126 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /**
+     * Test for unsupported SQL statements in CREATE TABLE statement.
+     *
+     * @throws Exception On fails.
+     */
+    @Test
+    public void testUnsupportedCreateTable() throws Exception {
+        assertSqlUnsupported("CREATE MEMORY TABLE unsupported_tbl0 (id integer primary key, val integer)");
+        assertSqlUnsupported("CREATE GLOBAL TEMPORARY TABLE unsupported_tbl1 (id integer primary key, val integer)");
+        assertSqlUnsupported("CREATE LOCAL TEMPORARY TABLE unsupported_tbl2 (id integer primary key, val integer)");
+        assertSqlUnsupported("CREATE TEMPORARY TABLE unsupported_tbl3 (id integer primary key, val integer)");
+        assertSqlUnsupported("CREATE TABLE unsupported_tbl4 (id integer primary key, val integer) HIDDEN");
+    }
+
+    /**
+     * Test for unsupported SQL statements in CREATE TABLE statement.
+     */
+    @Test
+    public void testUnsupportedMerge() {
+        execSql(
+            "create table test ( " +
+                "id integer primary key, " +
+                "val varchar DEFAULT 'test_val')");
+
+        assertSqlUnsupported("MERGE INTO test (id, val) VALUES (0, DEFAULT)");
+    }
+
+    /**
+     * Test for unsupported SQL statements in CREATE TABLE statement.
+     */
+    @Test
+    public void testUnsupportedAlterTableAlterColumn() {
+        execSql(
+            "CREATE TABLE test ( " +
+                "id integer primary key, " +
+                "val varchar DEFAULT 'test_val')");
+
+        assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SELECTIVITY 1");
+        assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SET DEFAULT 'new val'");
+        assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val DROP DEFAULT");
+        assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SET ON UPDATE 'new val'");
+        assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val DROP ON UPDATE");
+        assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SET NULL");
+        assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SET NOT NULL");
+        assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SET VISIBLE");
+        assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SET INVISIBLE");
+
+        assertSqlUnsupported("ALTER TABLE test ADD COLUMN (q integer) FIRST");
+    }
+
+    /**
+     * Test for unsupported SQL statements in CREATE TABLE statement.
+     */
+    @Test
+    public void testUnsupportedCTE() {
+        // Simple CTE supports
+        execSql(
+            "WITH temp (A, B) AS (SELECT 1, 2) " +
+                "SELECT * FROM temp");
+
+        assertSqlUnsupported(
+            "WITH RECURSIVE temp (n, fact) AS " +
+            "(SELECT 0, 1 " +
+            "UNION ALL " +
+            "SELECT n+1, (n+1)*fact FROM temp WHERE n < 9) " +
+            "SELECT * FROM temp;");
+
+        execSql(
+            "CREATE TABLE test ( " +
+                "id integer primary key, " +
+                "parent integer DEFAULT 0, " +
+                "nm varchar)");
+
+        assertSqlUnsupported(
+            "WITH RECURSIVE tree (nm, id, level, pathstr) AS " +
+            "(SELECT nm, id, 0, CAST('' AS text) FROM test WHERE parent IS NULL " +
+            "UNION ALL " +
+            "SELECT test.nm, test.id, tree.level + 1, tree.pathstr + test.nm " +
+            "FROM TEST " +
+            "INNER JOIN tree ON tree.id = test.parent) " +
+            "SELECT id, space( level ) + nm AS nm FROM tree ORDER BY pathstr");
+    }
+
+    /**
+     * Test for unsupported SQL statements.
+     */
+    @Test
+    public void testUnsupportedSqlStatements() {
+        execSql(
+            "create table test ( " +
+                "id integer primary key, " +
+                "val varchar DEFAULT 'test_val')");
+
+        assertSqlUnsupported("CREATE SCHEMA my_schema");
+        assertSqlUnsupported("DROP SCHEMA my_schema");
+        assertSqlUnsupported("ALTER SCHEMA public RENAME TO private");
+
+        assertSqlUnsupported("ANALYZE TABLE test");
+
+        assertSqlUnsupported("ALTER INDEX idx0 RENAME TO idx1");
+
+        assertSqlUnsupported("ALTER TABLE test RENAME TO new_test");
+
+        assertSqlUnsupported("CREATE VIEW test_view AS SELECT * FROM test WHERE id < 100");
+        assertSqlUnsupported("DROP VIEW test_view");
+
+        assertSqlUnsupported("CREATE SEQUENCE SEQ_0");
+        assertSqlUnsupported("DROP SEQUENCE SEQ_0");
+
+        assertSqlUnsupported("CREATE TRIGGER trig_0 BEFORE INSERT ON TEST FOR EACH ROW CALL \"MyTrigger\"");
+        assertSqlUnsupported("DROP TRIGGER trig_0");
+
+        assertSqlUnsupported("CREATE ROLE newRole");
+        assertSqlUnsupported("DROP ROLE newRole");
+
+        assertSqlUnsupported("RUNSCRIPT FROM 'q.sql'");
+        assertSqlUnsupported("SCRIPT NODATA");
+        assertSqlUnsupported("SCRIPT NODATA");
     }
 
     /**
@@ -91,55 +213,5 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
             fail("Unexpected exception. See above");
         }
-    }
-
-    /**
-     * Test for unsupported SQL statements.
-     *
-     * @throws Exception On fails.
-     */
-    @Test
-    public void testUnsupportedSqlStatements() throws Exception {
-        startGrid(getConfiguration());
-
-//        assertSqlUnsupported("CREATE SCHEMA my_schema");
-//        assertSqlUnsupported("DROP SCHEMA my_schema");
-//
-//        assertSqlUnsupported("RUNSCRIPT FROM 'q.sql'");
-//        assertSqlUnsupported("SCRIPT NODATA");
-//
-//        assertSqlUnsupported("SCRIPT NODATA");
-
-        assertSqlUnsupported("SHOW SCHEMAS");
-        assertSqlUnsupported("SHOW TABLES");
-
-//        assertSqlUnsupported("WITH RECURSIVE temp (n, fact) AS \n" +
-//            "(SELECT 0, 1 \n" +
-//            "  UNION ALL \n" +
-//            " SELECT n+1, (n+1)*fact FROM temp  \n" +
-//            "        WHERE n < 9)\n" +
-//            "SELECT * FROM temp;");
-//
-//        execSql(
-//            "WITH temp (A, B) AS (SELECT 1, 2) " +
-//                "SELECT * from temp");
-//
-//        execSql(
-//            "create table tree_sample ( " +
-//                "id integer primary key, " +
-//                "id_parent integer, " +
-//                "nm varchar)");
-//
-//        assertSqlUnsupported("with recursive tree (nm, id, level, pathstr)\n" +
-//            "as (select nm, id, 0, cast('' as text)\n" +
-//            "   from tree_sample\n" +
-//            "   where id_parent is null\n" +
-//            "union all\n" +
-//            "   select tree_sample.nm, tree_sample.id, tree.level + 1, tree.pathstr + tree_sample.nm\n" +
-//            "   from tree_sample\n" +
-//            "     inner join tree on tree.id = tree_sample.id_parent)\n" +
-//            "select id, space( level ) + nm as nm\n" +
-//            "from tree\n" +
-//            "order by pathstr");
     }
 }
