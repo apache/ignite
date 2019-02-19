@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,7 +34,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Map of partitions that will be preloaded from history. (partId -> (fromCntr, toCntr)). */
-    private CachePartitionPartialCountersMap historical;
+	private CachePartitionPartialCountersMap historical;
 
     /** Set of partitions that will be preloaded from all it's current data. */
     private Set<Integer> full;
