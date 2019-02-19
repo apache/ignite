@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.lang;
+package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
- * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
- * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
- *
- * @param <E> Type of closure parameter.
- * @param <R> Type of result value.
+ * Closure of cluster wide update of distributed property.
  */
-public interface IgniteThrowableBiConsumer<E, R> extends Serializable {
+@FunctionalInterface
+public interface PropertyUpdateClosure {
+
     /**
-     * Consumer body.
+     * Update property on cluster.
      *
-     * @param e Consumer parameter.
-     * @throws IgniteCheckedException if body execution was failed.
+     * @param key Property key.
+     * @param newValue New value.
+     * @return Future this boolean value.
+     * @throws IgniteCheckedException if failed.
      */
-    public void accept(E e, R r) throws IgniteCheckedException;
+    public GridFutureAdapter<?> update(String key, Serializable newValue) throws IgniteCheckedException;
 }
