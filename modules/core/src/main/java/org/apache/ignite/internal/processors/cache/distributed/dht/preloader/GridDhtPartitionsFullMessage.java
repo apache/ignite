@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -444,8 +444,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 parallelismLvl,
                 ctx.kernalContext().getSystemExecutorService(),
                 objectsToMarshall,
-                new IgniteThrowableConsumer<Object, byte[]>() {
-                    @Override public byte[] accept(Object payload) throws IgniteCheckedException {
+                new IgniteThrowableFunction<Object, byte[]>() {
+                    @Override public byte[] apply(Object payload) throws IgniteCheckedException {
                         byte[] marshalled = U.marshal(ctx, payload);
 
                         if(compress)
@@ -536,8 +536,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             parallelismLvl,
             ctx.kernalContext().getSystemExecutorService(),
             objectsToUnmarshall,
-            new IgniteThrowableConsumer<byte[], Object>() {
-                @Override public Object accept(byte[] binary) throws IgniteCheckedException {
+            new IgniteThrowableFunction<byte[], Object>() {
+                @Override public Object apply(byte[] binary) throws IgniteCheckedException {
                     return compressed()
                         ? U.unmarshalZip(ctx.marshaller(), binary, classLoader)
                         : U.unmarshal(ctx, binary, classLoader);

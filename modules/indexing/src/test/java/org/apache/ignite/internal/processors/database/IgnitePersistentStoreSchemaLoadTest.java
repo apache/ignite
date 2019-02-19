@@ -260,6 +260,10 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
             @Override public void onCheckpointBegin(Context ctx) {
                 cnt.countDown();
             }
+
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
+            }
         });
 
         return cnt;

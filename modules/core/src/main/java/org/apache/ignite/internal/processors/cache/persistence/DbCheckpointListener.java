@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,4 +57,11 @@ public interface DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public void onCheckpointBegin(Context ctx) throws IgniteCheckedException;
+
+    /**
+     * Do some actions before checkpoint write lock.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException;
 }
