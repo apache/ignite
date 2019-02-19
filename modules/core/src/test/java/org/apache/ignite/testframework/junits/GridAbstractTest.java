@@ -178,18 +178,13 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     protected static final String DEFAULT_CACHE_NAME = "default";
 
     /** Manages first and last test execution. */
-    @ClassRule public static final TestRule firstLastTestRule = new TestRule() {
-        @Override public Statement apply(Statement base, Description desc) {
-            return ClassRuleWrapper.evaluate(base, desc.getTestClass(), 60);
-        }
-    };
+    @ClassRule public static final TestRule firstLastTestRule = new GridClassRule();
 
     /** Manages test execution and reporting. */
-    @Rule public transient TestRule runRule = (base, description) -> new Statement() {
+    @Rule public transient TestRule runRule = (base, desc) -> new Statement() {
         @Override public void evaluate() throws Throwable {
             assert getName() != null : "getName returned null";
 
-//            GridAbstractTestWithAssumption.handleAssumption(() -> runTestCase(base), log());
             runTestCase(base);
         }
     };
@@ -264,24 +259,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         log = new GridTestLog4jLogger();
 
         GridAbstractTest.startGrid = startGrid;
-    }
-
-    /** */
-    private void clsRule(Statement base) throws Throwable {
-        // t0d0 cleanup extra unneeded facilities
-//        GridAbstractTestWithAssumption src = () ->
-//        {
-            try {
-                beforeFirstTest();
-
-                base.evaluate();
-            }
-            finally {
-                afterLastTest();
-            }
-//        };
-
-//        GridAbstractTestWithAssumption.handleAssumption(src, log());
     }
 
     /**
@@ -2562,29 +2539,49 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /**
-     *  Runs test classes sequentionally, in order to prevent corruption of static members of {@link GridAbstractTest}.
+     *  Runs test classes sequentially, in order to prevent corruption of static members of {@link GridAbstractTest}.
+     *  <p>
+     *  Also calls {@link #beforeFirstTest()} and {@link #afterLastTest()} methods.
      */
-    private static class ClassRuleWrapper {
+    private static class GridClassRule implements TestRule {
         /** */
         private static final Lock runSerializer = new ReentrantLock();
 
-        /** */
-        static Statement evaluate(Statement base, Class<?> cls, long timeoutMnutes) {
+        /** {@inheritDoc} */
+        @Override public Statement apply(Statement base, Description description) {
             return new Statement() {
                 @Override public void evaluate() throws Throwable {
-                    apply(base, cls, timeoutMnutes);
+                    runTestClass(base, description.getTestClass());
                 }
             };
         }
 
         /** */
-        private static void apply(Statement base, Class<?> cls, long timeoutMnutes) throws Throwable {
+        private static void runTestClass(Statement base, Class<?> cls) throws Throwable {
+            boolean locked = runSerializer.tryLock(5, TimeUnit.MINUTES);
+
+            if (!locked)
+                throw new RuntimeException("Failed to acquire test execution lock");
+
             try {
-                runSerializer.tryLock(timeoutMnutes, TimeUnit.MINUTES);
-                ((GridAbstractTest)cls.newInstance()).clsRule(base);
+                evaluateInsideLegacyFixture(base, cls);
             }
             finally {
                 runSerializer.unlock();
+            }
+        }
+
+        /** */
+        private static void evaluateInsideLegacyFixture(Statement base, Class<?> cls) throws Throwable {
+            GridAbstractTest fixtureInstance = (GridAbstractTest)cls.newInstance();
+
+            try {
+                fixtureInstance.beforeFirstTest();
+
+                base.evaluate();
+            }
+            finally {
+                fixtureInstance.afterLastTest();
             }
         }
     }
