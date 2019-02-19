@@ -47,7 +47,9 @@ import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
@@ -780,7 +782,7 @@ public class BinaryContext {
 
         final int typeId = mapper.typeId(clsName);
 
-        registered = registerUserClassName(typeId, cls.getName());
+        registered = registerUserClassName(typeId, cls.getName(), false);
 
         BinarySerializer serializer = serializerForClass(cls);
 
@@ -818,7 +820,7 @@ public class BinaryContext {
     private BinaryClassDescriptor registerUserClassDescriptor(BinaryClassDescriptor desc) {
         boolean registered;
 
-        registered = registerUserClassName(desc.typeId(), desc.describedClass().getName());
+        registered = registerUserClassName(desc.typeId(), desc.describedClass().getName(), false);
 
         if (registered) {
             BinarySerializer serializer = desc.initialSerializer();
@@ -1190,15 +1192,17 @@ public class BinaryContext {
      *
      * @param typeId Type ID.
      * @param clsName Class Name.
+     * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with
+     *      {@link MappingExchangeResult} future instead of synchronously awaiting for its completion.
      * @return {@code True} if the mapping was registered successfully.
      */
-    public boolean registerUserClassName(int typeId, String clsName) {
+    public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered) {
         IgniteCheckedException e = null;
 
         boolean res = false;
 
         try {
-            res = marshCtx.registerClassName(JAVA_ID, typeId, clsName);
+            res = marshCtx.registerClassName(JAVA_ID, typeId, clsName, failIfUnregistered);
         }
         catch (DuplicateTypeIdException dupEx) {
             // Ignore if trying to register mapped type name of the already registered class name and vise versa
