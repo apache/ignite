@@ -1,4 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o pipefail
+set -o errtrace
+set -o functrace
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -22,7 +28,7 @@ ARGS=$@
 #
 # Import common functions.
 #
-if [ "${IGNITE_HOME}" = "" ];
+if [ "${IGNITE_HOME:-}" = "" ];
     then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
     else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
@@ -66,7 +72,7 @@ JVM_OPTS="-Xms1g -Xmx1g -XX:MaxPermSize=128M -server ${JVM_OPTS}"
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
 
-if [ "${DOCK_OPTS}" == "" ]; then
+if [ "${DOCK_OPTS:-}" == "" ]; then
     DOCK_OPTS="-Xdock:name=Visor - Ignite Shell Console"
 fi
 
@@ -106,17 +112,37 @@ function restoreSttySettings() {
 trap restoreSttySettings INT
 
 #
-# Final JVM_OPTS for Java 9 compatibility
+# Final JVM_OPTS for Java 9+ compatibility
 #
 javaMajorVersion "${JAVA_HOME}/bin/java"
 
-if [ $version -gt 8 ]; then
-    JVM_OPTS="--add-exports java.base/jdk.internal.misc=ALL-UNNAMED \
-          --add-exports java.base/sun.nio.ch=ALL-UNNAMED \
-          --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-          --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-          --add-modules java.xml.bind \
-      ${JVM_OPTS}"
+if [ $version -eq 8 ] ; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+         ${JVM_OPTS}"
+
+elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        --add-modules=java.transaction \
+        --add-modules=java.xml.bind \
+        ${JVM_OPTS}"
+
+elif [ $version -eq 11 ] ; then
+    JVM_OPTS="\
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        ${JVM_OPTS}"
 fi
 
 #

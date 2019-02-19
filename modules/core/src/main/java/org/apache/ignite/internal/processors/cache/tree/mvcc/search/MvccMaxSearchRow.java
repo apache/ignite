@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree.mvcc.search;
 
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -45,7 +46,7 @@ public class MvccMaxSearchRow extends SearchRow {
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
-        return Integer.MAX_VALUE;
+        return MvccUtils.MVCC_READ_OP_CNTR;
     }
 
     /** {@inheritDoc} */

@@ -24,11 +24,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -40,7 +42,6 @@ import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
@@ -56,6 +57,7 @@ import org.h2.result.SortOrder;
 import org.h2.schema.SchemaObject;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
@@ -69,6 +71,9 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 public class GridH2Table extends TableBase {
     /** Insert hack flag. */
     private static final ThreadLocal<Boolean> INSERT_HACK = new ThreadLocal<>();
+
+    /** Exclusive lock constant. */
+    private static final long EXCLUSIVE_LOCK = -1;
 
     /** Cache context info. */
     private final GridCacheContextInfo cacheInfo;
@@ -92,10 +97,14 @@ public class GridH2Table extends TableBase {
     private final ReentrantReadWriteLock lock;
 
     /** */
-    private boolean destroyed;
+    private volatile boolean destroyed;
 
-    /** */
-    private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap<>();
+    /**
+     * Map of sessions locks.
+     * Session -> EXCLUSIVE_LOCK (-1L) - for exclusive locks.
+     * Session -> (table version) - for shared locks.
+     */
+    private final ConcurrentMap<Session, SessionLock> sessions = new ConcurrentHashMap<>();
 
     /** */
     private final IndexColumn affKeyCol;
@@ -120,6 +129,9 @@ public class GridH2Table extends TableBase {
 
     /** Columns with thread-safe access. */
     private volatile Column[] safeColumns;
+
+    /** Table version. The version is changed when exclusive lock is acquired (DDL operation is started). */
+    private final AtomicLong ver = new AtomicLong();
 
     /**
      * Creates table.
@@ -170,9 +182,9 @@ public class GridH2Table extends TableBase {
 
         // Add scan index at 0 which is required by H2.
         if (hasHashIndex)
-            idxs.add(0, new GridH2PrimaryScanIndex(this, index(1), index(0)));
+            idxs.add(0, new H2TableScanIndex(this, index(1), index(0)));
         else
-            idxs.add(0, new GridH2PrimaryScanIndex(this, index(0), null));
+            idxs.add(0, new H2TableScanIndex(this, index(0), null));
 
         pkIndexPos = hasHashIndex ? 2 : 1;
 
@@ -350,10 +362,17 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
         // In accordance with base method semantics, we'll return true if we were already exclusively locked.
-        Boolean res = sessions.get(ses);
+        SessionLock sesLock = sessions.get(ses);
 
-        if (res != null)
-            return res;
+        if (sesLock != null) {
+            if (sesLock.isExclusive())
+                return true;
+
+            if (ver.get() != sesLock.version())
+                throw new QueryRetryException(getName());
+
+            return false;
+        }
 
         // Acquire the lock.
         lock(exclusive);
@@ -365,25 +384,53 @@ public class GridH2Table extends TableBase {
         }
 
         // Mutate state.
-        sessions.put(ses, exclusive);
+        sessions.put(ses, exclusive ? SessionLock.exclusiveLock() : SessionLock.sharedLock(ver.longValue()));
 
         ses.addLock(this);
 
         return false;
     }
 
-    /**
-     * @return Table identifier.
-     */
-    public QueryTable identifier() {
-        return identifier;
+    /** {@inheritDoc} */
+    @Override public void unlock(Session ses) {
+        SessionLock sesLock = sessions.remove(ses);
+
+        if (sesLock.locked)
+            unlock(sesLock.isExclusive());
     }
 
     /**
-     * @return Table identifier as string.
+     * @param ses H2 session.
      */
-    public String identifierString() {
-        return identifierStr;
+    private void readLockInternal(Session ses) {
+        SessionLock sesLock = sessions.get(ses);
+
+        assert sesLock != null && !sesLock.isExclusive()
+            : "Invalid table lock [name=" + getName() + ", lock=" + sesLock.ver + ']';
+
+        if (!sesLock.locked) {
+            lock(false);
+
+            sesLock.locked = true;
+        }
+    }
+
+    /**
+     * Release table lock.
+     *
+     * @param ses H2 session.
+     */
+    private void unlockReadInternal(Session ses) {
+        SessionLock sesLock = sessions.get(ses);
+
+        assert sesLock != null && !sesLock.isExclusive()
+            : "Invalid table unlock [name=" + getName() + ", lock=" + sesLock.ver + ']';
+
+        if (sesLock.locked) {
+            sesLock.locked = false;
+
+            unlock(false);
+        }
     }
 
     /**
@@ -396,7 +443,7 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            if (!exclusive || !GridMapQueryExecutor.FORCE_LAZY)
+            if (!exclusive)
                 l.lockInterruptibly();
             else {
                 for (;;) {
@@ -405,6 +452,8 @@ public class GridH2Table extends TableBase {
                     else
                         Thread.yield();
                 }
+
+                ver.incrementAndGet();
             }
         }
         catch (InterruptedException e) {
@@ -423,6 +472,33 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         l.unlock();
+    }
+
+    /**
+     * @param ses H2 session.
+     */
+    private void checkVersion(Session ses) {
+        SessionLock sesLock = sessions.get(ses);
+
+        assert sesLock != null && !sesLock.isExclusive()
+            : "Invalid table check version  [name=" + getName() + ", lock=" + sesLock.ver + ']';
+
+        if (ver.longValue() != sesLock.version())
+            throw new QueryRetryException(getName());
+    }
+
+    /**
+     * @return Table identifier.
+     */
+    public QueryTable identifier() {
+        return identifier;
+    }
+
+    /**
+     * @return Table identifier as string.
+     */
+    public String identifierString() {
+        return identifierStr;
     }
 
     /**
@@ -485,8 +561,6 @@ public class GridH2Table extends TableBase {
         try {
             ensureNotDestroyed();
 
-            assert sessions.isEmpty() : sessions;
-
             destroyed = true;
 
             for (int i = 1, len = idxs.size(); i < len; i++)
@@ -505,16 +579,6 @@ public class GridH2Table extends TableBase {
      */
     public void setRemoveIndexOnDestroy(boolean rmIndex){
         this.rmIndex = rmIndex;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unlock(Session ses) {
-        Boolean exclusive = sessions.remove(ses);
-
-        if (exclusive == null)
-            return;
-
-        unlock(exclusive);
     }
 
     /**
@@ -1212,5 +1276,85 @@ public class GridH2Table extends TableBase {
             return false;
 
         return true;
+    }
+
+    /**
+     * @param s H2 session.
+     */
+    public static void unlockTables(Session s) {
+        for (Table t : s.getLocks()) {
+            if (t instanceof GridH2Table)
+                ((GridH2Table)t).unlockReadInternal(s);
+        }
+    }
+
+    /**
+     * @param s H2 session.
+     */
+    public static void readLockTables(Session s) {
+        for (Table t : s.getLocks()) {
+            if (t instanceof GridH2Table)
+                ((GridH2Table)t).readLockInternal(s);
+        }
+    }
+
+    /**
+     * @param s H2 session.
+     */
+    public static void checkTablesVersions(Session s) {
+        for (Table t : s.getLocks()) {
+            if (t instanceof GridH2Table)
+                ((GridH2Table)t).checkVersion(s);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SessionLock {
+        /** Version. */
+        final long ver;
+
+        /** Locked by current thread flag. */
+        boolean locked;
+
+        /**
+         * Constructor for shared lock.
+         *
+         * @param ver Table version.
+         */
+        private SessionLock(long ver) {
+            this.ver = ver;
+            locked = true;
+        }
+
+        /**
+         * @param ver Locked table version.
+         * @return Shared lock instance.
+         */
+        static SessionLock sharedLock(long ver) {
+            return new SessionLock(ver);
+        }
+
+        /**
+         * @return Exclusive lock instance.
+         */
+        static SessionLock exclusiveLock() {
+            return new SessionLock(EXCLUSIVE_LOCK);
+        }
+
+        /**
+         * @return {@code true} if exclusive lock.
+         */
+        boolean isExclusive() {
+            return ver == EXCLUSIVE_LOCK;
+        }
+
+        /**
+         * @return Table version of the first lock.
+         */
+        long version() {
+            return ver;
+        }
     }
 }

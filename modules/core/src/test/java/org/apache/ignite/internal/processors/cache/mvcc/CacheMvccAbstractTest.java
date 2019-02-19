@@ -1356,6 +1356,12 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                         reader.apply(idx, caches, stop);
                     }
                     catch (Throwable e) {
+                        if (restartMode != null && X.hasCause(e, ClusterTopologyException.class)) {
+                            log.info("Writer error: " + e);
+
+                            return null;
+                        }
+
                         error("Unexpected error: " + e, e);
 
                         stop.set(true);

@@ -56,14 +56,21 @@ public class PartitionCompositeNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) throws IgniteCheckedException {
-        Collection<Integer> leftParts = left.apply(args);
-        Collection<Integer> rightParts = right.apply(args);
+    @Override public Collection<Integer> apply(PartitionClientContext cliCtx, Object... args)
+        throws IgniteCheckedException {
+        Collection<Integer> leftParts = left.apply(cliCtx, args);
+        Collection<Integer> rightParts = right.apply(cliCtx, args);
+
+        // Failed to resolve partitions on both sides, return.
+        if (leftParts == null && rightParts == null)
+            return null;
 
         if (op == PartitionCompositeNodeOperator.AND) {
-            // () and (...) -> ()
-            if (leftParts == null || rightParts == null)
-                return null;
+            // (ALL) and (...) -> (...)
+            if (leftParts == null)
+                return rightParts;
+            else if (rightParts == null)
+                return leftParts;
 
             // (A, B) and (B, C) -> (B)
             leftParts = new HashSet<>(leftParts);
@@ -73,11 +80,9 @@ public class PartitionCompositeNode implements PartitionNode {
         else {
             assert op == PartitionCompositeNodeOperator.OR;
 
-            // () or (...) -> (...)
-            if (leftParts == null)
-                return rightParts;
-            else if (rightParts == null)
-                return leftParts;
+            // (ALL) or (...) -> (ALL)
+            if (leftParts == null || rightParts == null)
+                return null;
 
             // (A, B) or (B, C) -> (A, B, C)
             leftParts = new HashSet<>(leftParts);
