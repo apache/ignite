@@ -20,11 +20,9 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
@@ -128,40 +126,27 @@ public class JdbcThinTcpIo {
     private final Object connMux = new Object();
 
     /** Current protocol version used to connection to Ignite. */
-    private ClientListenerProtocolVersion srvProtocolVer;
+    private ClientListenerProtocolVersion srvProtoVer;
 
     /** Socket. */
     private Socket sock;
 
     /**
-     * Constructor.
+     * Start connection and perform handshake.
      *
      * @param connProps Connection properties.
      * @param sockAddr Socket address.
+     * @param timeout Socket connection timeout in ms.
+     *
+     * @throws SQLException On connection error or reject.
+     * @throws IOException On IO error in handshake.
      */
-    public JdbcThinTcpIo(ConnectionProperties connProps, InetSocketAddress sockAddr) {
+    public JdbcThinTcpIo(ConnectionProperties connProps, InetSocketAddress sockAddr, int timeout)
+        throws SQLException, IOException {
         this.connProps = connProps;
         this.sockAddr = sockAddr;
-    }
 
-    /**
-     * @throws SQLException On connection error or reject.
-     * @throws IOException On IO error in handshake.
-     */
-    public void start() throws SQLException, IOException {
-        start(0);
-    }
-
-    /**
-     * @param timeout Socket connection timeout in ms.
-     * @throws SQLException On connection error or reject.
-     * @throws IOException On IO error in handshake.
-     */
-    // TODO: 13.02.19 called also from tests, and now synchronization moved up to JdbcThinConnection.
-    public void start(int timeout) throws SQLException, IOException {
-        assert !connected;
-
-        connect(sockAddr, timeout);
+        connect(sockAddr, 0);
 
         handshake(CURRENT_VER);
     }
@@ -227,17 +212,17 @@ public class JdbcThinTcpIo {
         }
     }
 
-    /**
-     * Get all addresses by host name.
-     *
-     * @param host Host name.
-     * @return Addresses.
-     * @throws UnknownHostException If host is unavailable.
-     */
     // TODO: 12.02.19 overrided within org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest.createTcpIo
-    protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
-        return InetAddress.getAllByName(host);
-    }
+//    /**
+//     * Get all addresses by host name.
+//     *
+//     * @param host Host name.
+//     * @return Addresses.
+//     * @throws UnknownHostException If host is unavailable.
+//     */
+//    protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
+//        return InetAddress.getAllByName(host);
+//    }
 
     /**
      * Used for versions: 2.1.5 and 2.3.0. The protocol version is changed but handshake format isn't changed.
@@ -246,7 +231,7 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error.
      * @throws SQLException On connection reject.
      */
-    public void handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
+    private void handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
@@ -302,7 +287,7 @@ public class JdbcThinTcpIo {
             else
                 igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
 
-            srvProtocolVer = ver;
+            srvProtoVer = ver;
         }
         else {
             short maj = reader.readShort();
@@ -369,7 +354,7 @@ public class JdbcThinTcpIo {
         if (accepted) {
             igniteVer = new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown", 0L, null);
 
-            srvProtocolVer = VER_2_1_0;
+            srvProtoVer = VER_2_1_0;
         }
         else {
             short maj = reader.readShort();
@@ -417,8 +402,10 @@ public class JdbcThinTcpIo {
 
                 sendRequestRaw(req);
 
-                if (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest)
+                if (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest) {
                     stmt.currentRequestId(req.requestId());
+                    stmt.currentCliIO(this);
+                }
             }
         }
         else
@@ -452,7 +439,7 @@ public class JdbcThinTcpIo {
 
         JdbcResponse res = new JdbcResponse();
 
-        res.readBinary(reader, srvProtocolVer);
+        res.readBinary(reader, srvProtoVer);
 
         return res;
     }
@@ -496,7 +483,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
             null, null);
 
-        req.writeBinary(writer, srvProtocolVer);
+        req.writeBinary(writer, srvProtoVer);
 
         synchronized (connMux) {
             send(writer.array());
@@ -590,18 +577,18 @@ public class JdbcThinTcpIo {
      * @return {@code true} If the unordered streaming supported.
      */
     boolean isUnorderedStreamSupported() {
-        assert srvProtocolVer != null;
+        assert srvProtoVer != null;
 
-        return srvProtocolVer.compareTo(VER_2_5_0) >= 0;
+        return srvProtoVer.compareTo(VER_2_5_0) >= 0;
     }
 
     /**
      * @return True if query cancellation supported, false otherwise.
      */
     boolean isQueryCancellationSupported() {
-        assert srvProtocolVer != null;
+        assert srvProtoVer != null;
 
-        return srvProtocolVer.compareTo(VER_2_8_0) >= 0;
+        return srvProtoVer.compareTo(VER_2_8_0) >= 0;
     }
 
     /**
