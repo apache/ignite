@@ -1418,11 +1418,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return pendingEntries != null ? pendingEntries.size() : 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean busyLockedByCurrentThread() {
-        return busyLock.busyLockedByCurrentThread();
-    }
-
     /**
      *
      */

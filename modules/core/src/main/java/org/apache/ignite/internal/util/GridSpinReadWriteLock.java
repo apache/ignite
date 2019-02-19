@@ -278,13 +278,6 @@ public class GridSpinReadWriteLock {
     }
 
     /**
-     * @return {@code True} if current thread holds read lock.
-     */
-    public boolean readLockedByCurrentThread() {
-        return readLockEntryCnt.get() > 0;
-    }
-
-    /**
      * Tries to acquire write lock.
      *
      * @return {@code True} if write lock has been acquired.

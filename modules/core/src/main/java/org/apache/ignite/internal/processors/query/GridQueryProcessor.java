@@ -1845,7 +1845,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert cctx != null;
         assert newRow != null;
         assert prevRowAvailable || prevRow == null;
-        assert cctx.offheap().busyLockedByCurrentThread();
+        // No need to acquire busy lock here - operation is protected by GridCacheQueryManager.busyLock
 
         KeyCacheObject key = newRow.key();
         CacheObject val = newRow.value();
@@ -2611,7 +2611,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void remove(GridCacheContext cctx, CacheDataRow row)
         throws IgniteCheckedException {
         assert row != null;
-        assert cctx.offheap().busyLockedByCurrentThread();
+        // No need to acquire busy lock here - operation is protected by GridCacheQueryManager.busyLock
 
         if (log.isDebugEnabled())
             log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key() + ", val=" + row.value() + "]");
