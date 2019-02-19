@@ -268,8 +268,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** */
     private void clsRule(Statement base) throws Throwable {
-        GridAbstractTestWithAssumption src = () ->
-        {
+//        GridAbstractTestWithAssumption src = () ->
+//        {
             try {
                 beforeFirstTest();
 
@@ -278,9 +278,9 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             finally {
                 afterLastTest();
             }
-        };
+//        };
 
-        GridAbstractTestWithAssumption.handleAssumption(src, log());
+//        GridAbstractTestWithAssumption.handleAssumption(src, log());
     }
 
     /**
