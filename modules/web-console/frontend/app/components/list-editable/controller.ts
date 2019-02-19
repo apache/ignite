@@ -25,13 +25,15 @@ export interface ListEditableNgModel<T> extends ng.INgModelController {
 
 export type ID = (string | number) & {tag: 'ItemID'}
 
+export type ItemScope<T> = {$index: number, item: T, form: ng.IFormController} & ng.IScope
+
 export default class ListEditable<T extends {_id?: any}> {
     static $inject = ['$animate', '$element', '$transclude', '$timeout'];
 
     constructor(
         $animate: ng.animate.IAnimateService,
-        private $element: JQLite,
-        private $transclude: ng.ITranscludeFunction,
+        public $element: JQLite,
+        public $transclude: ng.ITranscludeFunction,
         private $timeout: ng.ITimeoutService
     ) {
         $animate.enabled($element, false);
