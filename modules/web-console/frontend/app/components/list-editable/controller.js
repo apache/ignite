@@ -77,10 +77,6 @@ export default class {
         this.ngModel.$setViewValue(this.ngModel.$viewValue.map((v, i) => i === idx ? _.cloneDeep(data) : v));
     }
 
-    revert(idx) {
-        delete this._cache[idx];
-    }
-
     remove(idx) {
         this.ngModel.$setViewValue(this.ngModel.$viewValue.filter((v, i) => i !== idx));
     }
