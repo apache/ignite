@@ -37,7 +37,7 @@ export default class {
         this.$timeout = $timeout;
         this.hasItemView = $transclude.isSlotFilled('itemView');
 
-        this._cache = {};
+        this._cache = new Map();
     }
 
     $index(item, $index) {
@@ -82,15 +82,15 @@ export default class {
     }
 
     isEditView(idx) {
-        return this._cache.hasOwnProperty(idx);
+        return this._cache.has(idx);
     }
 
     getEditView(idx) {
-        return this._cache[idx];
+        return this._cache.get(idx);
     }
 
     startEditView(idx) {
-        this._cache[idx] = _.cloneDeep(this.ngModel.$viewValue[idx]);
+        this._cache.set(idx, _.cloneDeep(this.ngModel.$viewValue[idx]));
     }
 
     stopEditView(data, idx, form) {
@@ -102,7 +102,7 @@ export default class {
         if (!form.$valid && !this.ngModel.$options.getOption('allowInvalid'))
             return;
 
-        delete this._cache[idx];
+        this._cache.delete(idx);
 
         this.save(data, idx);
     }
