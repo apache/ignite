@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -161,7 +160,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *         <li>8 : {@link #ver}</li>
      *         <li>8 : {@link #extras}</li>
      *         <li>8 : {@link #lock}</li>
-     *         <li>8 : {@link #listenerLock}</li>
      *         <li>8 : {@link GridMetadataAwareAdapter#data}</li>
      *     </ul></li>
      *     <li>Primitive fields:<ul>
@@ -188,7 +186,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *     </ul></li>
      * </ul>
      */
-    private static final int SIZE_OVERHEAD = 8 * 8 /* references */ + 5 /* primitives */ + 16 /* extras */
+    private static final int SIZE_OVERHEAD = 7 * 8 /* references */ + 5 /* primitives */ + 16 /* extras */
         + 16 /* version */ + 20 /* key */ + 16 /* value */;
 
     /** Static logger to avoid re-creation. Made static for test purpose. */
@@ -225,10 +223,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @GridToStringExclude
     private final ReentrantLock lock = new ReentrantLock();
 
-    /** Read Lock for continuous query listener */
-    @GridToStringExclude
-    private final Lock listenerLock;
-
     /**
      * Flags:
      * <ul>
@@ -257,7 +251,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         this.key = key;
         this.hash = key.hashCode();
         this.cctx = cctx;
-        this.listenerLock = cctx.group().listenerLock().readLock();
 
         ver = cctx.shared().versions().startVersion();
     }
@@ -5013,7 +5006,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * query notified before the next cache listener update
      */
     private void lockListenerReadLock() {
-        listenerLock.lock();
+        cctx.group().listenerLock().readLock().lock();
     }
 
     /**
@@ -5022,7 +5015,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @see #lockListenerReadLock()
      */
     private void unlockListenerReadLock() {
-        listenerLock.unlock();
+        cctx.group().listenerLock().readLock().unlock();
     }
 
     /** {@inheritDoc} */
