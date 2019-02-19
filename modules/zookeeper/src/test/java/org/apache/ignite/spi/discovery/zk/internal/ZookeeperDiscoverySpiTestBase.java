@@ -105,7 +105,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     protected long joinTimeout;
 
     /** */
-    protected static TestingCluster zkCluster;
+    protected TestingCluster zkCluster;
 
     /** To run test with real local ZK. */
     protected static final boolean USE_TEST_CLUSTER = true;
@@ -125,7 +125,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
      *
      * Need to be cleaned in case of cluster restart.
      */
-    protected static ConcurrentHashMap<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> evts = new ConcurrentHashMap<>();
+    protected ConcurrentHashMap<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> evts = new ConcurrentHashMap<>();
 
     /** */
     protected static volatile boolean err;
@@ -186,8 +186,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() {
-        stopZkCluster();
-
         System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT);
 
         System.clearProperty(IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT);
@@ -228,6 +226,8 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             stopAllGrids();
 
             reset();
+
+            stopZkCluster();
         }
     }
 
