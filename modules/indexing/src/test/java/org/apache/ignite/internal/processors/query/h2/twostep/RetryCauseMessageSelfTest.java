@@ -402,31 +402,5 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
         @Override public void onMessage(UUID nodeId, Object msg) {
             startedExecutor.onMessage(nodeId, msg);
         }
-
-        /** {@inheritDoc} */
-        @Override public void cancelLazyWorkers() {
-            startedExecutor.cancelLazyWorkers();
-        }
-
-        /** {@inheritDoc} */
-        @Override GridSpinBusyLock busyLock() {
-            return startedExecutor.busyLock();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stopAndUnregisterCurrentLazyWorker() {
-            startedExecutor.stopAndUnregisterCurrentLazyWorker();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unregisterLazyWorker(MapQueryLazyWorker worker) {
-            startedExecutor.unregisterLazyWorker(worker);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int registeredLazyWorkers() {
-            return startedExecutor.registeredLazyWorkers();
-        }
     }
-
 }

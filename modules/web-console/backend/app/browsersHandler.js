@@ -130,7 +130,12 @@ module.exports = {
             clusterChanged(account, cluster) {
                 const socks = this._browserSockets.get(account);
 
-                _.forEach(socks, (sock) => sock.emit('cluster:changed', cluster));
+                _.forEach(socks, (sock) => {
+                    if (sock)
+                        sock.emit('cluster:changed', cluster);
+                    else
+                        console.log(`Fount closed socket [account=${account}, cluster=${cluster}]`);
+                });
             }
 
             pushInitialData(sock) {

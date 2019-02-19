@@ -262,6 +262,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                         if (ctx.hasPages())
                             cpFlag.set(true);
                     }
+
+                    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                        /* No-op. */
+                    }
                 };
 
                 db.addCheckpointListener(lsnr);

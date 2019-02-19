@@ -15,24 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.lang;
-
-import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
+package org.apache.ignite.internal.processors.query;
 
 /**
- * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
- * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
- *
- * @param <E> Type of closure parameter.
- * @param <R> Type of result value.
+ * Tests for lazy query execution.
  */
-public interface IgniteThrowableBiConsumer<E, R> extends Serializable {
-    /**
-     * Consumer body.
-     *
-     * @param e Consumer parameter.
-     * @throws IgniteCheckedException if body execution was failed.
-     */
-    public void accept(E e, R r) throws IgniteCheckedException;
+public class IgniteQueryTableLockAndConnectionPoolLazyModeOnTest
+    extends AbstractQueryTableLockAndConnectionPoolSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean lazy() {
+        return true;
+    }
 }
