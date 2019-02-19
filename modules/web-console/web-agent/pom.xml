@@ -41,8 +41,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
+        <groupId>org.gridgain</groupId>
+        <artifactId>community-parent</artifactId>
         <version>1</version>
         <relativePath>../../../parent</relativePath>
     </parent>
@@ -82,19 +82,19 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-indexing</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-rest-http</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -114,7 +114,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-slf4j</artifactId>
             <version>${project.version}</version>
         </dependency>

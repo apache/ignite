@@ -42,8 +42,8 @@
     <packaging>pom</packaging>
 
     <parent>
-        <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
+        <groupId>org.gridgain</groupId>
+        <artifactId>community-parent</artifactId>
         <version>1</version>
         <relativePath>../../../parent</relativePath>
     </parent>
@@ -53,7 +53,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -71,7 +71,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-extdata-uri-dep</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -133,7 +133,7 @@
                 <version>1.7</version>
                 <dependencies>
                     <dependency>
-                        <groupId>org.apache.ignite</groupId>
+                        <groupId>org.gridgain</groupId>
                         <artifactId>ignite-tools</artifactId>
                         <version>${project.version}</version>
                     </dependency>
