@@ -38,6 +38,11 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
  * Tests for Zookeeper SPI discovery client reconnect.
  */
 public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpiTestBase {
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 2 * super.getTestTimeout();
+    }
+
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -74,11 +79,11 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
 
         helper.clientMode(true);
 
-        startGridsMultiThreaded(10, 10);
+        startGridsMultiThreaded(5, 5);
 
         stopGrid(getTestIgniteInstanceName(0), true, false);
 
-        final int srvIdx = ThreadLocalRandom.current().nextInt(10);
+        final int srvIdx = ThreadLocalRandom.current().nextInt(5);
 
         final AtomicInteger idx = new AtomicInteger();
 
@@ -95,9 +100,9 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
 
                 return null;
             }
-        }, 10, "start-node");
+        }, 5, "start-node");
 
-        waitForTopology(20);
+        waitForTopology(10);
 
         evts.clear();
     }
