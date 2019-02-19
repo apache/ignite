@@ -49,7 +49,6 @@ import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -108,7 +107,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        TestIndexingSpi.forceFail(false);
+        forceFail(false);
 
         Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
 
@@ -333,10 +332,10 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPutTx(boolean putBefore, TransactionConcurrency concurrency,
         TransactionIsolation isolation, final Integer... keys) throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10871", MvccFeatureChecker.forcedMvcc());
+        // t0d0 follow up
+//        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10871", MvccFeatureChecker.forcedMvcc());
 
-        if (MvccFeatureChecker.forcedMvcc() &&
-            !MvccFeatureChecker.isSupported(concurrency, isolation))
+        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
             return;
 
         assertTrue(keys.length > 0);
@@ -346,7 +345,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         if (putBefore) {
-            TestIndexingSpi.forceFail(false);
+            forceFail(false);
 
             info("Start transaction.");
 
@@ -369,7 +368,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(DEFAULT_CACHE_NAME).get(key);
         }
 
-        TestIndexingSpi.forceFail(true);
+        forceFail(true);
 
         try {
             info("Start transaction.");
@@ -408,7 +407,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void checkUnlocked(final Integer key) throws Exception {
-        TestIndexingSpi.forceFail(false);
+        forceFail(false);
 
         awaitPartitionMapExchange();
 
@@ -476,7 +475,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPut(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            TestIndexingSpi.forceFail(false);
+            forceFail(false);
 
             info("Put key: " + key);
 
@@ -487,7 +486,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-        TestIndexingSpi.forceFail(true);
+        forceFail(true);
 
         info("Going to put: " + key);
 
@@ -514,7 +513,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkTransform(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            TestIndexingSpi.forceFail(false);
+            forceFail(false);
 
             info("Put key: " + key);
 
@@ -525,7 +524,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-        TestIndexingSpi.forceFail(true);
+        forceFail(true);
 
         info("Going to transform: " + key);
 
@@ -560,7 +559,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         assert keys.length > 1;
 
         if (putBefore) {
-            TestIndexingSpi.forceFail(false);
+            forceFail(false);
 
             Map<Integer, Integer> m = new HashMap<>();
 
@@ -578,7 +577,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(DEFAULT_CACHE_NAME).get(key);
         }
 
-        TestIndexingSpi.forceFail(true);
+        forceFail(true);
 
         final Map<Integer, Integer> m = new HashMap<>();
 
@@ -612,7 +611,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     private void checkRemove(boolean putBefore, final Integer key) throws Exception {
         // t0d0 fix https://issues.apache.org/jira/browse/IGNITE-9470
         if (putBefore) {
-            TestIndexingSpi.forceFail(false);
+            forceFail(false);
 
             info("Put key: " + key);
 
@@ -623,9 +622,12 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-        TestIndexingSpi.forceFail(true);
+        forceFail(true);
 
         info("Going to remove: " + key);
+
+        Class<? extends Throwable> expE = MvccFeatureChecker.forcedMvcc() ?
+            TransactionRollbackException.class : TransactionHeuristicException.class;
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -633,9 +635,24 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, TransactionHeuristicException.class, null);
+        }, expE, null);
 
         checkUnlocked(key);
+    }
+
+    /** */
+    private static CacheEntryPredicate FAILING_ENTRY_PREDICATE = new CacheEntryPredicateAdapter() {
+        @Override public boolean apply(GridCacheEntryEx ex) {
+            throw new IgniteSpiException("test spi failure");
+        }
+    };
+
+    /** */
+    private void forceFail(boolean b) {
+        if (MvccFeatureChecker.forcedMvcc())
+            GridCacheMapEntry.mockEntryPredicate = b ? FAILING_ENTRY_PREDICATE : null;
+
+        TestIndexingSpi.forceFail(b);
     }
 
     /**
