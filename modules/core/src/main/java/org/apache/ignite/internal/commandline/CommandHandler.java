@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.UUID;
@@ -1302,14 +1301,17 @@ public class CommandHandler {
 
         Map<String, VisorBaselineNode> srvs = res.getServers();
 
-        Optional<VisorBaselineNode> crdOpt = srvs.values().stream()
-            .min(Comparator.comparing(VisorBaselineNode::getOrder));
+        // if task runs on a node with VisorBaselineNode of old version (V1) we'll get order=null for all nodes.
 
-        String crdStr = crdOpt.map(
-            crd -> "ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder())
+        String crdStr = srvs.values().stream()
+            // check for not null
+            .filter(node -> node.getOrder() != null)
+            .min(Comparator.comparing(VisorBaselineNode::getOrder))
+            // format
+            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder() + ")")
             .orElse("");
 
-        log("Current topology version: " + res.getTopologyVersion() + " (Coordinator: " + crdStr + ")");
+        log("Current topology version: " + res.getTopologyVersion() + crdStr);
         nl();
 
         if (F.isEmpty(baseline))
@@ -1945,6 +1947,9 @@ public class CommandHandler {
 
         char sslTrustStorePassword[] = null;
 
+        final String pwdArgWarnFmt = "Warning: %s is insecure. " +
+            "Whenever possible, use interactive prompt for password (just discard %s option).";
+
         while (hasNextArg()) {
             String str = nextArg("").toLowerCase();
 
@@ -2055,6 +2060,8 @@ public class CommandHandler {
                     case CMD_PASSWORD:
                         pwd = nextArg("Expected password");
 
+                        log(String.format(pwdArgWarnFmt, CMD_PASSWORD, CMD_PASSWORD));
+
                         break;
 
                     case CMD_SSL_PROTOCOL:
@@ -2080,6 +2087,8 @@ public class CommandHandler {
                     case CMD_KEYSTORE_PASSWORD:
                         sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
 
+                        log(String.format(pwdArgWarnFmt, CMD_KEYSTORE_PASSWORD, CMD_KEYSTORE_PASSWORD));
+
                         break;
 
                     case CMD_KEYSTORE_TYPE:
@@ -2094,6 +2103,8 @@ public class CommandHandler {
 
                     case CMD_TRUSTSTORE_PASSWORD:
                         sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
+
+                        log(String.format(pwdArgWarnFmt, CMD_TRUSTSTORE_PASSWORD, CMD_TRUSTSTORE_PASSWORD));
 
                         break;
 

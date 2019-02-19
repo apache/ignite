@@ -39,8 +39,7 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  */
 public class LogRegFromSparkExample {
     /** Path to Spark LogReg model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/logreg/data" +
-        "/part-00000-7551081d-c0a8-4ed7-afe4-a464aabc7f80-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/logreg";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
