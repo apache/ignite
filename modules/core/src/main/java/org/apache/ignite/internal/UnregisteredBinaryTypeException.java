@@ -23,6 +23,8 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Exception thrown during serialization if binary metadata isn't registered and it's registration isn't allowed.
+ * Used for both binary types and marshalling mappings.
+ * Confusing old class name is preserved for backwards compatibility.
  */
 public class UnregisteredBinaryTypeException extends IgniteException {
     /** */
@@ -59,10 +61,18 @@ public class UnregisteredBinaryTypeException extends IgniteException {
 
     /**
      * @param typeId Type ID.
+     * @param fut Future to wait in handler.
+     */
+    public UnregisteredBinaryTypeException(int typeId, GridFutureAdapter<?> fut) {
+        this(typeId, null, fut);
+    }
+
+    /**
+     * @param typeId Type ID.
      * @param binaryMetadata Binary metadata.
      * @param fut Future to wait in handler.
      */
-    public UnregisteredBinaryTypeException(int typeId, BinaryMetadata binaryMetadata, GridFutureAdapter<?> fut) {
+    private UnregisteredBinaryTypeException(int typeId, BinaryMetadata binaryMetadata, GridFutureAdapter<?> fut) {
         super(createMessage(typeId, binaryMetadata, fut));
 
         this.typeId = typeId;

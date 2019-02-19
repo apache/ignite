@@ -543,10 +543,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                         transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
 
                     if (failIfUnregistered && !fut.isDone())
-                        throw new UnregisteredBinaryTypeException(typeId, mergedMeta, fut);
+                        throw new UnregisteredBinaryTypeException(typeId, fut);
 
                     fut.get();
                 }
+
                 return;
             }
 

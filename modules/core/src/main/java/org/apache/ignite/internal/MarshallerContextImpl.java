@@ -56,7 +56,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -283,7 +282,7 @@ public class MarshallerContextImpl implements MarshallerContext {
                 GridFutureAdapter<MappingExchangeResult> fut = transport.awaitMappingAcceptance(item, cache);
 
                 if (failIfUnregistered && !fut.isDone())
-                    throw new UnregisteredBinaryTypeException(typeId, null, fut);
+                    throw new UnregisteredBinaryTypeException(typeId, fut);
 
                 MappingExchangeResult res = fut.get();
 
@@ -299,7 +298,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             GridFutureAdapter<MappingExchangeResult> fut = transport.proposeMapping(item, cache);
 
             if (failIfUnregistered && !fut.isDone())
-                throw new UnregisteredBinaryTypeException(typeId, null, fut);
+                throw new UnregisteredBinaryTypeException(typeId, fut);
 
             MappingExchangeResult res = fut.get();
 

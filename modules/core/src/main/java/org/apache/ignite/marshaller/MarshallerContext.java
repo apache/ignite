@@ -54,6 +54,7 @@ public interface MarshallerContext {
      * parameters list.
      *
      * @deprecated Use {@link MarshallerContext#registerClassName(byte, int, java.lang.String, boolean)} instead.
+     *      This particular method will be deleted in future releases.
      */
     @Deprecated
     public boolean registerClassName(
