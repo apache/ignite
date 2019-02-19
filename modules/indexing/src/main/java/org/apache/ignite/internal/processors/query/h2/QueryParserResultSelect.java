@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -28,21 +29,61 @@ import java.util.List;
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class QueryParserResultSelect {
+    /** Statmement. */
+    private GridSqlStatement stmt;
+
     /** Two-step query, or {@code} null if this result is for local query. */
     private final GridCacheTwoStepQuery twoStepQry;
 
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> meta;
 
+    /** Number of parameters. */
+    private final int paramsCnt;
+
+    /** Involved cache IDs. */
+    private final List<Integer> cacheIds;
+
+    /** ID of the first MVCC cache. */
+    private final Integer mvccCacheId;
+
+    /** FOR UPDATE flag. */
+    private final boolean forUpdate;
+
     /**
      * Constructor.
      *
+     * @param stmt Statement.
      * @param twoStepQry Distributed query plan.
      * @param meta Fields metadata.
+     * @param paramsCnt Parameters count.
+     * @param cacheIds Cache IDs.
+     * @param mvccCacheId ID of the first MVCC cache.
+     * @param forUpdate Whether this is FOR UPDATE flag.
      */
-    public QueryParserResultSelect(@Nullable GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta) {
+    public QueryParserResultSelect(
+        GridSqlStatement stmt,
+        @Nullable GridCacheTwoStepQuery twoStepQry,
+        List<GridQueryFieldMetadata> meta,
+        int paramsCnt,
+        List<Integer> cacheIds,
+        @Nullable Integer mvccCacheId,
+        boolean forUpdate
+    ) {
+        this.stmt = stmt;
         this.twoStepQry = twoStepQry;
         this.meta = meta;
+        this.paramsCnt = paramsCnt;
+        this.cacheIds = cacheIds;
+        this.mvccCacheId = mvccCacheId;
+        this.forUpdate = forUpdate;
+    }
+
+    /**
+     * @return Parsed SELECT statement.
+     */
+    public GridSqlStatement statement() {
+        return stmt;
     }
 
     /**
@@ -60,9 +101,44 @@ public class QueryParserResultSelect {
     }
 
     /**
-     * @return Whether this is a local query.
+     * @return Whether split is needed for this query.
      */
-    public boolean isLocal() {
-        return twoStepQry == null;
+    public boolean splitNeeded() {
+        return twoStepQry != null;
+    }
+
+    /**
+     * @return Involved cache IDs.
+     */
+    public List<Integer> cacheIds() {
+        return cacheIds;
+    }
+
+    /**
+     * @return ID of the first MVCC cache.
+     */
+    public Integer mvccCacheId() {
+        return mvccCacheId;
+    }
+
+    /**
+     * @return Whether this is a SELECT for MVCC caches.
+     */
+    public boolean mvccEnabled() {
+        return mvccCacheId != null;
+    }
+
+    /**
+     * @return Whether this is FOR UPDATE query.
+     */
+    public boolean forUpdate() {
+        return forUpdate;
+    }
+
+    /**
+     * @return Number of parameters.
+     */
+    public int parametersCount() {
+        return paramsCnt;
     }
 }

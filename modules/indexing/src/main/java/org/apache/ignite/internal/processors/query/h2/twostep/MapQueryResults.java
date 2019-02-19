@@ -17,20 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.sql.ResultSet;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Mapper query results.
  */
 class MapQueryResults {
-    /** H@ indexing. */
+    /** H2 indexing. */
     private final IgniteH2Indexing h2;
 
     /** */
@@ -45,8 +44,8 @@ class MapQueryResults {
     /** */
     private final GridCacheContext<?, ?> cctx;
 
-    /** Lazy worker. */
-    private final MapQueryLazyWorker lazyWorker;
+    /** Lazy mode. */
+    private final boolean lazy;
 
     /** */
     private volatile boolean cancelled;
@@ -54,22 +53,28 @@ class MapQueryResults {
     /** {@code SELECT FOR UPDATE} flag. */
     private final boolean forUpdate;
 
+    /** Query context. */
+    private final QueryContext qctx;
+
     /**
      * Constructor.
+     *
      * @param h2 Indexing instance.
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
      * @param cctx Cache context.
-     * @param lazyWorker Lazy worker (if any).
      * @param forUpdate {@code SELECT FOR UPDATE} flag.
+     * @param lazy Lazy flag.
+     * @param qctx Query context.
      */
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        @Nullable MapQueryLazyWorker lazyWorker, boolean forUpdate) {
+        boolean forUpdate, boolean lazy, QueryContext qctx) {
         this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
-        this.lazyWorker = lazyWorker;
+        this.lazy = lazy;
+        this.qctx = qctx;
 
         results = new AtomicReferenceArray<>(qrys);
         cancels = new GridQueryCancel[qrys];
@@ -97,27 +102,12 @@ class MapQueryResults {
     }
 
     /**
-     * @return Lazy worker.
-     */
-    MapQueryLazyWorker lazyWorker() {
-        return lazyWorker;
-    }
-
-    /**
      * Add result.
-     * @param qry Query result index.
-     * @param q Query object.
-     * @param qrySrcNodeId Query source node.
-     * @param rs Result set.
-     * @param params Query arguments.
+     * @param qryIdx Query result index.
+     * @param res Result.
      */
-    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker);
-
-        if (lazyWorker != null)
-            lazyWorker.result(res);
-
-        if (!results.compareAndSet(qry, null, res))
+    void addResult(int qryIdx, MapQueryResult res) {
+        if (!results.compareAndSet(qryIdx, null, res))
             throw new IllegalStateException();
     }
 
@@ -138,29 +128,66 @@ class MapQueryResults {
     /**
      * Cancels the query.
      */
-    void cancel(boolean forceQryCancel) {
-        if (cancelled)
-            return;
+    void cancel() {
+        synchronized (this) {
+            if (cancelled)
+                return;
 
-        cancelled = true;
+            cancelled = true;
 
-        for (int i = 0; i < results.length(); i++) {
-            MapQueryResult res = results.get(i);
-
-            if (res != null) {
-                res.close();
-
-                continue;
-            }
-
-            // NB: Cancel is already safe even for lazy queries (see implementation of passed Runnable).
-            if (forceQryCancel) {
+            for (int i = 0; i < results.length(); i++) {
                 GridQueryCancel cancel = cancels[i];
 
                 if (cancel != null)
                     cancel.cancel();
             }
         }
+
+        // The closing result set is synchronized by themselves.
+        // Include to synchronize block may be cause deadlock on <this> and MapQueryResult#lock.
+        close();
+    }
+
+    /**
+     * Wrap MapQueryResult#close to synchronize close vs cancel.
+     * We have do it because connection returns to pool after close ResultSet but the whole MapQuery
+     * (that may contains several queries) may be canceled later.
+     *
+     * @param idx Map query (result) index.
+     */
+    void closeResult(int idx) {
+        MapQueryResult res = results.get(idx);
+
+        if (res != null && !res.closed()) {
+            try {
+                // Session isn't set for lazy=false queries.
+                // Also session == null when result already closed.
+                res.lock();
+                res.lockTables();
+
+                synchronized (this) {
+                    res.close();
+
+                    // The statement of the closed result must not be canceled
+                    // because statement & connection may be reused.
+                    cancels[idx] = null;
+                }
+            }
+            finally {
+                res.unlock();
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public void close() {
+        for (int i = 0; i < results.length(); i++)
+            closeResult(i);
+
+        if (lazy)
+            releaseQueryContext();
     }
 
     /**
@@ -182,5 +209,29 @@ class MapQueryResults {
      */
     public boolean isForUpdate() {
         return forUpdate;
+    }
+
+    /**
+     * @return Query context.
+     */
+    public QueryContext queryContext() {
+        return qctx;
+    }
+
+    /**
+     * Release query context.
+     */
+    public void releaseQueryContext() {
+        h2.queryContextRegistry().clearThreadLocal();
+
+        if (qctx.distributedJoinContext() == null)
+            qctx.clearContext(false);
+    }
+
+    /**
+     * @return Lazy flag.
+     */
+    public boolean isLazy() {
+        return lazy;
     }
 }
