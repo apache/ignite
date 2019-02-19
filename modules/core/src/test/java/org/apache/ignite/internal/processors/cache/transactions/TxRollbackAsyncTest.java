@@ -532,13 +532,16 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         checkFutures();
     }
 
+    static {
+        System.setProperty("IGNITE_FORCE_MVCC_MODE_IN_TESTS", Boolean.toString(true));
+    }
+
     /**
      * Rollback tx while near lock request is delayed.
      */
     @Test
     public void testRollbackDelayNearLockRequest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
-
+        // t0d0 investigate https://issues.apache.org/jira/browse/IGNITE-9470
         final Ignite client = startClient();
 
         final Ignite prim = primaryNode(0, CACHE_NAME);
