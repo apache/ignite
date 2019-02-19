@@ -17,9 +17,7 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -81,6 +79,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /** Server key store path. */
     private static final String SRV_KEY_STORE_PATH = U.getIgniteHome() +
         "/modules/clients/src/test/keystore/server.jks";
+
+    /** Localhost. */
+    private static final String LOCALHOST = "127.0.0.1";
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
@@ -1967,36 +1968,21 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * supply a malformed {@link ConnectionProperties} to {@link JdbcThinTcpIo}.
      */
     @Test
-    public void testInvalidNestedTxModeOnServerSide() throws SQLException, NoSuchMethodException,
-        IllegalAccessException, InvocationTargetException, InstantiationException, IOException {
+    public void testInvalidNestedTxModeOnServerSide() {
         ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
 
-        connProps.setAddresses(new HostAndPortRange[]{new HostAndPortRange("127.0.0.1", DFLT_PORT, DFLT_PORT)});
+        connProps.setAddresses(new HostAndPortRange[] {new HostAndPortRange(LOCALHOST, DFLT_PORT, DFLT_PORT)});
 
         connProps.nestedTxMode("invalid");
 
-        Constructor ctor = JdbcThinTcpIo.class.getDeclaredConstructor(ConnectionProperties.class);
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @SuppressWarnings("ResultOfObjectAllocationIgnored")
+            @Override public Object call() throws Exception {
+                new JdbcThinTcpIo(connProps, new InetSocketAddress(LOCALHOST, DFLT_PORT), 0);
 
-        boolean acc = ctor.isAccessible();
-
-        ctor.setAccessible(true);
-
-        final JdbcThinTcpIo io = (JdbcThinTcpIo)ctor.newInstance(connProps);
-
-        try {
-            GridTestUtils.assertThrows(null, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    io.start();
-
-                    return null;
-                }
-            }, SQLException.class, "err=Invalid nested transactions handling mode: invalid");
-        }
-        finally {
-            io.close();
-
-            ctor.setAccessible(acc);
-        }
+                return null;
+            }
+        }, SQLException.class, "err=Invalid nested transactions handling mode: invalid");
     }
 
     /**

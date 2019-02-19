@@ -129,6 +129,7 @@ public class JdbcThinTcpIo {
     private ClientListenerProtocolVersion srvProtoVer;
 
     /** Socket. */
+    // TODO: 19.02.19 seems that we don't need socket here, cause it's accessible through endpoint.
     private Socket sock;
 
     /**
@@ -207,6 +208,9 @@ public class JdbcThinTcpIo {
         catch (Exception e) {
             if (sock != null && !sock.isClosed())
                 U.closeQuiet(sock);
+
+            U.closeQuiet(in);
+            U.closeQuiet(out);
 
             throw e;
         }
