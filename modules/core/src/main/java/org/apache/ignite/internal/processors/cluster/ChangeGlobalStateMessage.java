@@ -163,8 +163,8 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /**
-    * @return Node initiated state change.
-    */
+     * @return Node initiated state change.
+     */
     public UUID initiatorNodeId() {
         return initiatingNodeId;
     }

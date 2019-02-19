@@ -15,15 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.testsuites.nightly;
 
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testsuites.IgniteBinaryCacheQueryTestSuite;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Special test suite with ignored tests for Binary mode.
+ * Test suite for cache queries with lazy mode.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({IgniteBinarySimpleNameMapperCacheQueryTestSuite.class})
-public class IgniteIgnoredBinarySimpleMapperTestSuite {
+@Suite.SuiteClasses({
+    IgniteBinaryCacheQueryTestSuite.class,
+})
+public class IgniteBinaryCacheQueryLazyTestSuite {
+    /**
+     * Setup lazy mode default.
+     */
+    @BeforeClass
+    public static void setupLazy() {
+        GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", true);
+    }
 }
