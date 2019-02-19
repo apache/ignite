@@ -117,7 +117,7 @@ public class MeanWithClusterProbAggregatorTest {
             }
         );
 
-        List<MeanWithClusterProbAggregator> res = MeanWithClusterProbAggregator.map(data);
+        List<MeanWithClusterProbAggregator> res = MeanWithClusterProbAggregator.map(data, 2);
         assertEquals(2, res.size());
 
         MeanWithClusterProbAggregator agg1 = res.get(0);

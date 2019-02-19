@@ -24,7 +24,9 @@ import org.junit.Assert;
  * in {@link Assert} in org.junit package.
  * Deprecation notice: instead of invoking inherited methods, directly refer to respective static methods of
  * {@link Assert} class.
+ * @deprecated and should be removed once all tests will be refactored to use proper API.
  */
+@Deprecated
 class JUnit3TestLegacyAssert {
     /** See class javadocs. */
     protected static void assertTrue(String msg, boolean cond) {
