@@ -33,15 +33,12 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Cache future self test.
  */
-@RunWith(JUnit4.class)
 public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static volatile boolean fail;

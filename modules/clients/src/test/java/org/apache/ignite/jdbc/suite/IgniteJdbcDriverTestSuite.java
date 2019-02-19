@@ -33,6 +33,7 @@ import org.apache.ignite.jdbc.JdbcPojoQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.JdbcResultSetSelfTest;
 import org.apache.ignite.jdbc.JdbcStatementSelfTest;
+import org.apache.ignite.jdbc.JdbcThinMetadataSqlMatchTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAuthenticateConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAutoCloseServerCursorTest;
 import org.apache.ignite.jdbc.thin.JdbcThinBatchSelfTest;
@@ -69,6 +70,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSkipReducerOnUpdateSelf
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataPrimaryKeysSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
+import org.apache.ignite.jdbc.thin.JdbcThinMultiStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
@@ -165,6 +167,7 @@ import org.junit.runners.Suite;
     JdbcThinEmptyCacheSelfTest.class,
     JdbcThinMetadataSelfTest.class,
     JdbcThinMetadataPrimaryKeysSelfTest.class,
+    JdbcThinMetadataSqlMatchTest.class,
     JdbcThinErrorsSelfTest.class,
     JdbcThinStatementCancelSelfTest.class,
     JdbcThinStatementTimeoutSelfTest.class,
@@ -185,6 +188,7 @@ import org.junit.runners.Suite;
     JdbcThinDynamicIndexTransactionalPartitionedNearSelfTest.class,
     JdbcThinDynamicIndexTransactionalPartitionedSelfTest.class,
     JdbcThinDynamicIndexTransactionalReplicatedSelfTest.class,
+    JdbcThinMultiStatementSelfTest.class,
 
     // New thin JDBC driver, DML tests
     JdbcThinBulkLoadAtomicPartitionedNearSelfTest.class,

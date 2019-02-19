@@ -21,7 +21,9 @@ package org.apache.ignite.internal.processors.query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -44,6 +46,9 @@ public class RunningQueryManager {
     /** Unique id for queries on single node. */
     private final AtomicLong qryIdGen = new AtomicLong();
 
+    /** Local node ID. */
+    private final UUID localNodeId;
+
     /** History size. */
     private final int histSz;
 
@@ -56,6 +61,8 @@ public class RunningQueryManager {
      * @param ctx Context.
      */
     public RunningQueryManager(GridKernalContext ctx) {
+        localNodeId = ctx.localNodeId();
+
         histSz = ctx.config().getSqlQueryHistorySize();
 
         qryHistTracker = new QueryHistoryTracker(histSz);
@@ -77,6 +84,7 @@ public class RunningQueryManager {
 
         GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
+            localNodeId,
             qry,
             qryType,
             schemaName,
@@ -102,11 +110,27 @@ public class RunningQueryManager {
         if (qryId == null)
             return;
 
-        GridRunningQueryInfo unregRunninigQry = runs.remove(qryId);
+        GridRunningQueryInfo qry = runs.remove(qryId);
 
         //We need to collect query history only for SQL queries.
-        if (unregRunninigQry != null && isSqlQuery(unregRunninigQry))
-            qryHistTracker.collectMetrics(unregRunninigQry, failed);
+        if (qry != null && isSqlQuery(qry))
+            qryHistTracker.collectMetrics(qry, failed);
+    }
+
+    /**
+     * Return SQL queries which executing right now.
+     *
+     * @return List of SQL running queries.
+     */
+    public List<GridRunningQueryInfo> runningSqlQueries() {
+        List<GridRunningQueryInfo> res = new ArrayList<>();
+
+        for (GridRunningQueryInfo run : runs.values()) {
+            if (isSqlQuery(run))
+                res.add(run);
+        }
+
+        return res;
     }
 
     /**
@@ -123,7 +147,7 @@ public class RunningQueryManager {
      * Return long running user queries.
      *
      * @param duration Duration of long query.
-     * @return List of queries which running longer than given duration.
+     * @return Collection of queries which running longer than given duration.
      */
     public Collection<GridRunningQueryInfo> longRunningQueries(long duration) {
         Collection<GridRunningQueryInfo> res = new ArrayList<>();

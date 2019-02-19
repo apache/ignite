@@ -32,13 +32,10 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * IGFS Hadoop file system Ignite client -based self test.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends IgniteHadoopFileSystemAbstractSelfTest {
     /** Alive node index. */
     private static final int ALIVE_NODE_IDX = GRID_COUNT - 1;

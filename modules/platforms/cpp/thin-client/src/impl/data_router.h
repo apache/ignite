@@ -29,11 +29,11 @@
 #include <ignite/thin/ignite_client_configuration.h>
 
 #include <ignite/common/concurrent.h>
+#include <ignite/network/end_point.h>
+#include <ignite/network/tcp_range.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include "impl/data_channel.h"
-#include "impl/net/end_point.h"
-#include "impl/net/tcp_range.h"
 #include "impl/cache/cache_affinity_info.h"
 
 namespace ignite
@@ -55,7 +55,7 @@ namespace ignite
             {
             public:
                 /** Connection establishment timeout in seconds. */
-                enum { DEFALT_CONNECT_TIMEOUT = 5 };
+                enum { DEFAULT_CONNECT_TIMEOUT = 5 };
 
                 /** Network IO operation timeout in seconds. */
                 enum { DEFALT_IO_TIMEOUT = 5 };
@@ -120,7 +120,7 @@ namespace ignite
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
-                void SyncMessage(const ReqT& req, RspT& rsp, const std::vector<net::EndPoint>& hint)
+                void SyncMessage(const ReqT& req, RspT& rsp, const std::vector<network::EndPoint>& hint)
                 {
                     SP_DataChannel channel = GetBestChannel(hint);
 
@@ -181,7 +181,7 @@ namespace ignite
                 IGNITE_NO_COPY_ASSIGNMENT(DataRouter);
 
                 /** End point collection. */
-                typedef std::vector<net::EndPoint> EndPoints;
+                typedef std::vector<network::EndPoint> EndPoints;
 
                 /** Shared pointer to end points. */
                 typedef common::concurrent::SharedPointer<EndPoints> SP_EndPoints;
@@ -209,7 +209,7 @@ namespace ignite
                  * @param hint Hint.
                  * @return @c true if the local host.
                  */
-                bool IsLocalHost(const std::vector<net::EndPoint>& hint);
+                bool IsLocalHost(const std::vector<network::EndPoint>& hint);
 
                 /**
                  * Check whether the provided address is the local host.
@@ -225,7 +225,7 @@ namespace ignite
                  * @param endPoint End point to check.
                  * @return @c true if provided by user using configuration. 
                  */
-                bool IsProvidedByUser(const net::EndPoint& endPoint);
+                bool IsProvidedByUser(const network::EndPoint& endPoint);
 
                 /**
                  * Get the best data channel.
@@ -233,7 +233,7 @@ namespace ignite
                  * @param hint End points of the preferred server node to use.
                  * @return The best available data channel.
                  */
-                SP_DataChannel GetBestChannel(const std::vector<net::EndPoint>& hint);
+                SP_DataChannel GetBestChannel(const std::vector<network::EndPoint>& hint);
 
                 /**
                  * Update local addresses.
@@ -246,7 +246,7 @@ namespace ignite
                  * @param str String with connection strings to parse.
                  * @param ranges Address ranges.
                  */
-                static void CollectAddresses(const std::string& str, std::vector<net::TcpRange>& ranges);
+                static void CollectAddresses(const std::string& str, std::vector<network::TcpRange>& ranges);
 
                 /** IO timeout in seconds. */
                 int32_t ioTimeout;
@@ -258,7 +258,7 @@ namespace ignite
                 ignite::thin::IgniteClientConfiguration config;
 
                 /** Address ranges. */
-                std::vector<net::TcpRange> ranges;
+                std::vector<network::TcpRange> ranges;
 
                 /** Local addresses. */
                 std::set<std::string> localAddresses;
@@ -270,7 +270,7 @@ namespace ignite
                 binary::BinaryTypeManager typeMgr;
 
                 /** Data channels. */
-                std::map<net::EndPoint, SP_DataChannel> channels;
+                std::map<network::EndPoint, SP_DataChannel> channels;
 
                 /** Channels mutex. */
                 common::concurrent::CriticalSection channelsMutex;

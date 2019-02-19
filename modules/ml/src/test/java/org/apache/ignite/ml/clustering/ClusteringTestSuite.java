@@ -17,6 +17,13 @@
 
 package org.apache.ignite.ml.clustering;
 
+import org.apache.ignite.ml.clustering.gmm.CovarianceMatricesAggregatorTest;
+import org.apache.ignite.ml.clustering.gmm.GmmModelTest;
+import org.apache.ignite.ml.clustering.gmm.GmmPartitionDataTest;
+import org.apache.ignite.ml.clustering.gmm.GmmTrainerIntegrationTest;
+import org.apache.ignite.ml.clustering.gmm.GmmTrainerTest;
+import org.apache.ignite.ml.clustering.gmm.MeanWithClusterProbAggregatorTest;
+import org.apache.ignite.ml.clustering.gmm.NewComponentStatisticsAggregatorTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -25,8 +32,18 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    //k-means tests
     KMeansTrainerTest.class,
-    KMeansModelTest.class
+    KMeansModelTest.class,
+
+    //GMM tests
+    CovarianceMatricesAggregatorTest.class,
+    GmmModelTest.class,
+    GmmPartitionDataTest.class,
+    MeanWithClusterProbAggregatorTest.class,
+    GmmTrainerTest.class,
+    GmmTrainerIntegrationTest.class,
+    NewComponentStatisticsAggregatorTest.class
 })
 public class ClusteringTestSuite {
 }

@@ -29,6 +29,8 @@ import org.apache.ignite.ml.inference.builder.AsyncModelBuilder;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilder;
 import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
 import org.apache.ignite.ml.inference.reader.ModelReader;
+import org.apache.ignite.ml.math.primitives.vector.NamedVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.mleap.MLeapModelParser;
 
 /**
@@ -53,7 +55,7 @@ public class MLeapModelParserExample {
 
             AsyncModelBuilder mdlBuilder = new IgniteDistributedModelBuilder(ignite, 4, 4);
 
-            try (Model<HashMap<String, Double>, Future<Double>> mdl = mdlBuilder.build(reader, parser)) {
+            try (Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, parser)) {
                 HashMap<String, Double> input = new HashMap<>();
                 input.put("bathrooms", 1.0);
                 input.put("bedrooms", 1.0);
@@ -64,7 +66,7 @@ public class MLeapModelParserExample {
                 input.put("square_feet", 1.0);
                 input.put("review_scores_rating", 1.0);
 
-                Future<Double> prediction = mdl.predict(input);
+                Future<Double> prediction = mdl.predict(VectorUtils.of(input));
 
                 System.out.println("Predicted price: " + prediction.get());
             }

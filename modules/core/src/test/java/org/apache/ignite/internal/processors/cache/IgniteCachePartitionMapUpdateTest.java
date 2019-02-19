@@ -30,15 +30,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE1_ATTR = "cache1";

@@ -27,13 +27,10 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests if system cache was started before deploying of service.
  */
-@RunWith(JUnit4.class)
 public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     /** */
     private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();

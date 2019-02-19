@@ -35,14 +35,13 @@ import org.apache.ignite.internal.stat.IoStatisticsCacheSelfTest;
 import org.apache.ignite.internal.stat.IoStatisticsManagerSelfTest;
 import org.apache.ignite.internal.stat.IoStatisticsMetricsLocalMXBeanImplSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(IgniteCacheTestSuite9.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheTestSuite9 {
     /**
      * @return IgniteCache test suite.
@@ -80,13 +79,5 @@ public class IgniteCacheTestSuite9 {
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsMetricsLocalMXBeanImplSelfTest.class, ignoredTests);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

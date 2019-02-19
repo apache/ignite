@@ -43,8 +43,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -55,7 +53,6 @@ import static org.apache.ignite.jdbc.JdbcResultSetSelfTest.assertEqualsToStringR
  * Result set test.
  */
 @SuppressWarnings("FloatingPointEquality")
-@RunWith(JUnit4.class)
 public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";

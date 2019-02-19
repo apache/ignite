@@ -27,7 +27,7 @@ import Notebook from './notebook.service';
 import {navigationMenuItem, AppStore} from '../../store';
 
 /**
- * @param {uirouter.UIRouter} $uiRouter
+ * @param {import('@uirouter/angularjs').UIRouter} $uiRouter
  * @param {ActivitiesData} ActivitiesData
  */
 function registerActivitiesHook($uiRouter, ActivitiesData) {

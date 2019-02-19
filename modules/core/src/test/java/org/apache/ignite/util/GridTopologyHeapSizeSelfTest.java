@@ -25,8 +25,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
@@ -34,7 +32,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 /**
  * Tests for calculation logic for topology heap size.
  */
-@RunWith(JUnit4.class)
 public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

@@ -35,10 +35,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 
@@ -46,7 +44,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
  * Test service deployment while client node disconnecting.
  */
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-@RunWith(JUnit4.class)
 public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractTest {
     /** */
     private static final long CLIENT_FAILURE_DETECTION_TIMEOUT = 5_000L;
@@ -55,8 +52,8 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
     private static final long CLIENT_RECONNECT_WAIT_TIMEOUT = 10_000L;
 
     /** */
-    @BeforeClass
-    public static void check() {
+    @Before
+    public void check() {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 
@@ -207,7 +204,10 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
 
         server().close();
 
-        assertTrue(latch.await(CLIENT_FAILURE_DETECTION_TIMEOUT * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(
+                CLIENT_FAILURE_DETECTION_TIMEOUT * 2 + CLIENT_FAILURE_DETECTION_TIMEOUT/10,
+                TimeUnit.MILLISECONDS
+        ));
 
         task.run();
     }

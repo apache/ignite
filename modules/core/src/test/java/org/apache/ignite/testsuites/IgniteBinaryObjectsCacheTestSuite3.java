@@ -24,9 +24,8 @@ import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryAtomicE
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  *  IgniteBinaryObjectsCacheTestSuite3 is kept together with {@link IgniteCacheTestSuite3}
@@ -44,7 +43,7 @@ import org.junit.runners.model.InitializationError;
  *  In future this suite may be merged with {@link IgniteCacheTestSuite3}
  *
  */
-@RunWith(IgniteBinaryObjectsCacheTestSuite3.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteBinaryObjectsCacheTestSuite3 {
     /**
      * @return Test suite.
@@ -63,17 +62,9 @@ public class IgniteBinaryObjectsCacheTestSuite3 {
 
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite3.suite(ignoredTests));
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest.class, ignoredTests);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

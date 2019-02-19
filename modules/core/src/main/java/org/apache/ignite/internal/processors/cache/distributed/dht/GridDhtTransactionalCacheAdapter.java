@@ -2060,7 +2060,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.rows(),
             req.operation(),
             req.filter(),
-            req.needRes());
+            req.needRes(),
+            req.keepBinary());
 
         fut.listen(NearTxResultHandler.instance());
 

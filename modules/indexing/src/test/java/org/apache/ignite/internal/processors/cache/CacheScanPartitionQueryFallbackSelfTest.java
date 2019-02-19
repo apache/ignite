@@ -60,13 +60,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests partition scan query fallback.
  */
-@RunWith(JUnit4.class)
 public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;

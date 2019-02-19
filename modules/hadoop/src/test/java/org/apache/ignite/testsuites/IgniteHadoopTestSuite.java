@@ -103,15 +103,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 import static org.apache.ignite.testframework.GridTestUtils.modeToPermissionSet;
 
 /**
  * Test suite for Hadoop Map Reduce engine.
  */
-@RunWith(IgniteHadoopTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteHadoopTestSuite {
     /**
      * @return Test suite.
@@ -376,13 +376,5 @@ public class IgniteHadoopTestSuite {
         }
 
         throw new IllegalStateException("Failed to install " + appName + ".");
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws Exception {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

@@ -54,16 +54,15 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Checks that client affinity assignment cache is calculated correctly regardless of current baseline topology.
  */
-@RunWith(JUnit4.class)
 public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int DEFAULT_NODES_COUNT = 5;
@@ -160,9 +159,22 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10261", MvccFeatureChecker.forcedMvcc());
 
         stopAllGrids();
 
