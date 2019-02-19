@@ -600,6 +600,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
+        if (!isSupported() && remoteVer.id > 0)
+            return;
+
         synchronized (innerStateLock) {
             DistributedMetaStorageVersion actualVer = getActualVersion();
 
