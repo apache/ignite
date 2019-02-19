@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.UUID;
@@ -1303,14 +1302,17 @@ public class CommandHandler {
 
         Map<String, VisorBaselineNode> srvs = res.getServers();
 
-        Optional<VisorBaselineNode> crdOpt = srvs.values().stream()
-            .min(Comparator.comparing(VisorBaselineNode::getOrder));
+        // if task runs on a node with VisorBaselineNode of old version (V1) we'll get order=null for all nodes.
 
-        String crdStr = crdOpt.map(
-            crd -> "ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder())
+        String crdStr = srvs.values().stream()
+            // check for not null
+            .filter(node -> node.getOrder() != null)
+            .min(Comparator.comparing(VisorBaselineNode::getOrder))
+            // format
+            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder() + ")")
             .orElse("");
 
-        log("Current topology version: " + res.getTopologyVersion() + " (Coordinator: " + crdStr + ")");
+        log("Current topology version: " + res.getTopologyVersion() + crdStr);
         nl();
 
         if (F.isEmpty(baseline))
