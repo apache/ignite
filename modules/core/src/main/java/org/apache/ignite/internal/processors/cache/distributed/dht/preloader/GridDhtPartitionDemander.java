@@ -847,7 +847,7 @@ public class GridDhtPartitionDemander {
                         ", topChanged=" + topologyChanged(fut) + ", rebalanceFuture=" + fut + "]");
             }
         }
-        catch (IgniteSpiException | IgniteCheckedException e) {
+        catch (Exception e) {
             LT.error(log, e, "Error during rebalancing [" + demandRoutineInfo(topicId, nodeId, supplyMsg) +
                 ", err=" + e + ']');
         }
@@ -867,7 +867,7 @@ public class GridDhtPartitionDemander {
         if (!infos.hasNext())
             return;
 
-        List<GridCacheEntryInfo> entryHist = new ArrayList<>();
+        List<GridCacheMvccEntryInfo> entryHist = new ArrayList<>();
 
         GridCacheContext cctx = null;
 
@@ -888,7 +888,7 @@ public class GridDhtPartitionDemander {
                     if (hasMore) {
                         entry = (GridCacheMvccEntryInfo)infos.next();
 
-                        GridCacheMvccEntryInfo prev = entryHist.isEmpty() ? null : (GridCacheMvccEntryInfo)entryHist.get(0);
+                        GridCacheMvccEntryInfo prev = entryHist.isEmpty() ? null : entryHist.get(0);
 
                         flushHistory = prev != null && ((grp.sharedGroup() && prev.cacheId() !=  entry.cacheId())
                             || !prev.key().equals(entry.key()));
@@ -901,7 +901,7 @@ public class GridDhtPartitionDemander {
 
                         int cacheId = entryHist.get(0).cacheId();
 
-                        if (cctx == null || grp.sharedGroup() && cacheId != cctx.cacheId())
+                        if (cctx == null || (grp.sharedGroup() && cacheId != cctx.cacheId()))
                             cctx = grp.sharedGroup() ? grp.shared().cacheContext(cacheId) : grp.singleCacheContext();
 
                         if (cctx != null) {
@@ -957,7 +957,7 @@ public class GridDhtPartitionDemander {
 
                     GridCacheEntryInfo entry = infos.next();
 
-                    if (cctx == null || grp.sharedGroup() && entry.cacheId() != cctx.cacheId())
+                    if (cctx == null || (grp.sharedGroup() && entry.cacheId() != cctx.cacheId()))
                         cctx = grp.sharedGroup() ? grp.shared().cacheContext(entry.cacheId()) : grp.singleCacheContext();
 
                     if (cctx == null)
@@ -1080,13 +1080,16 @@ public class GridDhtPartitionDemander {
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private boolean mvccPreloadEntry(
-        GridCacheContext cctx, ClusterNode from,
-        List<GridCacheEntryInfo> history, AffinityTopologyVersion topVer, int p
+        GridCacheContext cctx,
+        ClusterNode from,
+        List<GridCacheMvccEntryInfo> history,
+        AffinityTopologyVersion topVer,
+        int p
     ) throws IgniteCheckedException {
         assert ctx.database().checkpointLockIsHeldByThread();
         assert !history.isEmpty();
 
-        GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)history.get(0);
+        GridCacheMvccEntryInfo info = history.get(0);
 
         try {
             GridCacheEntryEx cached = null;
@@ -1097,7 +1100,7 @@ public class GridDhtPartitionDemander {
                 if (log.isTraceEnabled())
                     log.trace("Rebalancing key [key=" + info.key() + ", part=" + p + ", node=" + from.id() + ']');
 
-                if (cached.mvccPreloadEntry(topVer, history, GridCacheOperation.NOOP)) {
+                if (cached.mvccPreloadEntry(history)) {
                     cached.touch(); // Start tracking.
 
                     if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())

@@ -241,27 +241,13 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
-     * @param entry Entry.
-     * @param val Value.
-     * @param ver Version.
-     * @param expireTime Expire time.
-     * @param mvccVer MVCC version.
-     * @param newMvccVer New MVCC version.
-     * @param txState Tx state hint for the mvcc version.
-     * @param newTxState Tx state hint for the new mvcc version.
-     * @return {@code True} if value was inserted.
-     * @throws IgniteCheckedException If failed.
+     * Applies entry history if not exists.
+     *
+     * @param entry Entry to update.
+     * @param hist entry history.
+     * @return {@code True} if history applied successfully, {@code False} otherwise.
      */
-    public boolean mvccInitialValueIfAbsent(
-        GridCacheMapEntry entry,
-        @Nullable CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        MvccVersion mvccVer,
-        MvccVersion newMvccVer,
-        byte txState,
-        byte newTxState
-    ) throws IgniteCheckedException;
+    boolean mvccApplyHistoryIfAbsent(GridCacheMapEntry entry, List<GridCacheMvccEntryInfo> hist) throws IgniteCheckedException;
 
     /**
      * @param entry Entry.
@@ -748,29 +734,21 @@ public interface IgniteCacheOffheapManager {
             MvccVersion newMvccVer) throws IgniteCheckedException;
 
         /**
+         * Applies entry history if not exists.
+         *
          * @param cctx Cache context.
          * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param mvccVer MVCC version.
-         * @param newMvccVer New MVCC version.
-         * @param txState Tx state hint for the mvcc version.
-         * @param newTxState Tx state hint for the new mvcc version.
-         * @return {@code True} if new value was inserted.
-         * @throws IgniteCheckedException If failed.
+         * @param hist entry history.
+         * @return {@code True} if history applied successfully, {@code False} otherwise.
          */
-        boolean mvccInitialValueIfAbsent(
+        boolean mvccApplyHistoryIfAbsent(
             GridCacheContext cctx,
             KeyCacheObject key,
-            @Nullable CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccVersion mvccVer,
-            MvccVersion newMvccVer,
-            byte txState,
-            byte newTxState) throws IgniteCheckedException;
+            List<GridCacheMvccEntryInfo> hist) throws IgniteCheckedException;
 
         /**
+         * Either apply full history or nothing.
+         * Note: History will not be applied if history has already been actualized with concurrent update operation.
          *
          * @param cctx Grid cache context.
          * @param key Key.

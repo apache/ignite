@@ -517,11 +517,9 @@ class GridDhtPartitionSupplier {
                     MvccUtils.state(grp, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
                         row.newMvccOperationCounter());
 
-                if (newTxState != TxState.ABORTED) {
+                if (newTxState == TxState.COMMITTED) {
                     ((MvccUpdateVersionAware)info).newMvccVersion(row);
-
-                    if (newTxState == TxState.COMMITTED)
-                        ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
+                    ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
                 }
             }
         }
