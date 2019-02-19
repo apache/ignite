@@ -421,7 +421,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
-    @Override public void failNode(UUID nodeId, @Nullable String warning) {
+    @Override public void excludeNode(UUID nodeId, @Nullable String warning) {
         impl.failNode(nodeId, warning);
     }
 
@@ -622,7 +622,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
         /** {@inheritDoc} */
         @Override public void excludeNode(String nodeId) {
-            impl.failNode(UUID.fromString(nodeId), "Node failed from JMX interface, initiator=" + getLocalNodeId());
+            impl.failNode(UUID.fromString(nodeId), "Node excluded, node=" + nodeId +
+                    ", using JMX interface, initiator=" + getLocalNodeId());
         }
 
         /** {@inheritDoc} */
