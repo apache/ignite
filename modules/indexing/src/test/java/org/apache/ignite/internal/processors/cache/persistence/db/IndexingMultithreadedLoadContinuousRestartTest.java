@@ -143,6 +143,8 @@ public class IndexingMultithreadedLoadContinuousRestartTest extends GridCommonAb
 
     /**
      * Tests that continuous non-graceful node stop under load doesn't break SQL indexes.
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void test() throws Exception {
