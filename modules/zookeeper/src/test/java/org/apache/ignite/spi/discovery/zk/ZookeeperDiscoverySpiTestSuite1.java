@@ -46,14 +46,14 @@ import org.junit.runners.Suite;
     ZookeeperDiscoveryConcurrentStartAndStartStopTest.class,
     ZookeeperDiscoveryTopologyChangeAndReconnectTest.class,
     ZookeeperDiscoveryCommunicationFailureTest.class,
-    //ZookeeperDiscoveryClientDisconnectTest.class,
+    ZookeeperDiscoveryClientDisconnectTest.class,
     ZookeeperDiscoveryClientReconnectTest.class,
-    //ZookeeperDiscoverySplitBrainTest.class,
-    //ZookeeperDiscoveryCustomEventsTest.class,
-    //ZookeeperDiscoveryMiscTest.class,
-    //ZookeeperClientTest.class,
-    //ZookeeperDiscoverySpiSaslFailedAuthTest.class,
-    //ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class,
+    ZookeeperDiscoverySplitBrainTest.class,
+    ZookeeperDiscoveryCustomEventsTest.class,
+    ZookeeperDiscoveryMiscTest.class,
+    ZookeeperClientTest.class,
+    ZookeeperDiscoverySpiSaslFailedAuthTest.class,
+    ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class,
 })
 public class ZookeeperDiscoverySpiTestSuite1 {
     /**
