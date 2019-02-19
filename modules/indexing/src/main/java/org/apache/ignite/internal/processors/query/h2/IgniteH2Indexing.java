@@ -26,7 +26,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,15 +45,10 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -126,8 +120,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecut
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
-import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -139,12 +131,10 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
-import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -172,6 +162,7 @@ import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.requestSnapshot;
@@ -487,7 +478,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (parseRes.isDml()) {
                 UpdateResult updRes = executeUpdate(schemaName, parseRes.dml(), fieldsQry, true, filter, cancel);
 
-                List<?> updResRow = Collections.singletonList(updRes.counter());
+                List<?> updResRow = singletonList(updRes.counter());
 
                 return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META, new IgniteSingletonIterator<>(updResRow));
             }
@@ -1380,10 +1371,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 else {
                     UpdateResult updRes = executeUpdate(schemaName, dml , qry, true, filter, cancel);
 
-                    return Collections.singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
+                    return singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @SuppressWarnings("NullableProblems")
                         @Override public Iterator<List<?>> iterator() {
-                            return new IgniteSingletonIterator<>(Collections.singletonList(updRes.counter()));
+                            return new IgniteSingletonIterator<>(singletonList(updRes.counter()));
                         }
                     }, cancel));
                 }
@@ -1423,7 +1414,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 registerAsNewQry
             );
 
-            return Collections.singletonList(res);
+            return singletonList(res);
         }
         else {
             // Local query.
@@ -1440,7 +1431,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     qryId
                 );
 
-                return Collections.singletonList(res);
+                return singletonList(res);
             }
             catch (IgniteCheckedException e) {
                 runningQryMgr.unregister(qryId, true);
@@ -1985,107 +1976,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         runningQryMgr = new RunningQueryManager(ctx);
         partExtractor = new PartitionExtractor(new H2PartitionResolver(this));
 
-        cmdProc = new CommandProcessor(ctx, schemaMgr, runningQryMgr);
+        cmdProc = new CommandProcessor(ctx, schemaMgr, this);
+        cmdProc.start();
 
         if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
 
         JdbcUtils.serializer = h2Serializer();
-
-        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, (nodeId, msg, plc) -> onMessage(nodeId, msg));
-
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(final Event evt) {
-                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
-
-                Iterator<Map.Entry<KillQueryRun, GridFutureAdapter<String>>> it = cancellationRuns.entrySet().iterator();
-
-                while(it.hasNext()){
-                    Map.Entry<KillQueryRun, GridFutureAdapter<String>> entry = it.next();
-
-                    if(entry.getKey().nodeId().equals(nodeId)){
-                        entry.getValue().onDone();
-
-                        it.remove();
-                    }
-                }
-            }
-        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param msg Message.
-     */
-    public void onMessage(UUID nodeId, Object msg) {
-        try {
-            assert msg != null;
-
-            ClusterNode node = ctx.discovery().node(nodeId);
-
-            if (node == null)
-                return; // Node left, ignore.
-
-            boolean processed = true;
-
-            if (msg instanceof GridQueryKillRequest)
-                onQueryKillRequest((GridQueryKillRequest)msg, node);
-            if (msg instanceof GridQueryKillResponse)
-                onQueryKillResponse((GridQueryKillResponse)msg, node);
-            else
-                processed = false;
-
-            if (processed && log.isDebugEnabled())
-                log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
-        }
-        catch(Throwable th) {
-            U.error(log, "Failed to process message: " + msg, th);
-        }
-    }
-
-
-    /**
-     * Process request to kill query.
-     *
-     * @param msg Message.
-     * @param node Cluster node.
-     */
-    private void onQueryKillRequest(GridQueryKillRequest msg, ClusterNode node) {
-        String err = null;
-
-        try {
-            cancelQueries(singletonList(msg.nodeQryId()));
-        }
-        catch (Exception e) {
-            err = e.toString();
-
-            throw e;
-        }
-        finally {
-            if (msg.resposeRequired()) {
-                send(GridTopic.TOPIC_QUERY,
-                    GridTopic.TOPIC_QUERY.ordinal(),
-                    Collections.singleton(node),
-                    new GridQueryKillResponse(msg.nodeQryId(), err),
-                    null,
-                    locNodeQryHnd,
-                    GridIoPolicy.QUERY_POOL,
-                    false);
-            }
-        }
-    }
-
-    /**
-     * Process response to kill query request.
-     *
-     * @param msg Message.
-     * @param node Cluster node.
-     */
-    private void onQueryKillResponse(GridQueryKillResponse msg, ClusterNode node) {
-        GridFutureAdapter<String> fut = cancellationRuns.remove(new KillQueryRun(node.id(), msg.nodeQryId()));
-
-        if (fut != null)
-            fut.onDone(msg.error());
     }
 
     /**
@@ -2220,6 +2117,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         runningQryMgr.stop();
         schemaMgr.stop();
         connMgr.stop();
+
+        cmdProc.stop();
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
@@ -2498,8 +2397,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (UpdateResult res : ress) {
                 res.throwIfError();
 
-                QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                    (Collections.singletonList(res.counter())), cancel, false);
+                QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList
+                    (singletonList(res.counter())), cancel, false);
 
                 resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -2513,12 +2412,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             res.throwIfError();
 
-            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                (Collections.singletonList(res.counter())), cancel, false);
+            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList
+                (singletonList(res.counter())), cancel, false);
 
             resCur.fieldsMeta(UPDATE_RESULT_META);
 
-            return Collections.singletonList(resCur);
+            return singletonList(resCur);
         }
     }
 

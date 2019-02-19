@@ -21,11 +21,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
@@ -38,9 +41,16 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
@@ -58,7 +68,6 @@ import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBulkLoadDataConverter;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
@@ -72,6 +81,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
+import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
@@ -84,13 +95,17 @@ import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
+import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
+import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
@@ -105,6 +120,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
@@ -120,8 +136,8 @@ public class CommandProcessor {
     /** Schema manager. */
     private final SchemaManager schemaMgr;
 
-    /** Running query manager. */
-    private final RunningQueryManager runningQryMgr;
+    /** H2 Indexing. */
+    private final IgniteH2Indexing idx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -130,18 +146,142 @@ public class CommandProcessor {
     private static final boolean handleUuidAsByte =
             IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_UUID_DDL_BYTE_FORMAT, false);
 
+    /** Cancellation runs. */
+    private ConcurrentMap<KillQueryRun, GridFutureAdapter<String>> cancellationRuns = new ConcurrentHashMap<>();
+
+    /** Local node message handler */
+    private final CIX2<ClusterNode, Message> locNodeMsgHnd = new CIX2<ClusterNode, Message>() {
+        @Override public void applyx(ClusterNode locNode, Message msg) {
+            onMessage(locNode.id(), msg);
+        }
+    };
+
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      * @param schemaMgr Schema manager.
      */
-    public CommandProcessor(GridKernalContext ctx, SchemaManager schemaMgr, RunningQueryManager runningQryMgr) {
+    public CommandProcessor(GridKernalContext ctx, SchemaManager schemaMgr, IgniteH2Indexing idx) {
         this.ctx = ctx;
         this.schemaMgr = schemaMgr;
-        this.runningQryMgr = runningQryMgr;
+        this.idx = idx;
 
         log = ctx.log(CommandProcessor.class);
+    }
+
+    /**
+     * Start executor.
+     */
+    public void start() {
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, (nodeId, msg, plc) -> onMessage(nodeId, msg));
+
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(final Event evt) {
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+
+                Iterator<Map.Entry<KillQueryRun, GridFutureAdapter<String>>> it = cancellationRuns.entrySet().iterator();
+
+                while(it.hasNext()){
+                    Map.Entry<KillQueryRun, GridFutureAdapter<String>> entry = it.next();
+
+                    if(entry.getKey().nodeId().equals(nodeId)){
+                        entry.getValue().onDone();
+
+                        it.remove();
+                    }
+                }
+            }
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+    }
+
+    /**
+     * Close executor.
+     */
+    public void stop() {
+        Iterator<Map.Entry<KillQueryRun, GridFutureAdapter<String>>> it = cancellationRuns.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<KillQueryRun, GridFutureAdapter<String>> entry = it.next();
+
+            entry.getValue().onDone();
+
+            it.remove();
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    public void onMessage(UUID nodeId, Object msg) {
+        try {
+            assert msg != null;
+
+            ClusterNode node = ctx.discovery().node(nodeId);
+
+            if (node == null)
+                return; // Node left, ignore.
+
+            boolean processed = true;
+
+            if (msg instanceof GridQueryKillRequest)
+                onQueryKillRequest((GridQueryKillRequest)msg, node);
+            if (msg instanceof GridQueryKillResponse)
+                onQueryKillResponse((GridQueryKillResponse)msg, node);
+            else
+                processed = false;
+
+            if (processed && log.isDebugEnabled())
+                log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
+        }
+        catch(Throwable th) {
+            U.error(log, "Failed to process message: " + msg, th);
+        }
+    }
+
+    /**
+     * Process request to kill query.
+     *
+     * @param msg Message.
+     * @param node Cluster node.
+     */
+    private void onQueryKillRequest(GridQueryKillRequest msg, ClusterNode node) {
+        String err = null;
+
+        try {
+            idx.cancelQueries(singletonList(msg.nodeQryId()));
+        }
+        catch (Exception e) {
+            err = e.toString();
+
+            throw e;
+        }
+        finally {
+            if (msg.resposeRequired()) {
+                idx.send(GridTopic.TOPIC_QUERY,
+                    GridTopic.TOPIC_QUERY.ordinal(),
+                    Collections.singleton(node),
+                    new GridQueryKillResponse(msg.nodeQryId(), err),
+                    null,
+                    locNodeMsgHnd,
+                    GridIoPolicy.QUERY_POOL,
+                    false);
+            }
+        }
+    }
+
+    /**
+     * Process response to kill query request.
+     *
+     * @param msg Message.
+     * @param node Cluster node.
+     */
+    private void onQueryKillResponse(GridQueryKillResponse msg, ClusterNode node) {
+        GridFutureAdapter<String> fut = cancellationRuns.remove(new KillQueryRun(node.id(), msg.nodeQryId()));
+
+        if (fut != null)
+            fut.onDone(msg.error());
     }
 
     /**
@@ -187,6 +327,8 @@ public class CommandProcessor {
             }
             else if (cmdNative instanceof SqlSetStreamingCommand)
                 processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
+            else if(cmdNative instanceof SqlKillQueryCommand)
+                processKillQueryCommand((SqlKillQueryCommand) cmdNative);
             else
                 processTxCommand(cmdNative, qry);
         }
@@ -197,6 +339,73 @@ public class CommandProcessor {
         }
 
         return new CommandResult(res, unregister);
+    }
+
+
+    /**
+     * Process kill query command
+     *
+     * @param cmd Command.
+     */
+    private void processKillQueryCommand(SqlKillQueryCommand cmd) {
+        ClusterNode node = ctx.discovery().node(cmd.nodeId());
+
+        if (node != null) {
+            boolean resRequired = !cmd.async();
+            boolean sndReqRequired = true;
+
+            GridFutureAdapter<String> fut = null;
+
+            KillQueryRun run = null;
+
+            if (resRequired) {
+                fut = new GridFutureAdapter<>();
+
+                run = new KillQueryRun(cmd.nodeId(), cmd.nodeQueryId());
+
+                GridFutureAdapter<String> prevFut = cancellationRuns.putIfAbsent(run, fut);
+
+                if (prevFut != null) {
+                    fut = prevFut;
+
+                    //We shouldn't send new request for the same query.
+                    sndReqRequired = false;
+                }
+            }
+
+            if(sndReqRequired){
+
+                boolean snd = idx.send(GridTopic.TOPIC_QUERY,
+                    GridTopic.TOPIC_QUERY.ordinal(),
+                    Collections.singleton(node),
+                    new GridQueryKillRequest(cmd.nodeQueryId(), resRequired),
+                    null,
+                    locNodeMsgHnd,
+                    GridIoPolicy.QUERY_POOL,
+                    false
+                );
+
+                if(!snd){
+                    cancellationRuns.remove(run, fut);
+
+                    return;
+                }
+            }
+
+            if (fut != null) {
+                try {
+                    String err = fut.get();
+
+                    if(err != null)
+                        throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
+                            + cmd.nodeQueryId() + "err=" + err + "]");
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
+                        + cmd.nodeQueryId() + "err=" + e + "]", e);
+                }
+            }
+        }
     }
 
     /**
@@ -983,7 +1192,7 @@ public class CommandProcessor {
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
-            runningQryMgr, qryId);
+            idx.runningQueryManager(), qryId);
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
 

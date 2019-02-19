@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -38,7 +39,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -479,20 +479,22 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
                 List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query().runningQueries(-1);
 
-                for (GridRunningQueryInfo runningQuery : runningQueries)
-                    igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runningQuery.globalQueryId(), async));
+                List<IgniteInternalFuture> res = new ArrayList<>();
+
+                for (GridRunningQueryInfo runningQuery : runningQueries) {
+                    res.add(GridTestUtils.runAsync(() -> {
+                            igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runningQuery.globalQueryId(), async));
+                        }
+                    ));
+                }
 
                 assertEquals(expQryNum, runningQueries.size());
 
-                try {
-                    GridTestUtils.waitForCondition(
-                        () -> ignite.context().query().runningQueries(-1).isEmpty(), TIMEOUT);
-                }
-                catch (IgniteInterruptedCheckedException ignored) {
-                    // No-op.
-                }
-
                 TestSQLFunctions.reqLatch.countDown();
+
+                for (IgniteInternalFuture fut : res) {
+                    fut.get(TIMEOUT);
+                }
             }
             catch (Exception e) {
                 log.error("Unexpected exception.", e);
@@ -592,7 +594,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
          */
         @QuerySqlFunction
         public static long shouldNotBeCalledInCaseOfCancellation() {
-            Assert.fail("Query wasn't actually cancelled.");
+            fail("Query wasn't actually cancelled.");
 
             return 0;
         }
