@@ -39,12 +39,7 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  */
 public class GBTFromSparkExample {
     /** Path to Spark LogReg model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/gbt/data" +
-        "/part-00000-ea23dcda-6344-4b1f-9716-fbedf7caba2d-c000.snappy.parquet";
-
-    /** Spark model metadata path. */
-    private static final String SPARK_MDL_METADATA_PATH = "examples/src/main/resources/models/spark/serialized/gbt/treesMetadata" +
-        "/part-00000-9033203a-e1e6-4d24-9900-be8a4396710b-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/gbt";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
@@ -67,8 +62,8 @@ public class GBTFromSparkExample {
 
             IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
 
-            ModelsComposition mdl = (ModelsComposition)SparkModelParser.parseWithMetadata(
-                SPARK_MDL_PATH, SPARK_MDL_METADATA_PATH,
+            ModelsComposition mdl = (ModelsComposition)SparkModelParser.parse(
+                SPARK_MDL_PATH,
                 SupportedSparkModels.GRADIENT_BOOSTED_TREES
             );
 

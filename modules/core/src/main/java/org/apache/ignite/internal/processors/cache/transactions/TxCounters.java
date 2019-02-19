@@ -37,7 +37,7 @@ public class TxCounters {
     private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
 
     /** Final update counters for cache partitions in the end of transaction */
-    private Collection<PartitionUpdateCountersMessage> updCntrs;
+    private volatile Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /** Counter tracking number of entries locked by tx. */
     private final AtomicInteger lockCntr = new AtomicInteger();

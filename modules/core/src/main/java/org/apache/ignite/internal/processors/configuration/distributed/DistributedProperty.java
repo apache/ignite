@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiConsumer;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +39,7 @@ public class DistributedProperty<T extends Serializable> {
      * wide.
      */
     @GridToStringExclude
-    private volatile IgniteThrowableBiConsumer<String, Serializable> clusterWideUpdater;
+    private volatile PropertyUpdateClosure clusterWideUpdater;
 
     /**
      * @param name Name of property.
@@ -54,22 +54,51 @@ public class DistributedProperty<T extends Serializable> {
      * Change value across whole cluster.
      *
      * @param newVal Value which this property should be changed on.
-     * @return {@code true} if value was successfully updated and {@code false} if cluster wide update have not
-     * permitted yet.
+     * @return {@code true} if value was successfully updated and {@code false} if cluster wide update was failed,
+     * perhaps some concurrent operation was changed this value in same moment.
      * @throws DetachedPropertyException If this property have not been attached to processor yet, please call {@link
      * DistributedConfigurationProcessor#registerProperty(DistributedProperty)} before this method.
+     * @throws NotWritablePropertyException If this property don't ready to cluster wide update yet, perhaps cluster is
+     * not active yet.
      * @throws IgniteCheckedException If failed during cluster wide update.
      */
     public boolean propagate(T newVal) throws IgniteCheckedException {
+        ensureClusterWideUpdateIsReady();
+
+        clusterWideUpdater.update(name, newVal).get();
+
+        return true;
+    }
+
+    /**
+     * @throws DetachedPropertyException If this property have not been attached to processor yet, please call {@link
+     * DistributedConfigurationProcessor#registerProperty(DistributedProperty)} before this method.
+     * @throws NotWritablePropertyException If this property don't ready to cluster wide update yet, perhaps cluster is
+     * not active yet.
+     */
+    private void ensureClusterWideUpdateIsReady() throws DetachedPropertyException, NotWritablePropertyException {
         if (!attached)
             throw new DetachedPropertyException(name);
 
         if (clusterWideUpdater == null)
-            return false;
+            throw new NotWritablePropertyException(name);
+    }
 
-        clusterWideUpdater.accept(name, newVal);
+    /**
+     * Change value across whole cluster.
+     *
+     * @param newVal Value which this property should be changed on.
+     * @return Future for update operation.
+     * @throws DetachedPropertyException If this property have not been attached to processor yet, please call {@link
+     * DistributedConfigurationProcessor#registerProperty(DistributedProperty)} before this method.
+     * @throws NotWritablePropertyException If this property don't ready to cluster wide update yet, perhaps cluster is
+     * not active yet.
+     * @throws IgniteCheckedException If failed during cluster wide update.
+     */
+    public GridFutureAdapter<?> propagateAsync(T newVal) throws IgniteCheckedException {
+        ensureClusterWideUpdateIsReady();
 
-        return true;
+        return clusterWideUpdater.update(name, newVal);
     }
 
     /**
@@ -98,7 +127,7 @@ public class DistributedProperty<T extends Serializable> {
      *
      * @param updater Consumer for update value across cluster.
      */
-    void onReadyForUpdate(@NotNull IgniteThrowableBiConsumer<String, Serializable> updater) {
+    void onReadyForUpdate(@NotNull PropertyUpdateClosure updater) {
         this.clusterWideUpdater = updater;
     }
 
@@ -107,7 +136,7 @@ public class DistributedProperty<T extends Serializable> {
      *
      * @param newVal New value.
      */
-    void localUpdate(Serializable newVal) {
+    public void localUpdate(Serializable newVal) {
         val = (T)newVal;
     }
 

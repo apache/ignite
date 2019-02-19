@@ -65,7 +65,7 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
 
     /** {@inheritDoc} */
     @Override public int newMvccOperationCounter() {
-        return newMvccOpCntr & ~MVCC_OP_COUNTER_MASK;
+        return newMvccOpCntr & MVCC_OP_COUNTER_MASK;
     }
 
     /** {@inheritDoc} */
@@ -85,7 +85,7 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
-        return mvccOpCntr & ~MVCC_OP_COUNTER_MASK;
+        return mvccOpCntr & MVCC_OP_COUNTER_MASK;
     }
 
     /** {@inheritDoc} */

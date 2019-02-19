@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
+import java.io.Serializable;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -25,7 +26,10 @@ import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 /**
  * Helper class for ImpurityHistograms.
  */
-public abstract class ImpurityHistogram {
+public abstract class ImpurityHistogram implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = -8982240673834216798L;
+
     /** Bucket ids. */
     protected final Set<Integer> bucketIds = new TreeSet<>();
 
