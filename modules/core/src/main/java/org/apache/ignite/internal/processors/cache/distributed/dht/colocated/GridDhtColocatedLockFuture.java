@@ -1396,8 +1396,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 return true;
         }
 
-        trackable = false;
-
         if (tx != null) {
             if (explicit)
                 tx.markExplicit(cctx.localNodeId());
