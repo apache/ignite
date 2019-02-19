@@ -17,34 +17,38 @@
 
 import _ from 'lodash';
 
-/** @type {ng.IComponentController} */
-export default class {
-    /** @type {ng.INgModelController} */
-    ngModel;
+export interface ListEditableNgModel<T> extends ng.INgModelController {
+    $viewValue: T[],
+    editListItem(item: T): void,
+    editListIndex(index: number): void
+}
 
+export type ID = (string | number) & {tag: 'ItemID'}
+
+export default class ListEditable<T extends {_id?: any}> {
     static $inject = ['$animate', '$element', '$transclude', '$timeout'];
 
-    /**
-     * @param {ng.animate.IAnimateService} $animate
-     * @param {JQLite} $element
-     * @param {ng.ITranscludeFunction} $transclude
-     * @param {ng.ITimeoutService} $timeout
-     */
-    constructor($animate, $element, $transclude, $timeout) {
+    constructor(
+        $animate: ng.animate.IAnimateService,
+        private $element: JQLite,
+        private $transclude: ng.ITranscludeFunction,
+        private $timeout: ng.ITimeoutService
+    ) {
         $animate.enabled($element, false);
-        this.$transclude = $transclude;
-        this.$element = $element;
-        this.$timeout = $timeout;
         this.hasItemView = $transclude.isSlotFilled('itemView');
 
         this._cache = new Map();
     }
 
-    id(item, $index) {
-        if (item._id)
-            return item._id;
+    ngModel: ListEditableNgModel<T>;
+    hasItemView: boolean
+    private _cache: Map<ID, T>
 
-        return $index;
+    id(item: T | undefined, index: number): ID {
+        if (item && item._id)
+            return item._id as ID;
+
+        return index as ID;
     }
 
     $onDestroy() {
@@ -73,38 +77,36 @@ export default class {
         };
     }
 
-    save(data, id) {
+    save(item: T, id: ID) {
         this.ngModel.$setViewValue(
-            this.ngModel.$viewValue.map((v, i) => this.id(v, i) === id ? _.cloneDeep(data) : v)
+            this.ngModel.$viewValue.map((v, i) => this.id(v, i) === id ? _.cloneDeep(item) : v)
         );
     }
 
-    remove(id) {
-        this.ngModel.$setViewValue(
-            this.ngModel.$viewValue.filter((v, i) => this.id(v, i) !== id)
-        );
+    remove(id: ID): void {
+        this.ngModel.$setViewValue(this.ngModel.$viewValue.filter((v, i) => this.id(v, i) !== id));
     }
 
-    isEditView(id) {
+    isEditView(id: ID): boolean {
         return this._cache.has(id);
     }
 
-    getEditView(id) {
+    getEditView(id: ID): T {
         return this._cache.get(id);
     }
 
-    getItem(id) {
+    getItem(id: ID): T {
         return this.ngModel.$viewValue.find((v, i) => this.id(v, i) === id);
     }
 
-    startEditView(id) {
+    startEditView(id: ID) {
         this._cache.set(
             id,
             _.cloneDeep(this.getItem(id))
         );
     }
 
-    stopEditView(data, id, form) {
+    stopEditView(data: T, id: ID, form: ng.IFormController) {
         // By default list-editable saves only valid values, but if you specify {allowInvalid: true}
         // ng-model-option, then it will always save. Be careful and pay extra attention to validation
         // when doing so, it's an easy way to miss invalid values this way.
