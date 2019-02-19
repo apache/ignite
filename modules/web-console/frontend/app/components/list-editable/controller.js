@@ -40,7 +40,7 @@ export default class {
         this._cache = new Map();
     }
 
-    $index(item, $index) {
+    id(item, $index) {
         if (item._id)
             return item._id;
 
@@ -57,7 +57,7 @@ export default class {
         };
         this.ngModel.editListItem = (item) => {
             this.$timeout(() => {
-                this.startEditView(this.ngModel.$viewValue.indexOf(item));
+                this.startEditView(this.id(item, this.ngModel.$viewValue.indexOf(item)));
                 // For some reason required validator does not re-run after adding an item,
                 // the $validate call fixes the issue.
                 this.ngModel.$validate();
@@ -65,7 +65,7 @@ export default class {
         };
         this.ngModel.editListIndex = (index) => {
             this.$timeout(() => {
-                this.startEditView(index);
+                this.startEditView(this.id(this.ngModel.$viewValue[index], index));
                 // For some reason required validator does not re-run after adding an item,
                 // the $validate call fixes the issue.
                 this.ngModel.$validate();
@@ -73,27 +73,38 @@ export default class {
         };
     }
 
-    save(data, idx) {
-        this.ngModel.$setViewValue(this.ngModel.$viewValue.map((v, i) => i === idx ? _.cloneDeep(data) : v));
+    save(data, id) {
+        this.ngModel.$setViewValue(
+            this.ngModel.$viewValue.map((v, i) => this.id(v, i) === id ? _.cloneDeep(data) : v)
+        );
     }
 
-    remove(idx) {
-        this.ngModel.$setViewValue(this.ngModel.$viewValue.filter((v, i) => i !== idx));
+    remove(id) {
+        this.ngModel.$setViewValue(
+            this.ngModel.$viewValue.filter((v, i) => this.id(v, i) !== id)
+        );
     }
 
-    isEditView(idx) {
-        return this._cache.has(idx);
+    isEditView(id) {
+        return this._cache.has(id);
     }
 
-    getEditView(idx) {
-        return this._cache.get(idx);
+    getEditView(id) {
+        return this._cache.get(id);
     }
 
-    startEditView(idx) {
-        this._cache.set(idx, _.cloneDeep(this.ngModel.$viewValue[idx]));
+    getItem(id) {
+        return this.ngModel.$viewValue.find((v, i) => this.id(v, i) === id);
     }
 
-    stopEditView(data, idx, form) {
+    startEditView(id) {
+        this._cache.set(
+            id,
+            _.cloneDeep(this.getItem(id))
+        );
+    }
+
+    stopEditView(data, id, form) {
         // By default list-editable saves only valid values, but if you specify {allowInvalid: true}
         // ng-model-option, then it will always save. Be careful and pay extra attention to validation
         // when doing so, it's an easy way to miss invalid values this way.
@@ -102,8 +113,8 @@ export default class {
         if (!form.$valid && !this.ngModel.$options.getOption('allowInvalid'))
             return;
 
-        this._cache.delete(idx);
+        this._cache.delete(id);
 
-        this.save(data, idx);
+        this.save(data, id);
     }
 }

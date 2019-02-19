@@ -44,10 +44,13 @@ export default function listEditableOneWay() {
                 this.$scope = $scope;
             }
             $onInit() {
-                this.list.save = (item, index) => {
-                    if (!isMatch(this.list.ngModel.$viewValue[index], item)) this.onItemChange({$event: item});
+                this.list.save = (item, id) => {
+                    if (!isMatch(this.list.getItem(id), item)) this.onItemChange({$event: item});
                 };
-                this.list.remove = (index) => this.onItemRemove({$event: this.list.ngModel.$viewValue[index]});
+                this.list.remove = (id) => this.onItemRemove({
+                    $event: this.list.getItem(id)
+                    // $event: this.list.ngModel.$viewValue[index]
+                });
             }
         }
     };
