@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -82,7 +83,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** */
     @GridToStringInclude
-    private Collection<InetSocketAddress> sockAddrs;
+    private Set<InetSocketAddress> sockAddrs;
 
     /** */
     @GridToStringInclude
@@ -404,7 +405,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /**
      * @return Addresses that could be used by discovery.
      */
-    public Collection<InetSocketAddress> socketAddresses() {
+    public Set<InetSocketAddress> socketAddresses() {
         return sockAddrs;
     }
 

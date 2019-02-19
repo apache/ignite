@@ -93,6 +93,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -137,6 +138,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private SegmentationPolicy segPlc;
 
+    /** */
+    private static final String NODE_WITH_CONN_FAIL_NAME = "nodeWithReceiptFailed";
+
     /**
      * @throws Exception If fails.
      */
@@ -155,6 +159,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         if (spi == null) {
             spi = igniteInstanceName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
                 new TestTcpDiscoverySpi() : new TcpDiscoverySpi();
+
+            if (igniteInstanceName.contains(NODE_WITH_CONN_FAIL_NAME))
+                spi = new TestReceiptFailedDiscoverySpi();
         }
         else
             nodeSpi.set(null);
@@ -2252,6 +2259,91 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If any error occurs.
+     */
+    @Test
+    public void testNodeWithReceiptFailure() throws Exception {
+        Ignite g0 = startGrid(0);
+
+        Ignite g1 = startGrid(NODE_WITH_CONN_FAIL_NAME);
+
+        startGrid(2);
+
+        TestReceiptFailedDiscoverySpi failDisco = (TestReceiptFailedDiscoverySpi)g1.configuration().getDiscoverySpi();
+
+        TcpDiscoveryNode g0NextNode = ((ServerImpl) discoMap.get(g0.name()).impl).ring().nextNode();
+
+        assertEquals(g1.cluster().localNode().id(), g0NextNode.id());
+
+        failDisco.receiptFailed = true;
+
+        U.sleep(failDisco.failureDetectionTimeout() + 1000);
+
+        failDisco.receiptFailed = false;
+
+        assertTrue(GridTestUtils.waitForCondition(() ->
+            g0.cluster().forServers().nodes().size() == 2, failDisco.failureDetectionTimeout()));
+
+        UUID g1NewNextNode = ((ServerImpl) discoMap.get(g1.name()).impl).ring().nextNode().id();
+
+        assertTrue(g1NewNextNode.equals(g0.cluster().localNode().id()));
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    @Test
+    public void testFailureDetectionOnReceiptErrorIOEx() throws Exception {
+        runFailureDetectionOnReceiptError(new IOException("Simulate receipt failed "));
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11567")
+    @Test
+    public void testFailureDetectionOnReceiptErrorSoEx() throws Exception {
+        runFailureDetectionOnReceiptError(null);
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void runFailureDetectionOnReceiptError(@Nullable IOException ex) throws Exception {
+        Ignite g0 = startGrid(0);
+
+        Ignite g1 = startGrid(NODE_WITH_CONN_FAIL_NAME);
+
+        TestReceiptFailedDiscoverySpi failDisco = (TestReceiptFailedDiscoverySpi)g1.configuration().getDiscoverySpi();
+
+        assertTrue(g0.cluster().forServers().nodes().size() == 2);
+
+        failDisco.receiptFailed = true;
+
+        if (ex != null)
+            failDisco.exception = ex;
+
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    U.sleep(failDisco.failureDetectionTimeout() / 2);
+                } catch (IgniteInterruptedCheckedException e) {
+                    // no op
+                }
+
+                failDisco.receiptFailed = false;
+            }
+        });
+
+        assertTrue(GridTestUtils.waitForCondition(() ->
+            g0.cluster().forServers().nodes().size() == 2, failDisco.failureDetectionTimeout()));
+
+        startGrid(3);
+
+        assertTrue(g0.cluster().forServers().nodes().size() == 3);
+    }
+
+    /**
      * @param nodeName Node name.
      * @throws Exception If failed.
      */
@@ -2303,6 +2395,23 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean apply(UUID uuid, Object o) {
             return true;
+        }
+    }
+
+    /** */
+    private static class TestReceiptFailedDiscoverySpi extends TcpDiscoverySpi {
+        /** */
+        public volatile boolean receiptFailed;
+
+        /** */
+        public volatile IOException exception = new SocketTimeoutException("Simulate receipt failed ");
+
+        /** {@inheritDoc} */
+        @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
+            if (receiptFailed)
+                throw exception;
+
+            return super.readReceipt(sock, timeout);
         }
     }
 

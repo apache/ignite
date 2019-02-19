@@ -9036,7 +9036,7 @@ public abstract class IgniteUtils {
      * @param port Port.
      * @return Socket addresses for given addresses and host names.
      */
-    public static Collection<InetSocketAddress> toSocketAddresses(ClusterNode node, int port) {
+    public static Set<InetSocketAddress> toSocketAddresses(ClusterNode node, int port) {
         return toSocketAddresses(node.addresses(), node.hostNames(), port);
     }
 
@@ -9049,7 +9049,7 @@ public abstract class IgniteUtils {
      * @param port Port.
      * @return Socket addresses for given addresses and host names.
      */
-    public static Collection<InetSocketAddress> toSocketAddresses(Collection<String> addrs,
+    public static Set<InetSocketAddress> toSocketAddresses(Collection<String> addrs,
         Collection<String> hostNames, int port) {
         Set<InetSocketAddress> res = new HashSet<>(addrs.size());
 

@@ -3191,12 +3191,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 final boolean sameHost = U.sameMacs(locNode, next);
 
-                List<InetSocketAddress> locNodeAddrs = U.arrayList(locNode.socketAddresses());
+                Set<InetSocketAddress> locNodeAddrs = locNode.socketAddresses();
 
                 addr: for (InetSocketAddress addr : spi.getNodeAddresses(next, sameHost)) {
                     long ackTimeout0 = spi.getAckTimeout();
 
-                    if (locNodeAddrs.contains(addr)){
+                    if (locNodeAddrs.contains(addr)) {
                         if (log.isDebugEnabled())
                             log.debug("Skip to send message to the local node (probably remote node has the same " +
                                 "loopback address that local node): " + addr);
@@ -3251,10 +3251,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 // We should take previousNodeAlive flag into account only if we received the response from the correct node.
                                 if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
                                     // Remote node checked connection to it's previous and got success.
-                                    boolean previousNode = sndState.markLastFailedNodeAlive();
+                                    boolean previousNodeAlive = sndState.markLastFailedNodeAlive();
 
-                                    if (previousNode)
-                                        failedNodes.remove(failedNodes.size() - 1);
+                                    if (previousNodeAlive)
+                                        if (!newNextNode)
+                                            failedNodes.remove(failedNodes.size() - 1);
                                     else {
                                         newNextNode = false;
 
@@ -3271,7 +3272,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         return; // Nothing to do here.
                                     }
 
-                                    if (previousNode)
+                                    if (previousNodeAlive)
                                         U.warn(log, "New next node has connection to it's previous, trying previous " +
                                             "again. [next=" + next + ']');
 
@@ -3386,8 +3387,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
                                 else {
                                     // Resetting timeout control object to let the code below to use a new one
-                                    // for the next bunch of operations.
-                                    timeoutHelper = null;
+                                    // for the next bunch of operations or use previous if send operation failed.
+                                    if (sent)
+                                        timeoutHelper = null;
                                 }
                             }
                         }
@@ -3415,8 +3417,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         ", failedNodes=" + failedNodes + ']');
 
                                 for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
-                                    long tstamp = U.currentTimeMillis();
-
                                     prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs.msgs,
                                         pendingMsgs.customDiscardId);
 
@@ -3424,6 +3424,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     if (timeoutHelper == null)
                                         timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
+
+                                    long tstamp = U.currentTimeMillis();
 
                                     try {
                                         spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
@@ -3433,11 +3435,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         clearNodeAddedMessage(pendingMsg);
                                     }
 
-                                    long tstamp0 = U.currentTimeMillis();
+                                    spi.stats.onMessageSent(pendingMsg, U.currentTimeMillis() - tstamp);
 
                                     int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
-
-                                    spi.stats.onMessageSent(pendingMsg, tstamp0 - tstamp);
 
                                     if (log.isDebugEnabled())
                                         log.debug("Pending message has been sent to next node [msgId=" + msg.id() +
@@ -3455,39 +3455,32 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
                             }
 
-                            if (!(msg instanceof TcpDiscoveryConnectionCheckMessage))
-                                prepareNodeAddedMessage(msg, next.id(), pendingMsgs.msgs,
-                                    pendingMsgs.customDiscardId);
+                            prepareNodeAddedMessage(msg, next.id(), pendingMsgs.msgs, pendingMsgs.customDiscardId);
 
                             try {
                                 SecurityUtils.serializeVersion(1);
-
-                                long tstamp = U.currentTimeMillis();
 
                                 if (timeoutHelper == null)
                                     timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
 
                                 addFailedNodes(msg, failedNodes);
 
+                                long tstamp = U.currentTimeMillis();
+
+                                spi.writeToSocket(newNextNode ? newNext : next, sock, out, msg,
+                                    timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+
                                 boolean latencyCheck = msg instanceof TcpDiscoveryRingLatencyCheckMessage;
 
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been written to socket: " + msg.id());
 
-                                spi.writeToSocket(newNextNode ? newNext : next,
-                                    sock,
-                                    out,
-                                    msg,
-                                    timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
-
-                                long tstamp0 = U.currentTimeMillis();
+                                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
 
                                 int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been acked: " + msg.id());
-
-                                spi.stats.onMessageSent(msg, tstamp0 - tstamp);
 
                                 onMessageExchanged();
 
@@ -3527,8 +3520,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 U.error(log, "Failed to send message to next node [next=" + next.id() + ", msg=" + msg +
                                     ", err=" + e + ']', e);
 
-                            onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']',
-                                e);
+                            onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']', e);
 
                             if (timeoutHelper.checkFailureTimeoutReached(e))
                                 break;
