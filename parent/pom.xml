@@ -1189,7 +1189,7 @@
                                 </goals>
                                 <configuration>
                                     <resourceBundles>
-                                        <resourceBundle>org.apache.ignite:ignite-apache-license-gen:${project.version}
+                                        <resourceBundle>org.gridgain:ignite-apache-license-gen:${project.version}
                                         </resourceBundle>
                                     </resourceBundles>
                                     <excludeTransitive>true</excludeTransitive>
@@ -1280,7 +1280,7 @@
                                             <pluginExecutionFilter>
                                                 <groupId>org.codehaus.mojo</groupId>
                                                 <artifactId>flatten-maven-plugin</artifactId>
-                                                <versionRange>[1.0.0-beta-3,)</versionRange>
+                                                <versionRange>1.0.1</versionRange>
                                                 <goals>
                                                     <goal>flatten</goal>
                                                 </goals>
