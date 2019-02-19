@@ -122,7 +122,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
         evts.clear();
 
         // Waiting for client starts to reconnect and create join request.
-        assertTrue("Failed to wait for client node disconnected.", latch.await(10, SECONDS));
+        assertTrue("Failed to wait for client node disconnected.", latch.await(15, SECONDS));
 
         // Restart cluster twice for incrementing internal order. (alive zk-nodes having lower order and containing
         // client join request will be removed). See {@link ZookeeperDiscoveryImpl#cleanupPreviousClusterData}.
