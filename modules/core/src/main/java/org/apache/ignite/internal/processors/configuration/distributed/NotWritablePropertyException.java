@@ -17,22 +17,18 @@
 
 package org.apache.ignite.internal.processors.configuration.distributed;
 
+import org.apache.ignite.IgniteCheckedException;
+
 /**
- * Implementation of {@link DistributedProperty} for {@link Long}.
+ * Exception of distributed property still have not been allowed for write value.
  */
-public class DistributedLongProperty extends DistributedComparableProperty<Long> {
-
-    /** {@inheritDoc} */
-    DistributedLongProperty(String name, Long initVal) {
-        super(name, initVal);
-    }
-
+public class NotWritablePropertyException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
     /**
-     * @param name Name of property.
-     * @param initVal Initial initVal of property.
-     * @return Property detached from processor.(Distributed updating are not accessable).
+     * @param name Name of detached property.
      */
-    public static DistributedLongProperty detachedLongProperty(String name, Long initVal) {
-        return new DistributedLongProperty(name, initVal);
+    public NotWritablePropertyException(String name) {
+        super("Property '" + name + "' is not ready for cluster wide update, perhaps cluster is not active yet.");
     }
 }
