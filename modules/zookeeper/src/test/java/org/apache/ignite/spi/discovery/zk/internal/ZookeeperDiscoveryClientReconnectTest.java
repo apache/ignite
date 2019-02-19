@@ -43,16 +43,6 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
         return 2 * super.getTestTimeout();
     }
 
-    /** */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setFailureDetectionTimeout(2000);
-        cfg.setClientFailureDetectionTimeout(2000);
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
