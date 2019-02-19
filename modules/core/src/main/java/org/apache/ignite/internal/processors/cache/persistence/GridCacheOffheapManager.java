@@ -47,7 +47,6 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -180,17 +179,32 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
+        syncMetadata(ctx);
+    }
+
+    /** {@inheritDoc} */
+    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        if (!ctx.nextSnapshot())
+            syncMetadata(ctx);
+    }
+
+    /**
+     * Syncs and saves meta-information of all data structures to page memory.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void syncMetadata(Context ctx) throws IgniteCheckedException {
         Executor execSvc = ctx.executor();
 
         boolean needSnapshot = ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
 
         if (needSnapshot) {
             if (execSvc == null)
-                updateSnapshotTag(ctx);
+                addPartitions(ctx);
             else {
                 execSvc.execute(() -> {
                     try {
-                        updateSnapshotTag(ctx);
+                        addPartitions(ctx);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -199,17 +213,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        syncMetadata(execSvc, ctx, needSnapshot);
+        syncMetadata(ctx, ctx.executor(), needSnapshot);
     }
 
     /**
      * Syncs and saves meta-information of all data structures to page memory.
      *
      * @param execSvc Executor service to run save process
-     * @param ctx Checkpoint listener context.
      * @throws IgniteCheckedException If failed.
      */
-    private void syncMetadata(Executor execSvc, Context ctx, boolean needSnapshot) throws IgniteCheckedException {
+    private void syncMetadata(Context ctx, Executor execSvc, boolean needSnapshot) throws IgniteCheckedException {
         if (execSvc == null) {
             reuseList.saveMetadata();
 
@@ -239,13 +252,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * @return {@code True} is group is not empty.
-     */
-    private boolean notEmpty(CacheDataStore store) {
-        return store.rowStore() != null && (store.fullSize() > 0  || store.updateCounter() > 0);
-    }
-
-    /**
      * @param store Store to save metadata.
      * @throws IgniteCheckedException If failed.
      */
@@ -258,9 +264,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         RowStore rowStore0 = store.rowStore();
 
         if (rowStore0 != null) {
-            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
-
-            freeList.saveMetadata();
+            ((CacheFreeListImpl)rowStore0.freeList()).saveMetadata();
 
             long updCntr = store.updateCounter();
             long size = store.fullSize();
@@ -380,7 +384,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else
                             pageCnt = io.getCandidatePageCount(partMetaPageAddr);
 
-                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
+                        if (changed && PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
                             wal.log(new MetaPageUpdatePartitionDataRecord(
                                 grpId,
                                 partMetaId,
@@ -687,10 +691,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      * @param ctx Context.
      */
-    private void updateSnapshotTag(Context ctx) throws IgniteCheckedException {
+    private void addPartitions(Context ctx) throws IgniteCheckedException {
         int grpId = grp.groupId();
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
-        IgniteWriteAheadLogManager wal = this.ctx.wal();
 
         long metaPageId = pageMem.metaPageId(grpId);
         long metaPage = pageMem.acquirePage(grpId, metaPageId);
@@ -700,17 +703,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             try {
                 PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
-
-                long nextSnapshotTag = metaIo.getNextSnapshotTag(metaPageAddr);
-
-                metaIo.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
-
-                if (log != null && log.isDebugEnabled())
-                    log.debug("Save next snapshot before checkpoint start for grId = " + grpId
-                        + ", nextSnapshotTag = " + nextSnapshotTag);
-
-                if (!wal.disabled(grpId))
-                    wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId, nextSnapshotTag + 1));
 
                 addPartition(
                     null,
