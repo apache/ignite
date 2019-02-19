@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReser
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsWithCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWholeClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.SlowHistoricalRebalanceSmallHistoryTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointFreeListTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.IgniteCheckpointDirtyPagesForLowLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.filename.IgniteUidAsConsistentIdMigrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.FsyncWalRolloverDoesNotBlockTest;
@@ -184,6 +185,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsCorruptedStoreTest.class);
 
         suite.addTestSuite(IgniteWalIteratorSwitchSegmentTest.class);
+
+        suite.addTestSuite(CheckpointFreeListTest.class);
 
         suite.addTestSuite(IgniteWalIteratorExceptionDuringReadTest.class);
 
