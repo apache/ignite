@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.file;
+package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTrac
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
@@ -78,7 +77,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 
 /** */
-public class IgnitePdsCachePartitonsBackupSelfTest extends GridCommonAbstractTest {
+public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int CACHE_PARTS_COUNT = 8;
 

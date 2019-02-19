@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.file;
+package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -36,7 +36,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -45,10 +44,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
-import org.apache.ignite.internal.processors.cache.persistence.backup.FileTemporaryStore;
-import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.backup.TemporaryStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
@@ -66,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 
 /** */
-public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
+public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     implements IgniteBackupPageStoreManager {
     /** */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + ".delta";
@@ -90,9 +88,6 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     private final Map<GroupPartitionId, TemporaryStore> backupStores = new ConcurrentHashMap<>();
 
     /** */
-    private final IgniteLogger log;
-
-    /** */
     private final int pageSize;
 
     /** */
@@ -105,7 +100,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
     private ThreadLocal<byte[]> threadTempArr;
 
     /** */
-    public FileBackupPageStoreManager(GridKernalContext ctx) throws IgniteCheckedException {
+    public GridBackupPageStoreManager(GridKernalContext ctx) throws IgniteCheckedException {
         assert CU.isPersistenceEnabled(ctx.config());
 
         log = ctx.log(getClass());
@@ -204,6 +199,7 @@ public class FileBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 // #onMarkCheckpointBegin() is used to save meta information of partition (e.g. updateCounter, size).
                 // To get consistent partition state we should start to track all corresponding pages updates
                 // before GridCacheOffheapManager will saves meta to the #partitionMetaPageId() page.
+                // TODO shift to the second checkpoint begin.
                 @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
                     // Start tracking writes over remaining parts only from the next checkpoint.
                     if (backupCtx.tracked.compareAndSet(false, true)) {

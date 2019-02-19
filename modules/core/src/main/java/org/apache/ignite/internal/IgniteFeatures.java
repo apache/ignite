@@ -34,7 +34,10 @@ public enum IgniteFeatures {
     TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE(0),
 
     /** Cache metrics v2 support. */
-    CACHE_METRICS_V2(1);
+    CACHE_METRICS_V2(1),
+
+    /** */
+    CACHE_PARTITION_FILE_REBALANCE(2);
 
     /**
      * Unique feature identifier.
