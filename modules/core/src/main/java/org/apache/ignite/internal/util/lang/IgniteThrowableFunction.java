@@ -15,26 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Checkpoint futures.
+ * Represents a function that accepts one argument and produces a result. Unlike {@link java.util.function.Function}
+ * it is able to throw {@link IgniteCheckedException}.
+ *
+ * @param <E> The type of the input to the function.
+ * @param <R> The type of the result of the function.
  */
-public interface CheckpointFuture {
+public interface IgniteThrowableFunction<E, R> extends Serializable {
     /**
-     * @return Begin future.
+     * Applies this function to the given argument.
+     *
+     * @param e The function argument.
+     * @return The function result.
+     * @throws IgniteCheckedException if body execution was failed.
      */
-    public GridFutureAdapter beginFuture();
-
-    /**
-     * @return Finish future.
-     */
-    public GridFutureAdapter<Object> finishFuture();
-
-    /**
-     * @return Checkpoint was already started.
-     */
-    public boolean started();
+    public R apply(E e) throws IgniteCheckedException;
 }
