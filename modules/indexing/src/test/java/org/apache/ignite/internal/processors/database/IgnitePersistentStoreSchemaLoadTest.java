@@ -257,6 +257,14 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)node.context().cache().context().database();
 
         db.addCheckpointListener(new DbCheckpointListener() {
+            @Override public void onMarkCheckpointBegin(Context ctx) {
+                cnt.countDown();
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
+            }
+
             @Override public void onCheckpointBegin(Context ctx) {
                 cnt.countDown();
             }

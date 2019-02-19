@@ -3660,149 +3660,57 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         @SuppressWarnings("TooBroadScope")
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
+            long cpTs = updateLastCheckpointTime();
+
+            CheckpointProgress curr = scheduledCp;
+
             CheckpointRecord cpRec = new CheckpointRecord(null);
-
-            WALPointer cpPtr = null;
-
-            final CheckpointProgress curr;
 
             CheckpointEntry cp = null;
 
-            IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple;
-
-            tracker.onLockWaitStart();
-
-            boolean hasPages;
-
-            boolean hasPartitionsToDestroy;
-
             IgniteFuture snapFut = null;
 
-            long cpTs = System.currentTimeMillis();
+            IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple;
 
-            // This can happen in an unlikely event of two checkpoints happening
-            // within a currentTimeMillis() granularity window.
-            if (cpTs == lastCpTs)
-                cpTs++;
+            boolean hasPages, hasPartitionsToDestroy;
 
-            lastCpTs = cpTs;
+            DbCheckpointContextImpl ctx0 = new DbCheckpointContextImpl(curr, new PartitionAllocationMap());
+
+            internalReadLock();
+
+            try {
+                for (DbCheckpointListener lsnr : lsnrs)
+                    lsnr.beforeCheckpointBegin(ctx0);
+
+                ctx0.awaitPendingTasksFinished();
+            }
+            finally {
+                internalReadUnlock();
+            }
+
+            tracker.onLockWaitStart();
 
             checkpointLock.writeLock().lock();
 
             try {
+                updateCurrentCheckpointProgress();
+
+                assert curCpProgress == curr : "Concurrent checkpoint begin should not be happened";
+
                 tracker.onMarkStart();
-
-                synchronized (this) {
-                    curr = scheduledCp;
-
-                    curr.state(LOCK_TAKEN);
-
-                    if (curr.reason == null)
-                        curr.reason = "timeout";
-
-                    // It is important that we assign a new progress object before checkpoint mark in page memory.
-                    scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
-
-                    curCpProgress = curr;
-                }
-
-                final PartitionAllocationMap map = new PartitionAllocationMap();
-
-                GridCompoundFuture asyncLsnrFut = asyncRunner == null ? null : new GridCompoundFuture();
-
-                DbCheckpointListener.Context ctx0 = new DbCheckpointListener.Context() {
-                    @Override public boolean nextSnapshot() {
-                        return curr.nextSnapshot;
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override public PartitionAllocationMap partitionStatMap() {
-                        return map;
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override public boolean needToSnapshot(String cacheOrGrpName) {
-                        return curr.snapshotOperation.cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override public Executor executor() {
-                        return asyncRunner == null ? null : cmd -> {
-                            try {
-                                GridFutureAdapter<?> res = new GridFutureAdapter<>();
-
-                                asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
-
-                                asyncLsnrFut.add(res);
-                            }
-                            catch (RejectedExecutionException e) {
-                                assert false : "A task should never be rejected by async runner";
-                            }
-                        };
-                    }
-                };
 
                 // Listeners must be invoked before we write checkpoint record to WAL.
                 for (DbCheckpointListener lsnr : lsnrs)
-                    lsnr.onCheckpointBegin(ctx0);
+                    lsnr.onMarkCheckpointBegin(ctx0);
 
-                if (asyncLsnrFut != null) {
-                    asyncLsnrFut.markInitialized();
+                ctx0.awaitPendingTasksFinished();
 
-                    asyncLsnrFut.get();
-                }
+                tracker.onListenersExecuteEnd();
 
                 if (curr.nextSnapshot)
-                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
+                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, ctx0.partitionStatMap());
 
-                GridCompoundFuture grpHandleFut = asyncRunner == null ? null : new GridCompoundFuture();
-
-                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                    if (grp.isLocal() || !grp.walEnabled())
-                        continue;
-
-                    Runnable r = () -> {
-                        ArrayList<GridDhtLocalPartition> parts = new ArrayList<>(grp.topology().localPartitions().size());
-
-                        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
-                            parts.add(part);
-
-                        CacheState state = new CacheState(parts.size());
-
-                        for (GridDhtLocalPartition part : parts) {
-                            state.addPartitionState(
-                                part.id(),
-                                part.dataStore().fullSize(),
-                                part.updateCounter(),
-                                (byte)part.state().ordinal()
-                            );
-                        }
-
-                        synchronized (cpRec) {
-                            cpRec.addCacheGroupState(grp.groupId(), state);
-                        }
-                    };
-
-                    if (asyncRunner == null)
-                        r.run();
-                    else
-                        try {
-                            GridFutureAdapter<?> res = new GridFutureAdapter<>();
-
-                            asyncRunner.execute(U.wrapIgniteFuture(r, res));
-
-                            grpHandleFut.add(res);
-                        }
-                        catch (RejectedExecutionException e) {
-                            assert false : "Task should never be rejected by async runner";
-                        }
-                }
-
-                if (grpHandleFut != null) {
-                    grpHandleFut.markInitialized();
-
-                    grpHandleFut.get();
-                }
+                fillCacheGroupState(cpRec);
 
                 //There are allowable to replace pages only after checkpoint entry was stored to disk.
                 cpPagesTuple = beginAllCheckpoints(curr.cpMarkerStored);
@@ -3810,6 +3718,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 hasPages = hasPageForWrite(cpPagesTuple.get1());
 
                 hasPartitionsToDestroy = !curr.destroyQueue.pendingReqs.isEmpty();
+
+                WALPointer cpPtr = null;
 
                 if (hasPages || curr.nextSnapshot || hasPartitionsToDestroy) {
                     // No page updates for this checkpoint are allowed from now on.
@@ -3837,7 +3747,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 tracker.onLockRelease();
             }
 
+            DbCheckpointListener.Context ctx = createOnCheckpointBeginContext(ctx0, hasPages);
+
             curr.cpBeginFut.onDone();
+
+            for (DbCheckpointListener lsnr : lsnrs)
+                lsnr.onCheckpointBegin(ctx);
 
             if (snapFut != null) {
                 try {
@@ -3845,34 +3760,36 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
                 catch (IgniteException e) {
                     U.error(log, "Failed to wait for snapshot operation initialization: " +
-                        curr.snapshotOperation + "]", e);
+                        curr.snapshotOperation, e);
                 }
             }
 
             if (hasPages || hasPartitionsToDestroy) {
-                assert cpPtr != null;
                 assert cp != null;
+                assert cp.checkpointMark() != null;
 
                 tracker.onWalCpRecordFsyncStart();
 
                 // Sync log outside the checkpoint write lock.
-                cctx.wal().flush(cpPtr, true);
+                cctx.wal().flush(cp.checkpointMark(), true);
 
                 tracker.onWalCpRecordFsyncEnd();
 
                 writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.START);
 
-                curr.cpMarkerStored.onDone();
-
                 GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
 
                 if (printCheckpointStats)
                     if (log.isInfoEnabled())
-                        log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
-                                "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
+                        log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, " +
+                                "checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, " +
+                                "checkpointListenersExecuteTime=%dms, checkpointLockHoldTime=%dms, " +
+                                "walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
                             cpRec.checkpointId(),
-                            cpPtr,
+                            cp.checkpointMark(),
+                            tracker.beforeLockDuration(),
                             tracker.lockWaitDuration(),
+                            tracker.listenersExecuteDuration(),
                             tracker.lockHoldDuration(),
                             tracker.walCpRecordFsyncDuration(),
                             cpPages.size(),
@@ -3888,16 +3805,167 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (printCheckpointStats) {
                     if (log.isInfoEnabled())
                         LT.info(log, String.format("Skipping checkpoint (no pages were modified) [" +
-                                "checkpointLockWait=%dms, checkpointLockHoldTime=%dms, reason='%s']",
+                                "checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, " +
+                                "checkpointListenersExecuteTime=%dms, checkpointLockHoldTime=%dms, reason='%s']",
+                            tracker.beforeLockDuration(),
                             tracker.lockWaitDuration(),
+                            tracker.listenersExecuteDuration(),
                             tracker.lockHoldDuration(),
                             curr.reason));
                 }
 
-                GridMultiCollectionWrapper<FullPageId> wrapper = new GridMultiCollectionWrapper<>(new Collection[0]);
-
-                return new Checkpoint(null, wrapper, curr);
+                return new Checkpoint(null, new GridMultiCollectionWrapper<>(new Collection[0]), curr);
             }
+        }
+
+        /**
+         * Take read lock for internal use.
+         */
+        private void internalReadUnlock() {
+            checkpointLock.readLock().unlock();
+
+            if (ASSERTION_ENABLED)
+                CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() - 1);
+        }
+
+        /**
+         * Release read lock.
+         */
+        private void internalReadLock() {
+            checkpointLock.readLock().lock();
+
+            if (ASSERTION_ENABLED)
+                CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() + 1);
+        }
+
+        /**
+         * Fill cache group state in checkpoint record.
+         *
+         * @param cpRec Checkpoint record for filling.
+         * @throws IgniteCheckedException if fail.
+         */
+        private void fillCacheGroupState(CheckpointRecord cpRec) throws IgniteCheckedException {
+            GridCompoundFuture grpHandleFut = asyncRunner == null ? null : new GridCompoundFuture();
+
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                if (grp.isLocal() || !grp.walEnabled())
+                    continue;
+
+                Runnable r = () -> {
+                    ArrayList<GridDhtLocalPartition> parts = new ArrayList<>(grp.topology().localPartitions().size());
+
+                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
+                        parts.add(part);
+
+                    CacheState state = new CacheState(parts.size());
+
+                    for (GridDhtLocalPartition part : parts) {
+                        state.addPartitionState(
+                            part.id(),
+                            part.dataStore().fullSize(),
+                            part.updateCounter(),
+                            (byte)part.state().ordinal()
+                        );
+                    }
+
+                    synchronized (cpRec) {
+                        cpRec.addCacheGroupState(grp.groupId(), state);
+                    }
+                };
+
+                if (asyncRunner == null)
+                    r.run();
+                else
+                    try {
+                        GridFutureAdapter<?> res = new GridFutureAdapter<>();
+
+                        asyncRunner.execute(U.wrapIgniteFuture(r, res));
+
+                        grpHandleFut.add(res);
+                    }
+                    catch (RejectedExecutionException e) {
+                        assert false : "Task should never be rejected by async runner";
+                    }
+            }
+
+            if (grpHandleFut != null) {
+                grpHandleFut.markInitialized();
+
+                grpHandleFut.get();
+            }
+        }
+
+        /**
+         * @return Last checkpoint time.
+         */
+        private long updateLastCheckpointTime() {
+            long cpTs = System.currentTimeMillis();
+
+            // This can happen in an unlikely event of two checkpoints happening
+            // within a currentTimeMillis() granularity window.
+            if (cpTs == lastCpTs)
+                cpTs++;
+
+            lastCpTs = cpTs;
+
+            return cpTs;
+        }
+
+        /**
+         * Update current checkpoint progress by scheduled.
+         *
+         * @return Current checkpoint progress.
+         */
+        @NotNull private GridCacheDatabaseSharedManager.CheckpointProgress updateCurrentCheckpointProgress() {
+            final CheckpointProgress curr;
+
+            synchronized (this) {
+                curr = scheduledCp;
+
+                curr.state(LOCK_TAKEN);
+
+                if (curr.reason == null)
+                    curr.reason = "timeout";
+
+                // It is important that we assign a new progress object before checkpoint mark in page memory.
+                scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
+
+                curCpProgress = curr;
+            }
+            return curr;
+        }
+
+        /** */
+        private DbCheckpointListener.Context createOnCheckpointBeginContext(
+            DbCheckpointListener.Context delegate,
+            boolean hasPages
+        ) {
+            return new DbCheckpointListener.Context() {
+                /** {@inheritDoc} */
+                @Override public boolean nextSnapshot() {
+                    return delegate.nextSnapshot();
+                }
+
+                /** {@inheritDoc} */
+                @Override public PartitionAllocationMap partitionStatMap() {
+                    return delegate.partitionStatMap();
+                }
+
+                /** {@inheritDoc} */
+                @Override public boolean needToSnapshot(String cacheOrGrpName) {
+                    return delegate.needToSnapshot(cacheOrGrpName);
+                }
+
+                /** {@inheritDoc} */
+                @Override public @Nullable Executor executor() {
+                    return delegate.executor();
+                }
+
+                /** {@inheritDoc} */
+                @Override public boolean hasPages() {
+                    return hasPages;
+                }
+            };
         }
 
         /**
@@ -4010,6 +4078,87 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (!isCancelled)
                 cancel();
+        }
+
+        /**
+         * Context with information about current snapshots.
+         */
+        private class DbCheckpointContextImpl implements DbCheckpointListener.Context {
+            /** Current checkpoint progress. */
+            private final CheckpointProgress curr;
+
+            /** Partition map. */
+            private final PartitionAllocationMap map;
+
+            /** Pending tasks from executor. */
+            private GridCompoundFuture pendingTaskFuture;
+
+            /**
+             * @param curr Current checkpoint progress.
+             * @param map Partition map.
+             */
+            private DbCheckpointContextImpl(CheckpointProgress curr, PartitionAllocationMap map) {
+                this.curr = curr;
+                this.map = map;
+                this.pendingTaskFuture = asyncRunner == null ? null : new GridCompoundFuture();
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean nextSnapshot() {
+                return curr.nextSnapshot;
+            }
+
+            /** {@inheritDoc} */
+            @Override public PartitionAllocationMap partitionStatMap() {
+                return map;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean needToSnapshot(String cacheOrGrpName) {
+                return curr.snapshotOperation.cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
+            }
+
+            /** {@inheritDoc} */
+            @Override public Executor executor() {
+                return asyncRunner == null ? null : cmd -> {
+                    try {
+                        GridFutureAdapter<?> res = new GridFutureAdapter<>();
+
+                        res.listen(fut -> updateHeartbeat());
+
+                        asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
+
+                        pendingTaskFuture.add(res);
+                    }
+                    catch (RejectedExecutionException e) {
+                        assert false : "A task should never be rejected by async runner";
+                    }
+                };
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean hasPages() {
+                throw new IllegalStateException(
+                    "Property is unknown at this moment. You should use onCheckpointBegin() method."
+                );
+            }
+
+            /**
+             * Await all async tasks from executor was finished.
+             *
+             * @throws IgniteCheckedException if fail.
+             */
+            public void awaitPendingTasksFinished() throws IgniteCheckedException {
+                GridCompoundFuture pendingFut = this.pendingTaskFuture;
+
+                this.pendingTaskFuture = new GridCompoundFuture();
+
+                if (pendingFut != null) {
+                    pendingFut.markInitialized();
+
+                    pendingFut.get();
+                }
+            }
         }
     }
 
@@ -4520,6 +4669,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** {@inheritDoc} */
         @Override public GridFutureAdapter finishFuture() {
             return cpFinishFut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean started() {
+            return started;
         }
     }
 

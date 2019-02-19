@@ -10405,7 +10405,7 @@ public abstract class IgniteUtils {
     public static byte[] toBytes(Serializable obj) {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {
-            
+
             oos.writeObject(obj);
             oos.flush();
 

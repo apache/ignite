@@ -264,9 +264,19 @@ public class PageMemoryTracker implements IgnitePlugin {
         freeSlotsCnt = maxPages;
 
         if (cfg.isCheckPagesOnCheckpoint()) {
-            checkpointLsnr = ctx -> {
-                if (!checkPages(false))
-                    throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
+            checkpointLsnr = new DbCheckpointListener() {
+                @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    if (!checkPages(false))
+                        throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
+                }
+
+                @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    /* No-op. */
+                }
+
+                @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    /* No-op. */
+                }
             };
 
             ((GridCacheDatabaseSharedManager)gridCtx.cache().context().database()).addCheckpointListener(checkpointLsnr);
