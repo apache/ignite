@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
 
 import org.junit.Test;
 

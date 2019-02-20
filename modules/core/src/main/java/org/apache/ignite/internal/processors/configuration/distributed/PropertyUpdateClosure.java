@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.internal.processors.configuration.distributed;
 
-import java.util.Arrays;
-import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
-import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
- * Tests for {@link Precision}.
+ * Closure of cluster wide update of distributed property.
  */
-public class PrecisionTest {
-    /** */
-    @Test
-    public void testScore() {
-        Precision<Integer> scoreCalculator = new Precision<>(0);
+@FunctionalInterface
+public interface PropertyUpdateClosure {
 
-        LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1, 0, 1, 0, 1, 0),
-            Arrays.asList(1, 0, 0, 1, 1, 0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        assertEquals((double)2/3, score, 1e-12);
-    }
+    /**
+     * Update property on cluster.
+     *
+     * @param key Property key.
+     * @param newValue New value.
+     * @return Future this boolean value.
+     * @throws IgniteCheckedException if failed.
+     */
+    public GridFutureAdapter<?> update(String key, Serializable newValue) throws IgniteCheckedException;
 }
