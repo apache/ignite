@@ -28,7 +28,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -224,11 +223,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         checkTransform(true, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
     }
 
-    static {
-        // t0d0 remove
-        System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -332,8 +326,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPutTx(boolean putBefore, TransactionConcurrency concurrency,
         TransactionIsolation isolation, final Integer... keys) throws Exception {
-        // t0d0 follow up
-//        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10871", MvccFeatureChecker.forcedMvcc());
 
         if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
             return;
@@ -386,10 +378,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
             }
 
             fail("Transaction should fail.");
-        }
-        catch (CacheException e){
-            if (!MvccFeatureChecker.forcedMvcc() || !(e.getCause() instanceof TransactionRollbackException))
-                throw e;
         }
         catch (TransactionHeuristicException e) {
             log.info("Expected exception: " + e);
@@ -609,7 +597,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void checkRemove(boolean putBefore, final Integer key) throws Exception {
-        // t0d0 fix https://issues.apache.org/jira/browse/IGNITE-9470
         if (putBefore) {
             forceFail(false);
 
