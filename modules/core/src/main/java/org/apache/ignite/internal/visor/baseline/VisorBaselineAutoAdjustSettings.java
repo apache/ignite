@@ -43,12 +43,16 @@ public class VisorBaselineAutoAdjustSettings extends VisorDataTransferObject {
         this.softTimeout = softTimeout;
     }
 
-    /** "Enable" flag. */
+    /**
+     * @return "Enable" flag.
+     */
     public boolean isEnabled() {
         return enabled;
     }
 
-    /** Soft timeout. */
+    /**
+     * Soft timeout.
+     */
     public long getSoftTimeout() {
         return softTimeout;
     }
