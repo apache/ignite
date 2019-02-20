@@ -50,6 +50,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
+
 /**
  * Test to reproduce corrupted indexes problem after partition file eviction and truncation.
  */
@@ -95,6 +97,20 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */

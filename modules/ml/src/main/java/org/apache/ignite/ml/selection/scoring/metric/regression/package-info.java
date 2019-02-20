@@ -15,24 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.lang;
-
-import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
-
 /**
- * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
- * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
- *
- * @param <E> Type of closure parameter.
- * @param <R> Type of result value.
+ * <!-- Package description. -->
+ * Root package for regression metrics.
  */
-public interface IgniteThrowableBiConsumer<E, R> extends Serializable {
-    /**
-     * Consumer body.
-     *
-     * @param e Consumer parameter.
-     * @throws IgniteCheckedException if body execution was failed.
-     */
-    public void accept(E e, R r) throws IgniteCheckedException;
-}
+package org.apache.ignite.ml.selection.scoring.metric.regression;

@@ -40,7 +40,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -207,7 +207,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     /**
      * @param testAction Action that trigger stop or destroy of caches.
      */
-    private void performTest(IgniteThrowableConsumer<Ignite, Void> testAction, String groupName) throws Exception {
+    private void performTest(IgniteThrowableFunction<Ignite, Void> testAction, String groupName) throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
         ig0.cluster().active(true);
@@ -233,7 +233,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
         // Await some middle point rebalance for group.
         latch.await();
 
-        testAction.accept(ig0);
+        testAction.apply(ig0);
 
         // Resume rebalance after action performed.
         commSpi.resumeRebalanceFutures.get(CU.cacheId(groupName)).onDone();
