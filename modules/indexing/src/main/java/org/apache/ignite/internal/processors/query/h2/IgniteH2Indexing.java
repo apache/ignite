@@ -458,7 +458,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         GridNearTxLocal tx = null;
 
-        boolean mvccEnabled = false;
+        boolean mvccEnabled = mvccEnabled(kernalContext());
+
+        assert mvccEnabled || mvccTracker == null;
 
         try {
             SqlFieldsQuery fieldsQry = new SqlFieldsQuery(qry)
@@ -495,10 +497,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             boolean forUpdate = select.forUpdate();
 
-            mvccEnabled = select.mvccEnabled();
-
-            assert mvccEnabled || mvccTracker == null;
-
             if (forUpdate && !mvccEnabled)
                 throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
                     "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -528,7 +526,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             MvccQueryTracker mvccTracker0 = mvccTracker;
-            String qry0 = select.statement().getSQL();
+            String qry0 = forUpdate ? select.statement().getSQL() : qry; // Use qry string with cleaned FOR UPDATE flag.
 
             final QueryContext qctx = new QueryContext(
                 0,
