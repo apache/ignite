@@ -138,6 +138,7 @@ public class SqlClientContext implements AutoCloseable {
             this.streamNodeBufSize = perNodeBufSize;
             this.streamNodeParOps = perNodeParOps;
             this.streamOrdered = ordered;
+            this.totalProcessedOrderedReqs = 0;
 
             if (ordered) {
                 orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
