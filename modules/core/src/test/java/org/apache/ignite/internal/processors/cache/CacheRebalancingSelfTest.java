@@ -35,7 +35,9 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for rebalancing.
@@ -48,12 +50,12 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<Integer,Integer> rebalabceCacheCfg = new CacheConfiguration<>();
-        rebalabceCacheCfg.setBackups(1);
-        rebalabceCacheCfg.setName(REBALANCE_TEST_CACHE_NAME);
-        rebalabceCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        CacheConfiguration<Integer,Integer> ccfg = new CacheConfiguration<>();
+        ccfg.setBackups(1);
+        ccfg.setName(REBALANCE_TEST_CACHE_NAME);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), rebalabceCacheCfg);
+        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), ccfg);
 
         return cfg;
     }
@@ -68,7 +70,10 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testRebalanceLocalCacheFuture() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         startGrid(
             getTestIgniteInstanceName(0),
             getConfiguration(getTestIgniteInstanceName(0))
@@ -86,6 +91,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceFuture() throws Exception {
         IgniteEx ig0 = startGrid(0);
 
@@ -121,6 +127,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDisableRebalancing() throws Exception {
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for JdbcThinTcpIo.
@@ -115,6 +116,7 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
+    @Test
     public void testHostWithManyAddresses() throws SQLException, IOException, InterruptedException {
         CountDownLatch connectionAccepted = new CountDownLatch(1);
 
@@ -141,6 +143,7 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
+    @Test
     public void testExceptionMessage() throws SQLException, IOException {
         try (ServerSocket sock = createServerSocket(null)) {
             String[] addrs = {INACCESSIBLE_ADDRESSES[0], INACCESSIBLE_ADDRESSES[1]};

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchAckTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFilterListenerTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOperationP2PTest;
@@ -36,38 +35,32 @@ import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheCon
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicOneNodeTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteCacheQuerySelfTestSuite6 extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache Continuous Queries Test Suite 3");
-
-        // Continuous queries 3.
-        suite.addTestSuite(GridCacheContinuousQueryPartitionAtomicOneNodeTest.class);
-        suite.addTestSuite(CacheContinuousWithTransformerPartitionedSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryLocalAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryReplicatedAtomicOneNodeTest.class);
-        suite.addTestSuite(ContinuousQueryMarshallerTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryReplicatedAtomicSelfTest.class);
-        suite.addTestSuite(CacheKeepBinaryIterationTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryMultiNodesFilteringTest.class);
-        suite.addTestSuite(CacheKeepBinaryIterationStoreEnabledTest.class);
-        suite.addTestSuite(CacheKeepBinaryIterationNearEnabledTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryPartitionedOnlySelfTest.class);
-        suite.addTestSuite(CacheContinuousQueryOperationP2PTest.class);
-        suite.addTestSuite(CacheContinuousBatchAckTest.class);
-        suite.addTestSuite(CacheContinuousQueryOrderingEventTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryClientTest.class);
-        suite.addTestSuite(CacheContinuousQueryAsyncFilterListenerTest.class);
-        suite.addTestSuite(CacheContinuousWithTransformerRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheContinuousQueryPartitionAtomicOneNodeTest.class,
+    CacheContinuousWithTransformerPartitionedSelfTest.class,
+    GridCacheContinuousQueryLocalAtomicSelfTest.class,
+    GridCacheContinuousQueryReplicatedAtomicOneNodeTest.class,
+    ContinuousQueryMarshallerTest.class,
+    GridCacheContinuousQueryReplicatedAtomicSelfTest.class,
+    CacheKeepBinaryIterationTest.class,
+    GridCacheContinuousQueryMultiNodesFilteringTest.class,
+    CacheKeepBinaryIterationStoreEnabledTest.class,
+    CacheKeepBinaryIterationNearEnabledTest.class,
+    GridCacheContinuousQueryPartitionedOnlySelfTest.class,
+    CacheContinuousQueryOperationP2PTest.class,
+    CacheContinuousBatchAckTest.class,
+    CacheContinuousQueryOrderingEventTest.class,
+    IgniteCacheContinuousQueryClientTest.class,
+    CacheContinuousQueryAsyncFilterListenerTest.class,
+    CacheContinuousWithTransformerRandomOperationsTest.class,
+    CacheContinuousQueryRandomOperationsTest.class
+})
+public class IgniteCacheQuerySelfTestSuite6 {
 }

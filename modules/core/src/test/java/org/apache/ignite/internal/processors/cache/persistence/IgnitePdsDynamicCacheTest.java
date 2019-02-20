@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  *
@@ -82,6 +83,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartAndCreate() throws Exception {
         startGrids(3);
 
@@ -149,6 +151,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCacheSavingOnNewNode() throws Exception {
         Ignite ignite = startGrid(0);
 

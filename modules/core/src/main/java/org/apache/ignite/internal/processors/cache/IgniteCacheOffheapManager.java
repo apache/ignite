@@ -191,10 +191,11 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cctx Cache context.
      * @param key Key.
+     * @param mvccSnapshot MVCC snapshot.
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot ver)
+    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot)
         throws IgniteCheckedException;
 
     /**
@@ -219,23 +220,6 @@ public interface IgniteCacheOffheapManager {
      */
     GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, Object x)
         throws IgniteCheckedException;
-
-    /**
-     * @param entry Entry.
-     * @param val Value.
-     * @param ver Version.
-     * @param expireTime Expire time.
-     * @return {@code True} if value was inserted.
-     * @throws IgniteCheckedException If failed.
-     */
-    default boolean mvccInitialValue(
-        GridCacheMapEntry entry,
-        @Nullable CacheObject val,
-        GridCacheVersion ver,
-        long expireTime
-    ) throws IgniteCheckedException {
-        return mvccInitialValue(entry, val, ver, expireTime, null, null);
-    }
 
     /**
      * @param entry Entry.
@@ -291,12 +275,13 @@ public interface IgniteCacheOffheapManager {
      * @param needOldVal {@code True} if need old value.
      * @param filter Filter.
      * @param retVal Flag to return previous value.
+     * @param keepBinary Keep binary flag.
      * @param entryProc Entry processor.
      * @param invokeArgs Entry processor invoke arguments.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public MvccUpdateResult mvccUpdate(
+    public MvccUpdateResult mvccUpdate(
         GridCacheMapEntry entry,
         CacheObject val,
         GridCacheVersion ver,
@@ -308,6 +293,7 @@ public interface IgniteCacheOffheapManager {
         boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
         boolean retVal,
+        boolean keepBinary,
         EntryProcessor entryProc,
         Object[] invokeArgs) throws IgniteCheckedException;
 
@@ -360,37 +346,6 @@ public interface IgniteCacheOffheapManager {
         MvccVersion newMvccVer,
         byte mvccTxState,
         byte newMvccTxState
-    ) throws IgniteCheckedException;
-
-    /**
-     * @param primary {@code True} if on primary node.
-     * @param entry Entry.
-     * @param val Value.
-     * @param ver Cache version.
-     * @param expireTime Expire time.
-     * @param mvccSnapshot MVCC snapshot.
-     * @return Transactions to wait for before finishing current transaction.
-     * @throws IgniteCheckedException If failed.
-     */
-    GridLongList mvccUpdateNative(
-            boolean primary,
-            GridCacheMapEntry entry,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
-
-    /**
-     * @param primary {@code True} if on primary node.
-     * @param entry Entry.
-     * @param mvccSnapshot MVCC snapshot.
-     * @return Transactions to wait for before finishing current transaction.
-     * @throws IgniteCheckedException If failed.
-     */
-    GridLongList mvccRemoveNative(
-            boolean primary,
-            GridCacheMapEntry entry,
-            MvccSnapshot mvccSnapshot
     ) throws IgniteCheckedException;
 
     /**
@@ -460,11 +415,12 @@ public interface IgniteCacheOffheapManager {
     public int onUndeploy(ClassLoader ldr);
 
     /**
-     *
      * @param cacheId Cache ID.
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
      * @param topVer Topology version.
+     * @param mvccSnapshot MVCC snapshot.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -472,29 +428,20 @@ public interface IgniteCacheOffheapManager {
         boolean primary,
         boolean backup,
         AffinityTopologyVersion topVer,
-        @Nullable MvccSnapshot mvccSnapshot)
-        throws IgniteCheckedException;
-
-    /**
-     * @param cacheId Cache ID.
-     * @param part Partition.
-     * @return Partition data iterator.
-     * @throws IgniteCheckedException If failed.
-     */
-    public default GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part)
-        throws IgniteCheckedException {
-        return cachePartitionIterator(cacheId, part, null);
-    }
+        @Nullable MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
      * @param part Partition.
      * @param mvccSnapshot MVCC snapshot.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
     public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part,
-        @Nullable MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
+        @Nullable MvccSnapshot mvccSnapshot, Boolean dataPageScanEnabled) throws IgniteCheckedException;
 
     /**
      * @param part Partition number.
@@ -523,20 +470,24 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param cctx Cache context.
-     * @param primary Primary entries flag.
-     * @param backup Backup entries flag.
+     * @param primary {@code True} if need to return primary entries.
+     * @param backup {@code True} if need to return backup entries.
      * @param topVer Topology version.
      * @param keepBinary Keep binary flag.
+     * @param mvccSnapshot MVCC snapshot.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: MVCC>
     public <K, V> GridCloseableIterator<Cache.Entry<K, V>> cacheEntriesIterator(
         GridCacheContext cctx,
         final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
-        final boolean keepBinary) throws IgniteCheckedException;
+        final boolean keepBinary,
+        @Nullable final MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
@@ -588,17 +539,18 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cacheId Cache ID.
      * @param idxName Index name.
+     * @param segment Segment.
      * @return Root page for index tree.
      * @throws IgniteCheckedException If failed.
      */
-    public RootPage rootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException;
+    public RootPage rootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
      * @param idxName Index name.
      * @throws IgniteCheckedException If failed.
      */
-    public void dropRootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException;
+    public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
      * @param idxName Index name.
@@ -856,6 +808,7 @@ public interface IgniteCacheOffheapManager {
          * @param noCreate Flag indicating that row should not be created if absent.
          * @param needOldVal {@code True} if need old value.
          * @param retVal Flag to return previous value.
+         * @param keepBinary Keep binary flag.
          * @return Update result.
          * @throws IgniteCheckedException If failed.
          */
@@ -873,7 +826,8 @@ public interface IgniteCacheOffheapManager {
             boolean needHist,
             boolean noCreate,
             boolean needOldVal,
-            boolean retVal) throws IgniteCheckedException;
+            boolean retVal,
+            boolean keepBinary) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
@@ -908,39 +862,6 @@ public interface IgniteCacheOffheapManager {
             GridCacheContext cctx,
             KeyCacheObject key,
             MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param primary {@code True} if update is executed on primary node.
-         * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param expireTime Expire time.
-         * @param mvccSnapshot MVCC snapshot.
-         * @return Update result.
-         * @throws IgniteCheckedException If failed.
-         */
-        @Nullable GridLongList mvccUpdateNative(
-                GridCacheContext cctx,
-                boolean primary,
-                KeyCacheObject key,
-                CacheObject val,
-                GridCacheVersion ver,
-                long expireTime,
-                MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param primary {@code True} if update is executed on primary node.
-         * @param key Key.
-         * @param mvccSnapshot MVCC snapshot.
-         * @return List of transactions to wait for.
-         * @throws IgniteCheckedException If failed.
-         */
-        @Nullable GridLongList mvccRemoveNative(GridCacheContext cctx,
-                                      boolean primary,
-                                      KeyCacheObject key,
-                                      MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

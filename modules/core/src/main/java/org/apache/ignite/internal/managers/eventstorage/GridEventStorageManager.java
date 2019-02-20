@@ -413,7 +413,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to disable.
      */
-    @SuppressWarnings("deprecation")
     public synchronized void disableEvents(int[] types) {
         assert types != null;
 
@@ -887,7 +886,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param p Grid event predicate.
      * @return Collection of grid events.
      */
-    @SuppressWarnings("unchecked")
     public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) throws IgniteCheckedException {
         assert p != null;
 
@@ -949,7 +947,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Collection of events.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings({"deprecation"})
     private <T extends Event> List<T> query(IgnitePredicate<T> p, Collection<? extends ClusterNode> nodes,
         long timeout) throws IgniteCheckedException {
         assert p != null;
@@ -988,7 +985,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         };
 
         GridMessageListener resLsnr = new GridMessageListener() {
-            @SuppressWarnings("deprecation")
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 assert nodeId != null;
                 assert msg != null;

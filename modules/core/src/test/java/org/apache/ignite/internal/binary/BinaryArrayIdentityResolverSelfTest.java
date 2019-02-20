@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.junit.Test;
 
 import static org.junit.Assert.assertNotEquals;
 
@@ -88,6 +89,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /**
      * Test hash code generation for simple object.
      */
+    @Test
     public void testHashCode() {
         InnerClass obj = new InnerClass(1, "2", 3);
 
@@ -99,6 +101,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /**
      * Test hash code generation for simple object.
      */
+    @Test
     public void testHashCodeBinarylizable() {
         InnerClassBinarylizable obj = new InnerClassBinarylizable(1, "2", 3);
 
@@ -110,6 +113,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /**
      * Test equals for simple object.
      */
+    @Test
     public void testEquals() {
         InnerClass obj = new InnerClass(1, "2", 3);
 
@@ -128,6 +132,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /**
      * Test equals for simple object.
      */
+    @Test
     public void testEqualsBinarilyzable() {
         InnerClassBinarylizable obj = new InnerClassBinarylizable(1, "2", 3);
 
@@ -148,6 +153,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /**
      * Test equals for different type IDs.
      */
+    @Test
     public void testEqualsDifferenTypes() {
         InnerClass obj1 = new InnerClass(1, "2", 3);
         InnerClassBinarylizable obj2 = new InnerClassBinarylizable(1, "2", 3);

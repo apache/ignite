@@ -309,7 +309,6 @@ public final class GridCacheCountDownLatchImpl extends AtomicDataStructureProxy<
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    @SuppressWarnings({"ConstantConditions"})
     private Object readResolve() throws ObjectStreamException {
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();

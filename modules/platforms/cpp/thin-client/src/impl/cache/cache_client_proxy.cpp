@@ -101,6 +101,11 @@ namespace ignite
                     return GetCacheImpl(impl).Remove(key);
                 }
 
+                bool CacheClientProxy::Remove(const WritableKey& key, const Writable& val)
+                {
+                    return GetCacheImpl(impl).Remove(key, val);
+                }
+
                 void CacheClientProxy::RemoveAll(const Writable & keys)
                 {
                     return GetCacheImpl(impl).RemoveAll(keys);
@@ -124,6 +129,37 @@ namespace ignite
                 void CacheClientProxy::ClearAll(const Writable& keys)
                 {
                     GetCacheImpl(impl).ClearAll(keys);
+                }
+
+                bool CacheClientProxy::Replace(const WritableKey& key, const Writable& oldVal, const Writable& newVal)
+                {
+                    return GetCacheImpl(impl).Replace(key, oldVal, newVal);
+                }
+
+                void CacheClientProxy::GetAndPut(const WritableKey& key, const Writable& valIn, Readable& valOut)
+                {
+                    GetCacheImpl(impl).GetAndPut(key, valIn, valOut);
+                }
+
+                void CacheClientProxy::GetAndRemove(const WritableKey& key, Readable& valOut)
+                {
+                    GetCacheImpl(impl).GetAndRemove(key, valOut);
+                }
+
+                void CacheClientProxy::GetAndReplace(const WritableKey& key, const Writable& valIn, Readable& valOut)
+                {
+                    GetCacheImpl(impl).GetAndReplace(key, valIn, valOut);
+                }
+
+                bool CacheClientProxy::PutIfAbsent(const WritableKey& key, const Writable& val)
+                {
+                    return GetCacheImpl(impl).PutIfAbsent(key, val);
+                }
+
+                void CacheClientProxy::GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn,
+                    Readable& valOut)
+                {
+                    GetCacheImpl(impl).GetAndPutIfAbsent(key, valIn, valOut);
                 }
             }
         }

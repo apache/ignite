@@ -19,8 +19,12 @@ import Auth from '../../modules/user/Auth.service';
 import MessagesFactory from '../../services/Messages.service';
 import FormUtilsFactoryFactory from '../../services/FormUtils.service';
 import {ISignupData} from '../form-signup';
+import {get, eq, pipe} from 'lodash/fp';
 
-export default class PageSignup {
+const EMAIL_NOT_CONFIRMED_ERROR_CODE = 10104;
+const isEmailConfirmationError = pipe(get('data.errorCode'), eq(EMAIL_NOT_CONFIRMED_ERROR_CODE));
+
+export default class PageSignup implements ng.IPostLink {
     form: ng.IFormController;
 
     data: ISignupData = {
@@ -34,13 +38,20 @@ export default class PageSignup {
 
     serverError: string | null = null;
 
-    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils'];
+    isLoading = false;
+
+    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils', '$element'];
 
     constructor(
         private Auth: Auth,
         private IgniteMessages: ReturnType<typeof MessagesFactory>,
-        private IgniteFormUtils: ReturnType<typeof FormUtilsFactoryFactory>
+        private IgniteFormUtils: ReturnType<typeof FormUtilsFactoryFactory>,
+        private el: JQLite
     ) {}
+
+    $postLink() {
+        this.el.addClass('public-page');
+    }
 
     canSubmitForm(form: PageSignup['form']) {
         return form.$error.server ? true : !form.$invalid;
@@ -51,16 +62,26 @@ export default class PageSignup {
     }
 
     signup() {
+        this.isLoading = true;
+
         this.IgniteFormUtils.triggerValidation(this.form);
 
         this.setServerError(null);
 
-        if (!this.canSubmitForm(this.form))
+        if (!this.canSubmitForm(this.form)) {
+            this.isLoading = false;
             return;
+        }
 
-        return this.Auth.signup(this.data).catch((res) => {
-            this.IgniteMessages.showError(null, res.data);
-            this.setServerError(res.data);
-        });
+
+        return this.Auth.signup(this.data)
+            .catch((res) => {
+                if (isEmailConfirmationError(res))
+                    return;
+
+                this.IgniteMessages.showError(null, res.data);
+                this.setServerError(res.data);
+            })
+            .finally(() => this.isLoading = false);
     }
 }

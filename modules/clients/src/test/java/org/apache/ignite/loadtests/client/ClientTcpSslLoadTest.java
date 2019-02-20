@@ -20,6 +20,7 @@ package org.apache.ignite.loadtests.client;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.ClientTcpSslMultiThreadedSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  * Makes a long run to ensure stability and absence of memory leaks.
@@ -37,6 +38,7 @@ public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongRun() throws Exception {
         long start = System.currentTimeMillis();
 

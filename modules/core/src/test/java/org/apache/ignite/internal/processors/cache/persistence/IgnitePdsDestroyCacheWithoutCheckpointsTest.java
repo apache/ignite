@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
+import org.junit.Test;
 
 /**
  * Check that cluster survives after destroy caches abruptly with disabled checkpoints.
@@ -39,6 +40,7 @@ public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestro
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDestroyCachesAbruptlyWithoutCheckpoints() throws Exception {
         Ignite ignite = startGrids(NODES);
 
@@ -56,6 +58,7 @@ public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestro
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDestroyGroupCachesAbruptlyWithoutCheckpoints() throws Exception {
         Ignite ignite = startGrids(NODES);
 

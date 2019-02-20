@@ -27,6 +27,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -72,6 +74,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNullCacheName() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
@@ -91,6 +94,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCache() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
@@ -111,6 +115,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSharedCacheGroup() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
@@ -146,6 +151,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPersistenceDisabled() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
@@ -182,10 +188,13 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalCache() throws Exception {
         if (jdbc)
             // Doesn't make sense for JDBC.
             return;
+
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
@@ -217,6 +226,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableDisablePartitionedAtomic() throws Exception {
         checkEnableDisable(PARTITIONED, ATOMIC);
     }
@@ -226,6 +236,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableDisablePartitionedTransactional() throws Exception {
         checkEnableDisable(PARTITIONED, TRANSACTIONAL);
     }
@@ -235,6 +246,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableDisableReplicatedAtomic() throws Exception {
         checkEnableDisable(REPLICATED, ATOMIC);
     }
@@ -244,6 +256,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableDisableReplicatedTransactional() throws Exception {
         checkEnableDisable(REPLICATED, TRANSACTIONAL);
     }
@@ -278,6 +291,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDisablingProhibition() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ig) throws IgniteCheckedException {

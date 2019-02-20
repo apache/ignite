@@ -25,6 +25,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL;
 
@@ -93,16 +94,19 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testWithEnabledOption() throws Exception {
         doTest("true");
     }
 
     /** */
+    @Test
     public void testWithDisabledOption() throws Exception {
         doTest("false");
     }
 
     /** */
+    @Test
     public void testWithoutOption() throws Exception {
         doTest(null);
     }

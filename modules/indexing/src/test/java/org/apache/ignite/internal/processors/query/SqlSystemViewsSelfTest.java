@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.Time;
+import java.lang.reflect.Field;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
@@ -33,10 +38,14 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -47,20 +56,29 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.h2.api.TimestampWithTimeZone;
+import org.junit.Test;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Tests for ignite SQL system views.
  */
-public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
+public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /** Metrics check attempts. */
     private static final int METRICS_CHECK_ATTEMPTS = 10;
 
@@ -84,7 +102,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      * @param args Args.
      */
     @SuppressWarnings("unchecked")
-    private List<List<?>> execSql(Ignite ignite, String sql, Object ... args) {
+    private List<List<?>> execSql(Ignite ignite, String sql, Object... args) {
         IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
@@ -99,7 +117,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      * @param sql Sql.
      * @param args Args.
      */
-    private List<List<?>> execSql(String sql, Object ... args) {
+    private List<List<?>> execSql(String sql, Object... args) {
         return execSql(grid(), sql, args);
     }
 
@@ -121,10 +139,11 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, sqlE.statusCode());
     }
-    
+
     /**
      * Test system views modifications.
      */
+    @Test
     public void testModifications() throws Exception {
         startGrid(getConfiguration());
 
@@ -152,6 +171,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /**
      * Test different query modes.
      */
+    @Test
     public void testQueryModes() throws Exception {
         Ignite ignite = startGrid(0);
         startGrid(1);
@@ -177,9 +197,109 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
     }
 
+
+    /**
+     * Test running queries system view.
+     */
+    @Test
+    public void testRunningQueriesView() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache cache = ignite.createCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, String.class)
+        );
+
+        cache.put(100,"200");
+
+        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES";
+
+        FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql).setLocal(true));
+
+        List<?> cur = cache.query(new SqlFieldsQuery(sql).setLocal(true)).getAll();
+
+        assertEquals(2, cur.size());
+
+        List<?> res0 = (List<?>)cur.get(0);
+        List<?> res1 = (List<?>)cur.get(1);
+
+        TimestampWithTimeZone tsTz = (TimestampWithTimeZone)res0.get(4);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        int sysTZOff = TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60 / 1000;
+
+        assertEquals(sysTZOff, tsTz.getTimeZoneOffsetMins());
+
+        long diffInMinutes = Math.abs((tsTz.getNanosSinceMidnight() / 1_000_000_000 / 60) - (now.getHour() * 60 + now.getMinute()));
+
+        assertTrue(diffInMinutes < 3);
+
+        assertEquals(sql, res0.get(0));
+
+        assertEquals(sql, res1.get(0));
+
+        assertTrue((Boolean)res0.get(3));
+
+        String id0 = (String)res0.get(1);
+        String id1 = (String)res1.get(1);
+
+        assertNotEquals(id0, id1);
+
+
+        String qryPrefix = ignite.localNode().id() + "_";
+
+        String qryId1 = qryPrefix + "1";
+        String qryId2 = qryPrefix + "2";
+
+        assertTrue(id0.equals(qryId1) || id1.equals(qryId1));
+
+        assertTrue(id0.equals(qryId2) || id1.equals(qryId2));
+
+        assertEquals(2, cache.query(new SqlFieldsQuery(sql)).getAll().size());
+
+        notClosedFieldQryCursor.close();
+
+        assertEquals(1, cache.query(new SqlFieldsQuery(sql)).getAll().size());
+
+        cache.put(100,"200");
+
+        QueryCursor notClosedQryCursor = cache.query(new SqlQuery<>(String.class, "_key=100"));
+
+        String expSqlQry = "SELECT \"default\".\"STRING\"._KEY, \"default\".\"STRING\"._VAL FROM " +
+            "\"default\".\"STRING\" WHERE _key=100";
+
+        cur = cache.query(new SqlFieldsQuery(sql)).getAll();
+
+        assertEquals(2, cur.size());
+
+        res0 = (List<?>)cur.get(0);
+        res1 = (List<?>)cur.get(1);
+
+        assertTrue(expSqlQry, res0.get(0).equals(expSqlQry) || res1.get(0).equals(expSqlQry));
+
+        assertFalse((Boolean)res0.get(3));
+
+        assertFalse((Boolean)res1.get(3));
+
+        notClosedQryCursor.close();
+
+        sql = "SELECT SQL, QUERY_ID FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='" + qryPrefix + "7'";
+
+        assertEquals(qryPrefix + "7", ((List<?>)cache.query(new SqlFieldsQuery(sql)).getAll().get(0)).get(1));
+
+        sql = "SELECT SQL FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE DURATION > 100000";
+
+        assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
+
+        sql = "SELECT SQL FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='UNKNOWN'";
+
+        assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
+    }
+
     /**
      * Test that we can't use cache tables and system views in the same query.
      */
+    @Test
     public void testCacheToViewJoin() throws Exception {
         Ignite ignite = startGrid();
 
@@ -193,7 +313,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      * @param rowData Row data.
      * @param colTypes Column types.
      */
-    private void assertColumnTypes(List<?> rowData, Class<?> ... colTypes) {
+    private void assertColumnTypes(List<?> rowData, Class<?>... colTypes) {
         for (int i = 0; i < colTypes.length; i++) {
             if (rowData.get(i) != null)
                 assertEquals("Column " + i + " type", colTypes[i], rowData.get(i).getClass());
@@ -205,6 +325,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodesViews() throws Exception {
         Ignite igniteSrv = startGrid(getTestIgniteInstanceName(), getConfiguration().setMetricsUpdateFrequency(500L));
 
@@ -218,7 +339,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         List<List<?>> resAll = execSql("SELECT ID, CONSISTENT_ID, VERSION, IS_CLIENT, IS_DAEMON, " +
-                "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
+            "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
 
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
             Integer.class, String.class, String.class);
@@ -330,14 +451,14 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
             Integer.class, Integer.class, Float.class, // Waiting jobs.
             Integer.class, Integer.class, Float.class, Integer.class, // Rejected jobs.
             Integer.class, Integer.class, Float.class, Integer.class, // Canceled jobs.
-            Time.class, Time.class, Time.class, // Jobs wait time.
-            Time.class, Time.class, Time.class, Time.class, // Jobs execute time.
+            Long.class, Long.class, Long.class, // Jobs wait time.
+            Long.class, Long.class, Long.class, Long.class, // Jobs execute time.
             Integer.class, Integer.class, // Executed jobs/task.
-            Time.class, Time.class, Time.class, Float.class, Float.class, // Busy/idle time.
+            Long.class, Long.class, Long.class, Float.class, Float.class, // Busy/idle time.
             Integer.class, Double.class, Double.class, Double.class, // CPU.
             Long.class, Long.class, Long.class, Long.class, Long.class, // Heap memory.
             Long.class, Long.class, Long.class, Long.class, Long.class, // Nonheap memory.
-            Time.class, Timestamp.class, Timestamp.class, Long.class, // Uptime.
+            Long.class, Timestamp.class, Timestamp.class, Long.class, // Uptime.
             Integer.class, Integer.class, Long.class, Integer.class, // Threads.
             Integer.class, Long.class, Integer.class, Long.class, // Sent/received messages.
             Integer.class); // Outbound message queue.
@@ -363,7 +484,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         // Broadcast jobs to server and client nodes to get non zero metric values.
         for (int i = 0; i < 100; i++) {
-            IgniteFuture<Void > fut = igniteSrv.compute(igniteSrv.cluster().forNodeId(nodeId0, nodeId(1)))
+            IgniteFuture<Void> fut = igniteSrv.compute(igniteSrv.cluster().forNodeId(nodeId0, nodeId(1)))
                 .broadcastAsync(
                     new IgniteRunnable() {
                         @Override public void run() {
@@ -414,18 +535,18 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
                     assertEquals(metrics.getCurrentCancelledJobs(), resMetrics.get(0).get(13));
                     assertEquals(metrics.getAverageCancelledJobs(), resMetrics.get(0).get(14));
                     assertEquals(metrics.getTotalCancelledJobs(), resMetrics.get(0).get(15));
-                    assertEquals(metrics.getMaximumJobWaitTime(), convertToMilliseconds(resMetrics.get(0).get(16)));
-                    assertEquals(metrics.getCurrentJobWaitTime(), convertToMilliseconds(resMetrics.get(0).get(17)));
-                    assertEquals((long)metrics.getAverageJobWaitTime(), convertToMilliseconds(resMetrics.get(0).get(18)));
-                    assertEquals(metrics.getMaximumJobExecuteTime(), convertToMilliseconds(resMetrics.get(0).get(19)));
-                    assertEquals(metrics.getCurrentJobExecuteTime(), convertToMilliseconds(resMetrics.get(0).get(20)));
-                    assertEquals((long)metrics.getAverageJobExecuteTime(), convertToMilliseconds(resMetrics.get(0).get(21)));
-                    assertEquals(metrics.getTotalJobsExecutionTime(), convertToMilliseconds(resMetrics.get(0).get(22)));
+                    assertEquals(metrics.getMaximumJobWaitTime(), resMetrics.get(0).get(16));
+                    assertEquals(metrics.getCurrentJobWaitTime(), resMetrics.get(0).get(17));
+                    assertEquals((long)metrics.getAverageJobWaitTime(), resMetrics.get(0).get(18));
+                    assertEquals(metrics.getMaximumJobExecuteTime(), resMetrics.get(0).get(19));
+                    assertEquals(metrics.getCurrentJobExecuteTime(), resMetrics.get(0).get(20));
+                    assertEquals((long)metrics.getAverageJobExecuteTime(), resMetrics.get(0).get(21));
+                    assertEquals(metrics.getTotalJobsExecutionTime(), resMetrics.get(0).get(22));
                     assertEquals(metrics.getTotalExecutedJobs(), resMetrics.get(0).get(23));
                     assertEquals(metrics.getTotalExecutedTasks(), resMetrics.get(0).get(24));
-                    assertEquals(metrics.getTotalBusyTime(), convertToMilliseconds(resMetrics.get(0).get(25)));
-                    assertEquals(metrics.getTotalIdleTime(), convertToMilliseconds(resMetrics.get(0).get(26)));
-                    assertEquals(metrics.getCurrentIdleTime(), convertToMilliseconds(resMetrics.get(0).get(27)));
+                    assertEquals(metrics.getTotalBusyTime(), resMetrics.get(0).get(25));
+                    assertEquals(metrics.getTotalIdleTime(), resMetrics.get(0).get(26));
+                    assertEquals(metrics.getCurrentIdleTime(), resMetrics.get(0).get(27));
                     assertEquals(metrics.getBusyTimePercentage(), resMetrics.get(0).get(28));
                     assertEquals(metrics.getIdleTimePercentage(), resMetrics.get(0).get(29));
                     assertEquals(metrics.getTotalCpus(), resMetrics.get(0).get(30));
@@ -442,7 +563,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
                     assertEquals(metrics.getNonHeapMemoryCommitted(), resMetrics.get(0).get(41));
                     assertEquals(metrics.getNonHeapMemoryMaximum(), resMetrics.get(0).get(42));
                     assertEquals(metrics.getNonHeapMemoryTotal(), resMetrics.get(0).get(43));
-                    assertEquals(metrics.getUpTime(), convertToMilliseconds(resMetrics.get(0).get(44)));
+                    assertEquals(metrics.getUpTime(), resMetrics.get(0).get(44));
                     assertEquals(metrics.getStartTime(), ((Timestamp)resMetrics.get(0).get(45)).getTime());
                     assertEquals(metrics.getNodeStartTime(), ((Timestamp)resMetrics.get(0).get(46)).getTime());
                     assertEquals(metrics.getLastDataVersion(), resMetrics.get(0).get(47));
@@ -471,6 +592,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /**
      * Test baseline topology system view.
      */
+    @Test
     public void testBaselineViews() throws Exception {
         cleanPersistenceDir();
 
@@ -517,9 +639,276 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test IO statistics SQL system views for cache groups.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testIoStatisticsViews() throws Exception {
+        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0"));
+
+        ignite.cluster().active(true);
+
+        execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
+
+        for (int i = 0; i < 500; i++)
+            execSql("INSERT INTO DEFAULT.TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
+
+        String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO";
+
+        List<List<?>> res1 = execSql(sql1);
+
+        Map<?, ?> map = res1.stream().collect(Collectors.toMap(k -> k.get(1), v -> v.get(3)));
+
+        assertEquals(2, map.size());
+
+        assertTrue(map.containsKey("SQL_default_TST"));
+
+        assertTrue((Long)map.get("SQL_default_TST") > 0);
+
+        assertTrue(map.containsKey(DEFAULT_CACHE_NAME));
+
+        sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO WHERE " +
+            "GROUP_NAME='SQL_default_TST'";
+
+        assertEquals(1, execSql(sql1).size());
+    }
+
+    /**
+     * Simple test for {@link SqlSystemViewTables}
+     */
+    @Test
+    public void testTablesView() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        GridCacheProcessor cacheProc = ignite.context().cache();
+
+        execSql("CREATE TABLE CACHE_SQL (ID INT PRIMARY KEY, MY_VAL VARCHAR) WITH " +
+            "\"cache_name=cache_sql,template=partitioned,atomicity=atomic,wrap_value=true,value_type=random_name\"");
+
+        execSql("CREATE TABLE PUBLIC.DFLT_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1, ID2)) WITH"
+            + "\"affinity_key=ID2,wrap_value=false,key_type=random_name\"");
+
+        int cacheSqlId = cacheProc.cacheDescriptor("cache_sql").cacheId();
+        int ddlTabId = cacheProc.cacheDescriptor("SQL_PUBLIC_DFLT_CACHE").cacheId();
+
+        List<List<?>> cacheSqlInfos = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
+
+        List<?> expRow = asList(
+            "DEFAULT",           // SCHEMA_NAME
+            "CACHE_SQL",         // TABLE_NAME
+            "cache_sql",         // CACHE_NAME
+            cacheSqlId,          // CACHE_ID
+            null,                // AFFINITY_KEY_COLUMN
+            "ID",                // KEY_ALIAS
+            null,                // VALUE_ALIAS
+            "java.lang.Integer", // KEY_TYPE_NAME
+            "random_name"        // VALUE_TYPE_NAME
+
+        );
+
+        assertEquals("Returned incorrect info. ", expRow, cacheSqlInfos.get(0));
+
+        // no more rows are expected.
+        assertEquals("Expected to return only one row", 1, cacheSqlInfos.size());
+
+        List<List<?>> allInfos = execSql("SELECT * FROM IGNITE.TABLES");
+
+        List<?> allExpRows = asList(
+            expRow,
+            asList(
+                "PUBLIC",                // SCHEMA_NAME
+                "DFLT_CACHE",            // TABLE_NAME
+                "SQL_PUBLIC_DFLT_CACHE", // CACHE_NAME
+                ddlTabId,                // CACHE_ID
+                "ID2",                   // AFFINITY_KEY_COLUMN
+                null,                    // KEY_ALIAS
+                "MY_VAL",                // VALUE_ALIAS
+                "random_name",           // KEY_TYPE_NAME
+                "java.lang.String"       // VALUE_TYPE_NAME
+            )
+        );
+
+        if (!F.eqNotOrdered(allExpRows, allInfos))
+            fail("Returned incorrect rows [expected=" + allExpRows + ", actual=" + allInfos + "].");
+
+        // Filter by cache name:
+        assertEquals(
+            Collections.singletonList(asList("DFLT_CACHE", "SQL_PUBLIC_DFLT_CACHE")),
+            execSql("SELECT TABLE_NAME, CACHE_NAME " +
+                "FROM IGNITE.TABLES " +
+                "WHERE CACHE_NAME LIKE 'SQL\\_PUBLIC\\_%'"));
+
+        assertEquals(
+            Collections.singletonList(asList("CACHE_SQL", "cache_sql")),
+            execSql("SELECT TABLE_NAME, CACHE_NAME " +
+                "FROM IGNITE.TABLES " +
+                "WHERE CACHE_NAME NOT LIKE 'SQL\\_PUBLIC\\_%'"));
+
+        // Join with CACHES view.
+        assertEquals(
+            asList(
+                asList("DFLT_CACHE", "SQL_PUBLIC_DFLT_CACHE", "SQL_PUBLIC_DFLT_CACHE"),
+                asList("CACHE_SQL", "cache_sql", "cache_sql")),
+            execSql("SELECT TABLE_NAME, TAB.CACHE_NAME, C.NAME " +
+                "FROM IGNITE.TABLES AS TAB JOIN IGNITE.CACHES AS C " +
+                "ON TAB.CACHE_ID = C.CACHE_ID " +
+                "ORDER BY C.NAME")
+        );
+    }
+
+    /**
+     * Verify that if we drop or create table, TABLES system view reflects these changes.
+     */
+    @Test
+    public void testTablesDropAndCreate() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        final String selectTabNameCacheName = "SELECT TABLE_NAME, CACHE_NAME FROM IGNITE.TABLES ORDER BY TABLE_NAME";
+
+        assertTrue("Initially no tables expected", execSql(selectTabNameCacheName).isEmpty());
+
+        execSql("CREATE TABLE PUBLIC.TAB1 (ID INT PRIMARY KEY, VAL VARCHAR)");
+
+        assertEquals(
+            asList(asList("TAB1", "SQL_PUBLIC_TAB1")),
+            execSql(selectTabNameCacheName));
+
+        execSql("CREATE TABLE PUBLIC.TAB2 (ID LONG PRIMARY KEY, VAL_STR VARCHAR) WITH \"cache_name=cache2\"");
+        execSql("CREATE TABLE PUBLIC.TAB3 (ID LONG PRIMARY KEY, VAL_INT INT) WITH \"cache_name=cache3\" ");
+
+        assertEquals(
+            asList(
+                asList("TAB1", "SQL_PUBLIC_TAB1"),
+                asList("TAB2", "cache2"),
+                asList("TAB3", "cache3")
+            ),
+            execSql(selectTabNameCacheName));
+
+        execSql("DROP TABLE PUBLIC.TAB2");
+
+        assertEquals(
+            asList(
+                asList("TAB1", "SQL_PUBLIC_TAB1"),
+                asList("TAB3", "cache3")
+            ),
+            execSql(selectTabNameCacheName));
+
+        execSql("DROP TABLE PUBLIC.TAB3");
+
+        assertEquals(
+            asList(asList("TAB1", "SQL_PUBLIC_TAB1")),
+            execSql(selectTabNameCacheName));
+
+        execSql("DROP TABLE PUBLIC.TAB1");
+
+        assertTrue("All tables should be dropped", execSql(selectTabNameCacheName).isEmpty());
+    }
+
+
+
+    /**
+     * Dummy implementation of the mapper. Required to test "AFFINITY_KEY_COLUMN".
+     */
+    static class ConstantMapper implements AffinityKeyMapper {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 7018626316531791556L;
+
+        /** {@inheritDoc} */
+        @Override public Object affinityKey(Object key) {
+            return 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            //NO-op
+        }
+    }
+
+    /**
+     * Check affinity column if custom affinity mapper is specified.
+     */
+    @Test
+    public void testTablesNullAffinityKey() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        AffinityKeyMapper fakeMapper = new ConstantMapper();
+
+        ignite.getOrCreateCache(defaultCacheConfiguration().setName("NO_KEY_FIELDS_CACHE").setAffinityMapper(fakeMapper)
+            .setQueryEntities(Collections.singleton(
+                // A cache with  no key fields
+                new QueryEntity(Object.class.getName(), "Object2")
+                    .addQueryField("name", String.class.getName(), null)
+                    .addQueryField("salary", Integer.class.getName(), null)
+                    .setTableName("NO_KEY_TABLE")
+            )));
+
+        List<List<String>> expected = Collections.singletonList(asList("NO_KEY_TABLE", null));
+
+        assertEquals(expected,
+            execSql("SELECT TABLE_NAME, AFFINITY_KEY_COLUMN " +
+                "FROM IGNITE.TABLES " +
+                "WHERE CACHE_NAME = 'NO_KEY_FIELDS_CACHE'"));
+
+        assertEquals(expected,
+            execSql("SELECT TABLE_NAME, AFFINITY_KEY_COLUMN " +
+                "FROM IGNITE.TABLES " +
+                "WHERE AFFINITY_KEY_COLUMN IS NULL"));
+    }
+
+    /**
+     * Special test for key/val name and type. Covers most used cases
+     */
+    @Test
+    public void testTablesViewKeyVal() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        {
+            ignite.getOrCreateCache(defaultCacheConfiguration().setName("NO_ALIAS_NON_SQL_KEY")
+                .setQueryEntities(Collections.singleton(
+                    // A cache with  no key fields
+                    new QueryEntity(Object.class.getName(), "Object2")
+                        .addQueryField("name", String.class.getName(), null)
+                        .addQueryField("salary", Integer.class.getName(), null)
+                        .setTableName("NO_ALIAS_NON_SQL_KEY")
+                )));
+
+            List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
+                "WHERE TABLE_NAME = 'NO_ALIAS_NON_SQL_KEY'").get(0);
+
+            assertEquals(asList(null, null), keyValAliases);
+        }
+
+        {
+            execSql("CREATE TABLE PUBLIC.SIMPLE_KEY_SIMPLE_VAL (ID INT PRIMARY KEY, NAME VARCHAR) WITH \"wrap_value=false\"");
+
+            List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
+                "WHERE TABLE_NAME = 'SIMPLE_KEY_SIMPLE_VAL'").get(0);
+
+            assertEquals(asList("ID", "NAME"), keyValAliases);
+
+        }
+
+        {
+            execSql("CREATE TABLE PUBLIC.COMPLEX_KEY_COMPLEX_VAL " +
+                "(ID1 INT, " +
+                "ID2 INT, " +
+                "VAL1 VARCHAR, " +
+                "VAL2 VARCHAR, " +
+                "PRIMARY KEY(ID1, ID2))");
+
+            List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
+                "WHERE TABLE_NAME = 'COMPLEX_KEY_COMPLEX_VAL'").get(0);
+
+            assertEquals(asList(null, null), keyValAliases);
+        }
+    }
+
+    /**
      * Test caches system views.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testCachesViews() throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("def").setPersistenceEnabled(true))
@@ -735,6 +1124,161 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Regression test. Verifies that duration metrics is able to be longer than 24 hours.
+     */
+    @Test
+    public void testDurationMetricsCanBeLonger24Hours() throws Exception {
+        Ignite ign = startGrid("MockedMetrics", getConfiguration().setMetricsUpdateFrequency(500));
+
+        ClusterNode node = ign.cluster().localNode();
+
+        assert node instanceof TcpDiscoveryNode : "Setup failed, test is incorrect.";
+
+        // Get rid of metrics provider: current logic ignores metrics field if provider != null.
+        setField(node, "metricsProvider", null);
+
+        ClusterMetricsImpl original = getField(node, "metrics");
+        
+        setField(node, "metrics", new MockedClusterMetrics(original));;
+
+        List<?> durationMetrics = execSql(ign,
+            "SELECT " +
+                "MAX_JOBS_WAIT_TIME, " +
+                "CUR_JOBS_WAIT_TIME, " +
+                "AVG_JOBS_WAIT_TIME, " +
+
+                "MAX_JOBS_EXECUTE_TIME, " +
+                "CUR_JOBS_EXECUTE_TIME, " +
+                "AVG_JOBS_EXECUTE_TIME, " +
+                "TOTAL_JOBS_EXECUTE_TIME, " +
+
+                "TOTAL_BUSY_TIME, " +
+
+                "TOTAL_IDLE_TIME, " +
+                "CUR_IDLE_TIME, " +
+                "UPTIME " +
+
+                "FROM IGNITE.NODE_METRICS").get(0);
+
+        List<Long> elevenExpVals = LongStream
+            .generate(() -> MockedClusterMetrics.LONG_DURATION_MS)
+            .limit(11)
+            .boxed()
+            .collect(Collectors.toList());
+
+        assertEqualsCollections(elevenExpVals, durationMetrics);
+    }
+
+    /**
+     * Mock for {@link ClusterMetricsImpl} that always returns big (more than 24h) duration for all duration metrics.
+     */
+    public static class MockedClusterMetrics extends ClusterMetricsImpl {
+        /** Some long (> 24h) duration. */
+        public static final long LONG_DURATION_MS = TimeUnit.DAYS.toMillis(365);
+
+        /**
+         * Constructor.
+         *
+         * @param original - original cluster metrics object. Required to leave the original behaviour for not overriden
+         * methods.
+         */
+        public MockedClusterMetrics(ClusterMetricsImpl original) throws Exception {
+            super(
+                getField(original, "ctx"),
+                getField(original, "vmMetrics"),
+                getField(original, "nodeStartTime"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaximumJobWaitTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentJobWaitTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public double getAverageJobWaitTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaximumJobExecuteTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentJobExecuteTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public double getAverageJobExecuteTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTotalJobsExecutionTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTotalBusyTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTotalIdleTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentIdleTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getUpTime() {
+            return LONG_DURATION_MS;
+        }
+    }
+
+    /**
+     * Get field value using reflection.
+     * 
+     * @param target object containing the field. 
+     * @param fieldName name of the field.
+     */
+    private static <T> T getField(Object target, String fieldName) throws Exception {
+        Class clazz = target.getClass();
+
+        Field fld = clazz.getDeclaredField(fieldName);
+
+        fld.setAccessible(true);
+
+        return (T) fld.get(target);
+    }
+
+    /**
+     * Set field using reflection.
+     * 
+     * @param target object containing the field.
+     * @param fieldName name of the field.
+     * @param val new field value.
+     */
+    private static void setField(Object target, String fieldName, Object val) throws Exception {
+        Class clazz = target.getClass();
+
+        Field fld = clazz.getDeclaredField(fieldName);
+
+        fld.setAccessible(true);
+
+        fld.set(target, val);
+    }
+
+    /**
      * Gets ignite configuration with persistence enabled.
      */
     private IgniteConfiguration getPdsConfiguration(String consistentId) throws Exception {
@@ -748,20 +1292,6 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         cfg.setConsistentId(consistentId);
 
         return cfg;
-    }
-
-    /**
-     * Convert Time to milliseconds.
-     *
-     * Note: Returned Time values from SQL it's milliseconds since January 1, 1970, 00:00:00 GMT. To get right interval
-     * in milliseconds this value must be adjusted to current time zone.
-     *
-     * @param sqlTime Time value returned from SQL.
-     */
-    private long convertToMilliseconds(Object sqlTime) {
-        Time time0 = (Time)sqlTime;
-
-        return time0.getTime() + TimeZone.getDefault().getOffset(time0.getTime());
     }
 
     /**

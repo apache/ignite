@@ -1497,7 +1497,6 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ConstantConditions")
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 while (!isCancelled()) {

@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.junit.Test;
 
 /**
  * Tests various cache operations with indexing enabled.
@@ -30,6 +31,7 @@ public class CacheOffheapBatchIndexingMultiTypeTest extends CacheOffheapBatchInd
     /**
      * Tests putAll with multiple indexed entities and streamer pre-loading with low off-heap cache size.
      */
+    @Test
     public void testPutAllMultupleEntitiesAndStreamer() {
         doStreamerBatchTest(50, 1_000, new Class<?>[] {
             Integer.class, CacheOffheapBatchIndexingBaseTest.Person.class,
@@ -40,6 +42,7 @@ public class CacheOffheapBatchIndexingMultiTypeTest extends CacheOffheapBatchInd
     /**
      * Tests putAll after with streamer batch load with one entity.
      */
+    @Test
     public void testPuAllSingleEntity() {
         doStreamerBatchTest(50,
             1_000,

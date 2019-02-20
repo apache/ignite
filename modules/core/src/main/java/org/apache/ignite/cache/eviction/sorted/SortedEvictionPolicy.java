@@ -244,7 +244,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
@@ -256,7 +255,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
      *
      * @param meta Holder.
      */
-    @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
         Holder<K, V> holder = (Holder<K, V>)meta;
 
@@ -297,7 +295,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public boolean equals(Object obj) {
             if (this == obj)
                 return true;
@@ -353,7 +350,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public int compare(Holder<K, V> h1, Holder<K, V> h2) {
             if (h1 == h2)
                 return 0;

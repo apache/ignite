@@ -52,7 +52,6 @@ public class ClientResourceRegistry {
      * @param <T> Object type.
      * @return Object.
      */
-    @SuppressWarnings("unchecked")
     public <T> T get(long hnd) {
         Object obj = res.get(hnd);
 

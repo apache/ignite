@@ -59,6 +59,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -688,6 +689,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleCoordinatorsLeft2Persistence() throws Exception {
         persistence = true;
 
@@ -697,6 +699,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleCoordinatorsLeft3Persistence() throws Exception {
         persistence = true;
 
@@ -706,6 +709,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleCoordinatorsLeft4() throws Exception {
         checkCoordinatorsLeft(4, true);
     }

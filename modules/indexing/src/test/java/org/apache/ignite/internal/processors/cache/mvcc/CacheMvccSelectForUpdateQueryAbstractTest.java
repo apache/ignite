@@ -39,6 +39,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.connect;
@@ -96,6 +97,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     /**
      *
      */
+    @Test
     public void testSelectForUpdateDistributed() throws Exception {
         doTestSelectForUpdateDistributed("Person", false);
     }
@@ -104,6 +106,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectForUpdateLocal() throws Exception {
         doTestSelectForUpdateLocal("Person", false);
     }
@@ -111,6 +114,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectForUpdateOutsideTxDistributed() throws Exception {
         doTestSelectForUpdateDistributed("Person", true);
     }
@@ -118,6 +122,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectForUpdateOutsideTxLocal() throws Exception {
         doTestSelectForUpdateLocal("Person", true);
     }
@@ -193,6 +198,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     /**
      *
      */
+    @Test
     public void testSelectForUpdateWithUnion() {
         assertQueryThrows("select id from person union select 1 for update",
             "SELECT UNION FOR UPDATE is not supported.");
@@ -201,6 +207,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     /**
      *
      */
+    @Test
     public void testSelectForUpdateWithJoin() {
         assertQueryThrows("select p1.id from person p1 join person p2 on p1.id = p2.id for update",
             "SELECT FOR UPDATE with joins is not supported.");
@@ -209,6 +216,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     /**
      *
      */
+    @Test
     public void testSelectForUpdateWithLimit() {
         assertQueryThrows("select id from person limit 0,5 for update",
             "LIMIT/OFFSET clauses are not supported for SELECT FOR UPDATE.");
@@ -217,6 +225,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     /**
      *
      */
+    @Test
     public void testSelectForUpdateWithGroupings() {
         assertQueryThrows("select count(*) from person for update",
             "SELECT FOR UPDATE with aggregates and/or GROUP BY is not supported.");
@@ -228,6 +237,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectForUpdateAfterAbortedTx() throws Exception {
         assert disableScheduledVacuum;
 

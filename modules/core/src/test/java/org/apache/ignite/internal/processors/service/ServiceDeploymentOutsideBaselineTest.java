@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -32,17 +33,15 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /** */
 public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String SERVICE_NAME = "test-service";
 
@@ -55,10 +54,6 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
-        discoverySpi.setIpFinder(IP_FINDER);
-        cfg.setDiscoverySpi(discoverySpi);
 
         if (persistence) {
             cfg.setDataStorageConfiguration(
@@ -78,6 +73,20 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         persistence = false;
         srvcCfg = null;
@@ -93,6 +102,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOutsideBaseline() throws Exception {
         checkDeploymentFromOutsideNode(true, false);
     }
@@ -100,6 +110,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOutsideBaselineNoPersistence() throws Exception {
         checkDeploymentFromOutsideNode(false, false);
     }
@@ -107,6 +118,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOutsideBaselineStatic() throws Exception {
         checkDeploymentFromOutsideNode(true, true);
     }
@@ -114,6 +126,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOutsideBaselineStaticNoPersistence() throws Exception {
         checkDeploymentFromOutsideNode(false, true);
     }
@@ -121,6 +134,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFromNodeAddedToBlt() throws Exception {
         checkDeployWithNodeAddedToBlt(true);
     }
@@ -128,6 +142,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployToNodeAddedToBlt() throws Exception {
         checkDeployWithNodeAddedToBlt(false);
     }
@@ -135,6 +150,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFromNodeRemovedFromBlt() throws Exception {
         checkDeployFromNodeRemovedFromBlt(true, false);
     }
@@ -142,6 +158,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFromNodeRemovedFromBltStatic() throws Exception {
         checkDeployFromNodeRemovedFromBlt(true, true);
     }
@@ -149,6 +166,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployToNodeRemovedFromBlt() throws Exception {
         checkDeployFromNodeRemovedFromBlt(false, false);
     }
@@ -156,13 +174,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    public void testStaticDeployFromEachPersistentNodes() throws Exception {
-        checkDeployFromEachNodes(true, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testDeployFromEachNodes() throws Exception {
         checkDeployFromEachNodes(false, false);
     }
@@ -170,6 +182,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticDeployFromEachNodes() throws Exception {
         checkDeployFromEachNodes(false, true);
     }
@@ -188,9 +201,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
         Ignite ignite0 = deployServiceFromNewNode(staticDeploy, 0);
 
-        if (persistence)
-            ignite0.cluster().active(true);
-        else {
+        if (!staticDeploy) {
             IgniteCluster cluster = ignite0.cluster();
 
             cluster.setBaselineTopology(cluster.topologyVersion());

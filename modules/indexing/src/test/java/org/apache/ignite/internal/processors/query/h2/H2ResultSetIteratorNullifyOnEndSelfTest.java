@@ -26,14 +26,15 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for iterator data link erasure after closing or completing
  */
-public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractTest {
+public class H2ResultSetIteratorNullifyOnEndSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
 
@@ -46,6 +47,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Non local SQL Fields check nullification after close
      */
+    @Test
     public void testSqlFieldsQueryClose() {
         SqlFieldsQuery qry = new SqlFieldsQuery(SELECT_MAX_SAL_SQLF);
 
@@ -63,6 +65,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Non local SQL Fields check nullification after complete
      */
+    @Test
     public void testSqlFieldsQueryComplete() {
         SqlFieldsQuery qry = new SqlFieldsQuery(SELECT_MAX_SAL_SQLF);
 
@@ -78,6 +81,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Local SQL Fields check nullification after close
      */
+    @Test
     public void testSqlFieldsQueryLocalClose() {
         SqlFieldsQuery qry = new SqlFieldsQuery(SELECT_MAX_SAL_SQLF);
 
@@ -97,6 +101,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Local SQL Fields check nullification after complete
      */
+    @Test
     public void testSqlFieldsQueryLocalComplete() {
         SqlFieldsQuery qry = new SqlFieldsQuery(SELECT_MAX_SAL_SQLF);
 
@@ -151,11 +156,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
         awaitPartitionMapExchange();
 
         populateDataIntoPerson();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**

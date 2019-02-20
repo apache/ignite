@@ -447,6 +447,18 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public <V1> IgniteQueue<V1> withKeepBinary() {
+        gate.enter();
+
+        try {
+            return new GridCacheQueueProxy<>(cctx, (GridCacheQueueAdapter<V1>)delegate.withKeepBinary());
+        }
+        finally {
+            gate.leave();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return delegate.hashCode();
     }

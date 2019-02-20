@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -33,22 +34,23 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  *
  */
 public class WalCompactionTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Wal segment size. */
     private static final int WAL_SEGMENT_SIZE = 4 * 1024 * 1024;
 
@@ -64,11 +66,17 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /** Wal mode. */
     private WALMode walMode;
 
+    /** */
+    private static class RolloverRecord extends CheckpointRecord {
+        /** */
+        private RolloverRecord() {
+            super(null);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -94,6 +102,20 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
@@ -116,6 +138,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyingUpdatesFromCompactedWal() throws Exception {
         testApplyingUpdatesFromCompactedWal(false);
     }
@@ -125,6 +148,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyingUpdatesFromCompactedWalWhenCompressorDisabled() throws Exception {
         testApplyingUpdatesFromCompactedWal(true);
     }
@@ -241,6 +265,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompressorToleratesEmptyWalSegmentsFsync() throws Exception {
         testCompressorToleratesEmptyWalSegments(WALMode.FSYNC);
     }
@@ -248,8 +273,74 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompressorToleratesEmptyWalSegmentsLogOnly() throws Exception {
         testCompressorToleratesEmptyWalSegments(WALMode.LOG_ONLY);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testOptimizedWalSegments() throws Exception {
+        IgniteConfiguration icfg = getConfiguration(getTestIgniteInstanceName(0));
+
+        icfg.getDataStorageConfiguration().setWalSegmentSize(300_000_000);
+        icfg.getDataStorageConfiguration().setWalSegments(1);
+
+        IgniteEx ig = (IgniteEx)startGrid(getTestIgniteInstanceName(0), optimize(icfg), null);
+
+        ig.cluster().active(true);
+
+        IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
+
+        for (int i = 0; i < 2500; i++) { // At least 50MB of raw data in total.
+            final byte[] val = new byte[20000];
+
+            val[i] = 1;
+
+            cache.put(i, val);
+        }
+
+        IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
+
+        IgniteCacheDatabaseSharedManager dbMgr = ig.context().cache().context().database();
+
+        RolloverRecord rec = new RolloverRecord();
+
+        try {
+            dbMgr.checkpointReadLock();
+
+            try {
+                walMgr.log(rec, RolloverType.NEXT_SEGMENT);
+            }
+            finally {
+                dbMgr.checkpointReadUnlock();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            log.error(e.getMessage(), e);
+        }
+
+        long start = System.currentTimeMillis();
+
+        do {
+            Thread.yield();
+        } while(walMgr.lastArchivedSegment() < 0 && (System.currentTimeMillis() - start < 15_000));
+
+        assertTrue(System.currentTimeMillis() - start < 15_000);
+
+        String nodeFolderName = ig.context().pdsFolderResolver().resolveFolders().folderName();
+
+        stopAllGrids();
+
+        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
+        File walDir = new File(dbDir, "wal");
+        File archiveDir = new File(walDir, "archive");
+        File nodeArchiveDir = new File(archiveDir, nodeFolderName);
+        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0));
+
+        assertTrue("" + walSegment.length(), walSegment.length() < 200_000_000);
     }
 
     /**
@@ -288,9 +379,20 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         File nodeArchiveDir = new File(archiveDir, nodeFolderName);
         File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(emptyIdx));
 
-        try (RandomAccessFile raf = new RandomAccessFile(walSegment, "rw")) {
-            raf.setLength(0); // Clear wal segment, but don't delete.
-        }
+        long start = U.currentTimeMillis();
+        do {
+            try (RandomAccessFile raf = new RandomAccessFile(walSegment, "rw")) {
+                raf.setLength(0); // Clear wal segment, but don't delete.
+            }
+
+            if (walSegment.length() == 0)
+                break;
+
+            if (U.currentTimeMillis() - start >= 10000)
+                throw new IgniteCheckedException("Can't trucate: " + walSegment.getAbsolutePath());
+
+            Thread.yield();
+        } while (true);
 
         compactionEnabled = true;
 
@@ -315,12 +417,25 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         System.out.println("Max compressed index: " + maxIdx);
         assertTrue(maxIdx > emptyIdx);
 
-        assertTrue(walSegment.exists()); // Failed to compress WAL segment shoudn't be deleted.
+        if (!walSegment.exists()) {
+            File[] list = nodeArchiveDir.listFiles();
+
+            Arrays.sort(list);
+
+            log.info("Files in archive:" + list.length);
+
+            for (File f : list)
+                log.info(f.getAbsolutePath());
+
+            // Failed to compress WAL segment shoudn't be deleted.
+            fail("File " + walSegment.getAbsolutePath() + " does not exist.");
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSeekingStartInCompactedSegment() throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);

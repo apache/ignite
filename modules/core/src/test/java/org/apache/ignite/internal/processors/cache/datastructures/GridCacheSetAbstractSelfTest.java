@@ -28,7 +28,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -53,6 +52,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -111,7 +111,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                 return;
             }
-            catch (AssertionFailedError e) {
+            catch (AssertionError e) {
                 if (i == MAX_CHECK - 1)
                     throw e;
 
@@ -167,6 +167,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateRemove() throws Exception {
         testCreateRemove(false);
     }
@@ -174,6 +175,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateRemoveCollocated() throws Exception {
         testCreateRemove(true);
     }
@@ -243,6 +245,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApi() throws Exception {
         testApi(false);
     }
@@ -250,6 +253,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApiCollocated() throws Exception {
         testApi(true);
     }
@@ -406,6 +410,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         testIterator(false);
     }
@@ -413,6 +418,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorCollocated() throws Exception {
         testIterator(true);
     }
@@ -506,6 +512,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorClose() throws Exception {
         testIteratorClose(false);
     }
@@ -513,6 +520,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorCloseCollocated() throws Exception {
         testIteratorClose(true);
     }
@@ -540,7 +548,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                 assertSetIteratorsCleared();
             }
-            catch (AssertionFailedError e) {
+            catch (AssertionError e) {
                 if (i == 9)
                     throw e;
 
@@ -562,7 +570,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             try {
                 assertSetIteratorsCleared();
             }
-            catch (AssertionFailedError e) {
+            catch (AssertionError e) {
                 if (i == 9)
                     throw e;
 
@@ -591,6 +599,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinsAndLeaves() throws Exception {
         if (collectionCacheMode() == LOCAL)
             return;
@@ -601,6 +610,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinsAndLeavesCollocated() throws Exception {
         if (collectionCacheMode() == LOCAL)
             return;
@@ -651,6 +661,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded() throws Exception {
         testMultithreaded(false);
     }
@@ -658,6 +669,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedCollocated() throws Exception {
         if (collectionCacheMode() != PARTITIONED)
             return;
@@ -737,6 +749,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCleanup() throws Exception {
         testCleanup(false);
     }
@@ -744,6 +757,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCleanupCollocated() throws Exception {
         testCleanup(true);
     }
@@ -850,6 +864,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         final IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false));
 
@@ -877,6 +892,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         final CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -927,6 +943,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         final CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -982,6 +999,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -1027,6 +1045,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * Test that non collocated sets are stored in a separated cache.
      */
+    @Test
     public void testCacheReuse()  {
         testCacheReuse(false);
     }
@@ -1034,6 +1053,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /**
      * Test that collocated sets within the same group and compatible configurations are stored in the same cache.
      */
+    @Test
     public void testCacheReuseCollocated() {
         testCacheReuse(true);
     }
@@ -1081,7 +1101,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      *
      * @throws Exception If failed.
      */
-    public void _testMultipleStructuresInDifferentGroups() throws Exception {
+    @Test
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
         Ignite ignite = grid(0);
 
         CollectionConfiguration cfg1 = collectionConfiguration();

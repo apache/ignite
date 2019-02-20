@@ -1448,5 +1448,23 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             DoOutInOp((int)CacheOp.ResetQueryMetrics);
         }
+
+        /** <inheritdoc /> */
+        public void PreloadPartition(int partition)
+        {
+            DoOutInOp((int)CacheOp.PreloadPartition, partition);
+        }
+
+        /** <inheritdoc /> */
+        public Task PreloadPartitionAsync(int partition)
+        {
+            return DoOutOpAsync(CacheOp.PreloadPartitionAsync, w => w.WriteInt(partition));
+        }
+
+        /** <inheritdoc /> */
+        public bool LocalPreloadPartition(int partition)
+        {
+            return DoOutOp(CacheOp.LocalPreloadPartition, w => w.WriteInt(partition));
+        }
     }
 }

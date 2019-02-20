@@ -50,6 +50,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Job stealing test.
@@ -96,6 +97,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testTwoJobs() throws IgniteCheckedException {
         executeAsync(ignite1.compute(), new JobStealingSingleNodeTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
@@ -110,6 +112,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testTwoJobsNullPredicate() throws IgniteCheckedException {
         executeAsync(ignite1.compute(), new JobStealingSingleNodeTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
@@ -124,6 +127,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testTwoJobsTaskNameNullPredicate() throws IgniteCheckedException {
         executeAsync(ignite1.compute(), JobStealingSingleNodeTask.class.getName(), null).get(TASK_EXEC_TIMEOUT_MS);
 
@@ -138,6 +142,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testTwoJobsPartiallyNullPredicate() throws IgniteCheckedException {
         IgnitePredicate<ClusterNode> topPred =  new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode e) {
@@ -158,6 +163,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionPredicate() throws Exception {
         final Ignite ignite3 = startGrid(3);
 
@@ -181,6 +187,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionPredicateInternalStealing() throws Exception {
         final Ignite ignite3 = startGrid(3);
 
@@ -209,6 +216,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNodeTopology() throws Exception {
         IgnitePredicate<ClusterNode> p = new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode e) {
@@ -229,6 +237,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNodeProjection() throws Exception {
         ClusterGroup prj = ignite1.cluster().forNodeIds(Collections.singleton(ignite1.cluster().localNode().id()));
 
@@ -244,6 +253,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNodeProjectionNullPredicate() throws Exception {
         ClusterGroup prj = ignite1.cluster().forNodeIds(Collections.singleton(ignite1.cluster().localNode().id()));
 
@@ -260,6 +270,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testProjectionPredicateDifferentClassLoaders() throws Exception {
         final Ignite ignite3 = startGrid(3);
 

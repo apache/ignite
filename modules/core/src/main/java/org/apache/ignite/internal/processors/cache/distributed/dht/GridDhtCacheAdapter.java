@@ -260,7 +260,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 res.addInfo(info);
                         }
 
-                        entry.touch(msg.topologyVersion());
+                        entry.touch();
 
                         break;
                     }
@@ -699,7 +699,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
                 finally {
                     if (entry != null)
-                        entry.touch(topVer);
+                        entry.touch();
 
                     part.release();
 
@@ -969,12 +969,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 res0 = info.value();
                         }
 
-                        res = new GridNearSingleGetResponse(ctx.cacheId(),
+                        res = new GridNearSingleGetResponse(
+                            ctx.cacheId(),
                             req.futureId(),
                             null,
                             res0,
                             false,
-                            req.addDeploymentInfo());
+                            req.addDeploymentInfo()
+                        );
 
                         if (info != null && req.skipValues())
                             res.setContainsValue();
@@ -982,15 +984,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     else {
                         AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().initialVersion();
 
-                        assert topVer.compareTo(req.topologyVersion()) > 0 : "Wrong ready topology version for " +
-                            "invalid partitions response [topVer=" + topVer + ", req=" + req + ']';
-
-                        res = new GridNearSingleGetResponse(ctx.cacheId(),
+                        res = new GridNearSingleGetResponse(
+                            ctx.cacheId(),
                             req.futureId(),
                             topVer,
                             null,
                             true,
-                            req.addDeploymentInfo());
+                            req.addDeploymentInfo()
+                        );
                     }
                 }
                 catch (NodeStoppingException ignored) {
@@ -1075,8 +1076,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     res.error(e);
                 }
 
-                if (!F.isEmpty(fut.invalidPartitions()))
-                    res.invalidPartitions(fut.invalidPartitions(), ctx.shared().exchange().lastTopologyFuture().initialVersion());
+                if (!F.isEmpty(fut.invalidPartitions())){
+                    AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().initialVersion();
+
+                    res.invalidPartitions(fut.invalidPartitions(), topVer);
+                }
 
                 try {
                     ctx.io().send(nodeId, res, ctx.ioPolicy());
@@ -1097,7 +1101,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public void sendTtlUpdateRequest(@Nullable final IgniteCacheExpiryPolicy expiryPlc) {
         if (expiryPlc != null && expiryPlc.entries() != null) {
             ctx.closures().runLocalSafe(new Runnable() {
-                @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
+                @SuppressWarnings({"ForLoopReplaceableByForEach"})
                 @Override public void run() {
                     Map<KeyCacheObject, GridCacheVersion> entries = expiryPlc.entries();
 
@@ -1228,7 +1232,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
                 finally {
                     if (entry != null)
-                        entry.touch(AffinityTopologyVersion.NONE);
+                        entry.touch();
                 }
             }
             catch (IgniteCheckedException e) {

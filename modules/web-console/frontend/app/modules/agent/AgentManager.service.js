@@ -18,11 +18,10 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import {BehaviorSubject} from 'rxjs/BehaviorSubject';
-import 'rxjs/add/operator/first';
-import 'rxjs/add/operator/partition';
-import 'rxjs/add/operator/takeUntil';
-import 'rxjs/add/operator/pluck';
+import {timer, BehaviorSubject, of, from} from 'rxjs';
+import {exhaustMap, first, pluck, tap, distinctUntilChanged, map, filter, expand, takeWhile, last} from 'rxjs/operators';
+
+import io from 'socket.io-client';
 
 import AgentModal from './AgentModal.service';
 // @ts-ignore
@@ -120,7 +119,7 @@ class ConnectionState {
 }
 
 export default class AgentManager {
-    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
+    static $inject = ['$rootScope', '$q', '$transitions', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
 
     /** @type {ng.IScope} */
     $root;
@@ -165,17 +164,15 @@ export default class AgentManager {
      * @param {ng.IRootScopeService} $root
      * @param {ng.IQService} $q
      * @param {import('@uirouter/angularjs').TransitionService} $transitions
-     * @param {unknown} socketFactory
      * @param {import('./AgentModal.service').default} agentModal
      * @param {import('app/components/user-notifications/service').default} UserNotifications
      * @param {import('app/services/Version.service').default} Version
      * @param {import('./components/cluster-login/service').default} ClusterLoginSrv
      */
-    constructor($root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv) {
+    constructor($root, $q, $transitions, agentModal, UserNotifications, Version, ClusterLoginSrv) {
         this.$root = $root;
         this.$q = $q;
         this.$transitions = $transitions;
-        this.socketFactory = socketFactory;
         this.agentModal = agentModal;
         this.UserNotifications = UserNotifications;
         this.Version = Version;
@@ -185,14 +182,21 @@ export default class AgentManager {
 
         let prevCluster;
 
-        this.currentCluster$ = this.connectionSbj
-            .distinctUntilChanged(({ cluster }) => prevCluster === cluster)
-            .do(({ cluster }) => prevCluster = cluster);
+        this.currentCluster$ = this.connectionSbj.pipe(
+            distinctUntilChanged(({ cluster }) => prevCluster === cluster),
+            tap(({ cluster }) => prevCluster = cluster)
+        );
 
-        this.clusterIsActive$ = this.connectionSbj
-            .map(({ cluster }) => cluster)
-            .filter((cluster) => Boolean(cluster))
-            .pluck('active');
+        this.clusterIsActive$ = this.connectionSbj.pipe(
+            map(({ cluster }) => cluster),
+            filter((cluster) => Boolean(cluster)),
+            pluck('active')
+        );
+
+        this.clusterIsAvailable$ = this.connectionSbj.pipe(
+            pluck('cluster'),
+            map((cluster) => !!cluster)
+        );
 
         if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({
@@ -220,7 +224,9 @@ export default class AgentManager {
         if (nonNil(this.socket))
             return;
 
-        this.socket = this.socketFactory();
+        const options = this.isDemoMode() ? {query: 'IgniteDemoMode=true'} : {};
+
+        this.socket = io.connect(options);
 
         const onDisconnect = () => {
             const conn = this.connectionSbj.getValue();
@@ -353,58 +359,6 @@ export default class AgentManager {
         return this.awaitAgent();
     }
 
-    /**
-     * @param {String} backText
-     * @param {String} [backState]
-     * @returns {ng.IPromise}
-     */
-    startClusterWatch(backText, backState) {
-        this.backText = backText;
-        this.backState = backState;
-
-        const conn = this.connectionSbj.getValue();
-
-        conn.useConnectedCluster();
-
-        this.connectionSbj.next(conn);
-
-        this.modalSubscription && this.modalSubscription.unsubscribe();
-
-        this.modalSubscription = this.connectionSbj.subscribe({
-            next: ({state}) => {
-                switch (state) {
-                    case State.CONNECTED:
-                        this.agentModal.hide();
-
-                        break;
-
-                    case State.AGENT_DISCONNECTED:
-                        this.agentModal.agentDisconnected(this.backText, this.backState);
-                        this.ClusterLoginSrv.cancel();
-
-                        break;
-
-                    case State.CLUSTER_DISCONNECTED:
-                        this.agentModal.clusterDisconnected(this.backText, this.backState);
-                        this.ClusterLoginSrv.cancel();
-
-                        break;
-
-                    default:
-                    // Connection to backend is not established yet.
-                }
-            }
-        });
-
-        const stopWatchUnsubscribe = this.$transitions.onExit({}, () => {
-            this.stopWatch();
-
-            stopWatchUnsubscribe();
-        });
-
-        return this.awaitCluster();
-    }
-
     stopWatch() {
         this.modalSubscription && this.modalSubscription.unsubscribe();
 
@@ -486,8 +440,13 @@ export default class AgentManager {
                         if (cluster.secured)
                             this.clustersSecrets.get(cluster.id).sessionToken = res.sessionToken;
 
-                        if (res.zipped)
-                            return this.pool.postMessage(res.data);
+                        if (res.zipped) {
+                            const taskId = _.get(params, 'taskId', '');
+
+                            const useBigIntJson = taskId.startsWith('query');
+
+                            return this.pool.postMessage({payload: res.data, useBigIntJson});
+                        }
 
                         return res;
 
@@ -524,7 +483,7 @@ export default class AgentManager {
         if (this.isDemoMode())
             return Promise.resolve(this._executeOnActiveCluster({}, {}, event, params));
 
-        return this.connectionSbj.first().toPromise()
+        return this.connectionSbj.pipe(first()).toPromise()
             .then(({cluster}) => {
                 if (_.isNil(cluster))
                     throw new Error('Failed to execute request on cluster.');
@@ -552,7 +511,7 @@ export default class AgentManager {
                 if (err instanceof CancellationError)
                     return;
 
-                return err;
+                throw err;
             });
     }
 
@@ -714,14 +673,14 @@ export default class AgentManager {
      * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
      * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
      * @param {Boolean} local Flag whether to execute query locally.
-     * @param {Number} pageSz
+     * @param {Number} pageSize
      * @param {Boolean} [lazy] query flag.
      * @param {Boolean} [collocated] Collocated query.
      * @returns {Promise}
      */
-    querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy = false, collocated = false) {
+    querySql({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy = false, collocated = false}) {
         if (this.available(IGNITE_2_0)) {
-            let args = [cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz];
+            let args = [cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize];
 
             if (this.available(...COLLOCATED_QUERY_SINCE))
                 args = [...args, lazy, collocated];
@@ -741,11 +700,11 @@ export default class AgentManager {
         let queryPromise;
 
         if (enforceJoinOrder)
-            queryPromise = this.visorTask('querySqlV3', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local, pageSz);
+            queryPromise = this.visorTask('querySqlV3', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local, pageSize);
         else if (nonCollocatedJoins)
-            queryPromise = this.visorTask('querySqlV2', nid, cacheName, query, nonCollocatedJoins, local, pageSz);
+            queryPromise = this.visorTask('querySqlV2', nid, cacheName, query, nonCollocatedJoins, local, pageSize);
         else
-            queryPromise = this.visorTask('querySql', nid, cacheName, query, local, pageSz);
+            queryPromise = this.visorTask('querySql', nid, cacheName, query, local, pageSize);
 
         return queryPromise
             .then(({key, value}) => {
@@ -754,6 +713,21 @@ export default class AgentManager {
 
                 return Promise.reject(key);
             });
+    }
+
+    /**
+     * @param {String} nid Node id.
+     * @param {String} queryId Query ID.
+     * @param {Number} pageSize
+     * @returns {Promise}
+     */
+    queryFetchFistsPage(nid, queryId, pageSize) {
+        return this.visorTask('queryFetchFirstPage', nid, queryId, pageSize).then(({error, result}) => {
+            if (_.isEmpty(error))
+                return result;
+
+            return Promise.reject(error);
+        });
     }
 
     /**
@@ -769,6 +743,34 @@ export default class AgentManager {
         return this.visorTask('queryFetch', nid, queryId, pageSize);
     }
 
+    _fetchQueryAllResults(acc, pageSize) {
+        if (!_.isNil(acc.rows)) {
+            if (!acc.hasMore)
+                return acc;
+
+            return of(acc).pipe(
+                expand((acc) => {
+                    return from(this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
+                        .then((res) => {
+                            acc.rows = acc.rows.concat(res.rows);
+                            acc.hasMore = res.hasMore;
+
+                            return acc;
+                        }));
+                }),
+                takeWhile((acc) => acc.hasMore),
+                last()
+            ).toPromise();
+        }
+
+        return timer(100, 500).pipe(
+            exhaustMap(() => this.queryFetchFistsPage(acc.responseNodeId, acc.queryId, pageSize)),
+            filter((res) => !_.isNil(res.rows)),
+            first(),
+            map((res) => this._fetchQueryAllResults(res, 1024))
+        ).toPromise();
+    }
+
     /**
      * @param {String} nid Node id.
      * @param {String} cacheName Cache name.
@@ -781,26 +783,12 @@ export default class AgentManager {
      * @param {Boolean} collocated Collocated query.
      * @returns {Promise}
      */
-    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy, collocated) {
+    querySqlGetAll({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy, collocated}) {
         // Page size for query.
-        const pageSz = 1024;
+        const pageSize = 1024;
 
-        const fetchResult = (acc) => {
-            if (!acc.hasMore)
-                return acc;
-
-            return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSz)
-                .then((res) => {
-                    acc.rows = acc.rows.concat(res.rows);
-
-                    acc.hasMore = res.hasMore;
-
-                    return fetchResult(acc);
-                });
-        };
-
-        return this.querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy, collocated)
-            .then(fetchResult);
+        return this.querySql({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy, collocated})
+            .then((res) => this._fetchQueryAllResults(res, pageSize));
     }
 
     /**
@@ -828,7 +816,7 @@ export default class AgentManager {
      * @param {Number} pageSize Page size.
      * @returns {Promise}
      */
-    queryScan(nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize) {
+    queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize}) {
         if (this.available(IGNITE_2_0)) {
             return this.visorTask('queryScanX2', nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize)
                 .then(({error, result}) => {
@@ -848,7 +836,7 @@ export default class AgentManager {
         const prefix = caseSensitive ? SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE : SCAN_CACHE_WITH_FILTER;
         const query = `${prefix}${filter}`;
 
-        return this.querySql(nid, cacheName, query, false, false, false, local, pageSize);
+        return this.querySql({nid, cacheName, query, nonCollocatedJoins: false, enforceJoinOrder: false, replicatedOnly: false, local, pageSize});
     }
 
     /**
@@ -861,26 +849,12 @@ export default class AgentManager {
      * @param {Boolean} local Flag whether to execute query locally.
      * @returns {Promise}
      */
-    queryScanGetAll(nid, cacheName, filter, regEx, caseSensitive, near, local) {
+    queryScanGetAll({nid, cacheName, filter, regEx, caseSensitive, near, local}) {
         // Page size for query.
-        const pageSz = 1024;
+        const pageSize = 1024;
 
-        const fetchResult = (acc) => {
-            if (!acc.hasMore)
-                return acc;
-
-            return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSz)
-                .then((res) => {
-                    acc.rows = acc.rows.concat(res.rows);
-
-                    acc.hasMore = res.hasMore;
-
-                    return fetchResult(acc);
-                });
-        };
-
-        return this.queryScan(nid, cacheName, filter, regEx, caseSensitive, near, local, pageSz)
-            .then(fetchResult);
+        return this.queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize})
+            .then((res) => this._fetchQueryAllResults(res, pageSize));
     }
 
     /**

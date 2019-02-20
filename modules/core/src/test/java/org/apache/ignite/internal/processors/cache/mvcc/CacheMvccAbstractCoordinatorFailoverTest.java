@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import org.junit.Test;
+
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
@@ -30,6 +32,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxGet_Server_Backups0_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
 
@@ -40,6 +43,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxGet_SingleNode_CoordinatorFails() throws Exception {
         accountsTxReadAll(1, 0, 0, 1,
             null, true, GET, PUT, DFLT_TEST_TIME, RestartMode.RESTART_CRD);
@@ -48,6 +52,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxScan_Server_Backups0_CoordinatorFails() throws Exception {
         accountsTxReadAll(2, 0, 0, 64,
             null, true, SCAN, PUT, DFLT_TEST_TIME, RestartMode.RESTART_CRD);
@@ -56,6 +61,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxScan_SingleNode_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
 
@@ -67,6 +73,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_Server_Backups0_RestartCoordinator_GetPut() throws Exception {
         putAllGetAll(RestartMode.RESTART_CRD  , 2, 0, 0, 64,
             null, GET, PUT);
@@ -75,6 +82,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_SingleNode_RestartCoordinator_GetPut_Persistence() throws Exception {
         persistence = true;
 
@@ -85,6 +93,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate_N_Objects_Servers_Backups0__PutGet_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
 
@@ -95,8 +104,8 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate_N_Objects_SingleNode__PutGet_CoordinatorFails() throws Exception {
-
         updateNObjectsTest(7, 1, 0, 0, 1, DFLT_TEST_TIME,
             null, GET, PUT, RestartMode.RESTART_CRD);
     }
@@ -104,6 +113,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCoordinatorFailureSimplePessimisticTxPutGet() throws Exception {
         coordinatorFailureSimple(PESSIMISTIC, REPEATABLE_READ, GET, PUT);
     }
@@ -111,6 +121,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadInProgressCoordinatorFailsSimple_FromClientPutGet() throws Exception {
         readInProgressCoordinatorFailsSimple(true, null, GET, PUT);
     }
@@ -118,6 +129,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCoordinatorChangeActiveQueryClientFails_Simple() throws Exception {
         checkCoordinatorChangeActiveQueryClientFails_Simple(null, GET, PUT);
     }

@@ -24,6 +24,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Transient value serialization test.
@@ -49,6 +50,7 @@ public class GridTransientTest extends GridCommonAbstractTest implements Seriali
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransientSerialization() throws Exception {
         GridTransientTest objSrc = new GridTransientTest();
 

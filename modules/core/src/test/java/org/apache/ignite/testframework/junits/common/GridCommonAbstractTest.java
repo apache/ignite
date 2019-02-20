@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
@@ -47,6 +48,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -60,6 +62,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -78,18 +81,19 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -117,6 +121,8 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -130,6 +136,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /** Cache peek modes array that consist of only ONHEAP mode. */
     protected static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {CachePeekMode.ONHEAP};
+
+    /** Service deployment wait timeout. */
+    protected static final int SERVICE_DEPLOYMENT_WAIT_TIMEOUT = 10_000;
 
     /**
      * @param startGrid If {@code true}, then grid node will be auto-started.
@@ -316,7 +325,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return DHT cache.
      */
     protected <K, V> GridDhtCacheAdapter<K, V> dht() {
-        return this.<K, V>near().dht();
+        GridCacheAdapter<K, V> internalCache = ((IgniteKernal)grid()).internalCache(DEFAULT_CACHE_NAME);
+
+        return internalCache.isNear() ? internalCache.context().near().dht() : internalCache.context().dht();
     }
 
     /**
@@ -324,7 +335,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return DHT cache.
      */
     protected <K, V> GridDhtCacheAdapter<K, V> dht(int idx) {
-        return this.<K, V>near(idx).dht();
+        GridCacheAdapter<K, V> internalCache = ((IgniteKernal)grid(idx)).internalCache(DEFAULT_CACHE_NAME);
+
+        return internalCache.isNear() ? internalCache.context().near().dht() : internalCache.context().dht();
     }
 
     /**
@@ -333,7 +346,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return DHT cache.
      */
     protected <K, V> GridDhtCacheAdapter<K, V> dht(int idx, String cache) {
-        return this.<K, V>near(idx, cache).dht();
+        GridCacheAdapter<K, V> internalCache = ((IgniteKernal)grid(idx)).internalCache(cache);
+
+        return internalCache.isNear() ? internalCache.context().near().dht() : internalCache.context().dht();
     }
 
     /**
@@ -395,12 +410,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param cache Ignite cache.
+     * @return CacheAtomicityMode for given cache.
+     */
+    public static CacheAtomicityMode atomicityMode(IgniteCache cache) {
+        return ((CacheConfiguration)cache.getConfiguration(CacheConfiguration.class)).getAtomicityMode();
+    }
+
+    /**
      * @param cache Cache.
      * @param keys Keys.
      * @param replaceExistingValues Replace existing values.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues)
         throws Exception {
         IgniteCache<K, Object> cacheCp = (IgniteCache<K, Object>)cache;
@@ -489,16 +511,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         });
 
-        getTestCounters().incrementStarted();
-
         super.setUp();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        getTestCounters().incrementStopped();
-
-        super.tearDown();
     }
 
     /** {@inheritDoc} */
@@ -946,7 +959,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Use method for manual rebalaincing cache on all nodes. Note that using
+     * Use method for manual rebalancing cache on all nodes. Note that using
      * <pre name="code" class="java">
      *   for (int i = 0; i < G.allGrids(); i++)
      *     grid(i).cache(CACHE_NAME).rebalance().get();
@@ -964,40 +977,52 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             return;
 
         IgniteFuture<Void> fut =
-            ignite.compute().withTimeout(5_000).broadcastAsync(new IgniteRunnable() {
-                /** */
-                @LoggerResource
-                IgniteLogger log;
-
-                /** */
-                @IgniteInstanceResource
-                private Ignite ignite;
-
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    IgniteCache<?, ?> cache = ignite.cache(cacheName);
-
-                    assertNotNull(cache);
-
-                    while (!(Boolean)cache.rebalance().get()) {
-                        try {
-                            U.sleep(100);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                    }
-
-                    if (log.isInfoEnabled())
-                        log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
-                }
-            });
+            ignite.compute().withTimeout(5_000).broadcastAsync(new ManualRebalancer(cacheName));
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return fut.isDone();
             }
         }, 5_000));
+    }
+
+    /**
+     *
+     */
+    private static class ManualRebalancer implements IgniteRunnable {
+        /** */
+        @LoggerResource
+        IgniteLogger log;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private final String cacheName;
+
+        public ManualRebalancer(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+            assertNotNull(cache);
+
+            while (!cache.rebalance().get()) {
+                try {
+                    U.sleep(100);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
+        }
     }
 
     /**
@@ -1054,7 +1079,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom) {
         return findKeys(cache, cnt, startFrom, 0);
     }
@@ -1065,7 +1089,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final int type) {
         assert cnt > 0 : cnt;
 
@@ -1146,7 +1169,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is backup.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> backupKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
         return findKeys(cache, cnt, startFrom, 1);
     }
@@ -1158,7 +1180,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
         return findKeys(cache, cnt, startFrom, 2);
@@ -1387,7 +1408,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeek(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, null, null);
+        return cache.localPeek(key, null);
     }
 
     /**
@@ -1395,7 +1416,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeekOnHeap(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP});
     }
 
     /**
@@ -2019,6 +2040,75 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             if (!txs.isEmpty())
                 fail("Some transaction are not finished");
+        }
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param topVer Topology version to wait.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    protected void waitForServicesReadyTopology(final IgniteEx ignite,
+        final AffinityTopologyVersion topVer) throws IgniteInterruptedCheckedException {
+        if (!(ignite.context().service() instanceof IgniteServiceProcessor))
+            return;
+
+        final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)ignite.context().service();
+
+        GridTestUtils.waitForCondition(() -> {
+            AffinityTopologyVersion readyTopVer = srvcProc.deployment().readyTopologyVersion();
+
+            return topVer.compareTo(readyTopVer) <= 0;
+        }, SERVICE_DEPLOYMENT_WAIT_TIMEOUT);
+    }
+
+    /**
+     * @return {@code false} if value of a system property "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED" is "false",
+     * otherwise {@code true}.
+     */
+    protected static boolean isEventDrivenServiceProcessorEnabled() {
+        return getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
+    }
+
+    /**
+     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
+     *
+     * @param countUpdate Number of events.
+     */
+    protected void awaitMetricsUpdate(int countUpdate) throws InterruptedException {
+        awaitMetricsUpdate(countUpdate, G.allGrids());
+    }
+
+    /**
+     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved on specific nodes.
+     *
+     * @param countUpdate Number of events.
+     * @param grids Collection of Ignite instances we are listening for metrics update
+     * @throws InterruptedException
+     */
+    protected void awaitMetricsUpdate(int countUpdate, Collection<Ignite> grids) throws InterruptedException {
+        if (countUpdate > 0) {
+
+            final CountDownLatch latch = new CountDownLatch(G.allGrids().size() * grids.size() * countUpdate);
+
+            final IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt.type() == EventType.EVT_NODE_METRICS_UPDATED;
+
+                    latch.countDown();
+
+                    return true;
+                }
+            };
+
+            for (Ignite g : grids)
+                g.events().localListen(lsnr, EventType.EVT_NODE_METRICS_UPDATED);
+
+            // Wait for metrics update.
+            assert latch.await(10, TimeUnit.SECONDS);
+
+            for (Ignite g : grids)
+                g.events().stopLocalListen(lsnr);
         }
     }
 }

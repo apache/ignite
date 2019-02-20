@@ -42,6 +42,7 @@ import org.apache.storm.testing.TestJob;
 import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.tuple.Values;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -81,6 +82,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * @throws TimeoutException
      * @throws InterruptedException
      */
+    @Test
     public void testStormStreamerIgniteBolt() throws TimeoutException, InterruptedException {
         final StormStreamer<String, String> stormStreamer = new StormStreamer<>();
 

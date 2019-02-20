@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline.cache;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.commandline.OutputFormat;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,6 +32,9 @@ public class CacheArguments {
 
     /** Caches. */
     private Set<String> caches;
+
+    /** Exclude caches or groups. */
+    private Set<String> excludeCaches;
 
     /** Partition id. */
     private int partId;
@@ -70,6 +74,26 @@ public class CacheArguments {
 
     /** Full config flag. */
     private boolean fullConfig;
+
+    /** Cache filter. */
+    private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
+
+    /** Check CRC sum on idle verify. */
+    private boolean idleCheckCrc;
+
+    /**
+     * @return Gets filter of caches, which will by checked.
+     */
+    public CacheFilterEnum getCacheFilterEnum() {
+        return cacheFilterEnum;
+    }
+
+    /**
+     * @param cacheFilterEnum Cache filter.
+     */
+    public void setCacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
+        this.cacheFilterEnum = cacheFilterEnum;
+    }
 
     /**
      * @return Full config flag.
@@ -121,6 +145,20 @@ public class CacheArguments {
      */
     public void caches(Set<String> caches) {
         this.caches = caches;
+    }
+
+    /**
+     * @return Exclude caches or groups.
+     */
+    public Set<String> excludeCaches() {
+        return excludeCaches;
+    }
+
+    /**
+     * @param excludeCaches Excluse caches or groups.
+     */
+    public void excludeCaches(Set<String> excludeCaches) {
+        this.excludeCaches = excludeCaches;
     }
 
     /**
@@ -272,4 +310,18 @@ public class CacheArguments {
      * @param outputFormat New output format.
      */
     public void outputFormat(OutputFormat outputFormat) { this.outputFormat = outputFormat; }
+
+    /**
+     * @return Check page CRC sum on idle verify flag.
+     */
+    public boolean idleCheckCrc() {
+        return idleCheckCrc;
+    }
+
+    /**
+     * @param idleCheckCrc Check page CRC sum on idle verify flag.
+     */
+    public void idleCheckCrc(boolean idleCheckCrc) {
+        this.idleCheckCrc = idleCheckCrc;
+    }
 }

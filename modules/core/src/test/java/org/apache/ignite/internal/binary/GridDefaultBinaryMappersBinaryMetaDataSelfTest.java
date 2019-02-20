@@ -37,6 +37,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Binary meta data test.
@@ -94,6 +95,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAll() throws Exception {
         binaries().toBinary(new TestObject2());
 
@@ -154,6 +156,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoConfiguration() throws Exception {
         binaries().toBinary(new TestObject3());
 
@@ -163,6 +166,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReflection() throws Exception {
         BinaryType meta = binaries().type(TestObject1.class);
 
@@ -207,6 +211,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryMarshalAware() throws Exception {
         binaries().toBinary(new TestObject2());
 
@@ -240,6 +245,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMerge() throws Exception {
         binaries().toBinary(new TestObject2());
 
@@ -281,6 +287,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializedObject() throws Exception {
         TestObject1 obj = new TestObject1();
 

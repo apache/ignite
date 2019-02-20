@@ -25,6 +25,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * {@link IgfsEntryInfo} test case.
@@ -44,6 +45,7 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         marshaller.setContext(new MarshallerContextTestImpl());
 

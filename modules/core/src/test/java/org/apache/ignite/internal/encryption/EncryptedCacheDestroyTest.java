@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEY_PREFIX;
 
@@ -39,6 +40,7 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEncryptedCacheDestroy() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
@@ -62,6 +64,7 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEncryptedCacheFromGroupDestroy() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
@@ -117,11 +120,11 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
         if (keyShouldBeEmpty) {
             assertNull(encKey);
 
-            assertNull(metaStore.getData(ENCRYPTION_KEY_PREFIX + grpId));
+            assertNull(metaStore.readRaw(ENCRYPTION_KEY_PREFIX + grpId));
         } else {
             assertNotNull(encKey);
 
-            assertNotNull(metaStore.getData(ENCRYPTION_KEY_PREFIX + grpId));
+            assertNotNull(metaStore.readRaw(ENCRYPTION_KEY_PREFIX + grpId));
         }
     }
 }

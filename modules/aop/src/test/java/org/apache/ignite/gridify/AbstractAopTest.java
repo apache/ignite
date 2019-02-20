@@ -28,11 +28,9 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
@@ -43,9 +41,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
 @SuppressWarnings( {"OverlyStrongTypeCast", "ProhibitedExceptionDeclared", "IfMayBeConditional"})
 public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private DeploymentMode depMode = DeploymentMode.PRIVATE;
 
     /** {@inheritDoc} */
@@ -53,8 +48,6 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentSpi(new LocalDeploymentSpi());
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setMetricsUpdateFrequency(500);
         cfg.setDeploymentMode(depMode);
@@ -65,6 +58,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultPrivate() throws Exception {
         checkDefault(DeploymentMode.PRIVATE);
     }
@@ -72,6 +66,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultIsolated() throws Exception {
         checkDefault(DeploymentMode.ISOLATED);
     }
@@ -79,6 +74,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultContinuous() throws Exception {
         checkDefault(DeploymentMode.CONTINUOUS);
     }
@@ -86,6 +82,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultShared() throws Exception {
         checkDefault(DeploymentMode.SHARED);
     }
@@ -93,6 +90,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultWithUserClassLoaderPrivate() throws Exception {
         checkDefaultWithUserClassLoader(DeploymentMode.PRIVATE);
     }
@@ -100,6 +98,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultWithUserClassLoaderIsolated() throws Exception {
         checkDefaultWithUserClassLoader(DeploymentMode.ISOLATED);
     }
@@ -107,6 +106,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultWithUserClassLoaderContinuous() throws Exception {
         checkDefaultWithUserClassLoader(DeploymentMode.CONTINUOUS);
     }
@@ -114,6 +114,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultWithUserClassLoaderShared() throws Exception {
         checkDefaultWithUserClassLoader(DeploymentMode.SHARED);
     }
@@ -121,6 +122,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSingleDeploymentWithUserClassLoaderPrivate() throws Exception {
         checkSingleDeploymentWithUserClassLoader(DeploymentMode.PRIVATE);
     }
@@ -128,6 +130,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSingleDeploymentWithUserClassLoaderIsolated() throws Exception {
         checkSingleDeploymentWithUserClassLoader(DeploymentMode.ISOLATED);
     }
@@ -135,6 +138,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSingleDeploymentWithUserClassLoaderContinuous() throws Exception {
         checkSingleDeploymentWithUserClassLoader(DeploymentMode.CONTINUOUS);
     }
@@ -142,6 +146,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSingleDeploymentWithUserClassLoaderShared() throws Exception {
         checkSingleDeploymentWithUserClassLoader(DeploymentMode.SHARED);
     }
@@ -149,6 +154,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourceWithUserClassLoaderPrivate() throws Exception {
         checkDefaultResourceWithUserClassLoader(DeploymentMode.PRIVATE);
     }
@@ -156,6 +162,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourceWithUserClassLoaderIsolated() throws Exception {
         checkDefaultResourceWithUserClassLoader(DeploymentMode.ISOLATED);
     }
@@ -163,6 +170,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourceWithUserClassLoaderContinuous() throws Exception {
         checkDefaultResourceWithUserClassLoader(DeploymentMode.CONTINUOUS);
     }
@@ -170,6 +178,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourceWithUserClassLoaderShared() throws Exception {
         checkDefaultResourceWithUserClassLoader(DeploymentMode.SHARED);
     }
@@ -177,6 +186,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassPrivate() throws Exception {
         checkNonDefaultClass(DeploymentMode.PRIVATE);
     }
@@ -184,6 +194,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassIsolated() throws Exception {
         checkNonDefaultClass(DeploymentMode.ISOLATED);
     }
@@ -191,6 +202,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassContinuous() throws Exception {
         checkNonDefaultClass(DeploymentMode.CONTINUOUS);
     }
@@ -198,6 +210,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassShared() throws Exception {
         checkNonDefaultClass(DeploymentMode.SHARED);
     }
@@ -205,6 +218,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNamePrivate() throws Exception {
         checkNonDefaultName(DeploymentMode.PRIVATE);
     }
@@ -212,6 +226,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameIsolated() throws Exception {
         checkNonDefaultName(DeploymentMode.ISOLATED);
     }
@@ -219,6 +234,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameContinuous() throws Exception {
         checkNonDefaultName(DeploymentMode.CONTINUOUS);
     }
@@ -226,6 +242,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameShared() throws Exception {
         checkNonDefaultName(DeploymentMode.SHARED);
     }
@@ -233,6 +250,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultExceptionPrivate() throws Exception {
         checkDefaultException(DeploymentMode.PRIVATE);
     }
@@ -240,6 +258,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultExceptionIsolated() throws Exception {
         checkDefaultException(DeploymentMode.ISOLATED);
     }
@@ -247,6 +266,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultExceptionContinuous() throws Exception {
         checkDefaultException(DeploymentMode.CONTINUOUS);
     }
@@ -254,6 +274,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultExceptionShared() throws Exception {
         checkDefaultException(DeploymentMode.SHARED);
     }
@@ -261,6 +282,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourcePrivate() throws Exception {
         checkDefaultResource(DeploymentMode.PRIVATE);
     }
@@ -268,6 +290,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourceIsolated() throws Exception {
         checkDefaultResource(DeploymentMode.ISOLATED);
     }
@@ -275,6 +298,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourceContinuous() throws Exception {
         checkDefaultResource(DeploymentMode.CONTINUOUS);
     }
@@ -282,6 +306,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourceShared() throws Exception {
         checkDefaultResource(DeploymentMode.SHARED);
     }
@@ -289,6 +314,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassResourcePrivate() throws Exception {
         checkNonDefaultClassResource(DeploymentMode.PRIVATE);
     }
@@ -296,6 +322,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassResourceIsolated() throws Exception {
         checkNonDefaultClassResource(DeploymentMode.ISOLATED);
     }
@@ -303,6 +330,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassResourceContinuous() throws Exception {
         checkNonDefaultClassResource(DeploymentMode.CONTINUOUS);
     }
@@ -310,6 +338,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassResourceShared() throws Exception {
         checkNonDefaultClassResource(DeploymentMode.SHARED);
     }
@@ -317,6 +346,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameResourcePrivate() throws Exception {
         checkNonDefaultNameResource(DeploymentMode.PRIVATE);
     }
@@ -324,6 +354,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameResourceIsolated() throws Exception {
         checkNonDefaultNameResource(DeploymentMode.ISOLATED);
     }
@@ -331,6 +362,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameResourceContinuous() throws Exception {
         checkNonDefaultNameResource(DeploymentMode.CONTINUOUS);
     }
@@ -338,6 +370,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameResourceShared() throws Exception {
         checkNonDefaultNameResource(DeploymentMode.SHARED);
     }

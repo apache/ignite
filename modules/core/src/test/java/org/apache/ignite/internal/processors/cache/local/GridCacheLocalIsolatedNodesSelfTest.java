@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -32,13 +33,6 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Isolated nodes LOCAL cache self test.
  */
 public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.beforeTestsStarted();
-    }
-
     /**
      *
      */
@@ -48,6 +42,8 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         startGrids(3);
     }
 
@@ -60,6 +56,7 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testIsolatedNodes() throws Exception {
         Ignite g1 = grid(0);
         UUID nid1 = g1.cluster().localNode().id();

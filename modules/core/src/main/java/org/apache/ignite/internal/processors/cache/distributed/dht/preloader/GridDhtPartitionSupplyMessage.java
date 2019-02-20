@@ -249,6 +249,9 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
         CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
+        if (grp == null)
+            return;
+
         for (CacheEntryInfoCollection col : infos().values()) {
             List<GridCacheEntryInfo> entries = col.infos();
 

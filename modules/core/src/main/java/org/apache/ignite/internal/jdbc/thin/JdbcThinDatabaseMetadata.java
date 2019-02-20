@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
@@ -50,15 +51,16 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.CATALOG_NAME;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.columnRow;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.indexRows;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.primaryKeyRows;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.tableRow;
 
 /**
  * JDBC database metadata implementation.
  */
-@SuppressWarnings("RedundantCast")
 public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
-    /** The only possible name for catalog. */
-    public static final String CATALOG_NAME = "IGNITE";
-
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite Thin JDBC Driver";
 
@@ -752,27 +754,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         return new JdbcThinResultSet(rows, meta);
     }
 
-    /**
-     * @param tblMeta Table metadata.
-     * @return Table metadata row.
-     */
-    private List<Object> tableRow(JdbcTableMeta tblMeta) {
-        List<Object> row = new ArrayList<>(10);
-
-        row.add(CATALOG_NAME);
-        row.add(tblMeta.schemaName());
-        row.add(tblMeta.tableName());
-        row.add("TABLE");
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-
-        return row;
-    }
-
     /** {@inheritDoc} */
     @Override public ResultSet getSchemas() throws SQLException {
         return getSchemas(null, "%");
@@ -835,42 +816,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             rows.add(columnRow(res.meta().get(i), i + 1));
 
         return new JdbcThinResultSet(rows, meta);
-    }
-
-    /**
-     * @param colMeta Column metadata.
-     * @param pos Ordinal position.
-     * @return Column metadata row.
-     */
-    private List<Object> columnRow(JdbcColumnMeta colMeta, int pos) {
-        List<Object> row = new ArrayList<>(24);
-
-        row.add(CATALOG_NAME);                  // 1. TABLE_CAT
-        row.add(colMeta.schemaName());          // 2. TABLE_SCHEM
-        row.add(colMeta.tableName());           // 3. TABLE_NAME
-        row.add(colMeta.columnName());          // 4. COLUMN_NAME
-        row.add(colMeta.dataType());            // 5. DATA_TYPE
-        row.add(colMeta.dataTypeName());        // 6. TYPE_NAME
-        row.add(colMeta.precision() == -1 ? null : colMeta.precision()); // 7. COLUMN_SIZE
-        row.add((Integer)null);                 // 8. BUFFER_LENGTH
-        row.add(colMeta.scale() == -1 ? null : colMeta.scale());           // 9. DECIMAL_DIGITS
-        row.add(10);                            // 10. NUM_PREC_RADIX
-        row.add(colMeta.isNullable() ? columnNullable : columnNoNulls);  // 11. NULLABLE
-        row.add((String)null);                  // 12. REMARKS
-        row.add(colMeta.defaultValue());        // 13. COLUMN_DEF
-        row.add(colMeta.dataType());            // 14. SQL_DATA_TYPE
-        row.add((Integer)null);                 // 15. SQL_DATETIME_SUB
-        row.add(Integer.MAX_VALUE);             // 16. CHAR_OCTET_LENGTH
-        row.add(pos);                           // 17. ORDINAL_POSITION
-        row.add(colMeta.isNullable() ? "YES" : "NO"); // 18. IS_NULLABLE
-        row.add((String)null);                  // 19. SCOPE_CATALOG
-        row.add((String)null);                  // 20. SCOPE_SCHEMA
-        row.add((String)null);                  // 21. SCOPE_TABLE
-        row.add((Short)null);                   // 22. SOURCE_DATA_TYPE
-        row.add("NO");                          // 23. IS_AUTOINCREMENT
-        row.add("NO");                          // 23. IS_GENERATEDCOLUMN
-
-        return row;
     }
 
     /** {@inheritDoc} */
@@ -954,29 +899,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             rows.addAll(primaryKeyRows(pkMeta));
 
         return new JdbcThinResultSet(rows, meta);
-    }
-
-    /**
-     * @param pkMeta Primary key metadata.
-     * @return Result set rows for primary key.
-     */
-    private List<List<Object>> primaryKeyRows(JdbcPrimaryKeyMeta pkMeta) {
-        List<List<Object>> rows = new ArrayList<>(pkMeta.fields().size());
-
-        for (int i = 0; i < pkMeta.fields().size(); ++i) {
-            List<Object> row = new ArrayList<>(6);
-
-            row.add(CATALOG_NAME); // table catalog
-            row.add(pkMeta.schemaName());
-            row.add(pkMeta.tableName());
-            row.add(pkMeta.fields().get(i));
-            row.add((Integer)i + 1); // sequence number
-            row.add(pkMeta.name());
-
-            rows.add(row);
-        }
-
-        return rows;
     }
 
     /** {@inheritDoc} */
@@ -1181,36 +1103,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             rows.addAll(indexRows(idxMeta));
 
         return new JdbcThinResultSet(rows, meta);
-    }
-
-    /**
-     * @param idxMeta Index metadata.
-     * @return List of result rows correspond to index.
-     */
-    private List<List<Object>> indexRows(JdbcIndexMeta idxMeta) {
-        List<List<Object>> rows = new ArrayList<>(idxMeta.fields().size());
-
-        for (int i = 0; i < idxMeta.fields().size(); ++i) {
-            List<Object> row = new ArrayList<>(13);
-
-            row.add(CATALOG_NAME); // table catalog
-            row.add(idxMeta.schemaName());
-            row.add(idxMeta.tableName());
-            row.add(true); // non unique
-            row.add(null); // index qualifier (index catalog)
-            row.add(idxMeta.indexName());
-            row.add((short)tableIndexOther); // type
-            row.add((Integer)i); // field ordinal position in index
-            row.add(idxMeta.fields().get(i));
-            row.add(idxMeta.fieldsAsc().get(i) ? "A" : "D");
-            row.add((Integer)0); // cardinality
-            row.add((Integer)0); // pages
-            row.add((String)null); // filer condition
-
-            rows.add(row);
-        }
-
-        return rows;
     }
 
     /** {@inheritDoc} */
@@ -1502,7 +1394,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Database meta data is not a wrapper for " + iface.getName());
@@ -1535,10 +1426,10 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
-     * Checks if specified catalog matches the only possible catalog value. See {@link #CATALOG_NAME}.
+     * Checks if specified catalog matches the only possible catalog value. See {@link JdbcUtils#CATALOG_NAME}.
      *
      * @param catalog Catalog name or {@code null}.
-     * @return {@code true} If catalog equal ignoring case to {@link #CATALOG_NAME} or null (which means any catalog).
+     * @return {@code true} If catalog equal ignoring case to {@link JdbcUtils#CATALOG_NAME} or null (which means any catalog).
      *  Otherwise returns {@code false}.
      */
     private static boolean isValidCatalog(String catalog) {

@@ -23,14 +23,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -51,21 +49,11 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /** Transaction timeout. */
     private static final long TIMEOUT = 50;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @throws Exception If failed.
      */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(GRID_COUNT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -75,12 +63,6 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
         TransactionConfiguration txCfg = c.getTransactionConfiguration();
 
         txCfg.setDefaultTxTimeout(TIMEOUT);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
 
         return c;
     }
@@ -96,6 +78,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticReadCommitted() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, READ_COMMITTED);
     }
@@ -103,6 +86,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -110,6 +94,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticSerializable() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, SERIALIZABLE);
     }
@@ -117,6 +102,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticReadCommitted() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, READ_COMMITTED);
     }
@@ -124,6 +110,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -131,6 +118,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticSerializable() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, SERIALIZABLE);
     }

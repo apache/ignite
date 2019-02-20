@@ -24,18 +24,16 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -58,23 +56,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     private static final int GRID_CNT = 3;
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private CacheAtomicityMode atomicityMode;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
-
-        return c;
-    }
 
     /**
      * @return Cache configuration.
@@ -125,114 +107,132 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticReadCommittedNoPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, READ_COMMITTED, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticReadCommittedWithPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, READ_COMMITTED, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticReadCommitted() throws Exception {
         checkDoubleGet(OPTIMISTIC, READ_COMMITTED, false);
         checkDoubleGet(OPTIMISTIC, READ_COMMITTED, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticRepeatableReadNoPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, REPEATABLE_READ, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticRepeatableReadWithPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, REPEATABLE_READ, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticRepeatableRead() throws Exception {
         checkDoubleGet(OPTIMISTIC, REPEATABLE_READ, false);
         checkDoubleGet(OPTIMISTIC, REPEATABLE_READ, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticSerializableNoPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, SERIALIZABLE, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticSerializableWithPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, SERIALIZABLE, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticSerializable() throws Exception {
         checkDoubleGet(OPTIMISTIC, SERIALIZABLE, false);
         checkDoubleGet(OPTIMISTIC, SERIALIZABLE, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticReadCommittedNoPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, READ_COMMITTED, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticReadCommittedWithPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, READ_COMMITTED, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticReadCommitted() throws Exception {
         checkDoubleGet(PESSIMISTIC, READ_COMMITTED, false);
         checkDoubleGet(PESSIMISTIC, READ_COMMITTED, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticRepeatableReadNoPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticRepeatableReadWithPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, false);
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticSerializableNoPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, SERIALIZABLE, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticSerializableWithPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, SERIALIZABLE, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticSerializable() throws Exception {
         checkDoubleGet(PESSIMISTIC, SERIALIZABLE, false);
         checkDoubleGet(PESSIMISTIC, SERIALIZABLE, true);
     }
 
     /** @throws Exception If failed. */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Test
     public void testMvccPessimisticRepeatableReadNoPut() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, false);
     }
 
     /** @throws Exception If failed. */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Test
     public void testMvccPessimisticRepeatableReadWithPut() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, true);

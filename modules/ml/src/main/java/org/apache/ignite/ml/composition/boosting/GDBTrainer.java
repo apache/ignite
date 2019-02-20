@@ -20,7 +20,8 @@ package org.apache.ignite.ml.composition.boosting;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
@@ -30,6 +31,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -38,6 +40,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
@@ -86,20 +89,27 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
 
     /** {@inheritDoc} */
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        FeatureLabelExtractor<K, V, Double> extractor) {
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        if (!learnLabels(datasetBuilder, featureExtractor, lbExtractor))
+    @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        FeatureLabelExtractor<K, V, Double> extractor) {
+        if (!learnLabels(datasetBuilder, CompositionUtils.asFeatureExtractor(extractor), CompositionUtils.asLabelExtractor(extractor)))
             return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
-        IgniteBiTuple<Double, Long> initAndSampleSize = computeInitialValue(datasetBuilder, featureExtractor, lbExtractor);
+        IgniteBiFunction<K, V, Vector> featureExtractor =
+            (k, v) -> extractor.extract(k, v).features();
+        IgniteBiFunction<K, V, Double> lbExtractor =
+            (k, v) -> extractor.extract(k, v).label();
+
+        IgniteBiTuple<Double, Long> initAndSampleSize = computeInitialValue(
+            envBuilder,
+            datasetBuilder,
+            featureExtractor,
+            lbExtractor);
         if(initAndSampleSize == null)
             return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
@@ -112,18 +122,23 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
             .withBaseModelTrainerBuilder(this::buildBaseModelTrainer)
             .withExternalLabelToInternal(this::externalLabelToInternal)
             .withCntOfIterations(cntOfIterations)
-            .withEnvironment(environment)
+            .withEnvironmentBuilder(envBuilder)
             .withLossGradient(loss)
             .withSampleSize(sampleSize)
             .withMeanLabelValue(mean)
             .withDefaultGradStepSize(gradientStep)
             .withCheckConvergenceStgyFactory(checkConvergenceStgyFactory);
 
-        List<Model<Vector, Double>> models;
+        List<IgniteModel<Vector, Double>> models;
         if (mdl != null)
-            models = stgy.update((GDBModel)mdl, datasetBuilder, featureExtractor, lbExtractor);
+            models = stgy.update((GDBModel)mdl,
+                datasetBuilder,
+                featureExtractor,
+                lbExtractor);
         else
-            models = stgy.learnModels(datasetBuilder, featureExtractor, lbExtractor);
+            models = stgy.learnModels(datasetBuilder,
+                featureExtractor,
+                lbExtractor);
 
         double learningTime = (double)(System.currentTimeMillis() - learningStartTs) / 1000.0;
         environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
@@ -136,8 +151,13 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(ModelsComposition mdl) {
+    @Override public boolean isUpdateable(ModelsComposition mdl) {
         return mdl instanceof GDBModel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GDBTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (GDBTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 
     /**
@@ -145,17 +165,18 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      *
      * @param builder Dataset builder.
      * @param featureExtractor Feature extractor.
-     * @param lExtractor Labels extractor.
+     * @param lbExtractor Labels extractor.
      * @return true if labels learning was successful.
      */
     protected abstract <V, K> boolean learnLabels(DatasetBuilder<K, V> builder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lExtractor);
+        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor);
 
     /**
      * Returns regressor model trainer for one step of GDB.
      */
     @NotNull
-    protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
+    protected abstract DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> buildBaseModelTrainer();
 
     /**
      * Maps external representation of label to internal.
@@ -175,16 +196,20 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      * Compute mean value of label as first approximation.
      *
      * @param builder Dataset builder.
+     * @param envBuilder Learning environment builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    protected <V, K> IgniteBiTuple<Double, Long> computeInitialValue(DatasetBuilder<K, V> builder,
+    protected <V, K> IgniteBiTuple<Double, Long> computeInitialValue(
+        LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> builder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = builder.build(
+            envBuilder,
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, false)
+            new DecisionTreeDataBuilder<>(CompositionUtils.asFeatureLabelExtractor(featureExtractor, lbExtractor), false)
         )) {
             IgniteBiTuple<Double, Long> meanTuple = dataset.compute(
                 data -> {
@@ -249,7 +274,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
          * @param predictionsAggregator Predictions aggregator.
          * @param internalToExternalLblMapping Internal to external lbl mapping.
          */
-        public GDBModel(List<? extends Model<Vector, Double>> models,
+        public GDBModel(List<? extends IgniteModel<Vector, Double>> models,
             WeightedPredictionsAggregator predictionsAggregator,
             IgniteFunction<Double, Double> internalToExternalLblMapping) {
 
@@ -258,8 +283,8 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
         }
 
         /** {@inheritDoc} */
-        @Override public Double apply(Vector features) {
-            return internalToExternalLblMapping.apply(super.apply(features));
+        @Override public Double predict(Vector features) {
+            return internalToExternalLblMapping.apply(super.predict(features));
         }
     }
 }

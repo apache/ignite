@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -31,20 +32,16 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
  */
 public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private volatile boolean blockMsgs;
 
@@ -72,10 +69,12 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
             disco = new DyingDiscoverySpi();
         else if (igniteInstanceName.startsWith("listener"))
             disco = new ListeningDiscoverySpi();
+        else if (igniteInstanceName.startsWith("receiver"))
+            disco = new DyingThreadDiscoverySpi();
         else
             disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(IP_FINDER);
+        disco.setIpFinder(sharedStaticIpFinder);
         cfg.setDiscoverySpi(disco);
 
         return cfg;
@@ -84,6 +83,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPendingMessagesOverflow() throws Exception {
         Ignite coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
@@ -130,7 +130,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs,
             GridTestUtils.waitForCondition(() -> {
-                log.info("Waiting for messages delivery");
+                log.info("Waiting for messages delivery [sentSize=" + sentEnsuredMsgs.size() + ", rcvdSize=" + receivedEnsuredMsgs.size() + ']');
 
                 return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
             }, 10000));
@@ -139,6 +139,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomMessageInSingletonCluster() throws Exception {
         Ignite coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
@@ -185,11 +186,64 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeliveryAllFailedMessagesInCorrectOrder() throws Exception {
+        IgniteEx coord = startGrid("coordinator");
+        TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
+
+        Set<TcpDiscoveryAbstractMessage> sentEnsuredMsgs = new GridConcurrentHashSet<>();
+        coordDisco.addSendMessageListener(msg -> {
+            if (coordDisco.ensured(msg))
+                sentEnsuredMsgs.add(msg);
+        });
+
+        //Node which receive message but will not send it further around the ring.
+        IgniteEx receiver = startGrid("receiver");
+
+        //Node which will be failed first.
+        IgniteEx dummy = startGrid("dummy");
+
+        //Node which should received all fail message in any way.
+        startGrid("listener");
+
+        sentEnsuredMsgs.clear();
+        receivedEnsuredMsgs.clear();
+
+        blockMsgs = true;
+
+        log.info("Sending fail node messages");
+
+        coord.context().discovery().failNode(dummy.localNode().id(), "Dummy node failed");
+        coord.context().discovery().failNode(receiver.localNode().id(), "Receiver node failed");
+
+        boolean delivered = GridTestUtils.waitForCondition(() -> {
+            log.info("Waiting for messages delivery");
+
+            return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
+        }, 5000);
+
+        assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs, delivered);
+    }
+
+    /**
      * @param disco Discovery SPI.
      * @param id Message id.
      */
     private void sendDummyCustomMessage(TcpDiscoverySpi disco, IgniteUuid id) {
         disco.sendCustomEvent(new CustomMessageWrapper(new DummyCustomDiscoveryMessage(id)));
+    }
+
+    /**
+     * Discovery SPI, that makes a thread to die when {@code blockMsgs} is set to {@code true}.
+     */
+    private class DyingThreadDiscoverySpi extends TcpDiscoverySpi {
+        /** {@inheritDoc} */
+        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+            if (blockMsgs)
+                throw new RuntimeException("Thread is dying");
+        }
     }
 
     /**

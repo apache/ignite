@@ -39,6 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for {@link TcpDiscoverySpi} and {@link TcpCommunicationSpi}.
@@ -140,6 +141,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testCustomResolver() throws Exception {
         final Map<InetSocketAddress, Collection<InetSocketAddress>> map = new HashMap<>();
 
@@ -160,6 +162,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicResolverMapPorts() throws Exception {
         Map<String, String> map = new HashMap<>();
 
@@ -176,6 +179,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicResolverMapAddress() throws Exception {
         Map<String, String> map = new HashMap<>();
 
@@ -191,6 +195,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicResolverErrors() throws Exception {
         GridTestUtils.assertThrows(
             log,

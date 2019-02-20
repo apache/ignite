@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  *
@@ -29,6 +30,7 @@ public class CacheMvccSizeWithConcurrentTransactionTest extends CacheMvccAbstrac
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSize() throws Exception {
         doTestConsistency(clo);
     }

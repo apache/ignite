@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.math.util.MapUtil;
 
-/** Service class is used to calculate means and vaiances */
+/** Service class is used to calculate means and variances. */
 class GaussianNaiveBayesSumsHolder implements Serializable, AutoCloseable {
     /** Serial version uid. */
     private static final long serialVersionUID = 1L;
@@ -42,9 +42,9 @@ class GaussianNaiveBayesSumsHolder implements Serializable, AutoCloseable {
 
     /** In-place operation. Sums {@code arr2} to {@code arr1} element to element. */
     private double[] sum(double[] arr1, double[] arr2) {
-        for (int i = 0; i < arr1.length; i++) {
+        for (int i = 0; i < arr1.length; i++)
             arr1[i] += arr2[i];
-        }
+
         return arr1;
     }
 

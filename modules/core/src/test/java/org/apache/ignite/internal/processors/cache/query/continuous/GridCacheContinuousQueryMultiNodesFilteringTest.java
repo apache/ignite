@@ -50,11 +50,9 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -64,9 +62,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /** */
 @SuppressWarnings("unchecked")
 public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int SERVER_GRIDS_COUNT = 6;
 
@@ -89,6 +84,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
+    @Test
     public void testFiltersAndListeners() throws Exception {
         for (int i = 1; i <= SERVER_GRIDS_COUNT; i++)
             startGrid(i, false);
@@ -146,6 +142,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithNodeFilter() throws Exception {
         List<QueryCursor> qryCursors = new ArrayList<>();
 
@@ -250,8 +247,6 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         String igniteInstanceName = getTestIgniteInstanceName(idx);
 
         IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName)).setClientMode(isClientMode);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setUserAttributes(Collections.singletonMap("idx", idx));
 

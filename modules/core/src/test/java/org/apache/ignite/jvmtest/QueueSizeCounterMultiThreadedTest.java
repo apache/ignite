@@ -23,19 +23,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Test to check strange assertion in eviction manager.
  */
-public class QueueSizeCounterMultiThreadedTest extends TestCase {
+public class QueueSizeCounterMultiThreadedTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueSizeCounter() throws Exception {
         final ConcurrentLinkedQueue<Integer> q = new ConcurrentLinkedQueue<>();
 

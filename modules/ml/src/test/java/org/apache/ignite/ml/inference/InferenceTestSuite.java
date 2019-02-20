@@ -17,9 +17,10 @@
 
 package org.apache.ignite.ml.inference;
 
-import org.apache.ignite.ml.inference.builder.IgniteDistributedInfModelBuilderTest;
-import org.apache.ignite.ml.inference.builder.SingleInfModelBuilderTest;
-import org.apache.ignite.ml.inference.builder.ThreadedInfModelBuilderTest;
+import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilderTest;
+import org.apache.ignite.ml.inference.builder.SingleModelBuilderTest;
+import org.apache.ignite.ml.inference.builder.ThreadedModelBuilderTest;
+import org.apache.ignite.ml.inference.storage.model.DefaultModelStorageTest;
 import org.apache.ignite.ml.inference.util.DirectorySerializerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -29,10 +30,12 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    IgniteDistributedInfModelBuilderTest.class,
-    SingleInfModelBuilderTest.class,
-    ThreadedInfModelBuilderTest.class,
-    DirectorySerializerTest.class
+    SingleModelBuilderTest.class,
+    ThreadedModelBuilderTest.class,
+    DirectorySerializerTest.class,
+    DefaultModelStorageTest.class,
+    IgniteDistributedModelBuilderTest.class,
+    IgniteModelStorageUtilTest.class
 })
 public class InferenceTestSuite {
 }

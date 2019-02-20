@@ -38,10 +38,12 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  * Test TTL worker with persistence enabled
@@ -56,11 +58,24 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /** */
     public static final int ENTRIES = 100_000;
 
-    /** */
-    private static final TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+
         super.beforeTest();
 
         cleanPersistenceDir();
@@ -79,11 +94,6 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setIpFinder(FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         final CacheConfiguration ccfg = new CacheConfiguration();
         ccfg.setName(CACHE_NAME);
@@ -110,6 +120,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testTtlIsApplied() throws Exception {
         loadAndWaitForCleanup(false);
     }
@@ -117,6 +128,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testTtlIsAppliedAfterRestart() throws Exception {
         loadAndWaitForCleanup(true);
     }
@@ -148,6 +160,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingWithTtlExpirable() throws Exception {
         IgniteEx srv = startGrid(0);
         srv.cluster().active(true);
@@ -171,6 +184,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStartStopAfterRebalanceWithTtlExpirable() throws Exception {
         try {
             IgniteEx srv = startGrid(0);

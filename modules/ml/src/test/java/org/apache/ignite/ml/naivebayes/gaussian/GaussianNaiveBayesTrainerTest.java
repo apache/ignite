@@ -61,6 +61,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         singleLabeldata2.put(1, new double[] {-5.0, -2.0, LABEL_2});
     }
 
+    /** Trainer. */
     private GaussianNaiveBayesTrainer trainer;
 
     /** Initialization {@code GaussianNaiveBayesTrainer}.*/
@@ -83,8 +84,8 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+        TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }
 
     /** */

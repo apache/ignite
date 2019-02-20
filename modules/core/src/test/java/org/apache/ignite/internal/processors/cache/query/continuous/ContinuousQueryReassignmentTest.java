@@ -25,11 +25,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -37,18 +34,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  *
  */
 public class ContinuousQueryReassignmentTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)igniteCfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        return igniteCfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -63,6 +48,7 @@ public class ContinuousQueryReassignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousQueryNotCalledOnReassignment() throws Exception {
         testContinuousQueryNotCalledOnReassignment(false);
     }
@@ -70,6 +56,7 @@ public class ContinuousQueryReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLocalContinuousQueryNotCalledOnReassignment() throws Exception {
         testContinuousQueryNotCalledOnReassignment(true);
     }
@@ -114,6 +101,7 @@ public class ContinuousQueryReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousQueryWithRemoteFilterNotCalledOnReassignment() throws Exception {
         Ignite lsnrNode = startGrid(1);
         Ignite victim = startGrid(2);

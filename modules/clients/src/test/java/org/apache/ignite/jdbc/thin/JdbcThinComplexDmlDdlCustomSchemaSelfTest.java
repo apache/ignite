@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import org.junit.Test;
 
 /**
  * Base class for complex SQL tests based on JDBC driver.
@@ -55,6 +56,7 @@ public class JdbcThinComplexDmlDdlCustomSchemaSelfTest extends JdbcThinComplexDm
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateSelectDropEscapedSchema() throws Exception {
         try {
             curSchema = SCHEMA_2;
@@ -71,6 +73,7 @@ public class JdbcThinComplexDmlDdlCustomSchemaSelfTest extends JdbcThinComplexDm
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiple() throws Exception {
         testCreateSelectDrop();
         testCreateSelectDrop();

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.sql;
 import java.util.List;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  */
@@ -53,6 +54,7 @@ public class IgniteTransactionSQLColumnConstraintTest extends IgniteSQLColumnCon
     /**
      * That test is ignored due to drop column(s) operation is unsupported for the MVCC tables.
      */
+    @Test
     @Override public void testCharDropColumnWithConstraint() {
         // No-op.
     }
@@ -60,6 +62,7 @@ public class IgniteTransactionSQLColumnConstraintTest extends IgniteSQLColumnCon
     /**
      * That test is ignored due to drop column(s) operation is unsupported for the MVCC tables.
      */
+    @Test
     @Override public void testDecimalDropColumnWithConstraint() {
         // No-op.
     }

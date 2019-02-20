@@ -31,6 +31,7 @@ import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
@@ -47,6 +48,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCacheResultAnnotationUsage() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -57,6 +59,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCacheResultMethodUsage() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -67,6 +70,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheResults() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -80,6 +81,7 @@ public class IgniteCachePartitionedBackupNodeFailureRecoveryTest extends IgniteC
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBackUpFail() throws Exception {
         final IgniteEx node1 = grid(0);
         final IgniteEx node2 = grid(1);

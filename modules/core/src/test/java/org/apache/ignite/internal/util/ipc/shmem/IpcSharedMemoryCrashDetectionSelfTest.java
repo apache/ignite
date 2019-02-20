@@ -36,6 +36,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Test shared memory endpoints crash detection.
@@ -70,6 +72,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgfsServerClientInteractionsUponClientKilling() throws Exception {
         // Run server endpoint.
         IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(U.defaultWorkDirectory());
@@ -112,9 +115,9 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1386")
+    @Test
     public void testIgfsClientServerInteractionsUponServerKilling() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1386");
-
         Collection<Integer> shmemIdsBeforeInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("Shared memory IDs before starting server-client interactions: " + shmemIdsBeforeInteractions);
@@ -163,6 +166,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientThrowsCorrectExceptionUponServerKilling() throws Exception {
         info("Shared memory IDs before starting server-client interactions: " +
             IpcSharedMemoryUtils.sharedMemoryIds());
@@ -281,7 +285,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
      * @return List of shared memory IDs created while client-server interactions.
      * @throws Exception In case of any exception happen.
      */
-    @SuppressWarnings({"BusyWait", "TypeMayBeWeakened"})
+    @SuppressWarnings({"BusyWait"})
     private Collection<Integer> interactWithClient(IpcSharedMemoryServerEndpoint srv, boolean killClient)
         throws Exception {
         ProcessStartResult clientStartRes = startSharedMemoryTestClient();

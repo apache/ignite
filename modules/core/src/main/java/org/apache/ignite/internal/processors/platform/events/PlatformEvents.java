@@ -443,19 +443,17 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
 
         /** <inheritDoc /> */
-        @SuppressWarnings("unchecked")
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
-            Collection<Event> events = (Collection<Event>)obj;
+            Collection<Event> evts = (Collection<Event>)obj;
 
             if (obj != null) {
-                writer.writeInt(events.size());
+                writer.writeInt(evts.size());
 
-                for (Event e : events)
+                for (Event e : evts)
                     platformCtx.writeEvent(writer, e);
             }
-            else {
+            else
                 writer.writeInt(-1);
-            }
         }
 
         /** <inheritDoc /> */

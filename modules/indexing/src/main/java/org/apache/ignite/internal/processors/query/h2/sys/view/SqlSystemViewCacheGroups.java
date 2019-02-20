@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -58,6 +57,7 @@ public class SqlSystemViewCacheGroups extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition idCond = conditionForColumn("ID", first, last);
 
@@ -76,10 +76,9 @@ public class SqlSystemViewCacheGroups extends SqlAbstractLocalSystemView {
         else
             cacheGroups = ctx.cache().cacheGroupDescriptors().values();
 
-        AtomicLong rowKey = new AtomicLong();
-
         return F.iterator(cacheGroups,
-            grp -> createRow(ses, rowKey.incrementAndGet(),
+            grp -> createRow(
+                ses,
                 grp.groupId(),
                 grp.cacheOrGroupName(),
                 grp.sharedGroup(),

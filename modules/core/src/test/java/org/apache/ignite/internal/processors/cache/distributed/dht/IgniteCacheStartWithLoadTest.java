@@ -39,6 +39,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
+import org.junit.Test;
 
 /**
  *
@@ -76,6 +77,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testNoRebalanceDuringCacheStart() throws Exception {
         IgniteEx crd = (IgniteEx)startGrids(4);
 

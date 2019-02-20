@@ -36,6 +36,7 @@ import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import org.junit.Test;
 
 /**
  * Test client connects to two nodes cluster during time more than the
@@ -83,6 +84,7 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientConnectToCluster() throws Exception {
         clientMetricsUpdateCnt = 0;
 

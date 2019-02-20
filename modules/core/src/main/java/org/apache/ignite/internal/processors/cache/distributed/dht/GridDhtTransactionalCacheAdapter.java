@@ -726,7 +726,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.threadId(),
                 req.txTimeout(),
                 req.subjectId(),
-                req.taskNameHash());
+                req.taskNameHash(),
+                req.mvccSnapshot());
         }
         catch (IgniteCheckedException | IgniteException ex) {
             GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(req.cacheId(),
@@ -1122,7 +1123,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             null,
                             req.subjectId(),
                             req.taskNameHash(),
-                            req.txLabel());
+                            req.txLabel(),
+                            null);
 
                         if (req.syncCommit())
                             tx.syncMode(FULL_SYNC);
@@ -1436,8 +1438,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,
-                                        req.keepBinary(),
-                                        null); // TODO IGNITE-7371
+                                        req.keepBinary());
                                 }
 
                                 assert e.lockedBy(mappedVer) || ctx.mvcc().isRemoved(e.context(), mappedVer) :
@@ -1646,7 +1647,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     "(added to cancelled locks set): " + req);
                         }
 
-                        entry.touch(ctx.affinity().affinityTopologyVersion());
+                        entry.touch();
 
                         break;
                     }
@@ -1832,7 +1833,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (created && entry.markObsolete(dhtVer))
                         removeEntry(entry);
 
-                    entry.touch(topVer);
+                    entry.touch();
 
                     break;
                 }
@@ -1958,7 +1959,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.threadId(),
                 req.txTimeout(),
                 req.subjectId(),
-                req.taskNameHash());
+                req.taskNameHash(),
+                req.mvccSnapshot());
         }
         catch (Throwable e) {
             GridNearTxQueryResultsEnlistResponse res = new GridNearTxQueryResultsEnlistResponse(req.cacheId(),
@@ -2022,7 +2024,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.threadId(),
                 req.txTimeout(),
                 req.subjectId(),
-                req.taskNameHash());
+                req.taskNameHash(),
+                req.mvccSnapshot());
         }
         catch (IgniteCheckedException | IgniteException ex) {
             GridNearTxEnlistResponse res = new GridNearTxEnlistResponse(req.cacheId(),
@@ -2057,7 +2060,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.rows(),
             req.operation(),
             req.filter(),
-            req.needRes());
+            req.needRes(),
+            req.keepBinary());
 
         fut.listen(NearTxResultHandler.instance());
 
@@ -2076,6 +2080,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param timeout Timeout.
      * @param txSubjectId Transaction subject id.
      * @param txTaskNameHash Transaction task name hash.
+     * @param snapshot Mvcc snapsht.
      * @return Transaction.
      */
     public GridDhtTxLocal initTxTopologyVersion(UUID nodeId,
@@ -2088,7 +2093,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long nearThreadId,
         long timeout,
         UUID txSubjectId,
-        int txTaskNameHash) throws IgniteException, IgniteCheckedException {
+        int txTaskNameHash,
+        MvccSnapshot snapshot) throws IgniteException, IgniteCheckedException {
 
         assert ctx.affinityNode();
 
@@ -2158,6 +2164,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     null,
                     txSubjectId,
                     txTaskNameHash,
+                    null,
                     null);
 
                 // if (req.syncCommit())
@@ -2182,6 +2189,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     throw new IgniteCheckedException(msg);
                 }
 
+                tx.mvccSnapshot(snapshot);
                 tx.topologyVersion(topVer);
             }
             finally {

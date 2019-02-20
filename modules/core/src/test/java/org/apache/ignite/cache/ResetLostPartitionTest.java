@@ -33,10 +33,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -46,8 +46,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  *
  */
 public class ResetLostPartitionTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
     /** Cache name. */
     private static final String[] CACHE_NAMES = {"cacheOne", "cacheTwo", "cacheThree"};
     /** Cache size */
@@ -55,6 +53,8 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10560", MvccFeatureChecker.forcedMvcc());
+
         super.beforeTest();
 
         stopAllGrids();
@@ -81,7 +81,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         storageCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true)
-            .setMaxSize(300L * 1024 * 1024);
+            .setMaxSize(500L * 1024 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg);
 
@@ -90,8 +90,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
             cacheConfiguration(CACHE_NAMES[1], CacheAtomicityMode.ATOMIC),
             cacheConfiguration(CACHE_NAMES[2], CacheAtomicityMode.TRANSACTIONAL)
         };
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -120,7 +118,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(true);
         cfg.setClientMode(true);
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return cfg;
     }
@@ -130,6 +127,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
      *
      * @throws Exception if fail.
      */
+    @Test
     public void testReactivateGridBeforeResetLostPartitions() throws Exception {
         doRebalanceAfterPartitionsWereLost(true);
     }
@@ -139,6 +137,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
      *
      * @throws Exception if fail.
      */
+    @Test
     public void testResetLostPartitions() throws Exception {
         doRebalanceAfterPartitionsWereLost(false);
     }

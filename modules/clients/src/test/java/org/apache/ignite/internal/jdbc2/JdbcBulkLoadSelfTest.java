@@ -37,6 +37,7 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -124,6 +125,7 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testBulkLoadThrows() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {

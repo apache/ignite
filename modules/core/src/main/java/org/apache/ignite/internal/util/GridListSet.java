@@ -242,7 +242,6 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
     @Override public boolean remove(Object val) {
         A.notNull(val, "val");
 
@@ -339,7 +338,6 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
     @Override public boolean contains(Object val) {
         A.notNull(val, "val");
 
@@ -393,7 +391,6 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      * @return Clone of this set.
      * @throws CloneNotSupportedException
      */
-    @SuppressWarnings( {"unchecked"})
     @Override protected Object clone() throws CloneNotSupportedException {
         GridListSet<V> clone = (GridListSet<V>)super.clone();
 

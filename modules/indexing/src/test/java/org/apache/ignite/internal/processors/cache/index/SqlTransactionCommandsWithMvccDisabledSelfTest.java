@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  *
@@ -35,17 +36,10 @@ public class SqlTransactionCommandsWithMvccDisabledSelfTest extends AbstractSche
             "atomicity=transactional\"");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testBeginWithMvccDisabled() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -59,6 +53,7 @@ public class SqlTransactionCommandsWithMvccDisabledSelfTest extends AbstractSche
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testCommitWithMvccDisabled() throws Exception {
         execute(grid(0), "COMMIT");
         // assert no exception
@@ -67,6 +62,7 @@ public class SqlTransactionCommandsWithMvccDisabledSelfTest extends AbstractSche
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRollbackWithMvccDisabled() throws Exception {
         execute(grid(0), "ROLLBACK");
         // assert no exception

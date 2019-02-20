@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
@@ -57,6 +58,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testStartStop() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -78,6 +80,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopWhileInUse() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -145,6 +148,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoppedState() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 

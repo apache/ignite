@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test for {@link ClusterGroup#forHost(String, String...)}.
@@ -60,6 +61,7 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForHosts() throws Exception {
         if (!tcpDiscovery())
             return;
@@ -89,6 +91,7 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHostNames() throws Exception {
         Ignite ignite = grid();
 

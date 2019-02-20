@@ -19,6 +19,7 @@ package org.apache.ignite.ml.preprocessing.standardscaling;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -33,7 +34,6 @@ import static org.junit.Assert.assertArrayEquals;
  * Tests for {@link StandardScalerTrainer}.
  */
 public class StandardScalerTrainerTest extends TrainerTest {
-
     /** Data. */
     private DatasetBuilder<Integer, Vector> datasetBuilder;
 
@@ -63,6 +63,7 @@ public class StandardScalerTrainerTest extends TrainerTest {
         double[] expectedMeans = new double[] {0.5, 1.75, 4.5, 0.875};
 
         StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
+            TestUtils.testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );
@@ -76,6 +77,7 @@ public class StandardScalerTrainerTest extends TrainerTest {
         double[] expectedSigmas = new double[] {0.5, 1.47901995, 14.51723114, 0.93374247};
 
         StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
+            TestUtils.testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );

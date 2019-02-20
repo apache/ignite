@@ -388,7 +388,6 @@ public class IgfsControlResponse extends IgfsMessage {
      * @param out Data output.
      * @throws IOException If error occurred.
      */
-    @SuppressWarnings("unchecked")
     public void writeExternal(ObjectOutput out) throws IOException {
         byte[] hdr = new byte[RES_HEADER_SIZE];
 

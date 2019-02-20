@@ -20,6 +20,7 @@ package org.apache.ignite.lang.utils;
 import java.util.Map;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Performance test for {@link GridLeanMap}.
@@ -34,6 +35,7 @@ public class GridLeanMapPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPerformance() throws Exception {
         long avgDur = 0;
 

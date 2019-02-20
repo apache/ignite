@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.junit.Test;
 
 /**
  * Test http scanner.
@@ -107,6 +108,7 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployUndeploy2Files() throws Exception {
         String taskName = "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3";
 
@@ -133,6 +135,7 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameContantFiles() throws Exception {
         String taskName = "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3";
 

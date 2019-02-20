@@ -17,8 +17,6 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import java.io.FileNotFoundException;
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -32,13 +30,16 @@ import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
+
+import java.io.FileNotFoundException;
+import java.util.Arrays;
 
 /**
  * Change classification algorithm that was used in {@link Step_8_CV_with_Param_Grid} from decision tree to logistic
@@ -124,7 +125,7 @@ public class Step_9_Go_to_LogReg {
                                             minMaxScalerPreprocessor
                                         );
 
-                                    LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+                                    LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
                                         .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(learningRate),
                                             SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
                                         .withMaxIterations(maxIterations)
@@ -188,7 +189,7 @@ public class Step_9_Go_to_LogReg {
                         minMaxScalerPreprocessor
                     );
 
-                LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+                LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
                     .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(bestLearningRate),
                         SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
                     .withMaxIterations(bestMaxIterations)

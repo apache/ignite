@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -37,6 +38,7 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeWithPersistence() throws Exception {
         persistence = true;
 
@@ -46,6 +48,7 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeWithoutPersistence() throws Exception {
         persistence = false;
 

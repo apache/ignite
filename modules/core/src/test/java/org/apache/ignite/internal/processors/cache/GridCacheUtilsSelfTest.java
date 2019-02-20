@@ -35,6 +35,7 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Grid cache utils test.
@@ -117,6 +118,7 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testCacheKeyValidation() throws IgniteCheckedException {
         CU.validateCacheKey("key");
 

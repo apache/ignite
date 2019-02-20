@@ -224,7 +224,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Queue header.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <T> GridCacheQueueProxy<T> queue(final String name,
         final int cap,
         boolean colloc,
@@ -423,7 +422,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private void removeSetData(IgniteUuid setId, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         boolean loc = cctx.isLocal();
 
@@ -465,7 +463,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param separated Separated cache flag.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public void removeSetData(IgniteUuid id, boolean separated) throws IgniteCheckedException {
         assert id != null;
 
@@ -557,7 +554,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /**
      * @param setId Set ID.
      */
-    @SuppressWarnings("unchecked")
     private void blockSet(IgniteUuid setId) {
         GridCacheSetProxy set = setsMap.remove(setId);
 

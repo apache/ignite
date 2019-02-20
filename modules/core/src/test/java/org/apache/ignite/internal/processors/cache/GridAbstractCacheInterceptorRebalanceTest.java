@@ -33,14 +33,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -51,9 +49,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String CACHE_NAME = "test_cache";
 
@@ -88,8 +83,6 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
 
         cfg.setCacheConfiguration(ccfg);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         return cfg;
     }
 
@@ -110,6 +103,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceUpdate() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -123,6 +117,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceUpdateInvoke() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -138,6 +133,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceRemoveInvoke() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -153,6 +149,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceRemove() throws Exception {
         interceptor = new RebalanceRemoveInterceptor();
 
@@ -166,6 +163,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -179,6 +177,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testGetAndPut() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 

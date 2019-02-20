@@ -37,6 +37,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
+import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -52,6 +54,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -91,9 +95,12 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         }, 3000);
 
         for (Ignite node : G.allGrids()) {
-            GridContinuousProcessor proc = ((IgniteEx)node).context().continuous();
+            GridKernalContext ctx = ((IgniteEx)node).context();
+            GridContinuousProcessor proc = ctx.continuous();
 
-            assertEquals(1, ((Map)U.field(proc, "locInfos")).size());
+            final int locInfosCnt = ctx.service() instanceof GridServiceProcessor ? 1 : 0;
+
+            assertEquals(locInfosCnt, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(0, ((Map)U.field(proc, "rmtInfos")).size());
             assertEquals(0, ((Map)U.field(proc, "startFuts")).size());
             assertEquals(0, ((Map)U.field(proc, "stopFuts")).size());
@@ -115,6 +122,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllEntries() throws Exception {
         Ignite node = startGrids(3);
 
@@ -211,6 +219,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachingMaxSize() throws Exception {
         Ignite node = startGrids(1);
 
@@ -240,12 +249,14 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
 
                 return null;
             }
-        },  CacheException.class, "Failed to run update. Transaction is too large. Consider reducing transaction size");
+        },  CacheException.class, "Transaction is too large. Consider reducing transaction size");
     }
 
     /**
      * @throws Exception  If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10768")
+    @Test
     public void testUpdateCountersGapClosedSimplePartitioned() throws Exception {
         checkUpdateCountersGapIsProcessedSimple(CacheMode.PARTITIONED);
     }
@@ -253,6 +264,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception  If failed.
      */
+    @Test
     public void testUpdateCountersGapClosedSimpleReplicated() throws Exception {
         checkUpdateCountersGapIsProcessedSimple(CacheMode.REPLICATED);
     }
@@ -383,6 +395,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception  If failed.
      */
+    @Test
     public void testUpdateCountersGapClosedPartitioned() throws Exception {
         checkUpdateCountersGapsClosed(CacheMode.PARTITIONED);
     }
@@ -390,6 +403,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception  If failed.
      */
+    @Test
     public void testUpdateCountersGapClosedReplicated() throws Exception {
         checkUpdateCountersGapsClosed(CacheMode.REPLICATED);
     }
@@ -536,7 +550,6 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         assertEquals(range * 2, arrivedEvts.size());
 
         cur.close();
-        nearNode.close();
     }
 
     /**

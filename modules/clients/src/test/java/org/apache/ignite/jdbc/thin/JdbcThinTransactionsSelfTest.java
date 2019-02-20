@@ -34,20 +34,15 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Tests to check behavior with transactions on.
  */
 public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
@@ -60,12 +55,6 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME).setNearConfiguration(null));
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -124,6 +113,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testTransactionsBeginCommitRollback() throws IgniteCheckedException {
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -160,6 +150,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testTransactionsBeginCommitRollbackAutocommit() throws IgniteCheckedException {
         GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
@@ -186,6 +177,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testIgnoreNestedTxAutocommitOff() throws SQLException {
         try (Connection c = c(false, NestedTxMode.IGNORE)) {
             doNestedTxStart(c, false);
@@ -197,6 +189,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testCommitNestedTxAutocommitOff() throws SQLException {
         try (Connection c = c(false, NestedTxMode.COMMIT)) {
             doNestedTxStart(c, false);
@@ -208,6 +201,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testErrorNestedTxAutocommitOff() throws SQLException {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -223,6 +217,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testIgnoreNestedTxAutocommitOn() throws SQLException {
         try (Connection c = c(true, NestedTxMode.IGNORE)) {
             doNestedTxStart(c, false);
@@ -234,6 +229,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testCommitNestedTxAutocommitOn() throws SQLException {
         try (Connection c = c(true, NestedTxMode.COMMIT)) {
             doNestedTxStart(c, false);
@@ -245,6 +241,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testErrorNestedTxAutocommitOn() throws SQLException {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -260,6 +257,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testIgnoreNestedTxAutocommitOffBatched() throws SQLException {
         try (Connection c = c(false, NestedTxMode.IGNORE)) {
             doNestedTxStart(c, true);
@@ -271,6 +269,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testCommitNestedTxAutocommitOffBatched() throws SQLException {
         try (Connection c = c(false, NestedTxMode.COMMIT)) {
             doNestedTxStart(c, true);
@@ -282,6 +281,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testErrorNestedTxAutocommitOffBatched() throws SQLException {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -297,6 +297,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testIgnoreNestedTxAutocommitOnBatched() throws SQLException {
         try (Connection c = c(true, NestedTxMode.IGNORE)) {
             doNestedTxStart(c, true);
@@ -308,6 +309,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testCommitNestedTxAutocommitOnBatched() throws SQLException {
         try (Connection c = c(true, NestedTxMode.COMMIT)) {
             doNestedTxStart(c, true);
@@ -319,6 +321,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testErrorNestedTxAutocommitOnBatched() throws SQLException {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -359,6 +362,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testAutoCommitSingle() throws SQLException {
         doTestAutoCommit(false);
     }
@@ -366,6 +370,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testAutoCommitBatched() throws SQLException {
         doTestAutoCommit(true);
     }
@@ -410,6 +415,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
      * Test that exception in one of the statements does not kill connection worker altogether.
      * @throws SQLException if failed.
      */
+    @Test
     public void testExceptionHandling() throws SQLException {
         try (Connection c = c(true, NestedTxMode.ERROR)) {
             try (Statement s = c.createStatement()) {
@@ -436,6 +442,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
      * Test that exception in one of the statements does not kill connection worker altogether.
      * @throws SQLException if failed.
      */
+    @Test
     public void testParsingErrorHasNoSideEffect() throws SQLException {
         try (Connection c = c(false, NestedTxMode.ERROR)) {
             try (Statement s = c.createStatement()) {

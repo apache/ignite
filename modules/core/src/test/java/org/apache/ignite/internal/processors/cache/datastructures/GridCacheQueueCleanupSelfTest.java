@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -74,6 +75,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCleanup() throws Exception {
         IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME1, 0, config(false));
 

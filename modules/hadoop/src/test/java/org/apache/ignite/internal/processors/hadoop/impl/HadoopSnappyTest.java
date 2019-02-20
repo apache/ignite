@@ -32,10 +32,13 @@ import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Tests isolated Hadoop Snappy codec usage.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9920")
 public class HadoopSnappyTest extends GridCommonAbstractTest {
     /** Length of data. */
     private static final int BYTE_SIZE = 1024 * 50;
@@ -45,6 +48,8 @@ public class HadoopSnappyTest extends GridCommonAbstractTest {
      *
      * @throws Exception On error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9920")
+    @Test
     public void testSnappy() throws Throwable {
         // Run Snappy test in default class loader:
         checkSnappy();

@@ -21,6 +21,7 @@ package org.apache.ignite.compatibility.persistence;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Test to check that starting node with PK index of the old format present doesn't break anything.
@@ -50,13 +52,21 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override protected Collection<Dependency> getDependencies(String igniteVer) {
+    @Override @NotNull protected Collection<Dependency> getDependencies(String igniteVer) {
         Collection<Dependency> dependencies = super.getDependencies(igniteVer);
 
-        dependencies.add(new Dependency("indexing", null, "ignite-indexing", igniteVer));
-        dependencies.add(new Dependency("h2", "com.h2database", "h2", "1.4.195", true));
+        dependencies.add(new Dependency("h2", "com.h2database", "h2", "1.4.195", false));
 
         return dependencies;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Set<String> getExcluded(String ver, Collection<Dependency> dependencies) {
+        Set<String> excluded = super.getExcluded(ver, dependencies);
+
+        excluded.add("h2");
+
+        return excluded;
     }
 
     /**
@@ -64,6 +74,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSecondaryIndexesMigration_2_5() throws Exception {
         doTestStartupWithOldVersion("2.5.0");
     }
@@ -73,6 +84,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSecondaryIndexesMigration_2_4() throws Exception {
         doTestStartupWithOldVersion("2.4.0");
     }
@@ -245,5 +257,4 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
             cfg.setDataStorageConfiguration(memCfg);
         }
     }
-
 }

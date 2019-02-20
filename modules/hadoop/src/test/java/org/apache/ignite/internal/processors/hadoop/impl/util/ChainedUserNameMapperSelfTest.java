@@ -28,6 +28,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Collections;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 /**
  * Tests for chained user name mapper.
@@ -44,6 +45,7 @@ public class ChainedUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNullMappers() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -59,6 +61,7 @@ public class ChainedUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNullMapperElement() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -74,6 +77,7 @@ public class ChainedUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testChaining() throws Exception {
         BasicUserNameMapper mapper1 = new BasicUserNameMapper();
 

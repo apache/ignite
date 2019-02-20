@@ -229,7 +229,6 @@ public class CacheEvent extends EventAdapter {
      *
      * @return Cache entry associated with event.
      */
-    @SuppressWarnings({"unchecked"})
     public <K> K key() {
         return (K)key;
     }

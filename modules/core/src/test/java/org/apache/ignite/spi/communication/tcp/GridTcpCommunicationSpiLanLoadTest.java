@@ -41,6 +41,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.junit.Test;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
@@ -138,6 +139,7 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRunReceiver() throws Exception {
         info(">>> Starting receiving SPI. <<<");
 
@@ -153,6 +155,7 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRunSender() throws Exception {
         reject = true;
 

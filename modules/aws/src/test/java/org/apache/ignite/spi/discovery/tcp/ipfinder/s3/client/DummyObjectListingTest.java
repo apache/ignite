@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Class to test {@link DummyObjectListing}.
@@ -31,6 +32,7 @@ public class DummyObjectListingTest extends GridCommonAbstractTest {
     /**
      * Test cases for various object listing functions for S3 bucket.
      */
+    @Test
     public void testDummyObjectListing() {
         Set<String> fakeKeyPrefixSet = new HashSet<>();
 

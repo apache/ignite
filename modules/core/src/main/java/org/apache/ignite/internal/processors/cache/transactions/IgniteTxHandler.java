@@ -342,14 +342,17 @@ public class IgniteTxHandler {
     }
 
     /**
+     * @param originTx Transaction for copy.
      * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTxLocal(final GridNearTxPrepareRequest req) {
+    public IgniteInternalFuture<GridNearTxPrepareResponse>  prepareNearTxLocal(
+        final GridNearTxLocal originTx,
+        final GridNearTxPrepareRequest req) {
         // Make sure not to provide Near entries to DHT cache.
         req.cloneEntries();
 
-        return prepareNearTx(ctx.localNode(), req);
+        return prepareNearTx(originTx, ctx.localNode(), req);
     }
 
     /**
@@ -358,6 +361,20 @@ public class IgniteTxHandler {
      * @return Prepare future or {@code null} if need retry operation.
      */
     @Nullable private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+        final ClusterNode nearNode,
+        final GridNearTxPrepareRequest req
+    ) {
+        return prepareNearTx(null, nearNode, req);
+    }
+
+    /**
+     * @param originTx Transaction for copy.
+     * @param nearNode Node that initiated transaction.
+     * @param req Near prepare request.
+     * @return Prepare future or {@code null} if need retry operation.
+     */
+    @Nullable private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+        final GridNearTxLocal originTx,
         final ClusterNode nearNode,
         final GridNearTxPrepareRequest req
     ) {
@@ -509,7 +526,8 @@ public class IgniteTxHandler {
                     req.transactionNodes(),
                     req.subjectId(),
                     req.taskNameHash(),
-                    req.txLabel()
+                    req.txLabel(),
+                    originTx
                 );
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -1161,9 +1179,6 @@ public class IgniteTxHandler {
             nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
             dhtTx = startRemoteTx(nodeId, req, res);
 
-            if (dhtTx != null && req.updateCounters() != null) // Remember update counters on prepare state.
-                dhtTx.txCounters(true).updateCounters(req.updateCounters());
-
             // Set evicted keys from near transaction.
             if (nearTx != null)
                 res.nearEvicted(nearTx.evicted());
@@ -1317,23 +1332,28 @@ public class IgniteTxHandler {
             return;
         }
 
-        final GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
+        // Always add version to rollback history to prevent races with rollbacks.
+        if (!req.commit())
+            ctx.tm().addRolledbackTx(null, req.version());
+
+        GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
         GridNearTxRemote nearTx = ctx.tm().nearTx(req.version());
 
-        final GridCacheVersion nearTxId =
-            (dhtTx != null ? dhtTx.nearXidVersion() : (nearTx != null ? nearTx.nearXidVersion() : null));
+        IgniteInternalTx anyTx = U.<IgniteInternalTx>firstNotNull(dhtTx, nearTx);
 
-        if (txFinishMsgLog.isDebugEnabled()) {
-            txFinishMsgLog.debug("Received dht finish request [txId=" + nearTxId +
-                ", dhtTxId=" + req.version() +
+        final GridCacheVersion nearTxId = anyTx != null ? anyTx.nearXidVersion() : null;
+
+        if (txFinishMsgLog.isDebugEnabled())
+            txFinishMsgLog.debug("Received dht finish request [txId=" + nearTxId + ", dhtTxId=" + req.version() +
                 ", node=" + nodeId + ']');
-        }
 
-        // Safety - local transaction will finish explicitly.
-        if (nearTx != null && nearTx.local())
-            nearTx = null;
+        if (anyTx == null && req.commit())
+            ctx.tm().addCommittedTx(null, req.version(), null);
 
-        finish(nodeId, dhtTx, req);
+        if (dhtTx != null)
+            finish(nodeId, dhtTx, req);
+        else
+            applyPartitionsUpdatesCounters(req.updateCounters());
 
         if (nearTx != null)
             finish(nodeId, nearTx, req);
@@ -1386,31 +1406,7 @@ public class IgniteTxHandler {
         IgniteTxRemoteEx tx,
         GridDhtTxFinishRequest req
     ) {
-        // We don't allow explicit locks for transactions and
-        // therefore immediately return if transaction is null.
-        // However, we may decide to relax this restriction in
-        // future.
-        if (tx == null) {
-            if (req.commit())
-                // Must be some long time duplicate, but we add it anyway.
-                ctx.tm().addCommittedTx(tx, req.version(), null);
-            else
-                ctx.tm().addRolledbackTx(tx, req.version());
-
-            if (log.isDebugEnabled())
-                log.debug("Received finish request for non-existing transaction (added to completed set) " +
-                    "[senderNodeId=" + nodeId + ", res=" + req + ']');
-
-            return;
-        }
-        else {
-            if (req.updateCounters() != null)
-                tx.txCounters(true).updateCounters(req.updateCounters());
-
-            if (log.isDebugEnabled())
-                log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
-                    ", tx=" + tx + ']');
-        }
+        assert tx != null;
 
         req.txState(tx.txState());
 
@@ -1430,6 +1426,9 @@ public class IgniteTxHandler {
                 tx.commitRemoteTx();
             }
             else {
+                if (tx.dht() && req.updateCounters() != null)
+                    tx.txCounters(true).updateCounters(req.updateCounters());
+
                 tx.doneRemote(req.baseVersion(), null, null, null);
                 tx.mvccSnapshot(req.mvccSnapshot());
                 tx.rollbackRemoteTx();
@@ -1697,6 +1696,8 @@ public class IgniteTxHandler {
                     if (log.isDebugEnabled())
                         log.debug("Attempt to start a completed transaction (will ignore): " + tx);
 
+                    applyPartitionsUpdatesCounters(req.updateCounters());
+
                     return null;
                 }
 
@@ -1707,6 +1708,8 @@ public class IgniteTxHandler {
 
                     ctx.tm().uncommitTx(tx);
 
+                    applyPartitionsUpdatesCounters(req.updateCounters());
+
                     return null;
                 }
             }
@@ -1714,6 +1717,9 @@ public class IgniteTxHandler {
                 tx.writeVersion(req.writeVersion());
                 tx.transactionNodes(req.transactionNodes());
             }
+
+            if (req.updateCounters() != null)
+                tx.txCounters(true).updateCounters(req.updateCounters());
 
             if (!tx.isSystemInvalidate()) {
                 int idx = 0;
@@ -1771,8 +1777,7 @@ public class IgniteTxHandler {
                                                 /*transformClo*/null,
                                                 tx.resolveTaskName(),
                                                 /*expiryPlc*/null,
-                                                /*keepBinary*/true,
-                                                null); // TODO IGNITE-7371
+                                                /*keepBinary*/true);
 
                                             if (val == null)
                                                 val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
@@ -1879,7 +1884,7 @@ public class IgniteTxHandler {
                         EntryProcessor entryProc = null;
                         Object[] invokeArgs = null;
 
-                        boolean needOldVal = ctx.shared().mvccCaching().continuousQueryListeners(ctx, tx, key) != null;
+                        boolean needOldVal = tx.txState().useMvccCaching(ctx.cacheId());
 
                         Message val0 = vals != null ? vals.get(i) : null;
 
@@ -1898,7 +1903,7 @@ public class IgniteTxHandler {
                             invokeArgs = invokeVal.invokeArgs();
                         }
 
-                        assert entryProc != null || !op.isInvoke() : "entryProc=" + entryProc + ", op=" + op;
+                        assert entries != null || entryProc != null || !op.isInvoke() : "entryProc=" + entryProc + ", op=" + op;
 
                         GridDhtCacheEntry entry = dht.entryExx(key, tx.topologyVersion());
 
@@ -1941,6 +1946,7 @@ public class IgniteTxHandler {
                                                 false,
                                                 needOldVal,
                                                 null,
+                                                false,
                                                 false);
 
                                             break;

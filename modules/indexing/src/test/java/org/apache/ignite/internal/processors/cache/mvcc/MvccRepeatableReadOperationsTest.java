@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -164,6 +165,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
      *
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testGetAndUpdateOperations() throws IgniteCheckedException {
         Ignite node1 = grid(0);
 
@@ -225,6 +227,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
      *
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutIfAbsentConsistency() throws IgniteCheckedException {
         Ignite node1 = grid(0);
 
@@ -265,6 +268,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
      *
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testReplaceConsistency() throws IgniteCheckedException {
         Ignite node1 = grid(0);
 

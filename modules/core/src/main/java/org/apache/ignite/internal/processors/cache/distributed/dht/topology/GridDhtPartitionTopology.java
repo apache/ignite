@@ -82,6 +82,11 @@ public interface GridDhtPartitionTopology {
     ) throws IgniteInterruptedCheckedException;
 
     /**
+     * @return {@code True} If ready version initialized. {@code False} If not initialized.
+     */
+    public boolean initialized();
+
+    /**
      * @return Result topology version of last finished exchange.
      */
     public AffinityTopologyVersion readyTopologyVersion();
@@ -373,9 +378,9 @@ public interface GridDhtPartitionTopology {
     /**
      * Owns all moving partitions for the given topology version.
      *
-     * @param topVer Topology version.
+     * @param rebFinishedTopVer Topology version when rebalancing finished.
      */
-    public void ownMoving(AffinityTopologyVersion topVer);
+    public void ownMoving(AffinityTopologyVersion rebFinishedTopVer);
 
     /**
      * @param part Evicted partition.

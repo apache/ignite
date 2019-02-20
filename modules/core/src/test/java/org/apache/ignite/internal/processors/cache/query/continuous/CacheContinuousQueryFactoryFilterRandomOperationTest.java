@@ -54,10 +54,12 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -86,11 +88,12 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
     private static final int VALS = 10;
 
     /** */
-    public static final int ITERATION_CNT = 40;
+    public static final int ITERATION_CNT = SF.applyLB(40, 5);
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInternalQuery() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             1,
@@ -276,7 +279,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
         Transaction tx = null;
 
-        CacheAtomicityMode atomicityMode = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode();
+        CacheAtomicityMode atomicityMode = atomicityMode(cache);
 
         boolean mvccEnabled = atomicityMode == TRANSACTIONAL_SNAPSHOT;
 

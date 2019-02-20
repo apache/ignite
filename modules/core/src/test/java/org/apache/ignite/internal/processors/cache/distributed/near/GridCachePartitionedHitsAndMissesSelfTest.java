@@ -28,11 +28,10 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamReceiver;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -49,17 +48,9 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     /** Count of total numbers to generate. */
     private static final int CNT = 2000;
 
-    /** IP Finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        // DiscoverySpi.
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setIpFinder(IP_FINDER);
-        cfg.setDiscoverySpi(disco);
 
         // Cache.
         cfg.setCacheConfiguration(cacheConfiguration());
@@ -98,7 +89,10 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHitsAndMisses() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
         startGrids(GRID_CNT);
 
         awaitPartitionMapExchange();

@@ -19,17 +19,18 @@ package org.apache.ignite.jvmtest;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  * Java reg exp test.
  */
-public class RegExpTest extends TestCase {
+public class RegExpTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRegExp() throws Exception {
         String normal =
             "swap-spaces/space1/b53b3a3d6ab90ce0268229151c9bde11|b53b3a3d6ab90ce0268229151c9bde11|1315392441288";

@@ -37,11 +37,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -63,9 +61,6 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** Fail flag. */
     private static AtomicBoolean failFlag = new AtomicBoolean(false);
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -76,14 +71,9 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheCfg);
-        cfg.setDiscoverySpi(spi);
 
         return cfg;
     }
@@ -111,6 +101,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinity() throws Exception {
         waitTopologyUpdate();
 
@@ -162,6 +153,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinityWithPut() throws Exception {
         waitTopologyUpdate();
 

@@ -24,8 +24,19 @@
     @include custom_btn;
 }
 
+.page-landing__button-signin {
+    align-self: center;
+    margin-left: 30px;
+    margin-right: var(--page-side-padding) !important;
+    min-width: 80px;
+    font-weight: 500;
+    padding: 10px 25px !important;
+    flex: 0 0 auto;
+}
+
 page-landing {
-    font-family: Roboto;
+    display: block;
+    margin: 0 calc(var(--page-side-padding) * -1) calc(var(--page-side-padding) * -1);
 
     .btn-custom {
         @include custom_btn;

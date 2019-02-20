@@ -11,6 +11,7 @@
         <option name="m_requireAnnotationsFirst" value="false" />
     </inspection_tool>
     <inspection_tool class="RedundantSuppression" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="ProblematicWhitespace" enabled="true" level="ERROR" enabled_by_default="true" />
     <!-- Disabled inspetions -->
     <inspection_tool class="AbsoluteAlignmentInUserInterface" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="AbstractBeanReferencesInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
@@ -121,6 +122,7 @@
     <inspection_tool class="CanBeParameter" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CanBePrimaryConstructorProperty" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CanBeVal" enabled="false" level="WARNING" enabled_by_default="false"/>
+    <inspection_tool class="CastCanBeRemovedNarrowingVariableType" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="CastConflictsWithInstanceof" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CastThatLosesPrecision" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CastToConcreteClass" enabled="false" level="WARNING" enabled_by_default="false"/>
@@ -132,6 +134,7 @@
     <inspection_tool class="ChannelResource" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="insideTryAllowed" value="false"/>
     </inspection_tool>
+    <inspection_tool class="CharsetObjectCanBeUsed" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="CharUsedInArithmeticContext" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CharacterComparison" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CheckDtdRefs" enabled="false" level="ERROR" enabled_by_default="false"/>
@@ -203,6 +206,8 @@
         <option name="IGNORE_NON_PUBLIC" value="true"/>
     </inspection_tool>
     <inspection_tool class="ComponentRegistrationProblems" enabled="false" level="ERROR" enabled_by_default="false"/>
+    <inspection_tool class="ConditionalBreakInInfiniteLoop" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="ConditionCoveredByFurtherCondition" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ConditionSignal" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ConditionalExpression" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="ignoreSimpleAssignmentsAndReturns" value="false"/>
@@ -256,6 +261,7 @@
     <inspection_tool class="ConvertJavadoc" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ConvertOldAnnotations" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ConvertToStringTemplate" enabled="false" level="INFO" enabled_by_default="false"/>
+    <inspection_tool class="CopyConstructorMissesField" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="CovariantCompareTo" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CovariantEquals" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CyclicClassDependency" enabled="false" level="WARNING" enabled_by_default="false"/>
@@ -301,6 +307,7 @@
     <inspection_tool class="DuplicateCondition" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="ignoreMethodCalls" value="false"/>
     </inspection_tool>
+    <inspection_tool class="DuplicateExpressions" enabled="false" level="WEAK WARNING" enabled_by_default="false"/>
     <inspection_tool class="DuplicateMnemonic" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="DuplicatePropertyInspection" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="CURRENT_FILE" value="true"/>
@@ -943,6 +950,9 @@
         <option name="IGNORE_ANNOTATED_METHODS" value="true"/>
         <option name="IGNORE_SUSPICIOUS_METHOD_CALLS" value="true"/>
     </inspection_tool>
+    <inspection_tool class="RedundantClassCall" enabled="false" level="WARNING" enabled_by_default="false"/>
+    <inspection_tool class="RedundantCollectionOperation" enabled="false" level="WARNING" enabled_by_default="false"/>
+    <inspection_tool class="RedundantCompareCall" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="RedundantFieldInitialization" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="RedundantImplements" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="RedundantLambdaParameterType" enabled="false" level="INFORMATION" enabled_by_default="false"/>
@@ -1076,6 +1086,7 @@
         <option name="processLiterals" value="true"/>
         <option name="processComments" value="true"/>
     </inspection_tool>
+    <inspection_tool class="SortedCollectionWithNonComparableKeys" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="SpringAopErrorsInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="SpringAopWarningsInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="SpringBatchModel" enabled="false" level="ERROR" enabled_by_default="false"/>
@@ -1125,6 +1136,7 @@
     <inspection_tool class="SpringTransactionalComponentInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="SpringWebServiceAnnotationsInconsistencyInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="SpringWebServicesConfigurationsInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
+    <inspection_tool class="SpringXmlModelInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="SqlAddNotNullColumnInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="SqlAmbiguousColumnInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="SqlAutoIncrementDuplicateInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
@@ -1251,6 +1263,7 @@
     <inspection_tool class="ThrowableNotThrown" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ThrowablePrintedToSystemOut" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ThrowableResultOfMethodCallIgnored" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="ToArrayCallWithZeroLengthArrayArgument" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="TrivialIf" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="TryFinallyCanBeTryWithResources" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="TryStatementWithMultipleResources" enabled="false" level="INFORMATION" enabled_by_default="false" />
@@ -1404,6 +1417,7 @@
     <inspection_tool class="WhileLoopSpinsOnField" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="ignoreNonEmtpyLoops" value="false"/>
     </inspection_tool>
+    <inspection_tool class="WrapperTypeMayBePrimitive" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="WrongImportPackage" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="WrongPackageStatement" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="WrongPropertyKeyValueDelimiter" enabled="false" level="WEAK WARNING" enabled_by_default="false"/>

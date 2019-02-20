@@ -36,6 +36,7 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Job failover test.
@@ -61,6 +62,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailoverJobSession() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);

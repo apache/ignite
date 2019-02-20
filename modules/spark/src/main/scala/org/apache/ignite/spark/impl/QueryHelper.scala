@@ -21,6 +21,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import QueryUtils.{compileCreateTable, compileDropTable, compileInsert}
 import org.apache.ignite.internal.IgniteEx
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl
 import org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA
 import org.apache.ignite.spark.IgniteContext
 import org.apache.ignite.{Ignite, IgniteException}
@@ -163,9 +164,9 @@ private[apache] object QueryHelper {
         streamerPerNodeBufferSize: Option[Int],
         streamerPerNodeParallelOperations: Option[Int]
     ): Unit = {
-        val tblInfo = sqlTableInfo[Any, Any](ctx.ignite(), tblName, schemaName).get
+        val tblInfo = sqlTableInfo(ctx.ignite(), tblName, schemaName).get.asInstanceOf[QueryTypeDescriptorImpl]
 
-        val streamer = ctx.ignite().dataStreamer(tblInfo._1.getName)
+        val streamer = ctx.ignite().dataStreamer(tblInfo.cacheName)
 
         streamerAllowOverwrite.foreach(v ⇒ streamer.allowOverwrite(v))
 
@@ -185,8 +186,8 @@ private[apache] object QueryHelper {
                     row.get(row.fieldIndex(f.name)).asInstanceOf[Object]
                 }
 
-                qryProcessor.streamUpdateQuery(tblInfo._1.getName,
-                    tblInfo._1.getSqlSchema, streamer, insertQry, args.toArray)
+                qryProcessor.streamUpdateQuery(tblInfo.cacheName,
+                    tblInfo.schemaName, streamer, insertQry, args.toArray)
             }
         }
         finally {

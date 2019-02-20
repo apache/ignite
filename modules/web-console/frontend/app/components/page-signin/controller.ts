@@ -17,6 +17,8 @@
 
 import AuthService from 'app/modules/user/Auth.service';
 
+import {PageSigninStateParams} from './run';
+
 interface ISiginData {
     email: string,
     password: string
@@ -27,7 +29,9 @@ interface ISigninFormController extends ng.IFormController {
     password: ng.INgModelController
 }
 
-export default class {
+export default class PageSignIn implements ng.IPostLink {
+    activationToken?: PageSigninStateParams['activationToken'];
+
     data: ISiginData = {
         email: null,
         password: null
@@ -37,15 +41,18 @@ export default class {
 
     serverError: string = null;
 
-    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils'];
+    isLoading = false;
 
-    constructor(private Auth: AuthService, private IgniteMessages, private IgniteFormUtils) {}
+    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils', '$element'];
+
+    constructor(private Auth: AuthService, private IgniteMessages, private IgniteFormUtils, private el: JQLite) {}
 
     canSubmitForm(form: ISigninFormController) {
         return form.$error.server ? true : !form.$invalid;
     }
 
     $postLink() {
+        this.el.addClass('public-page');
         this.form.email.$validators.server = () => !this.serverError;
         this.form.password.$validators.server = () => !this.serverError;
     }
@@ -57,19 +64,25 @@ export default class {
     }
 
     signin() {
+        this.isLoading = true;
+
         this.IgniteFormUtils.triggerValidation(this.form);
 
         this.setServerError(null);
 
-        if (!this.canSubmitForm(this.form))
+        if (!this.canSubmitForm(this.form)) {
+            this.isLoading = false;
             return;
+        }
 
-        return this.Auth.signin(this.data.email, this.data.password).catch((res) => {
-            this.IgniteMessages.showError(null, res.data);
+        return this.Auth.signin(this.data.email, this.data.password, this.activationToken).catch((res) => {
+            this.IgniteMessages.showError(null, res.data.errorMessage ? res.data.errorMessage : res.data);
 
             this.setServerError(res.data);
 
             this.IgniteFormUtils.triggerValidation(this.form);
+
+            this.isLoading = false;
         });
     }
 }

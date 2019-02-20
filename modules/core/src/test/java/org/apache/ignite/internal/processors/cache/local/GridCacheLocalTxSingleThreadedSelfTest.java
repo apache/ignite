@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.IgniteTxSingleThreadedAbstrac
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -31,11 +32,10 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Tests for local transactions.
  */
 public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
-    /** {@inheritDoc} */
-    @Override public void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.beforeTestsStarted();
+    /** */
+    @Before
+    public void beforeGridCacheLocalTxSingleThreadedSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** Cache debug flag. */
@@ -43,6 +43,8 @@ public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThread
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);

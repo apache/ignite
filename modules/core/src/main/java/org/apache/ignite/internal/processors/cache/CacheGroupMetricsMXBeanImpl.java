@@ -85,6 +85,13 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
             delegate.updateTotalAllocatedPages(delta);
         }
+
+        /**
+         * Resets count of allocated pages to zero.
+         */
+        public void reset() {
+            totalAllocatedPages.reset();
+        }
     }
 
     /**

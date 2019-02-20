@@ -46,6 +46,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
@@ -73,6 +74,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testImplicitDeployLocally() throws Exception {
         execImplicitDeployLocally(true, true, true);
     }
@@ -80,6 +82,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testImplicitDeployP2P() throws Exception {
         execImplicitDeployP2P(true, true, true);
     }
@@ -87,6 +90,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExplicitDeployLocally() throws Exception {
         execExplicitDeployLocally(true, true, true);
     }
@@ -94,6 +98,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExplicitDeployP2P() throws Exception {
         execExplicitDeployP2P(true, true, true);
     }
@@ -117,7 +122,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     private void execExplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
         Ignite ignite = null;
 
@@ -183,7 +187,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-   @SuppressWarnings("unchecked")
    private void execImplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
        Ignite ignite = null;
 
@@ -262,7 +265,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     private void execExplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
        Ignite ignite1 = null;
        Ignite ignite2 = null;
@@ -334,7 +336,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-   @SuppressWarnings("unchecked")
    private void execImplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
       Ignite ignite1 = null;
       Ignite ignite2 = null;

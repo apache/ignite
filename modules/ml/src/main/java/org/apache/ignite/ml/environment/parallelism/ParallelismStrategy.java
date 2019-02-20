@@ -26,7 +26,6 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
  * bagging, learning submodels for One-vs-All model, Cross-Validation etc.
  */
 public interface ParallelismStrategy {
-
     /**
      * The type of parallelism.
      */

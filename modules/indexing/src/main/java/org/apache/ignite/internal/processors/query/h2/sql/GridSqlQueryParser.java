@@ -582,11 +582,7 @@ public class GridSqlQueryParser {
 
     /** */
     private static Command extractCommand(PreparedStatement stmt) {
-        try {
-            return COMMAND.get(stmt.unwrap(JdbcPreparedStatement.class));
-        } catch (SQLException e) {
-            throw new IgniteSQLException(e);
-        }
+        return COMMAND.get((JdbcPreparedStatement)stmt);
     }
 
     /**
@@ -1688,6 +1684,16 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Check whether statement is DML statement.
+     *
+     * @param stmt Statement.
+     * @return {@code True} if this is DML.
+     */
+    public static boolean isDml(Prepared stmt) {
+        return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
+    }
+
+    /**
      * @param stmt Prepared.
      * @return Target table.
      */
@@ -1728,7 +1734,11 @@ public class GridSqlQueryParser {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
                 if (tbl != null) {
-                    GridCacheContext cctx = tbl.cache();
+                    //It's not affinity cache. Can't be local.
+                    if (tbl.cacheContext() == null)
+                        return false;
+
+                    GridCacheContext cctx = tbl.cacheContext();
 
                     if (cctx.mvccEnabled())
                         return false;
@@ -1759,8 +1769,8 @@ public class GridSqlQueryParser {
             if (o instanceof GridSqlTable) {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
-                if (tbl != null && tbl.cache().isPartitioned())
-                    return tbl.cache();
+                if (tbl != null && tbl.cacheContext().isPartitioned())
+                    return tbl.cacheContext();
             }
         }
 
@@ -1770,7 +1780,7 @@ public class GridSqlQueryParser {
     /**
      * @return All known cache IDs.
      */
-    public Collection<Integer> cacheIds() {
+    public List<Integer> cacheIds() {
         ArrayList<Integer> res = new ArrayList<>(1);
 
         for (Object o : h2ObjToGridObj.values()) {
@@ -1786,6 +1796,57 @@ public class GridSqlQueryParser {
         }
 
         return res;
+    }
+
+    /**
+     * Extract all tables participating in DML statement.
+     *
+     * @return List of tables participate at query.
+     * @throws IgniteSQLException in case query contains virtual tables.
+     */
+    public List<GridH2Table> tablesForDml() throws IgniteSQLException {
+        Collection<?> parserObjects = h2ObjToGridObj.values();
+
+        List<GridH2Table> tbls = new ArrayList<>(parserObjects.size());
+
+        // check all involved caches
+        for (Object o : parserObjects) {
+            if (o instanceof GridSqlMerge)
+                o = ((GridSqlMerge) o).into();
+            else if (o instanceof GridSqlInsert)
+                o = ((GridSqlInsert) o).into();
+            else if (o instanceof GridSqlUpdate)
+                o = ((GridSqlUpdate) o).target();
+            else if (o instanceof GridSqlDelete)
+                o = ((GridSqlDelete) o).from();
+
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table h2tbl = ((GridSqlTable)o).dataTable();
+
+                if (h2tbl == null) { // Check for virtual tables.
+                    throw new IgniteSQLException("Operation not supported for table '" +
+                        ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+
+                tbls.add(h2tbl);
+            }
+        }
+
+        return tbls;
+    }
+
+    /**
+     * Parse query.
+     *
+     * @param prepared Prepared statement.
+     * @param useOptimizedSubqry Whether to user optimized subquery.
+     * @return Parsed query.
+     */
+    public static GridSqlQuery parseQuery(Prepared prepared, boolean useOptimizedSubqry) {
+        return (GridSqlQuery)new GridSqlQueryParser(useOptimizedSubqry).parse(prepared);
     }
 
     /**
@@ -2238,6 +2299,16 @@ public class GridSqlQueryParser {
     public static boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
         Prepared prep = prepared(nativeStmt);
 
+        return isStreamableInsertStatement(prep);
+    }
+
+    /**
+     * Check if passed statement is insert statement eligible for streaming.
+     *
+     * @param prep Prepared statement.
+     * @return {@code True} if streamable insert.
+     */
+    public static boolean isStreamableInsertStatement(Prepared prep) {
         return prep instanceof Insert && INSERT_QUERY.get((Insert)prep) == null;
     }
 

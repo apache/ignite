@@ -50,6 +50,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 /**
  *
@@ -121,6 +122,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAckOnIdle() throws Exception {
         checkAck(10, 2000, 9);
     }
@@ -128,6 +130,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAckOnCount() throws Exception {
         checkAck(10, 60_000, 10);
     }
@@ -138,7 +141,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
      * @param msgPerIter Messages per iteration.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void checkAck(int ackCnt, int idleTimeout, int msgPerIter) throws Exception {
         createSpis(ackCnt, idleTimeout, TcpCommunicationSpi.DFLT_MSG_QUEUE_LIMIT);
 
@@ -238,6 +240,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueOverflow() throws Exception {
         for (int i = 0; i < 3; i++) {
             try {
@@ -271,7 +274,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void checkOverflow() throws Exception {
         TcpCommunicationSpi spi0 = spis.get(0);
         TcpCommunicationSpi spi1 = spis.get(1);

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
@@ -54,6 +55,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -99,6 +101,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryCommitNearFailure1() throws Exception {
         checkRecoveryNearFailure(COMMIT, CLIENT);
     }
@@ -106,6 +109,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryCommitNearFailure2() throws Exception {
         checkRecoveryNearFailure(COMMIT, SERVER);
     }
@@ -113,6 +117,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryRollbackNearFailure1() throws Exception {
         checkRecoveryNearFailure(ROLLBAK, CLIENT);
     }
@@ -120,6 +125,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryRollbackNearFailure2() throws Exception {
         checkRecoveryNearFailure(ROLLBAK, SERVER);
     }
@@ -127,6 +133,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryCommitPrimaryFailure1() throws Exception {
         checkRecoveryPrimaryFailure(COMMIT, false);
     }
@@ -134,6 +141,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryRollbackPrimaryFailure1() throws Exception {
         checkRecoveryPrimaryFailure(ROLLBAK, false);
     }
@@ -141,6 +149,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryCommitPrimaryFailure2() throws Exception {
         checkRecoveryPrimaryFailure(COMMIT, true);
     }
@@ -148,6 +157,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryRollbackPrimaryFailure2() throws Exception {
         checkRecoveryPrimaryFailure(ROLLBAK, true);
     }
@@ -344,6 +354,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryCommit() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -387,7 +398,10 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testCountersNeighborcastServerFailed() throws Exception {
+        // Reopen https://issues.apache.org/jira/browse/IGNITE-10766 if starts failing
+
         int srvCnt = 4;
 
         startGridsMultiThreaded(srvCnt);
@@ -463,13 +477,13 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
                 latch1.countDown();
 
-                latch2.await();
+                latch2.await(getTestTimeout(), TimeUnit.MILLISECONDS);
             }
 
             return null;
         });
 
-        latch1.await();
+        latch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         // drop primary
         victim.close();
@@ -483,7 +497,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         latch2.countDown();
 
-        backgroundTxFut.get();
+        backgroundTxFut.get(getTestTimeout());
 
         assertTrue(liveNodes.stream()
             .map(node -> node.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer")).getAll())
@@ -493,6 +507,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testUpdateCountersGapIsClosed() throws Exception {
         int srvCnt = 3;
 

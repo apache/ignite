@@ -23,13 +23,14 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for schemas.
  */
-public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
+public class MultipleStatementsSqlQuerySelfTest extends AbstractIndexingCommonTest {
     /** Node. */
     private IgniteEx node;
 
@@ -48,6 +49,7 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      * Test query without caches.
      */
+    @Test
     public void testQuery() {
         GridQueryProcessor qryProc = node.context().query();
 
@@ -91,6 +93,7 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      * Test query without caches.
      */
+    @Test
     public void testQueryWithParameters() {
         GridQueryProcessor qryProc = node.context().query();
 
@@ -134,6 +137,7 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testQueryMultipleStatementsFailed() {
         final SqlFieldsQuery qry = new SqlFieldsQuery("select 1; select 1;").setSchema("PUBLIC");
 
@@ -150,6 +154,7 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      * Check cached two-steps query.
      */
+    @Test
     public void testCachedTwoSteps() {
         List<FieldsQueryCursor<List<?>>> curs = sql("SELECT 1; SELECT 2");
 

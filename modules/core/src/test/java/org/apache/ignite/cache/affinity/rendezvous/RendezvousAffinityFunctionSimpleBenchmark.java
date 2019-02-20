@@ -65,6 +65,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Simple benchmarks, compatibility test and distribution check utils for affinity functions.
@@ -91,6 +92,13 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         ignite = startGrid();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
     }
 
     /**
@@ -346,6 +354,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      * @throws IOException On error.
      */
+    @Test
     public void testDistribution() throws IOException {
         AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
 
@@ -397,6 +406,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testAffinityBenchmarkAdd() {
         mode = TopologyModificationMode.ADD;
 
@@ -410,6 +420,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testAffinityBenchmarkChangeLast() {
         mode = TopologyModificationMode.CHANGE_LAST_NODE;
 
@@ -503,6 +514,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testPartitionsMigrate() {
         int[] nodesCnts = {2, 3, 10, 64, 100, 200, 300, 400, 500, 600};
 
@@ -548,6 +560,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testAffinityCompatibility() {
         AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
 
@@ -1033,7 +1046,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             parts = in.readInt();
             exclNeighbors = in.readBoolean();

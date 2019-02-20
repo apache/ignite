@@ -17,8 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
@@ -86,16 +87,20 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
+import org.apache.ignite.internal.processors.continuous.IgniteContinuousQueryMetadataUpdateTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite2 extends TestSuite {
+@RunWith(DynamicSuite.class)
+public class IgniteCacheMvccTestSuite2 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         HashSet<Class> ignoredTests = new HashSet<>(128);
@@ -110,7 +115,7 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(NearCacheSyncUpdateTest.class);
         ignoredTests.add(GridCacheNearMultiGetSelfTest.class);
 
-        // Optimistic tx tests.
+        // Irrelevant Tx tests.
         ignoredTests.add(GridCacheColocatedOptimisticTransactionSelfTest.class);
         ignoredTests.add(CacheOptimisticTransactionsWithFilterSingleServerTest.class);
         ignoredTests.add(CacheOptimisticTransactionsWithFilterTest.class);
@@ -159,6 +164,7 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(IgniteNoCustomEventsOnNodeStart.class);
         ignoredTests.add(CacheExchangeMessageDuplicatedStateTest.class);
         ignoredTests.add(IgniteDynamicCacheAndNodeStop.class);
+        ignoredTests.add(IgniteContinuousQueryMetadataUpdateTest.class);
 
         ignoredTests.add(GridCacheReplicatedJobExecutionTest.class);
         ignoredTests.add(GridCacheNearJobExecutionSelfTest.class);
@@ -181,16 +187,14 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(GridCachePartitionedNearDisabledTxMultiThreadedSelfTest.class); // See GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
         ignoredTests.add(GridCachePartitionedTxTimeoutSelfTest.class); // See GridCachePartitionedMvccTxTimeoutSelfTest
 
-        TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 2");
-
-        suite.addTest(IgniteCacheTestSuite2.suite(ignoredTests));
+        List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite2.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(GridCachePartitionedMvccTxSingleThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheColocatedMvccTxSingleThreadedSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMvccTxMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMvccTxTimeoutSelfTest.class);
+        suite.add(GridCachePartitionedMvccTxSingleThreadedSelfTest.class);
+        suite.add(GridCacheColocatedMvccTxSingleThreadedSelfTest.class);
+        suite.add(GridCachePartitionedMvccTxMultiThreadedSelfTest.class);
+        suite.add(GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest.class);
+        suite.add(GridCachePartitionedMvccTxTimeoutSelfTest.class);
 
         return suite;
     }

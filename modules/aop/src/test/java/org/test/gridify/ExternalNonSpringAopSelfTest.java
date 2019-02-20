@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * To run this test with JBoss AOP make sure of the following:
@@ -78,6 +79,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultPrivate() throws Exception {
         checkDefault(DeploymentMode.PRIVATE);
     }
@@ -85,6 +87,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultIsolated() throws Exception {
         checkDefault(DeploymentMode.ISOLATED);
     }
@@ -92,6 +95,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultContinuous() throws Exception {
         checkDefault(DeploymentMode.CONTINUOUS);
     }
@@ -99,6 +103,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultShared() throws Exception {
         checkDefault(DeploymentMode.SHARED);
     }
@@ -106,6 +111,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassPrivate() throws Exception {
         checkNonDefaultClass(DeploymentMode.PRIVATE);
     }
@@ -113,6 +119,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassIsolated() throws Exception {
         checkNonDefaultClass(DeploymentMode.ISOLATED);
     }
@@ -120,6 +127,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultContinuous() throws Exception {
         checkNonDefaultClass(DeploymentMode.CONTINUOUS);
     }
@@ -127,6 +135,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultShared() throws Exception {
         checkNonDefaultClass(DeploymentMode.SHARED);
     }
@@ -134,6 +143,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNamePrivate() throws Exception {
         checkNonDefaultName(DeploymentMode.PRIVATE);
     }
@@ -141,6 +151,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameIsolated() throws Exception {
         checkNonDefaultName(DeploymentMode.ISOLATED);
     }
@@ -148,6 +159,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameContinuous() throws Exception {
         checkNonDefaultName(DeploymentMode.CONTINUOUS);
     }
@@ -155,6 +167,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameShared() throws Exception {
         checkNonDefaultName(DeploymentMode.SHARED);
     }
@@ -162,6 +175,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTaskNameAndTaskClassPrivate() throws Exception {
         checkTaskNameAndTaskClass(DeploymentMode.PRIVATE);
     }
@@ -169,6 +183,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTaskNameAndTaskClassIsolated() throws Exception {
         checkTaskNameAndTaskClass(DeploymentMode.ISOLATED);
     }
@@ -176,6 +191,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTaskNameAndTaskClassContinuous() throws Exception {
         checkTaskNameAndTaskClass(DeploymentMode.CONTINUOUS);
     }
@@ -183,6 +199,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTaskNameAndTaskClassShared() throws Exception {
         checkTaskNameAndTaskClass(DeploymentMode.SHARED);
     }
@@ -190,6 +207,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultExceptionPrivate() throws Exception {
         checkDefaultException(DeploymentMode.PRIVATE);
     }
@@ -197,6 +215,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultExceptionIsolated() throws Exception {
         checkDefaultException(DeploymentMode.ISOLATED);
     }
@@ -204,6 +223,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultExceptionContinuous() throws Exception {
         checkDefaultException(DeploymentMode.CONTINUOUS);
     }
@@ -211,6 +231,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultExceptionShared() throws Exception {
         checkDefaultException(DeploymentMode.SHARED);
     }
@@ -218,6 +239,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourcePrivate() throws Exception {
         checkDefaultResource(DeploymentMode.PRIVATE);
     }
@@ -225,6 +247,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourceIsolated() throws Exception {
         checkDefaultResource(DeploymentMode.ISOLATED);
     }
@@ -232,6 +255,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourceContinuous() throws Exception {
         checkDefaultResource(DeploymentMode.CONTINUOUS);
     }
@@ -239,6 +263,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDefaultResourceShared() throws Exception {
         checkDefaultResource(DeploymentMode.SHARED);
     }
@@ -246,6 +271,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassResourcePrivate() throws Exception {
         checkNonDefaultClassResource(DeploymentMode.PRIVATE);
     }
@@ -253,6 +279,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassResourceIsolated() throws Exception {
         checkNonDefaultClassResource(DeploymentMode.ISOLATED);
     }
@@ -260,6 +287,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassResourceContinuous() throws Exception {
         checkNonDefaultClassResource(DeploymentMode.CONTINUOUS);
     }
@@ -267,6 +295,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultClassResourceShared() throws Exception {
         checkNonDefaultClassResource(DeploymentMode.SHARED);
     }
@@ -274,6 +303,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameResourcePrivate() throws Exception {
         checkNonDefaultNameResource(DeploymentMode.PRIVATE);
     }
@@ -281,6 +311,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameResourceIsolated() throws Exception {
         checkNonDefaultNameResource(DeploymentMode.ISOLATED);
     }
@@ -288,6 +319,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameResourceContinuous() throws Exception {
         checkNonDefaultNameResource(DeploymentMode.CONTINUOUS);
     }
@@ -295,6 +327,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonDefaultNameResourceShared() throws Exception {
         checkNonDefaultNameResource(DeploymentMode.SHARED);
     }

@@ -146,6 +146,7 @@ const exec = (command, onResolveString, cwd, env) => {
 
 const startEnv = (webConsoleRootDirectoryPath = '../../') => {
     return new Promise(async(resolve) => {
+        const BACKEND_PORT = 3001;
         const command = `${process.platform === 'win32' ? 'npm.cmd' : 'npm'} start`;
 
         let port = 9001;
@@ -153,8 +154,8 @@ const startEnv = (webConsoleRootDirectoryPath = '../../') => {
         if (process.env.APP_URL)
             port = parseInt(url.parse(process.env.APP_URL).port, 10) || 80;
 
-        const backendInstanceLaunch = exec(command, 'Start listening', `${webConsoleRootDirectoryPath}backend`, {server_port: 3001, mongodb_url: mongoUrl}); // Todo: refactor cwd for backend when it's linked
-        const frontendInstanceLaunch = exec(command, 'Compiled successfully', `${webConsoleRootDirectoryPath}frontend`, {BACKEND_PORT: 3001, PORT: port});
+        const backendInstanceLaunch = exec(command, 'Start listening', `${webConsoleRootDirectoryPath}backend`, {server_port: BACKEND_PORT, mongodb_url: mongoUrl});
+        const frontendInstanceLaunch = exec(command, 'Compiled successfully', `${webConsoleRootDirectoryPath}frontend`, {BACKEND_URL: `http://localhost:${BACKEND_PORT}`, PORT: port});
 
         console.log('Building backend in progress...');
         await backendInstanceLaunch;

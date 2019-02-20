@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link X}.
@@ -33,6 +34,7 @@ public class GridXSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testHasCause() {
         ConnectException conEx = new ConnectException();
 
@@ -55,6 +57,7 @@ public class GridXSelfTest extends GridCommonAbstractTest {
     /**
      * Tests string presentation of given time.
      */
+    @Test
     public void testTimeSpan() {
         assertEquals(X.timeSpan2DHMSM(86400001L), "1 day, 00:00:00.001");
 
@@ -68,6 +71,7 @@ public class GridXSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testShallowClone() {
         // Single not cloneable object
         Object obj = new Object();
@@ -117,6 +121,7 @@ public class GridXSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings({"StringEquality"})
+    @Test
     public void testDeepCloner() {
         // Single not cloneable object
         Object obj = new Object();

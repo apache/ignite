@@ -47,6 +47,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Multithreaded job stealing test.
@@ -81,6 +82,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testTwoJobsMultithreaded() throws Exception {
         final AtomicReference<Exception> fail = new AtomicReference<>(null);
 
@@ -136,6 +138,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testJoinedNodeCanStealJobs() throws Exception {
         final AtomicReference<Exception> fail = new AtomicReference<>(null);
 

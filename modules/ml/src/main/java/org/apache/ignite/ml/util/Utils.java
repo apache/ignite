@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Spliterator;
@@ -129,5 +130,43 @@ public class Utils {
         return StreamSupport.stream(
                 Spliterators.spliteratorUnknownSize(iter, Spliterator.ORDERED),
                 false);
+    }
+
+    /**
+     * Serialized the specified object.
+     *
+     * @param o Object to be serialized.
+     * @return Serialized object as byte array.
+     */
+    public static <T extends Serializable> byte[] serialize(T o) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            oos.writeObject(o);
+            oos.flush();
+
+            return baos.toByteArray();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Deserialized object represented as a byte array.
+     *
+     * @param o Serialized object.
+     * @param <T> Type of serialized object.
+     * @return Deserialized object.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T extends Serializable> T deserialize(byte[] o) {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(o);
+             ObjectInputStream ois = new ObjectInputStream(bais)) {
+
+            return (T)ois.readObject();
+        }
+        catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

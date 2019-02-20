@@ -17,10 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.internal.processors.cache.IgniteCacheTxPeekModesTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheTxReplicatedPeekModesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccConfigurationValidationTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentTransactionTest;
@@ -40,81 +36,39 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccCachePeekTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUnsupportedTxModesTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccPersistenceSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+/** */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    CacheMvccTransactionsTest.class,
+    CacheMvccProcessorTest.class,
+    CacheMvccVacuumTest.class,
+    CacheMvccConfigurationValidationTest.class,
 
-/**
- *
- */
-public class IgniteCacheMvccTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("IgniteCache MVCC Test Suite");
+    DataStreamProcessorMvccSelfTest.class,
+    DataStreamProcessorMvccPersistenceSelfTest.class,
+    CacheMvccOperationChecksTest.class,
 
-        // Basic tests.
-        suite.addTestSuite(CacheMvccTransactionsTest.class);
-        suite.addTestSuite(CacheMvccProcessorTest.class);
-        suite.addTestSuite(CacheMvccVacuumTest.class);
-        suite.addTestSuite(CacheMvccConfigurationValidationTest.class);
+    CacheMvccRemoteTxOnNearNodeStartTest.class,
 
-        suite.addTestSuite(DataStreamProcessorMvccSelfTest.class);
-        suite.addTestSuite(DataStreamProcessorMvccPersistenceSelfTest.class);
-        suite.addTestSuite(CacheMvccOperationChecksTest.class);
+    MvccUnsupportedTxModesTest.class,
 
-        suite.addTestSuite(CacheMvccRemoteTxOnNearNodeStartTest.class);
+    MvccCachePeekTest.class,
 
-        suite.addTestSuite(MvccUnsupportedTxModesTest.class);
+    // Concurrent ops tests.
+    CacheMvccIteratorWithConcurrentTransactionTest.class,
+    CacheMvccLocalEntriesWithConcurrentTransactionTest.class,
+    CacheMvccScanQueryWithConcurrentTransactionTest.class,
+    CacheMvccSizeWithConcurrentTransactionTest.class,
 
-        suite.addTestSuite(MvccCachePeekTest.class);
-
-        suite.addTestSuite(MvccIgniteCacheTxPeekModesTest.class);
-        suite.addTestSuite(MvccIgniteCacheTxReplicatedPeekModesTest.class);
-
-        // Concurrent ops tests.
-        suite.addTestSuite(CacheMvccIteratorWithConcurrentTransactionTest.class);
-        suite.addTestSuite(CacheMvccLocalEntriesWithConcurrentTransactionTest.class);
-        suite.addTestSuite(CacheMvccScanQueryWithConcurrentTransactionTest.class);
-        suite.addTestSuite(CacheMvccSizeWithConcurrentTransactionTest.class);
-
-        // Failover tests.
-        suite.addTestSuite(CacheMvccTxFailoverTest.class);
-        suite.addTestSuite(CacheMvccClusterRestartTest.class);
-        suite.addTestSuite(CacheMvccPartitionedCoordinatorFailoverTest.class);
-        suite.addTestSuite(CacheMvccReplicatedCoordinatorFailoverTest.class);
-        suite.addTestSuite(CacheMvccProcessorLazyStartTest.class);
-
-        return suite;
-    }
-
-    /** */
-    public static class MvccIgniteCacheTxPeekModesTest extends IgniteCacheTxPeekModesTest {
-        /** {@inheritDoc} */
-        @Override protected CacheAtomicityMode atomicityMode() {
-            return TRANSACTIONAL_SNAPSHOT;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testLocalEntries() throws Exception {
-            fail("https://issues.apache.org/jira/browse/IGNITE-10167");
-
-            super.testLocalEntries();
-        }
-    }
-
-    /** */
-    public static class MvccIgniteCacheTxReplicatedPeekModesTest extends IgniteCacheTxReplicatedPeekModesTest {
-        /** {@inheritDoc} */
-        @Override protected CacheAtomicityMode atomicityMode() {
-            return TRANSACTIONAL_SNAPSHOT;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testLocalEntries() throws Exception {
-            fail("https://issues.apache.org/jira/browse/IGNITE-10167");
-
-            super.testLocalEntries();
-        }
-    }
+    // Failover tests.
+    CacheMvccTxFailoverTest.class,
+    CacheMvccClusterRestartTest.class,
+    CacheMvccPartitionedCoordinatorFailoverTest.class,
+    CacheMvccReplicatedCoordinatorFailoverTest.class,
+    CacheMvccProcessorLazyStartTest.class
+})
+public class IgniteCacheMvccTestSuite {
 }

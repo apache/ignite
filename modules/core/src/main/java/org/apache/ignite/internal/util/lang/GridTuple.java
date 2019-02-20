@@ -116,7 +116,6 @@ public class GridTuple<V> implements Iterable<V>, Cloneable, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         val = (V)in.readObject();
     }

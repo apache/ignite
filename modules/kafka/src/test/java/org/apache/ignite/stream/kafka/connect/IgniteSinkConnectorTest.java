@@ -51,6 +51,7 @@ import org.apache.kafka.connect.storage.OffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
 import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.easymock.EasyMock.mock;
@@ -138,6 +139,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSinkPutsWithoutTransformation() throws Exception {
         Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
 
@@ -149,6 +151,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSinkPutsWithTransformation() throws Exception {
         testSinkPuts(makeSinkProps(Utils.join(TOPICS, ",")), true);
     }

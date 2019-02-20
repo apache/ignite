@@ -27,18 +27,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -46,9 +41,7 @@ public class IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest extends GridComm
         if ("client".equals(igniteInstanceName))
             cfg.setClientMode(true).setFailureHandler(new StopNodeFailureHandler());
 
-        return cfg.setDiscoverySpi(new TcpDiscoverySpi()
-                .setIpFinder(IP_FINDER))
-                .setDataStorageConfiguration(new DataStorageConfiguration()
+        return cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                         .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                                 .setPersistenceEnabled(true)));
     }
@@ -71,6 +64,7 @@ public class IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest extends GridComm
      * Tests that joining node metadata correctly handled on client.
      * @throws Exception If fails.
      */
+    @Test
     public void testJoiningNodeBinaryMetaOnClient() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
