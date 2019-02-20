@@ -62,7 +62,7 @@
         </repository>
     </repositories>
 
-    <groupId>org.apache.ignite</groupId>
+    <groupId>org.gridgain</groupId>
     <artifactId>ignite-examples</artifactId>
     <version>to_be_replaced_by_ignite_version</version>
 
@@ -74,49 +74,49 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-core</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-log4j</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-indexing</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-spring-data_2.0</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-ml</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-ml-xgboost-model-parser</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-ml-spark-model-parser</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
@@ -169,13 +169,13 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>org.gridgain</groupId>
                     <artifactId>ignite-scalar</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
 
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>org.gridgain</groupId>
                     <artifactId>ignite-spark</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
@@ -229,19 +229,19 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>org.gridgain</groupId>
                     <artifactId>ignite-hibernate_5.1</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
 
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>org.gridgain</groupId>
                     <artifactId>ignite-schedule</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
 
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>org.gridgain</groupId>
                     <artifactId>ignite-geospatial</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
