@@ -172,7 +172,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class);
 
-        suite.addTestSuite();
+        suite.addTestSuite(NodeWithFilterRestartTest.class);
 
         return suite;
     }
