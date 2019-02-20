@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -49,7 +50,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
@@ -58,8 +58,6 @@ import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -67,8 +65,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
-public class GridQueryParsingTest extends GridCommonAbstractTest {
+public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     /** */
     private static Ignite ignite;
 
@@ -1029,7 +1026,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         String schemaName = idx.schema(DEFAULT_CACHE_NAME);
 
-        return (JdbcConnection)idx.connections().connectionForThread(schemaName);
+        return (JdbcConnection)idx.connections().connectionForThread().connection(schemaName);
     }
 
     /**

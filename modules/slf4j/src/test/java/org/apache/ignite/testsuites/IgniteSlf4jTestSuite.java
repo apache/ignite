@@ -17,25 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.logger.slf4j.Slf4jLoggerMarkerTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Slf4j logging tests.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    Slf4jLoggerMarkerTest.class
+})
 public class IgniteSlf4jTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Slf4j Logging Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(Slf4jLoggerMarkerTest.class));
-
-        return suite;
-    }
 }

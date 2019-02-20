@@ -74,7 +74,8 @@ public class BinaryClassificationMetrics implements Metric<Double> {
 
     /** */
     public BinaryClassificationMetrics withPositiveClsLb(double positiveClsLb) {
-        this.positiveClsLb = positiveClsLb;
+        if (Double.isFinite(positiveClsLb))
+            this.positiveClsLb = positiveClsLb;
         return this;
     }
 
@@ -85,13 +86,15 @@ public class BinaryClassificationMetrics implements Metric<Double> {
 
     /** */
     public BinaryClassificationMetrics withNegativeClsLb(double negativeClsLb) {
-        this.negativeClsLb = negativeClsLb;
+        if (Double.isFinite(negativeClsLb))
+            this.negativeClsLb = negativeClsLb;
         return this;
     }
 
     /** */
     public BinaryClassificationMetrics withMetric(Function<BinaryClassificationMetricValues, Double> metric) {
-        this.metric = metric;
+        if (metric != null)
+            this.metric = metric;
         return this;
     }
 

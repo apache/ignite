@@ -216,6 +216,9 @@ namespace Apache.Ignite.Core
         /** MVCC vacuum thread count. */
         private int? _mvccVacuumThreadCnt;
 
+        /** SQL query history size. */
+        private int? _sqlQueryHistorySize;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -250,6 +253,11 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="MvccVacuumThreadCount"/> property.
         /// </summary>
         public const int DefaultMvccVacuumThreadCount = 2;
+
+        /// <summary>
+        /// Default value for <see cref="SqlQueryHistorySize"/> property.
+        /// </summary>
+        public const int DefaultSqlQueryHistorySize = 1000;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -333,6 +341,7 @@ namespace Apache.Ignite.Core
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
+            writer.WriteIntNullable(_sqlQueryHistorySize);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -386,7 +395,7 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(true);
 
                 var keystoreEnc = enc as KeystoreEncryptionSpi;
-                
+
                 if (keystoreEnc == null)
                     throw new InvalidOperationException("Unsupported encryption SPI: " + enc.GetType());
 
@@ -478,7 +487,8 @@ namespace Apache.Ignite.Core
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
                 writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
-                writer.WriteLong((long) TransactionConfiguration.DefaultDefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DeadlockTimeout.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
@@ -722,6 +732,7 @@ namespace Apache.Ignite.Core
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
+            _sqlQueryHistorySize = r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -754,7 +765,7 @@ namespace Apache.Ignite.Core
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
 
-            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ? 
+            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ?
                 new KeystoreEncryptionSpi(r) : null;
 
             // Communication config
@@ -801,7 +812,8 @@ namespace Apache.Ignite.Core
                     DefaultTransactionIsolation = (TransactionIsolation) r.ReadInt(),
                     DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt()),
-                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong())
+                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong()),
+                    DeadlockTimeout = TimeSpan.FromMilliseconds(r.ReadLong())
                 };
             }
 
@@ -1085,7 +1097,7 @@ namespace Apache.Ignite.Core
         /// Null for default communication.
         /// </summary>
         public ICommunicationSpi CommunicationSpi { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the encryption service provider.
         /// Null for disabled encryption.
@@ -1632,6 +1644,17 @@ namespace Apache.Ignite.Core
         {
             get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
             set { _mvccVacuumThreadCnt = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the value indicating the number of SQL query history elements to keep in memory.
+        /// Zero or negative value disables the history.
+        /// </summary>
+        [DefaultValue(DefaultSqlQueryHistorySize)]
+        public int SqlQueryHistorySize
+        {
+            get { return _sqlQueryHistorySize ?? DefaultSqlQueryHistorySize; }
+            set { _sqlQueryHistorySize = value; }
         }
 
         /// <summary>

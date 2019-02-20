@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.cache.LargeEntryUpdateTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakLargeObjectsTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakLargePagesTest;
@@ -26,27 +24,20 @@ import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakNonTrans
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakWithExpirationTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Page memory leaks tests.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteDbMemoryLeakTest.class,
+    IgniteDbMemoryLeakWithExpirationTest.class,
+    IgniteDbMemoryLeakLargePagesTest.class,
+    IgniteDbMemoryLeakLargeObjectsTest.class,
+    IgniteDbMemoryLeakNonTransactionalTest.class,
+
+    LargeEntryUpdateTest.class
+})
 public class IgniteDbMemoryLeakTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Db Memory Leaks Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakWithExpirationTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakLargePagesTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakLargeObjectsTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakNonTransactionalTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(LargeEntryUpdateTest.class));
-
-        return suite;
-    }
 }

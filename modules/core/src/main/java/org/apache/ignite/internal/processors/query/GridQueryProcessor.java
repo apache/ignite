@@ -1567,6 +1567,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
+        if (!QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()))
+            ccfg.setAffinityMapper(null);
+
         if (affinityKey != null)
             ccfg.setKeyConfiguration(new CacheKeyConfiguration(entity.getKeyType(), affinityKey));
 
@@ -2043,6 +2046,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Execute update on DHT node (i.e. when it is possible to execute and update on all nodes independently).
      *
      * @param cctx Cache context.
      * @param cacheIds Involved cache ids.
@@ -2059,13 +2063,36 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Cursor over entries which are going to be changed.
      * @throws IgniteCheckedException If failed.
      */
-    public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] cacheIds,
-        int[] parts, String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
-        AffinityTopologyVersion topVer, MvccSnapshot mvccSnapshot,
-        GridQueryCancel cancel) throws IgniteCheckedException {
+    public UpdateSourceIterator<?> executeUpdateOnDataNodeTransactional(
+        GridCacheContext<?, ?> cctx,
+        int[] cacheIds,
+        int[] parts,
+        String schema,
+        String qry,
+        Object[] params,
+        int flags,
+        int pageSize,
+        int timeout,
+        AffinityTopologyVersion topVer,
+        MvccSnapshot mvccSnapshot,
+        GridQueryCancel cancel
+    ) throws IgniteCheckedException {
         checkxEnabled();
 
-        return idx.prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry, params, flags, pageSize, timeout, topVer, mvccSnapshot, cancel);
+        return idx.executeUpdateOnDataNodeTransactional(
+            cctx,
+            cacheIds,
+            parts,
+            schema,
+            qry,
+            params,
+            flags,
+            pageSize,
+            timeout,
+            topVer,
+            mvccSnapshot,
+            cancel
+        );
     }
 
     /**
@@ -2127,7 +2154,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             cliCtx,
             keepBinary,
             failOnMultipleStmts,
-            GridCacheQueryType.SQL_FIELDS
+            GridCacheQueryType.SQL_FIELDS,
+            null
+        );
+    }
+
+    /**
+     * Query SQL fields.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param cliCtx Client context.
+     * @param keepBinary Keep binary flag.
+     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
+     *      more then one SQL statement.
+     * @param cancel Hook for query cancellation.
+     * @return Cursor.
+     */
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(
+        @Nullable final GridCacheContext<?, ?> cctx,
+        final SqlFieldsQuery qry,
+        final SqlClientContext cliCtx,
+        final boolean keepBinary,
+        final boolean failOnMultipleStmts,
+        @Nullable final GridQueryCancel cancel
+    ) {
+        return querySqlFields(
+            cctx,
+            qry,
+            cliCtx,
+            keepBinary,
+            failOnMultipleStmts,
+            GridCacheQueryType.SQL_FIELDS,
+            cancel
         );
     }
 
@@ -2141,6 +2200,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
      * @param qryType Real query type.
+     * @param cancel Hook for query cancellation.
      * @return Cursor.
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(
@@ -2149,7 +2209,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final SqlClientContext cliCtx,
         final boolean keepBinary,
         final boolean failOnMultipleStmts,
-        GridCacheQueryType qryType
+        GridCacheQueryType qryType,
+        @Nullable final GridQueryCancel cancel
     ) {
         // Validate.
         checkxEnabled();
@@ -2167,10 +2228,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
                 new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
                     @Override public List<FieldsQueryCursor<List<?>>> applyx() {
-                        GridQueryCancel cancel = new GridQueryCancel();
+                        GridQueryCancel cancel0 = cancel != null ? cancel : new GridQueryCancel();
 
-                        List<FieldsQueryCursor<List<?>>> res = idx.querySqlFields(schemaName, qry, cliCtx,
-                            keepBinary, failOnMultipleStmts, null, cancel, true);
+                        List<FieldsQueryCursor<List<?>>> res =
+                            idx.querySqlFields(
+                                schemaName,
+                                qry,
+                                cliCtx,
+                                keepBinary,
+                                failOnMultipleStmts,
+                                null,
+                                cancel0,
+                                true
+                            );
 
                         if (cctx != null)
                             sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx, qryType);
@@ -2251,6 +2321,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public List<Long> streamBatchedUpdateQuery(final String schemaName, final SqlClientContext cliCtx,
         final String qry, final List<Object[]> args) {
+        checkxEnabled();
+
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -2298,7 +2370,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             null,
             keepBinary,
             true,
-            GridCacheQueryType.SQL
+            GridCacheQueryType.SQL,
+            null
         ).get(0);
 
         // Convert.

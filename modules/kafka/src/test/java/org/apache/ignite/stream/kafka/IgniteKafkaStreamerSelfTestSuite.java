@@ -17,31 +17,22 @@
 
 package org.apache.ignite.stream.kafka;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.stream.kafka.connect.IgniteSinkConnectorTest;
 import org.apache.ignite.stream.kafka.connect.IgniteSourceConnectorTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Apache Kafka streamers tests.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    // Kafka streamer.
+    KafkaIgniteStreamerSelfTest.class,
+
+    // Kafka streamers via Connect API.
+    IgniteSinkConnectorTest.class,
+    IgniteSourceConnectorTest.class
+})
 public class IgniteKafkaStreamerSelfTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Apache Kafka streamer Test Suite");
-
-        // Kafka streamer.
-        suite.addTest(new JUnit4TestAdapter(KafkaIgniteStreamerSelfTest.class));
-
-        // Kafka streamers via Connect API.
-        suite.addTest(new JUnit4TestAdapter(IgniteSinkConnectorTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteSourceConnectorTest.class));
-
-        return suite;
-    }
 }

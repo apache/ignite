@@ -58,7 +58,7 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector v) {
+    @Override public Double predict(Vector v) {
         if (!datasets.isEmpty()) {
             List<LabeledVector> neighbors = findKNearestNeighbors(v);
 

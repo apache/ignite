@@ -424,6 +424,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         opsLock.writeLock().lock();
 
         try {
+            if (ctx.isStopping())
+                return;
+
             disconnected = true;
 
             stopProcessor(new IgniteClientDisconnectedCheckedException(
@@ -535,7 +538,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param dfltNodeFilter Default NodeFilter.
      * @return Configurations to deploy.
      */
-    @SuppressWarnings("deprecation")
     private PreparedConfigurations<IgniteUuid> prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
         IgnitePredicate<ClusterNode> dfltNodeFilter) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
@@ -1235,7 +1237,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @return Copy of service.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("deprecation")
     private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
         if (cfg instanceof LazyServiceConfiguration) {
             byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();

@@ -35,8 +35,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_HANDSHAKE_FLAG;
@@ -48,7 +46,6 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALL
  * This class tests that parser confirms memcache extended specification.
  */
 @SuppressWarnings("TypeMayBeWeakened")
-@RunWith(JUnit4.class)
 public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
     private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();

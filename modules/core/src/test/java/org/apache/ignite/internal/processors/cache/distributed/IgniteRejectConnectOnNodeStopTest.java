@@ -34,15 +34,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 /**
  * Sanity test to check that node starts to reject connections when stop procedure started.
  */
-@RunWith(JUnit4.class)
 public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
     /** */
     private boolean client;

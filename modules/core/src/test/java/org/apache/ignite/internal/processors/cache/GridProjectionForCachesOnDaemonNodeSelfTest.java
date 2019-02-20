@@ -23,13 +23,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests of cache related cluster projections for daemon node.
  */
-@RunWith(JUnit4.class)
 public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstractTest {
     /** Daemon node. */
     private static boolean daemonNode;
@@ -58,6 +55,14 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
         daemon = startGrid(1);
 
         assert ((IgniteKernal)daemon).localNode().isDaemon();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+        daemon = null;
     }
 
     /** {@inheritDoc} */

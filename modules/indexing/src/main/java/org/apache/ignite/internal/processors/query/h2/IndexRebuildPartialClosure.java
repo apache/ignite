@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 
@@ -43,7 +43,7 @@ public class IndexRebuildPartialClosure implements SchemaIndexCacheVisitorClosur
         for (Map.Entry<GridH2Table, Collection<GridH2IndexBase>> tblIdxEntry : tblIdxs.entrySet()) {
             GridH2Table tbl = tblIdxEntry.getKey();
 
-            GridH2Row row0 = tbl.rowDescriptor().createRow(row);
+            H2CacheRow row0 = tbl.rowDescriptor().createRow(row);
 
             for (GridH2IndexBase idx : tblIdxEntry.getValue())
                 idx.putx(row0);

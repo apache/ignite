@@ -31,13 +31,10 @@ import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopSerializationWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test of wrapper of the native serialization.
  */
-@RunWith(JUnit4.class)
 public class HadoopSerializationWrapperSelfTest extends GridCommonAbstractTest {
     /**
      * Tests read/write of IntWritable via native WritableSerialization.

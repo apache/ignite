@@ -16,24 +16,15 @@
  */
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Integration tests for Grid REST functionality; Jetty is under the hood.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    RestSetupSimpleTest.class
+})
 public class GridRestSuite {
-    /**
-     * @return Suite that contains all tests for REST.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Apache Ignite REST Api suite");
-
-        suite.addTest(new JUnit4TestAdapter(RestSetupSimpleTest.class));
-
-        return suite;
-    }
 }

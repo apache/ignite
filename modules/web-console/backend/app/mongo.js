@@ -54,6 +54,22 @@ const defineSchema = (mongoose, schemas) => {
     return result;
 };
 
+const upgradeAccounts = (mongo, activation) => {
+    if (activation) {
+        return mongo.Account.find({
+            $or: [{activated: false}, {activated: {$exists: false}}],
+            activationToken: {$exists: false}
+        }, '_id').lean().exec()
+            .then((accounts) => {
+                const conditions = _.map(accounts, (account) => ({session: {$regex: `"${account._id}"`}}));
+
+                return mongoose.connection.db.collection('sessions').deleteMany({$or: conditions});
+            });
+    }
+
+    return mongo.Account.update({activated: false}, {$unset: {activationSentAt: "", activationToken: ""}}, {multi: true}).exec();
+};
+
 module.exports.factory = function(settings, mongoose, schemas) {
     // Use native promises
     mongoose.Promise = global.Promise;
@@ -128,7 +144,8 @@ module.exports.factory = function(settings, mongoose, schemas) {
                                             admin: true,
                                             token: 'ruQvlWff09zqoVYyh6WJ',
                                             attempts: 0,
-                                            resetPasswordToken: 'O2GWgOkKkhqpDcxjYnSP'
+                                            resetPasswordToken: 'O2GWgOkKkhqpDcxjYnSP',
+                                            activated: true
                                         }),
                                         mongo.Space.create({
                                             _id: '59fc0c26e145c32be0f83b34',
@@ -146,5 +163,10 @@ module.exports.factory = function(settings, mongoose, schemas) {
 
                     return mongo;
                 });
+        })
+        .then((mongo) => {
+            return upgradeAccounts(mongo, settings.activation.enabled)
+                .then(() => mongo)
+                .catch(() => mongo);
         });
 };

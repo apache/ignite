@@ -39,19 +39,19 @@ public class SVMModelTest {
         SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, 1.0).withRawLabels(true);
 
         Vector observation = new DenseVector(new double[]{1.0, 1.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{2.0, 1.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 2.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 2.0 + 3.0 * 1.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{1.0, 2.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 2.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 2.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{-2.0, 1.0});
-        TestUtils.assertEquals(1.0 - 2.0 * 2.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 - 2.0 * 2.0 + 3.0 * 1.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{1.0, -2.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.predict(observation), PRECISION);
 
         Assert.assertTrue(mdl.isKeepingRawLabels());
 
@@ -67,25 +67,25 @@ public class SVMModelTest {
         SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, 1.0);
 
         Vector observation = new DenseVector(new double[]{1.0, 1.0});
-        TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{3.0, 4.0});
-        TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{-1.0, -1.0});
-        TestUtils.assertEquals(0.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(0.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{-2.0, 1.0});
-        TestUtils.assertEquals(0.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(0.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{-1.0, -2.0});
-        TestUtils.assertEquals(0.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(0.0, mdl.predict(observation), PRECISION);
 
         final SVMLinearClassificationModel mdlWithNewData = mdl.withIntercept(-2.0).withWeights(new DenseVector(new double[] {-2.0, -2.0}));
         System.out.println("The SVM model is " + mdlWithNewData);
 
         observation = new DenseVector(new double[]{-1.0, -2.0});
-        TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0, mdl.predict(observation), PRECISION);
         TestUtils.assertEquals(-2.0, mdl.intercept(), PRECISION);
     }
 
@@ -96,10 +96,10 @@ public class SVMModelTest {
         SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, 1.0).withThreshold(5);
 
         Vector observation = new DenseVector(new double[]{1.0, 1.0});
-        TestUtils.assertEquals(0.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(0.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{3.0, 4.0});
-        TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0, mdl.predict(observation), PRECISION);
 
         TestUtils.assertEquals(5, mdl.threshold(), PRECISION);
     }
@@ -113,6 +113,6 @@ public class SVMModelTest {
 
         Vector observation = new DenseVector(new double[]{1.0});
 
-        mdl.apply(observation);
+        mdl.predict(observation);
     }
 }

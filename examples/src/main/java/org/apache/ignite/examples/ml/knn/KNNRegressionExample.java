@@ -86,7 +86,7 @@ public class KNNRegressionExample {
                     Vector inputs = val.copyOfRange(1, val.size());
                     double groundTruth = val.get(0);
 
-                    double prediction = knnMdl.apply(inputs);
+                    double prediction = knnMdl.predict(inputs);
 
                     mse += Math.pow(prediction - groundTruth, 2.0);
                     mae += Math.abs(prediction - groundTruth);
@@ -98,10 +98,10 @@ public class KNNRegressionExample {
 
                 System.out.println(">>> ---------------------------------");
 
-                mse = mse / totalAmount;
+                mse /= totalAmount;
                 System.out.println("\n>>> Mean squared error (MSE) " + mse);
 
-                mae = mae / totalAmount;
+                mae /= totalAmount;
                 System.out.println("\n>>> Mean absolute error (MAE) " + mae);
 
                 System.out.println(">>> kNN regression over cached dataset usage example completed.");

@@ -39,20 +39,17 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test to check various transactional scenarios.
  */
-@RunWith(JUnit4.class)
 public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcThinAbstractSelfTest {
     /** Client node index. */
     static final int CLI_IDX = 1;
@@ -162,58 +159,34 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         execute("CREATE INDEX IF NOT EXISTS persidx ON \"Person\".person(cityid)");
 
         insertPerson(1, "John", "Smith", 1, 1);
-
         insertPerson(2, "Mike", "Johns", 1, 2);
-
         insertPerson(3, "Sam", "Jules", 2, 2);
-
         insertPerson(4, "Alex", "Pope", 2, 3);
-
         insertPerson(5, "Peter", "Williams", 2, 3);
 
         insertCity(1, "Los Angeles", 5000);
-
         insertCity(2, "Seattle", 1500);
-
         insertCity(3, "New York", 12000);
-
         insertCity(4, "Cupertino", 400);
 
         insertCompany(1, "Microsoft", 2);
-
         insertCompany(2, "Google", 3);
-
         insertCompany(3, "Facebook", 1);
-
         insertCompany(4, "Uber", 1);
-
         insertCompany(5, "Apple", 4);
 
         insertProduct(1, "Search", 2);
-
         insertProduct(2, "Windows", 1);
-
         insertProduct(3, "Mac", 5);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(0);
-
-        startGrid(1);
-
-        startGrid(2);
-
-        startGrid(3);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        startGridsMultiThreaded(4);
     }
 
     /** {@inheritDoc} */
@@ -294,6 +267,8 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
         assertTrue(e.getCause() instanceof BatchUpdateException);
 
+        assertEquals(IgniteQueryErrorCode.DUPLICATE_KEY, ((BatchUpdateException)e.getCause()).getErrorCode());
+
         assertTrue(e.getCause().getMessage().contains("Duplicate key during INSERT [key=KeyCacheObjectImpl " +
             "[part=6, val=6, hasValBytes=true]]"));
 
@@ -347,7 +322,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10770")
     @Test
     public void testInsertAndQueryMultipleCaches() throws SQLException {
         executeInTransaction(new TransactionClosure() {
@@ -832,7 +806,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      * @param c Connection to begin a transaction on.
      */
-    private void begin(Connection c) throws SQLException {
+    private void begin(Connection c) {
         if (autoCommit())
             execute(c, "BEGIN");
     }
@@ -882,7 +856,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      * @return Result set.
      * @throws RuntimeException if failed.
      */
-    protected List<List<?>> execute(Connection conn, String sql, Object... args) {
+    @Override protected List<List<?>> execute(Connection conn, String sql, Object... args) {
         try {
             return super.execute(conn, sql, args);
         }
@@ -917,7 +891,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      * @param params Connection parameters.
      * @return Thin JDBC connection to specified node.
      */
-    protected Connection connect(IgniteEx node, String params) {
+    @Override protected Connection connect(IgniteEx node, String params) {
         try {
             return super.connect(node, params);
         }
@@ -1067,7 +1041,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      * Closure to be executed in scope of a transaction.
      */
-    private abstract class TransactionClosure implements IgniteInClosure<Connection> {
+    private abstract static class TransactionClosure implements IgniteInClosure<Connection> {
         // No-op.
     }
 
@@ -1083,7 +1057,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      * @param rows Rows.
      * @return Rows as a single list.
      */
-    @SuppressWarnings("unchecked")
     private static <T> List<T> flat(Collection<? extends Collection<?>> rows) {
         return new ArrayList<>(F.flatCollections((Collection<? extends Collection<T>>)rows));
     }

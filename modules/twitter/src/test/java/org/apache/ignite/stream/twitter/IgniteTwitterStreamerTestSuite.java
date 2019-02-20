@@ -17,24 +17,15 @@
 
 package org.apache.ignite.stream.twitter;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Twitter streamer tests.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteTwitterStreamerTest.class
+})
 public class IgniteTwitterStreamerTestSuite {
-    /**
-     * @return Twitter streamer tests suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Twitter streamed Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(IgniteTwitterStreamerTest.class));
-
-        return suite;
-    }
 }

@@ -17,23 +17,21 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
-/**
- *
- */
-@RunWith(AllTests.class)
+/** */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteHibernateTestSuite.class
+})
 public class IgniteBinaryHibernateTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
+    /** */
+    @BeforeClass
+    public static void init() {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
-        return IgniteHibernateTestSuite.suite();
     }
 }

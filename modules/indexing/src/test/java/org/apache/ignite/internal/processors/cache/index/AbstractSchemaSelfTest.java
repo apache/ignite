@@ -59,14 +59,13 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests for dynamic schema changes.
  */
 @SuppressWarnings("unchecked")
-public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
+public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest {
     /** Cache. */
     protected static final String CACHE_NAME = "cache";
 
@@ -558,7 +557,7 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param node Node to create cache on.
      */
     protected void destroySqlCache(Ignite node) throws IgniteCheckedException {
-        ((IgniteEx)node).context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false).get();
+        ((IgniteEx)node).context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false, null).get();
     }
 
     /**

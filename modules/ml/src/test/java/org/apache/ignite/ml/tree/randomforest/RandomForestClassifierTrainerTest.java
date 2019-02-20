@@ -92,7 +92,7 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
         ModelsComposition updatedOnEmptyDS = trainer.update(originalMdl, new HashMap<double[], Double>(), parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
 
         Vector v = VectorUtils.of(5, 0.5, 0.05, 0.005);
-        assertEquals(originalMdl.apply(v), updatedOnSameDS.apply(v), 0.01);
-        assertEquals(originalMdl.apply(v), updatedOnEmptyDS.apply(v), 0.01);
+        assertEquals(originalMdl.predict(v), updatedOnSameDS.predict(v), 0.01);
+        assertEquals(originalMdl.predict(v), updatedOnEmptyDS.predict(v), 0.01);
     }
 }

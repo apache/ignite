@@ -17,9 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
 import org.apache.ignite.p2p.DeploymentClassLoaderCallableTest;
 import org.apache.ignite.p2p.GridP2PClassLoadingSelfTest;
@@ -39,50 +36,34 @@ import org.apache.ignite.p2p.GridP2PUndeploySelfTest;
 import org.apache.ignite.p2p.P2PScanQueryUndeployTest;
 import org.apache.ignite.p2p.P2PStreamingClassLoaderTest;
 import org.apache.ignite.p2p.SharedDeploymentTest;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * P2P test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridP2PDoubleDeploymentSelfTest.class,
+    GridP2PHotRedeploymentSelfTest.class,
+    GridP2PClassLoadingSelfTest.class,
+    GridP2PUndeploySelfTest.class,
+    GridP2PRemoteClassLoadersSelfTest.class,
+    GridP2PNodeLeftSelfTest.class,
+    GridP2PDifferentClassLoaderSelfTest.class,
+    GridP2PSameClassLoaderSelfTest.class,
+    GridP2PJobClassLoaderSelfTest.class,
+    GridP2PRecursionTaskSelfTest.class,
+    GridP2PLocalDeploymentSelfTest.class,
+    //GridP2PTestTaskExecutionTest.class,
+    GridP2PTimeoutSelfTest.class,
+    GridP2PMissedResourceCacheSizeSelfTest.class,
+    GridP2PContinuousDeploymentSelfTest.class,
+    DeploymentClassLoaderCallableTest.class,
+    P2PStreamingClassLoaderTest.class,
+    SharedDeploymentTest.class,
+    P2PScanQueryUndeployTest.class,
+    GridDeploymentMessageCountSelfTest.class,
+})
 public class IgniteP2PSelfTestSuite {
-    /**
-     * @return Suite.
-     */
-    public static TestSuite suite() {
-        return suite(null);
-    }
-
-    /**
-     * @return P2P tests suite.
-     */
-    @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    public static TestSuite suite(Set<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Ignite P2P Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(GridP2PDoubleDeploymentSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PHotRedeploymentSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PClassLoadingSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PUndeploySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PRemoteClassLoadersSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PNodeLeftSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PDifferentClassLoaderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PSameClassLoaderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PJobClassLoaderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PRecursionTaskSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PLocalDeploymentSelfTest.class));
-        //suite.addTest(new JUnit4TestAdapter(GridP2PTestTaskExecutionTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PTimeoutSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PMissedResourceCacheSizeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PContinuousDeploymentSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(DeploymentClassLoaderCallableTest.class));
-        suite.addTest(new JUnit4TestAdapter(P2PStreamingClassLoaderTest.class));
-        suite.addTest(new JUnit4TestAdapter(SharedDeploymentTest.class));
-        suite.addTest(new JUnit4TestAdapter(P2PScanQueryUndeployTest.class));
-        GridTestUtils.addTestIfNeeded(suite, GridDeploymentMessageCountSelfTest.class, ignoredTests);
-
-        return suite;
-    }
 }

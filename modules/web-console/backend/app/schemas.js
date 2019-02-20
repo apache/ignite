@@ -46,7 +46,10 @@ module.exports.factory = function(mongoose) {
         lastActivity: Date,
         admin: Boolean,
         token: String,
-        resetPasswordToken: String
+        resetPasswordToken: String,
+        activated: {type: Boolean, default: false},
+        activationSentAt: Date,
+        activationToken: String
     });
 
     // Install passport plugin.

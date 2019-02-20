@@ -17,16 +17,17 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
+import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategyTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
 import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
 import org.apache.ignite.spi.discovery.LongClientConnectToClusterTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
+import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectSslTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectTest;
+import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownSslTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiCoordinatorChangeTest;
@@ -35,6 +36,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiMulticastTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryUnresolvedHostTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryClientSuspensionSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryFailedJoinTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryCoordinatorFailureTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderCleanerTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
@@ -42,6 +45,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnRec
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryReconnectUnstableTopologyTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryRestartTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySegmentationPolicyTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySelfTest;
@@ -63,93 +67,98 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Test suite for all discovery spi implementations.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    TcpDiscoveryVmIpFinderSelfTest.class,
+    TcpDiscoverySharedFsIpFinderSelfTest.class,
+    TcpDiscoveryJdbcIpFinderSelfTest.class,
+    TcpDiscoveryMulticastIpFinderSelfTest.class,
+    TcpDiscoveryIpFinderCleanerTest.class,
+
+    TcpDiscoverySelfTest.class,
+    TcpDiscoverySpiSelfTest.class,
+    //TcpDiscoverySpiRandomStartStopTest.class,
+    //TcpDiscoverySpiSslSelfTest.class,
+    //TcpDiscoverySpiWildcardSelfTest.class,
+    TcpDiscoverySpiFailureTimeoutSelfTest.class,
+    TcpDiscoverySpiMBeanTest.class,
+    TcpDiscoverySpiStartStopSelfTest.class,
+    TcpDiscoverySpiConfigSelfTest.class,
+    TcpDiscoveryMarshallerCheckSelfTest.class,
+    TcpDiscoverySnapshotHistoryTest.class,
+
+    GridTcpSpiForwardingSelfTest.class,
+
+    ExponentialBackoffTimeoutStrategyTest.class,
+
+    TcpClientDiscoverySpiSelfTest.class,
+    LongClientConnectToClusterTest.class,
+    TcpClientDiscoveryMarshallerCheckSelfTest.class,
+    TcpClientDiscoverySpiCoordinatorChangeTest.class,
+    TcpClientDiscoverySpiMulticastTest.class,
+    TcpClientDiscoverySpiFailureTimeoutSelfTest.class,
+    TcpClientDiscoveryUnresolvedHostTest.class,
+
+    TcpDiscoveryNodeConsistentIdSelfTest.class,
+    TcpDiscoveryNodeConfigConsistentIdSelfTest.class,
+
+    TcpDiscoveryRestartTest.class,
+    TcpDiscoveryMultiThreadedTest.class,
+    //TcpDiscoveryConcurrentStartTest.class,
+
+    TcpDiscoverySegmentationPolicyTest.class,
+
+    TcpDiscoveryNodeAttributesUpdateOnReconnectTest.class,
+    AuthenticationRestartTest.class,
+
+    TcpDiscoveryWithWrongServerTest.class,
+
+    TcpDiscoverySpiReconnectDelayTest.class,
+
+    IgniteDiscoveryMassiveNodeFailTest.class,
+    TcpDiscoveryCoordinatorFailureTest.class,
+
+    // Client connect.
+    IgniteClientConnectTest.class,
+    IgniteClientConnectSslTest.class,
+    IgniteClientReconnectMassiveShutdownTest.class,
+    IgniteClientReconnectMassiveShutdownSslTest.class,
+    TcpDiscoveryClientSuspensionSelfTest.class,
+
+    TcpDiscoveryFailedJoinTest.class,
+
+    // SSL.
+    TcpDiscoverySslSelfTest.class,
+    TcpDiscoverySslTrustedSelfTest.class,
+    TcpDiscoverySslSecuredUnsecuredTest.class,
+    TcpDiscoverySslTrustedUntrustedTest.class,
+    TcpDiscoverySslParametersTest.class,
+
+    // Disco cache reuse.
+    IgniteDiscoveryCacheReuseSelfTest.class,
+
+    DiscoveryUnmarshalVulnerabilityTest.class,
+
+    FilterDataForClientNodeDiscoveryTest.class,
+
+    TcpDiscoveryPendingMessageDeliveryTest.class,
+
+    TcpDiscoveryReconnectUnstableTopologyTest.class
+})
 public class IgniteSpiDiscoverySelfTestSuite {
-    /**
-     * @return Discovery SPI tests suite.
-     */
-    public static TestSuite suite() {
+    /** */
+    @BeforeClass
+    public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteSpiDiscoverySelfTestSuite.class));
-
-        TestSuite suite = new TestSuite("Ignite Discovery SPI Test Suite");
-
-        // Tcp.
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryVmIpFinderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySharedFsIpFinderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryJdbcIpFinderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryMulticastIpFinderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryIpFinderCleanerTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiSelfTest.class));
-        //suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiRandomStartStopTest.class));
-        //suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiSslSelfTest.class));
-        //suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiWildcardSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiFailureTimeoutSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiMBeanTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiStartStopSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiConfigSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryMarshallerCheckSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySnapshotHistoryTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridTcpSpiForwardingSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(TcpClientDiscoverySpiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(LongClientConnectToClusterTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpClientDiscoveryMarshallerCheckSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpClientDiscoverySpiCoordinatorChangeTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpClientDiscoverySpiMulticastTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpClientDiscoverySpiFailureTimeoutSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpClientDiscoveryUnresolvedHostTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryNodeConsistentIdSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryNodeConfigConsistentIdSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryRestartTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryMultiThreadedTest.class));
-        //suite.addTest(new JUnit4TestAdapter(TcpDiscoveryConcurrentStartTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySegmentationPolicyTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryNodeAttributesUpdateOnReconnectTest.class));
-        suite.addTest(new JUnit4TestAdapter(AuthenticationRestartTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryWithWrongServerTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiReconnectDelayTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteDiscoveryMassiveNodeFailTest.class));
-
-        // Client connect.
-        suite.addTest(new JUnit4TestAdapter(IgniteClientConnectTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectMassiveShutdownTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryClientSuspensionSelfTest.class));
-
-        // SSL.
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySslSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySslTrustedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySslSecuredUnsecuredTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySslTrustedUntrustedTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoverySslParametersTest.class));
-
-        // Disco cache reuse.
-        suite.addTest(new JUnit4TestAdapter(IgniteDiscoveryCacheReuseSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(DiscoveryUnmarshalVulnerabilityTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(FilterDataForClientNodeDiscoveryTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryPendingMessageDeliveryTest.class));
-
-        return suite;
     }
 }

@@ -46,8 +46,6 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -66,7 +64,6 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstractTest {
     /** */
     private boolean cacheEnabled;

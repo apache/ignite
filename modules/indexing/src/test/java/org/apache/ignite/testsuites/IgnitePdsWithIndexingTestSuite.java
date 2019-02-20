@@ -17,10 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteTcBotInitNewPageTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingWalRestoreTest;
@@ -28,28 +27,20 @@ import org.apache.ignite.internal.processors.database.IgnitePersistentStoreQuery
 import org.apache.ignite.internal.processors.database.IgnitePersistentStoreSchemaLoadTest;
 import org.apache.ignite.internal.processors.database.IgniteTwoRegionsRebuildIndexTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
-/**
- *
- */
-@RunWith(AllTests.class)
+/** */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteDbSingleNodeWithIndexingWalRestoreTest.class,
+    IgniteDbSingleNodeWithIndexingPutGetTest.class,
+    IgniteDbMultiNodeWithIndexingPutGetTest.class,
+    IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest.class,
+    IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest.class,
+    IgnitePersistentStoreSchemaLoadTest.class,
+    IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest.class,
+    IgniteTwoRegionsRebuildIndexTest.class,
+    IgniteTcBotInitNewPageTest.class
+})
 public class IgnitePdsWithIndexingTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Db Memory Leaks With Indexing Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(IgniteDbSingleNodeWithIndexingWalRestoreTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteDbSingleNodeWithIndexingPutGetTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteDbMultiNodeWithIndexingPutGetTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgnitePersistentStoreSchemaLoadTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTwoRegionsRebuildIndexTest.class));
-
-        return suite;
-    }
 }

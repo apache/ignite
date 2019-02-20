@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCachePutAllFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPutAllFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutAllRestartTest;
@@ -26,31 +24,24 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomic
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGetRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheAtomicReplicatedNodeRestartSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Cache stability test suite on changing topology.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteCacheAtomicNodeRestartTest.class,
+    IgniteCacheAtomicReplicatedNodeRestartSelfTest.class,
+
+    IgniteCacheAtomicPutAllFailoverSelfTest.class,
+    IgniteCachePutAllRestartTest.class,
+    GridCachePutAllFailoverSelfTest.class,
+
+    // TODO IGNITE-4768.
+    //suite.addTest(new JUnit4TestAdapter(IgniteBinaryMetadataUpdateNodeRestartTest.class,
+
+    IgniteCacheGetRestartTest.class
+})
 public class IgniteCacheRestartTestSuite2 {
-    /**
-     * @return Suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Cache Restart Test Suite2");
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheAtomicNodeRestartTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheAtomicPutAllFailoverSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCachePutAllRestartTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePutAllFailoverSelfTest.class));
-
-        // TODO IGNITE-4768.
-        //suite.addTest(new JUnit4TestAdapter(IgniteBinaryMetadataUpdateNodeRestartTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheGetRestartTest.class));
-
-        return suite;
-    }
 }

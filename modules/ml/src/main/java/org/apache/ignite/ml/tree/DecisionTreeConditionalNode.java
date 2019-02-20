@@ -60,17 +60,17 @@ public class DecisionTreeConditionalNode implements DecisionTreeNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector features) {
+    @Override public Double predict(Vector features) {
         double val = features.get(col);
 
         if (Double.isNaN(val)) {
             if (missingNode == null)
                 throw new IllegalArgumentException("Feature must not be null or missing node should be specified");
 
-            return missingNode.apply(features);
+            return missingNode.predict(features);
         }
 
-        return val > threshold ? thenNode.apply(features) : elseNode.apply(features);
+        return val > threshold ? thenNode.predict(features) : elseNode.predict(features);
     }
 
     /** */

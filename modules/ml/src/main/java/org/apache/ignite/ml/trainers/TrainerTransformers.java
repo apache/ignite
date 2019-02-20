@@ -22,8 +22,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -48,12 +49,11 @@ public class TrainerTransformers {
      * @param ensembleSize Size of ensemble.
      * @param subsampleRatio Subsample ratio to whole dataset.
      * @param aggregator Aggregator.
-     * @param <M> Type of one model in ensemble.
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
-        DatasetTrainer<M, L> trainer,
+    public static <L> BaggedTrainer<L> makeBagged(
+        DatasetTrainer<? extends IgniteModel, L> trainer,
         int ensembleSize,
         double subsampleRatio,
         PredictionsAggregator aggregator) {
@@ -71,58 +71,19 @@ public class TrainerTransformers {
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
+    public static <M extends IgniteModel<Vector, Double>, L> BaggedTrainer<L> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
         int featureVectorSize,
         int featuresSubspaceDim,
         PredictionsAggregator aggregator) {
-        return new DatasetTrainer<ModelsComposition, L>() {
-            /** {@inheritDoc} */
-            @Override public <K, V> ModelsComposition fit(
-                DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor,
-                IgniteBiFunction<K, V, L> lbExtractor) {
-                return runOnEnsemble(
-                    (db, i, fe) -> (() -> trainer.fit(db, fe, lbExtractor)),
-                    datasetBuilder,
-                    ensembleSize,
-                    subsampleRatio,
-                    featureVectorSize,
-                    featuresSubspaceDim,
-                    featureExtractor,
-                    aggregator,
-                    environment);
-            }
-
-            /** {@inheritDoc} */
-            @Override protected boolean checkState(ModelsComposition mdl) {
-                return mdl.getModels().stream().allMatch(m -> trainer.checkState((M)m));
-            }
-
-            /** {@inheritDoc} */
-            @Override protected <K, V> ModelsComposition updateModel(
-                ModelsComposition mdl,
-                DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor,
-                IgniteBiFunction<K, V, L> lbExtractor) {
-                return runOnEnsemble(
-                    (db, i, fe) -> (() -> trainer.updateModel(
-                        ((ModelWithMapping<Vector, Double, M>)mdl.getModels().get(i)).model(),
-                        db,
-                        fe,
-                        lbExtractor)),
-                    datasetBuilder,
-                    ensembleSize,
-                    subsampleRatio,
-                    featureVectorSize,
-                    featuresSubspaceDim,
-                    featureExtractor,
-                    aggregator,
-                    environment);
-            }
-        }.withEnvironmentBuilder(trainer.envBuilder);
+        return new BaggedTrainer<>(trainer,
+            aggregator,
+            ensembleSize,
+            subsampleRatio,
+            featureVectorSize,
+            featuresSubspaceDim);
     }
 
     /**
@@ -142,7 +103,7 @@ public class TrainerTransformers {
      * @param <M> Type of model.
      * @return Composition of models trained on bagged dataset.
      */
-    private static <K, V, M extends Model<Vector, Double>> ModelsComposition runOnEnsemble(
+    private static <K, V, M extends IgniteModel<Vector, Double>> ModelsComposition runOnEnsemble(
         IgniteTriFunction<DatasetBuilder<K, V>, Integer, IgniteBiFunction<K, V, Vector>, IgniteSupplier<M>> trainingTaskGenerator,
         DatasetBuilder<K, V> datasetBuilder,
         int ensembleSize,
@@ -191,7 +152,7 @@ public class TrainerTransformers {
         // If we need to do projection, do it.
         if (mappings != null) {
             for (int i = 0; i < models.size(); i++)
-                models.get(i).setMapping(getProjector(mappings.get(i)));
+                models.get(i).setMapping(VectorUtils.getProjector(mappings.get(i)));
         }
 
         double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
@@ -211,22 +172,6 @@ public class TrainerTransformers {
      */
     public static int[] getMapping(int featuresVectorSize, int maximumFeaturesCntPerMdl, long seed) {
         return Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random(seed));
-    }
-
-    /**
-     * Get projector from index mapping.
-     *
-     * @param mapping Index mapping.
-     * @return Projector.
-     */
-    public static IgniteFunction<Vector, Vector> getProjector(int[] mapping) {
-        return v -> {
-            Vector res = VectorUtils.zeroes(mapping.length);
-            for (int i = 0; i < mapping.length; i++)
-                res.set(i, v.get(mapping[i]));
-
-            return res;
-        };
     }
 
     /**
@@ -257,7 +202,7 @@ public class TrainerTransformers {
      * @param <Y> Output space.
      * @param <M> Model.
      */
-    private static class ModelWithMapping<X, Y, M extends Model<X, Y>> implements Model<X, Y> {
+    private static class ModelWithMapping<X, Y, M extends IgniteModel<X, Y>> implements IgniteModel<X, Y> {
         /** Model. */
         private final M model;
 
@@ -295,8 +240,8 @@ public class TrainerTransformers {
         }
 
         /** {@inheritDoc} */
-        @Override public Y apply(X x) {
-            return model.apply(mapping.apply(x));
+        @Override public Y predict(X x) {
+            return model.predict(mapping.apply(x));
         }
 
         /**

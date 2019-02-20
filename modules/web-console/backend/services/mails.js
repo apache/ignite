@@ -108,6 +108,24 @@ module.exports.factory = (settings) => {
 
         /**
          * Send email to user for password reset.
+         *
+         * @param host
+         * @param user
+         */
+        emailUserActivation(host, user) {
+            const activationLink = `${host}/signin?activationToken=${user.activationToken}`;
+
+            return this.send(user, `Confirm your account on ${settings.mail.greeting}`,
+                `Hello ${user.firstName} ${user.lastName}!<br><br>` +
+                `You are receiving this email because you have signed up to use <a href="${host}">${settings.mail.greeting}</a>.<br><br>` +
+                'Please click on the following link, or paste this into your browser to activate your account:<br><br>' +
+                `<a href="${activationLink}">${activationLink}</a>`,
+                'Failed to send email with confirm account link!');
+        }
+
+        /**
+         * Send email to user for password reset.
+         *
          * @param host
          * @param user
          */

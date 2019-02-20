@@ -21,13 +21,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteChangeGlobalStateDataStreamerTest extends IgniteChangeGlobalStateAbstractTest {
     /** {@inheritDoc} */
     @Override protected int backUpNodes() {

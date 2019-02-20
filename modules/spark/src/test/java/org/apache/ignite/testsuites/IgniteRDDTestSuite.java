@@ -17,27 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.spark.JavaEmbeddedIgniteRDDSelfTest;
 import org.apache.ignite.spark.JavaStandaloneIgniteRDDSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Test suit for Ignite RDD
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    JavaEmbeddedIgniteRDDSelfTest.class,
+    JavaStandaloneIgniteRDDSelfTest.class
+})
 public class IgniteRDDTestSuite {
-    /**
-     * @return Java Ignite RDD test suit.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Java Ignite RDD tests (standalone and embedded modes");
-
-        suite.addTest(new JUnit4TestAdapter(JavaEmbeddedIgniteRDDSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(JavaStandaloneIgniteRDDSelfTest.class));
-
-        return suite;
-    }
 }

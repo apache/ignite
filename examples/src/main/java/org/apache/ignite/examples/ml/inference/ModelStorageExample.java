@@ -26,17 +26,17 @@ import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.inference.InfModel;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.inference.ModelDescriptor;
 import org.apache.ignite.ml.inference.ModelSignature;
-import org.apache.ignite.ml.inference.builder.SingleInfModelBuilder;
-import org.apache.ignite.ml.inference.parser.IgniteFunctionInfModelParser;
-import org.apache.ignite.ml.inference.reader.ModelStorageInfModelReader;
+import org.apache.ignite.ml.inference.builder.SingleModelBuilder;
+import org.apache.ignite.ml.inference.parser.IgniteModelParser;
+import org.apache.ignite.ml.inference.reader.ModelStorageModelReader;
 import org.apache.ignite.ml.inference.storage.descriptor.ModelDescriptorStorage;
 import org.apache.ignite.ml.inference.storage.descriptor.ModelDescriptorStorageFactory;
 import org.apache.ignite.ml.inference.storage.model.ModelStorage;
 import org.apache.ignite.ml.inference.storage.model.ModelStorageFactory;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
  * This example demonstrates how to work with {@link ModelStorage}.
@@ -51,7 +51,7 @@ public class ModelStorageExample {
             ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
 
             System.out.println("Saving model into model storage...");
-            byte[] mdl = serialize((IgniteFunction<byte[], byte[]>)i -> i);
+            byte[] mdl = serialize((IgniteModel<byte[], byte[]>)i -> i);
             storage.mkdirs("/");
             storage.putFile("/my_model", mdl);
 
@@ -60,8 +60,8 @@ public class ModelStorageExample {
                 "MyModel",
                 "My Cool Model",
                 new ModelSignature("", "", ""),
-                new ModelStorageInfModelReader("/my_model"),
-                new IgniteFunctionInfModelParser<>()
+                new ModelStorageModelReader("/my_model"),
+                new IgniteModelParser<>()
             );
             descStorage.put("my_model", desc);
 
@@ -73,12 +73,12 @@ public class ModelStorageExample {
             desc = descStorage.get("my_model");
 
             System.out.println("Build inference model...");
-            SingleInfModelBuilder mdlBuilder = new SingleInfModelBuilder();
-            try (InfModel<byte[], byte[]> infMdl = mdlBuilder.build(desc.getReader(), desc.getParser())) {
+            SingleModelBuilder mdlBuilder = new SingleModelBuilder();
+            try (Model<byte[], byte[]> infMdl = mdlBuilder.build(desc.getReader(), desc.getParser())) {
 
                 System.out.println("Make inference...");
                 for (int i = 0; i < 10; i++) {
-                    Integer res = deserialize(infMdl.apply(serialize(i)));
+                    Integer res = deserialize(infMdl.predict(serialize(i)));
                     System.out.println(i + " -> " + res);
                 }
             }

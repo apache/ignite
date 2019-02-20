@@ -17,24 +17,15 @@
 
 package org.apache.ignite.stream.zeromq;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * ZeroMQ streamer tests.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteZeroMqStreamerTest.class
+})
 public class IgniteZeroMqStreamerTestSuite {
-    /**
-     * @return ZeroMQ streamer tests suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("ZeroMQ streamed Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(IgniteZeroMqStreamerTest.class));
-
-        return suite;
-    }
 }

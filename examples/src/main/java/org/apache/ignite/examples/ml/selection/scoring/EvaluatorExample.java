@@ -77,7 +77,15 @@ public class EvaluatorExample {
             );
 
             System.out.println("\n>>> Accuracy " + accuracy);
-            System.out.println("\n>>> Test Error " + (1 - accuracy));
+
+            double f1Score = BinaryClassificationEvaluator.evaluate(
+                dataCache,
+                mdl,
+                featureExtractor,
+                lbExtractor
+            ).f1Score();
+
+            System.out.println("\n>>> F1-Score " + f1Score);
         }
     }
 }

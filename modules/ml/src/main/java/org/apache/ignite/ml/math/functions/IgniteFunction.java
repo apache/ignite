@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.math.functions;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -37,6 +38,18 @@ public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
     // TODO: IGNITE-10653 Maybe we should add toString description to identity and constant.
     public static <T, R> IgniteFunction<T, R> constant(R r) {
         return (IgniteFunction<T, R>)t -> r;
+    }
+
+    /**
+     * Compose this function and given function.
+     *
+     * @param after Function to compose with.
+     * @param <V> Type of value which result of {@code after} extends.
+     * @return Functions composition.
+     */
+    default <V> IgniteFunction<T, V> andThen(IgniteFunction<? super R, ? extends V> after) {
+        Objects.requireNonNull(after);
+        return (T t) -> after.apply(apply(t));
     }
 
     /**

@@ -24,9 +24,10 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
+
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.jdbc.JdbcConnection;
 import org.jetbrains.annotations.Nullable;
@@ -34,9 +35,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Query run.
  */
-class ReduceQueryRun {
+public class ReduceQueryRun {
     /** */
-    private final List<GridMergeIndex> idxs;
+    private final List<ReduceIndex> idxs;
 
     /** */
     private CountDownLatch latch;
@@ -46,6 +47,9 @@ class ReduceQueryRun {
 
     /** */
     private final int pageSize;
+
+    /** */
+    private final Boolean dataPageScanEnabled;
 
     /** */
     private final AtomicReference<State> state = new AtomicReference<>();
@@ -59,17 +63,29 @@ class ReduceQueryRun {
      * @param idxsCnt Number of indexes.
      * @param pageSize Page size.
      * @param selectForUpdateFut Future controlling {@code SELECT FOR UPDATE} query execution.
+     * @param dataPageScanEnabled If data page scan is enabled.
      */
-    ReduceQueryRun(Connection conn, int idxsCnt, int pageSize,
-        GridNearTxSelectForUpdateFuture selectForUpdateFut) {
-
+    ReduceQueryRun(
+        Connection conn,
+        int idxsCnt,
+        int pageSize,
+        GridNearTxSelectForUpdateFuture selectForUpdateFut,
+        Boolean dataPageScanEnabled
+    ) {
         this.conn = (JdbcConnection)conn;
 
-        this.idxs = new ArrayList<>(idxsCnt);
+        idxs = new ArrayList<>(idxsCnt);
 
-        this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;
-
+        this.pageSize = pageSize > 0 ? pageSize : Query.DFLT_PAGE_SIZE;
         this.selectForUpdateFut = selectForUpdateFut;
+        this.dataPageScanEnabled  = dataPageScanEnabled;
+    }
+
+    /**
+     * @return {@code true} If data page scan is enabled.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled;
     }
 
     /**
@@ -117,7 +133,7 @@ class ReduceQueryRun {
         while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
             latch.countDown();
 
-        for (GridMergeIndex idx : idxs) // Fail all merge indexes.
+        for (ReduceIndex idx : idxs) // Fail all merge indexes.
             idx.fail(state.nodeId, state.ex);
     }
 
@@ -186,7 +202,7 @@ class ReduceQueryRun {
     /**
      * @return Indexes.
      */
-    List<GridMergeIndex> indexes() {
+    List<ReduceIndex> indexes() {
         return idxs;
     }
 

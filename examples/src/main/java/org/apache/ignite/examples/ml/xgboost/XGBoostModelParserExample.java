@@ -26,11 +26,13 @@ import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.inference.builder.AsyncInfModelBuilder;
-import org.apache.ignite.ml.inference.builder.IgniteDistributedInfModelBuilder;
-import org.apache.ignite.ml.inference.reader.FileSystemInfModelReader;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
+import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.builder.AsyncModelBuilder;
+import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilder;
+import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
+import org.apache.ignite.ml.inference.reader.ModelReader;
+import org.apache.ignite.ml.math.primitives.vector.NamedVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.xgboost.parser.XGModelParser;
 
 /**
@@ -57,9 +59,9 @@ public class XGBoostModelParserExample {
             if (mdlRsrc == null)
                 throw new IllegalArgumentException("File not found [resource_path=" + TEST_MODEL_RES + "]");
 
-            InfModelReader reader = new FileSystemInfModelReader(mdlRsrc.getPath());
+            ModelReader reader = new FileSystemModelReader(mdlRsrc.getPath());
 
-            AsyncInfModelBuilder mdlBuilder = new IgniteDistributedInfModelBuilder(ignite, 4, 4);
+            AsyncModelBuilder mdlBuilder = new IgniteDistributedModelBuilder(ignite, 4, 4);
 
             File testData = IgniteUtils.resolveIgnitePath(TEST_DATA_RES);
             if (testData == null)
@@ -69,7 +71,7 @@ public class XGBoostModelParserExample {
             if (testExpRes == null)
                 throw new IllegalArgumentException("File not found [resource_path=" + TEST_ER_RES + "]");
 
-            try (InfModel<HashMap<String, Double>, Future<Double>> mdl = mdlBuilder.build(reader, parser);
+            try (Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, parser);
                  Scanner testDataScanner = new Scanner(testData);
                  Scanner testExpResultsScanner = new Scanner(testExpRes)) {
 
@@ -86,7 +88,7 @@ public class XGBoostModelParserExample {
                             testObj.put("f" + keyVal[0], Double.parseDouble(keyVal[1]));
                     }
 
-                    double prediction = mdl.apply(testObj).get();
+                    double prediction = mdl.predict(VectorUtils.of(testObj)).get();
 
                     double expPrediction = Double.parseDouble(testExpResultsStr);
 

@@ -26,20 +26,17 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for illegal SQL schemas in node and cache configurations.
  */
 @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
-@RunWith(JUnit4.class)
-public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
+public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();

@@ -30,7 +30,7 @@ type SignupUserInfo = {
 };
 
 type AuthActions = 'signin' | 'signup' | 'password/forgot';
-type AuthOptions = {email:string, password:string}|SignupUserInfo|{email:string};
+type AuthOptions = {email:string, password:string, activationToken?: string}|SignupUserInfo|{email:string};
 
 export default class AuthService {
     static $inject = ['$http', '$rootScope', '$state', '$window', 'IgniteMessages', 'gettingStarted', 'User'];
@@ -49,8 +49,8 @@ export default class AuthService {
         return this._auth('signup', userInfo, loginAfterSignup);
     }
 
-    signin(email: string, password: string) {
-        return this._auth('signin', {email, password});
+    signin(email: string, password: string, activationToken?: string) {
+        return this._auth('signin', {email, password, activationToken});
     }
 
     remindPassword(email: string) {
@@ -86,5 +86,13 @@ export default class AuthService {
                 this.$window.open(this.$state.href('signin'), '_self');
             })
             .catch((e) => this.Messages.showError(e));
+    }
+
+    async resendSignupConfirmation(email: string) {
+        try {
+            return await this.$http.post('/api/v1/activation/resend/', {email});
+        } catch (res) {
+            throw res.data;
+        }
     }
 }
