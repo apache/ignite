@@ -83,17 +83,17 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return 1024;
     }
 
-    @Override
-    public boolean initialValue(CacheObject val, GridCacheVersion ver, long ttl, long expireTime, boolean preload,
-        AffinityTopologyVersion topVer, GridDrType drType,
-        boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    /** {@inheritDoc} */
+    @Override public boolean initialValue(CacheObject val, GridCacheVersion ver, long ttl, long expireTime,
+        boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore) {
         assert false;
 
         return false;
     }
 
-    @Override public boolean mvccPreloadEntry(AffinityTopologyVersion topVer, List<GridCacheEntryInfo> entries,
-        GridCacheOperation op) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    /** {@inheritDoc} */
+    @Override public boolean mvccPreloadEntry(
+        List<GridCacheMvccEntryInfo> entries) {
         assert false;
 
         return false;

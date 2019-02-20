@@ -241,10 +241,11 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
-     * Applies entry history if not exists.
+     * Tries to apply entry history.
+     * Either applies full entry history or do nothing.
      *
      * @param entry Entry to update.
-     * @param hist entry history.
+     * @param hist Full entry history.
      * @return {@code True} if history applied successfully, {@code False} otherwise.
      */
     boolean mvccApplyHistoryIfAbsent(GridCacheMapEntry entry, List<GridCacheMvccEntryInfo> hist) throws IgniteCheckedException;
@@ -315,6 +316,9 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
+     * Apply update with full history.
+     * Note: History version may be skipped if it have already been actualized with previous update operation.
+     *
      * @param entry Entry.
      * @param val Value.
      * @param ver Version.
@@ -734,12 +738,13 @@ public interface IgniteCacheOffheapManager {
             MvccVersion newMvccVer) throws IgniteCheckedException;
 
         /**
-         * Applies entry history if not exists.
+         * Tries to apply entry history.
+         * Either applies full entry history or do nothing.
          *
          * @param cctx Cache context.
          * @param key Key.
-         * @param hist entry history.
-         * @return {@code True} if history applied successfully, {@code False} otherwise.
+         * @param hist Full entry history.
+         * @return {@code True} if entry history applied successfully, {@code False} otherwise.
          */
         boolean mvccApplyHistoryIfAbsent(
             GridCacheContext cctx,
@@ -747,8 +752,8 @@ public interface IgniteCacheOffheapManager {
             List<GridCacheMvccEntryInfo> hist) throws IgniteCheckedException;
 
         /**
-         * Either apply full history or nothing.
-         * Note: History will not be applied if history has already been actualized with concurrent update operation.
+         * Apply update with full history.
+         * Note: History version may be skipped if it have already been actualized with previous update operation.
          *
          * @param cctx Grid cache context.
          * @param key Key.

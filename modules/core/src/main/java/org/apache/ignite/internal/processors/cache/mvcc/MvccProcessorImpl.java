@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryId;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
@@ -2173,6 +2174,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             int curCacheId = CU.UNDEFINED_CACHE_ID;
 
             try {
+                assert part.state() == GridDhtPartitionState.OWNING;
+
                 GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
 
                 KeyCacheObject prevKey = null;
@@ -2206,7 +2209,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                             return metrics;
                     }
 
-                    if (!prevKey.equals(row.key()) || (shared && curCacheId != row.cacheId())) {
+                    if ((shared && curCacheId != row.cacheId()) || !prevKey.equals(row.key())) {
                         if (rest != null || !F.isEmpty(cleanupRows))
                             cleanup(part, prevKey, cleanupRows, rest, cctx, metrics);
 
@@ -2296,8 +2299,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** */
         private boolean actualize(GridCacheContext cctx, MvccDataRow row,
             MvccSnapshot snapshot) throws IgniteCheckedException {
-            return isVisible(cctx, snapshot, row.mvccCoordinatorVersion(), row.mvccCounter(),
-                row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF), false)
+            int opCntrWithHints = row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF);
+
+            return isVisible(cctx, snapshot, row.mvccCoordinatorVersion(), row.mvccCounter(), opCntrWithHints, false)
                 && (row.mvccTxState() == TxState.NA ||
                 (row.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA && row.newMvccTxState() == TxState.NA));
         }

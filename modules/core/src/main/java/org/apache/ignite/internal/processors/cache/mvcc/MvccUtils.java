@@ -550,7 +550,7 @@ public class MvccUtils {
      * @return {@code True} if version is valid.
      */
     public static boolean mvccVersionIsValid(long crdVer, long cntr) {
-        return crdVer > MVCC_CRD_COUNTER_NA && cntr != MVCC_COUNTER_NA;
+        return crdVer > MVCC_CRD_COUNTER_NA && cntr > MVCC_COUNTER_NA;
     }
 
     /**

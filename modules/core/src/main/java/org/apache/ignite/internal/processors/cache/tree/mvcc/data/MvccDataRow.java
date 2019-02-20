@@ -233,6 +233,8 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public int newMvccOperationCounter() {
+        assert (newMvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+
         return newMvccOpCntr;
     }
 

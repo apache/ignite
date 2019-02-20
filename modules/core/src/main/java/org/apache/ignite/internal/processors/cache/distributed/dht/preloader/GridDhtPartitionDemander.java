@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
@@ -847,14 +846,14 @@ public class GridDhtPartitionDemander {
                         ", topChanged=" + topologyChanged(fut) + ", rebalanceFuture=" + fut + "]");
             }
         }
-        catch (Exception e) {
+        catch (IgniteSpiException | IgniteCheckedException e) {
             LT.error(log, e, "Error during rebalancing [" + demandRoutineInfo(topicId, nodeId, supplyMsg) +
                 ", err=" + e + ']');
         }
     }
 
     /**
-     * Adds mvcc {@code entry} with it's history to partition {@code p}.
+     * Adds mvcc entries with theirs history to partition p.
      *
      * @param node Node which sent entry.
      * @param p Partition id.
@@ -890,7 +889,7 @@ public class GridDhtPartitionDemander {
 
                         GridCacheMvccEntryInfo prev = entryHist.isEmpty() ? null : entryHist.get(0);
 
-                        flushHistory = prev != null && ((grp.sharedGroup() && prev.cacheId() !=  entry.cacheId())
+                        flushHistory = prev != null && ((grp.sharedGroup() && prev.cacheId() != entry.cacheId())
                             || !prev.key().equals(entry.key()));
                     }
                     else
@@ -934,7 +933,7 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Adds {@code entry} to partition {@code p}.
+     * Adds entries with theirs history to partition p.
      *
      * @param node Node which sent entry.
      * @param p Partition id.
@@ -1007,7 +1006,7 @@ public class GridDhtPartitionDemander {
             GridCacheEntryEx cached = null;
 
             try {
-                cached = cctx.cache().entryEx(entry.key());
+                cached = cctx.cache().entryEx(entry.key(), topVer);
 
                 if (log.isTraceEnabled())
                     log.trace("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + from.id() + ']');
@@ -1069,7 +1068,7 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Adds {@code entry} to partition {@code p}.
+     * Adds mvcc {@code entry} with it's history to partition {@code p}.
      *
      * @param cctx Cache context.
      * @param from Node which sent entry.
@@ -1091,11 +1090,13 @@ public class GridDhtPartitionDemander {
 
         GridCacheMvccEntryInfo info = history.get(0);
 
+        assert info.key() != null;
+
         try {
             GridCacheEntryEx cached = null;
 
             try {
-                cached = cctx.cache().entryEx(info.key());
+                cached = cctx.cache().entryEx(info.key(), topVer);
 
                 if (log.isTraceEnabled())
                     log.trace("Rebalancing key [key=" + info.key() + ", part=" + p + ", node=" + from.id() + ']');

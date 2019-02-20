@@ -745,6 +745,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
             GridCacheMvccEntryInfo entry = new GridCacheMvccEntryInfo();
 
+            entry.cacheId(cctx.cacheId());
             entry.version(row.version());
             entry.mvccVersion(row);
             entry.newMvccVersion(row);
@@ -756,8 +757,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             if (MvccUtils.compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) != 0) {
                 entry.mvccTxState(row.mvccTxState() != TxState.NA ? row.mvccTxState() :
                     MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter()));
-
-                assert entry.mvccTxState() != TxState.ABORTED;
             }
 
             if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA) {
