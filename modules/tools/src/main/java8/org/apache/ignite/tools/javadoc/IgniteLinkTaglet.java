@@ -18,12 +18,7 @@
 package org.apache.ignite.tools.javadoc;
 
 import com.sun.javadoc.Tag;
-import com.sun.source.doctree.DocTree;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import javax.lang.model.element.Element;
-import jdk.javadoc.doclet.Taglet;
+import com.sun.tools.doclets.Taglet;
 import java.io.File;
 import java.util.Map;
 
@@ -43,54 +38,46 @@ public class IgniteLinkTaglet implements Taglet {
         return NAME;
     }
 
-    @Override public String toString(List<? extends DocTree> tags, Element element) {
-        return null;
-    }
-
     /**
      * @return true since this tag can be used in a field doc comment.
      */
-     public boolean inField() {
+    @Override public boolean inField() {
         return true;
     }
 
     /**
      * @return true since this tag can be used in a constructor doc comment.
      */
-     public boolean inConstructor() {
+    @Override public boolean inConstructor() {
         return true;
     }
 
     /**
      * @return true since this tag can be used in a method doc comment.
      */
-     public boolean inMethod() {
+    @Override public boolean inMethod() {
         return true;
     }
 
     /**
      * @return true since this tag can be used in an overview doc comment.
      */
-     public boolean inOverview() {
+    @Override public boolean inOverview() {
         return true;
     }
 
     /**
      * @return true since this tag can be used in a package doc comment.
      */
-     public boolean inPackage() {
+    @Override public boolean inPackage() {
         return true;
     }
 
     /**
      * @return true since this.
      */
-     public boolean inType() {
+    @Override public boolean inType() {
         return true;
-    }
-
-    @Override public Set<Location> getAllowedLocations() {
-        return new HashSet<>();
     }
 
     /**
@@ -129,13 +116,13 @@ public class IgniteLinkTaglet implements Taglet {
      *
      * @param tag <code>Tag</code> representation of this custom tag.
      */
-     public String toString(Tag tag) {
+    @Override public String toString(Tag tag) {
         if (tag.text() == null || tag.text().isEmpty())
             return "";
 
         File f = tag.position().file();
 
-        String curClass = f == null ? "" : f.getAbsolutePath().replace(File.separator, ".");
+        String curClass = f == null ? "" : f.getAbsolutePath().replace(File.separator, "");
 
         String packPref = "src.main.java.";
 
@@ -157,11 +144,11 @@ public class IgniteLinkTaglet implements Taglet {
         String simpleClsName = lastIdx != -1 && lastIdx + 1 < tokens[0].length() ?
             tokens[0].substring(lastIdx + 1) : tokens[0];
 
-        String fullyQClsName = tokens[0].replace(".", "/");
+        String fullyQClsName = tokens[0].replace("", "/");
 
         return "<a href=\"" + path.toString() + fullyQClsName + ".html" +
             (tokens.length > 1 ? ("#" + tokens[1].replace("[]", "...")) : "") +
-            "\"><code>" + simpleClsName + (tokens.length > 1 ? ("." + tokens[1]) : "") + "</code></a>";
+            "\"><code>" + simpleClsName + (tokens.length > 1 ? ("" + tokens[1]) : "") + "</code></a>";
     }
 
     /**
@@ -171,7 +158,7 @@ public class IgniteLinkTaglet implements Taglet {
      *
      * @param tags the array of <code>Tag</code>s representing of this custom tag.
      */
-      public String toString(Tag[] tags) {
+    @Override public String toString(Tag[] tags) {
         return null;
     }
 }
