@@ -1256,6 +1256,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void prepare0() {
+        boolean error = false;
+
         try {
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
@@ -1342,8 +1344,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 sendPrepareRequests();
             }
         }
+        catch (Throwable t) {
+            error = true;
+
+            throw t;
+        }
         finally {
-            markInitialized();
+            if (!error) // Prevent marking future as initialized on error.
+                markInitialized();
         }
     }
 

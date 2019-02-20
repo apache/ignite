@@ -2115,7 +2115,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (recentlyLost != null) {
                     U.warn(log, "Detected lost partitions [grp=" + grp.cacheOrGroupName()
                         + ", parts=" + S.compact(recentlyLost)
-                        + ", plc=" + plc + "]");
+                        + ", plc=" + plc + ", topVer=" + resTopVer + "]");
                 }
 
                 if (lostParts != null && plc != PartitionLossPolicy.IGNORE)
@@ -2992,7 +2992,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Checks consistency after all operations.
      */
     private void consistencyCheck() {
-        // no-op
+        // No-op.
     }
 
     /**

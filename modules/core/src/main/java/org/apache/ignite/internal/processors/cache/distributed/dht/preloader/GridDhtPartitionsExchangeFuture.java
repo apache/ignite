@@ -3387,13 +3387,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
                     assignPartitionsStates();
             }
-            else {
-                if (exchCtx.events().hasServerJoin())
-                    assignPartitionsStates();
-
-                if (exchCtx.events().hasServerLeft())
-                    detectLostPartitions(resTopVer);
-            }
+            else if (exchCtx.events().hasServerJoin())
+                assignPartitionsStates();
 
             // Recalculate new affinity based on partitions availability.
             if (!exchCtx.mergeExchanges() && forceAffReassignment) {
@@ -3417,6 +3412,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             GridDhtPartitionsFullMessage msg = createPartitionsMessage(true,
                 minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
+
+            // Lost partition detection should be done after message is prepared or in case of IGNORE policy
+            // lost partitions will be moved to OWNING state and after what send to other nodes resulting in wrong calculation.
+            if (firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT && exchCtx.events().hasServerLeft())
+                detectLostPartitions(resTopVer);
 
             if (exchCtx.mergeExchanges()) {
                 assert !centralizedAff;
