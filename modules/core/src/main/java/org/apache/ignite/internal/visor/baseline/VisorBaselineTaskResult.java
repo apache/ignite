@@ -145,7 +145,7 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         out.writeLong(topVer);
         U.writeMap(out, baseline);
         U.writeMap(out, servers);
-        VisorBaselineAutoAdjustSettings.writeExternalData(out, autoAdjustSettings);
+        out.writeObject(autoAdjustSettings);
     }
 
     /** {@inheritDoc} */
@@ -156,7 +156,7 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         servers = U.readTreeMap(in);
 
         if (protoVer > V1)
-            autoAdjustSettings = VisorBaselineAutoAdjustSettings.readExternalData(in);
+            autoAdjustSettings = (VisorBaselineAutoAdjustSettings)in.readObject();
     }
 
     /** {@inheritDoc} */

@@ -106,7 +106,7 @@ public class VisorBaselineTaskArg extends VisorDataTransferObject {
         U.writeEnum(out, op);
         out.writeLong(topVer);
         U.writeCollection(out, consistentIds);
-        VisorBaselineAutoAdjustSettings.writeExternalData(out, autoAdjustSettings);
+        out.writeObject(autoAdjustSettings);
     }
 
     /** {@inheritDoc} */
@@ -116,7 +116,7 @@ public class VisorBaselineTaskArg extends VisorDataTransferObject {
         consistentIds = U.readList(in);
 
         if (protoVer > V1)
-            autoAdjustSettings = VisorBaselineAutoAdjustSettings.readExternalData(in);
+            autoAdjustSettings = (VisorBaselineAutoAdjustSettings)in.readObject();
     }
 
     /** {@inheritDoc} */

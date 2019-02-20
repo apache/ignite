@@ -1333,8 +1333,8 @@ public class CommandHandler {
         VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
 
         if (autoAdjustSettings != null) {
-            log("Baseline auto adjustment " + (autoAdjustSettings.enabled ? "enabled" : "disabled") +
-                ": softTimeout=" + autoAdjustSettings.softTimeout
+            log("Baseline auto adjustment " + (autoAdjustSettings.isEnabled() ? "enabled" : "disabled") +
+                ": softTimeout=" + autoAdjustSettings.getSoftTimeout()
             );
         }
 
