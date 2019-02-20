@@ -87,11 +87,10 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -1727,10 +1726,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                                 tx.commit();
                             }
                             catch (CacheException ex) {
-                                if (ex.getCause() instanceof TransactionSerializationException)
-                                    continue;
-
-                                throw ex;
+                                MvccFeatureChecker.assertMvccWriteConflict(ex);
                             }
                         }
                         finally {
@@ -2080,10 +2076,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                                 tx.commit();
                             }
                             catch (Exception e) {
-                                if (e.getCause() instanceof TransactionSerializationException)
+                                if (X.hasCause(e, ClusterTopologyException.class))
                                     continue;
 
-                                Assert.assertTrue("Unexpected error: " + e, X.hasCause(e, ClusterTopologyException.class));
+                                MvccFeatureChecker.assertMvccWriteConflict(e);
                             }
                         }
                         finally {
@@ -2908,10 +2904,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                             tx.commit();
                         }
                         catch (CacheException ex) {
-                            if (ex.getCause() instanceof TransactionSerializationException)
-                                continue;
-
-                            throw ex;
+                            MvccFeatureChecker.assertMvccWriteConflict(ex);
                         }
                         finally {
                             cache.readUnlock();

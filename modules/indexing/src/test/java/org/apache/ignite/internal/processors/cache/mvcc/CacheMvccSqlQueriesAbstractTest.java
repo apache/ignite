@@ -42,8 +42,8 @@ import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -225,8 +225,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
                                     break;
                                 }
                                 catch (CacheException e) {
-                                    if (!(e.getCause() instanceof TransactionSerializationException))
-                                        throw e;
+                                    MvccFeatureChecker.assertMvccWriteConflict(e);
                                 }
                             }
                         }
@@ -430,7 +429,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
                                     JoinTestChild child = (JoinTestChild)cache.cache.get(childKey);
 
                                     if (child == null) {
-                                        Integer parentKey = distributedJoin ? key + 100 : key;
+                                        int parentKey = distributedJoin ? key + 100 : key;
 
                                         child = new JoinTestChild(parentKey);
 
@@ -451,9 +450,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
                                     break;
                                 }
                                 catch (CacheException e) {
-                                    // t0d0 use common method from MvccFeatureChecker where appropriate
-                                    if (!(e.getCause() instanceof TransactionSerializationException))
-                                        throw e;
+                                    MvccFeatureChecker.assertMvccWriteConflict(e);
                                 }
                             }
 
