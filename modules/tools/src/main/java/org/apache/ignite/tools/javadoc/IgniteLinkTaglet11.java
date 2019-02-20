@@ -19,20 +19,20 @@ package org.apache.ignite.tools.javadoc;
 
 import com.sun.javadoc.Tag;
 import com.sun.source.doctree.DocTree;
+import java.io.File;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.Element;
 import jdk.javadoc.doclet.Taglet;
-import java.io.File;
-import java.util.Map;
 
 /**
  * Represents {@ignitelink Class} tag. This tag can
  * be used as replacement of {@link Class} tag that references to the Ignite class that is not in classpath.
  * Class and its arguments should have fully qualified names.
  */
-public class IgniteLinkTaglet implements Taglet {
+public class IgniteLinkTaglet11 implements Taglet {
     /** */
     private static final String NAME = "ignitelink";
 
@@ -107,8 +107,8 @@ public class IgniteLinkTaglet implements Taglet {
      *
      * @param tagletMap the map to register this tag to.
      */
-    public static void register(Map<String, IgniteLinkTaglet> tagletMap) {
-        IgniteLinkTaglet tag = new IgniteLinkTaglet();
+    public static void register(Map<String, IgniteLinkTaglet11> tagletMap) {
+        IgniteLinkTaglet11 tag = new IgniteLinkTaglet11();
 
         Taglet t = tagletMap.get(tag.getName());
 
@@ -165,13 +165,12 @@ public class IgniteLinkTaglet implements Taglet {
     }
 
     /**
-     * This method should not be called since arrays of inline tags do not
-     * exist.  Method {@link #toString(Tag)} should be used to convert this
-     * inline tag to a string.
+     * This method should not be called since arrays of inline tags do not exist.  Method {@link #toString(Tag)} should
+     * be used to convert this inline tag to a string.
      *
      * @param tags the array of <code>Tag</code>s representing of this custom tag.
      */
-      public String toString(Tag[] tags) {
+    public String toString(Tag[] tags) {
         return null;
     }
 }
