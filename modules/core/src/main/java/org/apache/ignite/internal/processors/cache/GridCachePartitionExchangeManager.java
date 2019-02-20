@@ -62,7 +62,6 @@ import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.communication.GridIoChannelListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
@@ -106,7 +105,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -443,23 +441,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
 
                             U.warn(log, "Cache group with id=" + m.groupId() + " is stopped or absent");
-                        }
-                        finally {
-                            leaveBusy();
-                        }
-                    }
-                });
-
-                // Channel handler.
-                cctx.gridIO().addChannelListener(rebalanceTopic(cnt), new GridIoChannelListener() {
-                    @Override public void onChannelCreated(IgniteSocketChannel channel) {
-                        if (!enterBusy())
-                            return;
-
-                        try {
-                            CacheGroupContext grp = cctx.cache().cacheGroup(channel.groupId());
-
-                            grp.preloader().handleChannelCreated(channel);
                         }
                         finally {
                             leaveBusy();

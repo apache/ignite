@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -31,16 +34,16 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
      * Take backup of specified cache group partition files and syncronously wait to its completion.
      *
      * @param idx Unique process identifier.
-     * @param grpId Tracked cache group id.
-     * @param parts Tracking cache group partitions during snapshot.
+     * @param grpsBackup Backing up cache groups and corresponding partitions.
      * @param hndlr Handler for processing partitions and corresponding partition deltas.
+     * @param fut A future of process flow control.
      * @throws IgniteCheckedException If fails.
      */
     public void backup(
-        int idx,
-        int grpId,
-        Set<Integer> parts,
-        BackupProcessTask hndlr
+        long idx,
+        Map<Integer, Set<Integer>> grpsBackup,
+        BackupProcessTask hndlr,
+        IgniteInternalFuture<Boolean> fut
     ) throws IgniteCheckedException;
 
     /**

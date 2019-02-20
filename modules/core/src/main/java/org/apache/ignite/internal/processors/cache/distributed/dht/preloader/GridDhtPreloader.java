@@ -38,15 +38,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -75,12 +74,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** Partition demanders. */
     private GridDhtPartitionDemander demander;
-
-    /** */
-    private GridDhtPartitionDownloader downloader;
-
-    /** */
-    private GridDhtPartitionUploader uploader;
 
     /** Start future. */
     private GridFutureAdapter<Object> startFut;
@@ -119,12 +112,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         supplier = new GridDhtPartitionSupplier(grp);
         demander = new GridDhtPartitionDemander(grp);
 
-        if (grp.persistenceEnabled()) {
-            uploader = new GridDhtPartitionUploader(grp);
-
-            downloader = new GridDhtPartitionDownloader(grp);
-        }
-
         demander.start();
     }
 
@@ -152,12 +139,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             if (demander != null)
                 demander.stop();
-
-            if (uploader !=  null)
-                uploader.stop();
-
-            if (downloader !=  null)
-                downloader.stop();
 
             top = null;
 
@@ -407,9 +388,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             return;
 
         try {
-            if (uploader != null)
-                uploader.handleDemandMessage(idx, id, d);
-
             supplier.handleDemandMessage(idx, id, d);
         }
         finally {
@@ -425,9 +403,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
-        if (downloader != null)
-            downloader.addAssignments(assignments);
-
         return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
     }
 
@@ -633,12 +608,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         finally {
             demandLock.writeLock().unlock();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void handleChannelCreated(IgniteSocketChannel channel) {
-        if (downloader != null)
-            downloader.handleChannelCreated(channel);
     }
 
     /** {@inheritDoc} */

@@ -35,7 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * The demand request for partitions according to given assignments.
  */
-public class GridPartitionCopyDemandMessage implements Message {
+public class GridPartitionsCopyDemandMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,7 +52,7 @@ public class GridPartitionCopyDemandMessage implements Message {
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridPartitionCopyDemandMessage() {
+    public GridPartitionsCopyDemandMessage() {
         // No-op.
     }
 
@@ -60,7 +60,7 @@ public class GridPartitionCopyDemandMessage implements Message {
      * @param rebId Rebalance id for this node.
      * @param topVer Topology version.
      */
-    public GridPartitionCopyDemandMessage(
+    public GridPartitionsCopyDemandMessage(
         long rebId,
         AffinityTopologyVersion topVer,
         Map<Integer, List<Integer>> assigns0
@@ -103,6 +103,13 @@ public class GridPartitionCopyDemandMessage implements Message {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /**
+     * @return The demanded cache group partions per each cache group.
+     */
+    public Map<Integer, GridIntList> assignments() {
+        return assigns;
     }
 
     /** {@inheritDoc} */
@@ -172,7 +179,7 @@ public class GridPartitionCopyDemandMessage implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridPartitionCopyDemandMessage.class);
+        return reader.afterMessageRead(GridPartitionsCopyDemandMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -192,6 +199,6 @@ public class GridPartitionCopyDemandMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPartitionCopyDemandMessage.class, this);
+        return S.toString(GridPartitionsCopyDemandMessage.class, this);
     }
 }

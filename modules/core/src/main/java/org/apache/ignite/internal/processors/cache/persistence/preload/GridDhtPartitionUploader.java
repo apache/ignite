@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
+package org.apache.ignite.internal.processors.cache.persistence.preload;
 
 import java.io.File;
 import java.util.HashMap;
@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
@@ -107,8 +108,8 @@ public class GridDhtPartitionUploader {
         assert demandMsg != null;
         assert nodeId != null;
 
-        if (demandMsg.rebalanceId() < 0) // Demand node requested context cleanup.
-            return;
+//        if (demandMsg.rebalanceId() < 0) // Demand node requested context cleanup.
+//            return;
 
         // Todo Check is demander node supports file transfer?
 

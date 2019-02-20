@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -107,6 +109,66 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
 
     /** Directory to store temporary files on testing cache backup process. */
     private File mergeTempDir;
+
+    /**
+     * Calculate CRC for all partition files of specified cache.
+     *
+     * @param cacheDir Cache directory to iterate over partition files.
+     * @return The map of [fileName, checksum].
+     * @throws IgniteCheckedException If fails.
+     */
+    private static Map<String, Integer> calculateCRC32Partitions(File cacheDir) throws IgniteCheckedException {
+        assert cacheDir.isDirectory();
+
+        Map<String, Integer> result = new HashMap<>();
+
+        try {
+            try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
+                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX))
+            ) {
+                for (Path path : partFiles)
+                    result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
+            }
+
+            return result;
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * @param from File to copy from.
+     * @param offset Starting file position.
+     * @param count Bytes to copy to destination.
+     * @param to Output directory.
+     * @throws IgniteCheckedException If fails.
+     */
+    private static File copy(File from, long offset, long count, File to) throws IgniteCheckedException {
+        assert to.isDirectory();
+
+        try {
+            File destFile = new File(to, from.getName());
+
+            if (!destFile.exists() || destFile.delete())
+                destFile.createNewFile();
+
+            try (FileChannel src = new FileInputStream(from).getChannel();
+                 FileChannel dest = new FileOutputStream(destFile).getChannel()) {
+                src.position(offset);
+
+                long written = 0;
+
+                while (written < count)
+                    written += src.transferTo(written, count - written, dest);
+            }
+
+            return destFile;
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
 
     /** */
     @Before
@@ -201,11 +263,15 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
             true
         );
 
+        final Map<Integer, Set<Integer>> grpsBackup = new HashMap<>();
+
+        grpsBackup.put(CU.cacheId(DEFAULT_CACHE_NAME),
+            IntStream.range(0, CACHE_PARTS_COUNT).boxed().collect(Collectors.toSet()));
+
         cctx1.storeBackup()
             .backup(
                 1,
-                CU.cacheId(DEFAULT_CACHE_NAME),
-                IntStream.range(0, CACHE_PARTS_COUNT).boxed().collect(Collectors.toSet()),
+                grpsBackup,
                 new BackupProcessTask() {
                     /** Last seen handled partition id file. */
                     private File lastSavedPartId;
@@ -285,7 +351,8 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
                             throw new IgniteCheckedException(e);
                         }
                     }
-                });
+                },
+                new GridFinishedFuture<>());
 
         partsCRCSnapshots.add(calculateCRC32Partitions(mergeCacheDir));
 
@@ -314,65 +381,5 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
         }
 
         System.out.println(sb.append("TT").append("[pages=").append(pageStore.pages()).append("]\n").toString());
-    }
-
-    /**
-     * Calculate CRC for all partition files of specified cache.
-     *
-     * @param cacheDir Cache directory to iterate over partition files.
-     * @return The map of [fileName, checksum].
-     * @throws IgniteCheckedException If fails.
-     */
-    private static Map<String, Integer> calculateCRC32Partitions(File cacheDir) throws IgniteCheckedException {
-        assert cacheDir.isDirectory();
-
-        Map<String, Integer> result = new HashMap<>();
-
-        try {
-            try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX))
-            ) {
-                for (Path path : partFiles)
-                    result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
-            }
-
-            return result;
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
-        }
-    }
-
-    /**
-     * @param from File to copy from.
-     * @param offset Starting file position.
-     * @param count Bytes to copy to destination.
-     * @param to Output directory.
-     * @throws IgniteCheckedException If fails.
-     */
-    private static File copy(File from, long offset, long count, File to) throws IgniteCheckedException {
-        assert to.isDirectory();
-
-        try {
-            File destFile = new File(to, from.getName());
-
-            if (!destFile.exists() || destFile.delete())
-                destFile.createNewFile();
-
-            try (FileChannel src = new FileInputStream(from).getChannel();
-                 FileChannel dest = new FileOutputStream(destFile).getChannel()) {
-                src.position(offset);
-
-                long written = 0;
-
-                while (written < count)
-                    written += src.transferTo(written, count - written, dest);
-            }
-
-            return destFile;
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
-        }
     }
 }

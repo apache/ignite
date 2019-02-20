@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.backup;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,11 +33,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
@@ -70,29 +69,21 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + ".delta";
 
     /** */
-    public static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [id=%s, grpId=%s, parts=%s]";
-
-    /** Base working directory for saving copied pages. */
-    private final File backupWorkDir;
-
+    public static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [id=%s]";
     /** Factory to working with {@link TemporaryStore} as file storage. */
     private final FileIOFactory ioFactory;
-
     /** Tracking partition files over all running snapshot processes. */
     private final ConcurrentMap<GroupPartitionId, AtomicInteger> trackMap = new ConcurrentHashMap<>();
-
     /** Keep only the first page error. */
     private final ConcurrentMap<GroupPartitionId, IgniteCheckedException> pageTrackErrors = new ConcurrentHashMap<>();
-
     /** Collection of backup stores indexed by [grpId, partId] key. */
     private final Map<GroupPartitionId, TemporaryStore> backupStores = new ConcurrentHashMap<>();
-
     /** */
     private final int pageSize;
-
     /** */
     private final ReadWriteLock rwlock = new ReentrantReadWriteLock();
-
+    /** Base working directory for saving copied pages. */
+    private File backupWorkDir;
     /** Thread local with buffers for handling copy-on-write over {@link PageStore} events. */
     private ThreadLocal<ByteBuffer> threadPageBuff;
 
@@ -103,15 +94,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     public GridBackupPageStoreManager(GridKernalContext ctx) throws IgniteCheckedException {
         assert CU.isPersistenceEnabled(ctx.config());
 
-        log = ctx.log(getClass());
         pageSize = ctx.config().getDataStorageConfiguration().getPageSize();
-
-        backupWorkDir = U.resolveWorkDirectory(ctx.config().getWorkDirectory(),
-            DataStorageConfiguration.DFLT_BACKUP_DIRECTORY,
-            true);
-
-        U.ensureDirectory(backupWorkDir, "backup store working directory", log);
-
         ioFactory = new RandomAccessFileIOFactory();
     }
 
@@ -150,6 +133,12 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
+        backupWorkDir = U.resolveWorkDirectory(cctx.kernalContext().config().getWorkDirectory(),
+            DataStorageConfiguration.DFLT_BACKUP_DIRECTORY,
+            true);
+
+        U.ensureDirectory(backupWorkDir, "backup store working directory", log);
+
         setThreadPageBuff(ThreadLocal.withInitial(() ->
             ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder())));
 
@@ -173,97 +162,101 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void backup(
-        int idx,
-        int grpId,
-        Set<Integer> parts,
-        BackupProcessTask task
+        long idx,
+        Map<Integer, Set<Integer>> grpsBackup,
+        BackupProcessTask task,
+        IgniteInternalFuture<Boolean> fut
     ) throws IgniteCheckedException {
-        if (!(cctx.database() instanceof GridCacheDatabaseSharedManager) || parts == null || parts.isEmpty())
+        if (!(cctx.database() instanceof GridCacheDatabaseSharedManager))
             return;
 
-        final NavigableSet<GroupPartitionId> grpPartIdSet = parts.stream()
-            .map(p -> new GroupPartitionId(grpId, p))
-            .collect(Collectors.toCollection(TreeSet::new));
+        final NavigableSet<GroupPartitionId> grpPartIdSet = new TreeSet<>();
+
+        for (Map.Entry<Integer, Set<Integer>> backupEntry : grpsBackup.entrySet()) {
+            for (Integer partId : backupEntry.getValue())
+                grpPartIdSet.add(new GroupPartitionId(backupEntry.getKey(), partId));
+        }
 
         // Init stores if not created yet.
         initTemporaryStores(grpPartIdSet);
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-        DbCheckpointListener dbLsnr = null;
-
         final BackupContext backupCtx = new BackupContext();
 
+        DbCheckpointListener dbLsnr = new DbCheckpointListener() {
+            // #onMarkCheckpointBegin() is used to save meta information of partition (e.g. updateCounter, size).
+            // To get consistent partition state we should start to track all corresponding pages updates
+            // before GridCacheOffheapManager will saves meta to the #partitionMetaPageId() page.
+            // TODO shift to the second checkpoint begin.
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                // Start tracking writes over remaining parts only from the next checkpoint.
+                if (backupCtx.tracked.compareAndSet(false, true)) {
+                    backupCtx.remainPartIds = new CopyOnWriteArraySet<>(grpPartIdSet);
+
+                    for (GroupPartitionId key : backupCtx.remainPartIds) {
+                        // Start track.
+                        AtomicInteger cnt = trackMap.putIfAbsent(key, new AtomicInteger(1));
+
+                        if (cnt != null)
+                            cnt.incrementAndGet();
+
+                        // Update offsets.
+                        backupCtx.deltaOffsetMap.put(key, pageSize * backupStores.get(key).writtenPagesCount());
+                    }
+                }
+            }
+
+            @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                // No-op.
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                // Will skip the other #onCheckpointBegin() checkpoint. We should wait for the next
+                // checkpoint and if it occurs must start to track writings of remaining in context partitions.
+                // Suppose there are no store writings between the end of last checkpoint and the start on new one.
+                if (backupCtx.inited.compareAndSet(false, true)) {
+                    rwlock.readLock().lock();
+
+                    try {
+                        PartitionAllocationMap allocationMap = ctx.partitionStatMap();
+
+                        allocationMap.prepareForSnapshot();
+
+                        backupCtx.idx = idx;
+
+                        for (GroupPartitionId key : grpPartIdSet) {
+                            PagesAllocationRange allocRange = allocationMap.get(key);
+
+                            assert allocRange != null :
+                                "Pages not allocated [pairId=" + key + ", backupCtx=" + backupCtx + ']';
+
+                            backupCtx.partAllocatedPages.put(key, allocRange.getCurrAllocatedPageCnt());
+
+                            // Set offsets with default zero values.
+                            backupCtx.deltaOffsetMap.put(key, 0);
+                        }
+                    }
+                    finally {
+                        rwlock.readLock().unlock();
+                    }
+                }
+            }
+        };
+
         try {
-            dbLsnr = new DbCheckpointListener() {
-                // #onMarkCheckpointBegin() is used to save meta information of partition (e.g. updateCounter, size).
-                // To get consistent partition state we should start to track all corresponding pages updates
-                // before GridCacheOffheapManager will saves meta to the #partitionMetaPageId() page.
-                // TODO shift to the second checkpoint begin.
-                @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-                    // Start tracking writes over remaining parts only from the next checkpoint.
-                    if (backupCtx.tracked.compareAndSet(false, true)) {
-                        backupCtx.remainPartIds = new CopyOnWriteArraySet<>(grpPartIdSet);
-
-                        for (GroupPartitionId key : backupCtx.remainPartIds) {
-                            // Start track.
-                            AtomicInteger cnt = trackMap.putIfAbsent(key, new AtomicInteger(1));
-
-                            if (cnt != null)
-                                cnt.incrementAndGet();
-
-                            // Update offsets.
-                            backupCtx.deltaOffsetMap.put(key, pageSize * backupStores.get(key).writtenPagesCount());
-                        }
-                    }
-                }
-
-                @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
-                    // No-op.
-                }
-
-                @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-                    // Will skip the other #onCheckpointBegin() checkpoint. We should wait for the next
-                    // checkpoint and if it occurs must start to track writings of remaining in context partitions.
-                    // Suppose there are no store writings between the end of last checkpoint and the start on new one.
-                    if (backupCtx.inited.compareAndSet(false, true)) {
-                        rwlock.readLock().lock();
-
-                        try {
-                            PartitionAllocationMap allocationMap = ctx.partitionStatMap();
-
-                            allocationMap.prepareForSnapshot();
-
-                            backupCtx.idx = idx;
-
-                            for (GroupPartitionId key : grpPartIdSet) {
-                                PagesAllocationRange allocRange = allocationMap.get(key);
-
-                                assert allocRange != null :
-                                    "Pages not allocated [pairId=" + key + ", backupCtx=" + backupCtx + ']';
-
-                                backupCtx.partAllocatedPages.put(key, allocRange.getCurrAllocatedPageCnt());
-
-                                // Set offsets with default zero values.
-                                backupCtx.deltaOffsetMap.put(key, 0);
-                            }
-                        }
-                        finally {
-                            rwlock.readLock().unlock();
-                        }
-                    }
-                }
-            };
+            if (fut.isCancelled())
+                return;
 
             dbMgr.addCheckpointListener(dbLsnr);
 
             CheckpointFuture cpFut = dbMgr.wakeupForCheckpointOperation(
                 new SnapshotOperationAdapter() {
                     @Override public Set<Integer> cacheGroupIds() {
-                        return new HashSet<>(Collections.singletonList(grpId));
+                        return new HashSet<>(grpsBackup.keySet());
                     }
                 },
-                String.format(BACKUP_CP_REASON, idx, grpId, S.compact(parts))
+                String.format(BACKUP_CP_REASON, idx)
             );
 
             A.notNull(cpFut, "Checkpoint thread is not running.");
@@ -274,8 +267,8 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
             cpFut.finishFuture().get();
 
-            U.log(log, "Start snapshot operation over files [grpId=" + grpId + ", parts=" + S.compact(parts) +
-                ", context=" + backupCtx + ']');
+            if (log.isDebugEnabled())
+                log.debug("Start backup operation [grps=" + grpsBackup + ']');
 
             // Use sync mode to execute provided task over partitons and corresponding deltas.
             for (GroupPartitionId grpPartId : grpPartIdSet) {
@@ -293,6 +286,9 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
                 final long partSize = backupCtx.partAllocatedPages.get(grpPartId) * pageSize + store.headerSize();
 
+                if (fut.isCancelled())
+                    return;
+
                 task.handlePartition(grpPartId,
                     resolvePartitionFileCfg(grpCfg, grpPartId.getPartitionId()),
                     partSize);
@@ -306,6 +302,9 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 final Map<GroupPartitionId, Integer> offsets = backupCtx.deltaOffsetMap;
                 final int deltaOffset = offsets.get(grpPartId);
                 final long deltaSize = backupStores.get(grpPartId).writtenPagesCount() * pageSize;
+
+                if (fut.isCancelled())
+                    return;
 
                 task.handleDelta(grpPartId,
                     resolvePartitionDeltaFileCfg(grpCfg, grpPartId.getPartitionId()),
@@ -327,6 +326,8 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 if (keyCnt != null && (keyCnt.decrementAndGet() == 0))
                     U.closeQuiet(backupStores.get(key));
             }
+
+            fut.cancel();
 
             throw new IgniteCheckedException(e);
         }
@@ -432,7 +433,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
         private final AtomicBoolean tracked = new AtomicBoolean();
 
         /** Unique identifier of backup process. */
-        private int idx;
+        private long idx;
 
         /**
          * The length of partition file sizes up to each cache partiton file.
@@ -448,14 +449,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "BackupContext {" +
-                "inited=" + inited +
-                ", tracked=" + tracked +
-                ", idx=" + idx +
-                ", partAllocatedPages=" + partAllocatedPages +
-                ", deltaOffsetMap=" + deltaOffsetMap +
-                ", remainPartIds=" + remainPartIds +
-                '}';
+            return S.toString(BackupContext.class, this);
         }
     }
 }

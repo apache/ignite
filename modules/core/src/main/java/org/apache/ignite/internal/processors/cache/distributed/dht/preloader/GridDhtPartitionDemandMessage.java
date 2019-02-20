@@ -152,7 +152,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /**
      * @return Unique rebalance session id.
      */
-    long rebalanceId() {
+    public long rebalanceId() {
         return rebalanceId;
     }
 
@@ -173,7 +173,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /**
      * @return Topic.
      */
-    Object topic() {
+    public Object topic() {
         return topic;
     }
 
