@@ -2176,6 +2176,9 @@ public class IgnitionEx {
                     "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
 
+            if(CU.isPersistenceEnabled(cfg) && myCfg.getConsistentId() == null)
+                U.warn(log, "Found potential configuration problem (forgot to set explicit consistent ID when persistence is enabled)");
+
             myCfg.setTransactionConfiguration(myCfg.getTransactionConfiguration() != null ?
                 new TransactionConfiguration(myCfg.getTransactionConfiguration()) : null);
 
