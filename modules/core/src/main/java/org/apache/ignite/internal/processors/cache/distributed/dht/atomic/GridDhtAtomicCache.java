@@ -2663,7 +2663,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             c.rdrs,
                             c.reqIdx,
                             updRes,
-                            dhtFut,
                             affAssignment,
                             sndPrevVal);
                     }
@@ -2733,7 +2732,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         readers,
                         i,
                         updRes,
-                        dhtFut,
                         affAssignment,
                         sndPrevVal);
                 }
@@ -2756,11 +2754,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridDhtCacheEntry.ReaderId[] readers,
         int idx,
         GridCacheUpdateAtomicResult updRes,
-        GridDhtAtomicAbstractUpdateFuture dhtFut,
         AffinityAssignment affAssignment,
         boolean sndPrevVal
     ) throws GridCacheEntryRemovedException
     {
+        GridDhtAtomicAbstractUpdateFuture dhtFut = dhtUpdRes.dhtFuture();
+
         GridCacheOperation op = req.operation();
 
         if (dhtFut != null) {
@@ -2858,11 +2857,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     dhtUpdRes.returnValue(retVal = new GridCacheReturn(nearNode.isLocal()));
 
                 retVal.addEntryProcessResult(ctx,
-                        entry.key(),
-                        null,
-                        compRes.get1(),
-                        compRes.get2(),
-                        req.keepBinary());
+                    entry.key(),
+                    null,
+                    compRes.get1(),
+                    compRes.get2(),
+                    req.keepBinary());
             }
         }
         else {
@@ -2870,13 +2869,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (retVal == null) {
                 CacheObject ret = updRes.oldValue();
 
-                if (retVal == null) {
-                    dhtUpdRes.returnValue(retVal = new GridCacheReturn(ctx,
-                        nearNode.isLocal(),
-                        req.keepBinary(),
-                        req.returnValue() ? ret : null,
-                        updRes.success()));
-                }
+                dhtUpdRes.returnValue(new GridCacheReturn(ctx,
+                    nearNode.isLocal(),
+                    req.keepBinary(),
+                    req.returnValue() ? ret : null,
+                    updRes.success()));
             }
         }
     }

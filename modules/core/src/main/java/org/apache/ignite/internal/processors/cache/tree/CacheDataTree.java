@@ -117,6 +117,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         rowsComparator = new Comparator<CacheSearchRow>() {
             @Override public int compare(CacheSearchRow row1, CacheSearchRow row2) {
                 try {
+                    int cmp = Integer.compare(row1.hash(), row2.hash());
+
+                    if (cmp != 0)
+                        return cmp;
+
                     return compareKeyBytes(
                         row1.key().valueBytes(grp.cacheObjectContext()),
                         row2.key().valueBytes(grp.cacheObjectContext()));
