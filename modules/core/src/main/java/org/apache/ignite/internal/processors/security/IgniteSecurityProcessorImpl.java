@@ -146,7 +146,7 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public boolean enabled() {
-        return true;
+        return secPrc.enabled();
     }
 
     /** {@inheritDoc} */
