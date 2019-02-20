@@ -75,7 +75,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private final AtomicReferenceArray<Stripe[]> buckets = new AtomicReferenceArray<>(BUCKETS);
 
     /** */
-    private final int MIN_SIZE_FOR_DATA_PAGE;
+    private final int dataPageMinSize;
 
     /** */
     private final PageHandler<T, Boolean> updateRow = new UpdateRowHandler();
@@ -358,9 +358,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         assert U.isPow2(BUCKETS);
         assert BUCKETS <= pageSize : pageSize;
 
-        // TODO this constant is used because currently we cannot reuse data pages as index pages
-        // TODO and vice-versa. It should be removed when data storage format is finalized.
-        MIN_SIZE_FOR_DATA_PAGE = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
+        dataPageMinSize = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
         int shift = 0;
 
@@ -483,7 +481,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             long pageId = 0L;
 
-            for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
+            for (int b = remaining < dataPageMinSize ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
                 pageId = takeEmptyPage(b, ioVersions(), statHolder);
 
                 if (pageId != 0L)
