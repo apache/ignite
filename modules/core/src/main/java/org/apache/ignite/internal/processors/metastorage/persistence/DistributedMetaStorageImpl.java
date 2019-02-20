@@ -181,7 +181,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         if (isPersistenceEnabled(ctx.config())) {
@@ -231,7 +231,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         if (!isPersistenceEnabled(ctx.config())) {
@@ -261,7 +261,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         synchronized (innerStateLock) {
@@ -459,7 +459,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         assert startupExtras != null;
@@ -493,7 +493,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData
     ) {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return null;
 
         synchronized (innerStateLock) {
@@ -502,7 +502,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (!discoData.hasJoiningNodeData()) {
                 // Joining node doesn't support distributed metastorage feature.
 
-                if (isSupported() && locVer.id > 0) {
+                if (isSupported() && locVer.id > 0 && !(node.isClient() || node.isDaemon())) {
                     String errorMsg = "Node not supporting distributed metastorage feature" +
                         " is not allowed to join the cluster";
 
@@ -607,7 +607,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         if (!discoData.hasJoiningNodeData())
@@ -644,7 +644,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         if (dataBag.commonDataCollectedFor(COMPONENT_ID))
@@ -842,7 +842,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 else
                     writeFullDataLater(nodeData);
             }
-            else if (!ctx.clientNode() && getActualVersion().id > 0) {
+            else if (!(ctx.clientNode() || ctx.isDaemon()) && getActualVersion().id > 0) {
                 throw new IgniteException("Cannot join the cluster because it doesn't support distributed metastorage" +
                     " feature and this node has not empty distributed metastorage data");
             }
