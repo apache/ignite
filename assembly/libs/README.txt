@@ -36,7 +36,7 @@ with actual Ignite version you are interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>apache-ignite</artifactId>
             <version>${ignite.version}</version>
         </dependency>
@@ -59,7 +59,7 @@ Here is how it can be imported into your POM file:
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${ignite.version}</version>
         </dependency>
@@ -122,14 +122,14 @@ you should add 'ignite-spring' module like this:
         ...
         <!-- Core module. -->
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${ignite.version}</version>
         </dependency>
 
         <!-- Optional. -->
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${ignite.version}</version>
         </dependency>

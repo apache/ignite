@@ -49,8 +49,8 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-spring</include>
-                <include>org.apache.ignite:ignite-indexing</include>
+                <include>org.gridgain:ignite-spring</include>
+                <include>org.gridgain:ignite-indexing</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -89,7 +89,7 @@
 
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-core</include>
+                <include>org.gridgain:ignite-core</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
@@ -129,37 +129,37 @@
         <moduleSet>
             <includeSubModules>true</includeSubModules>
             <excludes>
-                <exclude>org.apache.ignite:ignite-core</exclude>
-                <exclude>org.apache.ignite:ignite-clients</exclude>
-                <exclude>org.apache.ignite:ignite-spring</exclude>
-                <exclude>org.apache.ignite:ignite-tools</exclude>
-                <exclude>org.apache.ignite:ignite-extdata-p2p</exclude>
-                <exclude>org.apache.ignite:ignite-extdata-uri</exclude>
-                <exclude>org.apache.ignite:ignite-extdata-uri-dep</exclude>
-                <exclude>org.apache.ignite:ignite-examples</exclude>
-                <exclude>org.apache.ignite:ignite-indexing</exclude>
-                <exclude>org.apache.ignite:ignite-visor-console</exclude>
-                <exclude>org.apache.ignite:ignite-visor-console_2.10</exclude>
-                <exclude>org.apache.ignite:ignite-visor-plugins</exclude>
-                <exclude>org.apache.ignite:ignite-hadoop</exclude>
-                <exclude>org.apache.ignite:ignite-codegen</exclude>
-                <exclude>org.apache.ignite:ignite-apache-license-gen</exclude>
-                <exclude>org.apache.ignite:ignite-hibernate-core</exclude>
-                <exclude>org.apache.ignite:ignite-hibernate_4.2</exclude>
-                <exclude>org.apache.ignite:ignite-hibernate_5.1</exclude>
-                <exclude>org.apache.ignite:ignite-hibernate_5.3</exclude>
-                <exclude>org.apache.ignite:ignite-schedule</exclude>
-                <exclude>org.apache.ignite:ignite-geospatial</exclude>
-                <exclude>org.apache.ignite:ignite-appserver-test</exclude>
-                <exclude>org.apache.ignite:ignite-websphere-test</exclude>
-                <exclude>org.apache.ignite:ignite-cassandra</exclude>
-                <exclude>org.apache.ignite:ignite-yardstick</exclude>
-                <exclude>org.apache.ignite:ignite-benchmarks</exclude>
-                <exclude>org.apache.ignite:ignite-web-agent</exclude>
-                <exclude>org.apache.ignite:ignite-dev-utils</exclude>
-                <exclude>org.apache.ignite:ignite-extdata-platform</exclude>
-                <exclude>org.apache.ignite:ignite-compatibility</exclude>
-                <exclude>org.apache.ignite:ignite-sqlline</exclude>
+                <exclude>org.gridgain:ignite-core</exclude>
+                <exclude>org.gridgain:ignite-clients</exclude>
+                <exclude>org.gridgain:ignite-spring</exclude>
+                <exclude>org.gridgain:ignite-tools</exclude>
+                <exclude>org.gridgain:ignite-extdata-p2p</exclude>
+                <exclude>org.gridgain:ignite-extdata-uri</exclude>
+                <exclude>org.gridgain:ignite-extdata-uri-dep</exclude>
+                <exclude>org.gridgain:ignite-examples</exclude>
+                <exclude>org.gridgain:ignite-indexing</exclude>
+                <exclude>org.gridgain:ignite-visor-console</exclude>
+                <exclude>org.gridgain:ignite-visor-console_2.10</exclude>
+                <exclude>org.gridgain:ignite-visor-plugins</exclude>
+                <exclude>org.gridgain:ignite-hadoop</exclude>
+                <exclude>org.gridgain:ignite-codegen</exclude>
+                <exclude>org.gridgain:ignite-apache-license-gen</exclude>
+                <exclude>org.gridgain:ignite-hibernate-core</exclude>
+                <exclude>org.gridgain:ignite-hibernate_4.2</exclude>
+                <exclude>org.gridgain:ignite-hibernate_5.1</exclude>
+                <exclude>org.gridgain:ignite-hibernate_5.3</exclude>
+                <exclude>org.gridgain:ignite-schedule</exclude>
+                <exclude>org.gridgain:ignite-geospatial</exclude>
+                <exclude>org.gridgain:ignite-appserver-test</exclude>
+                <exclude>org.gridgain:ignite-websphere-test</exclude>
+                <exclude>org.gridgain:ignite-cassandra</exclude>
+                <exclude>org.gridgain:ignite-yardstick</exclude>
+                <exclude>org.gridgain:ignite-benchmarks</exclude>
+                <exclude>org.gridgain:ignite-web-agent</exclude>
+                <exclude>org.gridgain:ignite-dev-utils</exclude>
+                <exclude>org.gridgain:ignite-extdata-platform</exclude>
+                <exclude>org.gridgain:ignite-compatibility</exclude>
+                <exclude>org.gridgain:ignite-sqlline</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
