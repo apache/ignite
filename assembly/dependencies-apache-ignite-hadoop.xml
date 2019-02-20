@@ -49,10 +49,10 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-spark</include>
-                <include>org.apache.ignite:ignite-spring</include>
-                <include>org.apache.ignite:ignite-log4j</include>
-                <include>org.apache.ignite:ignite-indexing</include>
+                <include>org.gridgain:ignite-spark</include>
+                <include>org.gridgain:ignite-spring</include>
+                <include>org.gridgain:ignite-log4j</include>
+                <include>org.gridgain:ignite-indexing</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -94,7 +94,7 @@
 
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-core</include>
+                <include>org.gridgain:ignite-core</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
@@ -132,7 +132,7 @@
 
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-hadoop</include>
+                <include>org.gridgain:ignite-hadoop</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

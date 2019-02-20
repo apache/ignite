@@ -49,7 +49,7 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-aop</include>
+                <include>org.gridgain:ignite-aop</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>

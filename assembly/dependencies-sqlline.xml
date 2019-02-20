@@ -49,7 +49,7 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-sqlline</include>
+                <include>org.gridgain:ignite-sqlline</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
