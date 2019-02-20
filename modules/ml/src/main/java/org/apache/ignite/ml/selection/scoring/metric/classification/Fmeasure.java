@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import java.util.Iterator;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 
+import java.util.Iterator;
+
 /**
- * Recall calculator.
+ * F-measure calculator.
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public class Recall<L> extends ClassMetric<L> {
+public class Fmeasure<L> extends ClassMetric<L> {
     /**
      * The class of interest or positive class.
      *
      * @param clsLb The label.
      */
-    public Recall(L clsLb) {
+    public Fmeasure(L clsLb) {
         super(clsLb);
     }
 
@@ -40,6 +41,9 @@ public class Recall<L> extends ClassMetric<L> {
         if (clsLb != null) {
             long tp = 0;
             long fn = 0;
+            long fp = 0;
+            double recall;
+            double precision;
 
             while (it.hasNext()) {
                 LabelPair<L> e = it.next();
@@ -53,13 +57,19 @@ public class Recall<L> extends ClassMetric<L> {
                     else
                         fn++;
                 }
+
+                if (clsLb.equals(prediction) && !prediction.equals(truth))
+                    fp++;
             }
-            long denominator = tp + fn;
+            long denominatorRecall = tp + fn;
 
-            if (denominator == 0)
-                return 1; // according to https://github.com/dice-group/gerbil/wiki/Precision,-Recall-and-F1-measure
+            long denominatorPrecision = tp + fp;
 
-            return (double)tp / denominator;
+            // according to https://github.com/dice-group/gerbil/wiki/Precision,-Recall-and-F1-measure
+            recall = denominatorRecall == 0 ? 1 : (double)tp / denominatorRecall;
+            precision = denominatorPrecision == 0 ? 1 : (double)tp / denominatorPrecision;
+
+            return 2 * (recall * precision) / (recall + precision);
         }
         else
             return Double.NaN;
@@ -67,6 +77,6 @@ public class Recall<L> extends ClassMetric<L> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "recall for class with label " + clsLb;
+        return "F-measure for class with label " + clsLb;
     }
 }
