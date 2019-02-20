@@ -44,6 +44,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 
+import static org.apache.ignite.internal.pagemem.PageIdUtils.PART_ID_SIZE;
+
 /**
  * Default {@link PageMemoryWarmingUp} implementation.
  */
@@ -242,7 +244,7 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
                     if (dataRegCfg.isWarmingUpIndexesOnly() && partId != PageIdAllocator.INDEX_PARTITION)
                         continue;
 
-                    int grpId = Integer.parseInt(segFile.getName().substring(0, Segment.GRP_ID_PREFIX_LENGTH), 16);
+                    int grpId = (int)Long.parseLong(segFile.getName().substring(0, Segment.GRP_ID_PREFIX_LENGTH), 16);
 
                     int[] pageIdxArr = loadPageIndexes(segFile);
 
@@ -451,6 +453,9 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
         /** Group ID prefix length. */
         private static final int GRP_ID_PREFIX_LENGTH = 8;
 
+        /** Group ID key mask. */
+        private static final long GRP_ID_MASK = ~(-1L << 32);
+
         /** File name pattern. */
         private static final Pattern FILE_NAME_PATTERN = Pattern.compile("[0-9A-Fa-f]{" + FILE_NAME_LENGTH + "}\\" + FILE_EXT);
 
@@ -553,7 +558,7 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
          * @param pageId Page id.
          */
         static long key(long grpId, long pageId) {
-            return (grpId << PageIdUtils.PART_ID_SIZE) + PageIdUtils.partId(pageId);
+            return (((grpId & GRP_ID_MASK) << PART_ID_SIZE)) + PageIdUtils.partId(pageId);
         }
     }
 
