@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.util.concurrent.CountDownLatch;
@@ -53,23 +54,23 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public void insertDataRow(CacheDataRow row) throws IgniteCheckedException {
-        initDelegateIfNeeded().insertDataRow(row);
+    @Override public void insertDataRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        initDelegateIfNeeded().insertDataRow(row, statHolder);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean updateDataRow(long link, CacheDataRow row) throws IgniteCheckedException {
-        return initDelegateIfNeeded().updateDataRow(link, row);
+    @Override public boolean updateDataRow(long link, CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        return initDelegateIfNeeded().updateDataRow(link, row, statHolder);
     }
 
     /** {@inheritDoc} */
-    @Override public <S, R> R updateDataRow(long link, PageHandler<S, R> pageHnd, S arg) throws IgniteCheckedException {
-        return (R)initDelegateIfNeeded().updateDataRow(link, pageHnd, arg);
+    @Override public <S, R> R updateDataRow(long link, PageHandler<S, R> pageHnd, S arg, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        return (R)initDelegateIfNeeded().updateDataRow(link, pageHnd, arg, statHolder);
     }
 
     /** {@inheritDoc} */
-    @Override public void removeDataRowByLink(long link) throws IgniteCheckedException {
-        initDelegateIfNeeded().removeDataRowByLink(link);
+    @Override public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        initDelegateIfNeeded().removeDataRowByLink(link, statHolder);
     }
 
     /** {@inheritDoc} */
@@ -143,7 +144,12 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
                     this.delegate = createDelegate();
                 }
                 catch (IgniteCheckedException e) {
-                    this.initErr = e;
+                    initErr = e;
+                }
+                catch (Throwable e) {
+                    initErr = new IgniteCheckedException(e);
+
+                    throw e;
                 }
                 finally {
                     initLatch.countDown();
