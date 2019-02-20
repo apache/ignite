@@ -57,7 +57,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
         if ("client".equals(igniteInstanceName))
             cfg.setClientMode(true);
-        
+
         cfg.setGridLogger(strLog);
 
         return cfg;
@@ -95,6 +95,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Override protected boolean isMultiJvm() {
         return true;
     }
@@ -112,14 +113,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
         IgniteEx client = null;
 
-        try {
-            Ignition.setClientMode(true);
-
-            client = startGrid("client");
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        client = startGrid("client");
 
         MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
 
