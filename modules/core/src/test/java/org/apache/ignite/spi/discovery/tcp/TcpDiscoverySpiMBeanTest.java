@@ -17,12 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -32,8 +29,6 @@ import javax.management.JMX;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 import org.junit.Test;
@@ -95,11 +90,6 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
-
     /**
      * Tests TcpDiscoverySpiMBean#excludeNode.
      *
@@ -111,7 +101,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
         IgniteEx grid0 = (IgniteEx)startGrids(srvCnt);
 
-        IgniteEx client = null;
+        IgniteEx client;
 
         client = startGrid("client");
 
@@ -126,14 +116,17 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
         assertEquals(grid0.cluster().forClients().nodes().size(), 1);
 
-        bean.excludeNode(client.localNode().id().toString());
+        UUID clientId = client.localNode().id();
+
+        bean.excludeNode(clientId.toString());
 
         assertTrue(GridTestUtils.waitForCondition(() ->
-            grid0.cluster().forClients().nodes().isEmpty(), 5_000));
+            grid0.cluster().forClients().nodes().size() == 1, 5_000));
+
+        assertTrue(GridTestUtils.waitForCondition(() ->
+            grid0.cluster().forClients().node(clientId) == null, 5_000));
 
         assertTrue(strLog.toString().contains("Node excluded, node="));
-
-        assertEquals(grid0.cluster().forClients().nodes().size(), 0);
 
         bean.excludeNode(new UUID(0, 0).toString());
 

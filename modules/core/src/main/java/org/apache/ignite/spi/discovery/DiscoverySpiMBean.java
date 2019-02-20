@@ -83,7 +83,7 @@ public interface DiscoverySpiMBean {
     public String getLocalNodeFormatted();
 
      /**
-      * Exclude node from cluster.
+      * Exclude node from discovery.
       *
       * @param nodeId Node id string.
       */

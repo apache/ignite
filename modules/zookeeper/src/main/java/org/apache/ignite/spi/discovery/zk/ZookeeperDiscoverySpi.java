@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.curator.utils.PathUtils;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -633,16 +632,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
                 return;
             }
 
-            String msg = "Node excluded, node=" + nodeId +
-                ", using JMX interface, initiator=" + getLocalNodeId();
+            String msg = "Node excluded, node=" + nodeId + "using JMX interface, initiator=" + getLocalNodeId();
 
-            try {
-                U.warn(log, msg);
-
-                ignite.cluster().stopNodes(Collections.singletonList(node));
-            } catch (IgniteException ignore) {
-                impl.failNode(node, msg);
-            }
+            impl.failNode(node, msg);
         }
 
         /** {@inheritDoc} */

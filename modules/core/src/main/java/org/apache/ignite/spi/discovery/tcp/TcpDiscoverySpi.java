@@ -2509,16 +2509,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 return;
             }
 
-            String msg = "Node excluded, node=" + nodeId +
-                ", using JMX interface, initiator=" + getLocalNodeId();
+            String msg = "Node excluded, node=" + nodeId + "using JMX interface, initiator=" + getLocalNodeId();
 
-            try {
-                U.warn(log, msg);
-
-                ignite.cluster().stopNodes(Collections.singletonList(node));
-            } catch (IgniteException ignore) {
-                impl.failNode(node, msg);
-            }
+            impl.failNode(node, msg);
         }
 
         /** {@inheritDoc} */
