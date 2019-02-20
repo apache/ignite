@@ -68,6 +68,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -1298,9 +1299,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
                             break;
                         }
-                        catch (CacheException e) {
-                            // t0d0 figure out why commit throws an exception
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                        catch (Exception e) {
+                            assertTrue(e instanceof TransactionSerializationException);
                         }
                     }
                 }
