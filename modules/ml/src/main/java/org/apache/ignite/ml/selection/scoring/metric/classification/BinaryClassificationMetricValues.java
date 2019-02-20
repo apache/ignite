@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
+import org.apache.ignite.ml.selection.scoring.metric.MetricValues;
 
 /**
  * Provides access to binary metric values.
  */
-public class BinaryClassificationMetricValues {
+public class BinaryClassificationMetricValues implements MetricValues {
     /** True Positive (TP). */
     private double tp;
 
@@ -169,17 +167,5 @@ public class BinaryClassificationMetricValues {
     /** Returns F1-Score is the harmonic mean of Precision and Sensitivity. */
     public double f1Score() {
         return f1Score;
-    }
-
-    /** Returns the pair of metric name and metric value. */
-    public Map<String, Double> toMap() {
-        Map<String, Double> metricValues = new HashMap<>();
-        for (Field field : getClass().getDeclaredFields())
-            try {
-                metricValues.put(field.getName(), field.getDouble(this));
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        return metricValues;
     }
 }

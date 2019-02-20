@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
-import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
@@ -26,14 +25,16 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursor;
-import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetrics;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
+
+import java.util.Map;
 
 /**
- * Binary classification evaluator that computes metrics from predictions and ground truth values.
+ * Evaluator that computes metrics from predictions and ground truth values.
  */
-public class BinaryClassificationEvaluator {
+public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
