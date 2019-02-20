@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -157,11 +156,11 @@ public class IndexingMultithreadedLoadContinuousRestartTest extends GridCommonAb
             forceCheckpoint();
 
             // Validate indexes on start.
-            Collection<VisorValidateIndexesJobResult> res = ignite.compute().broadcast(
-                new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0));
+            ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0);
+            ignite.context().resource().injectGeneric(clo);
+            VisorValidateIndexesJobResult res = clo.call();
 
-            assertEquals(1, res.size());
-            assertFalse(res.iterator().next().hasIssues());
+            assertFalse(res.hasIssues());
 
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
