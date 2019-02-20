@@ -20,19 +20,12 @@ package org.apache.ignite.internal.managers.discovery;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 /**
  *
  */
 public interface IgniteDiscoverySpi extends DiscoverySpi {
-    /**
-     * Predicate that is always true. Might be used in
-     * {@link IgniteDiscoverySpi#allNodesSupport(IgniteFeatures, IgnitePredicate)}.
-     */
-    IgnitePredicate<ClusterNode> ALL_NODES = node -> true;
-
     /**
      * @param nodeId Node ID.
      * @return {@code True} if node joining or already joined topology.
@@ -52,10 +45,9 @@ public interface IgniteDiscoverySpi extends DiscoverySpi {
 
     /**
      * @param feature Feature to check.
-     * @param nodesPred Predicate to filter cluster nodes.
      * @return {@code true} if all nodes support the given feature.
      */
-    public boolean allNodesSupport(IgniteFeatures feature, IgnitePredicate<ClusterNode> nodesPred);
+    public boolean allNodesSupport(IgniteFeatures feature);
 
     /**
      * For TESTING only.

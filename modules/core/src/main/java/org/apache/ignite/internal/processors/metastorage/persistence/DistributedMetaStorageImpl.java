@@ -57,11 +57,9 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -172,22 +170,18 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
-     * @return {@code True} if all server nodes in the cluster support discributed metastorage feature.
+     * @return {@code True} if all nodes in the cluster support discributed metastorage feature.
      * @see IgniteFeatures#DISTRIBUTED_METASTORAGE
      */
     private boolean isSupported() {
-        IgnitePredicate<ClusterNode> srvrNodesFilter = node -> !node.isClient() && !node.isDaemon();
-
         DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
 
         if (discoSpi instanceof IgniteDiscoverySpi)
-            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(DISTRIBUTED_METASTORAGE, srvrNodesFilter);
+            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(DISTRIBUTED_METASTORAGE);
         else {
             Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
 
-            Collection<ClusterNode> srvNodes = F.view(nodes, srvrNodesFilter);
-
-            return IgniteFeatures.allNodesSupports(srvNodes, DISTRIBUTED_METASTORAGE);
+            return IgniteFeatures.allNodesSupports(nodes, DISTRIBUTED_METASTORAGE);
         }
     }
 

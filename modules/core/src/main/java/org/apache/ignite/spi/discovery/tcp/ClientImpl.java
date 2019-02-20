@@ -81,7 +81,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -377,8 +376,8 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature, IgnitePredicate<ClusterNode> nodesPred) {
-        return IgniteFeatures.allNodesSupports(F.view(upcast(rmtNodes.values()), nodesPred), feature);
+    @Override public boolean allNodesSupport(IgniteFeatures feature) {
+        return IgniteFeatures.allNodesSupports(upcast(rmtNodes.values()), feature);
     }
 
     /** {@inheritDoc} */
