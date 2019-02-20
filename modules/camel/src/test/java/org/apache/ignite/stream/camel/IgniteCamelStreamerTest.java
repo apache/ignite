@@ -389,17 +389,15 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
 
         // Listen to cache PUT events and expect as many as messages as test data items
         final CountDownLatch latch = new CountDownLatch(expect);
-        @SuppressWarnings("serial") IgniteBiPredicate<UUID, CacheEvent> callback =
-            new IgniteBiPredicate<UUID, CacheEvent>() {
-            @Override public boolean apply(UUID uuid, CacheEvent evt) {
+        @SuppressWarnings("serial") IgniteBiPredicate<UUID, CacheEvent> cb =
+            (UUID uuid, CacheEvent evt) -> {
                 latch.countDown();
 
                 return true;
-            }
-        };
+            };
 
         remoteLsnr = ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME))
-            .remoteListen(callback, null, EVT_CACHE_OBJECT_PUT);
+            .remoteListen(cb, null, EVT_CACHE_OBJECT_PUT);
 
         return latch;
     }

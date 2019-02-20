@@ -47,48 +47,6 @@ public class IgniteLinkTaglet11 implements Taglet {
         return null;
     }
 
-    /**
-     * @return true since this tag can be used in a field doc comment.
-     */
-     public boolean inField() {
-        return true;
-    }
-
-    /**
-     * @return true since this tag can be used in a constructor doc comment.
-     */
-     public boolean inConstructor() {
-        return true;
-    }
-
-    /**
-     * @return true since this tag can be used in a method doc comment.
-     */
-     public boolean inMethod() {
-        return true;
-    }
-
-    /**
-     * @return true since this tag can be used in an overview doc comment.
-     */
-     public boolean inOverview() {
-        return true;
-    }
-
-    /**
-     * @return true since this tag can be used in a package doc comment.
-     */
-     public boolean inPackage() {
-        return true;
-    }
-
-    /**
-     * @return true since this.
-     */
-     public boolean inType() {
-        return true;
-    }
-
     @Override public Set<Location> getAllowedLocations() {
         return new HashSet<>();
     }
@@ -135,7 +93,7 @@ public class IgniteLinkTaglet11 implements Taglet {
 
         File f = tag.position().file();
 
-        String curClass = f == null ? "" : f.getAbsolutePath().replace(File.separator, "");
+        String curClass = f == null ? "" : f.getAbsolutePath().replace(File.separator, ".");
 
         String packPref = "src.main.java.";
 
@@ -157,11 +115,11 @@ public class IgniteLinkTaglet11 implements Taglet {
         String simpleClsName = lastIdx != -1 && lastIdx + 1 < tokens[0].length() ?
             tokens[0].substring(lastIdx + 1) : tokens[0];
 
-        String fullyQClsName = tokens[0].replace("", "/");
+        String fullyQClsName = tokens[0].replace(".", "/");
 
         return "<a href=\"" + path.toString() + fullyQClsName + ".html" +
             (tokens.length > 1 ? ("#" + tokens[1].replace("[]", "...")) : "") +
-            "\"><code>" + simpleClsName + (tokens.length > 1 ? ("" + tokens[1]) : "") + "</code></a>";
+            "\"><code>" + simpleClsName + (tokens.length > 1 ? ("." + tokens[1]) : "") + "</code></a>";
     }
 
     /**
