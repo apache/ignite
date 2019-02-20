@@ -32,11 +32,12 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
@@ -215,6 +216,9 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /** */
         private GridCursor<? extends CacheDataRow> curr;
 
+        /** Creation time of this cursor to check if some row is expired. */
+        private final long time;
+
         /**
          * @param iter Cursors iterator.
          */
@@ -224,6 +228,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
             this.iter = iter;
 
             desc = rowDescriptor();
+
+            time = U.currentTimeMillis();
         }
 
         /** {@inheritDoc} */
@@ -251,9 +257,12 @@ public class H2PkHashIndex extends GridH2IndexBase {
                 for (;;) {
                     if (curr != null) {
                         while (curr.next()) {
+                            CacheDataRow row = curr.get();
                             // Need to filter rows by value type because in a single cache
                             // we can have multiple indexed types.
-                            if (type.matchType(curr.get().value()))
+                            // Also need to skip expired rows.
+                            if (type.matchType(row.value())
+                                && row.expireTime() > time)
                                 return true;
                         }
                     }
