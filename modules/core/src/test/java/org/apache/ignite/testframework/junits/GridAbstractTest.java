@@ -39,7 +39,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -2558,16 +2557,16 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         /** */
         private static void runTestClass(Statement base, Class<?> cls) throws Throwable {
-            boolean locked = runSerializer.tryLock(5, TimeUnit.MINUTES);
-
-            if (!locked)
-                throw new RuntimeException("Failed to acquire test execution lock");
+//            boolean locked = runSerializer.tryLock(5, TimeUnit.MINUTES);
+//
+//            if (!locked)
+//                throw new RuntimeException("Failed to acquire test execution lock");
 
             try {
                 evaluateInsideLegacyFixture(base, cls);
             }
             finally {
-                runSerializer.unlock();
+//                runSerializer.unlock();
             }
         }
 
