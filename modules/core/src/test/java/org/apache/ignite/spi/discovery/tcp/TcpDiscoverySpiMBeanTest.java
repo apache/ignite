@@ -17,10 +17,14 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -30,8 +34,13 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 
 /**
  * Tests TcpDiscoverySpiMBean.
@@ -139,10 +148,28 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
         assertNotNull(node);
 
+        final CountDownLatch cnt = new CountDownLatch(1);
+
+        Ignite segmentedNode = G.allGrids().stream().filter(id -> id.cluster().localNode().id().equals(node.id()))
+            .findAny().get();
+
+        assertNotNull(segmentedNode);
+
+        segmentedNode.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                cnt.countDown();
+
+                return false;
+            }
+        }, EVT_NODE_SEGMENTED);
+
         bean.excludeNode(node.id().toString());
 
         assertTrue(GridTestUtils.waitForCondition(() ->
             grid0.cluster().forServers().nodes().size() == srvCnt - 1, 5_000));
+
+        assertTrue("Next node have to be failed within failureDetectionTimeout",
+            cnt.await(grid0.configuration().getFailureDetectionTimeout() + 3000, MILLISECONDS));
 
         bean.excludeNode(grid0.localNode().id().toString());
     }
