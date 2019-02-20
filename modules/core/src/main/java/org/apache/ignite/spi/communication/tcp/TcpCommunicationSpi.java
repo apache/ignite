@@ -4102,7 +4102,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         DiscoverySpi discoSpi = ignite().configuration().getDiscoverySpi();
 
         if (discoSpi instanceof IgniteDiscoverySpi)
-            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(IgniteFeatures.TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE);
+            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(
+                IgniteFeatures.TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE,
+                IgniteDiscoverySpi.ALL_NODES
+            );
         else {
             Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
 

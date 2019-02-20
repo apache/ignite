@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -55,11 +57,14 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -171,12 +176,19 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @see IgniteFeatures#DISTRIBUTED_METASTORAGE
      */
     private boolean isSupported() {
-        GridDiscoveryManager discoveryMgr = ctx.discovery();
+        IgnitePredicate<ClusterNode> srvrNodesFilter = node -> !node.isClient() && !node.isDaemon();
 
-        if (discoveryMgr.discoCache() == null)
-            return true;
+        DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
 
-        return IgniteFeatures.allNodesSupports(discoveryMgr.aliveServerNodes(), DISTRIBUTED_METASTORAGE);
+        if (discoSpi instanceof IgniteDiscoverySpi)
+            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(DISTRIBUTED_METASTORAGE, srvrNodesFilter);
+        else {
+            Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
+
+            Collection<ClusterNode> srvNodes = F.view(nodes, srvrNodesFilter);
+
+            return IgniteFeatures.allNodesSupports(srvNodes, DISTRIBUTED_METASTORAGE);
+        }
     }
 
     /** {@inheritDoc} */

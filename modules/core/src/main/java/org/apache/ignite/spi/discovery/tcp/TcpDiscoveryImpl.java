@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiThread;
@@ -218,9 +219,10 @@ abstract class TcpDiscoveryImpl {
 
     /**
      * @param feature Feature to check.
-     * @return {@code True} if all nodes support the given featire, {@code false} otherwise.
+     * @param nodesPred Predicate to filter cluster nodes.
+     * @return {@code true} if all nodes support the given feature, {@code false} otherwise.
      */
-    public abstract boolean allNodesSupport(IgniteFeatures feature);
+    public abstract boolean allNodesSupport(IgniteFeatures feature, IgnitePredicate<ClusterNode> nodesPred);
 
     /**
      * @param nodeId Node id.
