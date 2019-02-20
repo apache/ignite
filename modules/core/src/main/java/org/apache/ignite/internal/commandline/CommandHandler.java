@@ -1332,9 +1332,11 @@ public class CommandHandler {
         log("Current topology version: " + res.getTopologyVersion());
         VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
 
-        log("Baseline auto adjustment " + (autoAdjustSettings.enabled ? "enabled" : "disabled") +
-            ": softTimeout=" + autoAdjustSettings.softTimeout
-        );
+        if (autoAdjustSettings != null) {
+            log("Baseline auto adjustment " + (autoAdjustSettings.enabled ? "enabled" : "disabled") +
+                ": softTimeout=" + autoAdjustSettings.softTimeout
+            );
+        }
 
         nl();
 

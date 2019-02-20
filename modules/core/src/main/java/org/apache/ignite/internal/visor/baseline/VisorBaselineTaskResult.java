@@ -127,6 +127,11 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         return servers;
     }
 
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /**
      * @return Baseline autoadjustment settings.
      */
@@ -149,7 +154,9 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         topVer = in.readLong();
         baseline = U.readTreeMap(in);
         servers = U.readTreeMap(in);
-        autoAdjustSettings = VisorBaselineAutoAdjustSettings.readExternalData(in);
+
+        if (protoVer > V1)
+            autoAdjustSettings = VisorBaselineAutoAdjustSettings.readExternalData(in);
     }
 
     /** {@inheritDoc} */
