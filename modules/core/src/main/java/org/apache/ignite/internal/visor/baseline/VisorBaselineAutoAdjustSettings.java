@@ -33,6 +33,10 @@ public class VisorBaselineAutoAdjustSettings extends VisorDataTransferObject {
     /** Soft timeout. */
     private long softTimeout;
 
+    /** Default constructor. */
+    public VisorBaselineAutoAdjustSettings() {
+    }
+
     /** Constructor. */
     public VisorBaselineAutoAdjustSettings(boolean enabled, long softTimeout) {
         this.enabled= enabled;
