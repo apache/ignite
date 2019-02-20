@@ -32,7 +32,11 @@ import org.jetbrains.annotations.Nullable;
  * SQL Query.
  *
  * @see IgniteCache#query(Query)
+ *
+ * @deprecated Since 2.8, please use {@link SqlFieldsQuery} instead.
+ *   In case a whole key-value entry must be selected use hidden columns: {@code SELECT _key, _val FROM ...}.
  */
+@Deprecated
 public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;

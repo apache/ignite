@@ -191,17 +191,17 @@ public class CacheClientBinaryQueryExample {
      * @param cache Ignite cache.
      */
     private static void sqlQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
-        SqlQuery<BinaryObject, BinaryObject> query = new SqlQuery<>(Employee.class, "zip = ?");
+        SqlFieldsQuery query = new SqlFieldsQuery("select _val from employee where zip = ?");
 
         int zip = 94109;
 
-        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees = cache.query(query.setArgs(zip));
+        QueryCursor<List<?>> rows = cache.query(query.setArgs(zip));
 
         System.out.println();
         System.out.println(">>> Employees with zip " + zip + ':');
 
-        for (Cache.Entry<BinaryObject, BinaryObject> e : employees.getAll())
-            System.out.println(">>>     " + e.getValue().deserialize());
+        for (List<?> row : rows.getAll())
+            System.out.println(">>>     " + ((BinaryObject)row.get(0)).deserialize());
     }
 
     /**
@@ -210,20 +210,19 @@ public class CacheClientBinaryQueryExample {
      * @param cache Ignite cache.
      */
     private static void sqlJoinQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
-        SqlQuery<BinaryObject, BinaryObject> qry = new SqlQuery<>(Employee.class,
-            "from Employee, \"" + ORGANIZATION_CACHE_NAME + "\".Organization as org " +
-                "where Employee.organizationId = org._key and org.name = ?");
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "select e._val from Employee e, \"" + ORGANIZATION_CACHE_NAME + "\".Organization as org " +
+                "where e.organizationId = org._key and org.name = ?");
 
         String organizationName = "GridGain";
 
-        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees =
-            cache.query(qry.setArgs(organizationName));
+        QueryCursor<List<?>> employees = cache.query(qry.setArgs(organizationName));
 
         System.out.println();
         System.out.println(">>> Employees working for " + organizationName + ':');
 
-        for (Cache.Entry<BinaryObject, BinaryObject> e : employees.getAll())
-            System.out.println(">>>     " + e.getValue());
+        for (List<?> row : employees.getAll())
+            System.out.println(">>>     " + row);
     }
 
     /**
