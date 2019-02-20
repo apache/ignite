@@ -160,8 +160,6 @@ public class ConnectionManager {
 
         stmtCleanupTask = ctx.timeout().schedule(this::cleanupStatements, stmtCleanupPeriod, stmtCleanupPeriod);
         connCleanupTask = ctx.timeout().schedule(this::cleanupConnections, CONN_CLEANUP_PERIOD, CONN_CLEANUP_PERIOD);
-
-        startDebugConsole();
     }
 
     /**
@@ -440,38 +438,6 @@ public class ConnectionManager {
 
             // Reset connection to receive new one at next call.
             U.close(c, log);
-        }
-    }
-
-    /**
-     * Start debug console if needed.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    private void startDebugConsole() throws IgniteCheckedException {
-        try {
-            if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
-                Connection c = DriverManager.getConnection(dbUrl);
-
-                int port = getInteger(IGNITE_H2_DEBUG_CONSOLE_PORT, 0);
-
-                WebServer webSrv = new WebServer();
-                Server web = new Server(webSrv, "-webPort", Integer.toString(port));
-                web.start();
-                String url = webSrv.addSession(c);
-
-                U.quietAndInfo(log, "H2 debug console URL: " + url);
-
-                try {
-                    Server.openBrowser(url);
-                }
-                catch (Exception e) {
-                    U.warn(log, "Failed to open browser: " + e.getMessage());
-                }
-            }
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
         }
     }
 
