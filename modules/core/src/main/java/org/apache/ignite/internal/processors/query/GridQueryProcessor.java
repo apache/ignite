@@ -1829,11 +1829,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-            if (desc == null)
-
-
-                return;
-
+        if (desc == null)
+            return;
 
         idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
     }
@@ -2471,17 +2468,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (idx == null)
             return;
 
-
-            QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
-                cctx.cacheObjectContext(),
-                val.key(),
-                val.value(),
-                false);
+        QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
+            cctx.cacheObjectContext(),
+            val.key(),
+            val.value(),
+            false);
 
         if (desc == null)
             return;
 
-                idx.remove(cctx, desc, val);
+        idx.remove(cctx, desc, val);
 
     }
 
