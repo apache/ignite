@@ -39,7 +39,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
+    private String url = bestEffortAffinity ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
+        "jdbc:ignite:thin://127.0.0.1";
+
+    /** Nodes count. */
+    private int nodesCnt = bestEffortAffinity ? 4 : 3;
 
     /** Statement. */
     private Statement stmt;
@@ -73,7 +78,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(3);
+        startGrids(nodesCnt);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",
             String.class, Organization.class);
@@ -95,7 +100,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Connection conn = DriverManager.getConnection(URL);
+        Connection conn = DriverManager.getConnection(url);
 
         conn.setSchema("\"pers\"");
 

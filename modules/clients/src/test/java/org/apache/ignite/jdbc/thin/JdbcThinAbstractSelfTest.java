@@ -41,6 +41,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
+
+    /** Signals that tests should start in best effort affinity mode. */
+    public static boolean bestEffortAffinity;
+
     /**
      * @param r Runnable to check support.
      */
@@ -112,6 +116,7 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
      * @param params Connection parameters.
      * @return Thin JDBC connection to specified node.
      */
+    // TODO: 20.02.19
     protected Connection connect(IgniteEx node, String params) throws SQLException {
         Collection<GridPortRecord> recs = node.context().ports().records();
 

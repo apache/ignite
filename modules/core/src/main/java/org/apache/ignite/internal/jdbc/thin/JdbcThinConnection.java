@@ -107,7 +107,8 @@ public class JdbcThinConnection implements Connection {
 
     /** Best effort affinity enabled flag. */
     // TODO: 13.02.19 IGNITE-11309 JDBC Thin: add flag or property to disable best effort affinity
-    private static final boolean BEST_EFFORT_AFFINITY_ENABLED = true;
+    @SuppressWarnings("unused")
+    private static boolean bestEffortAffinity;
 
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
@@ -199,7 +200,7 @@ public class JdbcThinConnection implements Connection {
 
         HostAndPortRange[] srvs = connProps.getAddresses();
 
-        if (BEST_EFFORT_AFFINITY_ENABLED)
+        if (bestEffortAffinity)
             connectInBestEffortAffinityMode(srvs);
         else
             connectInCommonMode(srvs);
@@ -956,6 +957,8 @@ public class JdbcThinConnection implements Connection {
         for (JdbcThinTcpIo clioIo : nodeToConnMap.values())
             clioIo.close();
 
+        nodeToConnMap.clear();
+
         connected = false;
 
         if (streamState != null) {
@@ -1271,7 +1274,8 @@ public class JdbcThinConnection implements Connection {
                 for (InetAddress addr : addrs) {
                     for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
                         try {
-                            JdbcThinTcpIo cliIo = new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), 0);
+                            JdbcThinTcpIo cliIo = new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port),
+                                0);
 
                             nodeToConnMap.put(cliIo.nodeId(), cliIo);
 

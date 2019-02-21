@@ -34,14 +34,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
  * Base class for complex SQL tests based on JDBC driver.
  */
-public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
+public class JdbcThinComplexDmlDdlSelfTest extends JdbcThinAbstractSelfTest {
     /** Cache mode to test with. */
     private final CacheMode cacheMode = CacheMode.PARTITIONED;
 
@@ -53,6 +52,14 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
 
     /** Cities to use. */
     private static final List<String> CITIES = Arrays.asList("St. Petersburg", "Boston", "Berkeley", "London");
+
+    /** URL. */
+    private String url = bestEffortAffinity ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
+        "jdbc:ignite:thin://127.0.0.1";
+
+    /** Nodes count. */
+    private int nodesCnt = bestEffortAffinity ? 4 : 2;
 
     /** JDBC connection. */
     private Connection conn;
@@ -83,14 +90,14 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
      * @throws SQLException On error.
      */
     protected Connection createConnection() throws SQLException {
-        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1");
+        return DriverManager.getConnection(url);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(2);
+        startGridsMultiThreaded(nodesCnt);
     }
 
     /** {@inheritDoc} */

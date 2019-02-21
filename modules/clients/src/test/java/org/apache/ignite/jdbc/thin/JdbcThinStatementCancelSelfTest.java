@@ -56,7 +56,12 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
+    private String url = bestEffortAffinity ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
+        "jdbc:ignite:thin://127.0.0.1";
+
+    /** Nodes count. */
+    private int nodesCnt = bestEffortAffinity ? 4 : 3;
 
     /** A CSV file with one record. */
     private static final String BULKLOAD_20_000_LINE_CSV_FILE =
@@ -71,9 +76,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
 
     /** Cancellation processing timeout. */
     public static final int TIMEOUT = 5000;
-
-    /** Nodes count. */
-    private static final byte NODES_COUNT = 3;
 
     /** Timeout for checking async result. */
     public static final int CHECK_RESULT_TIMEOUT = 1_000;
@@ -115,7 +117,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(NODES_COUNT);
+        startGridsMultiThreaded(nodesCnt);
 
         for (int i = 0; i < MAX_ROWS; ++i)
             grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
@@ -133,7 +135,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     public void before() throws Exception {
         TestSQLFunctions.init();
 
-        conn = DriverManager.getConnection(URL);
+        conn = DriverManager.getConnection(url);
 
         conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
@@ -473,7 +475,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
 
         // Prepares connections and statemens in order to use them for filling thread pool with pseuso-infine quries.
         for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
-            Connection yaConn = DriverManager.getConnection(URL);
+            Connection yaConn = DriverManager.getConnection(url);
 
             yaConn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
@@ -541,7 +543,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
 
         // Prepares connections and statemens in order to use them for filling thread pool with pseuso-infine quries.
         for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
-            Connection yaConn = DriverManager.getConnection(URL);
+            Connection yaConn = DriverManager.getConnection(url);
 
             yaConn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 

@@ -42,10 +42,12 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     private static final String CACHE2_NAME = "cache2";
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+    private String url = bestEffortAffinity ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
+        "jdbc:ignite:thin://127.0.0.1";
 
     /** Grid count. */
-    private static final int GRID_CNT = 2;
+    private int nodesCnt = bestEffortAffinity ? 4 : 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -76,7 +78,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(GRID_CNT);
+        startGridsMultiThreaded(nodesCnt);
 
         Ignite ignite = ignite(0);
 
@@ -95,11 +97,11 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings({"EmptyTryBlock", "unused"})
     @Test
     public void testDefaults() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             // No-op.
         }
 
-        try (Connection conn = DriverManager.getConnection(URL + '/')) {
+        try (Connection conn = DriverManager.getConnection(url + '/')) {
             // No-op.
         }
     }
@@ -109,7 +111,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSchemaNameInQuery() throws Exception {
-        Connection conn = DriverManager.getConnection(URL);
+        Connection conn = DriverManager.getConnection(url);
 
         Statement stmt = conn.createStatement();
 
@@ -148,7 +150,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSchemaInUrl() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL + "/\"cache1\"")) {
+        try(Connection conn = DriverManager.getConnection(url + "/\"cache1\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val from Integer t");
@@ -159,7 +161,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
                 assertEquals(rs.getInt(2), rs.getInt(1) * 2);
         }
 
-        try(Connection conn = DriverManager.getConnection(URL + "/\"cache2\"")) {
+        try(Connection conn = DriverManager.getConnection(url + "/\"cache2\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val from Integer t");
@@ -176,7 +178,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSchemaInUrlAndInQuery() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL + "/\"cache2\"")) {
+        try(Connection conn = DriverManager.getConnection(url + "/\"cache2\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val, v._val " +
@@ -196,7 +198,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSetSchema() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL)) {
+        try(Connection conn = DriverManager.getConnection(url)) {
             // Try to execute query without set schema
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {

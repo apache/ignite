@@ -45,7 +45,12 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
     private static final String CACHE_NAME = "cache";
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/?autoCloseServerCursor=true";
+    private String url = bestEffortAffinity ?
+            "jdbc:ignite:thin://127.0.0.1:10800..10802/?autoCloseServerCursor=true" :
+            "jdbc:ignite:thin://127.0.0.1/?autoCloseServerCursor=true";
+
+    /** Nodes count. */
+    private int nodesCnt = bestEffortAffinity ? 4 : 3;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -69,7 +74,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(3);
+        startGridsMultiThreaded(nodesCnt);
     }
 
     /** {@inheritDoc} */
@@ -96,7 +101,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
         for (Person person: persons)
             cache.put(person.id, person);
 
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "select * from Person";
@@ -180,7 +185,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
      */
     @Test
     public void testInsert() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "insert into Person (_key, id, name, age) values (?, ?, ?, ?)";
@@ -216,7 +221,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
 
         cache.put(1, p);
 
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "update Person set age = age + 1";
@@ -242,7 +247,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
 
         cache.put(1, p);
 
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "delete Person where age = ?";

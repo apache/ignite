@@ -27,16 +27,23 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
  * Base class for complex SQL tests based on JDBC driver.
  */
-public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
+public class JdbcThinSelectAfterAlterTable extends JdbcThinAbstractSelfTest {
     /** Client connection port. */
     private int cliPort = ClientConnectorConfiguration.DFLT_PORT;
+
+    /** URL. */
+    private String url = bestEffortAffinity ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
+        "jdbc:ignite:thin://127.0.0.1";
+
+    /** Nodes count. */
+    private int nodesCnt = bestEffortAffinity ? 4 : 2;
 
     /** JDBC connection. */
     private Connection conn;
@@ -72,14 +79,14 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(2);
+        startGridsMultiThreaded(nodesCnt);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1");
+        conn = DriverManager.getConnection(url);
 
         stmt = conn.createStatement();
 
@@ -120,8 +127,9 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
      */
     @Test
     public void testSelectAfterAlterTableMultiNode() throws Exception {
-        try (Connection conn2 = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:"
-            + (ClientConnectorConfiguration.DFLT_PORT + 1))) {
+        try (Connection conn2 = DriverManager.getConnection(bestEffortAffinity ?
+            url :
+            "jdbc:ignite:thin://127.0.0.1:" + (ClientConnectorConfiguration.DFLT_PORT + 1))) {
 
             try (Statement stmt2 = conn2.createStatement()) {
                 stmt2.executeUpdate("alter table person add age int");

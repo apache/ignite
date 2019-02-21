@@ -48,7 +48,12 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
+    private String url = bestEffortAffinity ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
+        "jdbc:ignite:thin://127.0.0.1";
+
+    /** Nodes count. */
+    private int nodesCnt = bestEffortAffinity ? 4 : 3;
 
     /** Server thread pull size. */
     private static final int SERVER_THREAD_POOL_SIZE = 4;
@@ -89,7 +94,7 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(3);
+        startGridsMultiThreaded(nodesCnt);
 
         for (int i = 0; i < 10000; ++i)
             grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
@@ -105,7 +110,7 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Before
     public void before() throws Exception {
-        conn = DriverManager.getConnection(URL);
+        conn = DriverManager.getConnection(url);
 
         conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
