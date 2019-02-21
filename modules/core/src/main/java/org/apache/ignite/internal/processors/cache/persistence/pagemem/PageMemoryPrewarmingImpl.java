@@ -30,7 +30,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.PrewarmingConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -47,14 +47,17 @@ import org.apache.ignite.thread.IgniteThread;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.PART_ID_SIZE;
 
 /**
- * Default {@link PageMemoryWarmingUp} implementation.
+ * Default {@link PageMemoryPrewarming} implementation.
  */
-public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPagesTracker {
-    /** Warm up directory name. */
-    private static final String WARM_UP_DIR = "warm";
+public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPagesTracker {
+    /** Prewarming page IDs dump directory name. */
+    private static final String PREWARM_DUMP_DIR = "prewarm";
 
-    /** Data region configuration. */
-    private final DataRegionConfiguration dataRegCfg;
+    /** Data region name. */
+    private final String dataRegName;
+
+    /** Prewarming configuration. */
+    private final PrewarmingConfiguration prewarmCfg;
 
     /** Data region metrics. */
     private final DataRegionMetrics dataRegMetrics;
@@ -71,14 +74,14 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
     /** Page memory. */
     private volatile PageMemoryEx pageMem;
 
-    /** Warm up directory. */
-    private File warmUpDir;
+    /** Prewarming page IDs dump directory. */
+    private File dumpDir;
 
-    /** Warm up thread. */
-    private volatile Thread warmUpThread;
+    /** Prewarming thread. */
+    private volatile Thread prewarmThread;
 
-    /** Stop warming up flag. */
-    private volatile boolean stopWarmingUp;
+    /** Stop prewarming flag. */
+    private volatile boolean stopPrewarm;
 
     /** Dump worker. */
     private volatile LoadedPagesIdsDumpWorker dumpWorker;
@@ -90,23 +93,28 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
     private volatile boolean stopping;
 
     /**
-     * @param dataRegCfg Data region configuration.
+     * @param dataRegName Data region name.
+     * @param prewarmCfg Prewarming configuration.
      * @param dataRegMetrics Data region metrics.
      * @param ctx Cache shared context.
      */
-    public PageMemoryWarmingUpImpl(
-        DataRegionConfiguration dataRegCfg,
+    public PageMemoryPrewarmingImpl(
+        String dataRegName,
+        PrewarmingConfiguration prewarmCfg,
         DataRegionMetrics dataRegMetrics,
         GridCacheSharedContext<?, ?> ctx) {
-        assert dataRegCfg != null;
 
-        this.dataRegCfg = dataRegCfg;
+        this.dataRegName = dataRegName;
+
+        assert prewarmCfg != null;
+
+        this.prewarmCfg = prewarmCfg;
         this.dataRegMetrics = dataRegMetrics;
 
         assert ctx != null;
 
         this.ctx = ctx;
-        this.log = ctx.logger(PageMemoryWarmingUpImpl.class);
+        this.log = ctx.logger(PageMemoryPrewarmingImpl.class);
     }
 
     /** {@inheritDoc} */
@@ -118,22 +126,22 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
     @Override public void start() throws IgniteException {
         initDir();
 
-        if (dataRegCfg.isWaitWarmingUpOnStart()) {
-            warmUpThread = Thread.currentThread();
+        if (prewarmCfg.isWaitPrewarmingOnStart()) {
+            prewarmThread = Thread.currentThread();
 
             warmUp();
         }
         else {
-            warmUpThread = new IgniteThread(
+            prewarmThread = new IgniteThread(
                 ctx.igniteInstanceName(),
-                dataRegCfg.getName() + "-warm-up",
+                dataRegName + "-prewarm",
                 this::warmUp);
 
-            warmUpThread.setDaemon(true);
-            warmUpThread.start();
+            prewarmThread.setDaemon(true);
+            prewarmThread.start();
         }
 
-        if (dataRegCfg.getWarmingUpRuntimeDumpDelay() >= 0) {
+        if (prewarmCfg.getRuntimeDumpDelay() > PrewarmingConfiguration.RUNTIME_DUMP_DISABLED) {
             dumpWorker = new LoadedPagesIdsDumpWorker();
 
             new IgniteThread(dumpWorker).start();
@@ -145,10 +153,10 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
         stopping = true;
 
         try {
-            Thread warmUpThread = this.warmUpThread;
+            Thread prewarmThread = this.prewarmThread;
 
-            if (warmUpThread != null)
-                warmUpThread.join();
+            if (prewarmThread != null)
+                prewarmThread.join();
 
             if (dumpWorker != null) {
                 if (!loadedPagesDumpInProgress)
@@ -168,7 +176,7 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
     /** {@inheritDoc} */
     @Override public void onPageLoad(int grpId, long pageId) {
-        if (dataRegCfg.isWarmingUpIndexesOnly() &&
+        if (prewarmCfg.isIndexesOnly() &&
             PageIdUtils.partId(pageId) != PageIdAllocator.INDEX_PARTITION)
             return;
 
@@ -177,7 +185,7 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
     /** {@inheritDoc} */
     @Override public void onPageUnload(int grpId, long pageId) {
-        if (dataRegCfg.isWarmingUpIndexesOnly() &&
+        if (prewarmCfg.isIndexesOnly() &&
             PageIdUtils.partId(pageId) != PageIdAllocator.INDEX_PARTITION)
             return;
 
@@ -186,7 +194,7 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
     /** {@inheritDoc} */
     @Override public void onPageEvicted(int grpId, long pageId) {
-        stopWarmingUp = true;
+        stopPrewarm = true;
 
         onPageUnload(grpId, pageId);
     }
@@ -199,10 +207,10 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
         assert store instanceof FilePageStoreManager : "Invalid page store manager was created: " + store;
 
-        warmUpDir = Paths.get(((FilePageStoreManager)store).workDir().getAbsolutePath(), WARM_UP_DIR).toFile();
+        dumpDir = Paths.get(((FilePageStoreManager)store).workDir().getAbsolutePath(), PREWARM_DUMP_DIR).toFile();
 
-        if (!U.mkdirs(warmUpDir))
-            throw new IgniteException("Could not create directory for warming-up data: " + warmUpDir);
+        if (!U.mkdirs(dumpDir))
+            throw new IgniteException("Could not create directory for prewarming data: " + dumpDir);
     }
 
     /**
@@ -211,19 +219,19 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
     private void warmUp() {
         try {
             if (log.isInfoEnabled())
-                log.info("Starting warming-up of DataRegion[name=" + dataRegCfg.getName() + "]");
+                log.info("Start prewarming of DataRegion [name=" + dataRegName + "]");
 
-            File[] segFiles = warmUpDir.listFiles(Segment.FILE_FILTER);
+            File[] segFiles = dumpDir.listFiles(Segment.FILE_FILTER);
 
             if (segFiles == null) {
                 if (log.isInfoEnabled())
-                    log.info("Saved warming-up files not found!");
+                    log.info("Saved prewarming dump files not found!");
 
                 return;
             }
 
             if (log.isInfoEnabled())
-                log.info("Saved warming-up files found: " + segFiles.length);
+                log.info("Saved prewarming dump files found: " + segFiles.length);
 
             int pagesWarmed = 0;
 
@@ -234,14 +242,14 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
                 boolean del = true;
 
                 try {
-                    if (stopping || stopWarmingUp)
+                    if (stopping || stopPrewarm)
                         continue;
 
                     int partId = Integer.parseInt(segFile.getName().substring(
                         Segment.GRP_ID_PREFIX_LENGTH,
                         Segment.FILE_NAME_LENGTH), 16);
 
-                    if (dataRegCfg.isWarmingUpIndexesOnly() && partId != PageIdAllocator.INDEX_PARTITION)
+                    if (prewarmCfg.isIndexesOnly() && partId != PageIdAllocator.INDEX_PARTITION)
                         continue;
 
                     int grpId = (int)Long.parseLong(segFile.getName().substring(0, Segment.GRP_ID_PREFIX_LENGTH), 16);
@@ -253,7 +261,7 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
                     del = false;
 
                     for (int pageIdx : pageIdxArr) {
-                        if (stopping || stopWarmingUp) {
+                        if (stopping || stopPrewarm) {
                             del = true;
 
                             break;
@@ -278,23 +286,23 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
                     }
                 }
                 catch (IOException | NumberFormatException e) {
-                    U.error(log, "Failed to read warming-up file: " + segFile.getName(), e);
+                    U.error(log, "Failed to read prewarming dump file: " + segFile.getName(), e);
                 }
                 finally {
                     if (del && !segFile.delete())
-                        U.warn(log, "Failed to delete warming-up file: " + segFile.getName());
+                        U.warn(log, "Failed to delete prewarming dump file: " + segFile.getName());
                 }
             }
 
             long warmingUpTime = U.currentTimeMillis() - startTs;
 
             if (log.isInfoEnabled()) {
-                log.info("Warming-up of DataRegion[name=" + dataRegCfg.getName() + "] finished in " +
+                log.info("Prewarming of DataRegion [name=" + dataRegName + "] finished in " +
                     warmingUpTime + " ms, pages warmed: " + pagesWarmed);
             }
         }
         finally {
-            warmUpThread = null;
+            prewarmThread = null;
         }
     }
 
@@ -302,9 +310,9 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
      * @param onStopping On stopping.
      */
     private void dumpLoadedPagesIds(boolean onStopping) {
-        if (warmUpThread != null) {
+        if (prewarmThread != null) {
             if (onStopping)
-                U.warn(log, "Attempt dump of loaded pages IDs on stopping while warming-up process is running!");
+                U.warn(log, "Attempt dump of loaded pages IDs on stopping while prewarming process is running!");
 
             return;
         }
@@ -316,14 +324,14 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
                 return;
 
             if (log.isInfoEnabled())
-                log.info("Starting dump of loaded pages IDs of DataRegion[name=" + dataRegCfg.getName() + "]");
+                log.info("Starting dump of loaded pages IDs of DataRegion [name=" + dataRegName + "]");
 
             final ConcurrentMap<Long, Segment> updated = new ConcurrentHashMap<>();
 
             long startTs = U.currentTimeMillis();
 
             pageMem.forEachAsync((fullId, val) -> {
-                if (dataRegCfg.isWarmingUpIndexesOnly() &&
+                if (prewarmCfg.isIndexesOnly() &&
                     PageIdUtils.partId(fullId.pageId()) != PageIdAllocator.INDEX_PARTITION)
                     return;
 
@@ -358,12 +366,12 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
             long dumpTime = U.currentTimeMillis() - startTs;
 
             if (log.isInfoEnabled()) {
-                log.info("Dump of loaded pages IDs of DataRegion[name=" + dataRegCfg.getName() + "] finished in " +
+                log.info("Dump of loaded pages IDs of DataRegion [name=" + dataRegName + "] finished in " +
                     dumpTime + " ms, segments updated: " + segUpdated);
             }
         }
         catch (IgniteCheckedException e) {
-            U.warn(log, "Dump of loaded pages IDs for DataRegion[name=" + dataRegCfg.getName() + "] failed", e);
+            U.warn(log, "Dump of loaded pages IDs for DataRegion [name=" + dataRegName + "] failed", e);
         }
         finally {
             loadedPagesDumpInProgress = false;
@@ -404,11 +412,11 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
         seg.pageIdxArr = null;
 
-        File segFile = new File(warmUpDir, seg.fileName());
+        File segFile = new File(dumpDir, seg.fileName());
 
         if (pageIdxArr.length == 0) {
             if (!segFile.delete())
-                U.warn(log, "Failed to delete warming-up file: " + segFile.getName());
+                U.warn(log, "Failed to delete prewarming dump file: " + segFile.getName());
 
             return;
         }
@@ -573,13 +581,13 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
          * Default constructor.
          */
         LoadedPagesIdsDumpWorker() {
-            super(ctx.igniteInstanceName(), dataRegCfg.getName() + NAME_SUFFIX, PageMemoryWarmingUpImpl.this.log);
+            super(ctx.igniteInstanceName(), dataRegName + NAME_SUFFIX, PageMemoryPrewarmingImpl.this.log);
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!stopping && !isCancelled()) {
-                Thread.sleep(dataRegCfg.getWarmingUpRuntimeDumpDelay());
+                Thread.sleep(prewarmCfg.getRuntimeDumpDelay());
 
                 if (stopping)
                     break;

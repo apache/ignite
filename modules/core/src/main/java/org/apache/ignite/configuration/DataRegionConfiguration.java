@@ -19,7 +19,6 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryWarmingUp;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
@@ -131,20 +130,11 @@ public final class DataRegionConfiguration implements Serializable {
      */
     private boolean persistenceEnabled = false;
 
-    /** Flag to enable warming up. */
-    private boolean warmingUpEnabled = false;
-
-    /** Warming up indexes only flag. */
-    private boolean warmingUpIndexesOnly = false;
-
-    /** Wait warming up on start flag. */
-    private boolean waitWarmingUpOnStart = false;
-
-    /** Warming up runtime dump delay. */
-    private long warmingUpRuntimeDumpDelay = -1;
-
     /** Temporary buffer size for checkpoints in bytes. */
     private long checkpointPageBufSize;
+
+    /** Prewarming configuration. */
+    private PrewarmingConfiguration prewarmCfg;
 
     /**
      * Gets data region name.
@@ -359,88 +349,23 @@ public final class DataRegionConfiguration implements Serializable {
     }
 
     /**
-     * If enabled, list of loaded page IDs will be saved on node stop,
-     * and on the next node start pages will be loaded in memory again.
+     * If set, IDs of pages loaded in memory will be saved on node stop,
+     * and on the next start of node pages will be loaded in memory again.
      *
-     * @return Warming up enabled flag.
+     * @return Prewarming configuration.
      */
-    public boolean isWarmingUpEnabled() {
-        return warmingUpEnabled;
+    public PrewarmingConfiguration getPrewarmingConfiguration() {
+        return prewarmCfg;
     }
 
     /**
-     * Sets warming up enabled flag.
+     * Sets prewarming configuration.
      *
-     * @param warmingUpEnabled Warming up enabled flag.
+     * @param prewarmCfg Prewarming configuration.
      * @return {@code this} for chaining.
      */
-    public DataRegionConfiguration setWarmingUpEnabled(boolean warmingUpEnabled) {
-        this.warmingUpEnabled = warmingUpEnabled;
-
-        return this;
-    }
-
-    /**
-     * If enabled, only index partitions will be tracked and warmed up.
-     *
-     * @return Warming up indexes only flag.
-     */
-    public boolean isWarmingUpIndexesOnly() {
-        return warmingUpIndexesOnly;
-    }
-
-    /**
-     * Sets warming up indexes only flag.
-     *
-     * @param warmingUpIndexesOnly Warming up indexes only flag.
-     * @return {@code this} for chaining.
-     */
-    public DataRegionConfiguration setWarmingUpIndexesOnly(boolean warmingUpIndexesOnly) {
-        this.warmingUpIndexesOnly = warmingUpIndexesOnly;
-
-        return this;
-    }
-
-    /**
-     * If enabled, starting of page memory for this data region will wait for finishing of warming up process.
-     *
-     * @return Wait warming up on start flag.
-     */
-    public boolean isWaitWarmingUpOnStart() {
-        return waitWarmingUpOnStart;
-    }
-
-    /**
-     * Sets wait warming up on start flag.
-     *
-     * @param waitWarmingUpOnStart Wait warming up on start flag.
-     * @return {@code this} for chaining.
-     */
-    public DataRegionConfiguration setWaitWarmingUpOnStart(boolean waitWarmingUpOnStart) {
-        this.waitWarmingUpOnStart = waitWarmingUpOnStart;
-
-        return this;
-    }
-
-    /**
-     * Sets warming up runtime dump delay.
-     * Value {@code -1} (default) means that runtime dumps will be disabled and {@link PageMemoryWarmingUp}
-     * implementation will dump ids of loaded pages only on node stop.
-     *
-     * @return Warming up runtime dump delay.
-     */
-    public long getWarmingUpRuntimeDumpDelay() {
-        return warmingUpRuntimeDumpDelay;
-    }
-
-    /**
-     * Sets warming up runtime dump delay.
-     *
-     * @param warmingUpRuntimeDumpDelay Warming up runtime dump delay.
-     * @return {@code this} for chaining.
-     */
-    public DataRegionConfiguration setWarmingUpRuntimeDumpDelay(long warmingUpRuntimeDumpDelay) {
-        this.warmingUpRuntimeDumpDelay = warmingUpRuntimeDumpDelay;
+    public DataRegionConfiguration setPrewarmingConfiguration(PrewarmingConfiguration prewarmCfg) {
+        this.prewarmCfg = prewarmCfg;
 
         return this;
     }
