@@ -2248,63 +2248,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         void add(TcpDiscoveryAbstractMessage msg) {
             assert spi.ensured(msg) && msg.verified() : msg;
 
-            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                TcpDiscoveryNodeAddedMessage addedMsg =
-                    new TcpDiscoveryNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
-
-                msg = addedMsg;
-
-                TcpDiscoveryNode node = addedMsg.node();
-
-                if (node.clientRouterNodeId() != null && !msgs.contains(msg)) {
-                    Collection<TcpDiscoveryNode> allNodes = ring.allNodes();
-
-                    Collection<TcpDiscoveryNode> top = new ArrayList<>(allNodes.size());
-
-                    for (TcpDiscoveryNode n0 : allNodes) {
-                        assert n0.internalOrder() > 0 : n0;
-
-                        if (n0.internalOrder() < node.internalOrder())
-                            top.add(n0);
-                    }
-
-                    addedMsg.clientTopology(top);
-                }
-
-                // Do not need this data for client reconnect.
-                if (addedMsg.gridDiscoveryData() != null)
-                    addedMsg.clearDiscoveryData();
-            }
-            else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
-
-                if (addFinishMsg.clientDiscoData() != null) {
-                    addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
-
-                    msg = addFinishMsg;
-
-                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
-
-                    Set<Integer> mrgdCmnData = new HashSet<>();
-                    Set<UUID> mrgdSpecData = new HashSet<>();
-
-                    boolean allMerged = false;
-
-                    for (TcpDiscoveryAbstractMessage msg0 : msgs) {
-
-                        if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                            DiscoveryDataPacket existingDiscoData =
-                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
-
-                            if (existingDiscoData != null)
-                                allMerged = discoData.mergeDataFrom(existingDiscoData, mrgdCmnData, mrgdSpecData);
-                        }
-
-                        if (allMerged)
-                            break;
-                    }
-                }
-            }
+            if (msg instanceof TcpDiscoveryNodeAddedMessage)
+                msg = processNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
+            else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage)
+                msg = processNodeAddFinishedMessage((TcpDiscoveryNodeAddFinishedMessage)msg);
             else if (msg instanceof TcpDiscoveryNodeLeftMessage)
                 clearClientAddFinished(msg.creatorNodeId());
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
@@ -2314,6 +2261,61 @@ class ServerImpl extends TcpDiscoveryImpl {
                 msgs.add(msg);
             }
         }
+
+        private TcpDiscoveryAbstractMessage processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
+            TcpDiscoveryNodeAddedMessage addedMsg =
+                new TcpDiscoveryNodeAddedMessage(msg);
+
+            TcpDiscoveryNode node = addedMsg.node();
+
+            if (node.clientRouterNodeId() != null && !msgs.contains(msg)) {
+                Collection<TcpDiscoveryNode> allNodes = ring.allNodes();
+
+                Collection<TcpDiscoveryNode> top = new ArrayList<>(allNodes.size());
+
+                for (TcpDiscoveryNode n0 : allNodes) {
+                    assert n0.internalOrder() > 0 : n0;
+
+                    if (n0.internalOrder() < node.internalOrder())
+                        top.add(n0);
+                }
+
+                addedMsg.clientTopology(top);
+            }
+
+            // Do not need this data for client reconnect.
+            if (addedMsg.gridDiscoveryData() != null)
+                addedMsg.clearDiscoveryData();
+
+            return addedMsg;
+        }
+
+        private TcpDiscoveryAbstractMessage processNodeAddFinishedMessage(TcpDiscoveryNodeAddFinishedMessage msg) {
+            if (msg.clientDiscoData() == null)
+                return msg;
+
+            TcpDiscoveryNodeAddFinishedMessage addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(msg);
+
+            DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
+
+            Set<Integer> mrgdCmnData = new HashSet<>();
+            Set<UUID> mrgdSpecData = new HashSet<>();
+
+            for (TcpDiscoveryAbstractMessage msg0 : msgs) {
+                if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
+                    DiscoveryDataPacket existingDiscoData =
+                        ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
+
+                    if (existingDiscoData != null) {
+                        if (discoData.mergeDataFrom(existingDiscoData, mrgdCmnData, mrgdSpecData))
+                            break;
+                    }
+                }
+            }
+
+            return addFinishMsg;
+        }
+
 
         /**
          * @param clientId Client node ID.
