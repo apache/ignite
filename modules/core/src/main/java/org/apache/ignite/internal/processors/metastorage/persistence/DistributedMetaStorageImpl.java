@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -484,7 +485,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             hist
         );
 
-        dataBag.addJoiningNodeData(COMPONENT_ID, data);
+        try {
+            dataBag.addJoiningNodeData(COMPONENT_ID, JdkMarshaller.DEFAULT.marshal(data));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Returns current baseline topology id of {@code -1} if there's no baseline topology found. */
@@ -521,8 +527,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (!isPersistenceEnabled(ctx.config()))
                 return null;
 
-            DistributedMetaStorageJoiningNodeData joiningData =
-                (DistributedMetaStorageJoiningNodeData)discoData.joiningNodeData();
+            DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
+
+            if (joiningData == null)
+                return null;
 
             DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
@@ -619,8 +627,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!discoData.hasJoiningNodeData())
             return;
 
-        DistributedMetaStorageJoiningNodeData joiningData =
-            (DistributedMetaStorageJoiningNodeData)discoData.joiningNodeData();
+        DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
+
+        if (joiningData == null)
+            return;
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
@@ -664,8 +674,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!isSupported())
             return;
 
-        DistributedMetaStorageJoiningNodeData joiningData =
-            (DistributedMetaStorageJoiningNodeData)discoData.joiningNodeData();
+        DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
+
+        if (joiningData == null)
+            return;
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
@@ -734,6 +746,24 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     }
                 }
             }
+        }
+    }
+
+    /** */
+    @Nullable private DistributedMetaStorageJoiningNodeData getJoiningNodeData(
+        DiscoveryDataBag.JoiningNodeDiscoveryData discoData
+    ) {
+        byte[] data = (byte[])discoData.joiningNodeData();
+
+        assert data != null;
+
+        try {
+            return JdkMarshaller.DEFAULT.unmarshal(data, U.gridClassLoader());
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Unable to unmarshal joinging node data for distributed metastorage component.", e);
+
+            return null;
         }
     }
 
