@@ -95,9 +95,6 @@ namespace ignite
                             break;
                         }
                     }
-
-                    if (!channels.empty())
-                        break;
                 }
 
                 if (channels.empty())

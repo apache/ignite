@@ -47,7 +47,7 @@ namespace ignite
 
             int64_t IgniteNode::Compare(const IgniteNode& other) const
             {
-                if (HasGuid() && other.HasGuid())
+                if (IsLegacy() && other.IsLegacy())
                     return guid.Compare(other.guid);
 
                 return endPoint.Compare(other.endPoint);

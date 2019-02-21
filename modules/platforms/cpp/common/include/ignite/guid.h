@@ -193,11 +193,12 @@ namespace ignite
         uint16_t part4 = static_cast<uint16_t>(guid.GetLeastSignificantBits() >> 48);
         uint64_t part5 = guid.GetLeastSignificantBits() & 0x0000FFFFFFFFFFFFULL;
 
-        os  << std::setfill<C>('0') << std::setw(8)  << std::hex << part1 << '-'
-            << std::setfill<C>('0') << std::setw(4)  << std::hex << part2 << '-'
-            << std::setfill<C>('0') << std::setw(4)  << std::hex << part3 << '-'
-            << std::setfill<C>('0') << std::setw(4)  << std::hex << part4 << '-'
-            << std::setfill<C>('0') << std::setw(12) << std::hex << part5;
+        os  << std::hex 
+            << std::setfill<C>('0') << std::setw(8)  << part1 << '-'
+            << std::setfill<C>('0') << std::setw(4)  << part2 << '-'
+            << std::setfill<C>('0') << std::setw(4)  << part3 << '-'
+            << std::setfill<C>('0') << std::setw(4)  << part4 << '-'
+            << std::setfill<C>('0') << std::setw(12) << part5 << std::dec;
 
         return os;
     }

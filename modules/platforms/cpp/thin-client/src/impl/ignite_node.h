@@ -118,6 +118,14 @@ namespace ignite
                 }
 
                 /**
+                 * Check if the guid is set for the instance.
+                 */
+                bool IsLegacy() const
+                {
+                    return guid.GetMostSignificantBits() != 0 || guid.GetLeastSignificantBits() != 0;
+                }
+
+                /**
                  * Compare to another value.
                  *
                  * @param other Instance to compare to.
@@ -180,14 +188,6 @@ namespace ignite
                 friend bool IGNITE_IMPORT_EXPORT operator>=(const IgniteNode& val1, const IgniteNode& val2);
 
             private:
-                /**
-                 * Check if the guid is set for the instance.
-                 */
-                bool HasGuid() const
-                {
-                    return guid.GetMostSignificantBits() != 0 || guid.GetLeastSignificantBits() != 0;
-                }
-
                 /** Address. */
                 network::EndPoint endPoint;
 

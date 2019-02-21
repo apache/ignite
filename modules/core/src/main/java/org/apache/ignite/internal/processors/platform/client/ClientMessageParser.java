@@ -353,12 +353,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_CACHE_DESTROY:
                 return new ClientCacheDestroyRequest(reader);
 
-            case OP_CACHE_NODE_PARTITIONS: {
-                if (ver.compareTo(VER_1_3_0) >= 0)
-                    break;
-
+            case OP_CACHE_NODE_PARTITIONS:
                 return new ClientCacheNodePartitionsRequest(reader);
-            }
 
             case OP_CACHE_PARTITIONS:
                 return new ClientCachePartitionsRequest(reader);

@@ -21,7 +21,9 @@
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
+#include "impl/affinity_topology_version.h"
 #include "impl/response_status.h"
+#include "impl/data_channel.h"
 #include "impl/message.h"
 
 namespace ignite
@@ -30,6 +32,21 @@ namespace ignite
     {
         namespace thin
         {
+            /**
+             * Message flags.
+             */
+            struct Flag
+            {
+                enum Type
+                {
+                    /** Failure flag. */
+                    FAILURE = 1,
+
+                    /** Affinity topology change flag. */
+                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1,
+                };
+            };
+
             GetOrCreateCacheWithNameRequest::GetOrCreateCacheWithNameRequest(const std::string& name) :
                 name(name)
             {
@@ -65,6 +82,27 @@ namespace ignite
 
             void Response::Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver)
             {
+                if (ver >= DataChannel::VERSION_1_3_0)
+                {
+                    int16_t flags = reader.ReadInt16();
+
+                    if (flags & Flag::AFFINITY_TOPOLOGY_CHANGED)
+                    {
+                        AffinityTopologyVersion topVer;
+
+                        topVer.Read(reader);
+                    }
+
+                    if (!(flags & Flag::FAILURE))
+                    {
+                        status = ResponseStatus::SUCCESS;
+
+                        ReadOnSuccess(reader, ver);
+
+                        return;
+                    }
+                }
+
                 status = reader.ReadInt32();
 
                 if (status == ResponseStatus::SUCCESS)

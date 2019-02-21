@@ -154,6 +154,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ignite_client.cpp" />
+    <ClCompile Include="..\..\src\impl\affinity_topology_version.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_affinity_info.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_proxy.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h" />
     <ClInclude Include="..\..\include\ignite\thin\ssl_mode.h" />
+    <ClInclude Include="..\..\src\impl\affinity_topology_version.h" />
     <ClInclude Include="..\..\src\impl\cache\cache_affinity_info.h" />
     <ClInclude Include="..\..\src\impl\cache\cache_client_impl.h" />
     <ClInclude Include="..\..\src\impl\connectable_node_partitions.h" />

@@ -816,7 +816,7 @@ BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCacheThreeNodes)
     StartNode("node2");
 
     IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110..11120");
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -833,7 +833,7 @@ BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCacheThreeNodes)
         int64_t val;
         LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
 
-        BOOST_CHECK_EQUAL(val, i * 5039);
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
     }
 }
 
