@@ -2574,17 +2574,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (idx == null)
             return;
 
-
-            QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
-                cctx.cacheObjectContext(),
-                row.key(),
-                row.value(),
-                false);
+        QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
+            cctx.cacheObjectContext(),
+            row.key(),
+            row.value(),
+            false);
 
         if (desc == null)
             return;
 
-                idx.remove(cctx, desc, row);
+        idx.remove(cctx, desc, row);
     }
 
     /**
