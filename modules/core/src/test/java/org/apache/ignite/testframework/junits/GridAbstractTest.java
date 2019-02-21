@@ -42,8 +42,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.Ignite;
@@ -176,8 +174,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    /** Manages first and last test execution. */
-    @ClassRule public static final TestRule firstLastTestRule = new GridClassRule();
+    /** Sustains {@link #beforeTestsStarted()} and {@link #afterTestsStopped()} methods execution.*/
+    @ClassRule public static final TestRule firstLastTestRule = new BeforeFirstAndAfterLastTestRule();
 
     /** Manages test execution and reporting. */
     @Rule public transient TestRule runRule = (base, desc) -> new Statement() {
@@ -2538,41 +2536,22 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /**
-     *  Runs test classes sequentially, in order to prevent corruption of static members of {@link GridAbstractTest}.
-     *  <p>
-     *  Also calls {@link #beforeFirstTest()} and {@link #afterLastTest()} methods.
+     *  Calls {@link #beforeFirstTest()} and {@link #afterLastTest()} methods
+     *  in order to support {@link #beforeTestsStarted()} and {@link #afterTestsStopped()}.
      */
-    private static class GridClassRule implements TestRule {
-        /** */
-        private static final Lock runSerializer = new ReentrantLock();
-
+    private static class BeforeFirstAndAfterLastTestRule implements TestRule {
         /** {@inheritDoc} */
-        @Override public Statement apply(Statement base, Description description) {
+        @Override public Statement apply(Statement base, Description desc) {
             return new Statement() {
                 @Override public void evaluate() throws Throwable {
-                    runTestClass(base, description.getTestClass());
+                    evaluateInsideInstanceFixture(base, desc);
                 }
             };
         }
 
         /** */
-        private static void runTestClass(Statement base, Class<?> cls) throws Throwable {
-//            boolean locked = runSerializer.tryLock(5, TimeUnit.MINUTES);
-//
-//            if (!locked)
-//                throw new RuntimeException("Failed to acquire test execution lock");
-
-            try {
-                evaluateInsideLegacyFixture(base, cls);
-            }
-            finally {
-//                runSerializer.unlock();
-            }
-        }
-
-        /** */
-        private static void evaluateInsideLegacyFixture(Statement base, Class<?> cls) throws Throwable {
-            GridAbstractTest fixtureInstance = (GridAbstractTest)cls.newInstance();
+        private static void evaluateInsideInstanceFixture(Statement base, Description desc) throws Throwable {
+            GridAbstractTest fixtureInstance = (GridAbstractTest)desc.getTestClass().newInstance();
 
             try {
                 fixtureInstance.beforeFirstTest();
