@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -78,6 +79,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -114,12 +116,24 @@ import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
  */
 public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
+    private static final String NODE_WITH_PORT_ID_0 = "node0-47500";
+
+    /** */
+    private static final String NODE_WITH_PORT_ID_1 = "node1-47501";
+
+    /** */
+    private static final String NODE_WITH_PORT_ID_2 = "node2-47502";
+
+    /** */
+    private static final String NODE_WITH_PORT_ID_3 = "node3-47503";
+
+    /** */
     private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private Map<String, TcpDiscoverySpi> discoMap = new HashMap<>();
 
-    /** */
+    /** If not null this ID is used as nodeID. */
     private UUID nodeId;
 
     /** */
@@ -137,8 +151,92 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private SegmentationPolicy segPlc;
 
+    /** ID to be used as a nodeID for failed node. */
+    private UUID failedNodeId = UUID.randomUUID();
+
     /** */
-    private UUID failingNodeId = UUID.randomUUID();
+    private boolean usePortFromNodeName;
+
+    /** */
+    private TcpDiscoverySpi specialSpi;
+
+    /** */
+    private TcpDiscoveryIpFinder specialIpFinder;
+
+    /** Discovery SPI aimed to fail node with it when another server node joins the topology. */
+    private TcpDiscoverySpi failingNodeOnNodeJoinSpi = new TcpDiscoverySpi() {
+        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
+                UUID nodeId = ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId();
+
+                if (nodeId.equals(failedNodeId)) {
+                    Object workerObj = GridTestUtils.getFieldValue(impl, "msgWorker");
+
+                    OutputStream out = GridTestUtils.getFieldValue(workerObj, "out");
+
+                    try {
+                        out.close();
+                    }
+                    catch (Exception ignored) {
+                        // No-op.
+                    }
+
+                    return;
+                }
+            }
+
+            super.startMessageProcess(msg);
+        }
+    };
+
+    /** */
+    private TcpDiscoverySpi node1SpecialSpi = new TcpDiscoverySpi() {
+        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                UUID nodeId = ((TcpDiscoveryNodeAddedMessage)msg).node().id();
+
+                if (nodeId.equals(failedNodeId)/* && !startRequestSent*/)
+                    try {
+                        GridTestUtils.runAsync(() -> startGrid(NODE_WITH_PORT_ID_3));
+                    }
+                    catch (Exception ignored) {
+                        // No-op.
+                    }
+            }
+
+            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
+                UUID nodeId = ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId();
+
+                if (nodeId.equals(failedNodeId)) {
+                    Object workerObj = GridTestUtils.getFieldValue(impl, "msgWorker");
+
+                    OutputStream out = GridTestUtils.getFieldValue(workerObj, "out");
+
+                    try {
+                        out.close();
+                    }
+                    catch (Exception ignored) {
+                        // No-op.
+                    }
+
+                    return;
+                }
+            }
+
+            if (msg instanceof TcpDiscoveryNodeFailedMessage) {
+                try {
+                    GridTestUtils.runAsync(() -> stopGrid(NODE_WITH_PORT_ID_0));
+                }
+                catch (Exception ignored) {
+                    // No-op.
+                }
+
+                throw new RuntimeException("Node01 shutdown exception");
+            }
+
+            super.startMessageProcess(msg);
+        }
+    };
 
     /**
      * @throws Exception If fails.
@@ -162,12 +260,18 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         else
             nodeSpi.set(null);
 
-        if (igniteInstanceName.equals("node01"))
-            spi = failingOnNodeJoinSpi;
+        if (specialSpi != null)
+            spi = specialSpi;
 
         discoMap.put(igniteInstanceName, spi);
 
-        spi.setIpFinder(ipFinder);
+        if (usePortFromNodeName)
+            spi.setLocalPort(Integer.parseInt(igniteInstanceName.split("-")[1]));
+
+        if (specialIpFinder != null && igniteInstanceName.equals(NODE_WITH_PORT_ID_2))
+            spi.setIpFinder(specialIpFinder);
+        else
+            spi.setIpFinder(ipFinder);
 
         spi.setNetworkTimeout(2500);
 
@@ -207,7 +311,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(null);
 
-        if (nodeId != null)
+        if (nodeId != null && igniteInstanceName.equals(NODE_WITH_PORT_ID_2))
             cfg.setNodeId(nodeId);
 
         if (igniteInstanceName.contains("NonSharedIpFinder")) {
@@ -253,41 +357,67 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** Discovery SPI aimed to fail node with it when another server node joins the topology. */
-    private TcpDiscoverySpi failingOnNodeJoinSpi = new TcpDiscoverySpi() {
-        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                UUID nodeId = ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId();
-
-                if (nodeId.equals(failingNodeId)) {
-                    Object workerObj = GridTestUtils.getFieldValue(impl, "msgWorker");
-
-                    OutputStream out = GridTestUtils.getFieldValue(workerObj, "out");
-
-                    try {
-                        out.close();
-                    }
-                    catch (Exception ignored) {
-                        // No-op.
-                    }
-
-                    return;
-                }
-            }
-
-            super.startMessageProcess(msg);
-        }
-    };
-
+    /**
+     * Scenario: two server nodes in stable topology, n1 -> n0.
+     *
+     * During node n2 join join request is handled successfully, NodeAdded message finishes pass across the ring,
+     * NodeAddFinished message is generated.
+     *
+     * Right before delivering finished message to n2 glitch happens, n0 and n1 think that n2 has failed,
+     * but n2 tries to send join request again (with the same nodeID).
+     *
+     * It is expected that n2 repeated join request doesn't pass validation and n2 shuts down automatically.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void testNodeTreatedAsFailed() throws Exception {
-        IgniteEx ig0 = startGrid("node00");
+    public void testServerRejoinAfterNetworkGlitchIsProhibited() throws Exception {
+        startGrid(NODE_WITH_PORT_ID_0);
 
-        IgniteEx ig1 = startGrid("node01");
+        specialSpi = failingNodeOnNodeJoinSpi;
 
-        nodeId = failingNodeId;
+        startGrid(NODE_WITH_PORT_ID_1);
 
-        IgniteEx ig2 = startGrid("node02");
+        nodeId = failedNodeId;
+
+        boolean exceptionThrown = false;
+        try {
+            startGrid(NODE_WITH_PORT_ID_2);
+        }
+        catch (IgniteCheckedException e) {
+            //TODO add asserts here
+            exceptionThrown = true;
+        }
+
+        assertTrue("Expected IgniteSpiException was not thrown", exceptionThrown);
+    }
+
+    /**
+     * //TODO write meaningful comment decribing the test.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNodeIdsHistorySpreading() throws Exception {
+        usePortFromNodeName = true;
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "false");
+
+        startGrid(NODE_WITH_PORT_ID_0);
+
+        specialSpi = node1SpecialSpi;
+
+        startGrid(NODE_WITH_PORT_ID_1);
+
+        specialSpi = null;
+
+        nodeId = failedNodeId;
+
+        specialIpFinder = new TcpDiscoveryVmIpFinder(false);
+
+        ((TcpDiscoveryVmIpFinder)specialIpFinder).setAddresses(Arrays.asList("127.0.0.1:47500", "127.0.0.1:47503"));
+
+        startGrid(NODE_WITH_PORT_ID_2);
     }
 
     /** {@inheritDoc} */
