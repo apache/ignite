@@ -128,6 +128,8 @@ public class KillQueryTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        cntr = 0;
+
         startGrids(NODES_COUNT);
 
         for (int i = 0; i < MAX_ROWS; ++i) {
@@ -487,6 +489,8 @@ public class KillQueryTest extends GridCommonAbstractTest {
                         }
                     ));
                 }
+
+                doSleep(500);
 
                 assertEquals(expQryNum, runningQueries.size());
 
