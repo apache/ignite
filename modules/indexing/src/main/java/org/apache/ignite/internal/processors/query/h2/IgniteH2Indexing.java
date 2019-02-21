@@ -458,9 +458,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         GridNearTxLocal tx = null;
 
-        boolean mvccEnabled = mvccEnabled(kernalContext());
-
-        assert mvccEnabled || mvccTracker == null;
+        boolean mvccEnabled = false;
 
         try {
             SqlFieldsQuery fieldsQry = new SqlFieldsQuery(qry)
@@ -497,6 +495,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             boolean forUpdate = select.forUpdate();
 
+            // select.mvccEnabled() may be false in case of select from GridSqlFunctionType.TABLE.
+            mvccEnabled = select.mvccEnabled() || mvccTracker != null;
+
+            assert !mvccEnabled || mvccEnabled(kernalContext());
+
             if (forUpdate && !mvccEnabled)
                 throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
                     "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -508,7 +511,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     Integer mvccCacheId = select.mvccCacheId();
 
                     if (mvccCacheId != null) {
-                        GridCacheContext mvccCacheCtx = ctx.cache().context().cacheContext(select.mvccCacheId());
+                        GridCacheContext mvccCacheCtx = ctx.cache().context().cacheContext(mvccCacheId);
 
                         if (mvccCacheCtx == null)
                             throw new IgniteCheckedException("Cache has been stopped concurrently [cacheId=" +

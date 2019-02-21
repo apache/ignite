@@ -94,7 +94,7 @@ public class CacheMvccSelectForUpdateQueryBasicTest  extends CacheMvccAbstractTe
             { REPLICATED,       0,      false,      false},
             { PARTITIONED,      0,      true,       false},
             { PARTITIONED,      0,      false,      true},
-            { PARTITIONED,      1,      false,      true},
+            { PARTITIONED,      1,      true,       true},
             { PARTITIONED,      1,      false,      false},
             { PARTITIONED,      2,      true,       false},
         });
