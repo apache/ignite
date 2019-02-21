@@ -224,6 +224,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.BetweenOperationEx
 import org.apache.ignite.internal.processors.query.h2.twostep.DmlSelectPartitionPruningSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.InOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.JoinPartitionPruningSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.MvccDmlPartitionPruningSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.SqlDataTypeConversionTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalColumnConstraintsTest;
@@ -541,6 +542,7 @@ import org.junit.runners.Suite;
     BetweenOperationExtractPartitionSelfTest.class,
     JoinPartitionPruningSelfTest.class,
     DmlSelectPartitionPruningSelfTest.class,
+    MvccDmlPartitionPruningSelfTest.class,
 
     GridCacheDynamicLoadOnClientTest.class,
     GridCacheDynamicLoadOnClientPersistentTest.class,
