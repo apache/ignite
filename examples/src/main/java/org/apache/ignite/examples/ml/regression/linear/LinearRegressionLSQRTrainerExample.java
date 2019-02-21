@@ -18,15 +18,15 @@
 package org.apache.ignite.examples.ml.regression.linear;
 
 import java.io.FileNotFoundException;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
@@ -79,25 +79,15 @@ public class LinearRegressionLSQRTrainerExample {
                 extractor
             );
 
-            System.out.println(">>> Linear regression model: " + mdl);
+            double rmse = Evaluator.evaluate(
+                dataCache,
+                mdl,
+                CompositionUtils.asFeatureExtractor(extractor),
+                CompositionUtils.asLabelExtractor(extractor),
+                new RegressionMetrics()
+            );
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
-
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
-
-                    double prediction = mdl.predict(inputs);
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
-            }
-
-            System.out.println(">>> ---------------------------------");
+            System.out.println("\n>>> Rmse = " + rmse);
 
             System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
         }
