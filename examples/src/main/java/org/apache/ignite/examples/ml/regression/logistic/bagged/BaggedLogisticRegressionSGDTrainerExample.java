@@ -17,6 +17,8 @@
 
 package org.apache.ignite.examples.ml.regression.logistic.bagged;
 
+import java.io.FileNotFoundException;
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -33,9 +35,6 @@ import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
-import java.util.Arrays;
 
 /**
  * This example shows how bagging technique may be applied to arbitrary trainer.

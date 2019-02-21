@@ -17,9 +17,8 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import org.apache.ignite.ml.selection.scoring.LabelPair;
-
 import java.util.Iterator;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
 
 /**
  * Recall calculator.

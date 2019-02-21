@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric;
 
-import org.apache.ignite.ml.selection.scoring.LabelPair;
-
 import java.util.Iterator;
 import java.util.function.Function;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
 
 /**
  * Abstract metrics calculator.

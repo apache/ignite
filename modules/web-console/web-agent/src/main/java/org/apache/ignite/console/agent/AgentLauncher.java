@@ -17,6 +17,12 @@
 
 package org.apache.ignite.console.agent;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterException;
+import io.socket.client.Ack;
+import io.socket.client.IO;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 import java.io.File;
 import java.io.IOException;
 import java.net.Authenticator;
@@ -34,12 +40,6 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterException;
-import io.socket.client.Ack;
-import io.socket.client.IO;
-import io.socket.client.Socket;
-import io.socket.emitter.Emitter;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;

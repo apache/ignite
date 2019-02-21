@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.HashSet;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.h2.engine.Session;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.HashSet;
 
 /**
  * Scan index for {@link GridH2Table}. Delegates to {@link CacheDataTree} when either index rebuild is in progress,

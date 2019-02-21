@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
@@ -30,9 +32,6 @@ import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetric
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 

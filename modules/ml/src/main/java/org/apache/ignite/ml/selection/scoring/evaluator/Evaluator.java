@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
@@ -28,8 +29,6 @@ import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
-
-import java.util.Map;
 
 /**
  * Evaluator that computes metrics from predictions and ground truth values.

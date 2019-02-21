@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.Collection;
 import java.util.Collections;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Node denoting empty partition set.

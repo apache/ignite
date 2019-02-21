@@ -17,6 +17,8 @@
 
 package org.apache.ignite.examples.ml.selection.cv;
 
+import java.util.Arrays;
+import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -29,9 +31,6 @@ import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassi
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Run <a href="https://en.wikipedia.org/wiki/Decision_tree">decision tree</a> classification with

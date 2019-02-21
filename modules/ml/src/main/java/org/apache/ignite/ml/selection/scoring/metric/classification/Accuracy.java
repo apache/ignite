@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.util.Iterator;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
-
-import java.util.Iterator;
 
 /**
  * Accuracy score calculator.

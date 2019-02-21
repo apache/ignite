@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Node denoting all available partitions

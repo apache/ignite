@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Registry of all currently available query contexts.

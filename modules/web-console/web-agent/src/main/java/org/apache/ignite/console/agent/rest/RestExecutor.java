@@ -17,13 +17,6 @@
 
 package org.apache.ignite.console.agent.rest;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.net.ConnectException;
-import java.security.GeneralSecurityException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -32,6 +25,13 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.net.ConnectException;
+import java.security.GeneralSecurityException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.Dispatcher;

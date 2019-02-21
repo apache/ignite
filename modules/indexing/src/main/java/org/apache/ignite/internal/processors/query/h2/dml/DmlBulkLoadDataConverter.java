@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import java.util.List;
 
 /**
  * Converts a row of values to actual key+value using {@link UpdatePlan#processRow(List)}.

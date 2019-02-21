@@ -17,11 +17,10 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.util.Iterator;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.ml.selection.scoring.metric.AbstractMetrics;
 import org.apache.ignite.ml.selection.scoring.metric.exceptions.UnknownClassLabelException;
-
-import java.util.Iterator;
 
 /**
  * Binary classification metrics calculator.

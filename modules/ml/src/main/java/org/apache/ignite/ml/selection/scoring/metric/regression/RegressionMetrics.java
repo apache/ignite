@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.regression;
 
+import java.util.Iterator;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.ml.selection.scoring.metric.AbstractMetrics;
-
-import java.util.Iterator;
 
 /**
  * Regression metrics calculator.

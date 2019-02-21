@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
 
 /**
  * Common node of partition tree.
