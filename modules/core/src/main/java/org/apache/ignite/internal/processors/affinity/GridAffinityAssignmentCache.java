@@ -200,7 +200,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version.
      * @param affAssignment Affinity assignment for topology version.
      */
-    public GridAffinityAssignment initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
+    public GridAffinityAssignmentV2 initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
         assert topVer.compareTo(lastVersion()) >= 0 : "[topVer = " + topVer + ", last=" + lastVersion() + ']';
 
         assert idealAssignment != null;
@@ -218,7 +218,7 @@ public class GridAffinityAssignmentCache {
      * @param assignment Calculated assignment.
      * @return Calculated assignment.
      */
-    private GridAffinityAssignment set(AffinityTopologyVersion topVer, GridAffinityAssignment assignment) {
+    private GridAffinityAssignmentV2 set(AffinityTopologyVersion topVer, GridAffinityAssignmentV2 assignment) {
         HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignment, backups));
 
         head.set(assignment);
