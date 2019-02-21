@@ -65,7 +65,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
+    private String url = bestEffortAffinity ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802/" :
+        "jdbc:ignite:thin://127.0.0.1/";
+
+    /** Nodes count. */
+    private int nodesCnt = bestEffortAffinity ? 4 : 3;
 
     /** SQL query. */
     private static final String SQL_PART =
@@ -101,7 +106,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(3);
+        startGridsMultiThreaded(nodesCnt);
 
         IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -130,7 +135,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        conn = DriverManager.getConnection(URL);
+        conn = DriverManager.getConnection(url);
 
         conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 

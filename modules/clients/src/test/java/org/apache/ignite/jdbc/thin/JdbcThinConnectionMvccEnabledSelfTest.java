@@ -43,8 +43,13 @@ import static java.sql.Connection.TRANSACTION_SERIALIZABLE;
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfTest {
-    /** */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+    /** URL. */
+    private String url = bestEffortAffinity ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
+        "jdbc:ignite:thin://127.0.0.1";
+
+    /** Nodes count. */
+    private int nodesCnt = bestEffortAffinity ? 4 : 2;
 
     /** {@inheritDoc} */
     @SuppressWarnings({"deprecation", "unchecked"})
@@ -76,7 +81,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(2);
+        startGridsMultiThreaded(nodesCnt);
     }
 
     /**
@@ -84,7 +89,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
      */
     @Test
     public void testMetadataDefaults() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             assertEquals(TRANSACTION_REPEATABLE_READ, meta.getDefaultTransactionIsolation());
@@ -103,7 +108,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
      */
     @Test
     public void testGetSetAutoCommit() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             assertTrue(conn.getMetaData().supportsTransactions());
 
             assertTrue(conn.getAutoCommit());
@@ -132,7 +137,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
      */
     @Test
     public void testCommit() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             assertTrue(conn.getMetaData().supportsTransactions());
 
             // Should not be called in auto-commit mode
@@ -168,7 +173,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
      */
     @Test
     public void testRollback() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             assertTrue(conn.getMetaData().supportsTransactions());
 
             // Should not be called in auto-commit mode
@@ -204,7 +209,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
      */
     @Test
     public void testSetSavepoint() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Disallowed in auto-commit mode
@@ -244,7 +249,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
      */
     @Test
     public void testSetSavepointName() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
@@ -299,7 +304,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
      */
     @Test
     public void testRollbackSavePoint() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg

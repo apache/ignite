@@ -31,7 +31,10 @@ import org.apache.ignite.jdbc.thin.JdbcThinComplexDmlDdlCustomSchemaSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinComplexDmlDdlSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinComplexDmlDdlSkipReducerOnUpdateSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinComplexQuerySelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinConnectionMvccEnabledSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinConnectionSSLTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionTimeoutSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinDataSourceSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDeleteStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexAtomicPartitionedNearSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexAtomicPartitionedSelfTest;
@@ -48,6 +51,8 @@ import org.apache.ignite.jdbc.thin.JdbcThinMetadataPrimaryKeysSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
+import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementCancelSelfTest;
@@ -65,6 +70,16 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    //    // New thin JDBC
+//    1JdbcThinConnectionSelfTest.class,
+    JdbcThinConnectionMvccEnabledSelfTest.class,
+//    1JdbcThinConnectionMultipleAddressesTest.class,
+//    1JdbcThinTcpIoTest.class,
+    JdbcThinConnectionSSLTest.class,
+    JdbcThinDataSourceSelfTest.class,
+    JdbcThinPreparedStatementSelfTest.class,
+    JdbcThinResultSetSelfTest.class,
+
     JdbcThinStatementSelfTest.class,
     JdbcThinComplexQuerySelfTest.class,
     JdbcThinNoDefaultSchemaTest.class,
@@ -122,7 +137,7 @@ public class IgniteJdbcThinDriverBestEffordAffinitySuite {
      */
     @BeforeClass
     public static void setupBestEffortAffinity() {
-        GridTestUtils.setFieldValue(JdbcThinConnection.class, "BEST_EFFORT_AFFINITY", true);
+        GridTestUtils.setFieldValue(JdbcThinConnection.class, "bestEffortAffinity", true);
         GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "bestEffortAffinity", true);
     }
 }
