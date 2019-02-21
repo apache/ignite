@@ -27,13 +27,13 @@
 #include <ignite/guid.h>
 #include <ignite/common/concurrent.h>
 
-#include <ignite/network/end_point.h>
 #include <ignite/network/socket_client.h>
 
 #include <ignite/impl/interop/interop_output_stream.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include "impl/protocol_version.h"
+#include "impl/ignite_node.h"
 
 namespace ignite
 {
@@ -156,21 +156,12 @@ namespace ignite
                 void InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout);
 
                 /**
-                 * Get address.
-                 * @return Address.
+                 * Get remote node.
+                 * @return Node.
                  */
-                const network::EndPoint& GetAddress() const
+                const IgniteNode& GetNode() const
                 {
-                    return address;
-                }
-
-                /**
-                 * Get GUID of the remote node.
-                 * @return GUID.
-                 */
-                const Guid& GetGuid() const
-                {
-                    return nodeGuid;
+                    return node;
                 }
 
             private:
@@ -319,11 +310,8 @@ namespace ignite
                 /** Sync IO mutex. */
                 common::concurrent::CriticalSection ioMutex;
 
-                /** Remote host address. */
-                network::EndPoint address;
-
-                /** Guid of the remote node. */
-                Guid nodeGuid;
+                /** Remote node data. */
+                IgniteNode node;
 
                 /** Configuration. */
                 const ignite::thin::IgniteClientConfiguration& config;

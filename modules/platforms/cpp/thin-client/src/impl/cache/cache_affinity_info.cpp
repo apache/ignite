@@ -30,25 +30,26 @@ namespace ignite
             {
                 CacheAffinityInfo::CacheAffinityInfo(const std::vector<ConnectableNodePartitions>& info)
                 {
-                    std::vector<ConnectableNodePartitions>::const_iterator it;
+                    typedef std::vector<ConnectableNodePartitions>::const_iterator InfoIterator;
 
-                    for (it = info.begin(); it != info.end(); ++it)
+                    for (InfoIterator it = info.begin(); it != info.end(); ++it)
                     {
                         const std::vector<int32_t>& parts = it->GetPartitions();
-                        const std::vector<network::EndPoint>& endPoints = it->GetEndPoints();
+                        const network::EndPoints& endPoints = it->GetEndPoints();
 
                         for (size_t i = 0; i < parts.size(); ++i)
                         {
                             assert(parts[i] >= 0);
 
-                            size_t upart = static_cast<size_t>(parts[i]);
+                            size_t uPart = static_cast<size_t>(parts[i]);
 
-                            if (upart >= affinityMapping.size())
-                                affinityMapping.resize(upart + 1);
+                            if (uPart >= affinityMapping.size())
+                                affinityMapping.resize(uPart + 1);
 
-                            EndPoints& dst = affinityMapping[upart];
+                            IgniteNodes& dst = affinityMapping[uPart];
 
-                            dst.insert(dst.end(), endPoints.begin(), endPoints.end());
+                            for (network::EndPoints::const_iterator ep = endPoints.begin(); ep != endPoints.end(); ++ep)
+                                dst.push_back(IgniteNode(*ep));
                         }
                     }
                 }
@@ -63,7 +64,7 @@ namespace ignite
                     return static_cast<int32_t>(affinityMapping.size());
                 }
 
-                const EndPoints& CacheAffinityInfo::GetMapping(int32_t part) const
+                const IgniteNodes& CacheAffinityInfo::GetMapping(int32_t part) const
                 {
                     assert(part >= 0);
                     assert(static_cast<size_t>(part) < affinityMapping.size());
@@ -71,9 +72,11 @@ namespace ignite
                     return affinityMapping[part];
                 }
 
-                const EndPoints& CacheAffinityInfo::GetMapping(const WritableKey& key) const
+                const IgniteNodes& CacheAffinityInfo::GetMapping(const WritableKey& key) const
                 {
-                    int32_t part = GetPartitionForKey(key);
+                    size_t part = static_cast<size_t>(GetPartitionForKey(key));
+
+                    assert(part < affinityMapping.size());
 
                     return affinityMapping[part];
                 }
@@ -81,7 +84,7 @@ namespace ignite
                 int32_t CacheAffinityInfo::GetPartitionForKey(const WritableKey& key) const
                 {
                     int32_t hash = key.GetHashCode();
-                    uint32_t uhash = static_cast<uint32_t>(hash);
+                    uint32_t uHash = static_cast<uint32_t>(hash);
 
                     int32_t parts = GetPartitionsNum();
 
@@ -91,7 +94,7 @@ namespace ignite
                     {
                         int32_t mask = parts - 1;
 
-                        part = (uhash ^ (uhash >> 16)) & mask;
+                        part = (uHash ^ (uHash >> 16)) & mask;
                     }
                     else
                     {

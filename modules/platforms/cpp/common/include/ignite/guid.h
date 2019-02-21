@@ -106,6 +106,69 @@ namespace ignite
          * @return True if equal.
          */
         friend bool IGNITE_IMPORT_EXPORT operator== (const Guid& val1, const Guid& val2);
+
+        /**
+         * Compare to another value.
+         *
+         * @param other Instance to compare to.
+         * @return Zero if equals, negative number if less and positive if more.
+         */
+        int64_t Compare(const Guid& other) const;
+
+        /**
+         * Comparison operator.
+         *
+         * @param val1 First value.
+         * @param val2 Second value.
+         * @return True if equal.
+         */
+        friend bool IGNITE_IMPORT_EXPORT operator==(const Guid& val1, const Guid& val2);
+
+        /**
+         * Comparison operator.
+         *
+         * @param val1 First value.
+         * @param val2 Second value.
+         * @return True if not equal.
+         */
+        friend bool IGNITE_IMPORT_EXPORT operator!=(const Guid& val1, const Guid& val2);
+
+        /**
+         * Comparison operator.
+         *
+         * @param val1 First value.
+         * @param val2 Second value.
+         * @return True if less.
+         */
+        friend bool IGNITE_IMPORT_EXPORT operator<(const Guid& val1, const Guid& val2);
+
+        /**
+         * Comparison operator.
+         *
+         * @param val1 First value.
+         * @param val2 Second value.
+         * @return True if less or equal.
+         */
+        friend bool IGNITE_IMPORT_EXPORT operator<=(const Guid& val1, const Guid& val2);
+
+        /**
+         * Comparison operator.
+         *
+         * @param val1 First value.
+         * @param val2 Second value.
+         * @return True if greater.
+         */
+        friend bool IGNITE_IMPORT_EXPORT operator>(const Guid& val1, const Guid& val2);
+
+        /**
+         * Comparison operator.
+         *
+         * @param val1 First value.
+         * @param val2 Second value.
+         * @return True if greater or equal.
+         */
+        friend bool IGNITE_IMPORT_EXPORT operator>=(const Guid& val1, const Guid& val2);
+
     private:
         /** Most significant bits. */
         int64_t most;  

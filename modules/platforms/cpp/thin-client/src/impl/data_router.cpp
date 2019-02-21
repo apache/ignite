@@ -30,7 +30,6 @@
 #include "impl/message.h"
 #include "impl/response_status.h"
 #include "impl/remote_type_updater.h"
-#include "ignite/impl/thin/writable_key.h"
 
 namespace ignite
 {
@@ -41,11 +40,7 @@ namespace ignite
             DataRouter::DataRouter(const ignite::thin::IgniteClientConfiguration& cfg) :
                 ioTimeout(DEFALT_IO_TIMEOUT),
                 connectionTimeout(DEFAULT_CONNECT_TIMEOUT),
-                config(cfg),
-                ranges(),
-                localAddresses(),
-                typeUpdater(),
-                typeMgr()
+                config(cfg)
             {
                 srand(common::GetRandSeed());
 
@@ -95,7 +90,7 @@ namespace ignite
                         {
                             common::concurrent::CsLockGuard lock(channelsMutex);
 
-                            channels[channel.Get()->GetAddress()].Swap(channel);
+                            channels[channel.Get()->GetNode()].Swap(channel);
 
                             break;
                         }
@@ -113,11 +108,9 @@ namespace ignite
             {
                 typeMgr.SetUpdater(0);
 
-                std::map<network::EndPoint, SP_DataChannel>::iterator it;
-
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
-                for (it = channels.begin(); it != channels.end(); ++it)
+                for (std::map<IgniteNode, SP_DataChannel>::iterator it = channels.begin(); it != channels.end(); ++it)
                 {
                     DataChannel* channel = it->second.Get();
 
@@ -168,18 +161,18 @@ namespace ignite
 
                 size_t idx = r % channels.size();
 
-                std::map<network::EndPoint, SP_DataChannel>::iterator it = channels.begin();
+                std::map<IgniteNode, SP_DataChannel>::iterator it = channels.begin();
 
                 std::advance(it, idx);
 
                 return it->second;
             }
 
-            bool DataRouter::IsLocalHost(const std::vector<network::EndPoint>& hint)
+            bool DataRouter::IsLocalHost(const IgniteNodes& hint)
             {
-                for (std::vector<network::EndPoint>::const_iterator it = hint.begin(); it != hint.end(); ++it)
+                for (IgniteNodes::const_iterator it = hint.begin(); it != hint.end(); ++it)
                 {
-                    const std::string& host = it->host;
+                    const std::string& host = it->GetEndPoint().host;
 
                     if (IsLocalAddress(host))
                         continue;
@@ -216,47 +209,24 @@ namespace ignite
                 return false;
             }
 
-            SP_DataChannel DataRouter::GetBestChannel(const std::vector<network::EndPoint>& hint)
+            SP_DataChannel DataRouter::GetBestChannel(const IgniteNodes& hint)
             {
                 if (hint.empty())
                     return GetRandomChannel();
 
                 bool localHost = IsLocalHost(hint);
 
-                for (std::vector<network::EndPoint>::const_iterator it = hint.begin(); it != hint.end(); ++it)
+                for (IgniteNodes::const_iterator itNode = hint.begin(); itNode != hint.end(); ++itNode)
                 {
-                    if (IsLocalAddress(it->host) && !localHost)
-                        continue;
-
-                    if (!IsProvidedByUser(*it))
+                    if (IsLocalAddress(itNode->GetEndPoint().host) && !localHost)
                         continue;
 
                     common::concurrent::CsLockGuard lock(channelsMutex);
 
-                    SP_DataChannel& dst = channels[*it];
+                    std::map<IgniteNode, SP_DataChannel>::iterator itChannel = channels.find(*itNode);
 
-                    if (dst.IsValid())
-                        return dst;
-
-                    SP_DataChannel channel(new DataChannel(config, typeMgr));
-
-                    bool connected = false;
-
-                    try
-                    {
-                        connected = channel.Get()->Connect(it->host, it->port, connectionTimeout);
-                    }
-                    catch (const IgniteError&)
-                    {
-                        // No-op.
-                    }
-
-                    if (connected)
-                    {
-                        dst.Swap(channel);
-
-                        return dst;
-                    }
+                    if (itChannel != channels.end())
+                        return itChannel->second;
                 }
 
                 return GetRandomChannel();

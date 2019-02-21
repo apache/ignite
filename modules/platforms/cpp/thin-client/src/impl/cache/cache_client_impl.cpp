@@ -57,9 +57,9 @@ namespace ignite
                     }
                     else
                     {
-                        const EndPoints& endPoints = affinityInfo.Get()->GetMapping(key);
-                        
-                        router.Get()->SyncMessage(req, rsp, endPoints);
+                        const IgniteNodes& nodes = affinityInfo.Get()->GetMapping(key);
+
+                        router.Get()->SyncMessage(req, rsp, nodes);
                     }
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)

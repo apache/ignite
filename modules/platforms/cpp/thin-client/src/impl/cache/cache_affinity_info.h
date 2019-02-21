@@ -25,6 +25,8 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/network/end_point.h>
 
+#include "impl/ignite_node.h"
+
 namespace ignite
 {
     namespace impl
@@ -39,9 +41,6 @@ namespace ignite
 
             namespace cache
             {
-                /** End point collection. */
-                typedef std::vector<network::EndPoint> EndPoints;
-
                 /**
                  * Cache Affinity Info.
                  */
@@ -73,7 +72,7 @@ namespace ignite
                      * @param part Partition.
                      * @return Mapping.
                      */
-                    const EndPoints& GetMapping(int32_t part) const;
+                    const IgniteNodes& GetMapping(int32_t part) const;
 
                     /**
                      * Get mapping for the partition.
@@ -81,7 +80,7 @@ namespace ignite
                      * @param key Key.
                      * @return Mapping.
                      */
-                    const EndPoints& GetMapping(const WritableKey& key) const;
+                    const IgniteNodes& GetMapping(const WritableKey& key) const;
 
                     /**
                      * Calculate partition for the key assuming it uses Rendezvous Affinity Function.
@@ -93,7 +92,7 @@ namespace ignite
 
                 private:
                     /** Affinity mapping. */
-                    std::vector<EndPoints> affinityMapping;
+                    std::vector<IgniteNodes> affinityMapping;
                 };
 
                 /** Shared pointer to Cache Affinity Info. */

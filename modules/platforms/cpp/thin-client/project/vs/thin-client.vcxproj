@@ -160,6 +160,7 @@
     <ClCompile Include="..\..\src\impl\data_channel.cpp" />
     <ClCompile Include="..\..\src\impl\data_router.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_client_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\ignite_node.cpp" />
     <ClCompile Include="..\..\src\impl\message.cpp" />
     <ClCompile Include="..\..\src\impl\protocol_version.cpp" />
     <ClCompile Include="..\..\src\impl\remote_type_updater.cpp" />
@@ -181,6 +182,7 @@
     <ClInclude Include="..\..\src\impl\data_channel.h" />
     <ClInclude Include="..\..\src\impl\data_router.h" />
     <ClInclude Include="..\..\src\impl\ignite_client_impl.h" />
+    <ClInclude Include="..\..\src\impl\ignite_node.h" />
     <ClInclude Include="..\..\src\impl\message.h" />
     <ClInclude Include="..\..\src\impl\protocol_version.h" />
     <ClInclude Include="..\..\src\impl\remote_type_updater.h" />

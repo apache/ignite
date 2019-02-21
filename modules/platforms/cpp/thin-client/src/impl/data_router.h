@@ -33,8 +33,8 @@
 #include <ignite/network/tcp_range.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
-#include "impl/data_channel.h"
 #include "impl/cache/cache_affinity_info.h"
+#include "impl/data_channel.h"
 
 namespace ignite
 {
@@ -116,11 +116,11 @@ namespace ignite
                  *
                  * @param req Request message.
                  * @param rsp Response message.
-                 * @param hint End points of the preferred server node to use.
+                 * @param hint Preferred server node to use.
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
-                void SyncMessage(const ReqT& req, RspT& rsp, const std::vector<network::EndPoint>& hint)
+                void SyncMessage(const ReqT& req, RspT& rsp, const IgniteNodes& hint)
                 {
                     SP_DataChannel channel = GetBestChannel(hint);
 
@@ -180,11 +180,8 @@ namespace ignite
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataRouter);
 
-                /** End point collection. */
-                typedef std::vector<network::EndPoint> EndPoints;
-
                 /** Shared pointer to end points. */
-                typedef common::concurrent::SharedPointer<EndPoints> SP_EndPoints;
+                typedef common::concurrent::SharedPointer<network::EndPoints> SP_EndPoints;
 
                 /**
                  * Get endpoints for the key.
@@ -209,7 +206,7 @@ namespace ignite
                  * @param hint Hint.
                  * @return @c true if the local host.
                  */
-                bool IsLocalHost(const std::vector<network::EndPoint>& hint);
+                bool IsLocalHost(const IgniteNodes& hint);
 
                 /**
                  * Check whether the provided address is the local host.
@@ -230,10 +227,10 @@ namespace ignite
                 /**
                  * Get the best data channel.
                  *
-                 * @param hint End points of the preferred server node to use.
+                 * @param hint Preferred server node to use.
                  * @return The best available data channel.
                  */
-                SP_DataChannel GetBestChannel(const std::vector<network::EndPoint>& hint);
+                SP_DataChannel GetBestChannel(const IgniteNodes& hint);
 
                 /**
                  * Update local addresses.
@@ -270,7 +267,7 @@ namespace ignite
                 binary::BinaryTypeManager typeMgr;
 
                 /** Data channels. */
-                std::map<network::EndPoint, SP_DataChannel> channels;
+                std::map<IgniteNode, SP_DataChannel> channels;
 
                 /** Channels mutex. */
                 common::concurrent::CriticalSection channelsMutex;

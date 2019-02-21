@@ -49,6 +49,9 @@
     <ClCompile Include="..\..\src\impl\remote_type_updater.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_node.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
@@ -109,6 +112,9 @@
       <Filter>Code\impl\cache</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\impl\remote_type_updater.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\ignite_node.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
   </ItemGroup>

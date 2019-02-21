@@ -45,8 +45,7 @@ namespace ignite
             DataChannel::DataChannel(const ignite::thin::IgniteClientConfiguration& cfg,
                 binary::BinaryTypeManager& typeMgr) :
                 ioMutex(),
-                address(),
-                nodeGuid(),
+                node(),
                 config(cfg),
                 typeMgr(typeMgr),
                 currentVersion(VERSION_DEFAULT),
@@ -81,8 +80,7 @@ namespace ignite
                 else
                     socket.reset(network::ssl::MakeTcpSocketClient());
 
-                address.host = host;
-                address.port = port;
+                node = IgniteNode(host, port);
 
                 return TryRestoreConnection(timeout);
             }
@@ -320,7 +318,9 @@ namespace ignite
 
                 if (propVer >= VERSION_1_3_0)
                 {
-                    nodeGuid = reader.ReadGuid();
+                    Guid nodeGuid = reader.ReadGuid();
+
+                    node.SetGuid(nodeGuid);
                 }
 
                 return true;
@@ -358,7 +358,9 @@ namespace ignite
             {
                 bool connected = false;
 
-                connected = socket->Connect(address.host.c_str(), address.port, timeout);
+                const network::EndPoint& endPoint = node.GetEndPoint();
+
+                connected = socket->Connect(endPoint.host.c_str(), endPoint.port, timeout);
 
                 if (!connected)
                 {
