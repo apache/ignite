@@ -262,7 +262,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
                             // we can have multiple indexed types.
                             // Also need to skip expired rows.
                             if (type.matchType(row.value())
-                                && row.expireTime() > time)
+                                && !wasExpired(row))
                                 return true;
                         }
                     }
@@ -279,6 +279,15 @@ public class H2PkHashIndex extends GridH2IndexBase {
             finally {
                 CacheDataRowStore.setSkipVersion(false);
             }
+        }
+
+        /**
+         * @param row to check.
+         * @return {@code true} if row was expired at the moment this cursor was created; {@code false} if not or if
+         * expire time is not set for this cursor.
+         */
+        private boolean wasExpired(CacheDataRow row) {
+            return row.expireTime() > 0 && row.expireTime() <= time;
         }
 
         /** {@inheritDoc} */
