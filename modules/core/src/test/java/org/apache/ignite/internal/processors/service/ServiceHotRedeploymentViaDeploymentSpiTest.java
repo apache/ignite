@@ -42,12 +42,9 @@ import org.junit.Test;
 /**
  * Tests services hot redeployment via {@link DeploymentSpi}.
  */
-public class ServiceHotRedeploymentTest extends GridCommonAbstractTest {
+public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstractTest {
     /** */
     private static final String SERVICE_NAME = "test-service";
-
-    /** */
-    private final LocalDeploymentSpi locDepSpi = new LocalDeploymentSpi();
 
     /** */
     private Path srcTmpDir;
@@ -56,15 +53,9 @@ public class ServiceHotRedeploymentTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDeploymentSpi(locDepSpi);
+        cfg.setDeploymentSpi(deploymentSpi());
 
         return cfg;
-    }
-
-    /** */
-    @BeforeClass
-    public static void check() {
-        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 
     /** */
@@ -94,17 +85,19 @@ public class ServiceHotRedeploymentTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(0);
 
-            locDepSpi.register(clsLdr, srvc.getClass());
+            final DeploymentSpi depSpi = ignite.configuration().getDeploymentSpi();
+
+            depSpi.register(clsLdr, srvc.getClass());
 
             ignite.services().deployClusterSingleton(SERVICE_NAME, srvc);
             MyRenewService proxy = ignite.services().serviceProxy(SERVICE_NAME, MyRenewService.class, false);
             assertEquals(1, proxy.version());
 
             ignite.services().cancel(SERVICE_NAME);
-            locDepSpi.unregister(srvc.getClass().getName());
+            depSpi.unregister(srvc.getClass().getName());
 
             clsLdr = classLoader(2);
-            locDepSpi.register(clsLdr, srvc.getClass());
+            depSpi.register(clsLdr, srvc.getClass());
 
             ignite.services().deployClusterSingleton(SERVICE_NAME, srvc);
             proxy = ignite.services().serviceProxy(SERVICE_NAME, MyRenewService.class, false);
@@ -129,9 +122,9 @@ public class ServiceHotRedeploymentTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     private ClassLoader classLoader(int ver) throws Exception {
-        String source = "import org.apache.ignite.internal.processors.service.ServiceHotRedeploymentTest;\n" +
+        String source = "import org.apache.ignite.internal.processors.service.ServiceHotRedeploymentViaDeploymentSpiTest;\n" +
             "import org.apache.ignite.services.ServiceContext;\n" +
-            "public class MyRenewServiceImpl implements ServiceHotRedeploymentTest.MyRenewService {\n" +
+            "public class MyRenewServiceImpl implements ServiceHotRedeploymentViaDeploymentSpiTest.MyRenewService {\n" +
             "    @Override public int version() {\n" +
             "        return " + ver + ";\n" +
             "    }\n" +
@@ -140,12 +133,22 @@ public class ServiceHotRedeploymentTest extends GridCommonAbstractTest {
             "    @Override public void execute(ServiceContext ctx) throws Exception {}\n" +
             "}";
 
+        Files.createDirectories(srcTmpDir); // To avoid possible NoSuchFileException on some OS.
+
         File srcFile = new File(srcTmpDir.toFile(), "MyRenewServiceImpl.java");
+
         Path srcFilePath = Files.write(srcFile.toPath(), source.getBytes(StandardCharsets.UTF_8));
 
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         compiler.run(null, null, null, srcFilePath.toString());
 
         return URLClassLoader.newInstance(new URL[] {srcTmpDir.toUri().toURL()});
+    }
+
+    /**
+     * @return Deployment spi implementation.
+     */
+    protected DeploymentSpi deploymentSpi() {
+        return new LocalDeploymentSpi();
     }
 }
