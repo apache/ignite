@@ -574,6 +574,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private void cleanupOrphanedServerTransactions(Collection<ClusterNode> liveSrvs) {
         Set<UUID> ids = liveSrvs.stream()
             .map(ClusterNode::id)
+            .filter(uuid -> ctx.discovery().alive(uuid))
             .collect(Collectors.toSet());
 
         List<Long> forRmv = new ArrayList<>();
