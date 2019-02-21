@@ -48,6 +48,6 @@
     </context-param>
 
     <listener>
-        <listener-class>org.apache.ignite.startup.servlet.ServletContextListenerStartup</listener-class>
+        <listener-class>org.gridgain.startup.servlet.ServletContextListenerStartup</listener-class>
     </listener>
 </web-app>

@@ -48,12 +48,12 @@
     <property>
         <!-- FS driver class for the 'igfs://' URIs. -->
         <name>fs.igfs.impl</name>
-        <value>org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem</value>
+        <value>org.gridgain.hadoop.fs.v1.IgniteHadoopFileSystem</value>
     </property>
 
     <property>
         <!-- FS driver class for the 'igfs://' URIs in Hadoop2.x -->
         <name>fs.AbstractFileSystem.igfs.impl</name>
-        <value>org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem</value>
+        <value>org.gridgain.hadoop.fs.v2.IgniteHadoopFileSystem</value>
     </property>
 </configuration>
