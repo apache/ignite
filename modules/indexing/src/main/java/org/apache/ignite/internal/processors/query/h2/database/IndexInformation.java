@@ -42,11 +42,11 @@ public class IndexInformation {
      * @param unique Unique.
      * @param name Name.
      * @param type Type.
-     * @param keySql Key sql.
+     * @param keySql Key sql. Can be {@code null} in case columns key is not applicable for the index.
      * @param inlineSize Inline size. Can be {@code null} in case inline size is not applicable for the index.
      */
-    public IndexInformation(boolean pk, boolean unique, String name, H2IndexType type, String keySql,
-        Integer inlineSize) {
+    public IndexInformation(boolean pk, boolean unique, String name, H2IndexType type, @Nullable String keySql,
+        @Nullable Integer inlineSize) {
         this.pk = pk;
         this.unique = unique;
         this.name = name;
@@ -86,9 +86,9 @@ public class IndexInformation {
     /**
      * Get string representation of index key.
      *
-     * @return String representation of index key.
+     * @return String representation of index key. Can be {@code null} in case columns key is not applicable for the index.
      */
-    public String keySql() {
+    @Nullable public String keySql() {
         return keySql;
     }
 

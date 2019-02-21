@@ -17,35 +17,25 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.List;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
-import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
-import org.apache.ignite.internal.processors.query.h2.database.IndexInformationAware;
-import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModelMultiplier;
+import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 
 /**
  * Index base.
  */
-// TODO VO: Create ticket to use new logic for JDBC/ODBC driers.
-public abstract class GridH2IndexBase extends BaseIndex implements IndexInformationAware {
+public abstract class GridH2IndexBase extends BaseIndex {
     /** Underlying table. */
     private final GridH2Table tbl;
-
-    /** Index information . */
-    protected IndexInformation idxInfo;
 
     /**
      * Constructor.
@@ -237,33 +227,5 @@ public abstract class GridH2IndexBase extends BaseIndex implements IndexInformat
      */
     protected QueryContextRegistry queryContextRegistry() {
         return tbl.rowDescriptor().indexing().queryContextRegistry();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IndexInformation indexInformation() {
-        return idxInfo;
-    }
-
-    /**
-     * Initialize index information.
-     *
-     * @param pk PK
-     * @param type Type.
-     * @param idxColsList Indexed columns.
-     * @param inlineSize Inline size. Can be {@code null} in case inline size is not applicable for the index.
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    protected void initIndexInformation(boolean pk, H2IndexType type, List<IndexColumn> idxColsList,
-        Integer inlineSize) {
-        IndexColumn[] cols = H2Utils.unwrapKeyColumns(tbl, idxColsList.toArray(new IndexColumn[0]));
-
-        idxInfo = new IndexInformation(
-            pk,
-            getIndexType().isUnique(),
-            getName(),
-            type,
-            H2Utils.indexColumnsSql(cols),
-            inlineSize
-        );
     }
 }

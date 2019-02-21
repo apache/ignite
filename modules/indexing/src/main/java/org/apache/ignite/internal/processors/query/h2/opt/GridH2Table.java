@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,9 +40,12 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
+import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
+import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
@@ -64,6 +68,8 @@ import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_HASH_IDX_NAME;
+import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
 /**
  * H2 Table implementation.
@@ -98,6 +104,9 @@ public class GridH2Table extends TableBase {
 
     /** */
     private volatile boolean destroyed;
+
+    /** */
+    private final List<IndexInformation> predefIdxInfo;
 
     /**
      * Map of sessions locks.
@@ -191,6 +200,46 @@ public class GridH2Table extends TableBase {
         sysIdxsCnt = idxs.size();
 
         lock = new ReentrantReadWriteLock();
+
+        predefIdxInfo = predefinedIndexes();
+    }
+
+    /**
+     * @return List of predefined indexes information.
+     */
+    private List<IndexInformation> predefinedIndexes() {
+        IndexColumn keyCol = indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
+
+        List<IndexColumn> wrappedKeyCols = H2Utils.treeIndexColumns(rowDescriptor(),
+            new ArrayList<>(2), keyCol, affKeyCol);
+
+        //explicit add HASH index, due to we know all their parameters and it doesn't created on non afinity nodes.
+        IndexInformation hashIdx = H2Utils.indexInformation(this, false, true, PK_HASH_IDX_NAME, H2IndexType.HASH, wrappedKeyCols,
+            null);
+
+        //explicit add SCAN index, due to we know all their parameters and it depends on affinity node or not.
+        IndexInformation scanIdx = H2Utils.indexInformation(this, false, false, PK_HASH_IDX_NAME + SCAN_INDEX_NAME_SUFFIX,
+            H2IndexType.SCAN, null, null);
+
+        return Arrays.asList(hashIdx, scanIdx);
+    }
+
+    /**
+     * @return Information about all indexes related to the table.
+     */
+    public List<IndexInformation> indexesInformation(){
+        List<IndexInformation> res = new ArrayList<>(predefIdxInfo);
+
+        for (Index idx : idxs) {
+            if(idx instanceof H2TreeIndexBase)
+                res.add(((H2TreeIndexBase)idx).indexInformation());
+            else if( idx.getIndexType().isSpatial()) {
+                res.add(H2Utils.indexInformation(this, false, false, idx.getName(), H2IndexType.SPATIAL,
+                    Arrays.asList(idx.getIndexColumns()), null));
+            }
+        }
+
+        return res;
     }
 
     /**

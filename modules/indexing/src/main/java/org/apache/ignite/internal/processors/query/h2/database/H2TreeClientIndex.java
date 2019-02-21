@@ -56,7 +56,7 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
         initBaseIndex(table, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        initIndexInformation(getIndexType().isPrimaryKey(),H2IndexType.BTREE, colsList, inlineSize);
+        initIndexInformation(inlineSize);
     }
 
     /**

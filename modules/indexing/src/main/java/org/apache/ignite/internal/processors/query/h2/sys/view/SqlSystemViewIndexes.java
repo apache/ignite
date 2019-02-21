@@ -21,13 +21,10 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
-import org.apache.ignite.internal.processors.query.h2.database.IndexInformationAware;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -90,11 +87,7 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
             int cacheId = tbl.cacheId();
             String cacheName = tbl.cacheName();
 
-            List<IndexInformation> idxInfoList = tbl.getIndexes().stream()
-                .filter(i -> IndexInformationAware.class.isAssignableFrom(i.getClass()))
-                .map(IndexInformationAware.class::cast)
-                .map(IndexInformationAware::indexInformation).filter(Objects::nonNull)
-                .collect(Collectors.toList());
+            List<IndexInformation> idxInfoList = tbl.indexesInformation();
 
             for (IndexInformation idxInfo : idxInfoList) {
                 Object[] data = new Object[] {
@@ -111,6 +104,7 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
                     grpName,
                     idxInfo.inlineSize()
                 };
+
                 rows.add(createRow(ses, data));
             }
         });
@@ -125,11 +119,6 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return schemaMgr.dataTables().stream()
-            .flatMap(t -> t.getIndexes().stream())
-            .filter(i -> IndexInformationAware.class.isAssignableFrom(i.getClass()))
-            .map(IndexInformationAware.class::cast)
-            .map(IndexInformationAware::indexInformation).filter(Objects::nonNull)
-            .count();
+        return schemaMgr.dataTables().stream().mapToInt(t -> t.indexesInformation().size()).sum();
     }
 }

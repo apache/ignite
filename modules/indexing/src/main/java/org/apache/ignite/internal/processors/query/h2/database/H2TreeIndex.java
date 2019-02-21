@@ -287,7 +287,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         ctx.io().addMessageListener(msgTopic, msgLsnr);
 
-        initIndexInformation(getIndexType().isPrimaryKey(), H2IndexType.BTREE, unwrappedColsList, segments[0].inlineSize());
+        initIndexInformation(segments[0].inlineSize());
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -39,15 +41,19 @@ import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
+import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.TableFilter;
 
 /**
  *
  */
-public class H2PkHashIndex extends H2PkHashBaseIndex {
+public class H2PkHashIndex extends GridH2IndexBase {
     /** */
     private final GridCacheContext cctx;
 
@@ -61,6 +67,7 @@ public class H2PkHashIndex extends H2PkHashBaseIndex {
      * @param colsList Index columns.
      * @param segments Segments.
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     public H2PkHashIndex(
         GridCacheContext<?, ?> cctx,
         GridH2Table tbl,
@@ -68,11 +75,17 @@ public class H2PkHashIndex extends H2PkHashBaseIndex {
         List<IndexColumn> colsList,
         int segments
     ) {
-        super(tbl, name, colsList);
+        super(tbl);
 
         assert segments > 0: segments;
 
         this.segments = segments;
+
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
+
+        IndexColumn.mapColumns(cols, tbl);
+
+        initBaseIndex(tbl, 0, name, cols, IndexType.createPrimaryKey(false, true));
 
         this.cctx = cctx;
     }
@@ -158,6 +171,11 @@ public class H2PkHashIndex extends H2PkHashBaseIndex {
     }
 
     /** {@inheritDoc} */
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+        return Double.MAX_VALUE;
+    }
+
+    /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
         Cursor cursor = find(ses, null, null);
 
@@ -167,6 +185,21 @@ public class H2PkHashIndex extends H2PkHashBaseIndex {
             res++;
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRowCountApproximation() {
+        return 10_000; // TODO
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean canGetFirstOrLast() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Cursor findFirstOrLast(Session ses, boolean b) {
+        throw new UnsupportedOperationException();
     }
 
     /**

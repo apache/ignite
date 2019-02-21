@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
@@ -39,6 +40,9 @@ import org.h2.table.TableFilter;
 public abstract class H2TreeIndexBase extends GridH2IndexBase {
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
     public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
+
+    /** Index information . */
+    protected IndexInformation idxInfo;
 
     /**
      * Constructor.
@@ -59,6 +63,31 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
         int mul = getDistributedMultiplier(ses, filters, filter);
 
         return mul * baseCost;
+    }
+
+    /**
+     * Initialize index information.
+     *
+     * @param inlineSize Inline size.
+     */
+    protected void initIndexInformation(Integer inlineSize) {
+        IndexColumn[] unwrappedCols = H2Utils.unwrapKeyColumns((GridH2Table)table, getIndexColumns());
+
+        idxInfo = new IndexInformation(
+            getIndexType().isPrimaryKey(),
+            getIndexType().isUnique(),
+            getName(),
+            H2IndexType.BTREE,
+            H2Utils.indexColumnsSql(unwrappedCols),
+            inlineSize
+        );
+    }
+
+    /**
+     * @return Index information.
+     */
+    public IndexInformation indexInformation() {
+        return idxInfo;
     }
 
     /**

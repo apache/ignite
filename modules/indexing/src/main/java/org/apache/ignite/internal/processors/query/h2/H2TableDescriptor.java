@@ -30,8 +30,6 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.database.H2PkHashBaseIndex;
-import org.apache.ignite.internal.processors.query.h2.database.H2PkHashClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -81,7 +79,7 @@ public class H2TableDescriptor {
     private GridLuceneIndex luceneIdx;
 
     /** */
-    private H2PkHashBaseIndex pkHashIdx;
+    private H2PkHashIndex pkHashIdx;
 
     /** Flag of table has been created from SQL*/
     private boolean isSql;
@@ -433,14 +431,16 @@ public class H2TableDescriptor {
      * @return Index.
      */
     private Index createHashIndex(GridH2Table tbl, List<IndexColumn> cols) {
-        assert pkHashIdx == null : pkHashIdx;
         if (cacheInfo.affinityNode()) {
+            assert pkHashIdx == null : pkHashIdx;
+
             pkHashIdx = new H2PkHashIndex(cacheInfo.cacheContext(), tbl, PK_HASH_IDX_NAME, cols,
                 tbl.rowDescriptor().context().config().getQueryParallelism());
-        } else
-            pkHashIdx = new H2PkHashClientIndex(tbl, PK_HASH_IDX_NAME, cols);
 
-        return pkHashIdx;
+            return pkHashIdx;
+        }
+
+        return null;
     }
 
     /**
