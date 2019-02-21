@@ -6439,12 +6439,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         clientMsgWrk = clientMsgWrk0;
                     }
 
-                    if (log.isDebugEnabled())
-                        log.debug("Initialized connection with remote node [nodeId=" + nodeId +
-                            ", client=" + req.client() + ']');
-
-                    if (debugMode) {
-                        debugLog(msg, "Initialized connection with remote node [nodeId=" + nodeId +
+                    if (log.isInfoEnabled()) {
+                        log.info("Initialized connection with remote node [nodeId=" + nodeId +
+                            ", rmtAddr=" + sock.getRemoteSocketAddress() +
                             ", client=" + req.client() + ']');
                     }
                 }
