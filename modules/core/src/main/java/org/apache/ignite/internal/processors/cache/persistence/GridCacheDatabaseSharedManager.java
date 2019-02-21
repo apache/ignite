@@ -82,6 +82,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.PrewarmingConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -140,8 +141,8 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryWarmingUp;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryWarmingUpImpl;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPrewarming;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPrewarmingImpl;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
@@ -1156,10 +1157,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         else
             changeTracker = null;
 
-        PageMemoryWarmingUp warmingUp = null;
+        PageMemoryPrewarming prewarming = null;
 
-        if (plcCfg.isWarmingUpEnabled())
-            warmingUp = new PageMemoryWarmingUpImpl(plcCfg, memMetrics, cctx);
+        PrewarmingConfiguration prewarmCfg = plcCfg.getPrewarmingConfiguration();
+
+        if (prewarmCfg != null)
+            prewarming = new PageMemoryPrewarmingImpl(plcCfg.getName(), prewarmCfg, memMetrics, cctx);
 
         PageMemoryImpl pageMem = new PageMemoryImpl(
             wrapMetricsMemoryProvider(memProvider, memMetrics),
@@ -1189,12 +1192,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             memMetrics,
             resolveThrottlingPolicy(),
             this,
-            warmingUp);
+            prewarming);
 
         memMetrics.pageMemory(pageMem);
 
-        if (warmingUp != null)
-            warmingUp.pageMemory(pageMem);
+        if (prewarming != null)
+            prewarming.pageMemory(pageMem);
 
         return pageMem;
     }

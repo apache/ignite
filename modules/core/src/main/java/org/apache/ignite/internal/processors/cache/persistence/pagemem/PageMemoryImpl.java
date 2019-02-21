@@ -284,8 +284,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Memory metrics to track dirty pages count and page replace rate. */
     private DataRegionMetricsImpl memMetrics;
 
-    /** Warming up. */
-    @Nullable private final PageMemoryWarmingUp warmingUp;
+    /** Prewarming. */
+    @Nullable private final PageMemoryPrewarming prewarming;
 
     /** Loaded pages tracker. */
     @Nullable private final LoadedPagesTracker loadedPagesTracker;
@@ -306,7 +306,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param memMetrics Memory metrics to track dirty pages count and page replace rate.
      * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
      * @param cpProgressProvider checkpoint progress, base for throttling. Null disables throttling.
-     * @param warmingUp Warming up implementation.
+     * @param prewarming Prewarming implementation.
      */
     public PageMemoryImpl(
         DirectMemoryProvider directMemoryProvider,
@@ -319,7 +319,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         DataRegionMetricsImpl memMetrics,
         @Nullable ThrottlingPolicy throttlingPlc,
         @NotNull CheckpointWriteProgressSupplier cpProgressProvider,
-        @Nullable PageMemoryWarmingUp warmingUp) {
+        @Nullable PageMemoryPrewarming prewarming) {
         assert ctx != null;
         assert pageSize > 0;
 
@@ -338,8 +338,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
         this.cpProgressProvider = cpProgressProvider;
 
-        this.warmingUp = warmingUp;
-        this.loadedPagesTracker = warmingUp instanceof LoadedPagesTracker ? (LoadedPagesTracker)warmingUp : null;
+        this.prewarming = prewarming;
+        this.loadedPagesTracker = prewarming instanceof LoadedPagesTracker ? (LoadedPagesTracker)prewarming : null;
 
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
@@ -423,8 +423,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public void startWarmingUp() {
-        if (warmingUp != null)
-            warmingUp.start();
+        if (prewarming != null)
+            prewarming.start();
     }
 
     /**
@@ -450,8 +450,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             U.shutdownNow(getClass(), asyncRunner, log);
 
-            if (warmingUp != null)
-                warmingUp.stop();
+            if (prewarming != null)
+                prewarming.stop();
 
             if (segments != null) {
                 for (Segment seg : segments)

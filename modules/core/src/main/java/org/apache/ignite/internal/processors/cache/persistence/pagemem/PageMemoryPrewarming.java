@@ -21,7 +21,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 /**
  *
  */
-public interface PageMemoryWarmingUp extends LifecycleAware {
+public interface PageMemoryPrewarming extends LifecycleAware {
     /**
      * @param pageMem Page memory.
      */

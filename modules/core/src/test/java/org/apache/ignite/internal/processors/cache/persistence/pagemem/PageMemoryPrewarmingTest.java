@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.PrewarmingConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -39,7 +40,7 @@ import org.junit.runners.JUnit4;
  *
  */
 @RunWith(JUnit4.class)
-public class PageMemoryWarmingUpTest extends GridCommonAbstractTest {
+public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -56,10 +57,10 @@ public class PageMemoryWarmingUpTest extends GridCommonAbstractTest {
     protected int valCnt = 20;
 
     /** Wait warming up on start. */
-    protected boolean waitWarmingUpOnStart;
+    protected boolean waitPrewarmingOnStart;
 
     /** Warming up runtime dump delay. */
-    protected long warmingUpRuntimeDumpDelay = 30_000;
+    protected long prewarmingRuntimeDumpDelay = 30_000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -73,9 +74,9 @@ public class PageMemoryWarmingUpTest extends GridCommonAbstractTest {
                 .setMaxSize(maxMemorySize)
                 .setInitialSize(maxMemorySize)
                 .setPersistenceEnabled(true)
-                .setWarmingUpEnabled(true)
-                .setWaitWarmingUpOnStart(waitWarmingUpOnStart)
-                .setWarmingUpRuntimeDumpDelay(warmingUpRuntimeDumpDelay)
+                .setPrewarmingConfiguration(new PrewarmingConfiguration()
+                    .setWaitPrewarmingOnStart(waitPrewarmingOnStart)
+                    .setRuntimeDumpDelay(prewarmingRuntimeDumpDelay))
             );
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -110,7 +111,7 @@ public class PageMemoryWarmingUpTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testWarmingUp() throws Exception {
+    public void testPrewarming() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
