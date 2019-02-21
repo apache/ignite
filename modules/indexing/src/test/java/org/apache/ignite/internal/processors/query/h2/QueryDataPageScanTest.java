@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -269,6 +270,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
                 catch (CacheException e) {
+                    assertTrue(e.getCause() instanceof TransactionSerializationException);
                     if (!e.getMessage().contains(
                         "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"))
                         throw new IllegalStateException(e);
@@ -364,7 +366,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                     .setLazy(true)
                     .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled)
                     .setArgs(1, expNestedLoops, DirectPageScanIndexing.expectedDataPageScanEnabled)
-                    .setPageSize(keysCnt / 2) // Must be less than keysCnt.
+                    .setPageSize(keysCnt / 10) // Must be less than keysCnt.
             )
         ) {
             int nestedLoops = 0;

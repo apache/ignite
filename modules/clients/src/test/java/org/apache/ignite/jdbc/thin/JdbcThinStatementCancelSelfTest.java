@@ -439,9 +439,9 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             IgniteInternalFuture cancelRes = cancel(stmt);
 
             GridTestUtils.assertThrows(log, () -> {
-                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30) OR _key < " + MAX_ROWS);
                 stmt.addBatch("update Long set _val = _val + 1 where awaitLatchCancelled() = 0");
-                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30) OR _key < " + MAX_ROWS);
                 stmt.addBatch("update Long set _val = _val + 1 where shouldNotBeCalledInCaseOfCancellation()");
 
                 stmt.executeBatch();

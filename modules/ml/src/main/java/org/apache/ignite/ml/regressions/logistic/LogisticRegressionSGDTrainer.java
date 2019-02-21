@@ -103,7 +103,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
             batchSize,
             locIterations,
             seed
-        );
+        ).withEnvironmentBuilder(envBuilder);
 
         IgniteBiFunction<K, V, double[]> lbExtractorWrapper = (k, v) -> new double[] {lbExtractor.apply(k, v)};
         MultilayerPerceptron mlp;

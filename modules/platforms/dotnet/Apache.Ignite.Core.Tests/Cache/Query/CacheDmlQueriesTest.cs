@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Fields = new[]
                 {
                     /// Next two fieleds belong to the <see cref="Key"/> object, so should have been marked with <see cref="QueryField.IsKeyField"/>
-                    // But if we forgot to do this - all fields are treated as value fields. Key fields have default values and second insert fails. 
+                    // But if we forgot to do this - all fields are treated as value fields. Key fields have default values and second insert fails.
                     new QueryField("Lo", typeof(int)),
                     new QueryField("Hi", typeof(int)),
 

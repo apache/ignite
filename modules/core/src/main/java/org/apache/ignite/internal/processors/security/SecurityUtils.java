@@ -22,16 +22,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Security utilities.
  */
 public class SecurityUtils {
-    /** Version since service security supported. */
-    public static final IgniteProductVersion SERVICE_PERMISSIONS_SINCE = IgniteProductVersion.fromString("1.7.11");
-
     /** Default serialization version. */
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 

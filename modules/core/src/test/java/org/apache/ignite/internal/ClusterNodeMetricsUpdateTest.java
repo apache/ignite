@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
@@ -127,7 +126,7 @@ public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
                 try {
                     checkMetrics0(expNodes, expJobs);
                 }
-                catch (AssertionFailedError e) {
+                catch (AssertionError e) {
                     return false;
                 }
 

@@ -32,7 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -57,7 +57,7 @@ public class ConnectionManager {
     private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0" +
         ";MAX_OPERATION_MEMORY=0;BATCH_JOINS=1" +
-        ";ROW_FACTORY=\"" + GridH2PlainRowFactory.class.getName() + "\"" +
+        ";ROW_FACTORY=\"" + H2PlainRowFactory.class.getName() + "\"" +
         ";DEFAULT_TABLE_ENGINE=" + GridH2DefaultTableEngine.class.getName();
 
     /** The period of clean up the {@link #threadConns}. */
@@ -302,14 +302,25 @@ public class ConnectionManager {
 
         PreparedStatement stmt = cache.get(key);
 
-        if (stmt != null && !stmt.isClosed() && !stmt.unwrap(JdbcStatement.class).isCancelled() &&
-            !GridSqlQueryParser.prepared(stmt).needRecompile()) {
-            assert stmt.getConnection() == c;
+        // Nothing found.
+        if (stmt == null)
+            return null;
 
-            return stmt;
-        }
+        // TODO: Remove thread local caching at all. Just keep per-connection statement cache.
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-11211
+        // Statement is not from the given connection.
+        if (stmt.getConnection() != c)
+            return null;
 
-        return null;
+        // Is statement still valid?
+        if (
+            stmt.isClosed() ||                                 // Closed.
+            stmt.unwrap(JdbcStatement.class).isCancelled() ||  // Cancelled.
+            GridSqlQueryParser.prepared(stmt).needRecompile() // Outdated (schema has been changed concurrently).
+        )
+            return null;
+
+        return stmt;
     }
 
     /**
@@ -328,7 +339,7 @@ public class ConnectionManager {
 
             H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
 
-            stmt = PreparedStatementExImpl.wrap(prepareStatementNoCache(c, sql));
+            stmt = prepareStatementNoCache(c, sql);
 
             cache.put(key, stmt);
         }
@@ -364,7 +375,7 @@ public class ConnectionManager {
     /**
      * Clear statement cache when cache is unregistered..
      */
-    public void onCacheUnregistered() {
+    public void onCacheDestroyed() {
         threadConns.values().forEach(set -> set.keySet().forEach(H2ConnectionWrapper::clearStatementCache));
     }
 
@@ -396,6 +407,9 @@ public class ConnectionManager {
         if (connCleanupTask != null)
             connCleanupTask.close();
 
+        // Needs to be released before SHUTDOWN.
+        closeConnections();
+
         try (Connection c = connectionNoCache(QueryUtils.SCHEMA_INFORMATION); Statement s = c.createStatement()) {
             s.execute("SHUTDOWN");
         }
@@ -408,8 +422,6 @@ public class ConnectionManager {
 
             sysConn = null;
         }
-
-        closeConnections();
     }
 
     /**

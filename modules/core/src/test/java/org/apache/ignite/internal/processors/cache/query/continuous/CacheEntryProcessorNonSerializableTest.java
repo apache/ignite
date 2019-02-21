@@ -97,13 +97,6 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
         startGrid(getServerNodeCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @return Server nodes.
      */
@@ -434,7 +427,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     private void doTestInvokeTest(CacheConfiguration ccfg, TransactionConcurrency txConcurrency,
         TransactionIsolation txIsolation) {
         if (ccfg.getNearConfiguration() != null)
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         IgniteEx cln = grid(getServerNodeCount());
 

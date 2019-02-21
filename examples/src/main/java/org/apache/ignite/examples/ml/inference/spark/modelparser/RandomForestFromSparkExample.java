@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.inference.spark.modelparser;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -26,10 +25,12 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.sparkmodelparser.SparkModelParser;
 import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
+
+import java.io.FileNotFoundException;
 
 /**
  * Run Random Forest model loaded from snappy.parquet file.
@@ -39,8 +40,7 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  */
 public class RandomForestFromSparkExample {
     /** Path to Spark Random Forest model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/rf/data" +
-        "/part-00000-290bdb9d-bc1b-411c-8811-c3205434f5fc-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/rf";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
@@ -70,7 +70,7 @@ public class RandomForestFromSparkExample {
 
             System.out.println(">>> Random Forest model: " + mdl.toString(true));
 
-            double accuracy = BinaryClassificationEvaluator.evaluate(
+            double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,
