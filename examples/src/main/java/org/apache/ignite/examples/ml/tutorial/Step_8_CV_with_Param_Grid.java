@@ -17,8 +17,6 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import java.io.FileNotFoundException;
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -32,12 +30,15 @@ import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
+
+import java.io.FileNotFoundException;
+import java.util.Arrays;
 
 /**
  * To choose the best hyperparameters the cross-validation with {@link ParamGrid} will be used in this example.
@@ -50,7 +51,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on
  * the processed data using decision tree classification and the obtained hyperparams.</p>
  * <p>
- * Finally, this example uses {@link BinaryClassificationEvaluator} functionality to compute metrics from predictions.</p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  * <p>
  * The purpose of cross-validation is model checking, not model building.</p>
  * <p>
@@ -163,7 +164,7 @@ public class Step_8_CV_with_Param_Grid {
 
                 System.out.println("\n>>> Trained model: " + bestMdl);
 
-                double accuracy = BinaryClassificationEvaluator.evaluate(
+                double accuracy = Evaluator.evaluate(
                     dataCache,
                     split.getTestFilter(),
                     bestMdl,

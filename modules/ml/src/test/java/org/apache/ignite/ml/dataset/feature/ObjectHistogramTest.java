@@ -47,8 +47,8 @@ public class ObjectHistogramTest {
      */
     @Before
     public void setUp() throws Exception {
-        hist1 = new ObjectHistogram<>(this::computeBucket, x -> 1.);
-        hist2 = new ObjectHistogram<>(this::computeBucket, x -> 1.);
+        hist1 = new TestHist1();
+        hist2 = new TestHist1();
 
         fillHist(hist1, dataFirstPart);
         fillHist(hist2, dataSecondPart);
@@ -124,7 +124,7 @@ public class ObjectHistogramTest {
         double[] sums = new double[distribution.size()];
 
         int ptr = 0;
-        for(int bucket : distribution.keySet()) {
+        for (int bucket : distribution.keySet()) {
             sums[ptr] = distribution.get(bucket);
             buckets[ptr++] = bucket;
         }
@@ -136,25 +136,25 @@ public class ObjectHistogramTest {
     /** */
     @Test
     public void testOfSum() {
-        IgniteFunction<Double, Integer> bucketMap = x -> (int) (Math.ceil(x * 100) % 100);
+        IgniteFunction<Double, Integer> bucketMap = x -> (int)(Math.ceil(x * 100) % 100);
         IgniteFunction<Double, Double> cntrMap = x -> Math.pow(x, 2);
 
-        ObjectHistogram<Double> forAllHistogram = new ObjectHistogram<>(bucketMap, cntrMap);
+        ObjectHistogram<Double> forAllHistogram = new TestHist2();
         Random rnd = new Random();
         List<ObjectHistogram<Double>> partitions = new ArrayList<>();
         int cntOfPartitions = rnd.nextInt(100);
         int sizeOfDataset = rnd.nextInt(10000);
-        for(int i = 0; i < cntOfPartitions; i++)
-            partitions.add(new ObjectHistogram<>(bucketMap, cntrMap));
+        for (int i = 0; i < cntOfPartitions; i++)
+            partitions.add(new TestHist2());
 
-        for(int i = 0; i < sizeOfDataset; i++) {
+        for (int i = 0; i < sizeOfDataset; i++) {
             double objVal = rnd.nextDouble();
             forAllHistogram.addElement(objVal);
             partitions.get(rnd.nextInt(partitions.size())).addElement(objVal);
         }
 
         Optional<ObjectHistogram<Double>> leftSum = partitions.stream().reduce(ObjectHistogram::plus);
-        Optional<ObjectHistogram<Double>> rightSum = partitions.stream().reduce((x,y) -> y.plus(x));
+        Optional<ObjectHistogram<Double>> rightSum = partitions.stream().reduce((x, y) -> y.plus(x));
         assertTrue(leftSum.isPresent());
         assertTrue(rightSum.isPresent());
         assertTrue(forAllHistogram.isEqualTo(leftSum.get()));
@@ -167,5 +167,47 @@ public class ObjectHistogramTest {
      */
     private int computeBucket(Double val) {
         return (int)Math.rint(val);
+    }
+
+    /** */
+    private static class TestHist1 extends ObjectHistogram<Double> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 2397005559193012602L;
+
+        /** {@inheritDoc} */
+        @Override public Integer mapToBucket(Double obj) {
+            return (int)Math.rint(obj);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Double mapToCounter(Double obj) {
+            return 1.;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ObjectHistogram<Double> newInstance() {
+            return new TestHist1();
+        }
+    }
+
+    /** */
+    private static class TestHist2 extends ObjectHistogram<Double> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = -2080037140817825107L;
+
+        /** {@inheritDoc} */
+        @Override public Integer mapToBucket(Double x) {
+            return (int)(Math.ceil(x * 100) % 100);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Double mapToCounter(Double x) {
+            return Math.pow(x, 2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ObjectHistogram<Double> newInstance() {
+            return new TestHist2();
+        }
     }
 }
