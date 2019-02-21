@@ -1847,6 +1847,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert cctx != null;
         assert newRow != null;
         assert prevRowAvailable || prevRow == null;
+        // No need to acquire busy lock here - operation is protected by GridCacheQueryManager.busyLock
 
         KeyCacheObject key = newRow.key();
         CacheObject val = newRow.value();
@@ -1857,33 +1858,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (idx == null)
             return;
 
-        if (!busyLock.enterBusy())
-            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+        String cacheName = cctx.name();
 
-        try {
-            String cacheName = cctx.name();
+        CacheObjectContext coctx = cctx.cacheObjectContext();
 
-            CacheObjectContext coctx = cctx.cacheObjectContext();
+        QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
 
-            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
+        if (prevRowAvailable && prevRow != null) {
+            QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
+                coctx,
+                key,
+                prevRow.value(),
+                false);
 
-            if (prevRowAvailable && prevRow != null) {
-                QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
-                    coctx,
-                    key,
-                    prevRow.value(),
-                    false);
+            if (prevValDesc != desc) {
+                if (prevValDesc != null)
+                    idx.remove(cctx, prevValDesc, prevRow);
 
-                if (prevValDesc != desc) {
-                    if (prevValDesc != null)
-                        idx.remove(cctx, prevValDesc, prevRow);
-
-                    // Row has already been removed from another table indexes
-                    prevRow = null;
-                }
+                // Row has already been removed from another table indexes
+                prevRow = null;
             }
+        }
 
-            if (desc == null) {
+            if (desc == null){
                 int typeId = ctx.cacheObjects().typeId(val);
 
                 long missedCacheTypeKey = missedCacheTypeKey(cacheName, typeId);
@@ -1898,15 +1895,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows");
                     }
                 }
-
                 return;
             }
 
-            idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+
+        idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
     }
 
     /**
@@ -2573,31 +2566,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void remove(GridCacheContext cctx, CacheDataRow row)
         throws IgniteCheckedException {
         assert row != null;
+        // No need to acquire busy lock here - operation is protected by GridCacheQueryManager.busyLock
 
         if (log.isDebugEnabled())
-            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key()+ ", val=" + row.value() + "]");
+            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key() + ", val=" + row.value() + "]");
 
         if (idx == null)
             return;
 
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
-        try {
             QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
                 cctx.cacheObjectContext(),
                 row.key(),
                 row.value(),
                 false);
 
-            if (desc == null)
-                return;
+        if (desc == null)
+            return;
 
                 idx.remove(cctx, desc, row);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
     }
 
     /**
