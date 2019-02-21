@@ -337,6 +337,9 @@ public class GridAffinityAssignmentCache {
                 }
             }
 
+            if (skipCalculation && ctx.state().clusterState().localTransition())
+                skipCalculation = false;
+
             if (skipCalculation)
                 assignment = prevAssignment;
             else if (hasBaseline && !changedBaseline) {
