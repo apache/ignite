@@ -1180,7 +1180,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cache != null) {
                 stoppedCaches.put(cacheName, cache);
 
-                onKernalStop(cache, cancel);
+                onCacheManagersStop(cache, cancel);
             }
         }
 
@@ -1190,9 +1190,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cache == caches.remove(entry.getKey())) {
                 stoppedCaches.put(entry.getKey(), cache);
 
-                onKernalStop(entry.getValue(), cancel);
+                onCacheManagersStop(entry.getValue(), cancel);
             }
         }
+
+        stoppedCaches.forEach((cacheName, cache) -> onKernalStop(cache, cancel));
     }
 
     /** {@inheritDoc} */
@@ -1468,7 +1470,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cancel Cancel flag.
      */
     @SuppressWarnings("unchecked")
-    private void onKernalStop(GridCacheAdapter<?, ?> cache, boolean cancel) {
+    private void onCacheManagersStop(GridCacheAdapter<?, ?> cache, boolean cancel) {
         GridCacheContext ctx = cache.context();
 
         if (isNearEnabled(ctx)) {
@@ -1495,6 +1497,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (!excludes.contains(mgr))
                 mgr.onKernalStop(cancel);
         }
+    }
+
+    /**
+     * @param cache Cache to stop.
+     * @param cancel Cancel flag.
+     */
+    @SuppressWarnings("unchecked")
+    private void onKernalStop(GridCacheAdapter<?, ?> cache, boolean cancel) {
+        GridCacheContext ctx = cache.context();
 
         cache.onKernalStop();
 
