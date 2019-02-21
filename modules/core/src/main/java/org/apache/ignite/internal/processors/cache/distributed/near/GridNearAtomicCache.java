@@ -170,20 +170,17 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
             int nearValIdx = nearValsIdxs != null ? nearValsIdxs.indexOf(i) : -1;
 
-            long ttl = -1;
-            long expireTime = -1;
-
-            if (nearValIdx >= 0) {
+            if (nearValIdx >= 0)
                 val = res.nearValue(nearValIdx);
-                ttl = res.nearTtl(nearValIdx);
-                expireTime = res.nearExpireTime(nearValIdx);
-            }
             else {
                 assert req.operation() != TRANSFORM;
 
                 if (req.operation() != DELETE)
                     val = req.value(i);
             }
+
+            long ttl = res.nearTtl(i);
+            long expireTime = res.nearExpireTime(i);
 
             if (ttl != CU.TTL_NOT_CHANGED && expireTime == CU.EXPIRE_TIME_CALCULATE)
                 expireTime = CU.toExpireTime(ttl);

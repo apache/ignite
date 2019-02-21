@@ -259,6 +259,16 @@ public class GridLongList implements Message, Externalizable {
     }
 
     /**
+     * @param i Index.
+     * @param val Value.
+     */
+    public void set(int i, long val) {
+        assert i < idx;
+
+        arr[i] = val;
+    }
+
+    /**
      * @return Size.
      */
     public int size() {

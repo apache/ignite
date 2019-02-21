@@ -98,28 +98,35 @@ public class NearCacheUpdates implements Message {
      */
     void addNearTtl(int keyIdx, long ttl, long expireTime) {
         if (ttl >= 0) {
-            if (nearTtls == null) {
+            if (nearTtls == null)
                 nearTtls = new GridLongList(16);
 
-                for (int i = 0; i < keyIdx; i++)
-                    nearTtls.add(-1L);
-            }
+            for (int i = nearTtls.size(); i < keyIdx; i++)
+                nearTtls.add(-1L);
         }
 
-        if (nearTtls != null)
-            nearTtls.add(ttl);
+        if (nearTtls != null) {
+            if (keyIdx < nearTtls.size())
+                nearTtls.set(keyIdx, ttl);
+            else
+                nearTtls.add(ttl);
+        }
 
         if (expireTime >= 0) {
             if (nearExpireTimes == null) {
                 nearExpireTimes = new GridLongList(16);
 
-                for (int i = 0; i < keyIdx; i++)
+                for (int i = nearExpireTimes.size(); i < keyIdx; i++)
                     nearExpireTimes.add(-1);
             }
         }
 
-        if (nearExpireTimes != null)
-            nearExpireTimes.add(expireTime);
+        if (nearExpireTimes != null) {
+            if (keyIdx < nearExpireTimes.size())
+                nearExpireTimes.set(keyIdx, expireTime);
+            else
+                nearExpireTimes.add(expireTime);
+        }
     }
 
     /**
