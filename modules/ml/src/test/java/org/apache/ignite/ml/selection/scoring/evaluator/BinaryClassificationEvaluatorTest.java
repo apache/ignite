@@ -17,23 +17,24 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link BinaryClassificationEvaluator}.
+ * Tests for {@link Evaluator}.
  */
 public class BinaryClassificationEvaluatorTest extends TrainerTest {
     /**
@@ -58,7 +59,7 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
             lbExtractor
         ).withK(3);
 
-        double score = BinaryClassificationEvaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
+        double score = Evaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
 
         assertEquals(0.9839357429718876, score, 1e-12);
     }
@@ -89,7 +90,7 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
             lbExtractor
         ).withK(3);
 
-        double score = BinaryClassificationEvaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
+        double score = Evaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
 
         assertEquals(0.9, score, 1);
     }
