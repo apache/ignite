@@ -45,18 +45,18 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean class="org.gridgain.configuration.IgniteConfiguration">
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="dataStorageConfiguration">
-            <bean class="org.gridgain.configuration.DataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <!--
                     Default memory region that grows endlessly. A cache is bound to this memory region
                     unless it sets another one in its CacheConfiguration.
                 -->
                 <property name="defaultDataRegionConfiguration">
-                    <bean class="org.gridgain.configuration.DataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="name" value="Default_Region"/>
                         <!-- 100 MB memory region with disabled eviction -->
                         <property name="initialSize" value="#{100 * 1024 * 1024}"/>
@@ -69,7 +69,7 @@
                         <!--
                             Memory region of 40 MBs in size with an eviction enabled.
                         -->
-                        <bean class="org.gridgain.configuration.DataRegionConfiguration">
+                        <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                             <property name="name" value="40MB_Region_Eviction"/>
                             <!-- Memory region of 20 MB initial size. -->
                             <property name="initialSize" value="#{20 * 1024 * 1024}"/>
@@ -83,7 +83,7 @@
                             This memory region is backed by a memory-mapped file which names is passed via
                             'swapFilePath' parameter.
                         -->
-                        <bean class="org.gridgain.configuration.DataRegionConfiguration">
+                        <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                             <property name="name" value="30MB_Region_Swapping"/>
                             <!-- Memory region of 15 MB initial size. -->
                             <property name="initialSize" value="#{15 * 1024 * 1024}"/>
@@ -99,7 +99,7 @@
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
-            <bean class="org.gridgain.spi.discovery.tcp.TcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
                     <!--
                         Ignite provides several options for automatic discovery that can be used
@@ -107,8 +107,8 @@
                         to our documentation: http://apacheignite.readme.io/docs/cluster-config
                     -->
                     <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <!--<bean class="org.gridgain.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
-                    <bean class="org.gridgain.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
