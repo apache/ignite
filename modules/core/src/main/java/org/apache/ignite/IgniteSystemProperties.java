@@ -1143,6 +1143,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
+     * Maximum number of diagnostic warning messages per category, when waiting for PME.
+     */
+    public static final String IGNITE_ALLOW_KEY_VAL_COLUMNS_AT_DML = "IGNITE_ALLOW_KEY_VAL_COLUMNS_AT_DML";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

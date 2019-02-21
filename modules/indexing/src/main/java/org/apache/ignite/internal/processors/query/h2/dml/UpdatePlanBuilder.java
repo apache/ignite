@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -76,6 +77,10 @@ public final class UpdatePlanBuilder {
     /** Converter from GridSqlColumn to Column. */
     private static final IgniteClosure<GridSqlColumn, Column> TO_H2_COL =
         (IgniteClosure<GridSqlColumn, Column>)GridSqlColumn::column;
+
+    /** Allow hidden key value columns at the INSERT/UPDATE/MERGE statements (not final for tests). */
+    private static boolean ALLOW_KEY_VAL_COLUMNS = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_ALLOW_KEY_VAL_COLUMNS_AT_DML, false);
 
     /**
      * Constructor.
@@ -224,12 +229,24 @@ public final class UpdatePlanBuilder {
             int colId = col.column().getColumnId();
 
             if (desc.isKeyColumn(colId)) {
+                if (!ALLOW_KEY_VAL_COLUMNS && !QueryUtils.isSqlType(desc.type().keyClass())) {
+                    throw new IgniteSQLException(
+                        "Composite _KEY column is not supported at INSERT/UPDATE/MERGE statements",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+
                 keyColIdx = i;
 
                 continue;
             }
 
             if (desc.isValueColumn(colId)) {
+                if (!ALLOW_KEY_VAL_COLUMNS && !QueryUtils.isSqlType(desc.type().valueClass())) {
+                    throw new IgniteSQLException(
+                        "Composite _VAL column is not supported at INSERT/UPDATE/MERGE statements",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+
                 valColIdx = i;
 
                 continue;
@@ -413,8 +430,15 @@ public final class UpdatePlanBuilder {
 
                     Column col = updatedCols.get(i).column();
 
-                    if (desc.isValueColumn(col.getColumnId()))
+                    if (desc.isValueColumn(col.getColumnId())) {
+                        if (!ALLOW_KEY_VAL_COLUMNS && !QueryUtils.isSqlType(desc.type().valueClass())) {
+                            throw new IgniteSQLException(
+                                "Composite _VAL column is not supported at INSERT/UPDATE/MERGE statements",
+                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                        }
+
                         valColIdx = i;
+                    }
                 }
 
                 boolean hasNewVal = (valColIdx != -1);
