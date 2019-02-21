@@ -57,9 +57,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -249,8 +247,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSimpleRebalancing() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10560", MvccFeatureChecker.forcedMvcc());
-
         IgniteKernal ignite = (IgniteKernal)startGrid(0);
 
         generateData(ignite, 0, 0);

@@ -322,11 +322,11 @@ class GridDhtPartitionSupplier {
                 CacheDataRow row = iter.peek();
 
                 // Prevent mvcc entry history splitting into separate batches.
-                boolean canFlushMsg = !grp.mvccEnabled() ||
+                boolean canFlushHistory = !grp.mvccEnabled() ||
                     prevRow != null && ((grp.sharedGroup() && row.cacheId() != prevRow.cacheId()) ||
                         !row.key().equals(prevRow.key()));
 
-                if (canFlushMsg && supplyMsg.messageSize() >= msgMaxSize) {
+                if (canFlushHistory && supplyMsg.messageSize() >= msgMaxSize) {
                     if (++batchesCnt >= maxBatchesCnt) {
                         saveSupplyContext(contextId,
                             iter,

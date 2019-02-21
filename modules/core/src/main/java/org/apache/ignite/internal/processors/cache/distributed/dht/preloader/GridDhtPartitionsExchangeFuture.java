@@ -2178,9 +2178,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!cctx.localNode().isClient())
             tryToPerformLocalSnapshotOperation();
 
-        if (err == null)
-            cctx.coordinators().onExchangeDone(events().discoveryCache());
-
         // Create and destory caches and cache proxies.
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
@@ -2224,6 +2221,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // Complete any affReady futures and update last exchange done version.
             cctx.exchange().onExchangeDone(res, initialVersion(), err0);
+
+            if (err0 == null)
+                cctx.coordinators().onExchangeDone(events().discoveryCache());
 
             cctx.cache().completeProxyRestart(resolveCacheRequests(exchActions), initialVersion(), res);
 
