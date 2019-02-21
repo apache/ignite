@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import java.util.Iterator;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 
+import java.util.Iterator;
+
 /**
- * F-measure calculator.
+ * Precision calculator.
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public class Fmeasure<L> extends ClassMetric<L> {
+public class Precision<L> extends ClassMetric<L> {
     /**
      * The class of interest or positive class.
      *
      * @param clsLb The label.
      */
-    public Fmeasure(L clsLb) {
+    public Precision(L clsLb) {
         super(clsLb);
     }
 
@@ -39,10 +40,7 @@ public class Fmeasure<L> extends ClassMetric<L> {
     @Override public double score(Iterator<LabelPair<L>> it) {
         if (clsLb != null) {
             long tp = 0;
-            long fn = 0;
             long fp = 0;
-            double recall;
-            double precision;
 
             while (it.hasNext()) {
                 LabelPair<L> e = it.next();
@@ -50,25 +48,19 @@ public class Fmeasure<L> extends ClassMetric<L> {
                 L prediction = e.getPrediction();
                 L truth = e.getTruth();
 
-                if (clsLb.equals(truth)) {
+                if (clsLb.equals(prediction)) {
                     if (prediction.equals(truth))
                         tp++;
                     else
-                        fn++;
+                        fp++;
                 }
-
-                if (clsLb.equals(prediction) && !prediction.equals(truth))
-                    fp++;
             }
-            long denominatorRecall = tp + fn;
+            long denominator = tp + fp;
 
-            long denominatorPrecision = tp + fp;
+            if (denominator == 0)
+                return 1; // according to https://github.com/dice-group/gerbil/wiki/Precision,-Recall-and-F1-measure
 
-            // according to https://github.com/dice-group/gerbil/wiki/Precision,-Recall-and-F1-measure
-            recall = denominatorRecall == 0 ? 1 : (double)tp / denominatorRecall;
-            precision = denominatorPrecision == 0 ? 1 : (double)tp / denominatorPrecision;
-
-            return 2 * (recall * precision) / (recall + precision);
+            return (double)tp / denominator;
         }
         else
             return Double.NaN;
@@ -76,6 +68,7 @@ public class Fmeasure<L> extends ClassMetric<L> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "F-measure for class with label " + clsLb;
+        return "precision for class with label " + clsLb;
     }
+
 }
