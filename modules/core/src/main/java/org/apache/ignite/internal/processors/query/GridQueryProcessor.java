@@ -1797,6 +1797,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert cctx != null;
         assert newRow != null;
         assert prevRowAvailable || prevRow == null;
+        // No need to acquire busy lock here - operation is protected by GridCacheQueryManager.busyLock
 
         KeyCacheObject key = newRow.key();
 
@@ -1806,40 +1807,35 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (idx == null)
             return;
 
-        if (!busyLock.enterBusy())
-            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+        String cacheName = cctx.name();
 
-        try {
-            String cacheName = cctx.name();
+        CacheObjectContext coctx = cctx.cacheObjectContext();
 
-            CacheObjectContext coctx = cctx.cacheObjectContext();
+        QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, newRow.value(), true);
 
-            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, newRow.value(), true);
+        if (prevRowAvailable && prevRow != null) {
+            QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
+                coctx,
+                key,
+                prevRow.value(),
+                false);
 
-            if (prevRowAvailable && prevRow != null) {
-                QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
-                    coctx,
-                    key,
-                    prevRow.value(),
-                    false);
+            if (prevValDesc != desc) {
+                if (prevValDesc != null)
+                    idx.remove(cctx, prevValDesc, prevRow);
 
-                if (prevValDesc != desc) {
-                    if (prevValDesc != null)
-                        idx.remove(cctx, prevValDesc, prevRow);
-
-                    // Row has already been removed from another table indexes
-                    prevRow = null;
-                }
+                // Row has already been removed from another table indexes
+                prevRow = null;
             }
+        }
 
             if (desc == null)
+
+
                 return;
 
-            idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+
+        idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
     }
 
     /**
@@ -2467,31 +2463,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void remove(GridCacheContext cctx, CacheDataRow val)
         throws IgniteCheckedException {
         assert val != null;
+        // No need to acquire busy lock here - operation is protected by GridCacheQueryManager.busyLock
 
         if (log.isDebugEnabled())
-            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + val.key()+ ", val=" + val.value() + "]");
+            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + val.key() + ", val=" + val.value() + "]");
 
         if (idx == null)
             return;
 
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
-        try {
             QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
                 cctx.cacheObjectContext(),
                 val.key(),
                 val.value(),
                 false);
 
-            if (desc == null)
-                return;
+        if (desc == null)
+            return;
 
-            idx.remove(cctx, desc, val);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+                idx.remove(cctx, desc, val);
+
     }
 
     /**
