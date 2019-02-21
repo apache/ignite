@@ -111,8 +111,6 @@ public class InOperationExtractPartitionSelfTest extends AbstractIndexingCommonT
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         orgCache = null;
-
-        stopAllGrids();
     }
 
     /** */

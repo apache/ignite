@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.configuration.distributed;
 
-import java.io.Serializable;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiConsumer;
-
 /**
  * Implementation of {@link DistributedProperty} for {@link Boolean}.
  */
@@ -35,7 +32,7 @@ public class DistributedBooleanProperty extends DistributedProperty<Boolean> {
      * @param initVal Initial initVal of property.
      * @return Property detached from processor.(Distributed updating are not accessable).
      */
-    public static DistributedBooleanProperty detachedProperty(String name, Boolean initVal) {
+    public static DistributedBooleanProperty detachedBooleanProperty(String name, Boolean initVal) {
         return new DistributedBooleanProperty(name, initVal);
     }
 }

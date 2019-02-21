@@ -8,12 +8,6 @@
     <Filter Include="Code\impl">
       <UniqueIdentifier>{9bc8816b-8ec1-4da2-9381-d194f811280c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\impl\net">
-      <UniqueIdentifier>{a9e3beb1-9215-4edc-b0ea-eddd868bbc93}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Code\impl\ssl">
-      <UniqueIdentifier>{46739e07-2e4d-400b-bba2-902d96158c44}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Code\cache">
       <UniqueIdentifier>{143c6ccd-4c0a-4ac3-a6a5-23aa030288db}</UniqueIdentifier>
     </Filter>
@@ -34,15 +28,6 @@
     <ClCompile Include="..\..\src\impl\protocol_version.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\impl\ssl\secure_socket_client.cpp">
-      <Filter>Code\impl\ssl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\impl\ssl\ssl_gateway.cpp">
-      <Filter>Code\impl\ssl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\os\win\src\net\tcp_socket_client.cpp">
-      <Filter>Code\impl\net</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\impl\message.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>
@@ -55,20 +40,14 @@
     <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp">
       <Filter>Code\impl\cache</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\impl\net\remote_type_updater.cpp">
-      <Filter>Code\impl\net</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\impl\data_channel.cpp">
       <Filter>Code\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\os\win\src\net\net_utils.cpp">
-      <Filter>Code\impl\net</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\impl\cache\cache_affinity_info.cpp">
       <Filter>Code\impl\cache</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\impl\ssl\ssl_api.cpp">
-      <Filter>Code\impl\ssl</Filter>
+    <ClCompile Include="..\..\src\impl\remote_type_updater.cpp">
+      <Filter>Code\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -117,32 +96,8 @@
     <ClInclude Include="..\..\src\impl\response_status.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\impl\socket_client.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\impl\utility.h">
       <Filter>Code\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\impl\ssl\secure_socket_client.h">
-      <Filter>Code\impl\ssl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\impl\ssl\ssl_gateway.h">
-      <Filter>Code\impl\ssl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\impl\net\end_point.h">
-      <Filter>Code\impl\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\impl\net\net_utils.h">
-      <Filter>Code\impl\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\impl\net\remote_type_updater.h">
-      <Filter>Code\impl\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\impl\net\tcp_range.h">
-      <Filter>Code\impl\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\impl\net\tcp_socket_client.h">
-      <Filter>Code\impl\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\impl\cache\cache_client_impl.h">
       <Filter>Code\impl\cache</Filter>
@@ -153,8 +108,8 @@
     <ClInclude Include="..\..\src\impl\cache\cache_affinity_info.h">
       <Filter>Code\impl\cache</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\impl\ssl\ssl_api.h">
-      <Filter>Code\impl\ssl</Filter>
+    <ClInclude Include="..\..\src\impl\remote_type_updater.h">
+      <Filter>Code\impl</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

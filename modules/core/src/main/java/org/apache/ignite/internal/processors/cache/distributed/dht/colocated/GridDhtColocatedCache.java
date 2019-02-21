@@ -237,7 +237,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (ctx.mvccEnabled()) {
             try {
                 if (tx != null)
-                    mvccSnapshot = MvccUtils.requestSnapshot(ctx, tx);
+                    mvccSnapshot = MvccUtils.requestSnapshot(tx);
                 else {
                     mvccTracker = MvccUtils.mvccTracker(ctx, null);
 
@@ -342,7 +342,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (ctx.mvccEnabled()) {
             try {
                 if (tx != null)
-                    mvccSnapshot = MvccUtils.requestSnapshot(ctx, tx);
+                    mvccSnapshot = MvccUtils.requestSnapshot(tx);
                 else {
                     mvccTracker = MvccUtils.mvccTracker(ctx, null);
 

@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -189,7 +188,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-                catch (AssertionFailedError e) {
+                catch (AssertionError e) {
                     log.info("Check failed, will retry: " + e);
                 }
 

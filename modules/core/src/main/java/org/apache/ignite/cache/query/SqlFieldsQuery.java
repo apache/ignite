@@ -51,6 +51,10 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Do not remove. For tests only. */
+    @SuppressWarnings("NonConstantFieldWithUpperCaseName")
+    private static boolean DFLT_LAZY;
+
     /** SQL Query. */
     private String sql;
 
@@ -73,8 +77,8 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean replicatedOnly;
 
-    /** */
-    private boolean lazy;
+    /** Lazy mode is default since Ignite v.2.8. */
+    private boolean lazy = DFLT_LAZY;
 
     /** Partitions for query */
     private int[] parts;
