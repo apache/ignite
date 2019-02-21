@@ -536,6 +536,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public GridCacheUpdateAtomicResult innerUpdate(
+        @Nullable GridCacheMapEntry.AtomicCacheUpdateClosure c,
         GridCacheVersion ver,
         UUID evtNodeId,
         UUID affNodeId,

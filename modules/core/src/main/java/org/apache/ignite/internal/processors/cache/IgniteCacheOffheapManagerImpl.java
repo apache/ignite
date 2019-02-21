@@ -40,6 +40,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
@@ -1663,10 +1665,23 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                dataTree.invokeAll(rows.iterator(), CacheDataRowAdapter.RowData.NO_KEY, map::get);
+                RuntimeException err = null;
 
-                for (Map.Entry<? extends CacheSearchRow, ? extends OffheapInvokeClosure> e : map.entrySet())
-                    finishInvoke(cctx, e.getKey().key(), e.getValue());
+                try {
+                    dataTree.invokeAll(rows.iterator(), CacheDataRowAdapter.RowData.NO_KEY, map::get);
+                }
+                catch (UnregisteredClassException | UnregisteredBinaryTypeException clsErr) {
+                    err = clsErr;
+                }
+
+                for (Map.Entry<? extends CacheSearchRow, ? extends OffheapInvokeClosure> e : map.entrySet()) {
+                    // Update could be interrupted in the middle, finish update only for processed entries.
+                    if (e.getValue().operationType() != null)
+                        finishInvoke(cctx, e.getKey().key(), e.getValue());
+                }
+
+                if (err != null)
+                    throw err;
             }
             finally {
                 busyLock.leaveBusy();

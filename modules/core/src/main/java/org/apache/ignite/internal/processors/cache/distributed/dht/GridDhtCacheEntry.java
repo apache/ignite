@@ -698,7 +698,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @throws GridCacheEntryRemovedException If removed.
      */
     @SuppressWarnings({"ManualArrayToCollectionCopy"})
-    public Collection<ReaderId> checkReadersLocked() throws GridCacheEntryRemovedException {
+    protected Collection<ReaderId> checkReadersLocked() throws GridCacheEntryRemovedException {
         assert lockedByCurrentThread();
 
         checkObsolete();

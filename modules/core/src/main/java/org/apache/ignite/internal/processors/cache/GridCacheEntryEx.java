@@ -512,6 +512,7 @@ public interface GridCacheEntryEx {
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
+     * @param c Update closure.
      * @param ver Cache version to set. Entry will be updated only if current version is less then passed version.
      * @param evtNodeId Event node ID.
      * @param affNodeId Affinity node ID.
@@ -549,6 +550,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
     public GridCacheUpdateAtomicResult innerUpdate(
+        @Nullable GridCacheMapEntry.AtomicCacheUpdateClosure c,
         GridCacheVersion ver,
         UUID evtNodeId,
         UUID affNodeId,

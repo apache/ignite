@@ -146,8 +146,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         assert ver != null : "Failed to find version [req=" + req + ", res=" + res + ']';
 
-        int nearValIdx = 0;
-
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
         for (int i = 0; i < req.size(); i++) {
@@ -170,10 +168,15 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
             CacheObject val = null;
 
-            if (F.contains(nearValsIdxs, i)) {
-                val = res.nearValue(nearValIdx);
+            int nearValIdx = nearValsIdxs != null ? nearValsIdxs.indexOf(i) : -1;
 
-                nearValIdx++;
+            long ttl = -1;
+            long expireTime = -1;
+
+            if (nearValIdx >= 0) {
+                val = res.nearValue(nearValIdx);
+                ttl = res.nearTtl(nearValIdx);
+                expireTime = res.nearExpireTime(nearValIdx);
             }
             else {
                 assert req.operation() != TRANSFORM;
@@ -181,9 +184,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                 if (req.operation() != DELETE)
                     val = req.value(i);
             }
-
-            long ttl = res.nearTtl(i);
-            long expireTime = res.nearExpireTime(i);
 
             if (ttl != CU.TTL_NOT_CHANGED && expireTime == CU.EXPIRE_TIME_CALCULATE)
                 expireTime = CU.toExpireTime(ttl);
@@ -241,6 +241,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     GridCacheOperation op = val != null ? UPDATE : DELETE;
 
                     GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
+                        null,
                         ver,
                         nodeId,
                         nodeId,
@@ -341,6 +342,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         long expireTime = req.nearExpireTime(i);
 
                         GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
+                            null,
                             ver,
                             nodeId,
                             nodeId,
