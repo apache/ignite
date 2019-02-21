@@ -606,9 +606,9 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
                         committed = true;
                     }
                     catch (Exception ex) {
-                        assertTrue(ex.getMessage(), ex.getMessage() != null &&
-                            (ex.getMessage().contains("Transaction has been rolled back") ||
-                                ex.getMessage().contains("Cannot serialize transaction due to write conflict")));
+                        assertTrue(ex.getCause() instanceof TransactionSerializationException);
+                        assertEquals(cache.getConfiguration(CacheConfiguration.class).getAtomicityMode(),
+                            TRANSACTIONAL_SNAPSHOT);
                     }
                     finally {
                         if (tx != null)
