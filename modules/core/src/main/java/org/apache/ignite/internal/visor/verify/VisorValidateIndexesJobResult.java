@@ -92,4 +92,12 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
     @Override public String toString() {
         return S.toString(VisorValidateIndexesJobResult.class, this);
     }
+
+    /**
+     * @return {@code true} If any indexes issues found on node, otherwise returns {@code false}.
+     */
+    public boolean hasIssues() {
+        return (partRes != null && partRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty())) ||
+            (idxRes != null && idxRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()));
+    }
 }
