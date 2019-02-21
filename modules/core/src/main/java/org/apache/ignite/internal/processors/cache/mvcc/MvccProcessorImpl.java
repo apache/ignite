@@ -459,8 +459,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         // Process node left event on the current mvcc coordinator.
         else if (curCrd0.local()) {
             // 1. Notify active queries.
-            //TODO: IGNITE-10561: uncomment or remove?
-//            activeQueries.onNodeFailed(nodeId);
+            activeQueries.onNodeFailed(nodeId);
 
             // 2. Notify previous queries.
             prevQueries.onNodeFailed(nodeId);
