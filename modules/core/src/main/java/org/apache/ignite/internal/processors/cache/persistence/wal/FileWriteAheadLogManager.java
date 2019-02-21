@@ -491,7 +491,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             archiver.restart();
         }
 
-        if (dsCfg.isWalCompactionEnabled()) {
+        if (dsCfg.isWalCompactionEnabled() && !cctx.kernalContext().recoveryMode()) {
             assert compressor != null : "Compressor should be initialized.";
 
             compressor.restart();
