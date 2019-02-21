@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -38,6 +40,8 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         super.afterTest();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /**
@@ -47,6 +51,8 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDiscoCacheReuseOnNodeJoin() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
         startGridsMultiThreaded(2);
 
         // The final topology version after 2 node joins and one CacheAffinityChange message.

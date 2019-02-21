@@ -337,23 +337,20 @@ public class GridAffinityAssignmentCache {
                 }
             }
 
-            if (skipCalculation && ctx.state().clusterState().localTransition())
-                skipCalculation = false;
+            if (hasBaseline && changedBaseline) {
+                baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
+                    discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
+                    prevAssignment, events.lastEvent(), topVer, backups));
 
-            if (skipCalculation)
+                assignment = currentBaselineAssignment(topVer);
+            }
+            else if (skipCalculation)
                 assignment = prevAssignment;
             else if (hasBaseline && !changedBaseline) {
                 if (baselineAssignment == null)
                     baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                         discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
                         prevAssignment, events.lastEvent(), topVer, backups));
-
-                assignment = currentBaselineAssignment(topVer);
-            }
-            else if (hasBaseline && changedBaseline) {
-                baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
-                    discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                    prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
@@ -390,6 +387,10 @@ public class GridAffinityAssignmentCache {
 
         if (hasBaseline) {
             baselineTopology = discoCache.state().baselineTopology();
+
+            if (baselineAssignment == null)
+                System.out.println("Shit");
+
             assert baselineAssignment != null;
         }
         else {
