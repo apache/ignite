@@ -114,8 +114,6 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
@@ -144,7 +142,9 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**

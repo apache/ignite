@@ -94,7 +94,6 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
             ignoreClsNotFound,
             null);
 
-        assert locTransLsnr != null;
         assert rmtTransFactory != null;
 
         this.locTransLsnr = locTransLsnr;

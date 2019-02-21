@@ -74,3 +74,9 @@ export interface IInputErrorNotifier {
     notifyAboutError(): void
     hideError(): void
 }
+
+export enum WellKnownOperationStatus {
+    WAITING = 'WAITING',
+    ERROR = 'ERROR',
+    DONE = 'DONE'
+}
