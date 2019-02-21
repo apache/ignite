@@ -1935,41 +1935,63 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         final IgniteDiagnosticPrepareContext diagCtx = cctx.kernalContext().cluster().diagnosticEnabled() ?
             new IgniteDiagnosticPrepareContext(cctx.localNodeId()) : null;
 
+        int warningsLimit = 10;
+
+        List<String> warnings = new ArrayList<>(warningsLimit);
+
+        int warningsTotal = 0;
+
         if (tm != null) {
             for (IgniteInternalTx tx : tm.activeTransactions()) {
                 if (curTime - tx.startTime() > timeout) {
                     found = true;
 
-                    U.warn(diagnosticLog, "Found long running transaction [startTime=" + formatTime(tx.startTime()) +
-                        ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
+                    if (++warningsTotal <= warningsLimit) {
+                        warnings.add(">>> Transaction [startTime=" + formatTime(tx.startTime()) +
+                            ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
+                    }
                 }
             }
         }
+
+        logWarnings("First %d long running transactions [total=%d]", warningsLimit, warningsTotal, warnings);
+
+        warningsTotal = 0;
 
         if (mvcc != null) {
             for (GridCacheFuture<?> fut : mvcc.activeFutures()) {
                 if (curTime - fut.startTime() > timeout) {
                     found = true;
 
-                    U.warn(diagnosticLog, "Found long running cache future [startTime=" + formatTime(fut.startTime()) +
-                        ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
+                    if (++warningsTotal <= warningsLimit) {
+                        warnings.add(">>> Future [startTime=" + formatTime(fut.startTime()) +
+                            ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
+                    }
 
                     if (diagCtx != null && fut instanceof IgniteDiagnosticAware)
                         ((IgniteDiagnosticAware)fut).addDiagnosticRequest(diagCtx);
                 }
             }
+
+            logWarnings("First %d long running cache futures [total=%d]", warningsLimit, warningsTotal, warnings);
+
+            warningsTotal = 0;
 
             for (GridCacheFuture<?> fut : mvcc.atomicFutures()) {
                 if (curTime - fut.startTime() > timeout) {
                     found = true;
 
-                    U.warn(diagnosticLog, "Found long running cache future [startTime=" + formatTime(fut.startTime()) +
-                        ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
+                    if (++warningsTotal <= warningsLimit) {
+                        warnings.add(">>> Future [startTime=" + formatTime(fut.startTime()) +
+                            ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
+                    }
 
                     if (diagCtx != null && fut instanceof IgniteDiagnosticAware)
                         ((IgniteDiagnosticAware)fut).addDiagnosticRequest(diagCtx);
                 }
             }
+
+            logWarnings("First %d long running cache futures [total=%d]", warningsLimit, warningsTotal, warnings);
         }
 
         if (diagCtx != null && !diagCtx.empty()) {
@@ -1986,6 +2008,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         return found;
+    }
+
+    /**
+     * Log WARN messages.
+     *
+     * @param title Title template of warnings block.
+     * @param warningsLimit Warnings limit.
+     * @param warningsTotal The total number of warnings.
+     * @param messages Messages.
+     */
+    private void logWarnings(String title, int warningsLimit, int warningsTotal, List<String> messages) {
+        if (warningsTotal > 0) {
+            U.warn(diagnosticLog, String.format(title, warningsLimit, warningsTotal));
+
+            int idx = 0;
+
+            for (String message : messages) {
+                U.warn(diagnosticLog, message);
+
+                if (++idx == warningsLimit)
+                    break;
+            }
+
+            messages.clear();
+        }
     }
 
     /**
