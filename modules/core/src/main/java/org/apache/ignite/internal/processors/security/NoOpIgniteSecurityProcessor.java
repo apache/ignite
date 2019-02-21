@@ -86,7 +86,7 @@ public class NoOpIgniteSecurityProcessor implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public void onSessionExpired(UUID subjId) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
