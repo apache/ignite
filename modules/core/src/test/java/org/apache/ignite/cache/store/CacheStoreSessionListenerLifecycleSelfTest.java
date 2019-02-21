@@ -34,25 +34,22 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Store session listeners test.
  */
-@RunWith(JUnit4.class)
 public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Queue<String> evts = new ConcurrentLinkedDeque<>();
 
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.setUp();
+    /** */
+    @Before
+    public void beforeCacheStoreSessionListenerLifecycleSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

@@ -32,8 +32,6 @@ import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -44,7 +42,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests multi-update locks.
  */
-@RunWith(JUnit4.class)
 public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
     /** Near enabled flag. */
     private boolean nearEnabled;

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -33,19 +34,22 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class WalCompactionTest extends GridCommonAbstractTest {
     /** Wal segment size. */
     private static final int WAL_SEGMENT_SIZE = 4 * 1024 * 1024;
@@ -61,6 +65,14 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
     /** Wal mode. */
     private WALMode walMode;
+
+    /** */
+    private static class RolloverRecord extends CheckpointRecord {
+        /** */
+        private RolloverRecord() {
+            super(null);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -87,6 +99,20 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         cfg.setConsistentId(name);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -253,6 +279,71 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    @Test
+    public void testOptimizedWalSegments() throws Exception {
+        IgniteConfiguration icfg = getConfiguration(getTestIgniteInstanceName(0));
+
+        icfg.getDataStorageConfiguration().setWalSegmentSize(300_000_000);
+        icfg.getDataStorageConfiguration().setWalSegments(1);
+
+        IgniteEx ig = (IgniteEx)startGrid(getTestIgniteInstanceName(0), optimize(icfg), null);
+
+        ig.cluster().active(true);
+
+        IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
+
+        for (int i = 0; i < 2500; i++) { // At least 50MB of raw data in total.
+            final byte[] val = new byte[20000];
+
+            val[i] = 1;
+
+            cache.put(i, val);
+        }
+
+        IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
+
+        IgniteCacheDatabaseSharedManager dbMgr = ig.context().cache().context().database();
+
+        RolloverRecord rec = new RolloverRecord();
+
+        try {
+            dbMgr.checkpointReadLock();
+
+            try {
+                walMgr.log(rec, RolloverType.NEXT_SEGMENT);
+            }
+            finally {
+                dbMgr.checkpointReadUnlock();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            log.error(e.getMessage(), e);
+        }
+
+        long start = System.currentTimeMillis();
+
+        do {
+            Thread.yield();
+        } while(walMgr.lastArchivedSegment() < 0 && (System.currentTimeMillis() - start < 15_000));
+
+        assertTrue(System.currentTimeMillis() - start < 15_000);
+
+        String nodeFolderName = ig.context().pdsFolderResolver().resolveFolders().folderName();
+
+        stopAllGrids();
+
+        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
+        File walDir = new File(dbDir, "wal");
+        File archiveDir = new File(walDir, "archive");
+        File nodeArchiveDir = new File(archiveDir, nodeFolderName);
+        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0));
+
+        assertTrue("" + walSegment.length(), walSegment.length() < 200_000_000);
+    }
+
+    /**
      * Tests that WAL compaction won't be stopped by single broken WAL segment.
      */
     private void testCompressorToleratesEmptyWalSegments(WALMode walMode) throws Exception {
@@ -288,9 +379,20 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         File nodeArchiveDir = new File(archiveDir, nodeFolderName);
         File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(emptyIdx));
 
-        try (RandomAccessFile raf = new RandomAccessFile(walSegment, "rw")) {
-            raf.setLength(0); // Clear wal segment, but don't delete.
-        }
+        long start = U.currentTimeMillis();
+        do {
+            try (RandomAccessFile raf = new RandomAccessFile(walSegment, "rw")) {
+                raf.setLength(0); // Clear wal segment, but don't delete.
+            }
+
+            if (walSegment.length() == 0)
+                break;
+
+            if (U.currentTimeMillis() - start >= 10000)
+                throw new IgniteCheckedException("Can't trucate: " + walSegment.getAbsolutePath());
+
+            Thread.yield();
+        } while (true);
 
         compactionEnabled = true;
 

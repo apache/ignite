@@ -40,23 +40,18 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_1 = "cache_1";
@@ -143,8 +138,6 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      * @throws Exception If failed.
      */
     private void testStopCachesOnDeactivation(String groupName) throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10582", MvccFeatureChecker.forcedMvcc());
-
         performTest(ig -> {
             ig.cluster().active(false);
 
@@ -204,8 +197,6 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      * @throws Exception If failed.
      */
     private void testDestroySpecificCacheAndCacheGroup(String groupName) throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10582", MvccFeatureChecker.forcedMvcc());
-
         performTest(ig -> {
             ig.destroyCaches(Arrays.asList(CACHE_1, CACHE_3, CACHE_4));
 
@@ -216,7 +207,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     /**
      * @param testAction Action that trigger stop or destroy of caches.
      */
-    private void performTest(IgniteThrowableConsumer<Ignite, Void> testAction, String groupName) throws Exception {
+    private void performTest(IgniteThrowableFunction<Ignite, Void> testAction, String groupName) throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
         ig0.cluster().active(true);
@@ -242,7 +233,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
         // Await some middle point rebalance for group.
         latch.await();
 
-        testAction.accept(ig0);
+        testAction.apply(ig0);
 
         // Resume rebalance after action performed.
         commSpi.resumeRebalanceFutures.get(CU.cacheId(groupName)).onDone();

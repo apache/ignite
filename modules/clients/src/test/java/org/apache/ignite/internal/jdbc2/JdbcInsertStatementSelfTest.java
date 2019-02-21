@@ -29,13 +29,10 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Statement test.
  */
-@RunWith(JUnit4.class)
 public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** SQL query. */
     private static final String SQL = "insert into Person(_key, id, firstName, lastName, age, data) values " +

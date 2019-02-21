@@ -26,14 +26,11 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Grid URI deployment class loader test.
  */
 @GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
-@RunWith(JUnit4.class)
 public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.

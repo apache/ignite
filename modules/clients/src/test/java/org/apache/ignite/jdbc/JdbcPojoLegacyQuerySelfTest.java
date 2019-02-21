@@ -19,13 +19,10 @@ package org.apache.ignite.jdbc;
 
 import java.sql.ResultSet;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for Jdbc driver query without class on client
  */
-@RunWith(JUnit4.class)
 public class JdbcPojoLegacyQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
     /** URL. */
     private static final String URL = "jdbc:ignite://127.0.0.1/";

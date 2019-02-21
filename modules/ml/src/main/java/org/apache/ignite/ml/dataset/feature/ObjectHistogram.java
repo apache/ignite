@@ -22,44 +22,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
  * Basic implementation of {@link Histogram} that implements also {@link DistributionComputer}.
  *
  * @param <T> Type of object for histogram.
  */
-public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, DistributionComputer {
+public abstract class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, DistributionComputer {
     /** Serial version uid. */
     private static final long serialVersionUID = -2708731174031404487L;
 
-    /** Bucket mapping. */
-    private final IgniteFunction<T, Integer> bucketMapping;
-
-    /** Mapping to counter. */
-    private final IgniteFunction<T, Double> mappingToCntr;
-
     /** Histogram. */
-    private final Map<Integer, Double> hist;
-
-    /**
-     * Create an instance of ObjectHistogram.
-     *
-     * @param bucketMapping Bucket mapping.
-     * @param mappingToCntr Mapping to counter.
-     */
-    public ObjectHistogram(IgniteFunction<T, Integer> bucketMapping,
-        IgniteFunction<T, Double> mappingToCntr) {
-
-        this.bucketMapping = bucketMapping;
-        this.mappingToCntr = mappingToCntr;
-        this.hist = new TreeMap<>(Integer::compareTo);
-    }
+    private final TreeMap<Integer, Double> hist = new TreeMap<>();
 
     /** {@inheritDoc} */
     @Override public void addElement(T val) {
-        Integer bucket = bucketMapping.apply(val);
-        Double cntrVal = mappingToCntr.apply(val);
+        Integer bucket = mapToBucket(val);
+        Double cntrVal = mapToCounter(val);
 
         assert cntrVal >= 0;
         Double bucketVal = hist.getOrDefault(bucket, 0.0);
@@ -91,7 +70,7 @@ public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, Dis
 
     /** {@inheritDoc} */
     @Override public ObjectHistogram<T> plus(ObjectHistogram<T> other) {
-        ObjectHistogram<T> res = new ObjectHistogram<>(bucketMapping, mappingToCntr);
+        ObjectHistogram<T> res = newInstance();
         addTo(this.hist, res.hist);
         addTo(other.hist, res.hist);
         return res;
@@ -111,7 +90,7 @@ public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, Dis
     }
 
     /** {@inheritDoc} */
-    public boolean isEqualTo(ObjectHistogram<T> other) {
+    @Override public boolean isEqualTo(ObjectHistogram<T> other) {
         Set<Integer> totalBuckets = new HashSet<>(buckets());
         totalBuckets.addAll(other.buckets());
         if(totalBuckets.size() != buckets().size())
@@ -126,4 +105,27 @@ public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, Dis
 
         return true;
     }
+
+    /**
+     * Bucket mapping.
+     *
+     * @param obj Object.
+     * @return BucketId.
+     */
+    public abstract Integer mapToBucket(T obj);
+
+    /**
+     * Counter mapping.
+     *
+     * @param obj Object.
+     * @return counter.
+     */
+    public abstract Double mapToCounter(T obj);
+
+    /**
+     * Creates an instance of ObjectHistogram from child class.
+     *
+     * @return object histogram.
+     */
+    public abstract ObjectHistogram<T> newInstance();
 }

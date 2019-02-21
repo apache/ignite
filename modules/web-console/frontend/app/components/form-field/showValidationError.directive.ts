@@ -17,6 +17,18 @@
 
 import {IInputErrorNotifier} from '../../types';
 
+const scrollIntoView = (() => {
+    if (HTMLElement.prototype.scrollIntoViewIfNeeded)
+        return (el: HTMLElement) => {el.scrollIntoViewIfNeeded();};
+    return (el: HTMLElement) => {
+        try {
+            el.scrollIntoView({block: 'center'});
+        } catch (e) {
+            el.scrollIntoView();
+        }
+    };
+})();
+
 /**
  * Brings user attention to invalid form fields.
  * Use IgniteFormUtils.triggerValidation to trigger the event.
@@ -50,10 +62,7 @@ export function directive($timeout) {
                 }
 
                 $timeout(() => {
-                    if (el[0].scrollIntoViewIfNeeded)
-                        el[0].scrollIntoViewIfNeeded();
-                    else
-                        el[0].scrollIntoView();
+                    scrollIntoView(el[0]);
 
                     if (!attr.bsSelect)
                         $timeout(() => el[0].focus(), 100);

@@ -41,15 +41,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test to visualize and debug {@link PagesWriteThrottle}.
  * Prints puts/gets rate, number of dirty pages, pages written in current checkpoint and pages in checkpoint buffer.
  * Not intended to be part of any test suite.
  */
-@RunWith(JUnit4.class)
 public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache1";

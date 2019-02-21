@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -61,15 +61,13 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  * A set of tests that check correctness of logical recovery performed during node start.
  */
-@RunWith(JUnit4.class)
 public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final int[] EVTS_DISABLED = {};
@@ -126,6 +124,20 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(spi);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /**
@@ -261,7 +273,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10582")
     @Test
     public void testRecoveryWithMvccCaches() throws Exception {
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(

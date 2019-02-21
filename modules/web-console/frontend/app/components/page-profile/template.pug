@@ -17,6 +17,8 @@
 include /app/helpers/jade/mixins
 
 div
+    global-progress-line(is-loading='$ctrl.isLoading')
+
     header.header-with-selector
         div
             h1 User profile
@@ -154,6 +156,6 @@ div
 
     footer
         a.btn-ignite.btn-ignite--link-success(type='button' ui-sref='default-state') Cancel
-        button.btn-ignite.btn-ignite--success(ng-click='$ctrl.saveUser()')
+        button.btn-ignite.btn-ignite--success(ng-click='$ctrl.saveUser()' ng-disabled='$ctrl.isLoading')
             svg.icon-left(ignite-icon='checkmark')
             | Save Changes

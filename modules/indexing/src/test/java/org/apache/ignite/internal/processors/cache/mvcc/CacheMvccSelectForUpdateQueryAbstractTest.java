@@ -40,8 +40,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.connect;
@@ -50,7 +48,6 @@ import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSe
 /**
  * Test for {@code SELECT FOR UPDATE} queries.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvccAbstractTest {
     /** */
     private static final int CACHE_SIZE = 50;

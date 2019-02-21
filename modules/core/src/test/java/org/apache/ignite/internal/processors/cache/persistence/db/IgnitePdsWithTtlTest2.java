@@ -32,19 +32,16 @@ import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
-@RunWith(JUnit4.class)
 public class IgnitePdsWithTtlTest2 extends GridCommonAbstractTest {
     /** */
     public static AtomicBoolean handleFired = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
         super.beforeTest();
 

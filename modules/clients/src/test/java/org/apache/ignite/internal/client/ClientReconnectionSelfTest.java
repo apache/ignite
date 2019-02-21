@@ -26,13 +26,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String HOST = "127.0.0.1";

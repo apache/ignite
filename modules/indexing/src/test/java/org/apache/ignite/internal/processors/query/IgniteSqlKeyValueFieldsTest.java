@@ -36,13 +36,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test hidden _key, _val, _ver columns
  */
-@RunWith(JUnit4.class)
 public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
     /** */
     private static String NODE_BAD_CONF_MISS_KEY_FIELD = "badConf1";

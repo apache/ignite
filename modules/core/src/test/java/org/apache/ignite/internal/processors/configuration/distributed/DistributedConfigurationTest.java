@@ -17,19 +17,15 @@
 
 package org.apache.ignite.internal.processors.configuration.distributed;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class DistributedConfigurationTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_PROP = "someLong";
@@ -157,9 +153,6 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
         long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
 
         assertEquals(2, long0.value().longValue());
-
-        //Cluster wide update have not initialized yet.
-        assertFalse(long0.propagate(3L));
     }
 
     /**
@@ -189,10 +182,22 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
      */
     @Test(expected = DetachedPropertyException.class)
     public void testNotAttachedProperty() throws Exception {
-        DistributedLongProperty long0 = DistributedLongProperty.detachedProperty(TEST_PROP, 0L);
+        DistributedLongProperty long0 = DistributedLongProperty.detachedLongProperty(TEST_PROP, 0L);
         assertEquals(0, long0.value().longValue());
 
         long0.propagate(1L);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test(expected = NotWritablePropertyException.class)
+    public void testPropagateValueOnInactiveGridShouldThrowException() throws Exception {
+        IgniteEx ignite0 = (IgniteEx)startGrids(2);
+
+        DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
+
+        long0.propagate(2L);
     }
 
     /**
@@ -219,13 +224,6 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
 
             //Read init value because onReadyForReady have not happened yet.
             assertEquals(-1, longProperty.value().longValue());
-
-            try {
-                assertFalse(longProperty.propagate(1L));
-            }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
-            }
         };
 
         ignite0 = startGrid(0);

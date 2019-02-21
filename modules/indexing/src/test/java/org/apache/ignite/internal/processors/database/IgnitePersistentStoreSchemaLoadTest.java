@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.database;
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -37,15 +38,12 @@ import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String TMPL_NAME = "test_cache*";
@@ -256,6 +254,10 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         db.addCheckpointListener(new DbCheckpointListener() {
             @Override public void onMarkCheckpointBegin(Context ctx) {
                 cnt.countDown();
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
             }
 
             @Override public void onCheckpointBegin(Context ctx) {
