@@ -66,14 +66,14 @@
     <!--
         Configuration below demonstrates how to setup a IgniteFs node with file data.
     -->
-    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <bean id="ignite.cfg" class="org.gridgain.configuration.IgniteConfiguration">
         <property name="marshaller">
-            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
+            <bean class="org.gridgain.internal.binary.BinaryMarshaller" />
         </property>
 
         <property name="fileSystemConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
+                <bean class="org.gridgain.configuration.FileSystemConfiguration">
                     <property name="name" value="igfs"/>
 
                     <!-- Must correlate with cache affinity mapper. -->
@@ -89,7 +89,7 @@
                     -->
                     <!--
                     <property name="ipcEndpointConfiguration">
-                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                        <bean class="org.gridgain.igfs.IgfsIpcEndpointConfiguration">
                             <property name="type" value="TCP" />
                         </bean>
                     </property>
@@ -100,7 +100,7 @@
                     -->
                     <!--
                     <property name="ipcEndpointConfiguration">
-                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                        <bean class="org.gridgain.igfs.IgfsIpcEndpointConfiguration">
                             <property name="type" value="SHMEM" />
                         </bean>
                     </property>
@@ -111,7 +111,7 @@
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
-            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+            <bean class="org.gridgain.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
                     <!--
                         Ignition provides several options for automatic discovery that can be used
@@ -119,8 +119,8 @@
                         to our documentation: http://apacheignite.readme.io/docs/cluster-config
                     -->
                     <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <!--<bean class="org.gridgain.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
+                    <bean class="org.gridgain.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
