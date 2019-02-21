@@ -706,48 +706,56 @@ namespace Apache.Ignite.Core.Cache
         Task<int> GetSizeAsync(params CachePeekMode[] modes);
 
         /// <summary>
-        /// 
+        /// Gets the number of all entries cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
         /// </summary>
-        /// <param name="modes"></param>
-        /// <returns></returns>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Cache size across all nodes.</returns>
         long GetSizeLong(params CachePeekMode[] modes);
         
         /// <summary>
-        /// 
+        /// Gets the number of all entries in partition cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
         /// </summary>
-        /// <param name="partition"></param>
-        /// <param name="modes"></param>
-        /// <returns></returns>
+        /// <param name="partition">Cache partition.</param>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Partition cache size across all nodes.</returns>>
         long GetSizeLong(int partition, params CachePeekMode[] modes);
 
         /// <summary>
-        /// 
+        /// Gets the number of all entries cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
         /// </summary>
-        /// <param name="modes"></param>
-        /// <returns></returns>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Cache size across all nodes.</returns>
         Task<long> GetSizeLongAsync(params CachePeekMode[] modes);
         
         /// <summary>
-        /// 
+        /// Gets the number of all entries in a partition cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
         /// </summary>
-        /// <param name="partition"></param>
-        /// <param name="modes"></param>
-        /// <returns></returns>
+        /// <param name="partition">Cache partition.</param>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Partition cache size across all nodes.</returns>
         Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes);
 
         /// <summary>
-        /// 
+        /// Gets the number of all entries cached on this node as long value.
         /// </summary>
-        /// <param name="modes"></param>
-        /// <returns></returns>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Cache size on this node.</returns>
         long GetLocalSizeLong(params CachePeekMode[] modes);
         
         /// <summary>
-        /// 
+        /// Gets the number of all entries in a partition cached on this node as long value.
         /// </summary>
-        /// <param name="partition"></param>
-        /// <param name="modes"></param>
-        /// <returns></returns>
+        /// <param name="partition">Cache partition.</param>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Partition cache size on this node.</returns>
         long GetLocalSizeLong(int partition, params CachePeekMode[] modes);
         
         /// <summary>
