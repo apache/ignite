@@ -2314,8 +2314,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryCustomEventMessage) {
                 TcpDiscoveryCustomEventMessage msg0 = (TcpDiscoveryCustomEventMessage)msg;
 
+                msg = new TcpDiscoveryCustomEventMessage(msg0);
+
                 // We shoulgn't store deserialized message in the queue because of msg is transient.
-                msg = new TcpDiscoveryCustomEventMessage(msg0.creatorNodeId(), null, msg0.messageBytes());
+                ((TcpDiscoveryCustomEventMessage)msg).clearMessage();
             }
 
             synchronized (msgs) {
