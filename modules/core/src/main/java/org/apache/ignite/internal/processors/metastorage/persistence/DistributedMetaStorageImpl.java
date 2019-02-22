@@ -202,6 +202,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (ctx.clientNode() || ctx.isDaemon())
+            return;
+
         if (!isPersistenceEnabled(ctx.config())) {
             for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
                 subscriber.onReadyForRead(this);
