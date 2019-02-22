@@ -190,6 +190,13 @@ public interface IgniteCacheOffheapManager {
     public void invoke(GridCacheContext cctx, KeyCacheObject key, GridDhtLocalPartition part, OffheapInvokeClosure c)
         throws IgniteCheckedException;
 
+    /**
+     * @param cctx Cache context.
+     * @param part Partition.
+     * @param rows Rows to update sorted according to cache tree sort order.
+     * @param map Update closures map.
+     * @throws IgniteCheckedException If failed.
+     */
     public void invokeAll(GridCacheContext cctx,
         GridDhtLocalPartition part,
         Collection<? extends CacheSearchRow> rows,
@@ -902,7 +909,7 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * @param cctx Cache context.
-         * @param rows Rows sorted according to cache tree sort order..
+         * @param rows Rows sorted according to cache tree sort order.
          * @param map Update closures map.
          * @throws IgniteCheckedException If failed.
          */
