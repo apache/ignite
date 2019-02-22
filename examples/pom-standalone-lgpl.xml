@@ -54,6 +54,13 @@
         <lgpl.folder>src/main/java</lgpl.folder>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>GridGain External Repository</id>
+            <url>http://www.gridgainsystems.com/nexus/content/repositories/external</url>
+        </repository>
+    </repositories>
+
     <groupId>org.gridgain</groupId>
     <artifactId>ignite-examples</artifactId>
     <version>to_be_replaced_by_ignite_version</version>
