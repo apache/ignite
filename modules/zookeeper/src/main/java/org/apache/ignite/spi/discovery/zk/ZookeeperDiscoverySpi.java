@@ -339,6 +339,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
     /** {@inheritDoc} */
     @Override public boolean allNodesSupport(IgniteFeatures feature) {
+        if (impl == null)
+            return false;
+
         return impl.allNodesSupport(feature);
     }
 
