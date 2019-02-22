@@ -57,6 +57,8 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
         if (igniteInstanceName.equals(getTestIgniteInstanceName(NODES - 1)))
@@ -452,7 +454,12 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     private static class TestFilterExcludeOldest implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            return node.order() > 1;
+            try {
+                return node.order() > 1;
+            }
+            catch (UnsupportedOperationException e) {
+                return false;
+            }
         }
     }
 
@@ -472,7 +479,12 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            return node.order() != excludeOrder;
+            try {
+                return node.order() != excludeOrder;
+            }
+            catch (UnsupportedOperationException e) {
+                return false;
+            }
         }
     }
 
@@ -492,7 +504,12 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            return node.order() == includeOrder;
+            try {
+                return node.order() == includeOrder;
+            }
+            catch (UnsupportedOperationException e) {
+                return false;
+            }
         }
     }
 
