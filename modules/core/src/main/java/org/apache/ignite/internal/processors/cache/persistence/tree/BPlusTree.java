@@ -1301,7 +1301,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             Result res = findDown(g, g.rootId, 0L, g.rootLvl);
 
-            if (!res.retry && !g.nextRow(res))
+            if (!res.retry && !g.switchToNextRow(res))
                 return;
 
             checkInterrupted();
@@ -1354,7 +1354,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     case FOUND:
                         g.finish();
 
-                        if (g.nextRow(res))
+                        if (g.switchToNextRow(res))
                             continue;
 
                         // Intentional fallthrough.
@@ -1884,7 +1884,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             assert x.isFinished(): res;
                         }
 
-                        if (x.nextRow(FOUND))
+                        if (x.switchToNextRow(FOUND))
                             continue;
 
                         return;
@@ -1960,7 +1960,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         if (res != RETRY)
                             res = invokeDown(x, x.pageId, x.backId, x.fwdId, lvl - 1);
 
-                        if (x.nextRow(res))
+                        if (x.switchToNextRow(res))
                             continue;
 
                         if (res == RETRY_ROOT || x.isFinished())
@@ -1980,7 +1980,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = x.finishOrLockTail(pageId, page, backId, fwdId, lvl);
 
-                        if (x.nextRow(res))
+                        if (x.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -1991,7 +1991,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = x.onNotFound(pageId, page, fwdId, lvl);
 
-                        if (x.nextRow(res))
+                        if (x.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2002,7 +2002,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = x.onFound(pageId, page, backId, fwdId, lvl);
 
-                        if (x.nextRow(res))
+                        if (x.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2059,7 +2059,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             assert r.isFinished();
                         }
 
-                        if (r.nextRow(FOUND))
+                        if (r.switchToNextRow(FOUND))
                             continue;
 
                         return r.rmvdRow;
@@ -2126,7 +2126,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     case GO_DOWN:
                         res = removeDown(r, r.pageId, r.backId, r.fwdId, lvl - 1);
 
-                        if (r.nextRow(res))
+                        if (r.switchToNextRow(res))
                             continue;
 
                         if (res == RETRY) {
@@ -2140,7 +2140,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = r.finishOrLockTail(pageId, page, backId, fwdId, lvl);
 
-                        if (r.nextRow(res))
+                        if (r.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2151,7 +2151,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         r.finish();
 
-                        if (r.nextRow(res))
+                        if (r.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2159,7 +2159,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     case FOUND:
                         res = r.tryRemoveFromLeaf(pageId, page, backId, fwdId, lvl);
 
-                        if (r.nextRow(res))
+                        if (r.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2447,7 +2447,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             continue;
                         }
 
-                        if (p.nextRow(FOUND))
+                        if (p.switchToNextRow(FOUND))
                             continue;
 
                         return p.oldRow;
@@ -2689,7 +2689,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         if (res != RETRY) // Go down recursively.
                             res = putDown(p, p.pageId, p.fwdId, lvl - 1);
 
-                        if (p.nextRow(res))
+                        if (p.switchToNextRow(res))
                             continue;
 
                         if (res == RETRY_ROOT || p.isFinished())
@@ -2705,7 +2705,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = p.tryReplace(pageId, page, fwdId, lvl);
 
-                        if (p.nextRow(res))
+                        if (p.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2716,7 +2716,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = p.tryInsert(pageId, page, fwdId, lvl);
 
-                        if (p.nextRow(res))
+                        if (p.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2975,7 +2975,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param res Last result.
          * @return {@code true} If we have switched to the next row to process it.
          */
-        boolean nextRow(Result res) throws IgniteCheckedException {
+        boolean switchToNextRow(Result res) throws IgniteCheckedException {
             return false;
         }
 
@@ -2987,7 +2987,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return Insertion point.
          * @throws IgniteCheckedException If failed.
          */
-        final int findInsertionPointx(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
+        int findInsertionPointx(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
             return gettingHigh ?
                 findInsertionPointGettingHigh(lvl, io, pageAddr, cnt) :
                 findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
@@ -3227,7 +3227,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean nextRow(Result res) {
+        @Override boolean switchToNextRow(Result res) {
             if (!doNextRow(res, sortedRows))
                 return false;
 
@@ -3659,7 +3659,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean nextRow(Result res) {
+        @Override boolean switchToNextRow(Result res) {
             if (!doNextRow(res, sortedRows))
                 return false;
 
@@ -4054,7 +4054,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean nextRow(Result res) throws IgniteCheckedException {
+        @Override boolean switchToNextRow(Result res) throws IgniteCheckedException {
             if (!doNextRow(res, sortedRows))
                 return false;
 
@@ -4407,7 +4407,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean nextRow(Result res) throws IgniteCheckedException {
+        @Override boolean switchToNextRow(Result res) throws IgniteCheckedException {
             if (!doNextRow(res, sortedRows))
                 return false;
 
