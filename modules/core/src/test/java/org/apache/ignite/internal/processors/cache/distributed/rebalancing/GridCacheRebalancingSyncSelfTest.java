@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -129,6 +130,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg.setRebalanceBatchesPrefetchCount(1);
         cachePCfg.setRebalanceOrder(2);
         cachePCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cachePCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         CacheConfiguration<Integer, Integer> cachePCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -139,6 +141,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg2.setRebalanceOrder(2);
         cachePCfg2.setRebalanceDelay(SF.applyLB(5000, 500));
         cachePCfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cachePCfg2.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -148,6 +151,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cacheRCfg.setRebalanceBatchSize(1);
         cacheRCfg.setRebalanceBatchesPrefetchCount(Integer.MAX_VALUE);
         cacheRCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheRCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         CacheConfiguration<Integer, Integer> cacheRCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -156,6 +160,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cacheRCfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheRCfg2.setRebalanceOrder(4);
         cacheRCfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheRCfg2.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         iCfg.setCacheConfiguration(cachePCfg, cachePCfg2, cacheRCfg, cacheRCfg2);
 
@@ -228,7 +233,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                         TEST_SIZE + ", iteration=" + iter + ", cache=" + name + "]");
 
                 assertEquals("Value does not match [key=" + entry.getKey() + ", cache=" + name + ']',
-                    entry.getValue().intValue(), entry.getKey() + name.hashCode() + iter);
+                    entry.getKey() + name.hashCode() + iter, entry.getValue().intValue());
             });
 
             assertEquals(TEST_SIZE, cnt.get());
