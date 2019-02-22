@@ -2895,6 +2895,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         boolean gettingHigh;
 
+        /** Used in batch operations like {@link InvokeAll}. */
+        L nextRow;
+
         /**
          * @param row Row.
          * @param findLast find last row.
@@ -2906,6 +2909,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Need to have non-null search row here to correctly handle finish() and isFinished().
             this.row = findLast ? (L)Boolean.FALSE : row;
             this.findLast = findLast;
+        }
+
+        /**
+         * @param sortedRows Sorted rows.
+         */
+        final void takeNextRow(Iterator<? extends L> sortedRows) {
+            if (sortedRows.hasNext()) {
+                nextRow = sortedRows.next();
+                assert nextRow != null;
+            }
+            else
+                nextRow = null;
         }
 
         @SuppressWarnings({"unchecked", "WrapperTypeMayBePrimitive"})
@@ -2952,9 +2967,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param sortedRows Sorted rows.
          * @return {@code true} If was successfully switched to the next row.
          */
-        protected final boolean doNextRow(Result res, Iterator<? extends L> sortedRows) {
-            if (res.retry || !isFinished() || !sortedRows.hasNext())
+        protected final boolean doSwitchToNextRow(Result res, Iterator<? extends L> sortedRows) {
+            if (nextRow == null || res.retry || !isFinished())
                 return false;
+
+            // Switch to the next row.
+            row = nextRow;
+            takeNextRow(sortedRows);
 
             // Well need to get high enough to start new search.
             assert !gettingHigh;
@@ -2962,9 +2981,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             // Reinitialize state to continue working with the next row.
             lockRetriesCnt = getLockRetries();
-
-            row = sortedRows.next();
-            assert row != null;
 
             return true;
         }
@@ -3002,7 +3018,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param cnt Row count.
          * @return Insertion point.
          */
-        private int findInsertionPointGettingHigh(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
+        protected final int findInsertionPointGettingHigh(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
             int idx;
 
             if (cnt == 0)
@@ -3224,11 +3240,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.sortedRows = sortedRows;
             foundRows = new ArrayList<>();
+
+            takeNextRow(sortedRows);
         }
 
         /** {@inheritDoc} */
         @Override boolean switchToNextRow(Result res) {
-            if (!doNextRow(res, sortedRows))
+            if (!doSwitchToNextRow(res, sortedRows))
                 return false;
 
             // Reset state.
@@ -3656,11 +3674,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.sortedRows = sortedRows;
             oldRows = new ArrayList<>();
+
+            takeNextRow(sortedRows);
         }
 
         /** {@inheritDoc} */
         @Override boolean switchToNextRow(Result res) {
-            if (!doNextRow(res, sortedRows))
+            if (!doSwitchToNextRow(res, sortedRows))
                 return false;
 
             // Reset state.
@@ -4051,11 +4071,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.sortedRows = sortedRows;
             this.closures = closures;
+
+            takeNextRow(sortedRows);
         }
 
         /** {@inheritDoc} */
         @Override boolean switchToNextRow(Result res) throws IgniteCheckedException {
-            if (!doNextRow(res, sortedRows))
+            if (!doSwitchToNextRow(res, sortedRows))
                 return false;
 
             reuseFreePagesFromBag(reuseBag, 15);
@@ -4404,11 +4426,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.sortedRows = sortedRows;
             removedRows = new ArrayList<>();
+
+            takeNextRow(sortedRows);
         }
 
         /** {@inheritDoc} */
         @Override boolean switchToNextRow(Result res) throws IgniteCheckedException {
-            if (!doNextRow(res, sortedRows))
+            if (!doSwitchToNextRow(res, sortedRows))
                 return false;
 
             reuseFreePagesFromBag(reuseBag, 15);
