@@ -817,13 +817,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public int GetLocalSize(params CachePeekMode[] modes)
         {
-            return Size0<int>(true, null, modes);
+            return Size0(true, modes);
         }
 
         /** <inheritDoc /> */
         public int GetSize(params CachePeekMode[] modes)
         {
-            return Size0<int>(false, null, modes);
+            return Size0(false, modes);
         }
 
         /** <inheritDoc /> */
@@ -835,13 +835,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public long GetSizeLong(params CachePeekMode[] modes)
         {   
-            return Size0<long>(false, null, modes);
+            return Size0(false, null, modes);
         }
 
         /** <inheritDoc /> */
         public long GetSizeLong(int partition, params CachePeekMode[] modes)
         {
-            return Size0<long>(false, partition, modes);
+            return Size0(false, partition, modes);
         }
 
         /** <inheritDoc /> */
@@ -859,60 +859,62 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public long GetLocalSizeLong(params CachePeekMode[] modes)
         {
-            return Size0<long>(true, null, modes);
+            return Size0(true, null, modes);
         }
 
         /** <inheritDoc /> */
         public long GetLocalSizeLong(int partition, params CachePeekMode[] modes)
         {
-            return Size0<long>(true, partition, modes);
+            return Size0(true, partition, modes);
         }
-
+        
         /// <summary>
-        /// Internal size routine.
+        /// Internal integer size routine.
         /// </summary>
         /// <param name="loc">Local flag.</param>
         /// <param name="part">Partition number</param>
         /// <param name="modes">peek modes</param>
         /// <returns>Size.</returns>
-        private T Size0<T>(bool loc, int? part, params CachePeekMode[] modes)
+        private int Size0(bool loc, params CachePeekMode[] modes)
         {
             var modes0 = IgniteUtils.EncodePeekModes(modes);
 
-            var op = loc ? 
-                (typeof(T) == typeof(long) ? CacheOp.SizeLongLoc : CacheOp.SizeLoc) : 
-                (typeof(T) == typeof(long) ? CacheOp.SizeLong : CacheOp.Size);
+            var op = loc ? CacheOp.SizeLoc : CacheOp.Size;
 
-            long ret;
-            
-            if (typeof(T) == typeof(long))
-            {
-                ret = DoOutOp((int) op, writer =>
-                {
-                    writer.WriteInt(modes0);
-
-                    if (part != null)
-                    {
-                        writer.WriteBoolean(true);
-                        writer.WriteInt((int) part);
-                    }
-                    else
-                    {
-                        writer.WriteBoolean(false);   
-                    }
-                                 
-                });  
-            }
-            else
-            {
-                ret = DoOutInOp((int) op, modes0);
-            }
-                 
-            return (T) Convert.ChangeType(ret, typeof(T));
+            return (int) DoOutInOp((int) op, modes0); 
         }
         
         /// <summary>
-        /// Internal size routine.
+        /// Internal long size routine.
+        /// </summary>
+        /// <param name="loc">Local flag.</param>
+        /// <param name="part">Partition number</param>
+        /// <param name="modes">peek modes</param>
+        /// <returns>Size.</returns>
+        private long Size0(bool loc, int? part, params CachePeekMode[] modes)
+        {
+            var modes0 = IgniteUtils.EncodePeekModes(modes);
+
+            var op = loc ? CacheOp.SizeLongLoc : CacheOp.SizeLong; 
+           
+            return DoOutOp((int) op, writer =>
+            {
+                writer.WriteInt(modes0);
+
+                if (part != null)
+                {
+                    writer.WriteBoolean(true);
+                    writer.WriteInt((int) part);
+                }
+                else
+                {
+                    writer.WriteBoolean(false);   
+                }                     
+            });  
+        }
+        
+        /// <summary>
+        /// Internal async size routine.
         /// </summary>
         /// <param name="part">Partition number</param>
         /// <param name="modes">peek modes</param>

@@ -797,6 +797,19 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_LOCAL_PRELOAD_PARTITION:
                     return cache.localPreloadPartition(reader.readInt()) ? TRUE : FALSE;
+
+                case OP_SIZE_LONG:
+                case OP_SIZE_LONG_LOC: {
+                    CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
+
+                    Integer part = reader.readBoolean() ? reader.readInt() : null;
+
+                    if (type == OP_SIZE_LONG)
+                        return part != null ? cache.sizeLong(part, modes) : cache.sizeLong(modes);
+                    else
+                        return part != null ? cache.localSizeLong(part, modes) : cache.localSizeLong(modes);
+
+                }
             }
         }
         catch (Exception e) {
@@ -1087,27 +1100,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
 
         return super.processOutObject(type);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
-        switch (type) {
-            case OP_SIZE_LONG:
-            case OP_SIZE_LONG_LOC: {
-                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
-
-                Integer part = reader.readBoolean() ? reader.readInt() : null;
-
-                if (type == OP_SIZE_LONG)
-                    return part != null ? cache.sizeLong(part, modes) : cache.sizeLong(modes);
-                else
-                    return part != null ? cache.localSizeLong(part, modes) : cache.localSizeLong(modes);
-
-            }
-
-            default:
-                return super.processInStreamOutLong(type, reader);
-        }
     }
 
     /** {@inheritDoc} */
