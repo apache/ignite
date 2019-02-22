@@ -22,11 +22,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -36,17 +34,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests for local transactions.
  */
 public abstract class IgniteMvccTxMultiThreadedAbstractTest extends IgniteTxAbstractTest {
-    /** */
-    @Before
-    public void ensureForcedMvcc() {
-        assert MvccFeatureChecker.forcedMvcc();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        // No-op.
-    }
-
     /**
      * @return Thread count.
      */
