@@ -79,7 +79,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementCancelSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementTimeoutSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinStreamingNotOrderedReopenStreamTest;
+import org.apache.ignite.jdbc.thin.JdbcThinStreamingResetStreamTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStreamingNotOrderedSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStreamingOrderedSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
@@ -142,7 +142,7 @@ import org.junit.runners.Suite;
     org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest.class,
     JdbcThinStreamingNotOrderedSelfTest.class,
     JdbcThinStreamingOrderedSelfTest.class,
-    JdbcThinStreamingNotOrderedReopenStreamTest.class,
+    JdbcThinStreamingResetStreamTest.class,
 
     // DDL tests.
     org.apache.ignite.internal.jdbc2.JdbcDynamicIndexAtomicPartitionedNearSelfTest.class,

@@ -166,7 +166,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate
+            skipReducerOnUpdate,
+            orderedBatchesMux
         );
 
         this.busyLock = busyLock;

@@ -123,7 +123,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private final PriorityQueue<JdbcOrderedBatchExecuteRequest> orderedBatchesQueue = new PriorityQueue<>();
 
     /** Ordered batches mutex. */
-    private final Object orderedBatchesMux = new Object();
+    private final Object muxOrderedBatches = new Object();
 
     /** Request mutex. */
     private final Object reqMux = new Object();
@@ -189,7 +189,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate
+            skipReducerOnUpdate,
+            muxOrderedBatches
         );
 
         this.busyLock = busyLock;
@@ -334,16 +335,16 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
-        synchronized (orderedBatchesMux) {
+        synchronized (muxOrderedBatches) {
             orderedBatchesQueue.add(req);
 
-            orderedBatchesMux.notify();
+            muxOrderedBatches.notifyAll();
         }
 
         if (!cliCtx.isStreamOrdered())
             executeBatchOrdered(req);
 
-        return null;
+       return null;
     }
 
     /**
@@ -369,7 +370,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             sender.send(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
         }
 
-        synchronized (orderedBatchesMux) {
+        synchronized (muxOrderedBatches) {
             orderedBatchesQueue.poll();
         }
 
@@ -818,7 +819,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
         GridQueryCancel cancel = null;
 
-        if (isCancellationSupported()) {
+        // Skip request register check for ordered batches
+        // because ordered batch requests are processed asynchronously at the
+        // separate thread.
+        if (isCancellationSupported() && req.type() == BATCH_EXEC) {
             synchronized (reqMux) {
                 JdbcQueryDescriptor desc = reqRegister.get(req.requestId());
 
@@ -1156,11 +1160,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 JdbcOrderedBatchExecuteRequest req;
 
-                synchronized (orderedBatchesMux) {
+                synchronized (muxOrderedBatches) {
+                    // Notify creator thread about worker is ready to process incoming batch requests.
+                    muxOrderedBatches.notifyAll();
+
                     req = orderedBatchesQueue.peek();
 
                     if (req == null || req.order() != nextBatchOrder) {
-                        orderedBatchesMux.wait();
+                        muxOrderedBatches.wait();
 
                         continue;
                     }

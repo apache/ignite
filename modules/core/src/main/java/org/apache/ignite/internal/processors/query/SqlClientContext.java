@@ -57,8 +57,8 @@ public class SqlClientContext implements AutoCloseable {
     /** Skip reducer on update flag. */
     private final boolean skipReducerOnUpdate;
 
-    /** Monitor. */
-    private final Object mux = new Object();
+    /** Monitor for stream operations. */
+    private final Object muxStreamer;
 
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private boolean streamAllowOverwrite;
@@ -103,7 +103,8 @@ public class SqlClientContext implements AutoCloseable {
      */
     public SqlClientContext(GridKernalContext ctx, Factory<GridWorker> orderedBatchWorkerFactory,
         boolean distributedJoins, boolean enforceJoinOrder,
-        boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate) {
+        boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate,
+        Object muxStreamer) {
         this.ctx = ctx;
         this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
         this.distributedJoins = distributedJoins;
@@ -112,6 +113,7 @@ public class SqlClientContext implements AutoCloseable {
         this.replicatedOnly = replicatedOnly;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
+        this.muxStreamer = muxStreamer;
 
         log = ctx.log(SqlClientContext.class.getName());
     }
@@ -127,7 +129,7 @@ public class SqlClientContext implements AutoCloseable {
      */
     public void enableStreaming(boolean allowOverwrite, long flushFreq, int perNodeBufSize,
         int perNodeParOps, boolean ordered) {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             if (isStream())
                 return;
 
@@ -144,6 +146,16 @@ public class SqlClientContext implements AutoCloseable {
                 orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
 
                 orderedBatchThread.start();
+
+                try {
+                    // Waits for ordered batch worker starts process the batch queue.
+                    muxStreamer.wait();
+                }
+                catch (InterruptedException e) {
+                    log.error("Stream creation is interrupted", e);
+
+                    Thread.currentThread().interrupt();
+                }
             }
         }
     }
@@ -152,7 +164,7 @@ public class SqlClientContext implements AutoCloseable {
      * Turn off streaming on this client context - with closing all open streamers, if any.
      */
     public void disableStreaming() {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             if (!isStream())
                 return;
 
@@ -167,8 +179,8 @@ public class SqlClientContext implements AutoCloseable {
             }
 
             streamers = null;
-
             orderedBatchThread = null;
+            totalProcessedOrderedReqs = 0;
         }
     }
 
@@ -218,7 +230,7 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streaming state flag (on or off).
      */
     public boolean isStream() {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             return streamers != null;
         }
     }
@@ -227,7 +239,7 @@ public class SqlClientContext implements AutoCloseable {
      * @return Stream ordered flag.
      */
     public boolean isStreamOrdered() {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             return streamOrdered;
         }
     }
@@ -237,7 +249,7 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streamer for given cache.
      */
     public IgniteDataStreamer<?, ?> streamerForCache(String cacheName) {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             if (streamers == null)
                 return null;
 
@@ -269,10 +281,10 @@ public class SqlClientContext implements AutoCloseable {
      * @param total Expected total processed request.
      */
     public void waitTotalProcessedOrderedRequests(long total) {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             while (totalProcessedOrderedReqs < total) {
                 try {
-                    mux.wait();
+                    muxStreamer.wait();
                 }
                 catch (InterruptedException e) {
                     throw new IgniteException("Waiting for end of processing the last batch is interrupted", e);
@@ -285,10 +297,10 @@ public class SqlClientContext implements AutoCloseable {
      *
      */
     public void orderedRequestProcessed() {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             totalProcessedOrderedReqs++;
 
-            mux.notify();
+            muxStreamer.notify();
         }
     }
 
