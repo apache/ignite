@@ -38,7 +38,7 @@
 
     <profiles>
         <profile>
-            <id>java-9-10-11</id>
+            <id>java-9+</id>
             <activation>
                 <jdk>[1.9,)</jdk>
             </activation>

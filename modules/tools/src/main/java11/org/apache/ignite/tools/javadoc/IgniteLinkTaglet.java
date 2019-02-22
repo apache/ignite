@@ -50,7 +50,7 @@ public class IgniteLinkTaglet implements Taglet {
         for (Iterator<? extends DocTree> iter = tags.iterator(); iter.hasNext(); ) {
             DocTree next = iter.next();
 
-            sb.append(""); //todo
+            sb.append(""); //todo IGNITE-11393 Implement toString for Java 9+
         }
 
         return sb.toString();
