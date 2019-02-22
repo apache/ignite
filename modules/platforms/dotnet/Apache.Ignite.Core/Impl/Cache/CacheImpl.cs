@@ -872,7 +872,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Internal integer size routine.
         /// </summary>
         /// <param name="loc">Local flag.</param>
-        /// <param name="part">Partition number</param>
         /// <param name="modes">peek modes</param>
         /// <returns>Size.</returns>
         private int Size0(bool loc, params CachePeekMode[] modes)
