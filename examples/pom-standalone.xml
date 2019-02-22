@@ -55,10 +55,9 @@
     </properties>
 
     <repositories>
-        <!-- Following repository is required only for Nightly releases -->
         <repository>
-            <id>MyGet Nightly</id>
-            <url>https://www.myget.org/F/apache-ignite-nightly/maven</url>
+            <id>GridGain External Repository</id>
+            <url>http://www.gridgainsystems.com/nexus/content/repositories/external</url>
         </repository>
     </repositories>
 
