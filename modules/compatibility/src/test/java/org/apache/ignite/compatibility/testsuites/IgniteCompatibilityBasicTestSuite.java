@@ -19,6 +19,8 @@ package org.apache.ignite.compatibility.testsuites;
 
 import org.apache.ignite.compatibility.PdsWithTtlCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
+import org.apache.ignite.compatibility.persistence.IgnitePKIndexesMigrationToAlternativeKeyTest;
+import org.apache.ignite.compatibility.persistence.IgnitePKIndexesMigrationToUnwrapPkTest;
 import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
 import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
 import org.junit.runner.RunWith;
@@ -35,7 +37,11 @@ import org.junit.runners.Suite;
 
     FoldersReuseCompatibilityTest.class,
 
-    MigratingToWalV2SerializerWithCompactionTest.class
+    MigratingToWalV2SerializerWithCompactionTest.class,
+
+    IgnitePKIndexesMigrationToUnwrapPkTest.class,
+
+    IgnitePKIndexesMigrationToAlternativeKeyTest.class
 })
 public class IgniteCompatibilityBasicTestSuite {
 }
