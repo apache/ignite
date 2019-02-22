@@ -382,8 +382,6 @@ class GridUpdateNotifier {
                         (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
                         pluginsVers;
 
-                System.out.println(postParams);
-
                 if (!isCancelled()) {
                     try {
                         String updatesRes = updatesChecker.getUpdates(postParams);
