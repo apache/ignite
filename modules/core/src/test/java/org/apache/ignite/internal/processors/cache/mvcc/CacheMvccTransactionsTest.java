@@ -2076,10 +2076,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                                 tx.commit();
                             }
                             catch (Exception e) {
-                                if (X.hasCause(e, ClusterTopologyException.class))
-                                    continue;
-
-                                MvccFeatureChecker.assertMvccWriteConflict(e);
+                                if (!X.hasCause(e, ClusterTopologyException.class))
+                                    MvccFeatureChecker.assertMvccWriteConflict(e);
                             }
                         }
                         finally {
