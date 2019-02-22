@@ -197,9 +197,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** Logger. */
     protected static volatile IgniteLogger log;
 
-    /** Entry predicate for test purposes. Allows to fail MVCC operations.*/
-    static CacheEntryPredicate mockEntryPredicate;
-
     /** Cache registry. */
     @GridToStringExclude
     protected final GridCacheContext<?, ?> cctx;
@@ -1263,9 +1260,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert tx != null;
         assert mvccVer != null;
-
-        if (filter == null)
-            filter = mockEntryPredicate;
 
         final boolean valid = valid(tx.topologyVersion());
 
