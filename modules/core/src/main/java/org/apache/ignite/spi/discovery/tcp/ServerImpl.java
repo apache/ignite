@@ -3121,7 +3121,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         debugLog(msg, "No next node in topology.");
 
                     if (ring.hasRemoteNodes() && !(msg instanceof TcpDiscoveryConnectionCheckMessage) &&
-                        !(msg instanceof TcpDiscoveryStatusCheckMessage && msg.creatorNodeId().equals(locNodeId))) {
+                        !(msg instanceof TcpDiscoveryStatusCheckMessage && msg.creatorNodeId().equals(locNodeId)) &&
+                        // Do not re-add high-priority messages to the queue to prevent infinite loop.
+                        !(msg instanceof TcpDiscoveryMetricsUpdateMessage) &&
+                        !(msg instanceof TcpDiscoveryClientMetricsUpdateMessage)) {
                         msg.senderNodeId(locNodeId);
 
                         addMessage(msg);
