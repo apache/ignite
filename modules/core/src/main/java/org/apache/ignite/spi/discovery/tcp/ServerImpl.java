@@ -6450,8 +6450,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (log.isInfoEnabled()) {
-                        log.info("Initialized connection with remote node [nodeId=" + nodeId +
-                            ", rmtAddr=" + sock.getRemoteSocketAddress() +
+                        log.info("Initialized connection with remote " +
+                            (req.client() ? "client" : "server") +
+                            " node [nodeId=" + nodeId +
+                            ", rmtAddr=" + sock.getRemoteSocketAddress() + ']');
+                    }
+
+                    if (debugMode) {
+                        debugLog(msg, "Initialized connection with remote node [nodeId=" + nodeId +
                             ", client=" + req.client() + ']');
                     }
                 }
