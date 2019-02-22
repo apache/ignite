@@ -48,7 +48,6 @@ import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
