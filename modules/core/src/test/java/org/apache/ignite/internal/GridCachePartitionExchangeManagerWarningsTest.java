@@ -139,10 +139,10 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
 
         ExecutorService excSvc = Executors.newFixedThreadPool(transactions);
 
-        try (Ignite srv1 = start("srv-1", false, true)) {
+        try (Ignite srv1 = start("srv", false, true)) {
             CountDownLatch txStarted = new CountDownLatch(transactions);
 
-            final CountDownLatch stopTx = new CountDownLatch(1);
+            CountDownLatch stopTx = new CountDownLatch(1);
 
             for (int i = 0; i < transactions; i++)
                 excSvc.submit(new AsyncTransaction(srv1, CACHE_NAME, i, txStarted, stopTx));
@@ -168,7 +168,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     }
 
     /**
-     * Start a node.
+     * Start Ignite node.
      *
      * @param instanceName Ignite instance name.
      * @param clientMode Client mode flag.
@@ -180,7 +180,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     }
 
     /**
-     * Create a configuration.
+     * Create Ignite configuration.
      *
      * @param instanceName Ignite instance name.
      * @param clientMode Client mode flag.
@@ -317,9 +317,11 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg,
             IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-            // Skip response from backup node.
-            if (((GridIoMessage)msg).message() instanceof GridDhtAtomicDeferredUpdateResponse)
-                return;
+            if (msg instanceof GridIoMessage) {
+                // Skip response from backup node.
+                if (((GridIoMessage)msg).message() instanceof GridDhtAtomicDeferredUpdateResponse)
+                    return;
+            }
 
             super.sendMessage(node, msg, ackC);
         }

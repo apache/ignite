@@ -1935,63 +1935,61 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         final IgniteDiagnosticPrepareContext diagCtx = cctx.kernalContext().cluster().diagnosticEnabled() ?
             new IgniteDiagnosticPrepareContext(cctx.localNodeId()) : null;
 
-        int warningsLimit = 10;
-
-        List<String> warnings = new ArrayList<>(warningsLimit);
-
-        int warningsTotal = 0;
+        WarningsGroup warnings = new WarningsGroup(diagnosticLog, 10);
 
         if (tm != null) {
             for (IgniteInternalTx tx : tm.activeTransactions()) {
                 if (curTime - tx.startTime() > timeout) {
                     found = true;
 
-                    if (++warningsTotal <= warningsLimit) {
+                    if (warnings.canAddMessage()) {
                         warnings.add(">>> Transaction [startTime=" + formatTime(tx.startTime()) +
                             ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
                     }
+                    else
+                        warnings.incTotal();
                 }
             }
         }
 
-        logWarnings("First %d long running transactions [total=%d]", warningsLimit, warningsTotal, warnings);
-
-        warningsTotal = 0;
+        warnings.flush("First %d long running transactions [total=%d]");
 
         if (mvcc != null) {
             for (GridCacheFuture<?> fut : mvcc.activeFutures()) {
                 if (curTime - fut.startTime() > timeout) {
                     found = true;
 
-                    if (++warningsTotal <= warningsLimit) {
+                    if (warnings.canAddMessage()) {
                         warnings.add(">>> Future [startTime=" + formatTime(fut.startTime()) +
                             ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
                     }
+                    else
+                        warnings.incTotal();
 
                     if (diagCtx != null && fut instanceof IgniteDiagnosticAware)
                         ((IgniteDiagnosticAware)fut).addDiagnosticRequest(diagCtx);
                 }
             }
 
-            logWarnings("First %d long running cache futures [total=%d]", warningsLimit, warningsTotal, warnings);
-
-            warningsTotal = 0;
+            warnings.flush("First %d long running cache futures [total=%d]");
 
             for (GridCacheFuture<?> fut : mvcc.atomicFutures()) {
                 if (curTime - fut.startTime() > timeout) {
                     found = true;
 
-                    if (++warningsTotal <= warningsLimit) {
+                    if (warnings.canAddMessage()) {
                         warnings.add(">>> Future [startTime=" + formatTime(fut.startTime()) +
                             ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
                     }
+                    else
+                        warnings.incTotal();
 
                     if (diagCtx != null && fut instanceof IgniteDiagnosticAware)
                         ((IgniteDiagnosticAware)fut).addDiagnosticRequest(diagCtx);
                 }
             }
 
-            logWarnings("First %d long running cache futures [total=%d]", warningsLimit, warningsTotal, warnings);
+            warnings.flush("First %d long running cache futures [total=%d]");
         }
 
         if (diagCtx != null && !diagCtx.empty()) {
@@ -2008,31 +2006,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         return found;
-    }
-
-    /**
-     * Log WARN messages.
-     *
-     * @param title Title template of warnings block.
-     * @param warningsLimit Warnings limit.
-     * @param warningsTotal The total number of warnings.
-     * @param messages Messages.
-     */
-    private void logWarnings(String title, int warningsLimit, int warningsTotal, List<String> messages) {
-        if (warningsTotal > 0) {
-            U.warn(diagnosticLog, String.format(title, warningsLimit, warningsTotal));
-
-            int idx = 0;
-
-            for (String message : messages) {
-                U.warn(diagnosticLog, message);
-
-                if (++idx == warningsLimit)
-                    break;
-            }
-
-            messages.clear();
-        }
     }
 
     /**
@@ -3411,6 +3384,85 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(AffinityReadyFuture.class, this, super.toString());
+        }
+    }
+
+    /**
+     * Class to print only limited number of warnings.
+     */
+    private static class WarningsGroup {
+        /** */
+        private final IgniteLogger log;
+
+        /** */
+        private final int warningsLimit;
+
+        /** */
+        private final List<String> messages;
+
+        /** */
+        private int warningsTotal;
+
+        /**
+         * @param log Target logger.
+         * @param warningsLimit Warnings limit.
+         */
+        private WarningsGroup(IgniteLogger log, int warningsLimit) {
+            this.log = log;
+
+            this.warningsLimit = warningsLimit;
+
+            messages = new ArrayList<>(warningsLimit);
+        }
+
+        /**
+         * @param msg Warning message.
+         * @return {@code true} if message is added to list.
+         */
+        private boolean add(String msg) {
+            boolean added = false;
+
+            if (canAddMessage()) {
+                messages.add(msg);
+
+                added = true;
+            }
+
+            warningsTotal++;
+
+            return added;
+        }
+
+        /**
+         * @return {@code true} if messages list size less than limit.
+         */
+        private boolean canAddMessage() {
+            return warningsTotal < warningsLimit;
+        }
+
+        /**
+         * Increase total number of warnings.
+         */
+        private void incTotal() {
+            warningsTotal++;
+        }
+
+        /**
+         * Print warnings block title and messages.
+         *
+         * @param title Title template.
+         */
+        private void flush(String title) {
+            if (warningsTotal > 0) {
+                U.warn(log, String.format(title, warningsLimit, warningsTotal));
+
+                for (String message : messages)
+                    U.warn(log, message);
+
+                messages.clear();
+
+                warningsTotal = 0;
+            }
         }
     }
 }
