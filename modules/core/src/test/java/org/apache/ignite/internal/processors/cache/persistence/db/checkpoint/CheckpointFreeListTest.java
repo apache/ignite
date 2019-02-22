@@ -32,6 +32,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -318,6 +319,9 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
                         iter.remove();
                     }
+                }
+                catch (TimeoutException e) {
+                    return;
                 }
                 catch (Exception e) {
                     if (Thread.currentThread().isInterrupted())
