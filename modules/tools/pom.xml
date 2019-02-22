@@ -63,17 +63,6 @@
         <sourceDirectory>src/main/java</sourceDirectory>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <includes>
-                        <include>src/main/java/**/*.java</include>
-                        <include>${src.javaspecific.dir}/**/*.java</include>
-                    </includes>
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
                 <version>3.0.0</version>

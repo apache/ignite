@@ -21,6 +21,7 @@ import com.sun.javadoc.Tag;
 import com.sun.source.doctree.DocTree;
 import java.io.File;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +33,7 @@ import jdk.javadoc.doclet.Taglet;
  * be used as replacement of {@link Class} tag that references to the Ignite class that is not in classpath.
  * Class and its arguments should have fully qualified names.
  */
-public class IgniteLinkTaglet11 implements Taglet {
+public class IgniteLinkTaglet implements Taglet {
     /** */
     private static final String NAME = "ignitelink";
 
@@ -44,7 +45,15 @@ public class IgniteLinkTaglet11 implements Taglet {
     }
 
     @Override public String toString(List<? extends DocTree> tags, Element element) {
-        return null;
+        StringBuilder sb = new StringBuilder();
+
+        for (Iterator<? extends DocTree> iter = tags.iterator(); iter.hasNext(); ) {
+            DocTree next = iter.next();
+
+            sb.append(""); //todo
+        }
+
+        return sb.toString();
     }
 
     @Override public Set<Location> getAllowedLocations() {
@@ -65,8 +74,8 @@ public class IgniteLinkTaglet11 implements Taglet {
      *
      * @param tagletMap the map to register this tag to.
      */
-    public static void register(Map<String, IgniteLinkTaglet11> tagletMap) {
-        IgniteLinkTaglet11 tag = new IgniteLinkTaglet11();
+    public static void register(Map<String, IgniteLinkTaglet> tagletMap) {
+        IgniteLinkTaglet tag = new IgniteLinkTaglet();
 
         Taglet t = tagletMap.get(tag.getName());
 
@@ -120,15 +129,5 @@ public class IgniteLinkTaglet11 implements Taglet {
         return "<a href=\"" + path.toString() + fullyQClsName + ".html" +
             (tokens.length > 1 ? ("#" + tokens[1].replace("[]", "...")) : "") +
             "\"><code>" + simpleClsName + (tokens.length > 1 ? ("." + tokens[1]) : "") + "</code></a>";
-    }
-
-    /**
-     * This method should not be called since arrays of inline tags do not exist.  Method {@link #toString(Tag)} should
-     * be used to convert this inline tag to a string.
-     *
-     * @param tags the array of <code>Tag</code>s representing of this custom tag.
-     */
-    public String toString(Tag[] tags) {
-        return null;
     }
 }
