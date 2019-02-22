@@ -185,9 +185,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             ver = DistributedMetaStorageVersion.INITIAL_VERSION;
 
             bridge = new EmptyDistributedMetaStorageBridge();
-
-            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
-                subscriber.onReadyForRead(this);
         }
 
         GridDiscoveryManager discovery = ctx.discovery();
@@ -205,6 +202,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (!isPersistenceEnabled(ctx.config())) {
+            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
+                subscriber.onReadyForRead(this);
+        }
+
         if (active)
             onActivate(ctx);
     }
