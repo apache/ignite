@@ -142,6 +142,9 @@ namespace ignite
                     /** Cache nodes and partitions request. */
                     CACHE_NODE_PARTITIONS = 1100,
 
+                    /** Cache partitions request. */
+                    CACHE_PARTITIONS = 1101,
+
                     /** Get binary type info. */
                     GET_BINARY_TYPE = 3002,
 
@@ -189,6 +192,38 @@ namespace ignite
             };
 
             /**
+             * Cache partitions request.
+             */
+            class CachePartitionsRequest : public Request<RequestType::CACHE_PARTITIONS>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheIds Cache IDs.
+                 */
+                CachePartitionsRequest(const std::vector<int32_t>& cacheIds);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~CachePartitionsRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
+
+            private:
+                /** Cache IDs. */
+                const std::vector<int32_t>& cacheIds;
+            };
+
+            /**
              * Get or create cache request.
              */
             class GetOrCreateCacheWithNameRequest : public Request<RequestType::CACHE_GET_OR_CREATE_WITH_NAME>
@@ -218,7 +253,7 @@ namespace ignite
 
             private:
                 /** Name. */
-                std::string name;
+                const std::string& name;
             };
 
             /**
@@ -251,7 +286,7 @@ namespace ignite
 
             private:
                 /** Name. */
-                std::string name;
+                const std::string& name;
             };
 
             /**

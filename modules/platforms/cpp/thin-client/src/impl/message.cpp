@@ -47,6 +47,20 @@ namespace ignite
                 };
             };
 
+            CachePartitionsRequest::CachePartitionsRequest(const std::vector<int32_t>& cacheIds) :
+                cacheIds(cacheIds)
+            {
+                // No-op.
+            }
+
+            void CachePartitionsRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt32(static_cast<int32_t>(cacheIds.size()));
+
+                for (size_t i = 0; i < cacheIds.size(); ++i)
+                    writer.WriteInt32(cacheIds[i]);
+            }
+
             GetOrCreateCacheWithNameRequest::GetOrCreateCacheWithNameRequest(const std::string& name) :
                 name(name)
             {
