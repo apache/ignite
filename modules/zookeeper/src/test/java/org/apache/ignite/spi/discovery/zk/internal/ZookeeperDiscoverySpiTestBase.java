@@ -41,7 +41,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -105,7 +104,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     protected long joinTimeout;
 
     /** */
-    protected TestingCluster zkCluster;
+    protected static TestingCluster zkCluster;
 
     /** To run test with real local ZK. */
     protected static final boolean USE_TEST_CLUSTER = true;
@@ -125,7 +124,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
      *
      * Need to be cleaned in case of cluster restart.
      */
-    protected ConcurrentHashMap<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> evts = new ConcurrentHashMap<>();
+    protected static ConcurrentHashMap<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> evts = new ConcurrentHashMap<>();
 
     /** */
     protected static volatile boolean err;
@@ -180,15 +179,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         System.setProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT, "1000");
-
-        System.setProperty(IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, "30000");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() {
-        System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT);
+        stopZkCluster();
 
-        System.clearProperty(IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT);
+        System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT);
     }
 
     /** {@inheritDoc} */
@@ -226,8 +223,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             stopAllGrids();
 
             reset();
-
-            stopZkCluster();
         }
     }
 

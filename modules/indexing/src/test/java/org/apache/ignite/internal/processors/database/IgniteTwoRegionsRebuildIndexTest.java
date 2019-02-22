@@ -96,8 +96,7 @@ public class IgniteTwoRegionsRebuildIndexTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebuildIndexes() throws Exception {
-        startGrids(2);
-
+        startGrid("server");
         Ignite client = startGrid("client");
 
         client.cluster().active(true);
@@ -105,11 +104,8 @@ public class IgniteTwoRegionsRebuildIndexTest extends GridCommonAbstractTest {
         populateData(client, PERSISTED_CACHE);
         populateData(client, INMEMORY_CACHE);
 
-        stopGrid(0);
-        startGrid(0);
-
-        stopGrid(1);
-        startGrid(1);
+        stopGrid("server");
+        startGrid("server");
 
         stopGrid("client");
         startGrid("client");
