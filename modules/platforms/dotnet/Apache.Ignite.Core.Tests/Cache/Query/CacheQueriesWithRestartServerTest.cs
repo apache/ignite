@@ -72,9 +72,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             _client.ClientReconnected += (sender, args) => evt.Set();
 
             _server = StartGrid(0);
-
-            var restarted = evt.Wait(10000);
-            Assert.IsTrue(restarted);
+            WaitForReconnect(_client, 10000);
 
             cache = _client.GetOrCreateCache<int, Item>("Test");
             cache.Put(1, new Item { Id = 30, Title = "test" });
