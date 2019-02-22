@@ -1306,7 +1306,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private GridProcessor igniteSecurityProcessor(GridSecurityProcessor prc) {
         return prc != null && prc.enabled()
             ? new IgniteSecurityProcessorImpl(ctx, prc)
-            : new NoOpIgniteSecurityProcessor();
+            : new NoOpIgniteSecurityProcessor(ctx);
     }
 
     /**

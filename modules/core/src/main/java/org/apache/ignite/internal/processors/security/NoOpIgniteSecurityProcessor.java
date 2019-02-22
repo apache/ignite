@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.lang.IgniteFuture;
@@ -33,16 +34,33 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.security.IgniteSecurityProcessorImpl.ATTR_GRID_SEC_PROC_CLASS;
+
 /**
  * No operation Ignite Security Processor.
  */
 public class NoOpIgniteSecurityProcessor implements IgniteSecurityProcessor, GridProcessor {
+    /** */
+    private static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
+        "is not equal to remote node's grid security processor class " +
+        "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
+
     /** No operation Security session. */
     private static final IgniteSecuritySession NO_OP_SECURITY_SESSION = new IgniteSecuritySession() {
         @Override public void close() {
             //no-op
         }
     };
+
+    /** Grid kernal context. */
+    private final GridKernalContext ctx;
+
+    /**
+     * @param ctx Grid kernal context.
+     */
+    public NoOpIgniteSecurityProcessor(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
 
     /** {@inheritDoc} */
     @Override public IgniteSecuritySession startSession(SecurityContext secCtx) {
@@ -146,13 +164,13 @@ public class NoOpIgniteSecurityProcessor implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
-        return null;
+        return validateSecProcClass(node);
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
-        return null;
+        return validateSecProcClass(node);
     }
 
     /** {@inheritDoc} */
@@ -167,6 +185,28 @@ public class NoOpIgniteSecurityProcessor implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public @Nullable IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) {
+        return null;
+    }
+
+    /**
+     * Validates that remote node's grid security processor class is undefined.
+     *
+     * @param node Joining node.
+     * @return Validation result or {@code null} in case of success.
+     */
+    private IgniteNodeValidationResult validateSecProcClass(ClusterNode node){
+        String rmtCls = node.attribute(ATTR_GRID_SEC_PROC_CLASS);
+
+        if (rmtCls != null) {
+            ClusterNode locNode = ctx.discovery().localNode();
+
+            return new IgniteNodeValidationResult(
+                node.id(),
+                String.format(MSG_SEC_PROC_CLS_IS_INVALID, locNode.id(), node.id(), "undefined", rmtCls),
+                String.format(MSG_SEC_PROC_CLS_IS_INVALID, node.id(), locNode.id(), rmtCls, "undefined")
+            );
+        }
+
         return null;
     }
 }

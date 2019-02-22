@@ -47,6 +47,9 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  * Default Grid security Manager implementation.
  */
 public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, GridProcessor {
+    /** Internal attribute name constant. */
+    public static final String ATTR_GRID_SEC_PROC_CLASS = "grid.security.processor.class";
+
     /** Current security context. */
     private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
 
@@ -67,6 +70,9 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
      * @param secPrc Security processor.
      */
     public IgniteSecurityProcessorImpl(GridKernalContext ctx, GridSecurityProcessor secPrc) {
+        assert ctx != null;
+        assert secPrc != null;
+
         this.ctx = ctx;
         this.secPrc = secPrc;
 
@@ -151,6 +157,8 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
+
         secPrc.start();
     }
 
