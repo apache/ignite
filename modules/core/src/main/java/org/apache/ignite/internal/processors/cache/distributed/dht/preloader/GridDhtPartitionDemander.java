@@ -765,8 +765,6 @@ public class GridDhtPartitionDemander {
                         part.lock();
 
                         try {
-                            assert part.state() == MOVING : part;
-
                             Iterator<GridCacheEntryInfo> infos = e.getValue().infos().iterator();
 
                             if (grp.mvccEnabled())

@@ -6727,12 +6727,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             for (int i = 0; i < entries.size(); i++) {
                 GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)entries.get(i);
 
-                assert info.mvccTxState() == TxState.COMMITTED || MvccUtils.compare(info, mvccVer) == 0;
-                assert (i == 0 && info.newMvccTxState() == TxState.NA && info.newMvccCoordinatorVersion() == MvccUtils.MVCC_CRD_COUNTER_NA)
-                    || info.newMvccTxState() == TxState.COMMITTED
-                    || MvccUtils.compareNewVersion(info, mvccVer) == 0;
+                assert info.mvccTxState() == TxState.COMMITTED ||
+                    (MvccUtils.compare(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0 && i < entries.size() -1)
+                    || entries.size() == 1;
+                assert i != 0 || info.newMvccTxState() == TxState.NA && info.newMvccCoordinatorVersion() == MvccUtils.MVCC_CRD_COUNTER_NA;
+                assert i == 0 || info.newMvccTxState() == TxState.COMMITTED ||
+                    MvccUtils.compareNewVersion(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0;
 
-                boolean last = !cctx.offheap().mvccUpdateRowWithPreloadInfo(this,
+                boolean added = !cctx.offheap().mvccUpdateRowWithPreloadInfo(this,
                     info.value(),
                     info.version(),
                     info.expireTime(),
@@ -6753,7 +6755,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     mvccVer.counter()) == 0)
                     oldVal = info.value(); // Old means a value before current transaction.
 
-                if (last)
+                if (added)
                     break;
             }
 
