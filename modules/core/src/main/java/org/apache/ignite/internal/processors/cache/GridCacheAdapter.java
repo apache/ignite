@@ -149,7 +149,6 @@ import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -4322,17 +4321,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             // Should not happen.
             throw new IgniteCheckedException("Failed to perform cache operation (maximum number of retries exceeded).");
         }
-        else {
-            try {
-                return op.op(tx);
-            }
-            catch (IgniteCheckedException e) {
-                if (!(e instanceof TransactionCheckedException))
-                    throw new TransactionHeuristicException("Unexpected exception during operation execution", e);
-
-                throw e;
-            }
-        }
+        else
+            return op.op(tx);
     }
 
     /**

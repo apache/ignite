@@ -28,6 +28,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -48,6 +50,7 @@ import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -99,6 +102,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10871", MvccFeatureChecker.forcedMvcc());
+
         super.beforeTestsStarted();
 
         lastKey = 0;
@@ -106,7 +111,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        forceFail(false);
+        TestIndexingSpi.forceFail(false);
 
         Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
 
@@ -327,7 +332,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     private void checkPutTx(boolean putBefore, TransactionConcurrency concurrency,
         TransactionIsolation isolation, final Integer... keys) throws Exception {
 
-        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+        if (MvccFeatureChecker.forcedMvcc() &&
+            !MvccFeatureChecker.isSupported(concurrency, isolation))
             return;
 
         assertTrue(keys.length > 0);
@@ -337,7 +343,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         if (putBefore) {
-            forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Start transaction.");
 
@@ -360,7 +366,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(DEFAULT_CACHE_NAME).get(key);
         }
 
-        forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         try {
             info("Start transaction.");
@@ -379,7 +385,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             fail("Transaction should fail.");
         }
-        catch (TransactionHeuristicException e) {
+        catch (Exception e) {
+            assertTrue("Unexptected exception " + X.getFullStackTrace(e), e instanceof TransactionHeuristicException);
+
             log.info("Expected exception: " + e);
         }
 
@@ -395,7 +403,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void checkUnlocked(final Integer key) throws Exception {
-        forceFail(false);
+        TestIndexingSpi.forceFail(false);
 
         awaitPartitionMapExchange();
 
@@ -463,7 +471,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPut(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -474,7 +482,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-        forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to put: " + key);
 
@@ -484,12 +492,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, CacheException.class, null);
-
-        if (MvccFeatureChecker.forcedMvcc())
-            assertTrue(err.toString(), err.getCause() instanceof TransactionRollbackException); // Put operation fails.
-        else
-            assertTrue(err.toString(), err.getCause() instanceof TransactionHeuristicException); // Implicit tx commit fails.
+        }, TransactionHeuristicException.class, null);
 
         checkUnlocked(key);
     }
@@ -501,7 +504,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkTransform(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -512,7 +515,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-        forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to transform: " + key);
 
@@ -530,10 +533,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
             }
         }, CacheException.class, null);
 
-        Class<?> expCause = MvccFeatureChecker.forcedMvcc()
-            ? TransactionRollbackException.class : TransactionHeuristicException.class;
-
-        assertTrue("Unexpected cause: " + e, expCause.isInstance(e.getCause()));
+        assertTrue("Unexpected cause: " + e, e.getCause() instanceof TransactionHeuristicException);
 
         checkUnlocked(key);
     }
@@ -547,7 +547,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         assert keys.length > 1;
 
         if (putBefore) {
-            forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             Map<Integer, Integer> m = new HashMap<>();
 
@@ -565,7 +565,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(DEFAULT_CACHE_NAME).get(key);
         }
 
-        forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         final Map<Integer, Integer> m = new HashMap<>();
 
@@ -580,12 +580,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, CacheException.class, null);
-
-        if (MvccFeatureChecker.forcedMvcc())
-            assertTrue(err.toString(), err.getCause() instanceof TransactionRollbackException); // Put operation fails.
-        else
-            assertTrue(err.toString(), err.getCause() instanceof TransactionHeuristicException); // Implicit tx commit fails.
+        }, TransactionHeuristicException.class, null);
 
         for (Integer key : m.keySet())
             checkUnlocked(key);
@@ -598,7 +593,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkRemove(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -609,12 +604,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-        forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to remove: " + key);
-
-        Class<? extends Throwable> expE = MvccFeatureChecker.forcedMvcc() ?
-            TransactionRollbackException.class : TransactionHeuristicException.class;
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -622,24 +614,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, expE, null);
+        }, TransactionHeuristicException.class, null);
 
         checkUnlocked(key);
-    }
-
-    /** */
-    private static CacheEntryPredicate FAILING_ENTRY_PREDICATE = new CacheEntryPredicateAdapter() {
-        @Override public boolean apply(GridCacheEntryEx ex) {
-            throw new IgniteSpiException("test spi failure");
-        }
-    };
-
-    /** */
-    private void forceFail(boolean b) {
-        if (MvccFeatureChecker.forcedMvcc())
-            GridCacheMapEntry.mockEntryPredicate = b ? FAILING_ENTRY_PREDICATE : null;
-
-        TestIndexingSpi.forceFail(b);
     }
 
     /**
