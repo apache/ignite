@@ -2555,8 +2555,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         GridDrType drType = replicate ? DR_PRIMARY : DR_NONE;
 
-        // FIXME size > 1.
-        if (req.size() >= 1) {
+        if (req.size() > 1) {
             Map<UUID, CacheContinuousQueryListener> lsnrs = ctx.continuousQueries().updateListeners(!ctx.userCache(), false);
 
             boolean needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM ||
@@ -2980,8 +2979,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             int cnt = entries.size();
 
-            // FIXME cnt > 1.
-            Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure>> byPart = cnt >= 1 ? new HashMap<>() : null;
+            Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure>> byPart =
+                cnt > 1 ? new HashMap<>() : null;
 
             // Avoid iterator creation.
             for (int i = 0; i < cnt; i++) {
