@@ -33,20 +33,20 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIoDownloader;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileTransferManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.meta.PartitionFileMetaInfo;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.compact;
 
 /**
- *
+ * TODO must be removed
  */
 public class GridDhtPartitionDownloader {
     /** */
@@ -162,24 +162,24 @@ public class GridDhtPartitionDownloader {
 
             Files.createDirectory(out.toPath());
 
-            FileIoDownloader downloader =
-                new FileIoDownloader(channel.channel(), ioFactory, log, out);
+            FileTransferManager<PartitionFileMetaInfo> downloader =
+                new FileTransferManager<>(cctx.kernalContext(), channel.channel(), ioFactory);
 
             for (Integer partId : parts) {
-                File partFile = downloader.download();
+//                downloader.readFile();
 
                 // Check file name. Remove after at final implementation line.
-                String fname = partFile.getName();
-                int pos = fname.lastIndexOf('.');
+//                String fname = partFile.getName();
+//                int pos = fname.lastIndexOf('.');
 
-                assert pos > 0;
+//                assert pos > 0;
 
-                fname.substring(0, pos).equals(String.format(PART_FILE_TEMPLATE, partId));
+//                fname.substring(0, pos).equals(String.format(PART_FILE_TEMPLATE, partId));
 
                 // Merge procedure should be implemented here.
-
-                if (log.isInfoEnabled())
-                    log.info("Partition file downloaded: " + partFile.getName());
+//
+//                if (log.isInfoEnabled())
+//                    log.info("Partition file downloaded: " + partFile.getName());
             }
 
             downloader.close();

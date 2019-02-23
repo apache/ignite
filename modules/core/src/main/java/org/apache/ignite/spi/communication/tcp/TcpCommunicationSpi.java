@@ -4312,6 +4312,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (nioSrvr.getNioSocketChannel(connKey) != null)
                 throw new IgniteCheckedException("Connection key already used: " + connKey);
 
+            // TODO: maybe we can create TcpBlockingCommunication client?
             // GridNioSession ses = createGridNioSession()
             ses = (GridSelectorNioSession)createNioSession(remote, connKey.connectionIndex());
 

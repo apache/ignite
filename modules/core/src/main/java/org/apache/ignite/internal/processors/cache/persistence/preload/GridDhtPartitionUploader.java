@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -32,11 +31,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIoUploader;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileTransferManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.file.meta.PartitionFileMetaInfo;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -47,7 +45,9 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 
-/** */
+/**
+ * TODO class must be removed.
+ * */
 public class GridDhtPartitionUploader {
     /** */
     private final CacheGroupContext grp;
@@ -176,7 +176,8 @@ public class GridDhtPartitionUploader {
             // Future -
             // Checkpointed file - ?
             // CRC-32 calculation?
-            FileIoUploader uploader = new FileIoUploader(ch.channel(), ioFactory, log);
+            FileTransferManager<PartitionFileMetaInfo> uploader =
+                new FileTransferManager<>(cctx.kernalContext(), ch.channel(), ioFactory);
 
             U.log(log, "Start uploading cache group partition procedure [grp=" + grp.cacheOrGroupName() +
                 ", channel=" + ch + ", upCtx=" + upCtx + ']');
@@ -184,7 +185,9 @@ public class GridDhtPartitionUploader {
             for (Integer partId : upCtx.parts) {
                 File partFile = getPartitionFile(grpDir, partId);
 
-                uploader.upload(partFile);
+//                uploader.writeFileMetaInfo(new PartitionFileMetaInfo(grp.groupId(), partFile.getName(), 0L));
+
+                uploader.writeFile(partFile, 0, partFile.length());
 
                 U.log(log, "Partition file uploaded: " + partFile.getPath());
             }
@@ -201,36 +204,6 @@ public class GridDhtPartitionUploader {
         }
         finally {
             U.closeQuiet(ch);
-        }
-    }
-
-    /** */
-    private static class FileBackupTask implements BackupProcessTask {
-        /** */
-        private final FileIoUploader uploader;
-
-        /** */
-        public FileBackupTask(FileIoUploader uploader) {
-            this.uploader = uploader;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void handlePartition(
-            GroupPartitionId grpPartId,
-            File file,
-            long length
-        ) throws IgniteCheckedException {
-            uploader.upload(file);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void handleDelta(
-            GroupPartitionId grpPartId,
-            File file,
-            long offset,
-            long size
-        ) throws IgniteCheckedException {
-            uploader.upload(file);
         }
     }
 

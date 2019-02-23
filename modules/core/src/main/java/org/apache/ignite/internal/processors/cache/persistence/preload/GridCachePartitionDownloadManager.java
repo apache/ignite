@@ -16,6 +16,9 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.preload;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +37,15 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileTransferManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.meta.PartitionFileMetaInfo;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePartitionUploadManager.persistenceRebalanceApplicable;
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePartitionUploadManager.rebalanceThreadTopic;
@@ -46,6 +54,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.preload.Gr
  *
  */
 public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAdapter {
+    /** The default factory to provide IO oprations over downloading files. */
+    private static final FileIOFactory dfltIoFactory = new RandomAccessFileIOFactory();
+
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -103,6 +114,23 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
      */
     private void onChannelCreated0(int topicId, IgniteSocketChannel channel) {
 
+        try {
+            for (Integer partId : Arrays.asList(1, 2)) {
+                FileTransferManager<PartitionFileMetaInfo> ioDownloader =
+                    new FileTransferManager<>(cctx.kernalContext(), channel.channel(), dfltIoFactory);
+
+                PartitionFileMetaInfo meta;
+
+                ioDownloader.readFileMetaInfo(meta = new PartitionFileMetaInfo());
+
+                File partFile = new File("");
+
+                ioDownloader.readFile(partFile, meta.getSize());
+            }
+        }
+        catch (IOException | IgniteCheckedException e) {
+            U.error(log, "Error of handling channel creation event", e);
+        }
     }
 
     /**

@@ -130,6 +130,7 @@ public class FileTemporaryStore implements TemporaryStore {
     @Override public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
         init();
 
+        //TODO write pages for parallel backup processes
         if (writtenPagesCount.contains(pageId))
             return;
 

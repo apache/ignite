@@ -279,12 +279,12 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
                     @Override public void handlePartition(
                         GroupPartitionId grpPartId,
                         File file,
-                        long length
+                        long size
                     ) throws IgniteCheckedException {
                         try {
                             slowCopy.await();
 
-                            lastSavedPartId = copy(file, 0, length, mergeCacheDir);
+                            lastSavedPartId = copy(file, 0, size, mergeCacheDir);
                         }
                         catch (InterruptedException e) {
                             throw new IgniteCheckedException(e);

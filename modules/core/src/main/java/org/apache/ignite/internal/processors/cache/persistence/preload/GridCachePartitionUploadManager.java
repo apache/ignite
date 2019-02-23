@@ -36,8 +36,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIoUploader;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileTransferManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.meta.PartitionFileMetaInfo;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
@@ -54,7 +55,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_REBALANCE;
  *
  */
 public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapter {
-    /** The default factory to provide IO oprations over uploading failes. */
+    /** The default factory to provide IO oprations over uploading files. */
     private static final FileIOFactory dfltIoFactory = new RandomAccessFileIOFactory();
 
     /** */
@@ -182,9 +183,9 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
 
             backupMgr.backup(uploadFut.rebalanceId,
                 uploadFut.getAssigns(),
-                new SocketBackupProcessTask(new FileIoUploader(ch.channel(),
-                    dfltIoFactory,
-                    log)),
+                new SocketBackupProcessTask(new FileTransferManager<>(cctx.kernalContext(),
+                    ch.channel(),
+                    dfltIoFactory)),
                 uploadFut);
 
             uploadFut.onDone(true);
@@ -209,27 +210,36 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
     /** */
     private static class SocketBackupProcessTask implements BackupProcessTask {
         /** */
-        private final FileIoUploader uploader;
+        private final FileTransferManager<PartitionFileMetaInfo> uploader;
 
         /**
          * @param uploader An upload helper class.
          */
-        public SocketBackupProcessTask(FileIoUploader uploader) {
+        public SocketBackupProcessTask(FileTransferManager<PartitionFileMetaInfo> uploader) {
             this.uploader = uploader;
         }
 
         /** {@inheritDoc} */
-        @Override public void handlePartition(GroupPartitionId grpPartId, File file,
-            long length) throws IgniteCheckedException {
-            // Prepare file meta info.
+        @Override public void handlePartition(
+            GroupPartitionId grpPartId,
+            File file,
+            long size
+        ) throws IgniteCheckedException {
+            uploader.writeFileMetaInfo(new PartitionFileMetaInfo(grpPartId.getGroupId(), file.getName(), size, 0));
 
-            uploader.upload(file);
+            uploader.writeFile(file, 0, size);
         }
 
         /** {@inheritDoc} */
-        @Override public void handleDelta(GroupPartitionId grpPartId, File file, long offset,
-            long size) throws IgniteCheckedException {
-            uploader.upload(file);
+        @Override public void handleDelta(
+            GroupPartitionId grpPartId,
+            File file,
+            long offset,
+            long size
+        ) throws IgniteCheckedException {
+            uploader.writeFileMetaInfo(new PartitionFileMetaInfo(grpPartId.getGroupId(), file.getName(), size, 1));
+
+            uploader.writeFile(file, offset, size);
         }
     }
 
