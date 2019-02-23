@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.oom;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-
 /**
  * Tests for OOME on query.
  */
-@RunWith(JUnit4.class)
 public class QueryOOMWithQueryParallelismTest extends AbstractQueryOOMTest {
     /** {@inheritDoc} */
     @Override protected int queryParallelism() {

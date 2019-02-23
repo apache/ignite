@@ -34,8 +34,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -43,7 +41,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  *
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_NAME = "TEST_NAME";
