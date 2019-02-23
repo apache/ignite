@@ -127,4 +127,12 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
      * @throws IgniteException If job failed.
      */
     public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;
+
+    /**
+     * Returns set that will operate with binary objects. This is similar to {@link IgniteCache#withKeepBinary()} but
+     * for sets.
+     *
+     * @return New set instance for binary objects.
+     */
+    public <V1> IgniteSet<V1> withKeepBinary();
 }

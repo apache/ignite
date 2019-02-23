@@ -18,12 +18,22 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueApiSelfAbstractTest;
+import org.apache.ignite.internal.processors.cache.datastructures.GridCacheSetAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalQueueApiSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalSetSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueApiSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicSetSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedQueueApiSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetWithClientSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetWithNodeFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedQueueNoBackupsTest;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedSetNoBackupsSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedQueueApiSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSetSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSetWithClientSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSetWithNodeFilterSelfTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -38,12 +48,23 @@ import org.junit.runners.Suite;
     GridCacheReplicatedQueueApiSelfTest.class,
     GridCachePartitionedQueueApiSelfTest.class,
     GridCachePartitionedAtomicQueueApiSelfTest.class,
-    IgnitePartitionedQueueNoBackupsTest.class
+    IgnitePartitionedQueueNoBackupsTest.class,
+
+    GridCacheLocalSetSelfTest.class,
+    GridCachePartitionedAtomicSetSelfTest.class,
+    GridCachePartitionedSetSelfTest.class,
+    GridCachePartitionedSetWithClientSelfTest.class,
+    GridCachePartitionedSetWithNodeFilterSelfTest.class,
+    GridCacheReplicatedSetSelfTest.class,
+    GridCacheReplicatedSetWithClientSelfTest.class,
+    GridCacheReplicatedSetWithNodeFilterSelfTest.class,
+    IgnitePartitionedSetNoBackupsSelfTest.class,
 })
 public class IgniteCacheDataStructuresBinarySelfTestSuite {
     /** */
     @BeforeClass
     public static void init() {
         System.setProperty(GridCacheQueueApiSelfAbstractTest.BINARY_QUEUE, "true");
+        System.setProperty(GridCacheSetAbstractSelfTest.BINARY_SET, "true");
     }
 }
