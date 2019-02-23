@@ -555,7 +555,9 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
             @Override public boolean accept(File dir, String name) {
                 assert name != null;
 
-                return name.toLowerCase().endsWith(".gar");
+                String nameLowerCase = name.toLowerCase();
+
+                return nameLowerCase.endsWith(".gar") || nameLowerCase.endsWith(".jar");
             }
         };
 
@@ -736,7 +738,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
                     ClassLoader ldr = unitDesc.getClassLoader();
 
                     Class<?> cls = ldr instanceof GridUriDeploymentClassLoader ?
-                        ((GridUriDeploymentClassLoader)ldr).loadClassGarOnly(clsName) :
+                        ((GridUriDeploymentClassLoader)ldr).loadClassIsolated(clsName) :
                         ldr.loadClass(clsName);
 
                     assert cls != null;
@@ -989,7 +991,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
 
         try {
             in = ldr instanceof GridUriDeploymentClassLoader ?
-                ((GridUriDeploymentClassLoader)ldr).getResourceAsStreamGarOnly(rsrc) :
+                ((GridUriDeploymentClassLoader)ldr).getResourceAsStreamIsolated(rsrc) :
                 ldr.getResourceAsStream(rsrc);
 
             return in != null;
