@@ -112,6 +112,45 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jar-file</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>deployfile</finalName>
+                            <outputDirectory>${basedir}/target/file</outputDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>jar-uri</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>uri</finalName>
+                            <outputDirectory>${basedir}/target/deploy</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includes>
+                        <include>**/GridUriDeploymentTestTask8.class</include>
+                        <include>**/GridUriDeploymentTestWithNameTask8.class</include>
+                        <include>**/GridUriDeploymentTestTask9.class</include>
+                        <include>**/GridUriDeploymentDependency9.class</include>
+                        <include>**/test9.properties</include>
+                        <include>**/spring9.xml</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.7</version>
                 <dependencies>

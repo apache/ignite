@@ -51,12 +51,23 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     }
 
     /**
+     * Tests task from file 'deployfile.jar'.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeploymentFromJar() throws Exception {
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask8");
+        checkTask("GridUriDeploymentTestWithNameTask8");
+    }
+
+    /**
      * Tests task from file 'deployfile.gar'.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testDeploymentFromFile() throws Exception {
+    public void testDeploymentFromGar() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
         checkTask("GridUriDeploymentTestWithNameTask3");
     }
@@ -102,6 +113,26 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     }
 
     /**
+     * Tests task from file 'deployfile.jar'.
+     *
+     * Looks for task {@code GridUriDeploymentTestTask9}.
+     * That task loads resource {@code spring9.xml} and imports external class from the same JAR
+     * External class loads resource {@code test9.properties} from the same JAR it is loaded from.
+     *
+     * To check {@code GridDeploymentUriClassLoader} class loader need to delete all classes
+     * and resources from Junit classpath. Note that class loader searches for classes in a JAR
+     * file and not in the parent class loader for junits.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDependenceJarDeployment() throws Exception {
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask9");
+        getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask9")
+                .getResourceClass().newInstance();
+    }
+
+    /**
      * Tests task from file 'deployfile-depend.gar'.
      *
      * Looks for task {@code GridUriDeploymentTestTask1} with descriptor file from GAR-file.
@@ -115,7 +146,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * @throws Exception If failed.
      */
     @Test
-    public void testDependenceDeployment() throws Exception {
+    public void testDependenceGarDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask1");
         getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask1")
             .getResourceClass().newInstance();
