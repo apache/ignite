@@ -3092,7 +3092,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     // We should not touch the root to avoid contention on it, thus it is good idea to have it < rootLvl.
                     gettingHighLvl = retryJustHappened ?
                         lvl + 1 : // If the retry just happened, then we may guess that the tree was not changed much.
-                        (lvl + rootLvl) >>> 1; // Middle point between the root and the current level.
+                        guessHighLevel(lvl);
 
                     // TODO Maybe we can have a better heuristic?
                 }
@@ -3101,6 +3101,39 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 // We do this finalization to avoid extra work on lower levels, where we already know the high level.
                 gettingHighLvl = -gettingHighLvl;
             }
+        }
+
+        /**
+         * @param lvl Current level.
+         * @return Some level between the current and root.
+         */
+        private int guessHighLevel(int lvl) {
+            // Middle point between the root and the current level.
+            return (lvl + rootLvl) >>> 1;
+        }
+
+        /**
+         * @param lvl Current level.
+         * @param io Page IO.
+         * @param pageAddr Page address.
+         * @param cnt Row count.
+         * @return {@code true} If we need to get higher, {@code false} if we are high enough.
+         * @throws IgniteCheckedException If failed.
+         */
+        private boolean jumpHigher(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
+            assert lvl >= Math.abs(gettingHighLvl); // We should not get here until we are high enough.
+
+            // If it is a routing page or the search row is out of bounds for this page, need to get higher.
+            if (cnt == 0 || compare(lvl, io, pageAddr, cnt - 1, row) < 0) {
+                // Jump higher: avoid moving page by page.
+                gettingHighLvl = guessHighLevel(lvl);
+
+                return true;
+            }
+
+            // Starting from this point we are high enough to have valid search.
+            gettingHigh = false;
+            return false;
         }
 
         /**
@@ -3114,14 +3147,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         final int findInsertionPointx(int lvl, BPlusIO<L> io, long pageAddr, int cnt)
             throws IgniteCheckedException {
 
-            if (gettingHigh) {
-                assert lvl >= Math.abs(gettingHighLvl); // We should not get here until we are high enough.
-
-                // If it is a routing page or the search row is out of bounds for this page, need to get higher.
-                if (cnt == 0 || compare(lvl, io, pageAddr, cnt - 1, row) < 0)
-                    return Integer.MIN_VALUE; // Will be ignored, we will get higher because gettingHigh flag was not reset.
-
-                gettingHigh = false; // Starting from this point we are high enough to have valid search.
+            if (gettingHigh && jumpHigher(lvl, io, pageAddr, cnt)) {
+                // The result will be ignored, we will get higher because gettingHigh flag was not reset.
+                return Integer.MIN_VALUE;
             }
 
             int idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
