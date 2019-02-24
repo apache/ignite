@@ -17,13 +17,20 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Cache
 {
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     internal class ClientCacheAffinityAwarenessGroup
     {
-        public ClientCacheAffinityAwarenessGroup(IBinaryStream binaryStream)
+        public ClientCacheAffinityAwarenessGroup(IBinaryStream s)
         {
-            throw new System.NotImplementedException();
+            var cachesCount = s.ReadInt();
+            var keyConfigs = new List<ClientCacheKeyConfiguration>(cachesCount);
+
+            for (int i = 0; i < cachesCount; i++)
+            {
+                keyConfigs.Add(new ClientCacheKeyConfiguration(s.ReadInt(), s.ReadInt()));
+            }
         }
     }
 }

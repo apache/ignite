@@ -54,6 +54,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Disposed flag. */
         private bool _disposed;
 
+        /** Current affinity topology version. */
+        private AffinityTopologyVersion? _affinityTopologyVersion;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
         /// </summary>
@@ -279,9 +282,9 @@ namespace Apache.Ignite.Core.Impl.Client
                 s.WriteInt(cacheId);
             }, s =>
             {
-                var affVer = new AffinityTopologyVersion(s.ReadLong(), s.ReadInt());
+                _affinityTopologyVersion = new AffinityTopologyVersion(s.ReadLong(), s.ReadInt());
                 var size = s.ReadInt();
-                var res = new List<ClientCacheAffinityAwarenessGroup>();
+                var res = new List<ClientCacheAffinityAwarenessGroup>(size);
 
                 for (int i = 0; i < size; i++)
                 {

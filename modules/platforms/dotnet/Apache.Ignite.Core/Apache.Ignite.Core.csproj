@@ -79,6 +79,7 @@
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheAffinityAwarenessGroup.cs" />
+    <Compile Include="Impl\Client\Cache\ClientCacheKeyConfiguration.cs" />
     <Compile Include="Impl\Client\ClientFlags.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
