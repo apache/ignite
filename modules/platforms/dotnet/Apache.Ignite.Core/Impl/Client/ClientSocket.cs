@@ -278,6 +278,8 @@ namespace Apache.Ignite.Core.Impl.Client
         private T DecodeResponse<T>(BinaryHeapStream stream, Func<IBinaryStream, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc)
         {
+            ClientStatusCode statusCode;
+
             if (ServerVersion.CompareTo(Ver130) >= 0)
             {
                 var flags = (ClientFlags) stream.ReadShort();
@@ -286,9 +288,15 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     AffinityTopologyVersion = new AffinityTopologyVersion(stream.ReadLong(), stream.ReadInt());
                 }
-            }
 
-            var statusCode = (ClientStatusCode)stream.ReadInt();
+                statusCode = (flags & ClientFlags.Error) == ClientFlags.Error
+                    ? (ClientStatusCode) stream.ReadInt()
+                    : ClientStatusCode.Success;
+            }
+            else
+            {
+                statusCode = (ClientStatusCode) stream.ReadInt();
+            }
 
             if (statusCode == ClientStatusCode.Success)
             {
