@@ -3026,18 +3026,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /**
-         * If we are not on the right edge of the page or there are no forward pages,
-         * then we are high enough to have valid search from here.
-         *
-         * @param idx Insertion point.
-         * @param cnt Row count.
-         * @return {@code true} If this search result is always valid and can be used.
-         */
-        private boolean isValidSearch(int idx, int cnt) {
-            return -idx - 1 != cnt || fwdId == 0L;
-        }
-
-        /**
          * Marks level to get high with the next row after the current row will be processed.
          *
          * @param lvl Current level.
@@ -3049,6 +3037,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         private void markHighLevelForNextRow(int lvl, BPlusIO<L> io, long pageAddr, int cnt)
             throws IgniteCheckedException {
+            // This flag must always be reset at this point:
+            // it makes no sense to mark levels for the next rows while we are getting high.
+            assert !gettingHigh;
+
+            // For empty pages we do nothing: if we finalize the level we may miss better opportunities lower,
+            // on the other hand, no need to mark this level because it is just an empty routing page - we will
+            // waste resources on locking and reading it when we will get high.
+            if (cnt == 0)
+                return;
+
             // If the high level is finalized we do not need to mark lower levels.
             if (gettingHighLvl < 0 && lvl < -gettingHighLvl)
                 return;
@@ -3056,9 +3054,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Compare the next row with the rightmost row in the page (the next search row must always be greater than the current one).
             // Mark the level if the rightmost row is greater or equal to the next search row.
             // For all the rightmost pages with no forwards (including the root page) we always will have valid search.
+            // For empty pages we have to finalize
             if (fwdId == 0L || compare(io, pageAddr, cnt - 1, nextRow) >= 0)
                 gettingHighLvl = lvl;
             else {
+                // TODO may be compare to currently found insertion point instead of the rightmost row in the page??
+
                 // Because we unfinalize it after each switch to the next row.
                 assert gettingHighLvl >= 0: gettingHighLvl + " " + lvl;
 
@@ -3095,52 +3096,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         final int findInsertionPointx(int lvl, BPlusIO<L> io, long pageAddr, int cnt)
             throws IgniteCheckedException {
-            int idx;
 
             if (gettingHigh) {
                 assert lvl >= Math.abs(gettingHighLvl); // We should not get here until we are high enough.
 
-                idx = findInsertionPointStartingFromRight(row, lvl, io, pageAddr, cnt);
+                // If it is a routing page or the search row is out of bounds for this page, need to get higher.
+                if (cnt == 0 || compare(lvl, io, pageAddr, cnt - 1, row) < 0)
+                    return Integer.MIN_VALUE; // Will be ignored, will get higher because gettingHigh flag was not reset.
 
-                if (isValidSearch(idx, cnt))
-                    gettingHigh = false;
+                gettingHigh = false; // Starting from this point we are high enough to have valid search.
             }
-            else
-                idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
 
-            if (nextRow != null && !gettingHigh)
+            int idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
+
+            if (nextRow != null)
                 markHighLevelForNextRow(lvl, io, pageAddr, cnt);
-
-            return idx;
-        }
-
-        /**
-         * Like usual {@link #findInsertionPoint} but starting with the rightmost row instead of the middle row.
-         *
-         * @param searchRow Search row.
-         * @param lvl Level.
-         * @param io Page IO.
-         * @param pageAddr Page address.
-         * @param cnt Row count.
-         * @return Insertion point.
-         */
-        final int findInsertionPointStartingFromRight(L searchRow, int lvl, BPlusIO<L> io, long pageAddr, int cnt)
-            throws IgniteCheckedException {
-            int idx;
-
-            if (cnt == 0)
-                idx = -1; // The page is empty, nothing to search (and need to get higher if there are forward pages).
-            else {
-                // Try to compare with the rightmost row before doing binary search.
-                int cmp = compare(lvl, io, pageAddr, cnt - 1, searchRow);
-
-                if (cmp > 0) // Search row is less than the last row in the page, need to do binary search.
-                    idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, searchRow, shift);
-                else if (cmp == 0)
-                    idx = cnt - 1; // Search row is equal to the last row in the page.
-                else
-                    idx = -cnt - 1; // Search row is greater than the last row in the page.
-            }
 
             return idx;
         }
