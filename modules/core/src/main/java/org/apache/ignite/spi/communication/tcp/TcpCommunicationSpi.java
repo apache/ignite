@@ -4293,7 +4293,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** {@inheritDoc} */
-    @Override public boolean directConnectionSupported() {
+    @Override public boolean channelConnectionSupported() {
         // TODO: Check for compatibility version and enabled system property
         return true;
     }

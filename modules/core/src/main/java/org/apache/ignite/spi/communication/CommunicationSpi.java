@@ -114,7 +114,7 @@ public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
     /**
      * @return {@code True} if new type of direct connections supported.
      */
-    public default boolean directConnectionSupported() {
+    public default boolean channelConnectionSupported() {
         return false;
     }
 
