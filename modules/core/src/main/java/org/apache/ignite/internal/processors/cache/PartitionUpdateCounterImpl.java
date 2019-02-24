@@ -42,6 +42,9 @@ import org.jetbrains.annotations.Nullable;
  * TODO non-blocking version ? BitSets instead of TreeSet ?
  */
 public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
+    /** Max allowed gaps. */
+    private static final int MAX_GAPS = 10_000;
+
     /** */
     private static final byte VERSION = 1;
 
@@ -116,7 +119,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /**
-     * Sets value to update counter clearing all gaps below the new counter.
+     * Sets value to update counter clearing all gaps.
      *
      * @param val Values.
      */
@@ -137,7 +140,6 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
 
         cntr.set(val);
 
-        // Reset gaps below the counter.
         if (!queue.isEmpty())
             queue.clear();
     }
@@ -245,6 +247,9 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      * @param item Adds update task to priority queue.
      */
     private boolean offer(Item item) {
+        if (queue.size() == MAX_GAPS)
+            throw new IgniteException("Too much gaps [part=" + partId + ", cntr=" + this + ']');
+
         return queue.add(item);
     }
 
@@ -409,7 +414,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return queue;
     }
 
-    public synchronized void resetCounters() {
+    @Override public synchronized void resetCounters() {
         initCntr = 0;
 
         cntr.set(0);

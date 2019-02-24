@@ -28,11 +28,15 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,13 +48,21 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdentityFuture<Void> {
     /** */
     private final IgniteUuid futId = IgniteUuid.randomUuid();
+
     /** */
+    @GridToStringExclude
     private boolean trackable = true;
+
     /** */
+    @GridToStringExclude
     private final GridCacheSharedContext<?, ?> cctx;
+
     /** */
+    @GridToStringExclude
     private final IgniteInternalTx tx;
+
     /** */
+    @GridToStringExclude
     private final IgniteLogger log;
 
     /** */
@@ -88,9 +100,10 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
             MiniFuture miniFut = new MiniFuture(peer);
 
             try {
-                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
-
+                // we must add mini future before sending a message, otherwise mini future must miss completion
                 add(miniFut);
+
+                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 if (!(e instanceof ClusterTopologyCheckedException))
@@ -194,6 +207,21 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         trackable = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                return "[node=" + ((MiniFuture)f).nodeId +
+                    ", done=" + f.isDone() + "]";
+            }
+        });
+
+        return S.toString(PartitionCountersNeighborcastFuture.class, this,
+            "xid", tx.xidVersion(),
+            "innerFuts", futs,
+            "super", super.toString());
     }
 
     /**

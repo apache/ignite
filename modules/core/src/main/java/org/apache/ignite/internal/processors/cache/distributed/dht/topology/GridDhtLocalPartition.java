@@ -1027,6 +1027,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (primaryCntr != null)
             nextCntr = primaryCntr;
+        else if (tx.storeEnabled())
+            nextCntr = dataStore().nextUpdateCounter();
         else {
             TxCounters txCounters = tx.txCounters(false);
 

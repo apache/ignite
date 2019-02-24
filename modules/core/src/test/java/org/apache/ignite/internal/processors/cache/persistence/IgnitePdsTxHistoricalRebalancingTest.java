@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
+import org.junit.Test;
 
 /**
  *
@@ -60,5 +61,10 @@ public class IgnitePdsTxHistoricalRebalancingTest extends IgnitePdsTxCacheRebala
 
         if (!walRebalanceInvoked)
             throw new AssertionError("WAL rebalance hasn't been invoked.");
+    }
+
+    @Test
+    @Override public void testTopologyChangesWithConstantLoad() throws Exception {
+        super.testTopologyChangesWithConstantLoad();
     }
 }
