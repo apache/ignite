@@ -26,8 +26,10 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Net.Sockets;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Client.Cache;
 
     /// <summary>
     /// Socket wrapper with reconnect/failover functionality: reconnects on failure.
@@ -97,8 +99,9 @@ namespace Apache.Ignite.Core.Impl.Client
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
+            // TODO: Request partition map if it is out of date or unknown
             // TODO: Calculate target node for given cache and given key.
-            // TODO: Move the method to IClientAffinitySocket or something like that
+            // TODO: Move the method to IClientAffinitySocket or something like that?
             return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
@@ -260,6 +263,34 @@ namespace Apache.Ignite.Core.Impl.Client
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Updates the partition mapping.
+        /// </summary>
+        private void UpdatePartitionMapping(int cacheId)
+        {
+            // TODO: Check if we need to update?
+            // TODO: Sync and async
+
+            DoOutInOp<object>(ClientOp.CachePartitions, s =>
+            {
+                s.WriteInt(1);  // One cache.
+                s.WriteInt(cacheId);
+            }, s =>
+            {
+                var affVer = new AffinityTopologyVersion(s.ReadLong(), s.ReadInt());
+                var size = s.ReadInt();
+                var res = new List<ClientCacheAffinityAwarenessGroup>();
+
+                for (int i = 0; i < size; i++)
+                {
+                    res.Add(new ClientCacheAffinityAwarenessGroup(s));
+                }
+
+                // TODO
+                return null;
+            });
         }
     }
 }
