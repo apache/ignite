@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import java.util.Arrays;
 import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
 import org.junit.Test;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
