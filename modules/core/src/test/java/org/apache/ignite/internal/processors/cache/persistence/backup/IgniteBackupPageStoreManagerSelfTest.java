@@ -373,13 +373,13 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
 
             pageStore.read(pageId, buf, true);
 
-            sb.append("TT[pageId=")
+            sb.append("[pageId=")
                 .append(pageId)
                 .append(", crc=")
                 .append(PageIO.getCrc(buf))
                 .append("]\n");
         }
 
-        System.out.println(sb.append("TT").append("[pages=").append(pageStore.pages()).append("]\n").toString());
+        U.log(log, sb.append("[pages=").append(pageStore.pages()).append("]\n").toString());
     }
 }

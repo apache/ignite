@@ -66,6 +66,8 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
         SocketChannel channel,
         FileIOFactory factory
     ) throws IOException {
+        assert channel.isBlocking();
+
         this.channel = channel;
         this.dis = new DataInputStream(channel.socket().getInputStream());
         this.dos = new DataOutputStream(channel.socket().getOutputStream());

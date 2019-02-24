@@ -935,6 +935,7 @@ public class GridNioServer<T> {
 
     /**
      * Create a {@link IgniteSocketChannel} using provided session.
+     * // TODO manage#store chennels on TcpCommunicationSpi level?
      */
     public IgniteSocketChannel createNioChannel(
         GridSelectorNioSession ses,

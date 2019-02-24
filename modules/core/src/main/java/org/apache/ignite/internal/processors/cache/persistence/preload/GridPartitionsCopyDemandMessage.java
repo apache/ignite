@@ -63,7 +63,7 @@ public class GridPartitionsCopyDemandMessage implements Message {
     public GridPartitionsCopyDemandMessage(
         long rebId,
         AffinityTopologyVersion topVer,
-        Map<Integer, List<Integer>> assigns0
+        Map<Integer, GridIntList> assigns0
     ) {
         assert assigns0 != null && !assigns0.isEmpty();
 
@@ -72,16 +72,8 @@ public class GridPartitionsCopyDemandMessage implements Message {
 
         assigns = U.newHashMap(assigns0.size());
 
-        for (Map.Entry<Integer, List<Integer>> e : assigns0.entrySet()) {
-            List<Integer> parts = e.getValue();
-
-            GridIntList gList = new GridIntList(parts.size());
-
-            for (int n = 0; n < parts.size(); n++)
-                gList.add(parts.get(n));
-
-            assigns.put(e.getKey(), gList);
-        }
+        for (Map.Entry<Integer, GridIntList> e : assigns0.entrySet())
+            assigns.put(e.getKey(), e.getValue().copy());
     }
 
     /**

@@ -774,7 +774,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                                 ch.setReady();
 
-                                onChannelCreated(ch);
+                                onChannelCreated(connKey.nodeId(), ch);
                             }
                             catch (IOException e) {
                                 U.error(log, "Unable to configure blocking mode.", e);
@@ -926,10 +926,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
 
             /** {@inheritDoc} */
-            @Override public void onChannelCreated(IgniteSocketChannel ch) {
+            @Override public void onChannelCreated(UUID nodeId, IgniteSocketChannel ch) {
                 log.info("Notify corresponding listeners due to the new channel created: " + ch);
 
-                notifyListener(ch);
+                notifyListener(nodeId, ch);
             }
 
             /**
@@ -4008,11 +4008,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** */
-    private void notifyListener(IgniteSocketChannel ch) {
+    private void notifyListener(UUID nodeId, IgniteSocketChannel ch) {
         CommunicationListener<Message> lsnr0 = lsnr;
 
         if (lsnr0 != null)
-            lsnr0.onChannelCreated(ch);
+            lsnr0.onChannelCreated(nodeId, ch);
     }
 
     /**

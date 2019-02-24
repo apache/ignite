@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.util.EventListener;
+import java.util.UUID;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.jetbrains.annotations.Nullable;
@@ -80,9 +81,8 @@ public interface GridNioServerListener<T> extends EventListener {
 
     /**
      * Called when new {@link IgniteSocketChannel} is created by NIO server.
-     * Todo: add nodeId param?
      */
-    public default void onChannelCreated(IgniteSocketChannel ch) {
+    public default void onChannelCreated(UUID nodeId, IgniteSocketChannel ch) {
         // No-op.
     }
 }

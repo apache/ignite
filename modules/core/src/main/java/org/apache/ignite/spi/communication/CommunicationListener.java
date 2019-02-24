@@ -61,9 +61,10 @@ public interface CommunicationListener<T extends Serializable> extends EventList
     /**
      * Listen to {@link IgniteSocketChannel} creation event from remote connection.
      *
+     * @param nodeId Remote node id.
      * @param ch Local created channel endpoint.
      */
-    public default void onChannelCreated(IgniteSocketChannel ch) {
+    public default void onChannelCreated(UUID nodeId, IgniteSocketChannel ch) {
         // No-op.
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.util.EventListener;
+import java.util.UUID;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 
 /**
@@ -27,9 +28,8 @@ public interface GridIoChannelListener extends EventListener {
     /**
      * The creation event of {@link IgniteSocketChannel} from remote connection.
      *
+     * @param nodeId The remote node id.
      * @param channel Local created channel endpoint.
      */
-    public default void onChannelCreated(IgniteSocketChannel channel) {
-        // No-op.
-    }
+    public void onChannelCreated(UUID nodeId, IgniteSocketChannel channel);
 }

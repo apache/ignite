@@ -20,6 +20,7 @@ package org.apache.ignite.spi.communication.tcp;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
@@ -71,7 +72,7 @@ public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
         final CountDownLatch waitChLatch = new CountDownLatch(1);
 
         grid(1).context().io().addChannelListener(new GridIoChannelListener() {
-            @Override public void onChannelCreated(IgniteSocketChannel channel) {
+            @Override public void onChannelCreated(UUID nodeId, IgniteSocketChannel channel) {
                 // Created from ignite node with index = 0;
                 if (channel.id().nodeId().equals(grid(0).localNode().id())) {
                     nioCh[0] = channel;

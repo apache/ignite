@@ -291,8 +291,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
             }
 
-            @Override public void onChannelCreated(IgniteSocketChannel ch) {
-                onChannelCreated0(ch);
+            @Override public void onChannelCreated(UUID nodeId, IgniteSocketChannel ch) {
+                onChannelCreated0(nodeId, ch);
             }
         });
 
@@ -932,11 +932,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /** */
-    private void onChannelCreated0(IgniteSocketChannel ch) {
+    private void onChannelCreated0(UUID nodeId, IgniteSocketChannel ch) {
         assert ch != null;
 
         for (GridIoChannelListener lsnr : channelLsnrs)
-            lsnr.onChannelCreated(ch);
+            lsnr.onChannelCreated(nodeId, ch);
 
         if (ch.topic() == null)
             return;
@@ -953,7 +953,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     @Override public void run() {
                         for (GridIoChannelListener lsnr: lsnrQueue) {
                             if (lsnr != null)
-                                lsnr.onChannelCreated(ch);
+                                lsnr.onChannelCreated(nodeId, ch);
                         }
                     }
                 });
