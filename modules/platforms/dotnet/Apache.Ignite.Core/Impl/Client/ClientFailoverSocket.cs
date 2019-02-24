@@ -76,14 +76,26 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 throw new IgniteClientException("Failed to resolve all specified hosts.");
             }
-
-            Connect();
         }
 
         /** <inheritdoc /> */
         public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
+            return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
+        }
+
+        /** <inheritdoc /> */
+        public T DoOutInOpAffinity<T, TKey>(
+            ClientOp opId,
+            Action<IBinaryStream> writeAction,
+            Func<IBinaryStream, T> readFunc,
+            int cacheId,
+            TKey key,
+            Func<ClientStatusCode, string, T> errorFunc = null)
+        {
+            // TODO: Calculate target node for given cache and given key.
+            // TODO: Move the method to IClientAffinitySocket or something like that
             return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
@@ -166,6 +178,10 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void Connect()
         {
+            // TODO: Connect to all endpoints.
+            // We need a CurrentSocket property that is round-robin.
+            // Other connections can be established in the background.
+
             List<Exception> errors = null;
             var startIdx = (int) Interlocked.Increment(ref _endPointIndex);
 
