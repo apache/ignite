@@ -57,6 +57,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Current affinity topology version. */
         private AffinityTopologyVersion? _affinityTopologyVersion;
 
+        /** Affinity groups. TODO: More efficient representation with Dictionary. */
+        private List<ClientCacheAffinityAwarenessGroup> _affinityGroups;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
         /// </summary>
@@ -274,7 +277,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private void UpdatePartitionMapping(int cacheId)
         {
             // TODO: Check if we need to update?
-            // TODO: Sync and async
+            // TODO: Sync and async versions to call from sync and async methods.
 
             DoOutInOp<object>(ClientOp.CachePartitions, s =>
             {
@@ -291,7 +294,8 @@ namespace Apache.Ignite.Core.Impl.Client
                     res.Add(new ClientCacheAffinityAwarenessGroup(s));
                 }
 
-                // TODO
+                _affinityGroups = res;
+
                 return null;
             });
         }
