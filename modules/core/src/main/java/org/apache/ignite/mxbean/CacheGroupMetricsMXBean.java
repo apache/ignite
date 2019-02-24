@@ -108,6 +108,22 @@ public interface CacheGroupMetricsMXBean {
     public int getLocalNodeRentingPartitionsCount();
 
     /**
+     * Gets count of partitions with state LOST for this cache group located on this node.
+     *
+     * @return Partitions count.
+     */
+    @MXBeanDescription("Count of partitions with state LOST for this cache group located on this node.")
+    public int getLocalNodeLostPartitionsCount();
+
+    /**
+     * Gets count of partitions with state EVICTED for this cache group located on this node.
+     *
+     * @return Partitions count.
+     */
+    @MXBeanDescription("Count of partitions with state EVICTED for this cache group located on this node.")
+    public int getLocalNodeEvictedPartitionsCount();
+
+    /**
      * Gets count of entries remains to evict in RENTING partitions located on this node for this cache group.
      *
      * @return Entries count.
@@ -132,6 +148,30 @@ public interface CacheGroupMetricsMXBean {
     public int getClusterMovingPartitionsCount();
 
     /**
+     * Gets count of partitions with state LOST for this cache group in the entire cluster.
+     *
+     * @return Partitions count.
+     */
+    @MXBeanDescription("Count of partitions for this cache group in the entire cluster with state LOST.")
+    public int getClusterLostPartitionsCount();
+
+    /**
+     * Gets count of partitions with state RENTING for this cache group in the entire cluster.
+     *
+     * @return Partitions count.
+     */
+    @MXBeanDescription("Count of partitions for this cache group in the entire cluster with state RENTING.")
+    public int getClusterRentingPartitionsCount();
+
+    /**
+     * Gets count of partitions with state EVICTED for this cache group in the entire cluster.
+     *
+     * @return Partitions count.
+     */
+    @MXBeanDescription("Count of partitions for this cache group in the entire cluster with state EVICTED.")
+    public int getClusterEvictedPartitionsCount();
+
+    /**
      * Gets allocation map of partitions with state OWNING in the cluster.
      *
      * @return Map from partition number to set of nodes, where partition is located.
@@ -146,6 +186,30 @@ public interface CacheGroupMetricsMXBean {
      */
     @MXBeanDescription("Allocation map of partitions with state MOVING in the cluster.")
     public Map<Integer, Set<String>> getMovingPartitionsAllocationMap();
+
+    /**
+     * Gets allocation map of partitions with state RENTING in the cluster.
+     *
+     * @return Map from partition number to set of nodes, where partition is located
+     */
+    @MXBeanDescription("Allocation map of partitions with state RENTING in the cluster.")
+    public Map<Integer, Set<String>> getRentingPartitionsAllocationMap();
+
+    /**
+     * Gets allocation map of partitions with state LOST in the cluster.
+     *
+     * @return Map from partition number to set of nodes, where partition is located
+     */
+    @MXBeanDescription("Allocation map of partitions with state LOST in the cluster.")
+    public Map<Integer, Set<String>> getLostPartitionsAllocationMap();
+
+    /**
+     * Gets allocation map of partitions with state EVICTED in the cluster.
+     *
+     * @return Map from partition number to set of nodes, where partition is located
+     */
+    @MXBeanDescription("Allocation map of partitions with state EVICTED in the cluster.")
+    public Map<Integer, Set<String>> getEvictedPartitionsAllocationMap();
 
     /**
      * Gets affinity partitions assignment map.

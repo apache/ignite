@@ -260,6 +260,16 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public int getLocalNodeLostPartitionsCount() {
+        return localNodePartitionsCountByState(GridDhtPartitionState.LOST);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getLocalNodeEvictedPartitionsCount() {
+        return localNodePartitionsCountByState(GridDhtPartitionState.EVICTED);
+    }
+
+    /** {@inheritDoc} */
     @Override public long getLocalNodeRentingEntriesCount() {
         long entriesCnt = 0;
 
@@ -279,6 +289,21 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getClusterMovingPartitionsCount() {
         return clusterPartitionsCountByState(GridDhtPartitionState.MOVING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getClusterRentingPartitionsCount() {
+        return clusterPartitionsCountByState(GridDhtPartitionState.RENTING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getClusterLostPartitionsCount() {
+        return clusterPartitionsCountByState(GridDhtPartitionState.LOST);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getClusterEvictedPartitionsCount() {
+        return clusterPartitionsCountByState(GridDhtPartitionState.EVICTED);
     }
 
     /**
@@ -316,6 +341,21 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** {@inheritDoc} */
     @Override public Map<Integer, Set<String>> getMovingPartitionsAllocationMap() {
         return clusterPartitionsMapByState(GridDhtPartitionState.MOVING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Set<String>> getRentingPartitionsAllocationMap() {
+        return clusterPartitionsMapByState(GridDhtPartitionState.RENTING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Set<String>> getEvictedPartitionsAllocationMap() {
+        return clusterPartitionsMapByState(GridDhtPartitionState.EVICTED);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Set<String>> getLostPartitionsAllocationMap() {
+        return clusterPartitionsMapByState(GridDhtPartitionState.LOST);
     }
 
     /** {@inheritDoc} */
