@@ -46,8 +46,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Version 1.2.0. */
         public static readonly ClientProtocolVersion Ver120 = new ClientProtocolVersion(1, 2, 0);
 
+        /** Version 1.3.0. */
+        public static readonly ClientProtocolVersion Ver130 = new ClientProtocolVersion(1, 3, 0);
+
         /** Current version. */
-        public static readonly ClientProtocolVersion CurrentProtocolVersion = Ver120;
+        public static readonly ClientProtocolVersion CurrentProtocolVersion = Ver130;
 
         /** Handshake opcode. */
         private const byte OpHandshake = 1;
@@ -202,6 +205,11 @@ namespace Apache.Ignite.Core.Impl.Client
         public EndPoint LocalEndPoint { get { return _socket.LocalEndPoint; } }
 
         /// <summary>
+        /// Gets the ID of the connected server node.
+        /// </summary>
+        public Guid? ServerNodeId { get; private set; }
+
+        /// <summary>
         /// Starts waiting for the new message.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
@@ -327,6 +335,11 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (success)
                 {
+                    if (version.CompareTo(Ver130) >= 0)
+                    {
+                        ServerNodeId = BinaryUtils.Marshaller.Unmarshal<Guid>(stream);
+                    }
+
                     ServerVersion = version;
 
                     return;
