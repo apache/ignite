@@ -76,6 +76,9 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 throw new IgniteClientException("Failed to resolve all specified hosts.");
             }
+
+            // TODO: Connect only one and return quicker?
+            Connect();
         }
 
         /** <inheritdoc /> */
@@ -181,7 +184,6 @@ namespace Apache.Ignite.Core.Impl.Client
             // TODO: Connect to all endpoints.
             // We need a CurrentSocket property that is round-robin.
             // Other connections can be established in the background.
-
             List<Exception> errors = null;
             var startIdx = (int) Interlocked.Increment(ref _endPointIndex);
 
