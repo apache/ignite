@@ -829,7 +829,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<int> GetSizeAsync(params CachePeekMode[] modes)
         {
-            return SizeAsync0<int>(null, modes);
+            return SizeAsync0(modes);
         }
 
         /** <inheritDoc /> */
@@ -847,13 +847,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<long> GetSizeLongAsync(params CachePeekMode[] modes)
         {
-            return SizeAsync0<long>(null, modes);
+            return SizeAsync0(null, modes);
         }
 
         /** <inheritDoc /> */
         public Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes)
         {
-            return SizeAsync0<long>(partition, modes);
+            return SizeAsync0(partition, modes);
         }
 
         /** <inheritDoc /> */
@@ -913,33 +913,40 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
         
         /// <summary>
-        /// Internal async size routine.
+        /// Internal async integer size routine.
+        /// </summary>
+        /// <param name="modes">peek modes</param>
+        /// <returns>Size.</returns>
+        private Task<int> SizeAsync0(params CachePeekMode[] modes)
+        {
+            var modes0 = IgniteUtils.EncodePeekModes(modes);
+
+            return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0));
+        }
+        
+        /// <summary>
+        /// Internal async long size routine.
         /// </summary>
         /// <param name="part">Partition number</param>
         /// <param name="modes">peek modes</param>
         /// <returns>Size.</returns>
-        private Task<T> SizeAsync0<T>(int? part, params CachePeekMode[] modes)
+        private Task<long> SizeAsync0(int? part, params CachePeekMode[] modes)
         {
             var modes0 = IgniteUtils.EncodePeekModes(modes);
 
-            var op = typeof(T) == typeof(long) ? CacheOp.SizeLongAsync : CacheOp.SizeAsync;
-
-            return DoOutOpAsync<T>((int) op, writer =>
+            return DoOutOpAsync<long>(CacheOp.SizeLongAsync, writer =>
             {
                 writer.WriteInt(modes0);
-                
-                if (typeof(T) == typeof(long))
+                     
+                if (part != null)
                 {
-                    if (part != null)
-                    {
-                        writer.WriteBoolean(true);
-                        writer.WriteInt((int) part);
-                    }
-                    else
-                    {
-                        writer.WriteBoolean(false);   
-                    }
-                }              
+                    writer.WriteBoolean(true);
+                    writer.WriteInt((int) part);
+                }
+                else
+                {
+                    writer.WriteBoolean(false);   
+                }             
             });
         }
 
