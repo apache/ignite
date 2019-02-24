@@ -3047,9 +3047,23 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (cnt == 0)
                 return;
 
-            // If the high level is finalized we do not need to mark lower levels.
-            if (gettingHighLvl < 0 && lvl < -gettingHighLvl)
-                return;
+            boolean retryJustHappened = false;
+
+            // Handle finalized high level.
+            if (gettingHighLvl < 0) {
+                // Do not need to mark levels lower than the finalized high level:
+                // we already know that the next row is in another subtree.
+                if (lvl < -gettingHighLvl)
+                    return;
+
+                // We unfinalize the high level after each switch to the next row,
+                // so we can not get finalized high level from the previous processed row.
+                // The current level is higher or equal to the finalized high level,
+                // thus we have a RETRY (not RETRY_ROOT, because it resets gettingHighLvl field to rootLvl).
+                // Unfinalize the high level to handle the new tree state.
+                retryJustHappened = true;
+                gettingHighLvl = -gettingHighLvl;
+            }
 
             // Compare the next row with the rightmost row in the page (the next search row must always be greater than the current one).
             // Mark the level if the rightmost row is greater or equal to the next search row.
@@ -3058,29 +3072,34 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (fwdId == 0L || compare(io, pageAddr, cnt - 1, nextRow) >= 0)
                 gettingHighLvl = lvl;
             else {
-                // Because we unfinalize it after each switch to the next row.
-                assert gettingHighLvl >= 0: gettingHighLvl + " " + lvl;
+                assert gettingHighLvl >= 0;
 
                 // If the marked high level is lower then the current level, it means that we jumped high after
-                // processing previous rows and comparing here the new next row for the first time. We have already
-                // compared this new next row to the page bound and it known to be greater, it means that
+                // processing previous rows and comparing here the new next row for the first time.
+                // Or otherwise it was a concurrent tree modification that caused the retry in this thread.
+                //
+                // We have already compared this new next row to the page bound and it known to be greater, it means that
                 // the correct high level for the new next row is even higher than the current level and we do not know
-                // exactly where it is. Thus, we just guess it is somewhere between lvl and rootLvl.
+                // exactly where it is. We can only guess it is somewhere between lvl and rootLvl.
+                //
                 // We do not want to mark high levels for more than one next row because in presence of
                 // concurrent modifications these levels often will be wrong, producing pointless extra work,
                 // there also will be space overhead of storing them.
                 if (gettingHighLvl <= lvl) {
                     assert rootLvl > lvl; // Because otherwise we must be in the root here and must end up marking level in prev branch.
 
-                    // Heuristic to guess level for the next row.
-                    gettingHighLvl = (lvl + rootLvl) >>> 1;
+                    // Heuristic to guess the high level for the next row.
+                    // We should not touch the root to avoid contention on it, thus it is good idea to have it < rootLvl.
+                    gettingHighLvl = retryJustHappened ?
+                        lvl + 1 : // If the retry just happened, then we may guess that the tree was not changed much.
+                        (lvl + rootLvl) >>> 1; // Middle point between the root and the current level.
 
-                    assert gettingHighLvl < rootLvl; // We should not touch root to avoid contention on it.
+                    // TODO Maybe we can have a better heuristic?
                 }
 
                 // Finalize the previous marked level since the next row is out of bounds in the current subtree.
                 // We do this finalization to avoid extra work on lower levels, where we already know the high level.
-                gettingHighLvl = -gettingHighLvl - 1;
+                gettingHighLvl = -gettingHighLvl;
             }
         }
 
