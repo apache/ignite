@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Net.Sockets;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -210,6 +211,11 @@ namespace Apache.Ignite.Core.Impl.Client
         public Guid? ServerNodeId { get; private set; }
 
         /// <summary>
+        /// Gets the current Affinity Topology Version, if known.
+        /// </summary>
+        public AffinityTopologyVersion? AffinityTopologyVersion { get; private set; }
+
+        /// <summary>
         /// Starts waiting for the new message.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
@@ -269,9 +275,19 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Decodes the response that we got from <see cref="HandleResponse"/>.
         /// </summary>
-        private static T DecodeResponse<T>(BinaryHeapStream stream, Func<IBinaryStream, T> readFunc,
+        private T DecodeResponse<T>(BinaryHeapStream stream, Func<IBinaryStream, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc)
         {
+            if (ServerVersion.CompareTo(Ver130) >= 0)
+            {
+                var flags = (ClientFlags) stream.ReadShort();
+
+                if ((flags & ClientFlags.AffinityTopologyChanged) == ClientFlags.AffinityTopologyChanged)
+                {
+                    AffinityTopologyVersion = new AffinityTopologyVersion(stream.ReadLong(), stream.ReadInt());
+                }
+            }
+
             var statusCode = (ClientStatusCode)stream.ReadInt();
 
             if (statusCode == ClientStatusCode.Success)
