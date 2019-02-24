@@ -3058,8 +3058,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (fwdId == 0L || compare(io, pageAddr, cnt - 1, nextRow) >= 0)
                 gettingHighLvl = lvl;
             else {
-                // TODO may be compare to currently found insertion point instead of the rightmost row in the page??
-
                 // Because we unfinalize it after each switch to the next row.
                 assert gettingHighLvl >= 0: gettingHighLvl + " " + lvl;
 
@@ -3102,7 +3100,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                 // If it is a routing page or the search row is out of bounds for this page, need to get higher.
                 if (cnt == 0 || compare(lvl, io, pageAddr, cnt - 1, row) < 0)
-                    return Integer.MIN_VALUE; // Will be ignored, will get higher because gettingHigh flag was not reset.
+                    return Integer.MIN_VALUE; // Will be ignored, we will get higher because gettingHigh flag was not reset.
 
                 gettingHigh = false; // Starting from this point we are high enough to have valid search.
             }
