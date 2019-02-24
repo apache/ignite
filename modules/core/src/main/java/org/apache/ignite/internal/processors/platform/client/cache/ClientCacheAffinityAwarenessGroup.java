@@ -158,7 +158,7 @@ class ClientCacheAffinityAwarenessGroup
             CacheKeyConfiguration[] keyCfgs = ccfg.getKeyConfiguration();
 
             writer.writeInt(keyCfgs.length);
-    
+
             for (CacheKeyConfiguration keyCfg : keyCfgs) {
                 int keyTypeId = proc.typeId(keyCfg.getTypeName());
                 int affinityKeyFieldId = proc.binaryContext().fieldId(keyTypeId, keyCfg.getAffinityKeyFieldName());

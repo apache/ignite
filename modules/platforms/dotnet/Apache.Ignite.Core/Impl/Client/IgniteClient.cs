@@ -64,12 +64,12 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _configuration = new IgniteClientConfiguration(clientConfiguration);
 
-            _socket = new ClientFailoverSocket(_configuration);
-
             _marsh = new Marshaller(_configuration.BinaryConfiguration)
             {
                 Ignite = this
             };
+
+            _socket = new ClientFailoverSocket(_configuration, _marsh);
 
             _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
 

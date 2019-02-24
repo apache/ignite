@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
 
@@ -45,6 +46,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Config. */
         private readonly IgniteClientConfiguration _config;
 
+        /** Marshaller. */
+        private readonly Marshaller _marsh;
+
         /** Endpoints with corresponding hosts. */
         private readonly List<KeyValuePair<IPEndPoint, string>> _endPoints;
 
@@ -60,15 +64,21 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Affinity groups. TODO: More efficient representation with Dictionary. */
         private List<ClientCacheAffinityAwarenessGroup> _affinityGroups;
 
+        /** Map from node ID to connected socket. */
+        private Dictionary<Guid, ClientSocket> _nodeSocketMap = new Dictionary<Guid, ClientSocket>(); // TODO: Populate
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
         /// </summary>
         /// <param name="config">The configuration.</param>
-        public ClientFailoverSocket(IgniteClientConfiguration config)
+        /// <param name="marsh"></param>
+        public ClientFailoverSocket(IgniteClientConfiguration config, Marshaller marsh)
         {
             Debug.Assert(config != null);
+            Debug.Assert(marsh != null);
 
             _config = config;
+            _marsh = marsh;
 
 #pragma warning disable 618 // Type or member is obsolete
             if (config.Host == null && (config.Endpoints == null || config.Endpoints.Count == 0))
@@ -97,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritdoc /> */
-        public T DoOutInOpAffinity<T, TKey>(
+        public T DoOutInOpAffinity<T, TKey>( // TODO: This does not belong in Socket class. Move to IgniteClient?
             ClientOp opId,
             Action<IBinaryStream> writeAction,
             Func<IBinaryStream, T> readFunc,
@@ -105,6 +115,23 @@ namespace Apache.Ignite.Core.Impl.Client
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
+            UpdatePartitionMapping(cacheId);
+
+            // TODO: If T is a complex type, we need to extract affinity key?
+            var partMap = _affinityGroups.SingleOrDefault(g => g.KeyConfigs.Any(c => c.CacheId == cacheId));
+
+            if (partMap != null)
+            {
+                var partition = GetPartition(key);
+                var nodeId = partMap.PartitionMap.SingleOrDefault(x => x.Value.Contains(partition));
+
+                ClientSocket socket;
+                if (_nodeSocketMap.TryGetValue(nodeId.Key, out socket))
+                {
+                    return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+                }
+            }
+
             // TODO: Request partition map if it is out of date or unknown
             // TODO: Calculate target node for given cache and given key.
             // TODO: Move the method to IClientAffinitySocket or something like that?
@@ -298,6 +325,12 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 return null;
             });
+        }
+
+        private int GetPartition<TKey>(TKey key)
+        {
+            // TODO: Use built-in Rendezvous func.
+            return 0;
         }
     }
 }
