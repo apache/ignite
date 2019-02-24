@@ -22,6 +22,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     /// </summary>
     internal class ClientCacheKeyConfiguration  // TODO: Struct?
     {
+        /** Cache ID. */
+        private int _cacheId;
+
         /** Key type ID. */
         private readonly int _keyTypeId;
 
@@ -31,10 +34,19 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientCacheKeyConfiguration"/> class.
         /// </summary>
-        public ClientCacheKeyConfiguration(int keyTypeId, int affinityKeyFieldId)
+        public ClientCacheKeyConfiguration(int cacheId, int keyTypeId, int affinityKeyFieldId)
         {
+            _cacheId = cacheId;
             _keyTypeId = keyTypeId;
             _affinityKeyFieldId = affinityKeyFieldId;
+        }
+
+        /// <summary>
+        /// Gets the cache ID.
+        /// </summary>
+        public int CacheId
+        {
+            get { return _cacheId; }
         }
 
         /// <summary>

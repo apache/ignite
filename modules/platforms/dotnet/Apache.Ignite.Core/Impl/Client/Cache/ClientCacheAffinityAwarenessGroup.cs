@@ -17,20 +17,64 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Cache
 {
+    using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     internal class ClientCacheAffinityAwarenessGroup
     {
-        public ClientCacheAffinityAwarenessGroup(IBinaryStream s)
+        private readonly List<ClientCacheKeyConfiguration> _keyConfigs;
+
+        private readonly List<KeyValuePair<Guid, List<int>>> _partitionMap;
+
+        public ClientCacheAffinityAwarenessGroup(IBinaryStream stream)
         {
-            var cachesCount = s.ReadInt();
-            var keyConfigs = new List<ClientCacheKeyConfiguration>(cachesCount);
+            var cachesCount = stream.ReadInt();
+            _keyConfigs = new List<ClientCacheKeyConfiguration>(cachesCount);
 
             for (int i = 0; i < cachesCount; i++)
             {
-                keyConfigs.Add(new ClientCacheKeyConfiguration(s.ReadInt(), s.ReadInt()));
+                var cacheId = stream.ReadInt();
+                var keyCfgCount = stream.ReadInt();
+
+                for (int j = 0; j < keyCfgCount; j++)
+                {
+                    _keyConfigs.Add(new ClientCacheKeyConfiguration(cacheId, stream.ReadInt(), stream.ReadInt()));
+                }
             }
+
+            var partMapSize = stream.ReadInt();
+            _partitionMap = new List<KeyValuePair<Guid, List<int>>>(partMapSize);
+
+            var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
+
+            for (int i = 0; i < partMapSize; i++)
+            {
+                var nodeId = reader.ReadGuid();
+                Debug.Assert(nodeId != null);
+
+                var partCount = stream.ReadInt();
+                var parts = new List<int>(partCount);
+
+                for (int j = 0; j < partCount; j++)
+                {
+                    parts.Add(stream.ReadInt());
+                }
+
+                _partitionMap.Add(new KeyValuePair<Guid, List<int>>(nodeId.Value, parts));
+            }
+        }
+
+        public ICollection<ClientCacheKeyConfiguration> KeyConfigs
+        {
+            get { return _keyConfigs; }
+        }
+
+        public ICollection<KeyValuePair<Guid, List<int>>> PartitionMap
+        {
+            get { return _partitionMap; }
         }
     }
 }
