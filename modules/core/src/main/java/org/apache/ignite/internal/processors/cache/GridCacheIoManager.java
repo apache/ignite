@@ -311,6 +311,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
 
         @Override public void onChannelConfigure(IgniteSocketChannel ch, @Nullable Object msg) {
+            // TODO remove as no needs to handle creation channel event to particular cache group.
             if (msg instanceof GridCacheGroupIdMessage) {
                 GridCacheGroupIdMessage msg0 = (GridCacheGroupIdMessage)msg;
 

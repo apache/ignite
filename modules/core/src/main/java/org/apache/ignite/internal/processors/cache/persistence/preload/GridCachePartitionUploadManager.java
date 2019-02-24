@@ -183,9 +183,7 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
 
             backupMgr.backup(uploadFut.rebalanceId,
                 uploadFut.getAssigns(),
-                new SocketBackupProcessTask(new FileTransferManager<>(cctx.kernalContext(),
-                    ch.channel(),
-                    dfltIoFactory)),
+                new SocketBackupProcessTask(new FileTransferManager<>(cctx.kernalContext(), ch.channel())),
                 uploadFut);
 
             uploadFut.onDone(true);
@@ -210,13 +208,13 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
     /** */
     private static class SocketBackupProcessTask implements BackupProcessTask {
         /** */
-        private final FileTransferManager<PartitionFileMetaInfo> uploader;
+        private final FileTransferManager<PartitionFileMetaInfo> ftMrg;
 
         /**
-         * @param uploader An upload helper class.
+         * @param ftMrg An upload helper class.
          */
-        public SocketBackupProcessTask(FileTransferManager<PartitionFileMetaInfo> uploader) {
-            this.uploader = uploader;
+        public SocketBackupProcessTask(FileTransferManager<PartitionFileMetaInfo> ftMrg) {
+            this.ftMrg = ftMrg;
         }
 
         /** {@inheritDoc} */
@@ -225,9 +223,13 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
             File file,
             long size
         ) throws IgniteCheckedException {
-            uploader.writeFileMetaInfo(new PartitionFileMetaInfo(grpPartId.getGroupId(), file.getName(), size, 0));
+            ftMrg.writeMetaFrom(new PartitionFileMetaInfo(grpPartId.getGroupId(),
+                grpPartId.getPartitionId(),
+                file.getName(),
+                size,
+                0));
 
-            uploader.writeFile(file, 0, size);
+            ftMrg.writeFrom(file, 0, size);
         }
 
         /** {@inheritDoc} */
@@ -237,9 +239,13 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
             long offset,
             long size
         ) throws IgniteCheckedException {
-            uploader.writeFileMetaInfo(new PartitionFileMetaInfo(grpPartId.getGroupId(), file.getName(), size, 1));
+            ftMrg.writeMetaFrom(new PartitionFileMetaInfo(grpPartId.getGroupId(),
+                grpPartId.getPartitionId(),
+                file.getName(),
+                size,
+                1));
 
-            uploader.writeFile(file, offset, size);
+            ftMrg.writeFrom(file, offset, size);
         }
     }
 

@@ -21,6 +21,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -40,11 +41,11 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
     /** */
     private static final int CHUNK_SIZE = 1024 * 1024;
 
-    /** */
-    protected final SocketChannel channel;
+    /** The default factory to provide IO oprations over downloading files. */
+    private static final FileIOFactory dfltIoFactory = new RandomAccessFileIOFactory();
 
     /** */
-    protected final FileIOFactory factory;
+    protected final SocketChannel channel;
 
     /** */
     protected final IgniteLogger log;
@@ -58,20 +59,17 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
     /**
      * @param ktx Kernal context.
      * @param channel Socket channel to upload files to.
-     * @param factory Factory to provide io over files.
      * @throws IOException If fails.
      */
     public FileTransferManager(
         GridKernalContext ktx,
-        SocketChannel channel,
-        FileIOFactory factory
+        SocketChannel channel
     ) throws IOException {
         assert channel.isBlocking();
 
         this.channel = channel;
         this.dis = new DataInputStream(channel.socket().getInputStream());
         this.dos = new DataOutputStream(channel.socket().getOutputStream());
-        this.factory = factory;
         this.log = ktx.log(getClass());
     }
 
@@ -79,7 +77,7 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
      * @param meta File meta info to read from.
      * @throws IgniteCheckedException If fails.
      */
-    public void readFileMetaInfo(T meta) throws IgniteCheckedException {
+    public void readMetaInto(T meta) throws IgniteCheckedException {
         try {
             meta.readMetaInfo(dis);
         }
@@ -92,7 +90,7 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
      * @param meta File meta info to write at.
      * @throws IgniteCheckedException If fails.
      */
-    public void writeFileMetaInfo(T meta) throws IgniteCheckedException {
+    public void writeMetaFrom(T meta) throws IgniteCheckedException {
         try {
             meta.writeMetaInfo(dos);
 
@@ -106,7 +104,7 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
     /**
      * @throws IOException If fails.
      */
-    private void readAck() throws IOException {
+    public void readAck() throws IOException {
         if (!ACK_MSG.equals(dis.readUTF()))
             throw new IOException("Incorrect ack message");
     }
@@ -114,7 +112,7 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
     /**
      * @throws IOException If fails.
      */
-    private void writeAck() throws IOException {
+    public void writeAck() throws IOException {
         dos.writeUTF(ACK_MSG);
 
         dos.flush();
@@ -129,12 +127,15 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
 
     /**
      * @param file File to download into.
+     * @param offset Offset to start writing to the file.
      * @param count The number of bytes to expect.
      * @throws IgniteCheckedException If fails.
      */
-    public void readFile(File file, long count) throws IgniteCheckedException {
+    public void readInto(File file, long offset, long count) throws IgniteCheckedException {
         try {
-            try (FileIO fileIO = factory.create(file, CREATE, WRITE)) {
+            try (FileIO fileIO = dfltIoFactory.create(file, CREATE, WRITE)) {
+                fileIO.position(offset);
+
                 while (count > 0) {
                     long written = fileIO.transferFrom(channel, fileIO.position(), count);
 
@@ -153,14 +154,28 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
     }
 
     /**
+     * @param buff Buffer to read data into.
+     * @return The number of bytes read, possibly zero, or <tt>-1</tt> if the channel has reached end-of-stream.
+     * @throws IgniteCheckedException If fails.
+     */
+    public int readInto(ByteBuffer buff) throws IgniteCheckedException {
+        try {
+            return channel.read(buff);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
      * @param file Partition file.
      * @throws IgniteCheckedException If fails.
      */
-    public void writeFile(File file, long offset, long size) throws IgniteCheckedException {
+    public void writeFrom(File file, long offset, long size) throws IgniteCheckedException {
         FileIO fileIO = null;
 
         try {
-            fileIO = factory.create(file, READ);
+            fileIO = dfltIoFactory.create(file, READ);
 
             // Send the whole file to channel.
             // Todo limit thransfer speed

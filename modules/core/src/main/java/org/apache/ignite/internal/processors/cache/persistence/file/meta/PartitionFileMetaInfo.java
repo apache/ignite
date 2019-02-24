@@ -27,6 +27,9 @@ public class PartitionFileMetaInfo implements FileMetaInfo {
     private Integer grpId;
 
     /** */
+    private Integer partId;
+
+    /** */
     private String name;
 
     /** */
@@ -37,7 +40,7 @@ public class PartitionFileMetaInfo implements FileMetaInfo {
 
     /** */
     public PartitionFileMetaInfo() {
-        this(null, null, null, null);
+        this(null, null, null, null, null);
     }
 
     /**
@@ -46,8 +49,9 @@ public class PartitionFileMetaInfo implements FileMetaInfo {
      * @param size Cache partition file size.
      * @param type {@code 0} partition file, {@code 1} delta file.
      */
-    public PartitionFileMetaInfo(Integer grpId, String name, Long size, Integer type) {
+    public PartitionFileMetaInfo(Integer grpId, Integer partId, String name, Long size, Integer type) {
         this.grpId = grpId;
+        this.partId = partId;
         this.name = name;
         this.size = size;
         this.type = type;
@@ -58,6 +62,13 @@ public class PartitionFileMetaInfo implements FileMetaInfo {
      */
     public Integer getGrpId() {
         return grpId;
+    }
+
+    /**
+     * @return Cache partition id.
+     */
+    public Integer getPartId() {
+        return partId;
     }
 
     /**
@@ -84,20 +95,22 @@ public class PartitionFileMetaInfo implements FileMetaInfo {
     /** {@inheritDoc} */
     @Override public void readMetaInfo(DataInputStream is) throws IOException {
         grpId = is.readInt();
+        partId = is.readInt();
         name = is.readUTF();
         size = is.readLong();
         type = is.readInt();
 
-        if (grpId == null || name == null || size == null || type == null)
+        if (grpId == null || partId == null || name == null || size == null || type == null)
             throw new IOException("Recieved meta information incorrect");
     }
 
     /** {@inheritDoc} */
     @Override public void writeMetaInfo(DataOutputStream os) throws IOException {
-        if (grpId == null || name == null || size == null || type == null)
+        if (grpId == null || partId == null || name == null || size == null || type == null)
             throw new IOException("Partition meta information incorrect");
 
         os.writeInt(grpId);
+        os.writeInt(partId);
         os.writeUTF(name);
         os.writeLong(size);
         os.writeInt(type);

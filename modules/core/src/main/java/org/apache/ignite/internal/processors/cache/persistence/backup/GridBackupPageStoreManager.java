@@ -66,24 +66,35 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     implements IgniteBackupPageStoreManager {
     /** */
-    public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + ".delta";
+    public static final String DELTA_SUFFIX = ".delta";
+
+    /** */
+    public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
 
     /** */
     public static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [id=%s]";
+
     /** Factory to working with {@link TemporaryStore} as file storage. */
     private final FileIOFactory ioFactory;
+
     /** Tracking partition files over all running snapshot processes. */
     private final ConcurrentMap<GroupPartitionId, AtomicInteger> trackMap = new ConcurrentHashMap<>();
+
     /** Keep only the first page error. */
     private final ConcurrentMap<GroupPartitionId, IgniteCheckedException> pageTrackErrors = new ConcurrentHashMap<>();
+
     /** Collection of backup stores indexed by [grpId, partId] key. */
     private final Map<GroupPartitionId, TemporaryStore> backupStores = new ConcurrentHashMap<>();
+
     /** */
     private final int pageSize;
+
     /** */
     private final ReadWriteLock rwlock = new ReentrantReadWriteLock();
+
     /** Base working directory for saving copied pages. */
     private File backupWorkDir;
+
     /** Thread local with buffers for handling copy-on-write over {@link PageStore} events. */
     private ThreadLocal<ByteBuffer> threadPageBuff;
 
