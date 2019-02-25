@@ -155,9 +155,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** */
     private volatile int done;
 
-    /** Trackable flag (here may be non-volatile). */
-    private boolean trackable;
-
     /** TTL for create operation. */
     private final long createTtl;
 
@@ -266,12 +263,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** {@inheritDoc} */
     @Override public boolean trackable() {
-        return trackable;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
-        trackable = false;
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -807,8 +804,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     this.topVer = topVer;
             }
 
-            trackable = true;
-
             cctx.mvcc().addFuture(this);
 
             map(keys, false, true);
@@ -879,8 +874,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                             this.topVer = topVer;
                     }
                 }
-
-                trackable = true;
 
                 if (!remap)
                     cctx.mvcc().addFuture(this);
