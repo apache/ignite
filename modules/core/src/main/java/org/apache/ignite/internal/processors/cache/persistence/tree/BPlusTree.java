@@ -2957,7 +2957,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return The same or new reuse bag containing the given page id.
          */
         protected final ReuseBag addFreePageToBag(ReuseBag reuseBag, long pageId) throws IgniteCheckedException {
-            if (invoke != null && invoke.addFreePage(pageId))
+            if (invoke != null && invoke.addFreePageForReuse(pageId))
                 return reuseBag;
 
             assert pageId != 0L;
@@ -3984,7 +3984,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         private L insertWithSplit(long pageId, long page, long pageAddr, BPlusIO<L> io, int idx, int lvl)
             throws IgniteCheckedException {
-            long fwdId = allocatePage(null);
+            ReuseBag bag = invoke == null ? null : invoke.getReuseBag();
+
+            long fwdId = allocatePage(bag);
             long fwdPage = acquirePage(fwdId);
 
             try {
@@ -4032,7 +4034,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     }
 
                     if (!hadFwd && lvl == getRootLevel()) { // We are splitting root.
-                        long newRootId = allocatePage(null);
+                        long newRootId = allocatePage(bag);
                         long newRootPage = acquirePage(newRootId);
 
                         try {
@@ -4178,7 +4180,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         Function<L, InvokeClosure<T>> closures;
 
         /** */
-        ReuseBag reuseBag;
+        ReuseBag reuseBag = new LongListReuseBag();
 
         /**
          * @param firstRow The first row.
@@ -4200,7 +4202,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (!doSwitchToNextRow(res, sortedRows))
                 return false;
 
-            reuseFreePagesFromBag(reuseBag, 15);
+            if (reuseBag.size() > 128)
+                reuseFreePagesFromBag(reuseBag.take(64), 0);
 
             // Create a new closure for the switched row.
             clo = closures.apply(row);
@@ -4214,10 +4217,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean addFreePage(long pageId) throws IgniteCheckedException {
+        @Override boolean addFreePageForReuse(long pageId) throws IgniteCheckedException {
             reuseBag = addFreePageToBag(reuseBag, pageId);
 
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ReuseBag getReuseBag() {
+            return reuseBag;
         }
 
         /** {@inheritDoc} */
@@ -4522,8 +4530,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param pageId Page Id for reuse.
          * @return {@code true} If it was accepted.
          */
-        boolean addFreePage(long pageId) throws IgniteCheckedException {
+        boolean addFreePageForReuse(long pageId) throws IgniteCheckedException {
             return false;
+        }
+
+        /**
+         * @return Reuse bag for this operation.
+         */
+        ReuseBag getReuseBag() {
+            return null;
         }
     }
 
@@ -4555,7 +4570,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (!doSwitchToNextRow(res, sortedRows))
                 return false;
 
-            reuseFreePagesFromBag(reuseBag, 15);
+            reuseFreePagesFromBag(reuseBag, 16);
 
             // Reset state.
             rmvdRow = null;

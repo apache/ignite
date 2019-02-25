@@ -35,6 +35,13 @@ public final class LongListReuseBag extends GridLongList implements ReuseBag {
     }
 
     /**
+     * @param pageIds Page ids.
+     */
+    public LongListReuseBag(long[] pageIds) {
+        super(pageIds);
+    }
+
+    /**
      * @param size Initial size.
      * @param bag Bag to take pages from.
      */
@@ -61,5 +68,19 @@ public final class LongListReuseBag extends GridLongList implements ReuseBag {
     /** {@inheritDoc} */
     @Override public long pollFreePage() {
         return isEmpty() ? 0L : remove();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ReuseBag take(int cnt) {
+        assert cnt > 0: cnt;
+
+        if (cnt > size())
+            return null;
+
+        long[] res = new long[cnt];
+        System.arraycopy(arr, size() - cnt, res, 0, cnt);
+        pop(cnt);
+
+        return new LongListReuseBag(res);
     }
 }

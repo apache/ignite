@@ -48,7 +48,7 @@ public class GridLongList implements Message, Externalizable {
     public static final long[] EMPTY_ARRAY = new long[0];
 
     /** */
-    private long[] arr;
+    protected long[] arr;
 
     /** */
     private int idx;
