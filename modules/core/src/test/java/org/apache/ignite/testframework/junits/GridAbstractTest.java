@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.ToLongFunction;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.Ignite;
@@ -602,7 +603,12 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         if (isFirstTest()) {
             sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
-            info(">>> Starting test class: " + testClassDescription() + " <<<");
+            info(">>> Starting test class: " + testClassDescription() + ", memUsed=" +
+                GridUnsafe.allocTracker.values().stream().mapToLong(new ToLongFunction<Long>() {
+                    @Override public long applyAsLong(Long val) {
+                        return val;
+                    }
+                }).sum() + " <<<");
 
             if (isSafeTopology())
                 assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution:" + G.allGrids();

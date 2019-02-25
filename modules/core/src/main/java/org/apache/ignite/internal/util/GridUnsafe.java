@@ -27,6 +27,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteSystemProperties;
 import org.jetbrains.annotations.NotNull;
 import sun.misc.Unsafe;
@@ -113,6 +114,8 @@ public abstract class GridUnsafe {
 
     /** JavaNioAccess#newDirectByteBuffer method. */
     private static final Method NEW_DIRECT_BUF_MTD = newDirectBufferMethod();
+
+    public static ConcurrentHashMap<Long, Long> allocTracker = new ConcurrentHashMap<>();
 
     /**
      * Ensure singleton.
@@ -1087,7 +1090,11 @@ public abstract class GridUnsafe {
      * @return address.
      */
     public static long allocateMemory(long size) {
-        return UNSAFE.allocateMemory(size);
+        long addr = UNSAFE.allocateMemory(size);
+
+        allocTracker.put(addr, size);
+
+        return addr;
     }
 
     /**
@@ -1098,6 +1105,8 @@ public abstract class GridUnsafe {
      * @return address.
      */
     public static long reallocateMemory(long addr, long len) {
+        allocTracker.put(addr, len);
+
         return UNSAFE.reallocateMemory(addr, len);
     }
 
@@ -1197,6 +1206,8 @@ public abstract class GridUnsafe {
      * @param addr Address.
      */
     public static void freeMemory(long addr) {
+        allocTracker.remove(addr);
+
         UNSAFE.freeMemory(addr);
     }
 
