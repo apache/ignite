@@ -62,12 +62,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
-    private String url = bestEffortAffinity ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802/" :
-        "jdbc:ignite:thin://127.0.0.1/";
-
-    /** Nodes count. */
-    private int nodesCnt = bestEffortAffinity ? 4 : 3;
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /**
      * @param qryEntity Query entity.
@@ -89,7 +84,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(nodesCnt);
+        startGridsMultiThreaded(3);
 
         Map<String, Integer> orgPrecision = new HashMap<>();
 
@@ -137,7 +132,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class),
             "dep");
 
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("CREATE TABLE TEST (ID INT, NAME VARCHAR(50) default 'default name', " +
@@ -156,7 +151,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testResultSetMetaData() throws Exception {
-        Connection conn = DriverManager.getConnection(url);
+        Connection conn = DriverManager.getConnection(URL);
 
         conn.setSchema("\"pers\"");
 
@@ -193,7 +188,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testDecimalAndDateTypeMetaData() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
 
             ResultSet rs = stmt.executeQuery(
@@ -228,7 +223,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetTables() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs = meta.getTables(null, "pers", "%", new String[]{"TABLE"});
@@ -277,7 +272,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetAllTables() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs = meta.getTables(null, null, null, null);
@@ -309,7 +304,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetColumns() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("pers");
 
             DatabaseMetaData meta = conn.getMetaData();
@@ -422,7 +417,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetAllColumns() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs = meta.getColumns(null, null, null, null);
@@ -476,7 +471,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testInvalidCatalog() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs = meta.getSchemas("q", null);
@@ -506,7 +501,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testIndexMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url);
+        try (Connection conn = DriverManager.getConnection(URL);
              ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
 
             int cnt = 0;
@@ -545,7 +540,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetAllIndexes() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getIndexInfo(null, null, null, false, false);
 
             Set<String> expectedIdxs = new HashSet<>(Arrays.asList(
@@ -574,7 +569,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrimaryKeyMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url);
+        try (Connection conn = DriverManager.getConnection(URL);
              ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "PERSON")) {
 
             int cnt = 0;
@@ -594,7 +589,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetAllPrimaryKeys() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getPrimaryKeys(null, null, null);
 
             Set<String> expectedPks = new HashSet<>(Arrays.asList(
@@ -626,7 +621,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testParametersMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("\"pers\"");
 
             PreparedStatement stmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
@@ -651,7 +646,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSchemasMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
             Set<String> expectedSchemas = new HashSet<>(Arrays.asList("PUBLIC", "pers", "org", "dep"));
@@ -686,7 +681,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      * @param invalidCat catalog name that is not either
      */
     private void checkNoEntitiesFoundForCatalog(String invalidCat) throws SQLException {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             // Intention: we set the other arguments that way, the values to have as many results as possible.
@@ -727,7 +722,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testEmptySchemasMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas(null, "qqq");
 
             assert !rs.next() : "Empty result set is expected";
@@ -739,7 +734,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testVersions() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             assert conn.getMetaData().getDatabaseProductVersion().equals(IgniteVersionUtils.VER.toString());
             assert conn.getMetaData().getDriverVersion().equals(IgniteVersionUtils.VER.toString());
         }

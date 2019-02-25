@@ -25,13 +25,8 @@ import java.sql.SQLException;
  * Statement test.
  */
 public class JdbcThinInsertStatementSkipReducerOnUpdateSelfTest extends JdbcThinInsertStatementSelfTest {
-    /** URL. */
-    private String url = bestEffortAffinity ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802?skipReducerOnUpdate=true" :
-        "jdbc:ignite:thin://127.0.0.1?skipReducerOnUpdate=true";
-
     /** {@inheritDoc} */
     @Override protected Connection createConnection() throws SQLException {
-        return DriverManager.getConnection(url);
+        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?skipReducerOnUpdate=true");
     }
 }

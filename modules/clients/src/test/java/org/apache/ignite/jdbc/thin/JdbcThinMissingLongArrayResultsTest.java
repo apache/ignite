@@ -42,12 +42,10 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
     private static final String CACHE_NAME = "test";
 
     /** URL. */
-    private String url = bestEffortAffinity ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
-        "jdbc:ignite:thin://127.0.0.1";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
-    /** Nodes count. */
-    private int nodesCnt = bestEffortAffinity ? 4 : 3;
+    /** Grid count. */
+    private static final int GRID_CNT = 2;
 
     /** Rand. */
     private static final Random RAND = new Random(123);
@@ -89,7 +87,7 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(nodesCnt);
+        startGridsMultiThreaded(GRID_CNT);
 
         Ignite ignite = ignite(0);
 
@@ -158,7 +156,7 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
     @SuppressWarnings({"unused"})
     @Test
     public void testDefaults() throws Exception {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema('"' + CACHE_NAME + '"');
 
             try (PreparedStatement st = conn.prepareStatement("SELECT * FROM VALUE")) {

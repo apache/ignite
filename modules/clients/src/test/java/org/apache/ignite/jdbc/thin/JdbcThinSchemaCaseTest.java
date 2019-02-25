@@ -33,12 +33,10 @@ import org.junit.Test;
  */
 public class JdbcThinSchemaCaseTest extends JdbcThinAbstractSelfTest {
     /** URL. */
-    private String url = bestEffortAffinity ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
-        "jdbc:ignite:thin://127.0.0.1";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
-    /** Nodes count. */
-    private int nodesCnt = bestEffortAffinity ? 4 : 2;
+    /** Grid count. */
+    private static final int GRID_CNT = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -75,7 +73,7 @@ public class JdbcThinSchemaCaseTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(nodesCnt);
+        startGridsMultiThreaded(GRID_CNT);
     }
 
     /**
@@ -104,7 +102,7 @@ public class JdbcThinSchemaCaseTest extends JdbcThinAbstractSelfTest {
      * @throws SQLException If failed.
      */
     void checkSchemaConnection(String schema) throws SQLException {
-        try (Connection conn = DriverManager.getConnection(url + '/' + schema)) {
+        try (Connection conn = DriverManager.getConnection(URL + '/' + schema)) {
             Statement stmt = conn.createStatement();
 
             assertNotNull(stmt);
