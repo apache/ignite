@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -80,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
+import org.apache.ignite.internal.processors.cache.tree.SearchRowEx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
@@ -456,9 +458,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheContext cctx,
         GridDhtLocalPartition part,
         Collection<? extends CacheSearchRow> rows,
-        Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map)
+        Function<CacheSearchRow, OffheapInvokeClosure> closures)
         throws IgniteCheckedException {
-        dataStore(part).invokeAll(cctx, rows, map);
+        dataStore(part).invokeAll(cctx, rows, closures);
     }
 
     /** {@inheritDoc} */
@@ -1650,8 +1652,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public SearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key) {
-            return new SearchRow(grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID, key);
+        @Override public SearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key, Object data) {
+            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+            return data != null ? new SearchRowEx<>(cacheId, key, data) : new SearchRow(cacheId, key);
         }
 
         /** {@inheritDoc} */
@@ -1660,7 +1664,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void invokeAll(GridCacheContext cctx, Collection<? extends CacheSearchRow> rows, Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map) throws IgniteCheckedException {
+        @Override public void invokeAll(GridCacheContext cctx,
+                Collection<? extends CacheSearchRow> rows,
+                Function<CacheSearchRow, OffheapInvokeClosure> closures)
+                throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
@@ -1668,16 +1675,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 RuntimeException err = null;
 
                 try {
-                    dataTree.invokeAll(rows.iterator(), CacheDataRowAdapter.RowData.NO_KEY, map::get);
+                    dataTree.invokeAll(rows.iterator(), CacheDataRowAdapter.RowData.NO_KEY, closures);
                 }
                 catch (UnregisteredClassException | UnregisteredBinaryTypeException clsErr) {
                     err = clsErr;
                 }
 
-                for (Map.Entry<? extends CacheSearchRow, ? extends OffheapInvokeClosure> e : map.entrySet()) {
+                for (CacheSearchRow row : rows) {
+                    OffheapInvokeClosure c = closures.apply(row);
+
                     // Update could be interrupted in the middle, finish update only for processed entries.
-                    if (e.getValue().operationType() != null)
-                        finishInvoke(cctx, e.getKey().key(), e.getValue());
+                    if (c.operationType() != null)
+                        finishInvoke(cctx, row.key(), c);
                 }
 
                 if (err != null)

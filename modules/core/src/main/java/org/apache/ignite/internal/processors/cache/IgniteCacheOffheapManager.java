@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -200,7 +201,7 @@ public interface IgniteCacheOffheapManager {
     public void invokeAll(GridCacheContext cctx,
         GridDhtLocalPartition part,
         Collection<? extends CacheSearchRow> rows,
-        Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map)
+        Function<CacheSearchRow, OffheapInvokeClosure> closures)
         throws IgniteCheckedException;
 
     /**
@@ -899,7 +900,7 @@ public interface IgniteCacheOffheapManager {
          * @return Cache search row.
          * @throws IgniteCheckedException If failed.
          */
-        public CacheSearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
+        public CacheSearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key, Object data) throws IgniteCheckedException;
 
         /**
          * @return Rows comparator.
@@ -915,7 +916,7 @@ public interface IgniteCacheOffheapManager {
          */
         public void invokeAll(GridCacheContext cctx,
             Collection<? extends CacheSearchRow> rows,
-            Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map)
+            Function<CacheSearchRow, OffheapInvokeClosure> closures)
             throws IgniteCheckedException;
 
         /**

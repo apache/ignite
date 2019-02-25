@@ -1844,7 +1844,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param closures Provider of closures for each search row.
      * @throws IgniteCheckedException If failed.
      */
-    public void invokeAll(Iterator<? extends L> sortedRows, Object z, Function<L, InvokeClosure<T>> closures)
+    public void invokeAll(Iterator<? extends L> sortedRows, Object z, Function<L, ? extends InvokeClosure<T>> closures)
         throws IgniteCheckedException {
         doInvoke(new InvokeAll(sortedRows.next(), sortedRows, z, closures));
     }
@@ -4035,7 +4035,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         Iterator<? extends L> sortedRows;
 
         /** */
-        Function<L, InvokeClosure<T>> closures;
+        Function<L, ? extends InvokeClosure<T>> closures;
 
         /** */
         ReuseBag reuseBag;
@@ -4046,7 +4046,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param x Implementation specific argument.
          * @param clo Closure.
          */
-        InvokeAll(L firstRow, Iterator<? extends L> sortedRows, Object x, Function<L, InvokeClosure<T>> closures) {
+        InvokeAll(L firstRow, Iterator<? extends L> sortedRows, Object x, Function<L, ? extends InvokeClosure<T>> closures) {
             super(firstRow, x, closures.apply(firstRow));
 
             this.sortedRows = sortedRows;

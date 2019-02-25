@@ -2239,7 +2239,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     ) throws IgniteCheckedException, GridCacheEntryRemovedException, GridClosureException {
         assert cctx.atomic() && !detached();
 
-        if (!primary && !isNear())
+        if (!primary && !isNear() && c == null)
             ensureFreeSpace();
 
         if (!primary) {
@@ -5903,7 +5903,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private boolean wasIntercepted;
 
         /** */
-        AtomicCacheUpdateClosure(
+        public AtomicCacheUpdateClosure(
             GridCacheMapEntry entry,
             AffinityTopologyVersion topVer,
             GridCacheVersion newVer,
@@ -5958,6 +5958,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     break;
             }
+        }
+
+        /**
+         * @return Update result.
+         */
+        public GridCacheUpdateAtomicResult updateResult() {
+            return updateRes;
         }
 
         /** {@inheritDoc} */

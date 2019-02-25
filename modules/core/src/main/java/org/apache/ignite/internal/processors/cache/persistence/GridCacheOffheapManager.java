@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -2103,10 +2104,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public CacheSearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
+        @Override public CacheSearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key, Object data) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.createSearchRow(cctx, key);
+            return delegate.createSearchRow(cctx, key, data);
         }
 
         /** {@inheritDoc} */
@@ -2119,12 +2120,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void invokeAll(GridCacheContext cctx,
             Collection<? extends CacheSearchRow> rows,
-            Map<? extends CacheSearchRow, ? extends OffheapInvokeClosure> map) throws IgniteCheckedException {
+            Function<CacheSearchRow, OffheapInvokeClosure> closures) throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 
-            delegate.invokeAll(cctx, rows, map);
+            delegate.invokeAll(cctx, rows, closures);
         }
 
         /** {@inheritDoc} */
