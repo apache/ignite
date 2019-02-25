@@ -89,7 +89,6 @@ import org.junit.runners.Suite;
     JdbcThinEmptyCacheSelfTest.class,
     JdbcThinMetadataSelfTest.class,
     JdbcThinMetadataPrimaryKeysSelfTest.class,
-//    JdbcThinMetadataSqlMatchTest.class, Uses individual connect method from utils
 //2    JdbcThinErrorsSelfTest.class, JdbcErrorsAbstractSelfTest
     JdbcThinStatementCancelSelfTest.class,
     JdbcThinStatementTimeoutSelfTest.class,
@@ -110,7 +109,6 @@ import org.junit.runners.Suite;
     JdbcThinDynamicIndexTransactionalPartitionedNearSelfTest.class,
     JdbcThinDynamicIndexTransactionalPartitionedSelfTest.class,
     JdbcThinDynamicIndexTransactionalReplicatedSelfTest.class,
-//    JdbcThinMultiStatementSelfTest.class, Uses individual connect method from utils
 
     // New thin JDBC driver, DML tests
     JdbcThinBulkLoadAtomicPartitionedNearSelfTest.class,
