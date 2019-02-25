@@ -2960,7 +2960,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     if (!isDaemon) {
                         if (!isLocDaemon) {
-                            U.warn(log, "Node FAILED: " + node);
+                            U.warn(log, "Node FAILED: " + node +
+                                    ", consistentId=" + node.consistentId());
 
                             ackTopology(topVer.topologyVersion(), type, node, true);
                         }
