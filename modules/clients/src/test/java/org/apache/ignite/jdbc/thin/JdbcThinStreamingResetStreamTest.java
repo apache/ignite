@@ -16,21 +16,17 @@ public class JdbcThinStreamingResetStreamTest extends GridCommonAbstractTest {
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /** JDBC Connection. */
-    private static Connection conn;
+    private Connection conn;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrids(3);
-
-        conn = DriverManager.getConnection(URL, new Properties());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        U.close(conn, log);
-
         stopAllGrids();
 
         super.afterTestsStopped();
@@ -40,13 +36,21 @@ public class JdbcThinStreamingResetStreamTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        conn = DriverManager.getConnection(URL, new Properties());
+
         conn.prepareStatement("CREATE TABLE test(id LONG PRIMARY KEY, val0 VARCHAR, val1 VARCHAR) " +
             "WITH \"template=replicated\"").execute();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        conn.prepareStatement("DROP TABLE test").execute();
+        try {
+            conn.prepareStatement("SET STREAMING OFF").execute();
+            conn.prepareStatement("DROP TABLE test").execute();
+        }
+        finally {
+            U.close(conn, log);
+        }
 
         super.afterTest();
     }
@@ -73,7 +77,7 @@ public class JdbcThinStreamingResetStreamTest extends GridCommonAbstractTest {
     @Test
     public void testOrderedResetWorkerCreationRace() throws Exception {
         final long BATCH_SIZE = 2;
-        final long ITERATIONS = 100;
+        final long ITERATIONS = 1000;
 
         for (int iter = 0; iter < ITERATIONS; ++iter) {
             conn.prepareStatement("SET STREAMING ON BATCH_SIZE " + BATCH_SIZE + " ORDERED").execute();

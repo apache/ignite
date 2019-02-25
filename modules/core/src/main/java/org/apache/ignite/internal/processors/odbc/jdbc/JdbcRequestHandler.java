@@ -189,9 +189,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate,
-            muxOrderedBatches
-        );
+            skipReducerOnUpdate);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -238,8 +236,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         assert reqId != 0;
 
         synchronized (reqMux) {
-            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC ||
-                cmdType == BATCH_EXEC_ORDERED))
+            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC))
                 reqRegister.put(reqId, new JdbcQueryDescriptor());
         }
     }
@@ -335,14 +332,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
-        synchronized (muxOrderedBatches) {
-            orderedBatchesQueue.add(req);
-
-            muxOrderedBatches.notifyAll();
-        }
-
         if (!cliCtx.isStreamOrdered())
             executeBatchOrdered(req);
+        else {
+            synchronized (muxOrderedBatches) {
+                orderedBatchesQueue.add(req);
+
+                muxOrderedBatches.notifyAll();
+            }
+        }
 
        return null;
     }
@@ -368,10 +366,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             U.error(null, "Error processing file batch", e);
 
             sender.send(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
-        }
-
-        synchronized (muxOrderedBatches) {
-            orderedBatchesQueue.poll();
         }
 
         cliCtx.orderedRequestProcessed();
@@ -578,7 +572,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 jdbcCursors.put(processor.cursorId(), processor);
 
                 // responses for the same query on the client side
-                return new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams));
+                JdbcResponse r = new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams));
+
+                return r;
             }
 
             if (results.size() == 1) {
@@ -1171,6 +1167,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                         continue;
                     }
+                    else
+                        orderedBatchesQueue.poll();
                 }
 
                 executeBatchOrdered(req);

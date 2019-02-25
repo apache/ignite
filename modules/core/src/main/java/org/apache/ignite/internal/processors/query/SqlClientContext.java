@@ -58,7 +58,7 @@ public class SqlClientContext implements AutoCloseable {
     private final boolean skipReducerOnUpdate;
 
     /** Monitor for stream operations. */
-    private final Object muxStreamer;
+    private final Object muxStreamer = new Object();
 
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private boolean streamAllowOverwrite;
@@ -103,8 +103,7 @@ public class SqlClientContext implements AutoCloseable {
      */
     public SqlClientContext(GridKernalContext ctx, Factory<GridWorker> orderedBatchWorkerFactory,
         boolean distributedJoins, boolean enforceJoinOrder,
-        boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate,
-        Object muxStreamer) {
+        boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate) {
         this.ctx = ctx;
         this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
         this.distributedJoins = distributedJoins;
@@ -113,7 +112,7 @@ public class SqlClientContext implements AutoCloseable {
         this.replicatedOnly = replicatedOnly;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
-        this.muxStreamer = muxStreamer;
+//        this.muxStreamer = muxStreamer;
 
         log = ctx.log(SqlClientContext.class.getName());
     }
@@ -146,16 +145,6 @@ public class SqlClientContext implements AutoCloseable {
                 orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
 
                 orderedBatchThread.start();
-
-                try {
-                    // Waits for ordered batch worker starts process the batch queue.
-                    muxStreamer.wait();
-                }
-                catch (InterruptedException e) {
-                    log.error("Stream creation is interrupted", e);
-
-                    Thread.currentThread().interrupt();
-                }
             }
         }
     }
@@ -300,7 +289,7 @@ public class SqlClientContext implements AutoCloseable {
         synchronized (muxStreamer) {
             totalProcessedOrderedReqs++;
 
-            muxStreamer.notify();
+            muxStreamer.notifyAll();
         }
     }
 
