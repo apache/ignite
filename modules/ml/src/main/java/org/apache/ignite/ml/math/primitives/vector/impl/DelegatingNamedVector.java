@@ -24,10 +24,9 @@ import java.util.Set;
 import org.apache.ignite.ml.math.primitives.vector.NamedVector;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
-
 /**
  * Delegating named vector that delegates all operations to underlying vector and adds implementation of
- * {@link NamedValue} functionality using embedded map that maps string index on real integer index.
+ * {@link NamedVector} functionality using embedded map that maps string index on real integer index.
  */
 public class DelegatingNamedVector extends DelegatingVector implements NamedVector {
     /** */
