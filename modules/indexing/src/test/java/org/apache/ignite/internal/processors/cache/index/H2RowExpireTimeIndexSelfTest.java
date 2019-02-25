@@ -211,7 +211,8 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
 
         U.sleep(WAIT_MS_TIL_EXPIRED);
 
-        List<List<?>> mixed = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer USE INDEX (\"_key_PK_hash\")")).getAll();
+        List<List<?>> mixed = cache.query(new SqlFieldsQuery(
+            "SELECT * FROM \"notEager\".Integer USE INDEX (\"_key_PK_hash\")")).getAll();
 
         List<List<Integer>> exp = asList(
             asList(1, 2),
@@ -219,6 +220,11 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
             asList(5, 6));
 
         assertEqualsCollections(exp, mixed);
+
+        List<List<?>> expired = cache.query(new SqlFieldsQuery(
+            "SELECT * FROM \"notEager\".Integer USE INDEX (\"_key_PK_hash\") WHERE id >= 42 and id <= 42")).getAll();
+
+        Assert.assertTrue("Expired row should not be returned by sql. Result = " + expired, expired.isEmpty());
     }
 
 }
