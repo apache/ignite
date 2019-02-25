@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -54,6 +53,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.stat.IoStatisticsType;
+import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -120,7 +120,8 @@ public class CacheGroupContext {
     private List<GridCacheContext> contQryCaches;
 
     /** ReadWriteLock to control the continuous query setup - this is to prevent the race between cache update and listener setup */
-    private final ReentrantReadWriteLock listenerLock = new ReentrantReadWriteLock();
+    private final StripedCompositeReadWriteLock listenerLock =
+        new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors());
 
     /** */
     private final IgniteLogger log;
@@ -889,7 +890,6 @@ public class CacheGroupContext {
         assert sharedGroup() : cacheOrGroupName();
         assert cctx.group() == this : cctx.name();
         assert !cctx.isLocal() : cctx.name();
-        assert listenerLock.writeLock().isHeldByCurrentThread();
 
         List<GridCacheContext> contQryCaches = this.contQryCaches;
 
@@ -1007,14 +1007,19 @@ public class CacheGroupContext {
      * @throws IgniteCheckedException If failed.
      */
     public void start() throws IgniteCheckedException {
-        aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
-            cacheOrGroupName(),
-            grpId,
-            ccfg.getAffinity(),
-            ccfg.getNodeFilter(),
-            ccfg.getBackups(),
-            ccfg.getCacheMode() == LOCAL,
-            persistenceEnabled());
+        GridAffinityAssignmentCache affCache = ctx.affinity().groupAffinity(grpId);
+
+        if (affCache != null)
+            aff = affCache;
+        else
+            aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
+                cacheOrGroupName(),
+                grpId,
+                ccfg.getAffinity(),
+                ccfg.getNodeFilter(),
+                ccfg.getBackups(),
+                ccfg.getCacheMode() == LOCAL,
+                persistenceEnabled());
 
         if (ccfg.getCacheMode() != LOCAL)
             top = new GridDhtPartitionTopologyImpl(ctx, this);

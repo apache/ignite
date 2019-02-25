@@ -90,7 +90,6 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /**
-     *
      * @param directMode Flag indicating whether direct mode is used.
      */
     public void directMode(boolean directMode) {
@@ -376,8 +375,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      *
      * @param ses Session to shutdown.
      * @param hnd SSL handler.
-     * @throws GridNioException If failed to forward requests to filter chain.
      * @return Close future.
+     * @throws GridNioException If failed to forward requests to filter chain.
      */
     private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd)
         throws IgniteCheckedException {
@@ -435,7 +434,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     private ByteBuffer checkMessage(GridNioSession ses, Object msg) throws GridNioException {
         if (!(msg instanceof ByteBuffer))
             throw new GridNioException("Invalid object type received (is SSL filter correctly placed in filter " +
-                "chain?) [ses=" + ses + ", msgClass=" + msg.getClass().getName() +  ']');
+                "chain?) [ses=" + ses + ", msgClass=" + msg.getClass().getName() + ']');
 
         return (ByteBuffer)msg;
     }
