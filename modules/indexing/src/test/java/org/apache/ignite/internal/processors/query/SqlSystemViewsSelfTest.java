@@ -211,31 +211,31 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         String[][] expectedResults = {
             {"PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "\"ID2\" ASC, \"ID1\" ASC", "BTREE", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
+            {"PUBLIC", "AFF_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
             {"PUBLIC", "AFF_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
             {"PUBLIC", "AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "HASH", "false", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
-            {"PUBLIC", "AFF_CACHE", "_key_PK_hash__SCAN_", "null", "SCAN", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
 
             {"DEFAULT", "CACHE_SQL", "IDX_2", "\"ID\" DESC, \"ID\" ASC", "BTREE", "false", "false", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
+            {"DEFAULT", "CACHE_SQL", "__SCAN_", "null", "SCAN", "false", "false",  "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
             {"DEFAULT", "CACHE_SQL", "_key_PK", "\"ID\" ASC", "BTREE", "true", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
             {"DEFAULT", "CACHE_SQL", "_key_PK_hash", "\"ID\" ASC", "HASH", "false", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
-            {"DEFAULT", "CACHE_SQL", "_key_PK_hash__SCAN_", "null", "SCAN", "false", "false",  "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
 
             {"PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
             {"PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
+            {"PUBLIC", "DFLT_AFF_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "null"},
             {"PUBLIC", "DFLT_AFF_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
             {"PUBLIC", "DFLT_AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC", "HASH", "false", "true", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "null"},
-            {"PUBLIC", "DFLT_AFF_CACHE", "_key_PK_hash__SCAN_", "null", "SCAN", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "null"},
 
             {"PUBLIC", "DFLT_CACHE", "IDX_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
             {"PUBLIC", "DFLT_CACHE", "IDX_3", "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
             {"PUBLIC", "DFLT_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
             {"PUBLIC", "DFLT_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC", "HASH", "false", "true", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
-            {"PUBLIC", "DFLT_CACHE", "_key_PK_hash__SCAN_", "null", "SCAN", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
 
             {"TST1", "VALUECLASS", "TST1_INDEX", "\"KEY\" ASC, \"_KEY\" ASC", "BTREE", "false", "false", "2584860", "TST1", "2584860", "TST1", "10"},
+            {"TST1", "VALUECLASS", "__SCAN_", "null", "SCAN", "false", "false", "2584860", "TST1", "2584860", "TST1", "null"},
             {"TST1", "VALUECLASS", "_key_PK", "\"_KEY\" ASC", "BTREE", "true", "true", "2584860", "TST1", "2584860", "TST1", "10"},
             {"TST1", "VALUECLASS", "_key_PK_hash", "\"_KEY\" ASC", "HASH", "false", "true", "2584860", "TST1", "2584860", "TST1", "null"},
-            {"TST1", "VALUECLASS", "_key_PK_hash__SCAN_", "null", "SCAN", "false", "false", "2584860", "TST1", "2584860", "TST1", "null"},
         };
 
         for (int i = 0; i < srvNodeIndexes.size(); i++) {

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,10 +103,6 @@ public class GridH2Table extends TableBase {
 
     /** */
     private volatile boolean destroyed;
-
-    /** */
-    // TODO: Consider removing state
-    private final List<IndexInformation> predefIdxInfo;
 
     /**
      * Map of sessions locks.
@@ -201,44 +196,52 @@ public class GridH2Table extends TableBase {
         sysIdxsCnt = idxs.size();
 
         lock = new ReentrantReadWriteLock();
-
-        predefIdxInfo = predefinedIndexes();
     }
 
     /**
-     * @return List of predefined indexes information.
+     * @return Information about all indexes related to the table.
      */
-    private List<IndexInformation> predefinedIndexes() {
+    @SuppressWarnings("ZeroLengthArrayAllocation")
+    public List<IndexInformation> indexesInformation() {
+        List<IndexInformation> res = new ArrayList<>();
+
         IndexColumn keyCol = indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
 
         List<IndexColumn> wrappedKeyCols = H2Utils.treeIndexColumns(rowDescriptor(),
             new ArrayList<>(2), keyCol, affKeyCol);
 
         //explicit add HASH index, due to we know all their parameters and it doesn't created on non afinity nodes.
-        IndexInformation hashIdx = H2Utils.indexInformation(this, false, true, PK_HASH_IDX_NAME, H2IndexType.HASH, wrappedKeyCols,
-            null);
+        res.add(
+            new IndexInformation(false,
+                true, PK_HASH_IDX_NAME,
+                H2IndexType.HASH,
+                H2Utils.indexColumnsSql(H2Utils.unwrapKeyColumns(this, wrappedKeyCols.toArray(new IndexColumn[0]))),
+            null));
 
         //explicit add SCAN index, due to we know all their parameters and it depends on affinity node or not.
-        // TODO: Investigate whether we can simply print "__SCAN_" because this is what happens in H2 EXPLAIN
-        // TODO: see H2ScanIndex.getPlanSql()
-        IndexInformation scanIdx = H2Utils.indexInformation(this, false, false, PK_HASH_IDX_NAME + SCAN_INDEX_NAME_SUFFIX,
-            H2IndexType.SCAN, null, null);
-
-        return Arrays.asList(hashIdx, scanIdx);
-    }
-
-    /**
-     * @return Information about all indexes related to the table.
-     */
-    public List<IndexInformation> indexesInformation(){
-        List<IndexInformation> res = new ArrayList<>(predefIdxInfo);
+        res.add(new IndexInformation(false, false, SCAN_INDEX_NAME_SUFFIX, H2IndexType.SCAN, null, null));
 
         for (Index idx : idxs) {
-            if(idx instanceof H2TreeIndexBase)
-                res.add(((H2TreeIndexBase)idx).indexInformation());
-            else if( idx.getIndexType().isSpatial()) {
-                res.add(H2Utils.indexInformation(this, false, false, idx.getName(), H2IndexType.SPATIAL,
-                    Arrays.asList(idx.getIndexColumns()), null));
+            if (idx instanceof H2TreeIndexBase) {
+                res.add(new IndexInformation(
+                    idx.getIndexType().isPrimaryKey(),
+                    idx.getIndexType().isUnique(),
+                    idx.getName(),
+                    H2IndexType.BTREE,
+                    H2Utils.indexColumnsSql(H2Utils.unwrapKeyColumns(this, idx.getIndexColumns())),
+                    ((H2TreeIndexBase)idx).inlineSize()
+                ));
+            }
+            else if (idx.getIndexType().isSpatial()) {
+                res.add(
+                    new IndexInformation(
+                        false,
+                        false,
+                        idx.getName(),
+                        H2IndexType.SPATIAL,
+                        H2Utils.indexColumnsSql(idx.getIndexColumns()),
+                        null)
+                );
             }
         }
 

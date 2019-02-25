@@ -55,8 +55,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
-import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -894,32 +892,6 @@ public class H2Utils {
                 }
             }
         }
-    }
-
-    /**
-     * Create index information.
-     *
-     * @param pk PK
-     * @param type Type.
-     * @param idxColsList Indexed columns. Can be {@code null} in case index doesn't contains indexed columns.
-     * @param inlineSize Inline size. Can be {@code null} in case inline size is not applicable for the index.
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    public static IndexInformation indexInformation(GridH2Table tbl, boolean pk, boolean unique, String name,
-        H2IndexType type, List<IndexColumn> idxColsList, Integer inlineSize) {
-
-        String keySql = idxColsList != null ?
-            indexColumnsSql(unwrapKeyColumns(tbl, idxColsList.toArray(new IndexColumn[0])))
-            : null;
-
-        return new IndexInformation(
-            pk,
-            unique,
-            name,
-            type,
-            keySql,
-            inlineSize
-        );
     }
 
     /**

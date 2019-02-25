@@ -34,6 +34,9 @@ import org.h2.table.IndexColumn;
  * We need indexes on an not affinity nodes. The index shouldn't contains any data.
  */
 public class H2TreeClientIndex extends H2TreeIndexBase {
+    /** */
+    private final int inlineSize;
+
     /**
      * @param table Table.
      * @param name Index name.
@@ -49,14 +52,17 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
 
-        inlineSize = calculateInlineSize(cols, inlineSize, table.cacheInfo().config());
+        this.inlineSize = calculateInlineSize(cols, inlineSize, table.cacheInfo().config());
 
         IndexColumn.mapColumns(cols, table);
 
         initBaseIndex(table, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
+    }
 
-        initIndexInformation(inlineSize);
+    /** {@inheritDoc} */
+    @Override public int inlineSize() {
+        return inlineSize;
     }
 
     /**

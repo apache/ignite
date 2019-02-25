@@ -63,9 +63,9 @@ public class H2IndexesSystemViewTest extends GridCommonAbstractTest {
 
         String[][] expectedResults = {
             {"PUBLIC", "AFF_CACHE", "IDX_GEO_1", "\"GEOM\" ASC", "SPATIAL", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
+            {"PUBLIC", "AFF_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
             {"PUBLIC", "AFF_CACHE", "_key_PK", "\"ID1\" ASC", "BTREE", "true", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "5"},
             {"PUBLIC", "AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC", "HASH", "false", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
-            {"PUBLIC", "AFF_CACHE", "_key_PK_hash__SCAN_", "null", "SCAN", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
         };
 
         for (int i = 0; i < srvNodeIndexes.size(); i++) {

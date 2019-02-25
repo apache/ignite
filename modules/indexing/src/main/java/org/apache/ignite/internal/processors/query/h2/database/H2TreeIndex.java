@@ -286,8 +286,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
         };
 
         ctx.io().addMessageListener(msgTopic, msgLsnr);
+    }
 
-        initIndexInformation(segments[0].inlineSize());
+    /** {@inheritDoc} */
+    @Override public int inlineSize() {
+        return segments[0].inlineSize();
     }
 
     /**
