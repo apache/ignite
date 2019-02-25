@@ -37,6 +37,8 @@ import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry.AtomicCacheUpdateClosure;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -228,7 +230,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean transformedValue) throws IgniteCheckedException {
         try {
             while (true) {
-                GridCacheEntryEx entry = null;
+                GridCacheMapEntry entry = null;
 
                 AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -237,30 +239,42 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
                     GridCacheOperation op = val != null ? UPDATE : DELETE;
 
-                    GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
-                        null,
+                    AtomicCacheUpdateClosure c = new AtomicCacheUpdateClosure(
+                        0,
+                        entry,
+                        topVer,
                         ver,
-                        nodeId,
-                        nodeId,
                         op,
                         val,
                         null,
-                        /*write-through*/false,
                         /*read-through*/false,
-                        /*retval*/false,
+                        /*write-through*/false,
                         keepBinary,
-                        /*expiry policy*/null,
-                        /*event*/true,
-                        /*metrics*/true,
-                        /*primary*/false,
+                        null,
+                        false,
                         /*check version*/true,
-                        topVer,
                         CU.empty0(),
-                        DR_NONE,
                         ttl,
                         expireTime,
                         null,
                         false,
+                        false,
+                        null,
+                        ctx.disableTriggeringCacheInterceptorOnConflict());
+
+                    GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
+                        c,
+                        true,
+                        nodeId,
+                        nodeId,
+                        op,
+                        val,
+                        /*retval*/false,
+                        /*event*/true,
+                        /*metrics*/true,
+                        /*primary*/false,
+                        topVer,
+                        DR_NONE,
                         false,
                         subjId,
                         taskName,
@@ -318,7 +332,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             try {
                 while (true) {
                     try {
-                        GridCacheEntryEx entry = peekEx(key);
+                        GridCacheMapEntry entry = (GridCacheMapEntry)peekEx(key);
 
                         if (entry == null) {
                             if (nearEvicted == null)
@@ -335,33 +349,42 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         GridCacheOperation op = entryProcessor != null ? TRANSFORM :
                             (val != null) ? UPDATE : DELETE;
 
-                        long ttl = req.nearTtl(i);
-                        long expireTime = req.nearExpireTime(i);
+                        AtomicCacheUpdateClosure c = new AtomicCacheUpdateClosure(
+                            i,
+                            entry,
+                            req.topologyVersion(),
+                            ver,
+                            op,
+                            op == TRANSFORM ? entryProcessor : val,
+                            op == TRANSFORM ? req.invokeArguments() : null,
+                            /*read-through*/false,
+                            /*write-through*/false,
+                            req.keepBinary(),
+                            null,
+                            false,
+                            /*check version*/!req.forceTransformBackups(),
+                            CU.empty0(),
+                            req.nearTtl(i),
+                            req.nearExpireTime(i),
+                            null,
+                            false,
+                            intercept,
+                            null,
+                            ctx.disableTriggeringCacheInterceptorOnConflict());
 
                         GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
-                            null,
-                            ver,
+                            c,
+                            true,
                             nodeId,
                             nodeId,
                             op,
                             op == TRANSFORM ? entryProcessor : val,
-                            op == TRANSFORM ? req.invokeArguments() : null,
-                            /*write-through*/false,
-                            /*read-through*/false,
                             /*retval*/false,
-                            req.keepBinary(),
-                            null,
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/!req.forceTransformBackups(),
                             req.topologyVersion(),
-                            CU.empty0(),
                             DR_NONE,
-                            ttl,
-                            expireTime,
-                            null,
-                            false,
                             intercept,
                             req.subjectId(),
                             taskName,

@@ -2207,28 +2207,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @SuppressWarnings("unchecked")
     @Override public GridCacheUpdateAtomicResult innerUpdate(
         AtomicCacheUpdateClosure c,
-        final GridCacheVersion newVer,
+        boolean updateStore,
         final UUID evtNodeId,
         final UUID affNodeId,
         final GridCacheOperation op,
         @Nullable final Object writeObj,
-        @Nullable final Object[] invokeArgs,
-        final boolean writeThrough,
-        final boolean readThrough,
         final boolean retval,
-        final boolean keepBinary,
-        @Nullable final IgniteCacheExpiryPolicy expiryPlc,
         final boolean evt,
         final boolean metrics,
         final boolean primary,
-        final boolean verCheck,
         final AffinityTopologyVersion topVer,
-        @Nullable final CacheEntryPredicate[] filter,
         final GridDrType drType,
-        final long explicitTtl,
-        final long explicitExpireTime,
-        @Nullable final GridCacheVersion conflictVer,
-        final boolean conflictResolve,
         final boolean intercept,
         @Nullable final UUID subjId,
         final String taskName,
@@ -2255,35 +2244,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             Map<UUID, CacheContinuousQueryListener> lsnrs = cctx.continuousQueries().updateListeners(internal, false);
 
             boolean needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM
-                || !F.isEmptyOrNulls(filter);
+                || !F.isEmptyOrNulls(c.filter);
 
-            // Possibly read value from store.
-            boolean readFromStore = readThrough && needVal && (cctx.readThrough() &&
-                (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()));
-
-            if (c == null) {
-                c = new AtomicCacheUpdateClosure(this,
-                    topVer,
-                    newVer,
-                    op,
-                    writeObj,
-                    invokeArgs,
-                    readFromStore,
-                    writeThrough,
-                    keepBinary,
-                    expiryPlc,
-                    primary,
-                    verCheck,
-                    filter,
-                    explicitTtl,
-                    explicitExpireTime,
-                    conflictVer,
-                    conflictResolve,
-                    intercept,
-                    updateCntr,
-                    cctx.disableTriggeringCacheInterceptorOnConflict()
-                );
-
+            if (updateStore) {
                 key.valueBytes(cctx.cacheObjectContext());
 
                 if (isNear()) {
@@ -2328,12 +2291,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 (EntryProcessor<Object, Object, ?>)writeObj;
 
                             CacheInvokeEntry<Object, Object> entry =
-                                new CacheInvokeEntry<>(key, prevVal, version(), keepBinary, this);
+                                new CacheInvokeEntry<>(key, prevVal, version(), c.keepBinary, this);
 
                             IgniteThread.onEntryProcessorEntered(true);
 
                             try {
-                                entryProcessor.process(entry, invokeArgs);
+                                entryProcessor.process(entry, c.invokeArgs);
 
                                 evtVal = entry.modified() ?
                                     cctx.toCacheObject(cctx.unwrapTemporary(entry.getValue())) : prevVal;
@@ -2401,7 +2364,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     subjId,
                     transformClo.getClass().getName(),
                     taskName,
-                    keepBinary);
+                    c.keepBinary);
             }
 
             if (c.op == UPDATE) {
@@ -2431,7 +2394,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         subjId,
                         null,
                         taskName,
-                        keepBinary);
+                        c.keepBinary);
                 }
             }
             else {
@@ -2459,7 +2422,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         subjId,
                         null,
                         taskName,
-                        keepBinary);
+                        c.keepBinary);
                 }
             }
 
@@ -2493,7 +2456,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     c.op == UPDATE ? updateVal : oldVal,
                     null,
-                    keepBinary,
+                    c.keepBinary,
                     c.updateRes.updateCounter()
                 );
 
@@ -5852,7 +5815,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final boolean keepBinary;
 
         /** */
-        private final IgniteCacheExpiryPolicy expiryPlc;
+        public final IgniteCacheExpiryPolicy expiryPlc;
 
         /** */
         private final boolean primary;
@@ -5902,8 +5865,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** Disable interceptor invocation onAfter* methods flag. */
         private boolean wasIntercepted;
 
+        /** Index in update request. */
+        public final int reqIdx;
+
         /** */
         public AtomicCacheUpdateClosure(
+            int reqIdx,
             GridCacheMapEntry entry,
             AffinityTopologyVersion topVer,
             GridCacheVersion newVer,
@@ -5926,6 +5893,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean skipInterceptorOnConflict) {
             assert op == UPDATE || op == DELETE || op == TRANSFORM : op;
 
+            this.reqIdx = reqIdx;
             this.entry = entry;
             this.topVer = topVer;
             this.newVer = newVer;
@@ -6730,64 +6698,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(AtomicCacheUpdateClosure.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    public static class AtomicCacheBatchUpdateClosure extends AtomicCacheUpdateClosure {
-        /** Index in update request. */
-        public final int reqIdx;
-
-        /** Readers before clusure execution (reader cleared after remove). */
-        public final GridDhtCacheEntry.ReaderId[] rdrs;
-
-        public AtomicCacheBatchUpdateClosure(
-            int reqIdx,
-            GridDhtCacheEntry entry,
-            AffinityTopologyVersion topVer,
-            GridCacheVersion newVer,
-            GridCacheOperation op,
-            Object writeObj,
-            Object[] invokeArgs,
-            boolean readThrough,
-            boolean writeThrough,
-            boolean keepBinary,
-            @Nullable IgniteCacheExpiryPolicy expiryPlc,
-            boolean primary,
-            boolean verCheck,
-            @Nullable CacheEntryPredicate[] filter,
-            long explicitTtl,
-            long explicitExpireTime,
-            @Nullable GridCacheVersion conflictVer,
-            boolean conflictResolve,
-            boolean intercept,
-            @Nullable Long updateCntr,
-            boolean skipInterceptorOnConflict) {
-            super(entry,
-                topVer,
-                newVer,
-                op,
-                writeObj,
-                invokeArgs,
-                readThrough,
-                writeThrough,
-                keepBinary,
-                expiryPlc,
-                primary,
-                verCheck,
-                filter,
-                explicitTtl,
-                explicitExpireTime,
-                conflictVer,
-                conflictResolve,
-                intercept,
-                updateCntr,
-                skipInterceptorOnConflict);
-
-            this.reqIdx = reqIdx;
-            rdrs = entry.readersLocked();
         }
     }
 

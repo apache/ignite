@@ -537,36 +537,25 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public GridCacheUpdateAtomicResult innerUpdate(
         @Nullable GridCacheMapEntry.AtomicCacheUpdateClosure c,
-        GridCacheVersion ver,
+        boolean updateOffheap,
         UUID evtNodeId,
         UUID affNodeId,
         GridCacheOperation op,
         @Nullable Object val,
-        @Nullable Object[] invokeArgs,
-        boolean writeThrough,
-        boolean readThrough,
         boolean retval,
-        boolean keepBinary,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         boolean primary,
-        boolean checkVer,
         AffinityTopologyVersion topVer,
-        @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,
-        long conflictTtl,
-        long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer,
-        boolean conflictResolve,
         boolean intercept,
-        UUID subjId,
+        @Nullable UUID subjId,
         String taskName,
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
         @Nullable GridDhtAtomicAbstractUpdateFuture fut,
-        boolean transformOp)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean transformOp
+    ) {
         assert false;
 
         return null;

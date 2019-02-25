@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry.AtomicCacheBatchUpdateClosure;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry.AtomicCacheUpdateClosure;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -1767,7 +1766,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     !ctx.store().isLocal() &&                 // and this is not local store (conflict resolver should be used for local store)
                     !ctx.dr().receiveEnabled();               // and no DR.
 
-                Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure>> byPart =
+                Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheUpdateClosure>> byPart =
                     batchStoreUpdate ? new HashMap<>() : null;
 
                 while (true) {
@@ -1982,7 +1981,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicAbstractUpdateRequest req,
         GridNearAtomicUpdateResponse res,
         DhtAtomicUpdateResult dhtUpdRes,
-        @Nullable Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure>> byPart
+        @Nullable Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheUpdateClosure>> byPart
     )
         throws GridCacheEntryRemovedException
     {
@@ -2115,7 +2114,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final IgniteCacheExpiryPolicy expiry,
         final boolean sndPrevVal,
         final DhtAtomicUpdateResult dhtUpdRes,
-        final Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure>> byPart
+        final Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheUpdateClosure>> byPart
     ) throws GridCacheEntryRemovedException {
         assert !ctx.dr().receiveEnabled(); // Cannot update in batches during DR due to possible conflicts.
         assert !req.returnValue() || req.operation() == TRANSFORM; // Should not request return values for putAll.
@@ -2457,30 +2456,26 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         GridDrType drType = replicate ? DR_PRIMARY : DR_NONE;
 
-        for (Map.Entry<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure>> e0 : byPart.entrySet()) {
+        for (Map.Entry<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheUpdateClosure>> e0 : byPart.entrySet()) {
             try {
-                Map<CacheSearchRow, AtomicCacheBatchUpdateClosure> map = e0.getValue();
+                Map<CacheSearchRow, AtomicCacheUpdateClosure> map = e0.getValue();
 
                 ctx.offheap().invokeAll(ctx, e0.getKey(), map.keySet(), map::get);
 
-                for (Map.Entry<CacheSearchRow, AtomicCacheBatchUpdateClosure> e : map.entrySet()) {
-                    AtomicCacheBatchUpdateClosure c = e.getValue();
+                for (Map.Entry<CacheSearchRow, AtomicCacheUpdateClosure> e : map.entrySet()) {
+                    AtomicCacheUpdateClosure c = e.getValue();
 
                     updateSingleEntryPartialBatch(
-                        (GridDhtCacheEntry)c.entry(),
                         c,
-                        ver,
                         (CacheObject)c.writeValue(),
                         entryProcessorMap,
                         node,
                         hasNear,
                         taskName,
-                        expiry,
                         drType,
                         req,
                         res,
                         dhtUpdRes,
-                        c.reqIdx,
                         affAssignment,
                         sndPrevVal);
                 }
@@ -2589,148 +2584,137 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         GridDrType drType = replicate ? DR_PRIMARY : DR_NONE;
 
-        if (req.size() > 1) {
-            Map<UUID, CacheContinuousQueryListener> lsnrs = ctx.continuousQueries().updateListeners(!ctx.userCache(), false);
+        boolean batchUpdate = req.size() > 1;
 
-            boolean needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM ||
-                !F.isEmptyOrNulls(req.filter());
+        Map<UUID, CacheContinuousQueryListener> lsnrs = ctx.continuousQueries().updateListeners(!ctx.userCache(), false);
 
-            Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure>> byPart = new HashMap<>();
+        boolean needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM ||
+            !F.isEmptyOrNulls(req.filter());
 
-            BitSet retryEntries = dhtUpdRes.retryEntries();
+        Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheUpdateClosure>> byPart =
+            batchUpdate ? new HashMap<>() : null;
 
-            if (retryEntries != null)
-                dhtUpdRes.retryEntries(null);
+        BitSet retryEntries = dhtUpdRes.retryEntries();
 
-            for (int i = 0; i < req.size(); i++) {
+        if (retryEntries != null)
+            dhtUpdRes.retryEntries(null);
+
+        for (int i = 0; i < req.size(); i++) {
+            GridDhtCacheEntry entry = locked.get(i);
+
+            try {
                 if (retryEntries != null && !retryEntries.get(i))
                     continue;
 
-                GridDhtCacheEntry entry = locked.get(i);
+                // Possibly read value from store.
+                boolean readFromStore = !req.skipStore() && needVal && (ctx.readThrough() &&
+                    (op == GridCacheOperation.TRANSFORM || ctx.loadPreviousValue()));
 
-                try {
-                    entry.key().valueBytes(ctx.cacheObjectContext());
+                AtomicCacheUpdateClosure c = new AtomicCacheUpdateClosure(
+                    i,
+                    entry,
+                    topVer,
+                    ver,
+                    req.operation(),
+                    op == TRANSFORM ? req.entryProcessor(i) : req.writeValue(i),
+                    req.invokeArguments(),
+                    readFromStore,
+                    writeThrough() && !req.skipStore(),
+                    req.keepBinary(),
+                    expiry,
+                    /*primary*/true,
+                    /*verCheck*/false,
+                    req.filter(),
+                    req.conflictTtl(i),
+                    req.conflictExpireTime(i),
+                    req.conflictVersion(i),
+                    /*conflictResolve*/true,
+                    intercept,
+                    null,
+                    ctx.disableTriggeringCacheInterceptorOnConflict()
+                );
 
+                entry.key().valueBytes(ctx.cacheObjectContext());
+
+                if (batchUpdate) {
                     GridDhtLocalPartition part = entry.localPartition();
 
-                    TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure> map = byPart.get(part);
+                    TreeMap<CacheSearchRow, AtomicCacheUpdateClosure> map = byPart.get(part);
 
                     IgniteCacheOffheapManager.CacheDataStore dataStore = ctx.offheap().dataStore(part);
 
                     if (map == null)
                         byPart.put(part, map = new TreeMap<>(dataStore.rowsComparator()));
 
-                    // Possibly read value from store.
-                    boolean readFromStore = !req.skipStore() && needVal && (ctx.readThrough() &&
-                        (op == GridCacheOperation.TRANSFORM || ctx.loadPreviousValue()));
-
-                    AtomicCacheBatchUpdateClosure c = new AtomicCacheBatchUpdateClosure(
-                        i,
-                        entry,
-                        topVer,
-                        ver,
-                        req.operation(),
-                        op == TRANSFORM ? req.entryProcessor(i) : req.writeValue(i),
-                        req.invokeArguments(),
-                        readFromStore,
-                        writeThrough() && !req.skipStore(),
-                        req.keepBinary(),
-                        expiry,
-                        /*primary*/true,
-                        /*verCheck*/false,
-                        req.filter(),
-                        req.conflictTtl(i),
-                        req.conflictExpireTime(i),
-                        req.conflictVersion(i),
-                        /*conflictResolve*/true,
-                        intercept,
-                        null,
-                        ctx.disableTriggeringCacheInterceptorOnConflict()
-                    );
-
                     map.put(dataStore.createSearchRow(ctx, entry.key(), null), c);
                 }
-                catch (IgniteCheckedException e) {
-                    res.addFailedKey(entry.key(), e);
-                }
-            }
-
-            RuntimeException err = null;
-
-            for (Map.Entry<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure>> e0 : byPart.entrySet()) {
-                try {
-                    Map<CacheSearchRow, AtomicCacheBatchUpdateClosure> map = e0.getValue();
-
-                    try {
-                        ctx.offheap().invokeAll(ctx, e0.getKey(), map.keySet(), map::get);
-                    }
-                    catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
-                        err = e;
-                    }
-
-                    for (Map.Entry<CacheSearchRow, AtomicCacheBatchUpdateClosure> e : map.entrySet()) {
-                        AtomicCacheBatchUpdateClosure c = e.getValue();
-
-                        if (c.operationType() == null) {
-                            dhtUpdRes.addRetryEntry(c.reqIdx);
-
-                            continue;
-                        }
-
-                        updateSingleEntry(
-                            (GridDhtCacheEntry)c.entry(),
-                            c,
-                            ver,
-                            nearNode,
-                            hasNear,
-                            taskName,
-                            expiry,
-                            drType,
-                            req,
-                            res,
-                            dhtUpdRes,
-                            c.reqIdx,
-                            affAssignment,
-                            sndPrevVal);
-                    }
-                }
-                catch (IgniteCheckedException e) {
-                    for (CacheSearchRow row : e0.getValue().keySet())
-                        res.addFailedKey(row.key(), e);
-                }
-            }
-
-            if (err != null)
-                throw err;
-        } else {
-            // Avoid iterator creation.
-            for (int i = dhtUpdRes.processedEntriesCount(); i < req.size(); i++) {
-                // We are holding java-level locks on entries at this point.
-                // No GridCacheEntryRemovedException can be thrown.
-                try {
+                else {
                     updateSingleEntry(
-                        locked.get(i),
-                        null,
-                        ver,
+                        c,
+                        true,
                         nearNode,
                         hasNear,
                         taskName,
-                        expiry,
                         drType,
                         req,
                         res,
                         dhtUpdRes,
-                        i,
                         affAssignment,
                         sndPrevVal);
                 }
-                catch (IgniteCheckedException e) {
-                    res.addFailedKey(req.key(i), e);
-                }
-
-                dhtUpdRes.processedEntriesCount(i + 1);
+            }
+            catch (IgniteCheckedException e) {
+                res.addFailedKey(entry.key(), e);
             }
         }
+
+        if (!batchUpdate)
+            return;
+
+        RuntimeException err = null;
+
+        for (Map.Entry<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheUpdateClosure>> e0 : byPart.entrySet()) {
+            try {
+                Map<CacheSearchRow, AtomicCacheUpdateClosure> map = e0.getValue();
+
+                try {
+                    ctx.offheap().invokeAll(ctx, e0.getKey(), map.keySet(), map::get);
+                }
+                catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+                    err = e;
+                }
+
+                for (Map.Entry<CacheSearchRow, AtomicCacheUpdateClosure> e : map.entrySet()) {
+                    AtomicCacheUpdateClosure c = e.getValue();
+
+                    if (c.operationType() == null) {
+                        dhtUpdRes.addRetryEntry(c.reqIdx);
+
+                        continue;
+                    }
+
+                    updateSingleEntry(
+                        c,
+                        false,
+                        nearNode,
+                        hasNear,
+                        taskName,
+                        drType,
+                        req,
+                        res,
+                        dhtUpdRes,
+                        affAssignment,
+                        sndPrevVal);
+                }
+            }
+            catch (IgniteCheckedException e) {
+                for (CacheSearchRow row : e0.getValue().keySet())
+                    res.addFailedKey(row.key(), e);
+            }
+        }
+
+        if (err != null)
+            throw err;
     }
 
     /**
@@ -2752,57 +2736,37 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @throws GridCacheEntryRemovedException Should be never thrown.
      */
     private void updateSingleEntry(
-        GridDhtCacheEntry entry,
-        @Nullable AtomicCacheBatchUpdateClosure c,
-        GridCacheVersion ver,
+        AtomicCacheUpdateClosure c,
+        boolean updateOffheap,
         ClusterNode nearNode,
         boolean hasNear,
         String taskName,
-        @Nullable IgniteCacheExpiryPolicy expiry,
         GridDrType drType,
         GridNearAtomicAbstractUpdateRequest req,
         GridNearAtomicUpdateResponse res,
         DhtAtomicUpdateResult dhtUpdRes,
-        int idx,
         AffinityAssignment affAssignment,
         boolean sndPrevVal
     ) throws IgniteCheckedException, GridCacheEntryRemovedException
     {
-        GridCacheVersion newConflictVer = req.conflictVersion(idx);
-        long newConflictTtl = req.conflictTtl(idx);
-        long newConflictExpireTime = req.conflictExpireTime(idx);
-
-        assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer;
-
-        Object writeVal = req.operation() == TRANSFORM ? req.entryProcessor(idx) : req.writeValue(idx);
+        GridDhtCacheEntry entry = (GridDhtCacheEntry)c.entry();
 
         // Get readers before innerUpdate (reader cleared after remove).
-        GridDhtCacheEntry.ReaderId[] readers = c != null ? c.rdrs : entry.readersLocked();
+        GridDhtCacheEntry.ReaderId[] readers = entry.readersLocked();
 
         GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
             c,
-            ver,
+            updateOffheap,
             nearNode.id(),
             locNodeId,
             req.operation(),
-            writeVal,
-            req.invokeArguments(),
-            writeThrough() && !req.skipStore(),
-            !req.skipStore(),
+            req.operation() == TRANSFORM ? req.entryProcessor(c.reqIdx) : req.writeValue(c.reqIdx),
             sndPrevVal || req.returnValue(),
-            req.keepBinary(),
-            expiry,
             /*event*/true,
             /*metrics*/true,
             /*primary*/true,
-            /*verCheck*/false,
             req.topologyVersion(),
-            req.filter(),
             drType,
-            newConflictTtl,
-            newConflictExpireTime,
-            newConflictVer,
-            /*conflictResolve*/true,
             ctx.config().getInterceptor() != null,
             req.subjectId(),
             taskName,
@@ -2818,6 +2782,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (dhtFut != null) {
             if (updRes.sendToDht()) { // Send to backups even in case of remove-remove scenarios.
                 GridCacheVersionConflictContext<?, ?> conflictCtx = updRes.conflictResolveResult();
+
+                GridCacheVersion newConflictVer = req.conflictVersion(c.reqIdx);
+
+                assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer;
 
                 if (conflictCtx == null)
                     newConflictVer = null;
@@ -2861,14 +2829,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (updRes.sendToDht()) {
                 if (!ctx.affinity().partitionBelongs(nearNode, entry.partition(), req.topologyVersion())) {
                     // If put the same value as in request then do not need to send it back.
-                    if (op == TRANSFORM || req.writeValue(idx) != updRes.newValue()) {
-                        res.addNearValue(idx,
+                    if (op == TRANSFORM || req.writeValue(c.reqIdx) != updRes.newValue()) {
+                        res.addNearValue(c.reqIdx,
                             updRes.newValue(),
                             updRes.newTtl(),
                             updRes.conflictExpireTime());
                     }
                     else
-                        res.addNearTtl(idx, updRes.newTtl(), updRes.conflictExpireTime());
+                        res.addNearTtl(c.reqIdx, updRes.newTtl(), updRes.conflictExpireTime());
 
                     if (updRes.newValue() != null) {
                         IgniteInternalFuture<Boolean> f =
@@ -2882,10 +2850,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     entry.removeReader(nearNode.id(), req.messageId());
                 }
                 else
-                    res.addSkippedIndex(idx);
+                    res.addSkippedIndex(c.reqIdx);
             }
             else
-                res.addSkippedIndex(idx);
+                res.addSkippedIndex(c.reqIdx);
         }
 
         if (updRes.removeVersion() != null) {
@@ -2959,7 +2927,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridNearAtomicUpdateResponse res,
         final DhtAtomicUpdateResult dhtUpdRes,
         @Nullable final IgniteCacheExpiryPolicy expiry,
-        Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure>> byPart
+        Map<GridDhtLocalPartition, TreeMap<CacheSearchRow, AtomicCacheUpdateClosure>> byPart
     ) {
         assert putMap == null ^ rmvKeys == null;
 
@@ -3044,14 +3012,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 GridDhtLocalPartition part = entry.localPartition();
 
-                TreeMap<CacheSearchRow, AtomicCacheBatchUpdateClosure> map = byPart.get(part);
+                TreeMap<CacheSearchRow, AtomicCacheUpdateClosure> map = byPart.get(part);
 
                 IgniteCacheOffheapManager.CacheDataStore dataStore = ctx.offheap().dataStore(part);
 
                 if (map == null)
                     byPart.put(part, map = new TreeMap<>(dataStore.rowsComparator()));
 
-                AtomicCacheBatchUpdateClosure c = new AtomicCacheBatchUpdateClosure(
+                AtomicCacheUpdateClosure c = new AtomicCacheUpdateClosure(
                     firstEntryIdx + i,
                     entry,
                     topVer,
@@ -3101,23 +3069,21 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** */
     private void updateSingleEntryPartialBatch(
-        GridDhtCacheEntry entry,
-        @Nullable AtomicCacheBatchUpdateClosure c,
-        GridCacheVersion ver,
+        AtomicCacheUpdateClosure c,
         @Nullable final CacheObject writeVal,
         @Nullable final Map<KeyCacheObject, EntryProcessor<Object, Object, Object>> entryProcessorMap,
         ClusterNode nearNode,
         boolean hasNear,
         String taskName,
-        @Nullable IgniteCacheExpiryPolicy expiry,
         GridDrType drType,
         GridNearAtomicAbstractUpdateRequest req,
         GridNearAtomicUpdateResponse res,
         DhtAtomicUpdateResult dhtUpdRes,
-        int idx,
         AffinityAssignment affAssignment,
         boolean sndPrevVal
     ) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        GridDhtCacheEntry entry = (GridDhtCacheEntry)c.entry();
+
         final GridDhtAtomicAbstractUpdateFuture dhtFut = dhtUpdRes.dhtFuture();
 
         AffinityTopologyVersion topVer = req.topologyVersion();
@@ -3126,34 +3092,23 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             entryProcessorMap == null ? null : entryProcessorMap.get(entry.key());
 
         // Get readers before innerUpdate (reader cleared after remove).
-        GridDhtCacheEntry.ReaderId[] readers = c != null ? c.rdrs : entry.readersLocked();
+        GridDhtCacheEntry.ReaderId[] readers = entry.readersLocked();
 
         GridCacheOperation op = writeVal == null ? DELETE : UPDATE;
 
         GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
             c,
-            ver,
+            false,
             nearNode.id(),
             locNodeId,
             op,
             writeVal,
-            null,
-            /*write-through*/false,
-            /*read-through*/false,
             /*retval*/sndPrevVal,
-            req.keepBinary(),
-            expiry,
             /*event*/true,
             /*metrics*/true,
             /*primary*/true,
-            /*verCheck*/false,
             topVer,
-            null,
             drType,
-            CU.TTL_NOT_CHANGED,
-            CU.EXPIRE_TIME_CALCULATE,
-            null,
-            /*conflict resolve*/false,
             /*intercept*/false,
             req.subjectId(),
             taskName,
@@ -3162,8 +3117,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             dhtFut,
             entryProcessor != null);
 
-        assert !updRes.success() || updRes.newTtl() == CU.TTL_NOT_CHANGED || expiry != null :
-            "success=" + updRes.success() + ", newTtl=" + updRes.newTtl() + ", expiry=" + expiry;
+        assert !updRes.success() || updRes.newTtl() == CU.TTL_NOT_CHANGED || c.expiryPlc != null :
+            "success=" + updRes.success() + ", newTtl=" + updRes.newTtl() + ", expiry=" + c.expiryPlc;
 
         if (ctx.config().getInterceptor() != null) {
             if (op == UPDATE) {
@@ -3213,13 +3168,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (hasNear) {
             if (!ctx.affinity().partitionBelongs(nearNode, entry.partition(), topVer)) {
                 if (req.operation() == TRANSFORM) {
-                    res.addNearValue(idx,
+                    res.addNearValue(c.reqIdx,
                         writeVal,
                         updRes.newTtl(),
                         CU.EXPIRE_TIME_CALCULATE);
                 }
                 else
-                    res.addNearTtl(idx, updRes.newTtl(), CU.EXPIRE_TIME_CALCULATE);
+                    res.addNearTtl(c.reqIdx, updRes.newTtl(), CU.EXPIRE_TIME_CALCULATE);
 
                 if (writeVal != null || entry.hasValue()) {
                     IgniteInternalFuture<Boolean> f = entry.addReader(nearNode.id(), req.messageId(), topVer);
@@ -3232,7 +3187,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 entry.removeReader(nearNode.id(), req.messageId());
             }
             else
-                res.addSkippedIndex(idx);
+                res.addSkippedIndex(c.reqIdx);
         }
     }
 
@@ -3617,14 +3572,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     CacheObject val = req.value(idx);
 
                     EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(i);
-                    Long updateIdx = req.updateCounter(idx);
 
                     GridCacheOperation op = entryProcessor != null ? TRANSFORM : (val != null) ? UPDATE : DELETE;
 
-                    long ttl = req.ttl(idx);
-                    long expireTime = req.conflictExpireTime(idx);
-
                     AtomicCacheUpdateClosure c = new AtomicCacheUpdateClosure(
+                        batchStart + i,
                         entry,
                         req.topologyVersion(),
                         req.writeVersion(),
@@ -3638,12 +3590,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*primary*/false,
                         /*check version*/!req.forceTransformBackups(),
                         CU.empty0(),
-                        ttl,
-                        expireTime,
-                        req.conflictVersion(i),
+                        req.ttl(idx),
+                        req.conflictExpireTime(idx),
+                        req.conflictVersion(idx),
                         false,
                         intercept,
-                        updateIdx,
+                        req.updateCounter(idx),
                         ctx.disableTriggeringCacheInterceptorOnConflict());
 
                     SearchRowEx<AtomicCacheUpdateClosure> row = (SearchRowEx<AtomicCacheUpdateClosure>)
@@ -3710,13 +3662,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (batchSize == 1) {
             dhtAtomicUpdateRequestUpdateSingle(
+                batchStart,
                 nodeId,
                 req,
                 nearRes,
                 taskName,
                 writeThrough,
-                intercept,
-                batchStart);
+                intercept);
 
             return;
         }
@@ -3745,15 +3697,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     AtomicCacheUpdateClosure c = locked.get(i).data();
 
                     dhtAtomicUpdateRequestUpdateSingleEntry(
-                        c.entry(),
                         c,
+                        false,
                         nodeId,
                         req,
                         nearRes,
                         taskName,
-                        writeThrough,
-                        intercept,
-                        batchStart + i);
+                        intercept);
                 }
             }
             finally {
@@ -3798,52 +3748,38 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     private GridCacheUpdateAtomicResult dhtAtomicUpdateRequestUpdateSingleEntry(
-        GridCacheMapEntry entry,
         AtomicCacheUpdateClosure c,
+        boolean updateOffheap,
         UUID nodeId,
         GridDhtAtomicAbstractUpdateRequest req,
         @Nullable GridDhtAtomicNearResponse nearRes,
         String taskName,
-        boolean writeThrough,
-        boolean intercept,
-        int idx
+        boolean intercept
     ) throws NodeStoppingException, GridCacheEntryRemovedException {
-        CacheObject val = req.value(idx);
-        CacheObject prevVal = req.previousValue(idx);
+        GridCacheMapEntry entry = c.entry();
 
-        EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(idx);
-        Long updateIdx = req.updateCounter(idx);
+        CacheObject val = req.value(c.reqIdx);
+        CacheObject prevVal = req.previousValue(c.reqIdx);
+
+        EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(c.reqIdx);
+        Long updateIdx = req.updateCounter(c.reqIdx);
 
         GridCacheOperation op = entryProcessor != null ? TRANSFORM : (val != null) ? UPDATE : DELETE;
-
-        long ttl = req.ttl(idx);
-        long expireTime = req.conflictExpireTime(idx);
 
         try {
             return entry.innerUpdate(
                 c,
-                req.writeVersion(),
+                updateOffheap,
                 nodeId,
                 nodeId,
                 op,
                 op == TRANSFORM ? entryProcessor : val,
-                op == TRANSFORM ? req.invokeArguments() : null,
-                writeThrough,
-                /*read-through*/false,
                 /*retval*/false,
-                req.keepBinary(),
-                /*expiry policy*/null,
                 /*event*/true,
                 /*metrics*/true,
                 /*primary*/false,
-                /*check version*/!req.forceTransformBackups(),
                 req.topologyVersion(),
-                CU.empty0(),
                 ctx.isDrEnabled() ? DR_BACKUP : DR_NONE,
-                ttl,
-                expireTime,
-                req.conflictVersion(idx),
-                false,
                 intercept,
                 req.subjectId(),
                 taskName,
@@ -3873,15 +3809,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     private void dhtAtomicUpdateRequestUpdateSingle(
+        int idx,
         UUID nodeId,
         GridDhtAtomicAbstractUpdateRequest req,
         @Nullable GridDhtAtomicNearResponse nearRes,
         String taskName,
         boolean writeThrough,
-        boolean intercept,
-        int i) throws NodeStoppingException
+        boolean intercept) throws NodeStoppingException
     {
-        KeyCacheObject key = req.key(i);
+        KeyCacheObject key = req.key(idx);
 
         try {
             while (true) {
@@ -3890,16 +3826,43 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 try {
                     entry = entryExx(key);
 
-                    GridCacheUpdateAtomicResult updRes = dhtAtomicUpdateRequestUpdateSingleEntry(
+                    CacheObject val = req.value(idx);
+
+                    EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(idx);
+
+                    GridCacheOperation op = entryProcessor != null ? TRANSFORM : (val != null) ? UPDATE : DELETE;
+
+                    AtomicCacheUpdateClosure c = new AtomicCacheUpdateClosure(
+                        idx,
                         entry,
-                        null,
+                        req.topologyVersion(),
+                        req.writeVersion(),
+                        op,
+                        op == TRANSFORM ? entryProcessor : val,
+                        op == TRANSFORM ? req.invokeArguments() : null,
+                        /*read-through*/false,
+                        writeThrough,
+                        req.keepBinary(),
+                        /*expiry policy*/null,
+                        /*primary*/false,
+                        /*check version*/!req.forceTransformBackups(),
+                        CU.empty0(),
+                        req.ttl(idx),
+                        req.conflictExpireTime(idx),
+                        req.conflictVersion(idx),
+                        false,
+                        intercept,
+                        req.updateCounter(idx),
+                        ctx.disableTriggeringCacheInterceptorOnConflict());
+
+                    GridCacheUpdateAtomicResult updRes = dhtAtomicUpdateRequestUpdateSingleEntry(
+                        c,
+                        true,
                         nodeId,
                         req,
                         nearRes,
                         taskName,
-                        writeThrough,
-                        intercept,
-                        i);
+                        intercept);
 
                     if (updRes != null && updRes.removeVersion() != null)
                         ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -3970,7 +3933,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
             else {
                 for (int i = 0; i < req.size(); i++)
-                    dhtAtomicUpdateRequestUpdateSingle(nodeId, req, nearRes, taskName, writeThrough, intercept, i);
+                    dhtAtomicUpdateRequestUpdateSingle(i, nodeId, req, nearRes, taskName, writeThrough, intercept);
             }
         }
         catch (NodeStoppingException e){
