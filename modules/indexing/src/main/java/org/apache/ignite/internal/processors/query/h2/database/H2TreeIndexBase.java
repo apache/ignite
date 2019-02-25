@@ -70,6 +70,7 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
      *
      * @param inlineSize Inline size.
      */
+    // TODO: May be it makes sense to remove this from Tree indexes and calculate externally?
     protected void initIndexInformation(Integer inlineSize) {
         IndexColumn[] unwrappedCols = H2Utils.unwrapKeyColumns((GridH2Table)table, getIndexColumns());
 

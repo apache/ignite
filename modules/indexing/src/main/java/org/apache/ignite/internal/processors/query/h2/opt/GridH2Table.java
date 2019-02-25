@@ -106,6 +106,7 @@ public class GridH2Table extends TableBase {
     private volatile boolean destroyed;
 
     /** */
+    // TODO: Consider removing state
     private final List<IndexInformation> predefIdxInfo;
 
     /**
@@ -218,6 +219,8 @@ public class GridH2Table extends TableBase {
             null);
 
         //explicit add SCAN index, due to we know all their parameters and it depends on affinity node or not.
+        // TODO: Investigate whether we can simply print "__SCAN_" because this is what happens in H2 EXPLAIN
+        // TODO: see H2ScanIndex.getPlanSql()
         IndexInformation scanIdx = H2Utils.indexInformation(this, false, false, PK_HASH_IDX_NAME + SCAN_INDEX_NAME_SUFFIX,
             H2IndexType.SCAN, null, null);
 
