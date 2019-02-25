@@ -1,9 +1,9 @@
-Apache Ignite RocketMQ Streamer Module
+GridGain RocketMQ Streamer Module
 --------------------------------------
 
-Apache Ignite RocketMQ Streamer module provides streaming from RocketMQ to Ignite cache.
+GridGain RocketMQ Streamer module provides streaming from RocketMQ to GridGain cache.
 
-To use Ignite RocketMQ Streamer module, first import it to your Maven project.
+To use GridGain RocketMQ Streamer module, first import it to your Maven project.
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -13,7 +13,7 @@ To use Ignite RocketMQ Streamer module, first import it to your Maven project.
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-rocketmq</artifactId>
             <version>${ignite.version}</version>
         </dependency>

@@ -1,21 +1,21 @@
-Apache Ignite Docker module
+GridGain Docker module
 ===========================
-Apache Ignite Docker module provides Dockerfile and accompanying files for building docker image.
+GridGain Docker module provides Dockerfile and accompanying files for building docker image.
 
 
 Build image
 ===========
-1) Build Apache Ignite binary archive as described in DEVNOTES.txt.
+1) Build GridGain binary archive as described in DEVNOTES.txt.
 
-2) Goto Apache Ignite's Docker module directory
+2) Goto GridGain's Docker module directory
 
         cd modules/docker
 
-3) Copy Apache Ignite's binary archive to Docker module directory
+3) Copy GridGain's binary archive to Docker module directory
 
         cp -rfv ../../target/bin/apache-ignite-*.zip
 
-4) Unpack Apache Ignite's binary archive
+4) Unpack GridGain's binary archive
 
         unzip apache-ignite-*.zip
 

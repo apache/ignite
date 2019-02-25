@@ -1,4 +1,4 @@
-Apache Ignite Platform Tests
+GridGain Platform Tests
 ------------------------
 
 Special module for platform tests.
