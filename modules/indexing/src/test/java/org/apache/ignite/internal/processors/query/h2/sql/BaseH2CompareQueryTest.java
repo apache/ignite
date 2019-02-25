@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -245,11 +244,11 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                cachePers.query(sql.setArgs(3));
+                cachePers.query(sql.setArgs(3)).getAll();
 
                 return null;
             }
-        }, IgniteException.class, "Invalid number of query parameters.");
+        }, CacheException.class, "Invalid number of query parameters");
     }
 
     /**

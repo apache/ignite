@@ -64,7 +64,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1026,8 +1026,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         Collection<Integer> res = U.doInParallel(10,
             executorService,
             data,
-            new IgniteThrowableConsumer<Integer, Integer>() {
-                @Override public Integer accept(Integer cnt) throws IgniteInterruptedCheckedException {
+            new IgniteThrowableFunction<Integer, Integer>() {
+                @Override public Integer apply(Integer cnt) throws IgniteInterruptedCheckedException {
                     // Release thread in pool in the middle of range.
                     if (taskProcessed.getAndIncrement() == (data.size() / 2) - 1) {
                         poolThreadLatch.countDown();
@@ -1103,8 +1103,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             res = U.doInParallel(10,
                 executorService,
                 data,
-                new IgniteThrowableConsumer<Integer, Integer>() {
-                    @Override public Integer accept(Integer cnt) {
+                new IgniteThrowableFunction<Integer, Integer>() {
+                    @Override public Integer apply(Integer cnt) {
                         if (Thread.currentThread().getId() == threadId) {
                             fut.onDone();
 

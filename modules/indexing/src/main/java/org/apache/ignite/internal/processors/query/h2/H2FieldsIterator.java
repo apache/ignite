@@ -49,6 +49,8 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
         throws IgniteCheckedException {
         super(data, forUpdate);
 
+        assert detachedConn != null;
+
         this.mvccTracker = mvccTracker;
         this.detachedConn = detachedConn;
     }
@@ -68,8 +70,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
             super.onClose();
         }
         finally {
-            if (detachedConn != null)
-                detachedConn.recycle();
+            detachedConn.recycle();
 
             if (mvccTracker != null)
                 mvccTracker.onDone();
