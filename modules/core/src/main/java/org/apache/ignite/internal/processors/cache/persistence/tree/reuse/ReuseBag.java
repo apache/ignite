@@ -36,9 +36,4 @@ public interface ReuseBag {
      * @return {@code true} if no contained page IDs for reuse.
      */
     boolean isEmpty();
-
-    /**
-     * @return Number of pages for reuse in this bag.
-     */
-    int size();
 }
