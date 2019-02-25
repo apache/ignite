@@ -22,7 +22,6 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
@@ -128,10 +127,6 @@ public class JdbcThinTcpIo {
     /** Current protocol version used to connection to Ignite. */
     private ClientListenerProtocolVersion srvProtoVer;
 
-    /** Socket. */
-    // TODO: 19.02.19 seems that we don't need socket here, cause it's accessible through endpoint.
-    public Socket sock;
-
     /**
      * Start connection and perform handshake.
      *
@@ -171,8 +166,6 @@ public class JdbcThinTcpIo {
 
                 try {
                     sock.connect(addr, timeout);
-
-                    this.sock = sock;
                 }
                 catch (IOException e) {
                     throw new SQLException("Failed to connect to server [host=" + addr.getHostName() +
@@ -602,12 +595,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException if there is an error in the underlying protocol.
      */
     public void timeout(int ms) throws SQLException {
-        try {
-            sock.setSoTimeout(ms);
-        }
-        catch (SocketException e) {
-            throw new SQLException("Failed to set connection timeout.", SqlStateCode.INTERNAL_ERROR, e);
-        }
+        endpoint.timeout(ms);
     }
 
     /**
@@ -616,12 +604,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException if there is an error in the underlying protocol.
      */
     public int timeout() throws SQLException {
-        try {
-            return sock.getSoTimeout();
-        }
-        catch (SocketException e) {
-            throw new SQLException("Failed to set connection timeout.", SqlStateCode.INTERNAL_ERROR, e);
-        }
+        return endpoint.timeout();
     }
 
     /**
