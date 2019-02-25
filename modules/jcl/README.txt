@@ -1,7 +1,7 @@
-Apache Ignite JCL Module
+GridGain JCL Module
 ------------------------
 
-Apache Ignite JCL module provides GridLogger implementation that can delegate to any logger based
+GridGain JCL module provides GridLogger implementation that can delegate to any logger based
 on Jakarta Commons Logging (JCL).
 
 To enable JCL module when starting a standalone node, move 'optional/ignite-jcl' folder to
@@ -12,7 +12,7 @@ Importing JCL Module In Maven Project
 -------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add JCL module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
+dependency like this (replace '${ignite.version}' with actual GridGain version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -23,7 +23,7 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-jcl</artifactId>
             <version>${ignite.version}</version>
         </dependency>

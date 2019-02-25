@@ -1,8 +1,8 @@
-Apache Ignite Cassandra Serializers Module
+GridGain Cassandra Serializers Module
 ------------------------
 
-Apache Ignite Cassandra Serializers module provides additional serializers to store objects as BLOBs in Cassandra. The
-module could be used as an addition to Ignite Cassandra Store module.
+GridGain Cassandra Serializers module provides additional serializers to store objects as BLOBs in Cassandra. The
+module could be used as an addition to GridGain Cassandra Store module.
 
 To enable Cassandra Serializers module when starting a standalone node, move 'optional/ignite-cassandra-serializers'
 folder to 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will be added to
@@ -13,7 +13,7 @@ Importing Cassandra Serializers Module In Maven Project
 -------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Cassandra Store module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
+dependency like this (replace '${ignite.version}' with actual GridGain version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -24,7 +24,7 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-cassandra-serializers</artifactId>
             <version>${ignite.version}</version>
         </dependency>

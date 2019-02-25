@@ -1,4 +1,4 @@
-Apache Ignite OSGi Pax Logging Fragment Module
+GridGain OSGi Pax Logging Fragment Module
 ----------------------------------------------
 
 This module is an OSGi fragment that exposes the following packages from the Pax Logging API bundle:

@@ -1,4 +1,4 @@
-Apache Ignite.NET Examples
+GridGain.NET Examples
 ==================================
 
 Windows-only. See dotnetcore folder for cross-platform .NET-core based examples.

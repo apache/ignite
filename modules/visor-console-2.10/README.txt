@@ -1,4 +1,4 @@
-Apache Ignite Visor Console Module
+GridGain Visor Console Module
 ---------------------------
 
-Apache Ignite Visor Console module to be build with Scala 2.10.
+GridGain Visor Console module to be build with Scala 2.10.
