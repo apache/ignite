@@ -83,13 +83,13 @@ public class IgniteChangingBaselineDownCachePutAllFailoverTest extends CachePutA
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
