@@ -179,7 +179,7 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
 
         U.sleep(WAIT_MS_TIL_EXPIRED);
 
-        List<List<?>> mixed = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer")).getAll();
+        List<List<?>> mixed = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer USE INDEX (\"_key_PK_hash\")")).getAll();
 
         List<List<Integer>> exp = asList(
             asList(1, 2),
