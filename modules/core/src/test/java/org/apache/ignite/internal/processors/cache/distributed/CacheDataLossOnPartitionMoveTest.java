@@ -119,6 +119,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testDataLossOnPartitionMove() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-14779");
         try {
             Ignite ignite = startGridsMultiThreaded(GRIDS_CNT / 2, false);
 
