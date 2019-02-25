@@ -124,6 +124,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_WARN_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
@@ -152,6 +153,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private final long IGNITE_EXCHANGE_MERGE_DELAY =
         IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_EXCHANGE_MERGE_DELAY, 0);
+
+    /** */
+    private final int DIAGNOSTIC_WARN_LIMIT = IgniteSystemProperties.getInteger(IGNITE_DIAGNOSTIC_WARN_LIMIT, 10);
 
     /** */
     private static final IgniteProductVersion EXCHANGE_PROTOCOL_2_SINCE = IgniteProductVersion.fromString("2.1.4");
@@ -1856,14 +1860,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         exchWorker.dumpExchangeDebugInfo();
 
         if (!readyFuts.isEmpty()) {
-            U.warn(diagnosticLog, "First 5 pending affinity ready futures [total=" + readyFuts.size() + ']');
+            int warningsLimit = IgniteSystemProperties.getInteger(IGNITE_DIAGNOSTIC_WARN_LIMIT, 5);
+
+            U.warn(diagnosticLog, "First " + warningsLimit + " pending affinity ready futures [total=" +
+                readyFuts.size() + ']');
 
             int cnt = 0;
 
             for (AffinityReadyFuture fut : readyFuts.values()) {
                 U.warn(diagnosticLog, ">>> " + fut);
 
-                if (++cnt == 5)
+                if (++cnt == warningsLimit)
                     break;
             }
         }
@@ -1877,14 +1884,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         ExchangeFutureSet exchFuts = this.exchFuts;
 
         if (exchFuts != null) {
-            U.warn(diagnosticLog, "Last 10 exchange futures (total: " + exchFuts.size() + "):");
+            U.warn(diagnosticLog, "Last " + DIAGNOSTIC_WARN_LIMIT + " exchange futures (total: " +
+                exchFuts.size() + "):");
 
             int cnt = 0;
 
             for (GridDhtPartitionsExchangeFuture fut : exchFuts.values()) {
                 U.warn(diagnosticLog, ">>> " + fut.shortInfo());
 
-                if (++cnt == 10)
+                if (++cnt == DIAGNOSTIC_WARN_LIMIT)
                     break;
             }
         }
@@ -1935,9 +1943,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         final IgniteDiagnosticPrepareContext diagCtx = cctx.kernalContext().cluster().diagnosticEnabled() ?
             new IgniteDiagnosticPrepareContext(cctx.localNodeId()) : null;
 
-        WarningsGroup warnings = new WarningsGroup(diagnosticLog, 10);
-
         if (tm != null) {
+            WarningsGroup warnings = new WarningsGroup(diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
+
             for (IgniteInternalTx tx : tm.activeTransactions()) {
                 if (curTime - tx.startTime() > timeout) {
                     found = true;
@@ -1950,11 +1958,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         warnings.incTotal();
                 }
             }
+
+            warnings.flush("First %d long running transactions [total=%d]");
         }
 
-        warnings.flush("First %d long running transactions [total=%d]");
-
         if (mvcc != null) {
+            WarningsGroup warnings = new WarningsGroup(diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
+
             for (GridCacheFuture<?> fut : mvcc.activeFutures()) {
                 if (curTime - fut.startTime() > timeout) {
                     found = true;
@@ -1971,7 +1981,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
 
-            warnings.flush("First %d long running cache futures [total=%d]");
+            warnings.flush("First %d long running cache futures [total=%d]", true);
 
             for (GridCacheFuture<?> fut : mvcc.atomicFutures()) {
                 if (curTime - fut.startTime() > timeout) {
@@ -3398,7 +3408,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         private final int warningsLimit;
 
         /** */
-        private final List<String> messages;
+        private List<String> messages;
 
         /** */
         private int warningsTotal;
@@ -3411,8 +3421,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             this.log = log;
 
             this.warningsLimit = warningsLimit;
-
-            messages = new ArrayList<>(warningsLimit);
         }
 
         /**
@@ -3423,6 +3431,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             boolean added = false;
 
             if (canAddMessage()) {
+                if (messages == null)
+                    messages = new ArrayList<>(warningsLimit);
+
                 messages.add(msg);
 
                 added = true;
@@ -3453,15 +3464,30 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param title Title template.
          */
         private void flush(String title) {
+            flush(title, false);
+        }
+
+        /**
+         * Print warnings block title and messages.
+         *
+         * @param title Title template.
+         * @param clean Clean messages after flush.
+         */
+        private void flush(String title, boolean clean) {
             if (warningsTotal > 0) {
                 U.warn(log, String.format(title, warningsLimit, warningsTotal));
 
-                for (String message : messages)
-                    U.warn(log, message);
+                if (messages != null) {
+                    for (String message : messages)
+                        U.warn(log, message);
+                }
 
-                messages.clear();
+                if (clean) {
+                    if (messages != null)
+                        messages.clear();
 
-                warningsTotal = 0;
+                    warningsTotal = 0;
+                }
             }
         }
     }

@@ -1132,6 +1132,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BASELINE_AUTO_ADJUST_ENABLED = "IGNITE_BASELINE_AUTO_ADJUST_ENABLED";
 
     /**
+     * Maximum size of diagnostic warning messages.
+     */
+    public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
