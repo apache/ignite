@@ -25,6 +25,7 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListenerSelfTest;
 import org.apache.ignite.internal.processors.GridCacheTxLoadFromStoreOnLockSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheClientStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheConnectionLeakStoreTxTest;
+import org.apache.ignite.internal.processors.cache.CacheEventWithTxLabelTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticReadCommittedSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticRepeatableReadSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticSerializableSeltTest;
@@ -358,6 +359,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheContainsKeyAtomicTest.class);
 
         suite.addTestSuite(CacheResultIsNotNullOnPartitionLossTest.class);
+
+        suite.addTestSuite(CacheEventWithTxLabelTest.class);
 
         return suite;
     }

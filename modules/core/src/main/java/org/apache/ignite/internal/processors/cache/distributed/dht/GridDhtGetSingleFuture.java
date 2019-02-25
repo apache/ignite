@@ -111,6 +111,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Recovery context flag. */
     private final boolean recovery;
 
+    /** Transaction label. */
+    private final String txLbl;
+
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -123,6 +126,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param taskNameHash Task name hash code.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
+     * @param txLbl Transaction label.
      */
     public GridDhtGetSingleFuture(
         GridCacheContext<K, V> cctx,
@@ -136,7 +140,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean recovery
+        boolean recovery,
+        @Nullable String txLbl
     ) {
         assert reader != null;
         assert key != null;
@@ -153,6 +158,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.recovery = recovery;
+        this.txLbl = txLbl;
 
         futId = IgniteUuid.randomUuid();
 
@@ -392,7 +398,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 taskName,
                 expiryPlc,
                 skipVals,
-                recovery);
+                recovery,
+                txLbl);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -417,7 +424,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 taskName,
                                 expiryPlc,
                                 skipVals,
-                                recovery);
+                                recovery,
+                                null);
 
                         fut0.listen(createGetFutureListener());
                     }
