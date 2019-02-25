@@ -123,7 +123,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private final PriorityQueue<JdbcOrderedBatchExecuteRequest> orderedBatchesQueue = new PriorityQueue<>();
 
     /** Ordered batches mutex. */
-    private final Object muxOrderedBatches = new Object();
+    private final Object orderedBatchesMux = new Object();
 
     /** Request mutex. */
     private final Object reqMux = new Object();
@@ -335,10 +335,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (!cliCtx.isStreamOrdered())
             executeBatchOrdered(req);
         else {
-            synchronized (muxOrderedBatches) {
+            synchronized (orderedBatchesMux) {
                 orderedBatchesQueue.add(req);
 
-                muxOrderedBatches.notifyAll();
+                orderedBatchesMux.notifyAll();
             }
         }
 
@@ -572,9 +572,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 jdbcCursors.put(processor.cursorId(), processor);
 
                 // responses for the same query on the client side
-                JdbcResponse r = new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams));
-
-                return r;
+                return new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams));
             }
 
             if (results.size() == 1) {
@@ -815,7 +813,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
         GridQueryCancel cancel = null;
 
-        // Skip request register check for ordered batches
+        // Skip request register check for ORDERED batches (JDBC streams)
         // because ordered batch requests are processed asynchronously at the
         // separate thread.
         if (isCancellationSupported() && req.type() == BATCH_EXEC) {
@@ -1156,14 +1154,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 JdbcOrderedBatchExecuteRequest req;
 
-                synchronized (muxOrderedBatches) {
-                    // Notify creator thread about worker is ready to process incoming batch requests.
-                    muxOrderedBatches.notifyAll();
-
+                synchronized (orderedBatchesMux) {
                     req = orderedBatchesQueue.peek();
 
                     if (req == null || req.order() != nextBatchOrder) {
-                        muxOrderedBatches.wait();
+                        orderedBatchesMux.wait();
 
                         continue;
                     }

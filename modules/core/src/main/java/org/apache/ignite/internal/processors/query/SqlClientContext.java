@@ -112,7 +112,6 @@ public class SqlClientContext implements AutoCloseable {
         this.replicatedOnly = replicatedOnly;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
-//        this.muxStreamer = muxStreamer;
 
         log = ctx.log(SqlClientContext.class.getName());
     }

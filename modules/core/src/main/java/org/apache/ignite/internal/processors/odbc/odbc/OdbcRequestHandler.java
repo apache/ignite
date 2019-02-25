@@ -166,7 +166,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate);
+            skipReducerOnUpdate
+        );
 
         this.busyLock = busyLock;
         this.sender = sender;
@@ -1010,9 +1011,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 OdbcStreamingBatchRequest req;
 
                 synchronized (orderedBatchesMux) {
-                    // Notify creator thread about worker is ready to process incoming batch requests.
-                    orderedBatchesMux.notifyAll();
-
                     req = orderedBatchesQueue.peek();
 
                     if (req == null || req.order() != nextBatchOrder) {
