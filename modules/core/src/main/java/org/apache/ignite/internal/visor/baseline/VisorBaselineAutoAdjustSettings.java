@@ -28,14 +28,14 @@ public class VisorBaselineAutoAdjustSettings implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** "Enable" flag. */
-    public final boolean enabled;
+    public final Boolean enabled;
 
     /** Soft timeout. */
-    public final long softTimeout;
+    public final Long softTimeout;
 
     /** Constructor. */
-    public VisorBaselineAutoAdjustSettings(boolean enabled, long softTimeout) {
-        this.enabled= enabled;
+    public VisorBaselineAutoAdjustSettings(Boolean enabled, Long softTimeout) {
+        this.enabled = enabled;
         this.softTimeout = softTimeout;
     }
 
@@ -47,9 +47,15 @@ public class VisorBaselineAutoAdjustSettings implements Serializable {
         else {
             out.writeBoolean(true);
 
-            out.writeBoolean(baselineAutoAdjustSettings.enabled);
+            out.writeBoolean(baselineAutoAdjustSettings.enabled != null);
 
-            out.writeLong(baselineAutoAdjustSettings.softTimeout);
+            if (baselineAutoAdjustSettings.enabled != null)
+                out.writeBoolean(baselineAutoAdjustSettings.enabled);
+
+            out.writeBoolean(baselineAutoAdjustSettings.softTimeout != null);
+
+            if (baselineAutoAdjustSettings.softTimeout != null)
+                out.writeLong(baselineAutoAdjustSettings.softTimeout);
         }
     }
 
@@ -58,9 +64,15 @@ public class VisorBaselineAutoAdjustSettings implements Serializable {
         boolean autoAdjustSettingsNotNull = in.readBoolean();
 
         if (autoAdjustSettingsNotNull) {
-            boolean autoAdjustmentEnabled = in.readBoolean();
+            Boolean autoAdjustmentEnabled = null;
 
-            long timeout = in.readLong();
+            if (in.readBoolean())
+                autoAdjustmentEnabled = in.readBoolean();
+
+            Long timeout = null;
+
+            if (in.readBoolean())
+                timeout = in.readLong();
 
             return new VisorBaselineAutoAdjustSettings(autoAdjustmentEnabled, timeout);
         }

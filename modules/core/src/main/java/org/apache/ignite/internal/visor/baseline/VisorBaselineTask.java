@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatistic;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
@@ -85,8 +86,17 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
                 cluster.baselineConfiguration().getBaselineAutoAdjustTimeout()
             );
 
-            return new VisorBaselineTaskResult(ignite.cluster().active(), cluster.topologyVersion(),
-                F.isEmpty(baseline) ? null : baseline, srvrs, autoAdjustSettings);
+            BaselineAutoAdjustStatistic adjustStatistic = ignite.context().cluster().baselineAutoAdjustStatistic();
+
+            return new VisorBaselineTaskResult(
+                ignite.cluster().active(),
+                cluster.topologyVersion(),
+                F.isEmpty(baseline) ? null : baseline,
+                srvrs,
+                autoAdjustSettings,
+                adjustStatistic.getBaselineAdjustTimeout(),
+                adjustStatistic.getTaskState() == BaselineAutoAdjustStatistic.TaskState.IN_PROGRESS
+            );
         }
 
         /**
@@ -223,10 +233,11 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
             DistributedBaselineConfiguration baselineConfiguration = ignite.cluster().baselineConfiguration();
 
             try {
-                if (settings.enabled)
+                if (settings.softTimeout != null)
                     baselineConfiguration.updateBaselineAutoAdjustTimeoutAsync(settings.softTimeout).get();
 
-                baselineConfiguration.updateBaselineAutoAdjustEnabledAsync(settings.enabled).get();
+                if (settings.enabled != null)
+                    baselineConfiguration.updateBaselineAutoAdjustEnabledAsync(settings.enabled).get();
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

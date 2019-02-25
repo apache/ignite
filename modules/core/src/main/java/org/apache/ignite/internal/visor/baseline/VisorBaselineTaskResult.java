@@ -51,6 +51,12 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
     /** Baseline autoadjustment settings. */
     private VisorBaselineAutoAdjustSettings autoAdjustSettings;
 
+    /** Time to next baseline adjust. */
+    private long remainingTimeToBaselineAdjust = -1;
+
+    /** Is baseline adjust in progress? */
+    private boolean baselineAdjustInProgress = false;
+
     /**
      * Default constructor.
      */
@@ -84,19 +90,24 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
      * @param topVer Current topology version.
      * @param baseline Current baseline nodes.
      * @param servers Current server nodes.
+     * @param remainingTimeToBaselineAdjust Time to next baseline adjust.
+     * @param baselineAdjustInProgress {@code true} If baseline adjust is in progress.
      */
     public VisorBaselineTaskResult(
         boolean active,
         long topVer,
         Collection<? extends BaselineNode> baseline,
         Collection<? extends BaselineNode> servers,
-        VisorBaselineAutoAdjustSettings autoAdjustSettings
-    ) {
+        VisorBaselineAutoAdjustSettings autoAdjustSettings,
+        long remainingTimeToBaselineAdjust,
+        boolean baselineAdjustInProgress) {
         this.active = active;
         this.topVer = topVer;
         this.baseline = toMap(baseline);
         this.servers = toMap(servers);
         this.autoAdjustSettings = autoAdjustSettings;
+        this.remainingTimeToBaselineAdjust = remainingTimeToBaselineAdjust;
+        this.baselineAdjustInProgress = baselineAdjustInProgress;
     }
 
     /**
@@ -134,6 +145,20 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         return autoAdjustSettings;
     }
 
+    /**
+     * @return Time to next baseline adjust.
+     */
+    public long getRemainingTimeToBaselineAdjust() {
+        return remainingTimeToBaselineAdjust;
+    }
+
+    /**
+     * @return {@code true} If baseline adjust is in progress.
+     */
+    public boolean isBaselineAdjustInProgress() {
+        return baselineAdjustInProgress;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(active);
@@ -141,15 +166,20 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         U.writeMap(out, baseline);
         U.writeMap(out, servers);
         VisorBaselineAutoAdjustSettings.writeExternalData(out, autoAdjustSettings);
+        out.writeLong(remainingTimeToBaselineAdjust);
+        out.writeBoolean(baselineAdjustInProgress);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer,
+        ObjectInput in) throws IOException, ClassNotFoundException {
         active = in.readBoolean();
         topVer = in.readLong();
         baseline = U.readTreeMap(in);
         servers = U.readTreeMap(in);
         autoAdjustSettings = VisorBaselineAutoAdjustSettings.readExternalData(in);
+        remainingTimeToBaselineAdjust = in.readLong();
+        baselineAdjustInProgress = in.readBoolean();
     }
 
     /** {@inheritDoc} */
