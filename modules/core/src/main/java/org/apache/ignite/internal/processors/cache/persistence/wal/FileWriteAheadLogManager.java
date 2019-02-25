@@ -1371,8 +1371,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             throw error = new StorageException("Unable to initialize WAL segment", e);
         }
         finally {
-            if (error != null)
+            if (error != null) {
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, error));
+
+                cur.signalNextAvailable();
+            }
         }
     }
 
