@@ -205,6 +205,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
@@ -225,7 +226,7 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -254,6 +255,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -10741,7 +10743,7 @@ public abstract class IgniteUtils {
     public static <T, R> Collection<R> doInParallel(
         ExecutorService executorSvc,
         Collection<T> srcDatas,
-        IgniteThrowableConsumer<T, R> operation
+        IgniteThrowableFunction<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
         return doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
     }
@@ -10761,7 +10763,7 @@ public abstract class IgniteUtils {
         int parallelismLvl,
         ExecutorService executorSvc,
         Collection<T> srcDatas,
-        IgniteThrowableConsumer<T, R> operation
+        IgniteThrowableFunction<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
         if(srcDatas.isEmpty())
             return Collections.emptyList();
@@ -10801,7 +10803,7 @@ public abstract class IgniteUtils {
                 Collection<R> results = new ArrayList<>(batch.tasks.size());
 
                 for (T item : batch.tasks)
-                    results.add(operation.accept(item));
+                    results.add(operation.apply(item));
 
                 return results;
             }))
@@ -10820,7 +10822,7 @@ public abstract class IgniteUtils {
 
             try {
                 for (T item : batch.tasks)
-                    res.add(operation.accept(item));
+                    res.add(operation.apply(item));
 
                 batch.result(res);
             }
@@ -10901,6 +10903,17 @@ public abstract class IgniteUtils {
             root.addSuppressed(err);
 
         return root;
+    }
+
+    /**
+     * @return {@code true} if local node is coordinator.
+     */
+    public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoveryManager) {
+        DiscoverySpi spi = discoveryManager.getInjectedDiscoverySpi();
+
+        return spi instanceof TcpDiscoverySpi
+            ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
+            : F.eq(discoveryManager.localNode(), U.oldest(discoveryManager.aliveServerNodes(), null));
     }
 
     /**

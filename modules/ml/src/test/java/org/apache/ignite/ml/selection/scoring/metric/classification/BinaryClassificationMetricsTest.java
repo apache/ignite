@@ -15,17 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import java.util.Arrays;
 import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
+import org.apache.ignite.ml.selection.scoring.metric.Metric;
+import org.apache.ignite.ml.selection.scoring.metric.exceptions.UnknownClassLabelException;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.junit.Test;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link BinaryClassificationMetrics}.
+ * Tests for {@link RegressionMetrics}.
  */
 public class BinaryClassificationMetricsTest {
     /** */
@@ -131,7 +135,7 @@ public class BinaryClassificationMetricsTest {
     }
 
     /** */
-    @Test(expected = org.apache.ignite.ml.selection.scoring.metric.UnknownClassLabelException.class)
+    @Test(expected = UnknownClassLabelException.class)
     public void testFailWithIncorrectClassLabelsInData() {
         Metric scoreCalculator = new BinaryClassificationMetrics();
 
@@ -144,7 +148,7 @@ public class BinaryClassificationMetricsTest {
     }
 
     /** */
-    @Test(expected = org.apache.ignite.ml.selection.scoring.metric.UnknownClassLabelException.class)
+    @Test(expected = UnknownClassLabelException.class)
     public void testFailWithIncorrectClassLabelsInMetrics() {
         Metric scoreCalculator = new BinaryClassificationMetrics()
             .withPositiveClsLb(42);

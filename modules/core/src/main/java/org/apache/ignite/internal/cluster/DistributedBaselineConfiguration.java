@@ -18,43 +18,67 @@
 package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
-import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedProperty;
-import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedProperty;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 
 /**
  * Distributed baseline configuration.
  */
 public class DistributedBaselineConfiguration {
+    /** Default auto-adjust timeout for persistence grid. */
+    private static final int DEFAULT_PERSISTENCE_TIMEOUT = 5 * 60_000;
+    /** Default auto-adjust timeout for in-memory grid. */
+    private static final int DEFAULT_IN_MEMORY_TIMEOUT = 0;
+    /** Message of baseline auto-adjust configuration. */
+    private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%d' ms";
     /** Value of manual baseline control or auto adjusting baseline. */
-    private DistributedBooleanProperty baselineAutoAdjustEnabled;
+    private volatile DistributedBooleanProperty baselineAutoAdjustEnabled =
+        detachedBooleanProperty("baselineAutoAdjustEnabled", false);
 
     /**
      * Value of time which we would wait before the actual topology change since last discovery event(node join/exit).
      */
-    private DistributedLongProperty baselineAutoAdjustTimeout;
-
-    /** Value of time which we would wait from the first discovery event in the chain(node join/exit). */
-    private DistributedLongProperty baselineAutoAdjustMaxTimeout;
+    private volatile DistributedLongProperty baselineAutoAdjustTimeout =
+        detachedLongProperty("baselineAutoAdjustTimeout", -1L);
 
     /**
      * @param cfg Static config.
      * @param isp Subscription processor.
      */
-    public DistributedBaselineConfiguration(IgniteConfiguration cfg, GridInternalSubscriptionProcessor isp) {
-        baselineAutoAdjustEnabled = detachedProperty("baselineAutoAdjustEnabled", cfg.isInitBaselineAutoAdjustEnabled());
-        baselineAutoAdjustTimeout = detachedProperty("baselineAutoAdjustTimeout", cfg.getInitBaselineAutoAdjustTimeout());
-        baselineAutoAdjustMaxTimeout = detachedProperty("baselineAutoAdjustMaxTimeout", cfg.getInitBaselineAutoAdjustMaxTimeout());
-
+    public DistributedBaselineConfiguration(
+        IgniteConfiguration cfg,
+        GridInternalSubscriptionProcessor isp,
+        IgniteLogger log) {
         isp.registerDistributedConfigurationListener(
             dispatcher -> {
+                boolean persistenceEnabled = cfg != null && CU.isPersistenceEnabled(cfg);
+
+                long timeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
+
+                //It set default value locally only.
+                baselineAutoAdjustEnabled.localUpdate(getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, true));
+                baselineAutoAdjustTimeout.localUpdate(timeout);
+
                 dispatcher.registerProperty(baselineAutoAdjustEnabled);
                 dispatcher.registerProperty(baselineAutoAdjustTimeout);
-                dispatcher.registerProperty(baselineAutoAdjustMaxTimeout);
+
+                log.info(
+                    String.format(AUTO_ADJUST_CONFIGURED_MESSAGE,
+                        (baselineAutoAdjustEnabled.value() ? "enabled" : "disabled"),
+                        baselineAutoAdjustTimeout.value()
+                    ));
             }
         );
     }
@@ -70,8 +94,9 @@ public class DistributedBaselineConfiguration {
      * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline.
      * @throws IgniteCheckedException if failed.
      */
-    public void setBaselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteCheckedException {
-        this.baselineAutoAdjustEnabled.propagate(baselineAutoAdjustEnabled);
+    public GridFutureAdapter<?> updateBaselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled)
+        throws IgniteCheckedException {
+        return this.baselineAutoAdjustEnabled.propagateAsync(baselineAutoAdjustEnabled);
     }
 
     /**
@@ -87,23 +112,8 @@ public class DistributedBaselineConfiguration {
      * discovery event(node join/exit).
      * @throws IgniteCheckedException If failed.
      */
-    public void setBaselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteCheckedException {
-        this.baselineAutoAdjustTimeout.propagate(baselineAutoAdjustTimeout);
-    }
-
-    /**
-     * @return Value of time which we would wait from the first discovery event in the chain(node join/exit).
-     */
-    public long getBaselineAutoAdjustMaxTimeout() {
-        return baselineAutoAdjustMaxTimeout.value();
-    }
-
-    /**
-     * @param baselineAutoAdjustMaxTimeout Value of time which we would wait from the first discovery event in the
-     * chain(node join/exit).
-     * @throws IgniteCheckedException If failed.
-     */
-    public void setBaselineAutoAdjustMaxTimeout(long baselineAutoAdjustMaxTimeout) throws IgniteCheckedException {
-        this.baselineAutoAdjustMaxTimeout.propagate(baselineAutoAdjustMaxTimeout);
+    public GridFutureAdapter<?> updateBaselineAutoAdjustTimeoutAsync(
+        long baselineAutoAdjustTimeout) throws IgniteCheckedException {
+        return this.baselineAutoAdjustTimeout.propagateAsync(baselineAutoAdjustTimeout);
     }
 }
