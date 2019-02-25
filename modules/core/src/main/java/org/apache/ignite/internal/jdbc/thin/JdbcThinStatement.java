@@ -733,7 +733,6 @@ public class JdbcThinStatement implements Statement {
             conn.getAutoCommit(), false);
 
         try {
-            // TODO: 14.02.19 Verify that it's ok to send batch with empty stickyIO
             JdbcBatchExecuteResult res = conn.sendRequest(req, this, null).response();
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {

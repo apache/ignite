@@ -209,18 +209,6 @@ public class JdbcThinTcpIo {
         }
     }
 
-    // TODO: 12.02.19 overrided within org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest.createTcpIo
-//    /**
-//     * Get all addresses by host name.
-//     *
-//     * @param host Host name.
-//     * @return Addresses.
-//     * @throws UnknownHostException If host is unavailable.
-//     */
-//    protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
-//        return InetAddress.getAllByName(host);
-//    }
-
     /**
      * Used for versions: 2.1.5 and 2.3.0. The protocol version is changed but handshake format isn't changed.
      *

@@ -1909,7 +1909,6 @@ public class JdbcThinResultSet implements ResultSet {
         if (finished && (!isQuery || autoClose))
             throw new SQLException("Server cursor is already closed.", SqlStateCode.INVALID_CURSOR_STATE);
 
-        // TODO: 14.02.19 not sure that sticky mode is required here.
         if (!metaInit) {
             JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(cursorId), stmt, stickyIO).
                 response();
