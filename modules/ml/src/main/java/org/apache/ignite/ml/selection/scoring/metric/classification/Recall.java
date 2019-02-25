@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric;
+package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import java.util.Iterator;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 
+import java.util.Iterator;
+
 /**
- * Precision calculator.
+ * Recall calculator.
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public class Precision<L> extends ClassMetric<L> {
+public class Recall<L> extends ClassMetric<L> {
     /**
      * The class of interest or positive class.
      *
      * @param clsLb The label.
      */
-    public Precision(L clsLb) {
+    public Recall(L clsLb) {
         super(clsLb);
     }
 
@@ -39,7 +40,7 @@ public class Precision<L> extends ClassMetric<L> {
     @Override public double score(Iterator<LabelPair<L>> it) {
         if (clsLb != null) {
             long tp = 0;
-            long fp = 0;
+            long fn = 0;
 
             while (it.hasNext()) {
                 LabelPair<L> e = it.next();
@@ -47,14 +48,14 @@ public class Precision<L> extends ClassMetric<L> {
                 L prediction = e.getPrediction();
                 L truth = e.getTruth();
 
-                if (clsLb.equals(prediction)) {
+                if (clsLb.equals(truth)) {
                     if (prediction.equals(truth))
                         tp++;
                     else
-                        fp++;
+                        fn++;
                 }
             }
-            long denominator = tp + fp;
+            long denominator = tp + fn;
 
             if (denominator == 0)
                 return 1; // according to https://github.com/dice-group/gerbil/wiki/Precision,-Recall-and-F1-measure
@@ -67,7 +68,6 @@ public class Precision<L> extends ClassMetric<L> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "precision for class with label " + clsLb;
+        return "recall for class with label " + clsLb;
     }
-
 }
