@@ -66,7 +66,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
      * @return Calculated inline size for given indexed columns.
      */
     private int calculateInlineSize(IndexColumn[] cols, int inlineSize, CacheConfiguration<?, ?> cacheConf) {
-
         List<InlineIndexHelper> inlineCols = getAvailableInlineColumns(cols);
 
         return computeInlineSize(inlineCols, inlineSize, cacheConf);
