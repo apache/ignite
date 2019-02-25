@@ -9,7 +9,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Test JDBC streaming with ALLOW_OVERWRITE option
+ * Test JDBC streaming with restart / reset multiple times.
  */
 public class JdbcThinStreamingResetStreamTest extends GridCommonAbstractTest {
     /** JDBC URL. */
