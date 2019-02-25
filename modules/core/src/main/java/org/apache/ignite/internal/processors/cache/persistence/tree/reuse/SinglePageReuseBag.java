@@ -62,6 +62,11 @@ public final class SinglePageReuseBag implements ReuseBag {
     }
 
     /** {@inheritDoc} */
+    @Override public int size() {
+        return pageId == 0L ? 0 : 1;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SinglePageReuseBag.class, this, "pageId", U.hexLong(pageId));
     }
