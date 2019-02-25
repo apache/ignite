@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite.internal.jdbc2;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -37,9 +38,6 @@ import org.junit.Test;
  * Base (for v2 and thin drivers) test for the case (in)sensitivity of schema name.
  */
 public abstract class JdbcAbstractSchemaCaseTest extends GridCommonAbstractTest {
-    /** URL. */
-    //private static final String URL = "jdbc:ignite:thin://127.0.0.1";
-
     /** Grid count. */
     private static final int GRID_CNT = 2;
 
@@ -93,7 +91,7 @@ public abstract class JdbcAbstractSchemaCaseTest extends GridCommonAbstractTest 
     public void dropTables() throws Exception {
         List<String> schemas = getSchemasWithTestTable();
 
-        try (Connection conn = connect("")) {
+        try (Connection conn = connect("PUBLIC")) {
             Statement stmt = conn.createStatement();
 
             for (String schema : schemas)
@@ -160,7 +158,7 @@ public abstract class JdbcAbstractSchemaCaseTest extends GridCommonAbstractTest 
      * @param schema Schema name.
      * @throws SQLException If failed.
      */
-    void checkSchemaConnection(String schema) throws SQLException {
+    private void checkSchemaConnection(String schema) throws SQLException {
         try (Connection conn = connect(schema)) {
             Statement stmt = conn.createStatement();
 
@@ -176,14 +174,21 @@ public abstract class JdbcAbstractSchemaCaseTest extends GridCommonAbstractTest 
      *
      * @param schema Schema.
      */
-    void createTableWithImplicitSchema(String schema) throws SQLException {
+    private void createTableWithImplicitSchema(String schema) throws SQLException {
         try (Connection conn = connect(schema)) {
-            Statement stmt = conn.createStatement();
+            execute(conn, "CREATE TABLE IF NOT EXISTS TAB (id INT PRIMARY KEY, val INT);");
+            execute(conn, "CREATE TABLE IF NOT EXISTS TAB (id INT PRIMARY KEY, val INT);");
+            execute(conn, "CREATE TABLE IF NOT EXISTS TAB (newId VARCHAR PRIMARY KEY, val VARCHAR);");
+            execute(conn, "CREATE TABLE IF NOT EXISTS TAB (newId VARCHAR PRIMARY KEY, val VARCHAR);");
+        }
+    }
 
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TAB (id INT PRIMARY KEY, val INT);");
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TAB (id INT PRIMARY KEY, val INT);");
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TAB (newId VARCHAR PRIMARY KEY, val VARCHAR);");
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TAB (newId VARCHAR PRIMARY KEY, val VARCHAR);");
+    /**
+     * Shortcut to execute prepared statement.
+     */
+    private void execute(Connection conn, String sql) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.execute();
         }
     }
 
@@ -191,7 +196,7 @@ public abstract class JdbcAbstractSchemaCaseTest extends GridCommonAbstractTest 
      * Retrieves list of schemas, each schema contain test table "TAB".
      */
     List<String> getSchemasWithTestTable() throws SQLException {
-        try (Connection conn = connect("")) {
+        try (Connection conn = connect("PUBLIC")) {
             Statement stmt = conn.createStatement();
 
             ArrayList<String> schemasWithTab = new ArrayList<>();
@@ -208,8 +213,8 @@ public abstract class JdbcAbstractSchemaCaseTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Assert that table with name "TAB" is presented exactly in specified schemas.
-     * Order of specified schemas is ignored.
+     * Assert that table with name "TAB" is presented exactly in specified schemas. Order of specified schemas is
+     * ignored.
      *
      * @param schemas Schemas.
      */

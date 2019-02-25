@@ -21,6 +21,7 @@ import org.apache.ignite.internal.jdbc2.JdbcBlobTest;
 import org.apache.ignite.internal.jdbc2.JdbcBulkLoadSelfTest;
 import org.apache.ignite.internal.jdbc2.JdbcConnectionReopenTest;
 import org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest;
+import org.apache.ignite.internal.jdbc2.JdbcSchemaCaseSelfTest;
 import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcConnectionSelfTest;
 import org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest;
@@ -74,7 +75,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinMultiStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseTest;
+import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementCancelSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
@@ -136,6 +137,7 @@ import org.junit.runners.Suite;
     org.apache.ignite.internal.jdbc2.JdbcStreamingToPublicCacheTest.class,
     org.apache.ignite.internal.jdbc2.JdbcNoCacheStreamingSelfTest.class,
     JdbcBulkLoadSelfTest.class,
+    JdbcSchemaCaseSelfTest.class,
 
     JdbcBlobTest.class,
     org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest.class,
@@ -163,7 +165,7 @@ import org.junit.runners.Suite;
     JdbcThinStatementSelfTest.class,
     JdbcThinComplexQuerySelfTest.class,
     JdbcThinNoDefaultSchemaTest.class,
-    JdbcThinSchemaCaseTest.class,
+    JdbcThinSchemaCaseSelfTest.class,
     JdbcThinEmptyCacheSelfTest.class,
     JdbcThinMetadataSelfTest.class,
     JdbcThinMetadataPrimaryKeysSelfTest.class,

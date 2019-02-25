@@ -15,21 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite.internal.jdbc2;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+
 /**
- * Jdbc thin implementation.
+ * Jdbc v2 test for schema name case (in)sensitivity.
  */
-public class JdbcThinSchemaCaseTestImpl extends JdbcAbstractSchemaCaseTest {
+public class JdbcSchemaCaseSelfTest extends JdbcAbstractSchemaCaseTest {
+    /** JDBC URL. */
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=test0@modules/clients/src/test/config/jdbc-config.xml";
+
     /** {@inheritDoc} */
     @Override protected Connection connect(String schema) throws SQLException {
-        if (schema == null)
-            schema = "";
+        Connection conn = DriverManager.getConnection(BASE_URL);
 
-        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/" + schema);
+        conn.setSchema(schema);
+
+        return conn;
     }
 }
