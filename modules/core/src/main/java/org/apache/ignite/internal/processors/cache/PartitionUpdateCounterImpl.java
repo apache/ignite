@@ -283,6 +283,8 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /**
+     * Should never be called
+     *
      * @param delta Delta.
      */
     public long reserve(long delta) {

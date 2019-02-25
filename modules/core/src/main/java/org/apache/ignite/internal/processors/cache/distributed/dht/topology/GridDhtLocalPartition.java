@@ -992,7 +992,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 store.updateCounter(nextCntr);
             }
             else {
-                nextCntr = store.reserve(1) + 1; // Needed for mixed tx/atomic cache group.
+                nextCntr = store.reserve(1) + 1; // Needed for mixed tx/atomic caches in same group.
 
                 store.updateCounter(nextCntr - 1, 1); // Apply update right now (TODO apply update after writing entry to WAL)
             }
@@ -1027,8 +1027,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (primaryCntr != null)
             nextCntr = primaryCntr;
-        else if (tx.storeEnabled())
-            nextCntr = dataStore().nextUpdateCounter();
         else {
             TxCounters txCounters = tx.txCounters(false);
 
