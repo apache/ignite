@@ -339,7 +339,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.txSize(),
                                     req.subjectId(),
                                     req.taskNameHash(),
-                                    !req.skipStore() && req.storeUsed());
+                                    !req.skipStore() && req.storeUsed(),
+                                    req.txLabel());
 
                                 tx = ctx.tm().onCreated(null, tx);
 
@@ -1123,6 +1124,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             null,
                             req.subjectId(),
                             req.taskNameHash(),
+                            req.txLabel(),
                             null);
 
                         if (req.syncCommit())
@@ -2164,6 +2166,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     null,
                     txSubjectId,
                     txTaskNameHash,
+                    null,
                     null);
 
                 // if (req.syncCommit())
@@ -2272,7 +2275,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     -1,
                     req0.subjectId(),
                     req0.taskNameHash(),
-                    false);
+                    false,
+                    null);
 
                 tx.mvccSnapshot(new MvccSnapshotWithoutTxs(req0.coordinatorVersion(), req0.counter(),
                     MVCC_OP_COUNTER_NA, req0.cleanupVersion()));

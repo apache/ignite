@@ -58,6 +58,8 @@ import org.jetbrains.annotations.Nullable;
  * Colocated get future.
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
+    /** Transaction label. */
+    private String txLbl;
 
     /** */
     protected final MvccSnapshot mvccSnapshot;
@@ -76,6 +78,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      */
     public GridPartitionedGetFuture(
@@ -91,6 +94,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
+        @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         super(
@@ -111,6 +115,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         assert (mvccSnapshot == null) == !cctx.mvccEnabled();
 
         this.mvccSnapshot = mvccSnapshot;
+
+        this.txLbl = txLbl;
 
         initLogger(GridPartitionedGetFuture.class);
     }
@@ -241,6 +247,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
+                        txLbl,
                         mvccSnapshot()
                     );
 
@@ -447,6 +454,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             if (evt) {
                                 cctx.events().readEvent(key,
                                     null,
+                                    txLbl,
                                     row.value(),
                                     subjId,
                                     taskName,
@@ -651,6 +659,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 skipVals,
                 cctx.deploymentEnabled(),
                 recovery,
+                txLbl,
                 mvccSnapshot()
             );
         }

@@ -108,6 +108,9 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Transaction label. */
+    private @Nullable String txLbl;
+
     /** */
     private MvccSnapshot mvccSnapshot;
 
@@ -133,6 +136,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      * @param addDepInfo Deployment info.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      */
     public GridNearGetRequest(
@@ -151,6 +155,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         boolean skipVals,
         boolean addDepInfo,
         boolean recovery,
+        @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert futId != null;
@@ -180,6 +185,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
+        this.txLbl = txLbl;
         this.mvccSnapshot = mvccSnapshot;
 
         if (readThrough)
@@ -294,6 +300,15 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /** {@inheritDoc} */
     @Override public int partition() {
         return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
+    }
+
+    /**
+     * Get transaction label (may be null).
+     *
+     * @return Possible transaction label;
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
     }
 
     /**
@@ -427,6 +442,12 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 writer.incrementState();
 
             case 15:
+                if (!writer.writeString("txLbl", txLbl))
+                    return false;
+
+                writer.incrementState();
+
+            case 16:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -537,6 +558,14 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 15:
+                txLbl = reader.readString("txLbl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 16:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
@@ -556,7 +585,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 16;
+        return 17;
     }
 
     /** {@inheritDoc} */
