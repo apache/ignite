@@ -982,8 +982,14 @@ public class GridSqlQueryParser {
             for (Expression[] srcRow : srcRows) {
                 GridSqlElement[] row = new GridSqlElement[srcRow.length];
 
-                for (int i = 0; i < srcRow.length; i++)
+                for (int i = 0; i < srcRow.length; i++) {
                     row[i] = parseExpression(srcRow[i], false);
+
+                    if (row[i] == null) {
+                        throw new IgniteSQLException("DEFAULT values are unsupported for MERGE.",
+                            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                    }
+                }
 
                 rows.add(row);
             }

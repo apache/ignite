@@ -79,6 +79,19 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
      * Test for unsupported SQL statements in CREATE TABLE statement.
      */
     @Test
+    public void testUnsupportedInsert() {
+        execSql(
+            "create table test ( " +
+                "id integer primary key, " +
+                "val varchar DEFAULT 'test_val')");
+
+        assertSqlUnsupported("INSERT INTO test (id, val) VALUES (0, DEFAULT)");
+    }
+
+    /**
+     * Test for unsupported SQL statements in CREATE TABLE statement.
+     */
+    @Test
     public void testUnsupportedAlterTableAlterColumn() {
         execSql(
             "CREATE TABLE test ( " +

@@ -383,24 +383,24 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     public void testParseMerge() throws Exception {
         /* Plain rows w/functions, operators, defaults, and placeholders. */
         checkQuery("merge into Person(old, name) values(5, 'John')");
-        checkQuery("merge into Person(name) values(DEFAULT)");
-        checkQuery("merge into Person(name) values(DEFAULT), (null)");
-        checkQuery("merge into Person(name, parentName) values(DEFAULT, null), (?, ?)");
+        checkQuery("merge into Person(name) values(null)");
+        checkQuery("merge into Person(name) values(null), (null)");
+        checkQuery("merge into Person(name, parentName) values(null, null), (?, ?)");
         checkQuery("merge into Person(old, name) values(5, 'John',), (6, 'Jack')");
-        checkQuery("merge into Person(old, name) values(5 * 3, DEFAULT,)");
+        checkQuery("merge into Person(old, name) values(5 * 3, null,)");
         checkQuery("merge into Person(old, name) values(ABS(-8), 'Max')");
-        checkQuery("merge into Person(old, name) values(5, 'Jane'), (DEFAULT, DEFAULT), (6, 'Jill')");
-        checkQuery("merge into Person(old, name, parentName) values(8 * 7, DEFAULT, 'Unknown')");
+        checkQuery("merge into Person(old, name) values(5, 'Jane'), (null, null), (6, 'Jill')");
+        checkQuery("merge into Person(old, name, parentName) values(8 * 7, null, 'Unknown')");
         checkQuery("merge into Person(old, name, parentName) values" +
             "(2016 - 1828, CONCAT('Leo', 'Tolstoy'), CONCAT(?, 'Tolstoy'))," +
             "(?, 'AlexanderPushkin', null)," +
-            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), DEFAULT)");
+            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), null)");
         checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
             "('20160112', 1233, 'Ivan Ivanov', 'Peter Ivanov', 123)");
         checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
             "(CURRENT_DATE(), RAND(), ASCII('Hi'), INSERT('Leo Tolstoy', 4, 4, 'Max'), ASCII('HI'))");
         checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
-            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, DEFAULT, DEFAULT)");
+            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, NULL, NULL)");
         checkQuery("merge into Person(old, name) select ASCII(parentName), INSERT(parentName, 4, 4, 'Max') from " +
             "Person where date='2011-03-12'");
 
@@ -704,7 +704,10 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         // Both BEFORE and AFTER keywords.
         assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar before addrid",
-            IgniteSQLException.class, "ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported");
+            IgniteSQLException.class, "ALTER TABLE ADD COLUMN BEFORE/AFTER/FIRST is not supported");
+
+        assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar first",
+            IgniteSQLException.class, "ALTER TABLE ADD COLUMN BEFORE/AFTER/FIRST is not supported");
 
         // No such schema.
         assertParseThrows("ALTER TABLE SCH5.\"Person\" ADD (city varchar)", DbException.class, null);
