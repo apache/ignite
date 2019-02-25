@@ -19,6 +19,7 @@ package org.apache.ignite.jdbc.suite;
 
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.jdbc.thin.JdbcThinAbstractSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinAuthenticateConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAutoCloseServerCursorTest;
 import org.apache.ignite.jdbc.thin.JdbcThinBatchSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinBulkLoadAtomicPartitionedNearSelfTest;
@@ -43,12 +44,10 @@ import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexAtomicReplicatedSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexTransactionalPartitionedNearSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexTransactionalPartitionedSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexTransactionalReplicatedSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinEmptyCacheSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinInsertStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinInsertStatementSkipReducerOnUpdateSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSkipReducerOnUpdateSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinMetadataPrimaryKeysSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
@@ -75,7 +74,6 @@ import org.junit.runners.Suite;
     // New thin JDBC
     JdbcThinConnectionSelfTest.class,
     JdbcThinConnectionMvccEnabledSelfTest.class,
-//    JdbcThinConnectionMultipleAddressesTest.class,
     JdbcThinTcpIoTest.class,
     JdbcThinConnectionSSLTest.class,
     JdbcThinDataSourceSelfTest.class,
@@ -86,10 +84,7 @@ import org.junit.runners.Suite;
     JdbcThinComplexQuerySelfTest.class,
     JdbcThinNoDefaultSchemaTest.class,
     JdbcThinSchemaCaseTest.class,
-    JdbcThinEmptyCacheSelfTest.class,
     JdbcThinMetadataSelfTest.class,
-    JdbcThinMetadataPrimaryKeysSelfTest.class,
-//2    JdbcThinErrorsSelfTest.class, JdbcErrorsAbstractSelfTest
     JdbcThinStatementCancelSelfTest.class,
     JdbcThinStatementTimeoutSelfTest.class,
     JdbcThinConnectionTimeoutSelfTest.class,
@@ -129,6 +124,9 @@ import org.junit.runners.Suite;
     JdbcThinMergeStatementSkipReducerOnUpdateSelfTest.class,
     JdbcThinComplexDmlDdlSkipReducerOnUpdateSelfTest.class,
     JdbcThinComplexDmlDdlCustomSchemaSelfTest.class,
+
+    // Various commands.
+    JdbcThinAuthenticateConnectionSelfTest.class
 })
 public class IgniteJdbcThinDriverBestEffordAffinitySuite {
 
