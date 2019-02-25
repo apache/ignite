@@ -116,7 +116,6 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
      * @param params Connection parameters.
      * @return Thin JDBC connection to specified node.
      */
-    // TODO: 20.02.19
     protected Connection connect(IgniteEx node, String params) throws SQLException {
         Collection<GridPortRecord> recs = node.context().ports().records();
 
