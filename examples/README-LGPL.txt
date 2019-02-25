@@ -1,7 +1,7 @@
-Apache Ignite Examples
+GridGain Examples
 ======================
 
-This folder contains code examples for various Apache Ignite functionality.
+This folder contains code examples for various GridGain functionality.
 
 Examples are shipped as a separate Maven project, so to start running you simply need
 to import provided `pom.xml` file into your favourite IDE.
