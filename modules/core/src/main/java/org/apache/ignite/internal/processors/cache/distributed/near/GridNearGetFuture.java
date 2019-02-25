@@ -59,7 +59,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
     /** Transaction. */
-    private final IgniteTxLocalEx tx;
+    private IgniteTxLocalEx tx;
 
     /** */
     private GridCacheVersion ver;
@@ -94,8 +94,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean keepCacheObjects,
         boolean recovery
     ) {
-        super(
-            cctx,
+        super(cctx,
             keys,
             readThrough,
             forcePrimary,
@@ -106,8 +105,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             skipVals,
             needVer,
             keepCacheObjects,
-            recovery
-        );
+            recovery);
 
         assert !F.isEmpty(keys);
 
@@ -246,7 +244,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
                         skipVals,
-                        recovery);
+                        recovery,
+                        null);
 
                 Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -688,11 +687,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param saved Saved entries.
      * @param topVer Topology version.
      */
-    private void releaseEvictions(
-        Collection<KeyCacheObject> keys,
+    private void releaseEvictions(Collection<KeyCacheObject> keys,
         Map<KeyCacheObject, GridNearCacheEntry> saved,
-        AffinityTopologyVersion topVer
-    ) {
+        AffinityTopologyVersion topVer) {
         for (KeyCacheObject key : keys) {
             GridNearCacheEntry entry = saved.get(key);
 
@@ -736,8 +733,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
         /** {@inheritDoc} */
         @Override protected GridNearGetRequest createGetRequest0(IgniteUuid rootFutId, IgniteUuid futId) {
-            return new GridNearGetRequest(
-                cctx.cacheId(),
+            return new GridNearGetRequest(cctx.cacheId(),
                 rootFutId,
                 futId,
                 ver,
@@ -751,8 +747,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 true,
                 skipVals,
                 cctx.deploymentEnabled(),
-                recovery
-            ); // TODO IGNITE-7371
+                recovery,
+                null); // TODO IGNITE-7371
         }
 
         /** {@inheritDoc} */
