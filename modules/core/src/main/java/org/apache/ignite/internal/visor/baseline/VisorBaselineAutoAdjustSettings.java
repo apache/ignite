@@ -20,18 +20,22 @@ package org.apache.ignite.internal.visor.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /** */
-public class VisorBaselineAutoAdjustSettings implements Serializable {
+public class VisorBaselineAutoAdjustSettings extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** "Enable" flag. */
-    public final boolean enabled;
+    private boolean enabled;
 
     /** Soft timeout. */
-    public final long softTimeout;
+    private long softTimeout;
+
+    /** Default constructor. */
+    public VisorBaselineAutoAdjustSettings() {
+    }
 
     /** Constructor. */
     public VisorBaselineAutoAdjustSettings(boolean enabled, long softTimeout) {
@@ -39,32 +43,30 @@ public class VisorBaselineAutoAdjustSettings implements Serializable {
         this.softTimeout = softTimeout;
     }
 
-    /** */
-    public static void writeExternalData(ObjectOutput out,
-        VisorBaselineAutoAdjustSettings baselineAutoAdjustSettings) throws IOException {
-        if (baselineAutoAdjustSettings == null)
-            out.writeBoolean(false);
-        else {
-            out.writeBoolean(true);
-
-            out.writeBoolean(baselineAutoAdjustSettings.enabled);
-
-            out.writeLong(baselineAutoAdjustSettings.softTimeout);
-        }
+    /**
+     * @return "Enable" flag.
+     */
+    public boolean isEnabled() {
+        return enabled;
     }
 
-    /** */
-    public static VisorBaselineAutoAdjustSettings readExternalData(ObjectInput in) throws IOException {
-        boolean autoAdjustSettingsNotNull = in.readBoolean();
+    /**
+     * Soft timeout.
+     */
+    public long getSoftTimeout() {
+        return softTimeout;
+    }
 
-        if (autoAdjustSettingsNotNull) {
-            boolean autoAdjustmentEnabled = in.readBoolean();
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeBoolean(enabled);
+        out.writeLong(softTimeout);
+    }
 
-            long timeout = in.readLong();
-
-            return new VisorBaselineAutoAdjustSettings(autoAdjustmentEnabled, timeout);
-        }
-
-        return null;
+    /** {@inheritDoc} */
+    @Override
+    protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        enabled = in.readBoolean();
+        softTimeout = in.readLong();
     }
 }

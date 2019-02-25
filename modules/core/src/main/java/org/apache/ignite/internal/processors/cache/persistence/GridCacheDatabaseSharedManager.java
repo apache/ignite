@@ -3480,7 +3480,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 try {
                     chp = markCheckpointBegin(tracker);
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     if (curCpProgress != null)
                         curCpProgress.cpFinishFut.onDone(e);
 
@@ -3874,7 +3874,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             tracker.onLockWaitStart();
 
             checkpointLock.writeLock().lock();
-            
+
             try {
                 assert curCpProgress == curr : "Concurrent checkpoint begin should not be happened";
 
@@ -4066,6 +4066,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                     catch (RejectedExecutionException e) {
                         assert false : "Task should never be rejected by async runner";
+
+                        throw new IgniteException(e); //to protect from disabled asserts and call to failure handler
                     }
             }
 
