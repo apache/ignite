@@ -232,6 +232,8 @@ public class JdbcThinConnection implements Connection {
 
             boolean newVal = ((SqlSetStreamingCommand)cmd).isTurnOn();
 
+            ensureConnected();
+
             JdbcThinTcpIo cliIo = cliIo();
 
             // Actual ON, if needed.

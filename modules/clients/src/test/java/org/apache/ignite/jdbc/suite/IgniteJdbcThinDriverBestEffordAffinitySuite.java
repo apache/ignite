@@ -33,6 +33,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinComplexDmlDdlSkipReducerOnUpdateSelfT
 import org.apache.ignite.jdbc.thin.JdbcThinComplexQuerySelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSSLTest;
+import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionTimeoutSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDataSourceSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDeleteStatementSelfTest;
@@ -58,6 +59,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementCancelSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementTimeoutSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSkipReducerOnUpdateSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -70,11 +72,11 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    //    // New thin JDBC
-//    1JdbcThinConnectionSelfTest.class,
+    // New thin JDBC
+    JdbcThinConnectionSelfTest.class,
     JdbcThinConnectionMvccEnabledSelfTest.class,
-//    1JdbcThinConnectionMultipleAddressesTest.class,
-//    1JdbcThinTcpIoTest.class,
+//    JdbcThinConnectionMultipleAddressesTest.class,
+    JdbcThinTcpIoTest.class,
     JdbcThinConnectionSSLTest.class,
     JdbcThinDataSourceSelfTest.class,
     JdbcThinPreparedStatementSelfTest.class,
@@ -118,7 +120,7 @@ import org.junit.runners.Suite;
     JdbcThinBulkLoadTransactionalPartitionedSelfTest.class,
     JdbcThinBulkLoadTransactionalReplicatedSelfTest.class,
 
-//    // New thin JDBC driver, full SQL tests
+    // New thin JDBC driver, full SQL tests
     JdbcThinComplexDmlDdlSelfTest.class,
 
     JdbcThinSelectAfterAlterTable.class,

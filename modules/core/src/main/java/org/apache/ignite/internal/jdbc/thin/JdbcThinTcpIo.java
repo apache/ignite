@@ -130,7 +130,7 @@ public class JdbcThinTcpIo {
 
     /** Socket. */
     // TODO: 19.02.19 seems that we don't need socket here, cause it's accessible through endpoint.
-    private Socket sock;
+    public Socket sock;
 
     /**
      * Start connection and perform handshake.
@@ -147,7 +147,7 @@ public class JdbcThinTcpIo {
         this.connProps = connProps;
         this.sockAddr = sockAddr;
 
-        connect(sockAddr, 0);
+        connect(sockAddr, timeout);
 
         handshake(CURRENT_VER);
     }
