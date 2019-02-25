@@ -19,13 +19,18 @@ package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -77,6 +82,21 @@ public class JdbcThinSchemaCaseTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Cleanup.
+     */
+    @Before
+    public void dropTables() throws Exception {
+        List<String> schemas = getSchemasWithTestTable();
+
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            Statement stmt = conn.createStatement();
+
+            for (String schema : schemas)
+                stmt.executeUpdate("DROP TABLE IF EXISTS \"" + schema + "\".TAB");
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @SuppressWarnings({"unused"})
@@ -98,6 +118,40 @@ public class JdbcThinSchemaCaseTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Check case (in)sensitivity of schema name that is specified in the connection url.
+     */
+    @Test
+    public void testSchemaNameWithCreateTableIfNotExists() throws Exception {
+        createTableWithImplicitSchema("test0");
+
+        assertTablesInSchemasPresented("TEST0"); // due to its normalized.
+
+        createTableWithImplicitSchema("test1");
+
+        assertTablesInSchemasPresented("TEST0", "TEST1");
+
+        createTableWithImplicitSchema("\"TestCase\"");
+
+        assertTablesInSchemasPresented("TEST0", "TEST1", "TestCase");
+
+        createTableWithImplicitSchema("\"TEST0\"");
+
+        assertTablesInSchemasPresented("TEST0", "TEST1", "TestCase");
+
+        createTableWithImplicitSchema("\"TEST1\"");
+
+        assertTablesInSchemasPresented("TEST0", "TEST1", "TestCase");
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                createTableWithImplicitSchema("TestCase"); // due to normalization it is converted to "TESTCASE".
+
+                return null;
+            }
+        }, SQLException.class, null);
+    }
+
+    /**
      * @param schema Schema name.
      * @throws SQLException If failed.
      */
@@ -110,5 +164,55 @@ public class JdbcThinSchemaCaseTest extends JdbcThinAbstractSelfTest {
 
             stmt.execute("select t._key, t._val from Integer t");
         }
+    }
+
+    /**
+     * Create table with schema that is specified in connection properties.
+     *
+     * @param schema Schema.
+     */
+    void createTableWithImplicitSchema(String schema) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL + '/' + schema)) {
+            Statement stmt = conn.createStatement();
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TAB (id INT PRIMARY KEY, val INT);");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TAB (id INT PRIMARY KEY, val INT);");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TAB (newId VARCHAR PRIMARY KEY, val VARCHAR);");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TAB (newId VARCHAR PRIMARY KEY, val VARCHAR);");
+        }
+    }
+
+    /**
+     * Retrieves list of schemas, each schema contain test table "TAB".
+     */
+    List<String> getSchemasWithTestTable() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            Statement stmt = conn.createStatement();
+
+            ArrayList<String> schemasWithTab = new ArrayList<>();
+
+            try (ResultSet tabs = stmt.executeQuery(
+                "SELECT SCHEMA_NAME, TABLE_NAME FROM IGNITE.TABLES " +
+                    "WHERE TABLE_NAME = 'TAB' ORDER BY SCHEMA_NAME;")) {
+                while (tabs.next())
+                    schemasWithTab.add(tabs.getString("SCHEMA_NAME"));
+            }
+
+            return schemasWithTab;
+        }
+    }
+
+    /**
+     * Assert that table with name "TAB" is presented exactly in specified schemas.
+     * Order of specified schemas is ignored.
+     *
+     * @param schemas Schemas.
+     */
+    void assertTablesInSchemasPresented(String... schemas) throws SQLException {
+        Arrays.sort(schemas);
+
+        List<String> exp = Arrays.asList(schemas);
+
+        assertEqualsCollections(exp, getSchemasWithTestTable());
     }
 }
