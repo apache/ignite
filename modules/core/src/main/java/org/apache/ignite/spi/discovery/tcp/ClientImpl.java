@@ -2187,12 +2187,13 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.getSpiContext().isStopping())
                 return;
 
-            if (log.isInfoEnabled()) for (ClusterNode node : getRemoteNodes())
-                if (node.id().equals(locNode.clientRouterNodeId())) {
-                    log.info("Router node: " + node);
+            if (log.isInfoEnabled())
+                for (ClusterNode node : getRemoteNodes())
+                    if (node.id().equals(locNode.clientRouterNodeId())) {
+                        log.info("Router node: " + node);
 
-                    break;
-                }
+                        break;
+                    }
 
             if (getLocalNodeId().equals(msg.nodeId())) {
                 if (joining()) {
