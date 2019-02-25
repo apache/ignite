@@ -518,6 +518,9 @@ public class GridSqlQueryParser {
     /** */
     private static final String PARAM_ENCRYPTED = "ENCRYPTED";
 
+    /** Query parallelism value of cache configuration. */
+    private static final String PARAM_PARALLELISM = "PARALLELISM";
+
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
@@ -1529,6 +1532,19 @@ public class GridSqlQueryParser {
                 }
 
                 res.backups(backups);
+
+                break;
+
+            case PARAM_PARALLELISM:
+                ensureNotEmpty(name, val);
+
+                int qryPar = parseIntParam(PARAM_PARALLELISM, val);
+
+                if (qryPar <= 0)
+                    throw new IgniteSQLException("\"" + PARAM_PARALLELISM + "\" must be positive: " +
+                        qryPar, IgniteQueryErrorCode.PARSING);
+
+                res.parallelism(qryPar);
 
                 break;
 
