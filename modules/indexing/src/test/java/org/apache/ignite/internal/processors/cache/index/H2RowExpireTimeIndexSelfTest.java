@@ -95,9 +95,25 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
      * @param key key of the row.
      * @param val value of the row.
      */
-    private void putExpired(IgniteCache cache, Integer key, Integer val) {
+    private void putExpiredSoon(IgniteCache cache, Integer key, Integer val) {
         CreatedExpiryPolicy expireSinceCreated = new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS,
             EXPIRE_IN_MS_FROM_CREATE));
+
+        IgniteCache<Integer, Integer> expCache = cache.withExpiryPolicy(expireSinceCreated);
+
+        expCache.put(key, val);
+    }
+
+    /**
+     * Put values into the table with expire policy.
+     *
+     * @param cache cache to put values in.
+     * @param key key of the row.
+     * @param val value of the row.
+     */
+    private void putExpireInYear(IgniteCache cache, Integer key, Integer val) {
+        CreatedExpiryPolicy expireSinceCreated = new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS,
+            TimeUnit.DAYS.toMillis(365)));
 
         IgniteCache<Integer, Integer> expCache = cache.withExpiryPolicy(expireSinceCreated);
 
@@ -114,9 +130,10 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
 
         cache.put(1, 2);
         cache.put(3, 4);
-        cache.put(5, 6);
 
-        putExpired(cache, 42, 43);
+        putExpireInYear(cache, 5, 6);
+
+        putExpiredSoon(cache, 42, 43);
 
         U.sleep(WAIT_MS_TIL_EXPIRED);
 
@@ -131,6 +148,12 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
 
             Assert.assertTrue("Expired row should not be returned by sql. Result = " + expired, expired.isEmpty());
         }
+
+        {
+            List<List<?>> expired = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer where id >= 5 and id <= 5")).getAll();
+
+            assertEqualsCollections(Collections.singletonList(asList(5, 6)), expired);
+        }
     }
 
     /**
@@ -143,10 +166,11 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
 
         cache.put(1, 2);
         cache.put(3, 4);
-        cache.put(5, 6);
 
-        putExpired(cache, 42, 43);
-        putExpired(cache, 77, 88);
+        putExpireInYear(cache, 5, 6);
+
+        putExpiredSoon(cache, 42, 43);
+        putExpiredSoon(cache, 77, 88);
 
         U.sleep(WAIT_MS_TIL_EXPIRED);
 
@@ -155,6 +179,13 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
 
             assertEqualsCollections(Collections.singletonList(asList(5, 6)), mixed);
         }
+
+        {
+            List<List<?>> mixed = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer WHERE id >= 3")).getAll();
+
+            assertEqualsCollections(asList(asList(3, 4), asList(5, 6)), mixed);
+        }
+
 
         {
             List<List<?>> expired = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer WHERE id >= 42")).getAll();
@@ -172,10 +203,11 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
 
         cache.put(1, 2);
         cache.put(3, 4);
-        cache.put(5, 6);
 
-        putExpired(cache, 42, 43);
-        putExpired(cache, 77, 88);
+        putExpireInYear(cache, 5, 6);
+
+        putExpiredSoon(cache, 42, 43);
+        putExpiredSoon(cache, 77, 88);
 
         U.sleep(WAIT_MS_TIL_EXPIRED);
 
