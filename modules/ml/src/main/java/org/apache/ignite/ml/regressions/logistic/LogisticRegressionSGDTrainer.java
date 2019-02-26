@@ -89,6 +89,9 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
                 return a;
             });
 
+            if (cols == null)
+                throw new IllegalStateException("Cannot train on empty dataset");
+
             MLPArchitecture architecture = new MLPArchitecture(cols);
             architecture = architecture.withAddedLayer(1, true, Activators.SIGMOID);
 
