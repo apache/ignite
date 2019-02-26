@@ -285,7 +285,6 @@ export default angular.module('ignite-console', [
 .service('IgniteLegacyUtils', LegacyUtils)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
 .service('CSV', CSV)
-
 .service('Store', Store)
 // Filters.
 .filter('byName', byName)
@@ -307,87 +306,87 @@ export default angular.module('ignite-console', [
         $translateProvider.translations('en', i18n);
         $translateProvider.preferredLanguage('en');
 
-            // Set up the states.
-            $stateProvider
-                .state('base', {
-                    url: '',
-                    abstract: true,
-                    template: baseTemplate
-                });
+        // Set up the states.
+        $stateProvider
+        .state('base', {
+            url: '',
+            abstract: true,
+            template: baseTemplate
+        });
 
-            $urlRouterProvider.otherwise('/404');
-            $locationProvider.html5Mode(true);
-        }])
-    .run(['$rootScope', '$state', 'gettingStarted',
-        /**
-         * @param {ng.IRootScopeService} $root
-         * @param {import('@uirouter/angularjs').StateService} $state
-         * @param {ReturnType<typeof import('./modules/getting-started/GettingStarted.provider').service>} gettingStarted
-         */
-        ($root, $state, gettingStarted) => {
-            $root._ = _;
-            $root.$state = $state;
-            $root.gettingStarted = gettingStarted;
-        }
-    ])
-    .run(['$rootScope', 'AgentManager',
-        /**
-         * @param {ng.IRootScopeService} $root
-         * @param {import('./modules/agent/AgentManager.service').default} agentMgr
-         */
-        ($root, agentMgr) => {
-            let lastUser;
-
-            $root.$on('user', (e, user) => {
-                if (lastUser)
-                    return;
-
-                lastUser = user;
-
-                agentMgr.connect();
-            });
-        }
-    ])
-    .run(['$transitions',
-        /**
-         * @param {import('@uirouter/angularjs').TransitionService} $transitions
-         */
-        ($transitions) => {
-            $transitions.onSuccess({ }, (trans) => {
-                try {
-                    const {name, unsaved} = trans.$to();
-                    const params = trans.params();
-
-                    if (unsaved)
-                        localStorage.removeItem('lastStateChangeSuccess');
-                    else
-                        localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
-                }
-                catch (ignored) {
-                    // No-op.
-                }
-            });
-        }
-    ])
-    .run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
+        $urlRouterProvider.otherwise('/404');
+        $locationProvider.html5Mode(true);
+    }])
+.run(['$rootScope', '$state', 'gettingStarted',
     /**
-    * @param {ng.IRootScopeService} $root
-    * @param {ng.IHttpService} $http
-    * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
-    */
-        ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
-            $root.revertIdentity = () => {
-                $http.get('/api/v1/admin/revert/identity')
-                    .then(() => User.load())
-                    .then(() => $state.go('base.settings.admin'))
-                    .then(() => Notebook.load())
-                    .catch(Messages.showError);
-            };
-        }
-    ])
-    .run(['IgniteIcon',
+     * @param {ng.IRootScopeService} $root
+     * @param {import('@uirouter/angularjs').StateService} $state
+     * @param {ReturnType<typeof import('./modules/getting-started/GettingStarted.provider').service>} gettingStarted
+     */
+    ($root, $state, gettingStarted) => {
+        $root._ = _;
+        $root.$state = $state;
+        $root.gettingStarted = gettingStarted;
+    }
+])
+.run(['$rootScope', 'AgentManager',
     /**
-    * @param {import('./components/ignite-icon/service').default} IgniteIcon
-    */
-        (IgniteIcon) => IgniteIcon.registerIcons(icons)
-    ]);
+     * @param {ng.IRootScopeService} $root
+     * @param {import('./modules/agent/AgentManager.service').default} agentMgr
+     */
+    ($root, agentMgr) => {
+        let lastUser;
+
+        $root.$on('user', (e, user) => {
+            if (lastUser)
+                return;
+
+            lastUser = user;
+
+            agentMgr.connect();
+        });
+    }
+])
+.run(['$transitions',
+    /**
+     * @param {import('@uirouter/angularjs').TransitionService} $transitions
+     */
+    ($transitions) => {
+        $transitions.onSuccess({ }, (trans) => {
+            try {
+                const {name, unsaved} = trans.$to();
+                const params = trans.params();
+
+                if (unsaved)
+                    localStorage.removeItem('lastStateChangeSuccess');
+                else
+                    localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
+            }
+            catch (ignored) {
+            // No-op.
+            }
+        });
+    }
+])
+.run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {ng.IHttpService} $http
+     * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
+     */
+    ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
+        $root.revertIdentity = () => {
+            $http.get('/api/v1/admin/revert/identity')
+                .then(() => User.load())
+                .then(() => $state.go('base.settings.admin'))
+                .then(() => Notebook.load())
+                .catch(Messages.showError);
+        };
+    }
+])
+.run(['IgniteIcon',
+    /**
+     * @param {import('./components/ignite-icon/service').default} IgniteIcon
+     */
+    (IgniteIcon) => IgniteIcon.registerIcons(icons)
+]);
