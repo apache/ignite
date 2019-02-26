@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -1632,7 +1631,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             int explicitParts[] = qry.getPartitions();
             PartitionResult derivedParts = twoStepQry.derivedPartitions();
 
-            int parts[] = calculatePartitions(explicitParts, derivedParts, qry.getArgs());
+            int parts[] = PartitionResult.calculatePartitions(explicitParts, derivedParts, qry.getArgs());
 
             if (parts != null && parts.length == 0) {
                 failed = false;
@@ -1684,45 +1683,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (!cursorCreated)
                 runningQryMgr.unregister(qryId, failed);
         }
-    }
-
-    /**
-     * Calculate partitions for the query.
-     *
-     * @param explicitParts Explicit partitions provided in SqlFieldsQuery.partitions property.
-     * @param derivedParts Derived partitions found during partition pruning.
-     * @param args Arguments.
-     * @return Calculated partitions or {@code null} if failed to calculate and there should be a broadcast.
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    private int[] calculatePartitions(int[] explicitParts, PartitionResult derivedParts, Object[] args) {
-        if (!F.isEmpty(explicitParts))
-            return explicitParts;
-        else if (derivedParts != null) {
-            try {
-                Collection<Integer> realParts = derivedParts.tree().apply(null, args);
-
-                if (realParts == null)
-                    return null;
-                else if (realParts.isEmpty())
-                    return IgniteUtils.EMPTY_INTS;
-                else {
-                    int[] realParts0 = new int[realParts.size()];
-
-                    int i = 0;
-
-                    for (Integer realPart : realParts)
-                        realParts0[i++] = realPart;
-
-                    return realParts0;
-                }
-            }
-            catch (IgniteCheckedException e) {
-                throw new CacheException("Failed to calculate derived partitions for query.", e);
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -2577,25 +2537,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 flags = GridH2QueryRequest.setDataPageScanEnabled(flags,
                     fieldsQry.isDataPageScanEnabled());
 
-                int[] parts = fieldsQry.getPartitions();
+                int[] parts = PartitionResult.calculatePartitions(
+                    fieldsQry.getPartitions(),
+                    distributedPlan.derivedPartitions(),
+                    fieldsQry.getArgs());
 
-                IgniteInternalFuture<Long> fut = tx.updateAsync(
-                    cctx,
-                    ids,
-                    parts,
-                    schemaName,
-                    fieldsQry.getSql(),
-                    fieldsQry.getArgs(),
-                    flags,
-                    fieldsQry.getPageSize(),
-                    timeout);
+                if (parts != null && parts.length == 0)
+                    return new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
+                else {
+                    IgniteInternalFuture<Long> fut = tx.updateAsync(
+                        cctx,
+                        ids,
+                        parts,
+                        schemaName,
+                        fieldsQry.getSql(),
+                        fieldsQry.getArgs(),
+                        flags,
+                        fieldsQry.getPageSize(),
+                        timeout);
 
-                UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
+                    UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
 
-                if (commit)
-                    toCommit.commit();
+                    if (commit)
+                        toCommit.commit();
 
-                return res;
+                    return res;
+                }
             }
             catch (ClusterTopologyServerNotFoundException e) {
                 throw new CacheServerNotFoundException(e.getMessage(), e);

@@ -72,12 +72,11 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
 
 /**
- * Implementation of {@link DistributedMetaStorage} based on {@link MetaStorage} for persistence and discovery SPI
- * for communication.
+ * Implementation of {@link DistributedMetaStorage} based on {@link MetaStorage} for persistence and discovery SPI for
+ * communication.
  */
 public class DistributedMetaStorageImpl extends GridProcessorAdapter
-    implements DistributedMetaStorage, IgniteChangeGlobalStateSupport
-{
+    implements DistributedMetaStorage, IgniteChangeGlobalStateSupport {
     /** Component ID required for {@link DiscoveryDataBag} instances. */
     private static final int COMPONENT_ID = META_STORAGE.ordinal();
 
@@ -132,8 +131,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts = new ConcurrentHashMap<>();
 
     /**
-     * Some extra values that are useful only when node is not active. Otherwise it is nullized to remove
-     * excessive data from the heap.
+     * Some extra values that are useful only when node is not active. Otherwise it is nullized to remove excessive data
+     * from the heap.
      *
      * @see StartupExtras
      */
@@ -274,8 +273,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
-     * Implementation for {@link MetastorageLifecycleListener#onReadyForRead(ReadOnlyMetastorage)} listener.
-     * Invoked after node was started but before it was activated (only in persistent clusters).
+     * Implementation for {@link MetastorageLifecycleListener#onReadyForRead(ReadOnlyMetastorage)} listener. Invoked
+     * after node was started but before it was activated (only in persistent clusters).
      *
      * @param metastorage Local metastorage instance available for reading.
      * @throws IgniteCheckedException If there were any issues while metastorage reading.
@@ -363,16 +362,35 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
         assert val != null : key;
 
-        startWrite(key, marshal(val));
+        startWrite(key, marshal(val)).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFutureAdapter<?> writeAsync(@NotNull String key, @NotNull Serializable val)
+        throws IgniteCheckedException {
+        assert val != null : key;
+
+        return startWrite(key, marshal(val));
     }
 
     /** {@inheritDoc} */
     @Override public void remove(@NotNull String key) throws IgniteCheckedException {
-        startWrite(key, null);
+        startWrite(key, null).get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean compareAndSet(
+        @NotNull String key,
+        @Nullable Serializable expVal,
+        @NotNull Serializable newVal
+    ) throws IgniteCheckedException {
+        assert newVal != null : key;
+
+        return compareAndSetAsync(key, expVal, newVal).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFutureAdapter<Boolean> compareAndSetAsync(
         @NotNull String key,
         @Nullable Serializable expVal,
         @NotNull Serializable newVal
@@ -389,7 +407,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         assert expVal != null : key;
 
-        return startCas(key, marshal(expVal), null);
+        return startCas(key, marshal(expVal), null).get();
     }
 
     /** {@inheritDoc} */
@@ -690,8 +708,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
-     * Returns actual version from the local node. It is just a version for activated node or calculated future
-     * version otherwise.
+     * Returns actual version from the local node. It is just a version for activated node or calculated future version
+     * otherwise.
      */
     private DistributedMetaStorageVersion getActualVersion() {
         assert Thread.holdsLock(innerStateLock);
@@ -795,9 +813,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @param key The key.
      * @param valBytes Value bytes to write. Null if value needs to be removed.
      * @throws IgniteCheckedException If there was an error while sending discovery message or message was sent but
-     *      cluster is not active.
+     * cluster is not active.
      */
-    private void startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
+    private GridFutureAdapter<?> startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
@@ -808,13 +826,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         ctx.discovery().sendCustomEvent(msg);
 
-        fut.get();
+        return fut;
     }
 
     /**
      * Basically the same as {@link #startWrite(String, byte[])} but for CAS operations.
      */
-    private boolean startCas(String key, byte[] expValBytes, byte[] newValBytes) throws IgniteCheckedException {
+    private GridFutureAdapter<Boolean> startCas(String key, byte[] expValBytes, byte[] newValBytes)
+        throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
@@ -825,7 +844,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         ctx.discovery().sendCustomEvent(msg);
 
-        return fut.get();
+        return fut;
     }
 
     /**
@@ -895,7 +914,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
         if (e instanceof Error)
-            throw (Error) e;
+            throw (Error)e;
 
         throw U.convertException((IgniteCheckedException)e);
     }
@@ -905,7 +924,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      *
      * @param bridge Bridge to get the access to the storage.
      * @param histItem {@code <key, value>} pair to process.
-     * @param notifyListeners Whether listeners should be notified or not. {@code false} for data restore on activation.
+     * @param notifyListeners Whether listeners should be notified or not. {@code false} for data restore on
+     * activation.
      * @throws IgniteCheckedException In case of IO/unmarshalling errors.
      */
     private void completeWrite(

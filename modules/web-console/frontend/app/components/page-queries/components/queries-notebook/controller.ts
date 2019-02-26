@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
-import {Subject, defer, from, of, merge, timer, EMPTY} from 'rxjs';
+import {Subject, defer, from, of, merge, timer, EMPTY, from} from 'rxjs';
 import {catchError, distinctUntilChanged, expand, exhaustMap, filter, finalize, first, map, mergeMap, pluck, switchMap, takeUntil, take, tap} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
@@ -309,12 +309,10 @@ export class NotebookCtrl {
             paragraph.cancelRefresh($interval);
         };
 
-        const _stopTopologyRefresh = () => {
+        this._stopTopologyRefresh = () => {
             if ($scope.notebook && $scope.notebook.paragraphs)
                 $scope.notebook.paragraphs.forEach((paragraph) => _tryStopRefresh(paragraph));
         };
-
-        $scope.$on('$stateChangeStart', _stopTopologyRefresh);
 
         $scope.caches = [];
 

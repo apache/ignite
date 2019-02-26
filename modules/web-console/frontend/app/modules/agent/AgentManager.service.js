@@ -84,7 +84,7 @@ class ConnectionState {
         return cluster;
     }
 
-    update(demo, count, clusters) {
+    update(demo, count, clusters, hasDemo) {
         this.clusters = clusters;
 
         if (_.isEmpty(this.clusters))
@@ -95,6 +95,8 @@ class ConnectionState {
 
         if (this.cluster)
             this.cluster.connected = !!_.find(clusters, {id: this.cluster.id});
+
+        this.hasDemo = hasDemo;
 
         if (count === 0)
             this.state = State.AGENT_DISCONNECTED;
@@ -256,10 +258,10 @@ export default class AgentManager {
 
         this.socket.on('disconnect', onDisconnect);
 
-        this.socket.on('agents:stat', ({clusters, count}) => {
+        this.socket.on('agents:stat', ({clusters, count, hasDemo}) => {
             const conn = this.connectionSbj.getValue();
 
-            conn.update(this.isDemoMode(), count, clusters);
+            conn.update(this.isDemoMode(), count, clusters, hasDemo);
 
             this.connectionSbj.next(conn);
         });
