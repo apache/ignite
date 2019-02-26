@@ -16,10 +16,9 @@
  */
 
 import isMatch from 'lodash/isMatch';
-import {default as ListEditableController} from '../../controller';
+import {default as ListEditableController, ID} from '../../controller';
 
-/** @type {ng.IDirectiveFactory} */
-export default function listEditableOneWay() {
+export default function listEditableOneWay(): ng.IDirective {
     return {
         require: {
             list: 'listEditable'
@@ -28,26 +27,18 @@ export default function listEditableOneWay() {
             onItemChange: '&?',
             onItemRemove: '&?'
         },
-        controller: class Controller {
-            /** @type {ListEditableController} */
-            list;
-            /** @type {ng.ICompiledExpression} onItemChange */
-            onItemChange;
-            /** @type {ng.ICompiledExpression} onItemRemove */
-            onItemRemove;
+        controller: class Controller<T> {
+            list: ListEditableController<T>;
+            onItemChange: ng.ICompiledExpression;
+            onItemRemove: ng.ICompiledExpression;
 
-            static $inject = ['$scope'];
-            /**
-             * @param {ng.IScope} $scope
-             */
-            constructor($scope) {
-                this.$scope = $scope;
-            }
             $onInit() {
-                this.list.save = (item, index) => {
-                    if (!isMatch(this.list.ngModel.$viewValue[index], item)) this.onItemChange({$event: item});
+                this.list.save = (item: T, id: ID) => {
+                    if (!isMatch(this.list.getItem(id), item)) this.onItemChange({$event: item});
                 };
-                this.list.remove = (index) => this.onItemRemove({$event: this.list.ngModel.$viewValue[index]});
+                this.list.remove = (id: ID) => this.onItemRemove({
+                    $event: this.list.getItem(id)
+                });
             }
         }
     };
