@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.h2.H2IndexingGeoSelfTest;
 import org.apache.ignite.internal.processors.query.h2.H2IndexingSegmentedGeoSelfTest;
+import org.apache.ignite.internal.processors.query.h2.H2IndexesSystemViewTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -28,7 +29,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     H2IndexingGeoSelfTest.class,
-    H2IndexingSegmentedGeoSelfTest.class
+    H2IndexingSegmentedGeoSelfTest.class,
+    H2IndexesSystemViewTest.class
 })
 public class GeoSpatialIndexingTestSuite {
 }

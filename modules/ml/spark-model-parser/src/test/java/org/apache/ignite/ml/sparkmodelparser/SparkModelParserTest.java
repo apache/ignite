@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.sparkmodelparser;
 
-import java.io.File;
-import java.net.URL;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.io.File;
+import java.net.URL;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertTrue;
@@ -213,6 +214,25 @@ public class SparkModelParserTest {
         }
         catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Directory should contain only one parquet file"));
+        }
+    }
+
+    /**
+     * Fails on incorrect model class loading.
+     *
+     * NOTE: Trying to load Decision Tree model from GBT directory.
+     */
+    @Test
+    public void failOnIncorrectModelClassLoading() {
+        URL url = getClass().getClassLoader().getResource(SPARK_MDL_PATH);
+
+        try {
+            SparkModelParser.parse(
+                url.getPath() + File.separator + "gbt", SupportedSparkModels.DECISION_TREE
+            );
+            fail("Expected IllegalArgumentException exception");
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("The metadata file contains incorrect model metadata."));
         }
     }
 }

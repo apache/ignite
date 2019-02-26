@@ -17,15 +17,6 @@
 
 package org.apache.ignite.ml.sparkmodelparser;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -61,6 +52,11 @@ import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.*;
+
 /** Parser of Spark models. */
 public class SparkModelParser {
     /**
@@ -80,7 +76,8 @@ public class SparkModelParser {
                 "The specified path " + pathToMdl + " is not the path to directory.");
 
         String[] files = mdlDir.list();
-        if (files.length == 0) throw new IllegalArgumentException("Directory contain 0 files and sub-directories [directory_path=" + pathToMdl + "]");
+        if (files.length == 0)
+            throw new IllegalArgumentException("Directory contain 0 files and sub-directories [directory_path=" + pathToMdl + "]");
 
         if (Arrays.stream(files).noneMatch("data"::equals))
             throw new IllegalArgumentException("Directory should contain data sub-directory [directory_path=" + pathToMdl + "]");
@@ -110,6 +107,14 @@ public class SparkModelParser {
             throw new IllegalArgumentException("Directory should contain json file with model metadata " +
                 "with name part-00000 [directory_path=" + pathToMetadata + "]");
 
+        try {
+            validateMetadata(pathToMetadata, parsedSparkMdl);
+        }
+        catch (FileNotFoundException e) {
+            throw new IllegalArgumentException("Directory should contain json file with model metadata " +
+                "with name part-00000 [directory_path=" + pathToMetadata + "]");
+        }
+
         if (shouldContainTreeMetadataSubDirectory(parsedSparkMdl)) {
             if (Arrays.stream(files).noneMatch("treesMetadata"::equals))
                 throw new IllegalArgumentException("Directory should contain treeMetadata sub-directory [directory_path=" + pathToMdl + "]");
@@ -129,9 +134,35 @@ public class SparkModelParser {
             String pathToTreesMetadataFile = treesMetadataParquetFiles[0].getPath();
 
             return parseDataWithMetadata(pathToMdlFile, pathToTreesMetadataFile, parsedSparkMdl);
-        } else
+        }
+        else
             return parseData(pathToMdlFile, parsedSparkMdl);
+    }
 
+    /**
+     * Validate metadata json file.
+     *
+     * NOTE: file is exists due to previous validation step.
+     *
+     * @param pathToMetadata Path to metadata.
+     * @param parsedSparkMdl Parsed spark model.
+     */
+    private static void validateMetadata(String pathToMetadata,
+        SupportedSparkModels parsedSparkMdl) throws FileNotFoundException {
+        File metadataFile = IgniteUtils.resolveIgnitePath(pathToMetadata + File.separator + "part-00000");
+        if (metadataFile != null) {
+            Scanner sc = new Scanner(metadataFile);
+            boolean isInvalid = true;
+            while (sc.hasNextLine()) {
+                final String line = sc.nextLine();
+                if (line.contains(parsedSparkMdl.getMdlClsNameInSpark()))
+                    isInvalid = false;
+            }
+
+            if (isInvalid)
+                throw new IllegalArgumentException("The metadata file contains incorrect model metadata. " +
+                    "It should contain " + parsedSparkMdl.getMdlClsNameInSpark() + " model metadata.");
+        }
     }
 
     /**
@@ -141,7 +172,6 @@ public class SparkModelParser {
         return parsedSparkMdl == SupportedSparkModels.GRADIENT_BOOSTED_TREES
             || parsedSparkMdl == SupportedSparkModels.GRADIENT_BOOSTED_TREES_REGRESSION;
     }
-
 
     /**
      * Load model from parquet file.
@@ -179,7 +209,6 @@ public class SparkModelParser {
         }
     }
 
-
     /**
      * Load model and its metadata from parquet files.
      *
@@ -189,7 +218,7 @@ public class SparkModelParser {
      * @return Instance of parsedSparkMdl model.
      */
     private static Model parseDataWithMetadata(String pathToMdl, String pathToMetaData,
-                                          SupportedSparkModels parsedSparkMdl) {
+        SupportedSparkModels parsedSparkMdl) {
         File mdlRsrc1 = IgniteUtils.resolveIgnitePath(pathToMdl);
         if (mdlRsrc1 == null)
             throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMdl + "]");
