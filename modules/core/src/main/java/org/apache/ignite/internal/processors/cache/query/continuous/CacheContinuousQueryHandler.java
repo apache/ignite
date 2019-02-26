@@ -993,7 +993,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         @Nullable IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans) {
         EventListener locTransLsnr = localTransformedEventListener();
 
-        assert (locLsnr != null && locTransLsnr == null) || (locLsnr == null && locTransLsnr != null);
+        assert locLsnr == null || locTransLsnr == null;
 
         if (F.isEmpty(evts))
             return;
