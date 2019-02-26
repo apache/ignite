@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  *
@@ -130,8 +130,8 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
             else if (val instanceof char[])
                 return Arrays.hashCode((char[])val);
             else
-                throw new AssertionError("Wrong cache index type:" + val.getClass().getName());
-        }else
+                throw new RuntimeException("Wrong cache index type:" + val.getClass().getName());
+        } else
             return val.hashCode();
     }
 
@@ -217,7 +217,26 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
         KeyCacheObjectImpl other = (KeyCacheObjectImpl)obj;
 
-        return hashCode() == other.hashCode();
+        if (val.getClass().isArray() && val.getClass().equals(other.val.getClass())){
+            if (val instanceof byte[])
+                return Arrays.equals((byte[])val, (byte[])other.val);
+            else if (val instanceof int[])
+                return Arrays.equals((int[])val, (int[])other.val);
+            else if (val instanceof boolean[])
+                return Arrays.equals((boolean[])val, (boolean[])other.val);
+            else if (val instanceof float[])
+                return Arrays.equals((float[])val, (float[])other.val);
+            else if (val instanceof double[])
+                return Arrays.equals((double[])val, (double[])other.val);
+            else if (val instanceof long[])
+                return Arrays.equals((long[])val, (long[])other.val);
+            else if (val instanceof char[])
+                return Arrays.equals((char[])val, (char[])other.val);
+            else
+                throw new RuntimeException("Wrong cache index type:" + val.getClass().getName());
+        }
+
+        return val.equals(other.val);
     }
 
     /** {@inheritDoc} */
