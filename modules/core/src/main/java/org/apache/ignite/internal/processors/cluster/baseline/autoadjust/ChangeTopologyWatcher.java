@@ -97,6 +97,8 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             if (isLocalNodeCoordinator(discoveryMgr)) {
                 exchangeManager.affinityReadyFuture(new AffinityTopologyVersion(discoEvt.topologyVersion()))
                     .listen((IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>)future -> {
+                        if (future.error() != null)
+                            return;
 
                         if (exchangeManager.lastFinishedFuture().hasLostPartitions()) {
                             log.warning("Baseline won't be changed cause the lost partitions were detected");
