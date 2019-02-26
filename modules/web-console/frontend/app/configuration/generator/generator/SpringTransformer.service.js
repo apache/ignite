@@ -87,8 +87,13 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
         sb.endBlock('</bean>');
     }
 
-    static _toObject(clsName, items) {
-        return _.map(_.isArray(items) ? items : [items], (item) => {
+    static _toObject(clsName, val) {
+        const items = _.isArray(val) ? val : [val];
+
+        if (clsName === 'ARRAY_EVENTS')
+            return ['<list>', ..._.map(items, (item) => `    <util:constant static-field="${item.class}.${item.label}"/>`), '</list>'];
+
+        return _.map(items, (item) => {
             switch (clsName) {
                 case 'PROPERTY':
                 case 'PROPERTY_CHAR':
@@ -151,12 +156,16 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
                     sb.append(this._toObject(map.keyClsName, key));
                 sb.endBlock('</key>');
 
-                sb.startBlock('<value>');
+                if (!_.isArray(val))
+                    sb.startBlock('<value>');
+
                 if (isValBean)
                     this.appendBean(sb, val);
                 else
-                    sb.append(this._toObject(map.valClsName, val));
-                sb.endBlock('</value>');
+                    sb.append(this._toObject(map.valClsNameShow || map.valClsName, val));
+
+                if (!_.isArray(val))
+                    sb.endBlock('</value>');
 
                 sb.endBlock('</entry>');
             }

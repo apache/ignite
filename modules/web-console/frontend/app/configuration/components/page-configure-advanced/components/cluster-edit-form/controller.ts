@@ -69,12 +69,25 @@ export default class ClusterEditFormController {
                 this.eventStorage.push({value: null, label: 'Disabled'});
 
                 this.eventGroups = _.filter(this.IgniteEventGroups, ({value}) => value !== 'EVTS_SWAPSPACE');
+
+                _.forEach(this.eventGroups, (grp) => grp.events = _.filter(grp.events, (evt) => evt.indexOf('SWAP') < 0));
             }
             else {
                 this.eventGroups = this.IgniteEventGroups;
 
                 this.marshallerVariant.splice(0, 0, {value: 'OptimizedMarshaller', label: 'OptimizedMarshaller'});
             }
+
+            this.eventTypes = [];
+
+            _.forEach(this.eventGroups, (grp) => {
+                _.forEach(grp.events, (e) => {
+                    const newVal = {value: e, label: e};
+
+                    if (!_.find(this.eventTypes, newVal))
+                        this.eventTypes.push(newVal);
+                });
+            });
         };
 
         rebuildDropdowns();

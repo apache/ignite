@@ -1118,7 +1118,11 @@ module.exports.factory = function(mongoose) {
             subIntervals: Number
         },
         mvccVacuumThreadCount: Number,
-        mvccVacuumFrequency: Number
+        mvccVacuumFrequency: Number,
+        localEventListeners: [{
+            className: String,
+            eventTypes: [String]
+        }]
     });
 
     Cluster.index({name: 1, space: 1}, {unique: true});

@@ -583,4 +583,15 @@ export default class Clusters {
         cluster.binaryConfiguration.typeConfigurations.push(item);
         return item;
     }
+
+    addLocalEventListener(cluster) {
+        if (!cluster.localEventListeners)
+            cluster.localEventListeners = [];
+
+        const item = {_id: ObjectID.generate()};
+
+        cluster.localEventListeners.push(item);
+
+        return item;
+    }
 }

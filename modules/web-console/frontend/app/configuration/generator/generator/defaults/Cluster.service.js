@@ -421,6 +421,15 @@ const DFLT_CLUSTER = {
         sslEnabled: false,
         useIgniteSslContextFactory: true,
         sslClientAuth: false
+    },
+    localEventListeners: {
+        keyClsName: 'org.apache.ignite.lang.IgnitePredicate',
+        keyClsGenericName: 'org.apache.ignite.events.Event',
+        keyClsGenericExtends: true,
+        valClsName: 'int[]',
+        valClsNameShow: 'ARRAY_EVENTS',
+        keyField: 'className',
+        valField: 'eventTypes'
     }
 };
 

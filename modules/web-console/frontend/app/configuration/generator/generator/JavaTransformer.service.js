@@ -383,6 +383,12 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
     static _toObject(clsName, val) {
         const items = _.isArray(val) ? val : [val];
 
+        if (clsName === 'ARRAY_EVENTS') {
+            const lastIdx = items.length - 1;
+
+            return [..._.map(items, (v, idx) => (idx === 0 ? 'new int[] {' : ' ') + v.label + (lastIdx === idx ? '}' : ''))];
+        }
+
         return _.map(items, (item) => {
             if (_.isNil(item))
                 return 'null';
@@ -514,11 +520,12 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
     static _constructMap(sb, map, vars = []) {
         const keyClsName = this.javaTypes.shortClassName(map.keyClsName);
+        const keyClsGeneric = map.keyClsGenericName ? `<${map.keyClsGenericExtends ? '? extends ' : ''}${this.javaTypes.shortClassName(map.keyClsGenericName)}>` : '';
         const valClsName = this.javaTypes.shortClassName(map.valClsName);
 
         const mapClsName = map.ordered ? 'LinkedHashMap' : 'HashMap';
 
-        const type = `${mapClsName}<${keyClsName}, ${valClsName}>`;
+        const type = `${mapClsName}<${keyClsName}${keyClsGeneric}, ${valClsName}>`;
 
         sb.append(`${this.varInit(type, map.id, vars)} = new ${mapClsName}<>();`);
 
@@ -542,7 +549,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                     sb.append(`${map.id}.put(${key}, ${this._toObject(map.valClsName, _.head(val))});`);
             }
             else
-                sb.append(`${map.id}.put(${key}, ${this._toObject(map.valClsName, val)});`);
+                sb.append(`${map.id}.put(${key}, ${this._toObject(map.valClsNameShow || map.valClsName, val)});`);
         });
     }
 
@@ -724,6 +731,9 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         imports.push(prop.keyClsName);
         imports.push(prop.valClsName);
 
+        if (prop.keyClsGenericName)
+            imports.push(prop.keyClsGenericName);
+
         return imports;
     }
 
@@ -836,6 +846,18 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                     _.forEach(prop.eventTypes, (grp) => {
                         imports.push(`${grp.class}.${grp.value}`);
                     });
+
+                    break;
+
+                case 'MAP':
+                    if (prop.valClsNameShow === 'ARRAY_EVENTS') {
+                        _.forEach(prop.entries, (lnr) => {
+                            _.forEach(lnr.eventTypes, (type) => {
+                                console.log(type);
+                                imports.push(`${type.class}.${type.label}`);
+                            });
+                        });
+                    }
 
                     break;
                 default:
