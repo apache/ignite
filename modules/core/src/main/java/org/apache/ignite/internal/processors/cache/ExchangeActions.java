@@ -124,6 +124,13 @@ public class ExchangeActions {
             }
         }
 
+        if (locJoinCtx != null) {
+            for (DynamicCacheDescriptor desc : locJoinCtx.cacheDescriptors().values()) {
+                if (CU.isSystemCache(desc.cacheName()))
+                    return true;
+            }
+        }
+
         return false;
     }
 
