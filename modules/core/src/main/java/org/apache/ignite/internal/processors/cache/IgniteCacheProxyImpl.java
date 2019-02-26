@@ -496,7 +496,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
         final CacheQuery<R> qry = ctx.queries().createScanQuery(
-            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal());
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), scanQry.isDataPageScanEnabled());
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -659,8 +659,12 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (qry instanceof ContinuousQuery) {
             ContinuousQuery<K, V> qry0 = (ContinuousQuery<K, V>)qry;
 
-            if (qry0.getLocalListener() == null)
-                throw new IgniteException("Mandatory local listener is not set for the query: " + qry);
+            if (qry0.getLocalListener() == null &&
+                qry0.getRemoteFilterFactory() == null &&
+                qry0.getRemoteFilter() == null) {
+                throw new IgniteException("LocalListener, RemoterFilter " +
+                    "or RemoteFilterFactory must be specified for the query: " + qry);
+            }
 
             if (qry0.getRemoteFilter() != null && qry0.getRemoteFilterFactory() != null)
                 throw new IgniteException("Should be used either RemoterFilter or RemoteFilterFactory.");
@@ -672,8 +676,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         else {
             ContinuousQueryWithTransformer<K, V, ?> qry0 = (ContinuousQueryWithTransformer<K, V, ?>)qry;
 
-            if (qry0.getLocalListener() == null)
-                throw new IgniteException("Mandatory local transformed event listener is not set for the query: " + qry);
+            if (qry0.getLocalListener() == null && qry0.getRemoteFilterFactory() == null) {
+                throw new IgniteException("LocalListener " +
+                    "or RemoteFilterFactory must be specified for the query: " + qry);
+            }
 
             if (qry0.getRemoteTransformerFactory() == null)
                 throw new IgniteException("Mandatory RemoteTransformerFactory is not set for the query: " + qry);
@@ -798,6 +804,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 return query((ScanQuery)qry, null, projection(qry.isLocal()));
 
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
         }
         catch (Exception e) {
             if (e instanceof CacheException)

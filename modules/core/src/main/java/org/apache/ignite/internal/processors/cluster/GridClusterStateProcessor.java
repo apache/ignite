@@ -66,7 +66,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -630,11 +629,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         sharedCtx.io().addCacheHandler(
             0, GridChangeGlobalStateMessageResponse.class,
-            new CI2<UUID, GridChangeGlobalStateMessageResponse>() {
-                @Override public void apply(UUID nodeId, GridChangeGlobalStateMessageResponse msg) {
-                    processChangeGlobalStateResponse(nodeId, msg);
-                }
-            });
+            this::processChangeGlobalStateResponse
+        );
     }
 
     /** {@inheritDoc} */
@@ -759,13 +755,22 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology
     ) {
+        return changeGlobalState(activate, baselineNodes, forceChangeBaselineTopology, false);
+    }
+
+    public IgniteInternalFuture<?> changeGlobalState(
+        final boolean activate,
+        Collection<? extends BaselineNode> baselineNodes,
+        boolean forceChangeBaselineTopology,
+        boolean isAutoAdjust
+    ) {
         if (inMemoryMode)
-            return changeGlobalState0(activate, null, false);
+            return changeGlobalState0(activate, null, false, isAutoAdjust);
 
         BaselineTopology newBlt = (compatibilityMode && !forceChangeBaselineTopology) ? null :
             calculateNewBaselineTopology(activate, baselineNodes, forceChangeBaselineTopology);
 
-        return changeGlobalState0(activate, newBlt, forceChangeBaselineTopology);
+        return changeGlobalState0(activate, newBlt, forceChangeBaselineTopology, isAutoAdjust);
     }
 
     /**
@@ -835,6 +840,17 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
         BaselineTopology blt, boolean forceChangeBaselineTopology) {
+        return changeGlobalState0(activate, blt, forceChangeBaselineTopology, false);
+    }
+
+    /** */
+    private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
+        BaselineTopology blt, boolean forceChangeBaselineTopology, boolean isAutoAdjust) {
+        boolean isBaselineAutoAdjustEnabled = ctx.cluster().get().baselineConfiguration().isBaselineAutoAdjustEnabled();
+
+        if (forceChangeBaselineTopology && isBaselineAutoAdjustEnabled != isAutoAdjust)
+            throw new BaselineAdjustForbiddenException(isBaselineAutoAdjustEnabled);
+
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
@@ -903,7 +919,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             activate,
             blt,
             forceChangeBaselineTopology,
-            System.currentTimeMillis());
+            System.currentTimeMillis()
+        );
 
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 
@@ -1163,8 +1180,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             @Override public void run() {
                 boolean client = ctx.clientNode();
 
-                Exception e = null;
-
                 try {
                     if (ctx.service() instanceof GridServiceProcessor) {
                         GridServiceProcessor srvcProc = (GridServiceProcessor)ctx.service();
@@ -1181,6 +1196,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     ctx.task().onActivate(ctx);
 
                     ctx.encryption().onActivate(ctx);
+
+                    ((IgniteChangeGlobalStateSupport)ctx.distributedMetastorage()).onActivate(ctx);
 
                     if (log.isInfoEnabled())
                         log.info("Successfully performed final activation steps [nodeId="

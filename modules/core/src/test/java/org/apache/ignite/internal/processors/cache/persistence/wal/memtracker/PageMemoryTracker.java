@@ -185,7 +185,8 @@ public class PageMemoryTracker implements IgnitePlugin {
                     cleanupPages(fullPageId -> fullPageId.groupId() == grp.groupId());
                 }
 
-                @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
+                @Override
+                public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
                     super.onPartitionDestroyed(grpId, partId, tag);
 
                     cleanupPages(fullPageId -> fullPageId.groupId() == grpId
@@ -212,7 +213,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         Mockito.doReturn(pageSize).when(pageMemoryMock).pageSize();
         Mockito.when(pageMemoryMock.realPageSize(Mockito.anyInt())).then(mock -> {
-            int grpId = (Integer) mock.getArguments()[0];
+            int grpId = (Integer)mock.getArguments()[0];
 
             if (gridCtx.encryption().groupKey(grpId) == null)
                 return pageSize;
@@ -247,9 +248,19 @@ public class PageMemoryTracker implements IgnitePlugin {
         freeSlotsCnt = maxPages;
 
         if (cfg.isCheckPagesOnCheckpoint()) {
-            checkpointLsnr = ctx -> {
-                if (!checkPages(false))
-                    throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
+            checkpointLsnr = new DbCheckpointListener() {
+                @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    if (!checkPages(false))
+                        throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
+                }
+
+                @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    /* No-op. */
+                }
+
+                @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    /* No-op. */
+                }
             };
 
             ((GridCacheDatabaseSharedManager)gridCtx.cache().context().database()).addCheckpointListener(checkpointLsnr);
@@ -297,7 +308,6 @@ public class PageMemoryTracker implements IgnitePlugin {
     private boolean isEnabled() {
         return (cfg != null && cfg.isEnabled() && CU.isPersistenceEnabled(ctx.igniteConfiguration()));
     }
-
 
     /**
      * Cleanup pages by predicate.

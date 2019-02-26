@@ -48,9 +48,16 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
      * @param excludeCaches Caches to exclude.
      * @param skipZeros Skip zeros partitions.
      * @param cacheFilterEnum Cache kind.
+     * @param checkCrc Check partition crc sum.
      */
-    public VisorIdleVerifyDumpTaskArg(Set<String> caches, Set<String> excludeCaches, boolean skipZeros, CacheFilterEnum cacheFilterEnum) {
-        super(caches, excludeCaches);
+    public VisorIdleVerifyDumpTaskArg(
+        Set<String> caches,
+        Set<String> excludeCaches,
+        boolean skipZeros,
+        CacheFilterEnum cacheFilterEnum,
+        boolean checkCrc
+    ) {
+        super(caches, excludeCaches, checkCrc);
         this.skipZeros = skipZeros;
         this.cacheFilterEnum = cacheFilterEnum;
     }
@@ -75,28 +82,65 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
 
         out.writeBoolean(skipZeros);
 
-        U.writeEnum(out, cacheFilterEnum);
+        /**
+         * Since protocol version 2 we must save class instance new fields to end of output object. It's needs for
+         * support backward compatibility in extended (child) classes.
+         *
+         * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
+         */
+        if (instanceOfCurrentClass()) {
+            U.writeEnum(out, cacheFilterEnum);
+
+            U.writeCollection(out, getExcludeCaches());
+
+            out.writeBoolean(isCheckCrc());
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         super.readExternalData(protoVer, in);
 
         skipZeros = in.readBoolean();
 
-        if (protoVer >= V2)
-            cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
-        else
-            cacheFilterEnum = CacheFilterEnum.ALL;
+        /**
+         * Since protocol version 2 we must read class instance new fields from end of input object. It's needs for
+         * support backward compatibility in extended (child) classes.
+         *
+         * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
+         */
+        if (instanceOfCurrentClass()) {
+            if (protoVer >= V2)
+                cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
+            else
+                cacheFilterEnum = CacheFilterEnum.ALL;
+
+            if (protoVer >= V2)
+                excludeCaches(U.readSet(in));
+
+            if (protoVer >= V3)
+                checkCrc(in.readBoolean());
+        }
     }
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V2;
+        return (byte)Math.max(V2, super.getProtocolVersion());
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorIdleVerifyDumpTaskArg.class, this);
+    }
+
+    /**
+     * @return {@code True} if current instance is a instance of current class (not a child class) and {@code False} if
+     * current instance is a instance of extented class (i.e child class).
+     */
+    private boolean instanceOfCurrentClass() {
+        return VisorIdleVerifyDumpTaskArg.class == getClass();
     }
 }

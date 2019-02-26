@@ -66,13 +66,11 @@ public class AgentUtils {
     }
 
     /** */
-    private static final Ack NOOP_CB = new Ack() {
-        @Override public void call(Object... args) {
-            if (args != null && args.length > 0 && args[0] instanceof Throwable)
-                log.error("Failed to execute request on agent.", (Throwable)args[0]);
-            else
-                log.info("Request on agent successfully executed " + Arrays.toString(args));
-        }
+    private static final Ack NOOP_CB = args -> {
+        if (args != null && args.length > 0 && args[0] instanceof Throwable)
+            log.error("Failed to execute request on agent.", (Throwable)args[0]);
+        else
+            log.info("Request on agent successfully executed " + Arrays.toString(args));
     };
 
     /**

@@ -54,8 +54,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Callable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -70,7 +68,6 @@ import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEnd
 /**
  * Tests secondary file system configuration.
  */
-@RunWith(JUnit4.class)
 public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstractTest {
     /** IGFS scheme */
     static final String IGFS_SCHEME = "igfs";

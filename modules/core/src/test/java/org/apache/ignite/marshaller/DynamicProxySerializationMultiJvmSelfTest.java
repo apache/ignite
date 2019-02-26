@@ -28,13 +28,10 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Multi-JVM test for dynamic proxy serialization.
  */
-@RunWith(JUnit4.class)
 public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstractTest {
     /** */
     private static Callable<Marshaller> marshFactory;

@@ -53,8 +53,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -63,7 +61,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
  * Tests for distributed DML.
  */
 @SuppressWarnings({"unchecked"})
-@RunWith(JUnit4.class)
 public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static int NODE_COUNT = 4;

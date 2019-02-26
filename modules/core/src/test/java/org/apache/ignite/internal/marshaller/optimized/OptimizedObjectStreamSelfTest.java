@@ -69,15 +69,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test for optimized object streams.
  */
-@RunWith(JUnit4.class)
 public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /** */
     private static final MarshallerContext CTX = new MarshallerContextTestImpl();
@@ -140,7 +137,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testFloat() throws Exception {
         float val = 10.0f;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(val, marshalUnmarshal(val), 0);
     }
 
     /**
@@ -150,7 +147,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testDouble() throws Exception {
         double val = 100.0d;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(val, marshalUnmarshal(val), 0);
     }
 
     /**

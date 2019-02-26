@@ -36,13 +36,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests critical failure handling on checkpoint read lock acquisition errors.
  */
-@RunWith(JUnit4.class)
 public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
     /** */
     private static final AbstractFailureHandler FAILURE_HND = new AbstractFailureHandler() {

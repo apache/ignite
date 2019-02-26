@@ -35,14 +35,11 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingMvccTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
-/**
- *
- */
-@RunWith(IgniteCacheMvccTestSuite7.DynamicSuite.class)
+/** */
+@RunWith(DynamicSuite.class)
 public class IgniteCacheMvccTestSuite7 {
     /**
      * @return IgniteCache test suite.
@@ -78,15 +75,6 @@ public class IgniteCacheMvccTestSuite7 {
         suite.add(GridCacheRebalancingPartitionCountersMvccTest.class);
         suite.add(GridCacheRebalancingWithAsyncClearingMvccTest.class);
 
-
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

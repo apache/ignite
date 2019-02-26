@@ -29,14 +29,12 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -78,34 +76,28 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582,https://issues.apache.org/jira/browse/IGNITE-7956")
     @Test
     public void testEvictionWithReadThroughMvccTxReplicated() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
-
         testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582,https://issues.apache.org/jira/browse/IGNITE-7956")
     @Test
     public void testEvictionWithReadThroughMvccTxPartitioned() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
-
         testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.PARTITIONED);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582,https://issues.apache.org/jira/browse/IGNITE-7956,"
+        + "https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testEvictionWithReadThroughMvccTxLocal() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.LOCAL);
     }
 

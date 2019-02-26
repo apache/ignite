@@ -520,4 +520,19 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param f Function used for replacing.
      */
     public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f);
+
+    /**
+     * Returns matrix determinant using Laplace theorem.
+     *
+     * @return A determinant for this matrix.
+     * @throws CardinalityException Thrown if matrix is not square.
+     */
+    public double determinant();
+
+    /**
+     * Returns the inverse matrix of this matrix
+     *
+     * @return Inverse of this matrix
+     */
+    public Matrix inverse();
 }

@@ -30,15 +30,12 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests for methods that run job locally with multiple arguments.
  */
-@RunWith(JUnit4.class)
 public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonAbstractTest {
     /** */
     private static Collection<Object> ids;

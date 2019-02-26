@@ -19,6 +19,8 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteTcBotInitNewPageTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IndexingMultithreadedLoadContinuousRestartTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingWalRestoreTest;
@@ -38,7 +40,9 @@ import org.junit.runners.Suite;
     IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest.class,
     IgnitePersistentStoreSchemaLoadTest.class,
     IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest.class,
-    IgniteTwoRegionsRebuildIndexTest.class
+    IgniteTwoRegionsRebuildIndexTest.class,
+    IgniteTcBotInitNewPageTest.class,
+    IndexingMultithreadedLoadContinuousRestartTest.class
 })
 public class IgnitePdsWithIndexingTestSuite {
 }

@@ -37,13 +37,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean blockMsgs;
@@ -133,7 +130,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs,
             GridTestUtils.waitForCondition(() -> {
-                log.info("Waiting for messages delivery");
+                log.info("Waiting for messages delivery [sentSize=" + sentEnsuredMsgs.size() + ", rcvdSize=" + receivedEnsuredMsgs.size() + ']');
 
                 return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
             }, 10000));

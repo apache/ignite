@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import ml.combust.mleap.core.types.ScalarType;
 import ml.combust.mleap.core.types.StructField;
@@ -32,12 +31,13 @@ import ml.combust.mleap.runtime.javadsl.BundleBuilder;
 import ml.combust.mleap.runtime.javadsl.ContextBuilder;
 import ml.combust.mleap.runtime.transformer.PipelineModel;
 import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.math.primitives.vector.NamedVector;
 import scala.collection.JavaConverters;
 
 /**
  * MLeap model parser.
  */
-public class MLeapModelParser implements ModelParser<HashMap<String, Double>, Double, MLeapModel> {
+public class MLeapModelParser implements ModelParser<NamedVector, Double, MLeapModel> {
     /** */
     private static final long serialVersionUID = -370352744966205715L;
 

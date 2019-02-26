@@ -31,8 +31,6 @@ import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
@@ -41,7 +39,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
  * Abstract AOP test.
  */
 @SuppressWarnings( {"OverlyStrongTypeCast", "ProhibitedExceptionDeclared", "IfMayBeConditional"})
-@RunWith(JUnit4.class)
 public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /** */
     private DeploymentMode depMode = DeploymentMode.PRIVATE;

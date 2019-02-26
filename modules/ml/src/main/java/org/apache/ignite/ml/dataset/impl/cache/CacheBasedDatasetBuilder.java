@@ -59,8 +59,10 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     private final IgniteBiPredicate<K, V> filter;
 
     /** Upstream transformer builder. */
-    private final UpstreamTransformerBuilder<K, V> transformerBuilder;
+    private final UpstreamTransformerBuilder transformerBuilder;
 
+    /** Upstream keep binary. */
+    private final boolean upstreamKeepBinary;
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
      * predicate that passes all upstream entries to dataset.
@@ -93,11 +95,29 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     public CacheBasedDatasetBuilder(Ignite ignite,
         IgniteCache<K, V> upstreamCache,
         IgniteBiPredicate<K, V> filter,
-        UpstreamTransformerBuilder<K, V> transformerBuilder) {
+        UpstreamTransformerBuilder transformerBuilder) {
+        this(ignite, upstreamCache, filter, transformerBuilder, false);
+    }
+
+    /**
+     * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset}.
+     *
+     * @param ignite Ignite.
+     * @param upstreamCache Upstream cache.
+     * @param filter Filter.
+     * @param transformerBuilder Transformer builder.
+     * @param isKeepBinary Is keep binary for upstream cache.
+     */
+    public CacheBasedDatasetBuilder(Ignite ignite,
+        IgniteCache<K, V> upstreamCache,
+        IgniteBiPredicate<K, V> filter,
+        UpstreamTransformerBuilder transformerBuilder,
+        Boolean isKeepBinary){
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
         this.transformerBuilder = transformerBuilder;
+        this.upstreamKeepBinary = isKeepBinary;
     }
 
     /** {@inheritDoc} */
@@ -129,14 +149,15 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             partCtxBuilder,
             envBuilder,
             RETRIES,
-            RETRY_INTERVAL
+            RETRY_INTERVAL,
+            upstreamKeepBinary
         );
 
-        return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformerBuilder, datasetCache, envBuilder, partDataBuilder, datasetId);
+        return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformerBuilder, datasetCache, envBuilder, partDataBuilder, datasetId, upstreamKeepBinary);
     }
 
     /** {@inheritDoc} */
-    @Override public DatasetBuilder<K, V> withUpstreamTransformer(UpstreamTransformerBuilder<K, V> builder) {
+    @Override public DatasetBuilder<K, V> withUpstreamTransformer(UpstreamTransformerBuilder builder) {
         return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, filter, transformerBuilder.andThen(builder));
     }
 
@@ -144,5 +165,14 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
         return new CacheBasedDatasetBuilder<>(ignite, upstreamCache,
             (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2));
+    }
+
+    /**
+     * Add keepBinary policy. False by default.
+     *
+     * @param isKeepBinary Is keep binary.
+     */
+    public CacheBasedDatasetBuilder<K, V> withKeepBinary(boolean isKeepBinary){
+        return new CacheBasedDatasetBuilder<K, V>(ignite, upstreamCache, filter, transformerBuilder, isKeepBinary);
     }
 }

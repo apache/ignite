@@ -45,8 +45,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
@@ -58,7 +56,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstract
 /**
  * Test basic mvcc bulk cache operations.
  */
-@RunWith(JUnit4.class)
 public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

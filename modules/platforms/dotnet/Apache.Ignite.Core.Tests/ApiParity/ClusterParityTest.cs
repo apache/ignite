@@ -32,7 +32,8 @@
             "startNodes",
             "startNodesAsync",
             "stopNodes",
-            "restartNodes"
+            "restartNodes",
+            "baselineConfiguration"
         };
 
         /** Members that are missing on .NET side and should be added in future. */

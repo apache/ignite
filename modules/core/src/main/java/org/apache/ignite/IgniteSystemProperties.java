@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.stream.StreamTransformer;
@@ -491,7 +492,12 @@ public final class IgniteSystemProperties {
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
-    /** Force all SQL queries to be processed lazily regardless of what clients request. */
+    /**
+     *  Force all SQL queries to be processed lazily regardless of what clients request.
+     *
+     * @deprecated Since version 2.8.
+     */
+    @Deprecated
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
     /** Disable SQL system views. */
@@ -626,6 +632,14 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT = "IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT";
 
+    /**
+     * System property to specify consistent id of Ignite node.
+     * <p>
+     * Value of the system property will overwrite matched property
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#setConsistentId(Serializable)} in configuration.
+     */
+    public static final String IGNITE_OVERRIDE_CONSISTENT_ID = "IGNITE_OVERRIDE_CONSISTENT_ID";
+
     /** */
     public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
 
@@ -711,12 +725,6 @@ public final class IgniteSystemProperties {
 
     /** Ignite page memory concurrency level. */
     public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";
-
-    /**
-     * Start Ignite on versions of JRE 7 older than 1.7.0_71. For proper work it may require
-     * disabling JIT in some places.
-     */
-    public static final String IGNITE_FORCE_START_JAVA7 = "IGNITE_FORCE_START_JAVA7";
 
     /**
      * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
@@ -1080,6 +1088,48 @@ public final class IgniteSystemProperties {
      * metrics will be unavailable via JMX too.
      */
     public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
+
+    /**
+     * Maximum number of different partitions to be extracted from between expression within sql query.
+     * In case of limit exceeding all partitions will be used.
+     */
+    public static final String IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN =
+        "IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN";
+
+    /**
+     * Maximum amount of bytes that can be stored in history of {@link DistributedMetaStorage} updates.
+     */
+    public static final String IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES = "IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES";
+
+    /**
+     * Size threshold to allocate and retain additional  HashMap to improve contains()
+     * which leads to extra memory consumption.
+     */
+    public static final String IGNITE_AFFINITY_BACKUPS_THRESHOLD = "IGNITE_AFFINITY_BACKUPS_THRESHOLD";
+
+    /**
+     * Flag to disable memory optimization:
+     *  BitSets instead of HashSets to store partitions.
+     *  When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
+     * which leads to extra memory consumption, otherwise we use view on the
+     * list of cluster nodes to reduce memory consumption on redundant data structures.
+     */
+    public static final String IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = "IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION";
+
+    /**
+     * Limit the maximum number of objects in memory during the recovery procedure.
+     */
+    public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
+
+    /**
+     * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
+     */
+    public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
+
+    /**
+     * Flag to enable baseline auto-adjust by default.
+     */
+    public static final String IGNITE_BASELINE_AUTO_ADJUST_ENABLED = "IGNITE_BASELINE_AUTO_ADJUST_ENABLED";
 
     /**
      * Enforces singleton.

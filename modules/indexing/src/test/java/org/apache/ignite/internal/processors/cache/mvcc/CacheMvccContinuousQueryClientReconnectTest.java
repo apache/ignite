@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientReconnectTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -33,14 +32,12 @@ public class CacheMvccContinuousQueryClientReconnectTest  extends IgniteCacheCon
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10537")
     @Test
     @Override public void testReconnectClient() throws Exception {
         super.testReconnectClient();
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10537")
     @Test
     @Override public void testReconnectClientAndLeftRouter() throws Exception {
         super.testReconnectClientAndLeftRouter();

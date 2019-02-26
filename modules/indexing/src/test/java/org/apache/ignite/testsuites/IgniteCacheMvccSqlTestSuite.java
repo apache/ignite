@@ -67,11 +67,11 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlUpdateCounte
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccStreamingInsertTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxNodeMappingTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccDeadlockDetectionConfigTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadBulkOpsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadOperationsTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildWithMvccEnabledSelfTest;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -92,6 +92,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     GridIndexRebuildWithMvccEnabledSelfTest.class,
 
     CacheMvccTxNodeMappingTest.class,
+
+    MvccDeadlockDetectionConfigTest.class,
+    MvccDeadlockDetectionTest.class,
 
     // SQL vs CacheAPI consistency.
     MvccRepeatableReadOperationsTest.class,
@@ -193,13 +196,6 @@ public class IgniteCacheMvccSqlTestSuite {
         /** {@inheritDoc} */
         @Override protected CacheAtomicityMode atomicityMode() {
             return TRANSACTIONAL_SNAPSHOT;
-        }
-
-        /** {@inheritDoc} */
-        @Ignore("https://issues.apache.org/jira/browse/IGNITE-10765")
-        @Test
-        @Override public void testManyKeysRollback() throws Exception {
-            super.testManyKeysRollback();
         }
     }
 }

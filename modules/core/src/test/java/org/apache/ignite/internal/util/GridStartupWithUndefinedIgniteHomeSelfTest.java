@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -40,8 +39,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.nullifyHomeDirectory;
  * Checks that node can be started without operations with undefined IGNITE_HOME.
  * <p>
  * Notes:
- * 1. The test intentionally extends JUnit {@link TestCase} class to make the test
- * independent from {@link GridCommonAbstractTest} stuff.
+ * 1. The test is intentionally made  independent from {@link GridCommonAbstractTest} stuff.
  * 2. Do not replace native Java asserts with JUnit ones - test won't fall on TeamCity.
  */
 public class GridStartupWithUndefinedIgniteHomeSelfTest {
@@ -53,18 +51,16 @@ public class GridStartupWithUndefinedIgniteHomeSelfTest {
 
     /** {@inheritDoc} */
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         // Next grid in the same VM shouldn't use cached values produced by these tests.
         nullifyHomeDirectory();
 
         U.getIgniteHome();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testStartStopWithUndefinedIgniteHome() throws Exception {
+    public void testStartStopWithUndefinedIgniteHome() {
         IgniteUtils.nullifyHomeDirectory();
 
         // We can't use U.getIgniteHome() here because
