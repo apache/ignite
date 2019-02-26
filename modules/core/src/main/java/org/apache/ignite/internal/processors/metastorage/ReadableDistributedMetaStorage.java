@@ -30,6 +30,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface ReadableDistributedMetaStorage {
     /**
+     * Get the total number of updates that metastorage ever had.
+     */
+    long getUpdatesCount();
+
+    /**
      * Get value by the key.
      *
      * @param key The key.

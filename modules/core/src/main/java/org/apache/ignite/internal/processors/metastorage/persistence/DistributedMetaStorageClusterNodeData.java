@@ -29,7 +29,7 @@ class DistributedMetaStorageClusterNodeData implements Serializable {
     public final DistributedMetaStorageVersion ver;
 
     /** */
-    public final DistributedMetaStorageHistoryItem[] fullData;
+    public final DistributedMetaStorageKeyValuePair[] fullData;
 
     /** */
     public final DistributedMetaStorageHistoryItem[] hist;
@@ -40,7 +40,7 @@ class DistributedMetaStorageClusterNodeData implements Serializable {
     /** */
     public DistributedMetaStorageClusterNodeData(
         DistributedMetaStorageVersion ver,
-        DistributedMetaStorageHistoryItem[] fullData,
+        DistributedMetaStorageKeyValuePair[] fullData,
         DistributedMetaStorageHistoryItem[] hist,
         DistributedMetaStorageHistoryItem[] updates
     ) {

@@ -2271,6 +2271,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return impl.allNodesSupport(feature);
     }
 
+    /** */
+    public Object clusterData(TcpDiscoveryClusterDataComponent component) {
+        if (impl == null)
+            return null;
+
+        return impl.clusterData(component);
+    }
+
+    /** */
+    public void putClusterData(TcpDiscoveryClusterDataComponent component, Object data) {
+        assert (impl != null);
+
+        impl.putClusterData(component, data);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean knownNode(UUID nodeId) {
         return getNode0(nodeId) != null;

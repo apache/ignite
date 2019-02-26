@@ -35,17 +35,17 @@ class DistributedMetaStorageUtil {
     /**
      * Prefix for user keys to store in distributed metastorage.
      */
-    private static final String KEY_PREFIX = "key-";
+    private static final String KEY_PREFIX = "k-";
 
     /**
      * Key for history version.
      */
-    private static final String HISTORY_VER_KEY = "hist-ver";
+    private static final String HISTORY_VER_KEY = "hv";
 
     /**
      * Prefix for history items. Each item will be stored using {@code hist-item-<ver>} key.
      */
-    private static final String HISTORY_ITEM_KEY_PREFIX = "hist-item-";
+    private static final String HISTORY_ITEM_KEY_PREFIX = "h-";
 
     /**
      * Special key indicating that local data for distributied metastorage is inconsistent because of the ungoing
@@ -82,14 +82,15 @@ class DistributedMetaStorageUtil {
 
     /** */
     public static String historyItemKey(long ver) {
-        return historyItemPrefix() + ver;
+        // Natural order of keys should be preserved so we need leading zeroes.
+        return historyItemPrefix() + Long.toString(ver + 0x1000_0000_0000_0000L, 16).substring(1);
     }
 
     /** */
     public static long historyItemVer(String histItemKey) {
         assert histItemKey.startsWith(historyItemPrefix());
 
-        return Long.parseLong(histItemKey.substring(historyItemPrefix().length()));
+        return Long.parseLong(histItemKey.substring(historyItemPrefix().length()), 16);
     }
 
     /** */

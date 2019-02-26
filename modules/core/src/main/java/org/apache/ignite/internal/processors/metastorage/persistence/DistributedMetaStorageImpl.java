@@ -19,11 +19,10 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -58,6 +57,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryClusterDataComponent;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -100,7 +102,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * Version of distributed metastorage.
      */
-    volatile DistributedMetaStorageVersion ver;
+    private volatile DistributedMetaStorageVersion ver;
 
     /** Listeners set. */
     final Set<IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>>> lsnrs =
@@ -110,14 +112,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Map that contains latest changes in distributed metastorage. There should be no gaps in versions and the latest
      * version is always present in the map. This means that the map is empty only if version is 0.
      */
-    //TODO Use something similar to java.util.ArrayDeque.
-    private final Map<Long, DistributedMetaStorageHistoryItem> histCache = new ConcurrentHashMap<>();
-
-    /** Approximate number of bytes in values of {@link #histCache} map. */
-    private long histSizeApproximation;
+    private final DistributedMetaStorageHistoryCache histCache = new DistributedMetaStorageHistoryCache();
 
     /**
-     * Maximal acceptable value of {@link #histSizeApproximation}. After every write history would shrink until its size
+     * Maximal acceptable value of {@link #histCache} in bytes. After every write history would shrink until its size
      * is not greater then given value.
      */
     private final long histMaxBytes = IgniteSystemProperties.getLong(
@@ -249,7 +247,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             if (isPersistenceEnabled(ctx.config())) {
                 try {
-                    DistributedMetaStorageHistoryItem[] locFullData = bridge.localFullData();
+                    DistributedMetaStorageKeyValuePair[] locFullData = bridge.localFullData();
 
                     bridge = new ReadOnlyDistributedMetaStorageBridge(locFullData);
                 }
@@ -344,6 +342,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             subscriber.onReadyForWrite(this);
 
         writeAvailable.countDown();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getUpdatesCount() {
+        return bridge instanceof ReadOnlyDistributedMetaStorageBridge
+            ? ((ReadOnlyDistributedMetaStorageBridge)bridge).version().id
+            : ver.id;
     }
 
     /** {@inheritDoc} */
@@ -444,13 +449,23 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         assert startupExtras != null;
 
-        DistributedMetaStorageHistoryItem[] hist = new TreeMap<>(histCache) // Sorting might be avoided if histCache is a queue
-            .values()
-            .toArray(EMPTY_ARRAY);
-
         DistributedMetaStorageVersion verToSnd = bridge instanceof ReadOnlyDistributedMetaStorageBridge
             ? ((ReadOnlyDistributedMetaStorageBridge)bridge).version()
             : ver;
+
+        long clusterVer = versionFromDiscoveryClusterData();
+
+        DistributedMetaStorageHistoryItem[] hist;// = histCache.toArray();
+
+        if (verToSnd.id <= clusterVer)
+            hist = EMPTY_ARRAY;
+        else if (clusterVer + histCache.size() < verToSnd.id)
+            hist = histCache.toArray();
+        else
+            hist = Arrays.copyOfRange(histCache.toArray(), (int)(clusterVer + histCache.size() - verToSnd.id), histCache.size());
+
+        if (verToSnd.id > clusterVer)
+            setClusterDataVer(verToSnd.id);
 
         Serializable data = new DistributedMetaStorageJoiningNodeData(
             getBaselineTopologyId(),
@@ -599,6 +614,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                     for (long v = actualVer.id + 1; v <= remoteVer.id; v++)
                         updateLater(hist[(int)(v - remoteVer.id + hist.length - 1)]);
+
+                    setClusterDataVer(remoteVer.id);
                 }
                 else
                     assert false : "Joining node is too far ahead [remoteVer=" + remoteVer + "]";
@@ -652,7 +669,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     else {
                         DistributedMetaStorageVersion ver0;
 
-                        DistributedMetaStorageHistoryItem[] fullData;
+                        DistributedMetaStorageKeyValuePair[] fullData;
 
                         DistributedMetaStorageHistoryItem[] hist;
 
@@ -784,7 +801,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * {@link DistributedMetaStorageBridge#localFullData()} invoked on {@link #bridge}.
      */
     @TestOnly
-    private DistributedMetaStorageHistoryItem[] localFullData() throws IgniteCheckedException {
+    private DistributedMetaStorageKeyValuePair[] localFullData() throws IgniteCheckedException {
         return bridge.localFullData();
     }
 
@@ -872,7 +889,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (msg instanceof DistributedMetaStorageCasMessage)
                 completeCas(bridge, (DistributedMetaStorageCasMessage)msg);
             else
-                completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), true);
+                completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), false, true);
         }
         catch (IgniteCheckedException | Error e) {
             throw criticalError(e);
@@ -931,16 +948,60 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void completeWrite(
         DistributedMetaStorageBridge bridge,
         DistributedMetaStorageHistoryItem histItem,
+        boolean force,
         boolean notifyListeners
     ) throws IgniteCheckedException {
-        Serializable val = notifyListeners ? unmarshal(histItem.valBytes) : null;
-
         lock();
 
         try {
-            bridge.onUpdateMessage(histItem, val, notifyListeners);
+            if (!force) {
+                String[] keys = histItem.keys;
+                byte[][] valBytesArr = histItem.valBytesArray;
 
-            bridge.write(histItem.key, histItem.valBytes);
+                int cnt = 0;
+                int len = keys.length;
+
+                BitSet matches = new BitSet(len);
+
+                for (int i = 0; i < len; i++) {
+                    String key = keys[i];
+                    byte[] valBytes = valBytesArr[i];
+                    byte[] existingValBytes = (byte[])bridge.read(key, false);
+
+                    if (Arrays.equals(valBytes, existingValBytes))
+                        matches.set(i);
+                    else
+                        ++cnt;
+                }
+
+                if (cnt == 0)
+                    return;
+
+                if (cnt != len) {
+                    String[] newKeys = new String[cnt];
+                    byte[][] newValBytesArr = new byte[cnt][];
+
+                    for (int src = 0, dst = 0; src < len; src++) {
+                        if (!matches.get(src)) {
+                            newKeys[dst] = keys[src];
+                            newValBytesArr[dst] = valBytesArr[src];
+
+                            ++dst;
+                        }
+                    }
+
+                    histItem = new DistributedMetaStorageHistoryItem(newKeys, newValBytesArr);
+                }
+            }
+
+            bridge.onUpdateMessage(histItem);
+
+            if (notifyListeners)
+                for (int i = 0, len = histItem.keys.length; i < len; i++)
+                    notifyListeners(histItem.keys[i], bridge.read(histItem.keys[i], true), unmarshal(histItem.valBytesArray[i]));
+
+            for (int i = 0, len = histItem.keys.length; i < len; i++)
+                bridge.write(histItem.keys[i], histItem.valBytesArray[i]);
         }
         finally {
             unlock();
@@ -956,7 +1017,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      *
      * @param bridge Bridge to get the access to the storage.
      * @param msg Message with all required data.
-     * @see #completeWrite(DistributedMetaStorageBridge, DistributedMetaStorageHistoryItem, boolean)
+     * @see #completeWrite(DistributedMetaStorageBridge, DistributedMetaStorageHistoryItem, boolean, boolean)
      */
     private void completeCas(
         DistributedMetaStorageBridge bridge,
@@ -983,35 +1044,26 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             unlock();
         }
 
-        completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), true);
+        completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), false, true);
     }
 
     /**
-     * Store current update into the in-memory history cache. {@link #histSizeApproximation} is recalculated during this
-     * process.
+     * Store current update into the in-memory history cache.
      *
      * @param ver Version for the update.
      * @param histItem Update itself.
      */
     void addToHistoryCache(long ver, DistributedMetaStorageHistoryItem histItem) {
-        DistributedMetaStorageHistoryItem old = histCache.put(ver, histItem);
-
-        assert old == null : old;
-
-        histSizeApproximation += histItem.estimateSize();
+        histCache.put(ver, histItem);
     }
 
     /**
-     * Remove specific update from the in-memory history cache. {@link #histSizeApproximation} is recalculated during
-     * this process.
+     * Remove specific update from the in-memory history cache.
      *
      * @param ver Version of the update.
      */
     void removeFromHistoryCache(long ver) {
-        DistributedMetaStorageHistoryItem old = histCache.remove(ver);
-
-        if (old != null)
-            histSizeApproximation -= old.estimateSize();
+        histCache.remove(ver);
     }
 
     /**
@@ -1019,8 +1071,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      */
     void clearHistoryCache() {
         histCache.clear();
-
-        histSizeApproximation = 0L;
     }
 
     /**
@@ -1031,11 +1081,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         long maxBytes = histMaxBytes;
 
-        if (histSizeApproximation > maxBytes && histCache.size() > 1) {
+        if (histCache.sizeInBytes() > maxBytes && histCache.size() > 1) {
             lock();
 
             try {
-                while (histSizeApproximation > maxBytes && histCache.size() > 1) {
+                while (histCache.sizeInBytes() > maxBytes && histCache.size() > 1) {
                     bridge.removeHistoryItem(ver.id + 1 - histCache.size());
 
                     removeFromHistoryCache(ver.id + 1 - histCache.size());
@@ -1070,22 +1120,26 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         DistributedMetaStorageHistoryItem lastUpdate = histCache.get(ver.id);
 
         if (lastUpdate != null) {
-            byte[] valBytes = (byte[])bridge.read(lastUpdate.key, false);
+            lock();
 
-            if (!Arrays.equals(valBytes, lastUpdate.valBytes)) {
-                lock();
+            try {
+                for (int i = 0, len = lastUpdate.keys.length; i < len; i++) {
+                    String lastUpdateKey = lastUpdate.keys[i];
+                    byte[] lastUpdateValBytes = lastUpdate.valBytesArray[i];
 
-                try {
-                    bridge.write(lastUpdate.key, lastUpdate.valBytes);
+                    byte[] existingValBytes = (byte[])bridge.read(lastUpdateKey, false);
+
+                    if (!Arrays.equals(existingValBytes, lastUpdateValBytes))
+                        bridge.write(lastUpdateKey, lastUpdateValBytes);
                 }
-                finally {
-                    unlock();
-                }
+            }
+            finally {
+                unlock();
             }
         }
 
         for (DistributedMetaStorageHistoryItem histItem : startupExtras.deferredUpdates)
-            completeWrite(bridge, histItem, false);
+            completeWrite(bridge, histItem, true, false);
 
         notifyListenersBeforeReadyForWrite(bridge);
     }
@@ -1098,9 +1152,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void notifyListenersBeforeReadyForWrite(
         DistributedMetaStorageBridge bridge
     ) throws IgniteCheckedException {
-        DistributedMetaStorageHistoryItem[] oldData = this.bridge.localFullData();
+        DistributedMetaStorageKeyValuePair[] oldData = this.bridge.localFullData();
 
-        DistributedMetaStorageHistoryItem[] newData = bridge.localFullData();
+        DistributedMetaStorageKeyValuePair[] newData = bridge.localFullData();
 
         int oldIdx = 0, newIdx = 0;
 
@@ -1200,5 +1254,47 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /** Checkpoint read unlock. */
     private void unlock() {
         ctx.cache().context().database().checkpointReadUnlock();
+    }
+
+    /** */
+    public DistributedMetaStorageVersion getVer() {
+        return ver;
+    }
+
+    /** */
+    public void setVer(DistributedMetaStorageVersion ver) {
+        this.ver = ver;
+
+        setClusterDataVer(ver.id);
+    }
+
+    /** */
+    private void setClusterDataVer(long ver) {
+        DiscoverySpi discoverySpi = ctx.config().getDiscoverySpi();
+
+        if (discoverySpi instanceof TcpDiscoverySpi) {
+            TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi)discoverySpi;
+
+            tcpDiscoverySpi.putClusterData(TcpDiscoveryClusterDataComponent.DISTRIBUTED_METASTORAGE, ver);
+        }
+    }
+
+    /** */
+    private long versionFromDiscoveryClusterData() {
+        DiscoverySpi discoverySpi = ctx.config().getDiscoverySpi();
+
+        if (discoverySpi instanceof TcpDiscoverySpi) {
+            TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi)discoverySpi;
+
+            Object val = tcpDiscoverySpi.clusterData(TcpDiscoveryClusterDataComponent.DISTRIBUTED_METASTORAGE);
+
+            if (val != null) {
+                assert val instanceof Long : val;
+
+                return (Long)val;
+            }
+        }
+
+        return 0;
     }
 }

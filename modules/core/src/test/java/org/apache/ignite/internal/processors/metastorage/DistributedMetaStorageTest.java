@@ -321,6 +321,28 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWriteTwice() throws Exception {
+        startGrid(0).cluster().active(true);
+
+        assertEquals(0, metastorage(0).getUpdatesCount());
+
+        metastorage(0).write("key1", "value1");
+
+        assertEquals(1, metastorage(0).getUpdatesCount());
+
+        metastorage(0).write("key2", "value2");
+
+        assertEquals(2, metastorage(0).getUpdatesCount());
+
+        metastorage(0).write("key1", "value1");
+
+        assertEquals(2, metastorage(0).getUpdatesCount());
+    }
+
+    /**
      * @return {@link DistributedMetaStorage} instance for i'th node.
      */
     protected DistributedMetaStorage metastorage(int i) {

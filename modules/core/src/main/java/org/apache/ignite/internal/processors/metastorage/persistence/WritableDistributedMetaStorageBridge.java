@@ -27,7 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageKeyValuePair.EMPTY_ARRAY;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
@@ -81,18 +81,13 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
     /** {@inheritDoc} */
     @Override public void onUpdateMessage(
-        DistributedMetaStorageHistoryItem histItem,
-        Serializable val,
-        boolean notifyListeners
+        DistributedMetaStorageHistoryItem histItem
     ) throws IgniteCheckedException {
-        metastorage.write(historyItemKey(dms.ver.id + 1), histItem);
+        metastorage.write(historyItemKey(dms.getVer().id + 1), histItem);
 
-        dms.ver = dms.ver.nextVersion(histItem);
+        dms.setVer(dms.getVer().nextVersion(histItem));
 
-        metastorage.write(historyVersionKey(), dms.ver);
-
-        if (notifyListeners)
-            dms.notifyListeners(histItem.key, read(histItem.key, true), val);
+        metastorage.write(historyVersionKey(), dms.getVer());
     }
 
     /** {@inheritDoc} */
@@ -101,12 +96,12 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     }
 
     /** {@inheritDoc} */
-    @Override public DistributedMetaStorageHistoryItem[] localFullData() throws IgniteCheckedException {
-        List<DistributedMetaStorageHistoryItem> locFullData = new ArrayList<>();
+    @Override public DistributedMetaStorageKeyValuePair[] localFullData() throws IgniteCheckedException {
+        List<DistributedMetaStorageKeyValuePair> locFullData = new ArrayList<>();
 
         metastorage.iterate(
             localKeyPrefix(),
-            (key, val) -> locFullData.add(new DistributedMetaStorageHistoryItem(globalKey(key), (byte[])val)),
+            (key, val) -> locFullData.add(new DistributedMetaStorageKeyValuePair(globalKey(key), (byte[])val)),
             false
         );
 
@@ -132,24 +127,24 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
             if (startupExtras.fullNodeData != null) {
                 DistributedMetaStorageClusterNodeData fullNodeData = startupExtras.fullNodeData;
 
-                dms.ver = fullNodeData.ver;
+                dms.setVer(fullNodeData.ver);
 
                 dms.clearHistoryCache();
 
-                for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData)
+                for (DistributedMetaStorageKeyValuePair item : fullNodeData.fullData)
                     metastorage.writeRaw(localKey(item.key), item.valBytes);
 
                 for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
                     DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
 
-                    long histItemVer = dms.ver.id + i + 1 - len;
+                    long histItemVer = dms.getVer().id + i + 1 - len;
 
                     metastorage.write(historyItemKey(histItemVer), histItem);
 
                     dms.addToHistoryCache(histItemVer, histItem);
                 }
 
-                metastorage.write(historyVersionKey(), dms.ver);
+                metastorage.write(historyVersionKey(), dms.getVer());
             }
 
             metastorage.remove(cleanupGuardKey);

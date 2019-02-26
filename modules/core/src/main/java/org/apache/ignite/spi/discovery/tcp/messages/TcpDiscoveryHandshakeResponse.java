@@ -30,16 +30,20 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     /** */
     private long order;
 
+    /** */
+    private Object[] data;
+
     /**
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
      * @param locNodeOrder Local node order.
      */
-    public TcpDiscoveryHandshakeResponse(UUID creatorNodeId, long locNodeOrder) {
+    public TcpDiscoveryHandshakeResponse(UUID creatorNodeId, long locNodeOrder, Object[] clusterData) {
         super(creatorNodeId);
 
         order = locNodeOrder;
+        data = clusterData;
     }
 
     /**
@@ -92,6 +96,11 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
      */
     public void clientAck(boolean clientAck) {
         setFlag(CLIENT_ACK_FLAG_POS, clientAck);
+    }
+
+    /** */
+    public Object[] clusterData() {
+        return data;
     }
 
     /** {@inheritDoc} */
