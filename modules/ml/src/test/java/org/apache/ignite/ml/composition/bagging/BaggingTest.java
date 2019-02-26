@@ -60,10 +60,10 @@ public class BaggingTest extends TrainerTest {
         firstModelWeights = new HashMap<>();
 
         firstModelWeights.put(1, VectorUtils.of(-0.14721735583126058, 4.366377931980097));
-        firstModelWeights.put(2, VectorUtils.of(-1.0092940937477968, 1.2950461550870134));
-        firstModelWeights.put(3, VectorUtils.of(-5.5345231104301655, -0.7554216668724918));
-        firstModelWeights.put(4, VectorUtils.of(0.136489632011201, 1.0937407007786915));
-        firstModelWeights.put(13, VectorUtils.of(-0.27321382073998685, 1.1199411864901687));
+        firstModelWeights.put(2, VectorUtils.of(0.37824664453495443, 2.9422474282114495));
+        firstModelWeights.put(3, VectorUtils.of(-1.584467989609169, 2.8467326345685824));
+        firstModelWeights.put(4, VectorUtils.of(-2.543461229777167, 0.1317660102621108));
+        firstModelWeights.put(13, VectorUtils.of(-1.6329364937353634, 0.39278455436019116));
     }
 
     /**
