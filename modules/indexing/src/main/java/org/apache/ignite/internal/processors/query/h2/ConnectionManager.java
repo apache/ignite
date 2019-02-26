@@ -38,16 +38,10 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.jdbc.JdbcStatement;
-import org.h2.server.web.WebServer;
-import org.h2.tools.Server;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
-import static org.apache.ignite.IgniteSystemProperties.getString;
 
 /**
  * H2 connection manager.
@@ -147,9 +141,8 @@ public class ConnectionManager {
      * Constructor.
      *
      * @param ctx Context.
-     * @throws IgniteCheckedException On error.
      */
-    public ConnectionManager(GridKernalContext ctx) throws IgniteCheckedException {
+    public ConnectionManager(GridKernalContext ctx) {
         dbUrl = "jdbc:h2:mem:" + ctx.localNodeId() + DB_OPTIONS;
 
         log = ctx.log(ConnectionManager.class);
@@ -160,8 +153,6 @@ public class ConnectionManager {
 
         stmtCleanupTask = ctx.timeout().schedule(this::cleanupStatements, stmtCleanupPeriod, stmtCleanupPeriod);
         connCleanupTask = ctx.timeout().schedule(this::cleanupConnections, CONN_CLEANUP_PERIOD, CONN_CLEANUP_PERIOD);
-
-        startDebugConsole();
     }
 
     /**
@@ -440,38 +431,6 @@ public class ConnectionManager {
 
             // Reset connection to receive new one at next call.
             U.close(c, log);
-        }
-    }
-
-    /**
-     * Start debug console if needed.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    private void startDebugConsole() throws IgniteCheckedException {
-        try {
-            if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
-                Connection c = DriverManager.getConnection(dbUrl);
-
-                int port = getInteger(IGNITE_H2_DEBUG_CONSOLE_PORT, 0);
-
-                WebServer webSrv = new WebServer();
-                Server web = new Server(webSrv, "-webPort", Integer.toString(port));
-                web.start();
-                String url = webSrv.addSession(c);
-
-                U.quietAndInfo(log, "H2 debug console URL: " + url);
-
-                try {
-                    Server.openBrowser(url);
-                }
-                catch (Exception e) {
-                    U.warn(log, "Failed to open browser: " + e.getMessage());
-                }
-            }
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
         }
     }
 

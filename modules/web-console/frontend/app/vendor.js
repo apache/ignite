@@ -26,7 +26,6 @@ import 'angular1-async-filter';
 
 import 'angular-messages';
 import '@uirouter/angularjs';
-import '@uirouter/angularjs/lib/legacy/stateEvents';
 
 import 'resize-observer-polyfill';
 

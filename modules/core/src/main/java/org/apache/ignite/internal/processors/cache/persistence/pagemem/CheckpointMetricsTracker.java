@@ -76,6 +76,9 @@ public class CheckpointMetricsTracker {
     /** */
     private long walCpRecordFsyncEnd;
 
+    /** */
+    private long listenersExecEnd;
+
     /**
      * Increments counter if copy on write page was written.
      */
@@ -149,6 +152,13 @@ public class CheckpointMetricsTracker {
     /**
      *
      */
+    public void onListenersExecuteEnd() {
+        listenersExecEnd = System.currentTimeMillis();
+    }
+
+    /**
+     *
+     */
     public void onWalCpRecordFsyncStart() {
         walCpRecordFsyncStart = System.currentTimeMillis();
     }
@@ -172,6 +182,20 @@ public class CheckpointMetricsTracker {
      */
     public long lockWaitDuration() {
         return cpMarkStart - cpLockWaitStart;
+    }
+
+    /**
+     * @return Checkpoint action before taken write lock duration.
+     */
+    public long beforeLockDuration() {
+        return cpLockWaitStart - cpStart;
+    }
+
+    /**
+     * @return Execution listeners under write lock duration.
+     */
+    public long listenersExecuteDuration() {
+        return listenersExecEnd - cpMarkStart;
     }
 
     /**
