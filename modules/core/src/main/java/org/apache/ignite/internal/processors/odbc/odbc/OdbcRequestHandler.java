@@ -158,6 +158,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             }
         };
 
+        // TODO Support data page scan for ODBC: IGNITE-11305
+        Boolean dataPageScanEnabled = null;
+
         this.cliCtx = new SqlClientContext(
             ctx,
             orderedFactory,
@@ -166,7 +169,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate
+            skipReducerOnUpdate,
+            dataPageScanEnabled
         );
 
         this.busyLock = busyLock;
