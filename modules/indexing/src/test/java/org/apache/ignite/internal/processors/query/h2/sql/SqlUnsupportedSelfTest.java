@@ -51,11 +51,9 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
     /**
      * Test for unsupported SQL statements in CREATE TABLE statement.
-     *
-     * @throws Exception On fails.
      */
     @Test
-    public void testUnsupportedCreateTable() throws Exception {
+    public void testUnsupportedCreateTable() {
         assertSqlUnsupported("CREATE MEMORY TABLE unsupported_tbl0 (id integer primary key, val integer)");
         assertSqlUnsupported("CREATE GLOBAL TEMPORARY TABLE unsupported_tbl1 (id integer primary key, val integer)");
         assertSqlUnsupported("CREATE LOCAL TEMPORARY TABLE unsupported_tbl2 (id integer primary key, val integer)");
@@ -73,8 +71,10 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
                 "id integer PRIMARY KEY, " +
                 "val varchar DEFAULT 'test_val')");
 
-        assertSqlUnsupported("CREATE INDEX test_idx ON test (id NULLS FIRST)");
-        assertSqlUnsupported("CREATE INDEX test_idx ON test (id NULLS LAST)");
+        assertSqlUnsupported("CREATE INDEX test_idx ON test (val NULLS FIRST)");
+        assertSqlUnsupported("CREATE INDEX test_idx ON test (val NULLS LAST)");
+        assertSqlUnsupported("CREATE UNIQUE INDEX test_idx ON test (val)");
+        assertSqlUnsupported("CREATE HASH INDEX test_idx ON test (val)");
     }
 
     /**
@@ -204,6 +204,7 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
     /**
      * @param sql Sql.
      * @param args Args.
+     * @return Query results.
      */
     private List<List<?>> execSql(String sql, Object... args) {
         return execSql(grid(), sql, args);
@@ -213,12 +214,10 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
      * @param sql Sql.
      */
     private void assertSqlUnsupported(final String sql) {
-        Throwable t = GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
-            @Override public Void call() {
-                execSql(sql);
+        Throwable t = GridTestUtils.assertThrowsWithCause((Callable<Void>)() -> {
+            execSql(sql);
 
-                return null;
-            }
+            return null;
         }, IgniteSQLException.class);
 
         IgniteSQLException sqlE = X.cause(t, IgniteSQLException.class);
