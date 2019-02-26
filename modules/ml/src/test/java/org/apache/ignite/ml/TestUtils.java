@@ -17,14 +17,15 @@
 
 package org.apache.ignite.ml;
 
-import java.util.stream.IntStream;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.junit.Assert;
+
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertTrue;
 
@@ -168,6 +169,31 @@ public class TestUtils {
                 // TODO: IGNITE-5824, Check precision here.
                 Assert.assertEquals(eij, aij, 0.0);
             }
+    }
+
+    /**
+     * Verifies that two vectors are equal.
+     *
+     * @param exp Expected vector.
+     * @param observed Actual vector.
+     */
+    public static void assertEquals(Vector exp, Vector observed, double eps) {
+        Assert.assertNotNull("Observed should not be null", observed);
+
+        if (exp.size() != observed.size()) {
+            String msgBuff = "Observed has incorrect dimensions." +
+                "\nobserved is " + observed.size() +
+                " x " + observed.size();
+
+            Assert.fail(msgBuff);
+        }
+
+        for (int i = 0; i < exp.size(); ++i) {
+            double eij = exp.getX(i);
+            double aij = observed.getX(i);
+
+            Assert.assertEquals(eij, aij, eps);
+        }
     }
 
     /**
@@ -423,19 +449,18 @@ public class TestUtils {
         return new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
             @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor,
-                IgniteBiFunction<K, V, L> lbExtractor) {
+                FeatureLabelExtractor<K, V, L> extractor) {
                 return ml;
             }
 
             /** {@inheritDoc} */
-            @Override public boolean checkState(M mdl) {
+            @Override public boolean isUpdateable(M mdl) {
                 return true;
             }
 
             /** {@inheritDoc} */
             @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                FeatureLabelExtractor<K, V, L> extractor) {
                 return ml;
             }
         };

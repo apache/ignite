@@ -27,13 +27,10 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link DecisionTreeClassificationTrainer} that require to start the whole Ignite infrastructure.
  */
-@RunWith(JUnit4.class)
 public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -45,11 +42,6 @@ public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommon
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 1; i <= NODE_COUNT; i++)
             startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
     }
 
     /**

@@ -38,8 +38,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -47,7 +45,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Check reloadAll() on partitioned cache.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends GridCommonAbstractTest {
     /** Amount of nodes in the grid. */
     private static final int GRID_CNT = 4;
@@ -56,10 +53,10 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     private static final int BACKUP_CNT = 1;
 
     /** Map where dummy cache store values are stored. */
-    private final Map<Integer, String> map = new ConcurrentHashMap<>();
+    private static final Map<Integer, String> map = new ConcurrentHashMap<>();
 
     /** Collection of caches, one per grid node. */
-    private List<IgniteCache<Integer, String>> caches;
+    private static List<IgniteCache<Integer, String>> caches;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

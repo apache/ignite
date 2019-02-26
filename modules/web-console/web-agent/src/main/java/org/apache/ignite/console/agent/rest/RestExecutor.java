@@ -77,6 +77,7 @@ public class RestExecutor implements AutoCloseable {
     /**
      * Constructor.
      *
+     * @param trustAll {@code true} If we trust to self-signed sertificates.
      * @param keyStorePath Optional path to key store file.
      * @param keyStorePwd Optional password for key store.
      * @param trustStorePath Optional path to trust store file.
@@ -86,6 +87,7 @@ public class RestExecutor implements AutoCloseable {
      * @throws IOException If failed to load content of key stores.
      */
     public RestExecutor(
+        boolean trustAll,
         String keyStorePath,
         String keyStorePwd,
         String trustStorePath,
@@ -101,7 +103,10 @@ public class RestExecutor implements AutoCloseable {
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .dispatcher(dispatcher);
 
-        X509TrustManager trustMgr = trustManager(Boolean.getBoolean("trust.all"), trustStorePath, trustStorePwd);
+        X509TrustManager trustMgr = trustManager(trustAll, trustStorePath, trustStorePwd);
+
+        if (trustAll)
+            builder.hostnameVerifier((hostname, session) -> true);
 
         SSLSocketFactory sslSocketFactory = sslSocketFactory(
             keyStorePath, keyStorePwd,
@@ -110,7 +115,10 @@ public class RestExecutor implements AutoCloseable {
         );
 
         if (sslSocketFactory != null) {
-            builder.sslSocketFactory(sslSocketFactory, trustMgr);
+            if (trustMgr != null)
+                builder.sslSocketFactory(sslSocketFactory, trustMgr);
+            else
+                builder.sslSocketFactory(sslSocketFactory);
 
             if (!F.isEmpty(cipherSuites))
                 builder.connectionSpecs(sslConnectionSpec(cipherSuites));

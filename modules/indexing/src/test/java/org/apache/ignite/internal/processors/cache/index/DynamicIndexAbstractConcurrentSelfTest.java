@@ -52,8 +52,6 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
@@ -61,7 +59,6 @@ import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestT
  * Concurrency tests for dynamic index create/drop.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicIndexAbstractSelfTest {
     /** Test duration. */
     private static final long TEST_DUR = 10_000L;

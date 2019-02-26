@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -53,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -62,6 +60,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -128,10 +127,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** Prefix for a encryption group key in meta store. */
     public static final String ENCRYPTION_KEY_PREFIX = "grp-encryption-key-";
-
-    /** Encryption key predicate for meta store. */
-    private static final IgnitePredicate<String> ENCRYPTION_KEY_PREFIX_PRED =
-        (IgnitePredicate<String>)key -> key.startsWith(ENCRYPTION_KEY_PREFIX);
 
     /** Group encryption keys. */
     private final ConcurrentHashMap<Integer, Serializable> grpEncKeys = new ConcurrentHashMap<>();
@@ -551,18 +546,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) {
         try {
-            Map<String, ? extends Serializable> encKeys = metastorage.readForPredicate(ENCRYPTION_KEY_PREFIX_PRED);
-
-            if (encKeys.isEmpty())
-                return;
-
-            for (String key : encKeys.keySet()) {
+            metastorage.iterate(ENCRYPTION_KEY_PREFIX, (key, val) -> {
                 Integer grpId = Integer.valueOf(key.replace(ENCRYPTION_KEY_PREFIX, ""));
 
-                byte[] encGrpKey = (byte[])encKeys.get(key);
+                byte[] encGrpKey = (byte[])val;
 
                 grpEncKeys.putIfAbsent(grpId, getSpi().decryptKey(encGrpKey));
-            }
+            }, true);
 
             if (!grpEncKeys.isEmpty()) {
                 U.quietAndInfo(log, "Encryption keys loaded from metastore. [grps=" +

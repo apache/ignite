@@ -32,8 +32,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -41,7 +39,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests message count for different deployment scenarios.
  */
-@RunWith(JUnit4.class)
 public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     /** Test p2p task. */
     private static final String TEST_TASK = "org.apache.ignite.tests.p2p.SingleSplitTestTask";

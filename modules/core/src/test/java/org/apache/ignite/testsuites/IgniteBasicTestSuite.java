@@ -25,6 +25,7 @@ import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
+import org.apache.ignite.internal.ConsistentIdImplicitlyExplicitlyTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
@@ -42,8 +43,12 @@ import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
+import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTestNoOptimization;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
@@ -69,9 +74,11 @@ import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.BitSetIntSetTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
@@ -80,6 +87,7 @@ import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
+import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
@@ -120,6 +128,10 @@ import org.junit.runners.Suite;
 
     GridReleaseTypeSelfTest.class,
     GridProductVersionSelfTest.class,
+    GridAffinityAssignmentV2Test.class,
+    GridAffinityAssignmentV2TestNoOptimizations.class,
+    GridHistoryAffinityAssignmentTest.class,
+    GridHistoryAffinityAssignmentTestNoOptimization.class,
     GridAffinityProcessorRendezvousSelfTest.class,
     GridAffinityProcessorMemoryLeakTest.class,
     GridClosureProcessorSelfTest.class,
@@ -153,12 +165,6 @@ import org.junit.runners.Suite;
 
     DynamicProxySerializationMultiJvmSelfTest.class,
 
-    // Tests against configuration variations framework.
-    ParametersTest.class,
-    VariationsIteratorTest.class,
-    ConfigVariationsTestSuiteBuilderTest.class,
-    NotStringSystemPropertyTest.class,
-
     MarshallerContextLockingSelfTest.class,
     MarshallerContextSelfTest.class,
 
@@ -174,6 +180,7 @@ import org.junit.runners.Suite;
     CacheFreeListImplSelfTest.class,
     DataRegionMetricsSelfTest.class,
     SwapPathConstructionSelfTest.class,
+    BitSetIntSetTest.class,
 
     IgniteMarshallerCacheFSRestoreTest.class,
     IgniteMarshallerCacheClassNameConflictTest.class,
@@ -202,6 +209,19 @@ import org.junit.runners.Suite;
     ListeningTestLoggerTest.class,
 
     CacheLocalGetSerializationTest.class,
+
+    PluginNodeValidationTest.class,
+
+    // In-memory Distributed MetaStorage.
+    DistributedMetaStorageTest.class,
+
+    ConsistentIdImplicitlyExplicitlyTest.class,
+
+        // Tests against configuration variations framework.
+        ParametersTest.class,
+        VariationsIteratorTest.class,
+        NotStringSystemPropertyTest.class,
+        ConfigVariationsTestSuiteBuilderTest.class,
 })
 public class IgniteBasicTestSuite {
 }

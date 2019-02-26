@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 public class IgniteTopologyValidatorNearPartitionedTxCacheTest extends IgniteTopologyValidatorPartitionedTxCacheTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         super.beforeTestsStarted();
     }

@@ -22,8 +22,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.hsqldb.jdbc.jdbcDataSource;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_CHECKPOINT_TABLE_NAME;
 import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_EXPIRE_DATE_FIELD_NAME;
@@ -36,7 +34,6 @@ import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_VALUE
  * Grid jdbc checkpoint SPI config self test.
  */
 @GridSpiTest(spi = JdbcCheckpointSpi.class, group = "Checkpoint SPI")
-@RunWith(JUnit4.class)
 public class JdbcCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<JdbcCheckpointSpi> {
     /**
      * @throws Exception If failed.

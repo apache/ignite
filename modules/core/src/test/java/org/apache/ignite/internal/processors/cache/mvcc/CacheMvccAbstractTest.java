@@ -61,6 +61,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
@@ -95,6 +96,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -165,6 +167,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setFailureHandler(new StopNodeFailureHandler());
+
         if (disableScheduledVacuum)
             cfg.setMvccVacuumFrequency(Integer.MAX_VALUE);
 
@@ -217,6 +221,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        ccfg = null;
+        ccfgs = null;
 
         MvccProcessorImpl.coordinatorAssignClosure(null);
 
@@ -1349,6 +1356,12 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                         reader.apply(idx, caches, stop);
                     }
                     catch (Throwable e) {
+                        if (restartMode != null && X.hasCause(e, ClusterTopologyException.class)) {
+                            log.info("Writer error: " + e);
+
+                            return null;
+                        }
+
                         error("Unexpected error: " + e, e);
 
                         stop.set(true);
@@ -1503,6 +1516,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         if (X.hasCause(e, IgniteTxTimeoutCheckedException.class))
             return;
 
+        if (X.hasCause(e, TransactionSerializationException.class))
+            return;
+
         if (X.hasCause(e, CacheException.class)) {
             CacheException cacheEx = X.cause(e, CacheException.class);
 
@@ -1532,9 +1548,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
             if (sqlEx != null && sqlEx.getMessage() != null) {
                 if (sqlEx.getMessage().contains("Transaction is already completed."))
-                    return;
-
-                if (sqlEx.getMessage().contains("Cannot serialize transaction due to write conflict"))
                     return;
             }
         }
@@ -1612,9 +1625,22 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         if (retry) { // Retry on a stable topology with a newer snapshot.
             awaitPartitionMapExchange();
 
+            waitMvccQueriesDone();
+
             runVacuumSync();
 
             checkOldVersions(true);
+        }
+    }
+
+    /**
+     * Waits until all active queries are terminated on the Mvcc coordinator.
+     *
+     * @throws Exception If failed.
+     */
+    private void waitMvccQueriesDone() throws Exception {
+        for (Ignite node : G.allGrids()) {
+            checkActiveQueriesCleanup(node);
         }
     }
 
@@ -1703,12 +1729,19 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected final void checkActiveQueriesCleanup(Ignite node) throws Exception {
-        final MvccProcessorImpl crd = mvccProcessor(node);
+        final MvccProcessorImpl prc = mvccProcessor(node);
 
-        assertTrue("Active queries not cleared: " + node.name(), GridTestUtils.waitForCondition(
+        MvccCoordinator crd = prc.currentCoordinator();
+
+        if (!crd.local())
+            return;
+
+        assertTrue("Coordinator is not initialized: " + prc, GridTestUtils.waitForCondition(crd::initialized, 8_000));
+
+        assertTrue("Active queries are not cleared: " + node.name(), GridTestUtils.waitForCondition(
             new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    Object activeQueries = GridTestUtils.getFieldValue(crd, "activeQueries");
+                    Object activeQueries = GridTestUtils.getFieldValue(prc, "activeQueries");
 
                     synchronized (activeQueries) {
                         Long minQry = GridTestUtils.getFieldValue(activeQueries, "minQry");
@@ -1734,16 +1767,20 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             }, 8_000)
         );
 
-        assertTrue("Previous coordinator queries not empty: " + node.name(), GridTestUtils.waitForCondition(
+        assertTrue("Previous coordinator queries are not empty: " + node.name(), GridTestUtils.waitForCondition(
             new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    Map queries = GridTestUtils.getFieldValue(crd, "prevCrdQueries", "activeQueries");
-                    Boolean prevDone = GridTestUtils.getFieldValue(crd, "prevCrdQueries", "prevQueriesDone");
+                    PreviousQueries prevQueries = GridTestUtils.getFieldValue(prc, "prevQueries");
 
-                    if (!queries.isEmpty() || !prevDone)
-                        log.info("Previous coordinator state [prevDone=" + prevDone + ", queries=" + queries + ']');
+                    synchronized (prevQueries) {
+                        Map queries = GridTestUtils.getFieldValue(prevQueries, "active");
+                        Boolean prevDone = GridTestUtils.getFieldValue(prevQueries, "done");
 
-                    return queries.isEmpty();
+                        if (!queries.isEmpty() || !prevDone)
+                            log.info("Previous coordinator state [prevDone=" + prevDone + ", queries=" + queries + ']');
+
+                        return queries.isEmpty();
+                    }
                 }
             }, 8_000)
         );

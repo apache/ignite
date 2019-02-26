@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.IgniteVersionUtilsSelfTest;
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
@@ -70,6 +71,7 @@ import org.junit.runners.Suite;
     GridThreadPoolExecutorServiceSelfTest.class,
     IgniteThreadPoolSizeTest.class,
     IgniteUtilsSelfTest.class,
+    IgniteVersionUtilsSelfTest.class,
     GridSpinReadWriteLockSelfTest.class,
     GridQueueSelfTest.class,
     GridStringBuilderFactorySelfTest.class,

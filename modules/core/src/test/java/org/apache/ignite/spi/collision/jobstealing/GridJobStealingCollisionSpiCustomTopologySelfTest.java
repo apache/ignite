@@ -39,8 +39,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.THIEF_NODE_ATTR;
@@ -49,14 +47,13 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * Job stealing collision SPI topology test.
  */
 @GridSpiTest(spi = JobStealingCollisionSpi.class, group = "Collision SPI")
-@RunWith(JUnit4.class)
 public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
     GridSpiAbstractTest<JobStealingCollisionSpi> {
     /** */
-    private GridTestNode rmtNode1;
+    private static GridTestNode rmtNode1;
 
     /** */
-    private GridTestNode rmtNode2;
+    private static GridTestNode rmtNode2;
 
     /** */
     public GridJobStealingCollisionSpiCustomTopologySelfTest() {

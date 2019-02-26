@@ -17,12 +17,14 @@
 
 package org.apache.ignite.ml.xgboost;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
+import org.apache.ignite.ml.math.primitives.vector.NamedVector;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -32,7 +34,10 @@ import static org.apache.ignite.ml.math.StorageConstants.RANDOM_ACCESS_MODE;
 /**
  * XGBoost model composition.
  */
-public class XGModelComposition implements IgniteModel<HashMap<String, Double>, Double> {
+public class XGModelComposition implements IgniteModel<NamedVector, Double> {
+    /** */
+    private static final long serialVersionUID = 6765344479174942051L;
+
     /** Dictionary used for matching feature names and indexes. */
     private final Map<String, Integer> dict;
 
@@ -45,18 +50,18 @@ public class XGModelComposition implements IgniteModel<HashMap<String, Double>, 
      * @param models Basic models.
      */
     public XGModelComposition(Map<String, Integer> dict, List<DecisionTreeNode> models) {
-        this.dict = dict;
+        this.dict = new HashMap<>(dict);
         this.modelsComposition = new ModelsComposition(models, new XGModelPredictionsAggregator());
     }
 
     /** {@inheritDoc} */
-    @Override public Double predict(HashMap<String, Double> map) {
-        return modelsComposition.predict(toVector(map));
+    @Override public Double predict(NamedVector input) {
+        return modelsComposition.predict(reencode(input));
     }
 
     /** */
     public Map<String, Integer> getDict() {
-        return dict;
+        return Collections.unmodifiableMap(dict);
     }
 
     /** */
@@ -72,20 +77,19 @@ public class XGModelComposition implements IgniteModel<HashMap<String, Double>, 
     /**
      * Converts hash map into sparse vector using dictionary.
      *
-     * @param input Hash map with pairs of feature name and feature value.
+     * @param vector Named vector.
      * @return Sparse vector.
      */
-    private Vector toVector(Map<String, Double> input) {
+    private Vector reencode(NamedVector vector) {
         Vector inputVector = new SparseVector(dict.size(), RANDOM_ACCESS_MODE);
         for (int i = 0; i < dict.size(); i++)
             inputVector.set(i, Double.NaN);
 
-        for (Map.Entry<String, Double> feature : input.entrySet()) {
-            Integer idx = dict.get(feature.getKey());
+        for (String key : vector.getKeys()) {
+            Integer idx = dict.get(key);
 
             if (idx != null)
-                inputVector.set(idx, feature.getValue());
-
+                inputVector.set(idx, vector.get(key));
         }
 
         return inputVector;
@@ -95,6 +99,9 @@ public class XGModelComposition implements IgniteModel<HashMap<String, Double>, 
      * XG model predictions aggregator.
      */
     private static class XGModelPredictionsAggregator implements PredictionsAggregator {
+        /** */
+        private static final long serialVersionUID = 1274109586500815229L;
+
         /** {@inheritDoc} */
         @Override public Double apply(double[] predictions) {
             double res = 0;

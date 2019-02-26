@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test of error resiliency after an error in a map-reduce job execution.
@@ -30,7 +28,6 @@ import org.junit.runners.JUnit4;
  *   x { unchecked exception, checked exception, error }
  *   x { phase where the error happens }.
  */
-@RunWith(JUnit4.class)
 public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceTest {
     /**
      * Tests recovery.

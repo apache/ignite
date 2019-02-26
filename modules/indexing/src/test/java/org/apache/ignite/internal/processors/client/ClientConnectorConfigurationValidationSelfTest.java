@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.client;
 
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -40,15 +39,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Client connector configuration validation tests.
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAbstractTest {
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();
@@ -452,7 +449,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
 
                 assertTrue(rs.next());
 
-                TestCase.assertEquals(1, rs.getInt(1));
+                Assert.assertEquals(1, rs.getInt(1));
             }
         }
     }
@@ -461,6 +458,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      * Key class.
      */
     private static class ClientConnectorKey {
+        /** */
         @QuerySqlField
         public int key;
     }
@@ -469,6 +467,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      * Value class.
      */
     private static class ClientConnectorValue {
+        /** */
         @QuerySqlField
         public int val;
     }

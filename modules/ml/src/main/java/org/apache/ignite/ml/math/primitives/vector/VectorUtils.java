@@ -18,10 +18,14 @@
 package org.apache.ignite.ml.math.primitives.vector;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingNamedVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 
@@ -219,6 +223,28 @@ public class VectorUtils {
     }
 
     /**
+     * Creates named vector based on map of keys and values.
+     *
+     * @param values Values.
+     * @return Named vector.
+     */
+    public static NamedVector of(Map<String, Double> values) {
+        SparseVector vector = new SparseVector(values.size(), StorageConstants.RANDOM_ACCESS_MODE);
+        for (int i = 0; i < values.size(); i++)
+            vector.set(i, Double.NaN);
+
+        Map<String, Integer> dict = new HashMap<>();
+        int idx = 0;
+        for (Map.Entry<String, Double> e : values.entrySet()) {
+            dict.put(e.getKey(), idx);
+            vector.set(idx, e.getValue());
+            idx++;
+        }
+
+        return new DelegatingNamedVector(vector, dict);
+    }
+
+    /**
      * Concatenates two given vectors.
      *
      * @param v1 First vector.
@@ -262,5 +288,21 @@ public class VectorUtils {
             res = concat(res, v);
         }
         return res;
+    }
+
+    /**
+     * Get projector from index mapping.
+     *
+     * @param mapping Index mapping.
+     * @return Projector.
+     */
+    public static IgniteFunction<Vector, Vector> getProjector(int[] mapping) {
+        return v -> {
+            Vector res = zeroes(mapping.length);
+            for (int i = 0; i < mapping.length; i++)
+                res.set(i, v.get(mapping[i]));
+
+            return res;
+        };
     }
 }

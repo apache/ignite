@@ -24,13 +24,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test that validates {@link Ignite#cacheNames()} implementation.
  */
-@RunWith(JUnit4.class)
 public class CacheNamesWithSpecialCharactersTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME_1 = "--№=+:(replicated)";

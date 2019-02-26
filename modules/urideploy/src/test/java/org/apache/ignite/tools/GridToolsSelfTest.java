@@ -31,14 +31,11 @@ import org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for Ant task generating GAR file.
  */
 @GridCommonTest(group = "Tools")
-@RunWith(JUnit4.class)
 public class GridToolsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

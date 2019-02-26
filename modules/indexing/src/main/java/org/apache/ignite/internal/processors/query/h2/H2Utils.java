@@ -19,20 +19,24 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.text.MessageFormat;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-
 import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -40,16 +44,23 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
@@ -84,18 +95,21 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.Nullable;
 
 import javax.cache.CacheException;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.QueryUtils.VER_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
 /**
  * H2 utility methods.
  */
 public class H2Utils {
+    /** Dummy metadata for update result. */
+    public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
+        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
+
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
@@ -104,14 +118,14 @@ public class H2Utils {
     private static final char ESC_CH = '\"';
 
     /** Empty cursor. */
-    public static final GridCursor<GridH2Row> EMPTY_CURSOR = new GridCursor<GridH2Row>() {
+    public static final GridCursor<H2Row> EMPTY_CURSOR = new GridCursor<H2Row>() {
         /** {@inheritDoc} */
         @Override public boolean next() {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2Row get() {
+        @Override public H2Row get() {
             return null;
         }
     };
@@ -130,6 +144,7 @@ public class H2Utils {
      * @param col Column to find.
      * @return {@code true} If found.
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean containsColumn(List<IndexColumn> cols, IndexColumn col) {
         for (int i = cols.size() - 1; i >= 0; i--) {
             if (equals(cols.get(i), col))
@@ -181,7 +196,6 @@ public class H2Utils {
             .a(KEY_FIELD_NAME).a(' ').a(keyType).a(keyValVisibility).a(" NOT NULL");
 
         sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr).a(keyValVisibility);
-        sql.a(',').a(VER_FIELD_NAME).a(" OTHER INVISIBLE");
 
         for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet()) {
             GridQueryProperty prop = tbl.type().property(e.getKey());
@@ -271,6 +285,7 @@ public class H2Utils {
      * @param idxName Index name.
      * @param cols Columns.
      */
+    @SuppressWarnings("ConstantConditions")
     public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, String idxName, IndexColumn[] cols) {
         try {
             Class<?> cls = Class.forName(SPATIAL_IDX_CLS);
@@ -342,10 +357,26 @@ public class H2Utils {
      * @param enforceJoinOrder Enforce join order of tables.
      */
     public static void setupConnection(Connection conn, boolean distributedJoins, boolean enforceJoinOrder) {
+        setupConnection(conn,distributedJoins, enforceJoinOrder, false);
+    }
+
+    /**
+     * @param conn Connection to use.
+     * @param distributedJoins If distributed joins are enabled.
+     * @param enforceJoinOrder Enforce join order of tables.
+     * @param lazy Lazy query execution mode.
+     */
+    public static void setupConnection(
+        Connection conn,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean lazy
+    ) {
         Session s = session(conn);
 
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
+        s.setLazyQueryExecution(lazy);
     }
 
     /**
@@ -410,6 +441,7 @@ public class H2Utils {
      * @param tbl Table to check on not started cache.
      * @return {@code true} in case not started and has been started.
      */
+    @SuppressWarnings({"ConstantConditions", "UnusedReturnValue"})
     public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridH2Table tbl) {
         if (tbl != null && tbl.isCacheLazy()) {
             String cacheName = tbl.cacheInfo().config().getName();
@@ -538,9 +570,7 @@ public class H2Utils {
         String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [type=" + type.name() + "]";
 
         for (String name : names) {
-            if (name.equalsIgnoreCase(KEY_FIELD_NAME) ||
-                name.equalsIgnoreCase(VAL_FIELD_NAME) ||
-                name.equalsIgnoreCase(VER_FIELD_NAME))
+            if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME))
                 throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
     }
@@ -659,5 +689,193 @@ public class H2Utils {
      */
     public static GridH2RetryException retryException(String msg) {
         return new GridH2RetryException(msg);
+    }
+
+    /**
+     * Binds parameters to prepared statement.
+     *
+     * @param stmt Prepared statement.
+     * @param params Parameters collection.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params)
+        throws IgniteCheckedException {
+        if (!F.isEmpty(params)) {
+            int idx = 1;
+
+            for (Object arg : params)
+                bindObject(stmt, idx++, arg);
+        }
+    }
+
+    /**
+     * Binds object to prepared statement.
+     *
+     * @param stmt SQL statement.
+     * @param idx Index.
+     * @param obj Value to store.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws IgniteCheckedException {
+        try {
+            if (obj == null)
+                stmt.setNull(idx, Types.VARCHAR);
+            else if (obj instanceof BigInteger)
+                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
+            else if (obj instanceof BigDecimal)
+                stmt.setObject(idx, obj, Types.DECIMAL);
+            else
+                stmt.setObject(idx, obj);
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ", stmt=" +
+                stmt + ']', e);
+        }
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param cmp Comparator.
+     */
+    public static <Z> void bubbleUp(Z[] arr, int off, Comparator<Z> cmp) {
+        for (int i = off, last = arr.length - 1; i < last; i++) {
+            if (cmp.compare(arr[i], arr[i + 1]) <= 0)
+                break;
+
+            U.swap(arr, i, i + 1);
+        }
+    }
+
+    /**
+     * Collect cache identifiers from two-step query.
+     *
+     * @param mainCacheId Id of main cache.
+     * @return Result.
+     */
+    public static List<Integer> collectCacheIds(
+        IgniteH2Indexing idx,
+        @Nullable Integer mainCacheId,
+        Collection<QueryTable> tbls
+    ) {
+        LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
+
+        if (mainCacheId != null)
+            caches0.add(mainCacheId);
+
+        if (!F.isEmpty(tbls)) {
+            for (QueryTable tblKey : tbls) {
+                GridH2Table tbl = idx.schemaManager().dataTable(tblKey.schema(), tblKey.table());
+
+                if (tbl != null) {
+                    checkAndStartNotStartedCache(idx.kernalContext(), tbl);
+
+                    caches0.add(tbl.cacheId());
+                }
+            }
+        }
+
+        return caches0.isEmpty() ? Collections.emptyList() : new ArrayList<>(caches0);
+    }
+
+    /**
+     * Collect MVCC enabled flag.
+     *
+     * @param idx Indexing.
+     * @param cacheIds Cache IDs.
+     * @return {@code True} if indexing is enabled.
+     */
+    public static boolean collectMvccEnabled(IgniteH2Indexing idx, List<Integer> cacheIds) {
+        if (cacheIds.isEmpty())
+            return false;
+
+        GridCacheSharedContext sharedCtx = idx.kernalContext().cache().context();
+
+        GridCacheContext cctx0 = null;
+
+        boolean mvccEnabled = false;
+
+        for (int i = 0; i < cacheIds.size(); i++) {
+            Integer cacheId = cacheIds.get(i);
+
+            GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
+
+            assert cctx != null;
+
+            if (i == 0) {
+                mvccEnabled = cctx.mvccEnabled();
+                cctx0 = cctx;
+            }
+            else if (cctx.mvccEnabled() != mvccEnabled)
+                MvccUtils.throwAtomicityModesMismatchException(cctx0.config(), cctx.config());
+        }
+
+        return mvccEnabled;
+    }
+
+    /**
+     * Check if query is valid.
+     *
+     * @param idx Indexing.
+     * @param cacheIds Cache IDs.
+     * @param mvccEnabled MVCC enabled flag.
+     * @param forUpdate For update flag.
+     * @param tbls Tables.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static void checkQuery(
+        IgniteH2Indexing idx,
+        List<Integer> cacheIds,
+        boolean mvccEnabled,
+        boolean forUpdate,
+        Collection<QueryTable> tbls
+    ) {
+        GridCacheSharedContext sharedCtx = idx.kernalContext().cache().context();
+
+        // Check query parallelism.
+        int expectedParallelism = 0;
+
+        for (int i = 0; i < cacheIds.size(); i++) {
+            Integer cacheId = cacheIds.get(i);
+
+            GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
+
+            assert cctx != null;
+
+            if (!cctx.isPartitioned())
+                continue;
+
+            if (expectedParallelism == 0)
+                expectedParallelism = cctx.config().getQueryParallelism();
+            else if (cctx.config().getQueryParallelism() != expectedParallelism) {
+                throw new IllegalStateException("Using indexes with different parallelism levels in same query is " +
+                    "forbidden.");
+            }
+        }
+
+        // Check FOR UPDATE invariants: only one table, MVCC is there.
+        if (forUpdate) {
+            if (cacheIds.size() != 1)
+                throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
+                    "that involve single transactional cache.");
+
+            if (!mvccEnabled)
+                throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
+                    "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+
+        // Check for joins between system views and normal tables.
+        if (!F.isEmpty(tbls)) {
+            for (QueryTable tbl : tbls) {
+                if (QueryUtils.SCHEMA_SYS.equals(tbl.schema())) {
+                    if (!F.isEmpty(cacheIds)) {
+                        throw new IgniteSQLException("Normal tables and system views cannot be used in the same query.",
+                            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                    }
+                    else
+                        return;
+                }
+            }
+        }
     }
 }

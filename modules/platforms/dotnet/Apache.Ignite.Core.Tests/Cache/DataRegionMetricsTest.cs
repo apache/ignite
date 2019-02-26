@@ -17,9 +17,13 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System;
+    using System.IO;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
@@ -33,8 +37,20 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** */
         private const string RegionNoMetrics = "regNoMetrics";
 
+        /** */
+        private const string RegionWithMetricsAndPersistence = "regWithMetricsAndPersistence";
+
         /** System page size overhead, see PageMemoryNoStoreImpl.PAGE_OVERHEAD. */
         private const int PageOverhead = 24;
+
+        /** Persistent page size overhead, see PageMemoryImpl.PAGE_OVERHEAD. */
+        private const int PersistentPageOverhead = 48;
+
+        /** */
+        private static readonly TimeSpan CheckpointFrequency = TimeSpan.FromSeconds(5);
+
+        /** Temp dir for PDS. */
+        private static readonly string TempDir = IgniteUtils.GetTempDirectoryName();
 
         /// <summary>
         /// Tests the memory metrics.
@@ -42,17 +58,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestMemoryMetrics()
         {
-            var ignite = StartIgniteWithTwoDataRegions();
-
+            var ignite = StartIgniteWithThreeDataRegions();
+            
             // Verify metrics.
             var metrics = ignite.GetDataRegionMetrics().OrderBy(x => x.Name).ToArray();
-            Assert.AreEqual(4, metrics.Length);  // two defined plus system and plus TxLog.
+            Assert.AreEqual(6, metrics.Length);  // three defined plus system, metastorage and TxLog.
 
-            var emptyMetrics = metrics[0];
+            var emptyMetrics = metrics[1];
             Assert.AreEqual(RegionNoMetrics, emptyMetrics.Name);
             AssertMetricsAreEmpty(emptyMetrics);
 
-            var memMetrics = metrics[1];
+            var memMetrics = metrics[2];
             Assert.AreEqual(RegionWithMetrics, memMetrics.Name);
             Assert.Greater(memMetrics.AllocationRate, 0);
             Assert.AreEqual(0, memMetrics.EvictionRate);
@@ -64,28 +80,27 @@ namespace Apache.Ignite.Core.Tests.Cache
                 memMetrics.TotalAllocatedPages * (memMetrics.PageSize + PageOverhead));
             Assert.AreEqual(memMetrics.PhysicalMemorySize,
                 memMetrics.PhysicalMemoryPages * (memMetrics.PageSize + PageOverhead));
-
-            var sysMetrics = metrics[2];
+            Assert.Greater(memMetrics.OffHeapSize, memMetrics.PhysicalMemoryPages);
+            Assert.Greater(memMetrics.OffheapUsedSize, memMetrics.PhysicalMemoryPages);
+            
+            var sysMetrics = metrics[4];
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
             AssertMetricsAreEmpty(sysMetrics);
 
             // Metrics by name.
+            // In-memory region.
             emptyMetrics = ignite.GetDataRegionMetrics(RegionNoMetrics);
             Assert.AreEqual(RegionNoMetrics, emptyMetrics.Name);
             AssertMetricsAreEmpty(emptyMetrics);
 
+            // Persistence region.
             memMetrics = ignite.GetDataRegionMetrics(RegionWithMetrics);
             Assert.AreEqual(RegionWithMetrics, memMetrics.Name);
-            Assert.Greater(memMetrics.AllocationRate, 0);
-            Assert.AreEqual(0, memMetrics.EvictionRate);
-            Assert.AreEqual(0, memMetrics.LargeEntriesPagesPercentage);
-            Assert.Greater(memMetrics.PageFillFactor, 0);
-            Assert.Greater(memMetrics.TotalAllocatedPages, 1000);
-            Assert.Greater(memMetrics.PhysicalMemoryPages, 1000);
-            Assert.AreEqual(memMetrics.TotalAllocatedSize,
-                memMetrics.TotalAllocatedPages * (memMetrics.PageSize + PageOverhead));
-            Assert.AreEqual(memMetrics.PhysicalMemorySize,
-                memMetrics.PhysicalMemoryPages * (memMetrics.PageSize + PageOverhead));
+            AssertMetrics(memMetrics, false);
+            
+            memMetrics = ignite.GetDataRegionMetrics(RegionWithMetricsAndPersistence);
+            Assert.AreEqual(RegionWithMetricsAndPersistence, memMetrics.Name);
+            AssertMetrics(memMetrics, true);
 
             sysMetrics = ignite.GetDataRegionMetrics("sysMemPlc");
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
@@ -96,6 +111,40 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
+        /// Check metrics values for data region.
+        /// </summary>
+        /// <param name="metrics">Data region metrics.</param>
+        /// <param name="isPersistent">If data region is persistent.</param>
+        private static void AssertMetrics(IDataRegionMetrics metrics, bool isPersistent)
+        {
+            Assert.Greater(metrics.AllocationRate, 0);
+            Assert.AreEqual(0, metrics.EvictionRate);
+            Assert.AreEqual(0, metrics.LargeEntriesPagesPercentage);
+            Assert.Greater(metrics.PageFillFactor, 0);
+            Assert.Greater(metrics.TotalAllocatedPages, isPersistent ? 0 : 1000);
+            Assert.Greater(metrics.PhysicalMemoryPages, isPersistent ? 0 : 1000);
+            Assert.AreEqual(metrics.TotalAllocatedSize,
+                metrics.TotalAllocatedPages * (metrics.PageSize + (isPersistent ? 0 : PageOverhead)));
+            Assert.AreEqual(metrics.PhysicalMemorySize,
+                metrics.PhysicalMemoryPages * (metrics.PageSize + (isPersistent ? PersistentPageOverhead : PageOverhead)));
+            Assert.Greater(metrics.OffHeapSize, metrics.PhysicalMemoryPages);
+            Assert.Greater(metrics.OffheapUsedSize, metrics.PhysicalMemoryPages);
+
+            if (isPersistent)
+            {
+                Assert.Greater(metrics.PagesRead, 0);
+                Assert.Greater(metrics.PagesWritten, 0);
+                Assert.AreEqual(0, metrics.PagesReplaced);
+                Assert.AreEqual(0, metrics.UsedCheckpointBufferPages);
+                Assert.AreEqual(0, metrics.UsedCheckpointBufferSize);
+                Assert.Greater(metrics.CheckpointBufferSize, 0);
+#pragma warning disable 618
+                Assert.AreEqual(0, metrics.CheckpointBufferPages);
+#pragma warning restore 618
+            }
+        }
+        
+        /// <summary>
         /// Asserts that metrics are empty.
         /// </summary>
         private static void AssertMetricsAreEmpty(IDataRegionMetrics metrics)
@@ -104,20 +153,25 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(0, metrics.EvictionRate);
             Assert.AreEqual(0, metrics.LargeEntriesPagesPercentage);
             Assert.AreEqual(0, metrics.PageFillFactor);
+            Assert.AreEqual(0, metrics.OffheapUsedSize);
         }
 
         /// <summary>
-        /// Starts the ignite with two policies.
+        /// Starts the ignite with three policies (two in-memory and one persistent).
         /// </summary>
-        private static IIgnite StartIgniteWithTwoDataRegions()
+        private static IIgnite StartIgniteWithThreeDataRegions()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DataStorageConfiguration = new DataStorageConfiguration()
                 {
+                    CheckpointFrequency = CheckpointFrequency,
+                    MetricsEnabled = true,
+                    WalMode = WalMode.LogOnly,
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = RegionWithMetrics,
+                        PersistenceEnabled = false,
                         MetricsEnabled = true
                     },
                     DataRegionConfigurations = new[]
@@ -126,12 +180,21 @@ namespace Apache.Ignite.Core.Tests.Cache
                         {
                             Name = RegionNoMetrics,
                             MetricsEnabled = false
+                        },
+                        new DataRegionConfiguration()
+                        {
+                            Name = RegionWithMetricsAndPersistence,
+                            PersistenceEnabled = true,
+                            MetricsEnabled = true
                         }
                     }
-                }
+                },  
+                WorkDirectory = TempDir
             };
 
             var ignite = Ignition.Start(cfg);
+            
+            ignite.GetCluster().SetActive(true);
 
             // Create caches and do some things with them.
             var cacheNoMetrics = ignite.CreateCache<int, int>(new CacheConfiguration("cacheNoMetrics")
@@ -149,7 +212,19 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cacheWithMetrics.Put(1, 1);
             cacheWithMetrics.Get(1);
+            
+            var cacheWithMetricsAndPersistence = 
+                ignite.CreateCache<int, int>(new CacheConfiguration("cacheWithMetricsAndPersistence")
+            {
+                DataRegionName = RegionWithMetricsAndPersistence
+            });
 
+            cacheWithMetricsAndPersistence.Put(1, 1);
+            cacheWithMetricsAndPersistence.Get(1);
+
+            // Wait for checkpoint.
+            Thread.Sleep(CheckpointFrequency);
+            
             return ignite;
         }
 
@@ -160,6 +235,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TearDown()
         {
             Ignition.StopAll(true);
+            
+            Directory.Delete(TempDir, true);
         }
     }
 }

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.io.Console;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,8 +55,13 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
+import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
@@ -75,6 +80,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineAutoAdjustSettings;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
@@ -147,7 +153,20 @@ import static org.apache.ignite.internal.commandline.cache.CacheCommand.IDLE_VER
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.LIST;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.RESET_LOST_PARTITIONS;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.VALIDATE_INDEXES;
+import static org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg.USER_ATTRIBUTES;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CHECK_CRC;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.SKIP_ZEROS;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.CONFIG;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.GROUP;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.OUTPUT_FORMAT;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.SEQUENCE;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.AUTOADJUST;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.SET;
@@ -191,24 +210,9 @@ public class CommandHandler {
     /** */
     private static final String CMD_PING_TIMEOUT = "--ping-timeout";
 
-    /** */
-    private static final String CMD_DUMP = "--dump";
-
-    /** */
-    private static final String CMD_SKIP_ZEROS = "--skip-zeros";
-
-    /** Command exclude caches. */
-    private static final String CMD_EXCLUDE_CACHES = "--excludeCaches";
-
-    /** Cache filter. */
-    private static final String CACHE_FILTER = "--cache-filter";
-
     /** One cache filter option should used message. */
     public static final String ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG = "Should use only one of option: " +
-        CMD_EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly";
-
-    /** */
-    private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
+        EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly";
 
     // SSL configuration section
 
@@ -290,11 +294,14 @@ public class CommandHandler {
     /** */
     private static final String BASELINE_SET_VERSION = "version";
 
-    /** Parameter name for validate_indexes command. */
-    static final String VI_CHECK_FIRST = "--check-first";
+    /** */
+    private static final String BASELINE_AUTO_ADJUST = "autoadjust";
 
-    /** Parameter name for validate_indexes command. */
-    static final String VI_CHECK_THROUGH = "--check-through";
+    /** */
+    private static final String BASELINE_AUTO_ADJUST_ENABLE = "enable";
+
+    /** */
+    private static final String BASELINE_AUTO_ADJUST_DISABLE = "disable";
 
     /** */
     static final String WAL_PRINT = "print";
@@ -362,12 +369,6 @@ public class CommandHandler {
     /** */
     private static final String TX_KILL = "--kill";
 
-    /** */
-    private static final String OUTPUT_FORMAT = "--output-format";
-
-    /** */
-    private static final String CONFIG = "--config";
-
     /** Utility name. */
     private static final String UTILITY_NAME = "control.sh";
 
@@ -404,12 +405,15 @@ public class CommandHandler {
     /** Check if experimental commands are enabled. Default {@code false}. */
     private final boolean enableExperimental = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
 
+    /** Console instance. Public access needs for tests. */
+    public GridConsole console = GridConsoleAdapter.getInstance();
+
     /**
      * Creates list of common utility options.
      *
-     * @return List of common utility options.
+     * @return Array of common utility options.
      */
-    private static List<String> getCommonOptions() {
+    private static String[] getCommonOptions() {
         List<String> list = new ArrayList<>(32);
 
         list.add(op(CMD_HOST, "HOST_OR_IP"));
@@ -429,7 +433,7 @@ public class CommandHandler {
         list.add(op(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
         list.add(op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
 
-        return list;
+        return list.toArray(new String[0]);
     }
 
     /**
@@ -857,22 +861,22 @@ public class CommandHandler {
     private void printCacheHelp() {
         log(i("The '" + CACHE + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:"));
         nl();
-        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE + "[subcommand] <subcommand_parameters>"));
+        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE + " [subcommand] <subcommand_parameters>"));
         nl();
         log(i("The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '" + CONTENTION + "' and '" + VALIDATE_INDEXES + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node."));
         nl();
         nl();
         log(i("Subcommands:"));
 
-        usageCache(LIST, "regexPattern", op(or("groups", "seq")), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
+        String CACHES = "cacheName1,...,cacheNameN";
+
+        usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
-        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), op(or(CMD_EXCLUDE_CACHES + " cache1,...,cacheN",
-            op(CACHE_FILTER, or(CacheFilterEnum.ALL.toString(), CacheFilterEnum.SYSTEM.toString(),
-                CacheFilterEnum.PERSISTENT.toString(), CacheFilterEnum.NOT_PERSISTENT.toString())), "cache1,...," +
-                "cacheN")));
-        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", OP_NODE_ID, op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
-        usageCache(DISTRIBUTION, or(NODE_ID, NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attrName1,...,attrNameN"));
-        usageCache(RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
+        usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
+            op(or(g(EXCLUDE_CACHES, CACHES), g(CACHE_FILTER, or(CacheFilterEnum.values())), CACHES)));
+        usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
+        usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
+        usageCache(RESET_LOST_PARTITIONS, CACHES);
         nl();
     }
 
@@ -1041,7 +1045,10 @@ public class CommandHandler {
      */
     private void legacyCacheIdleVerify(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         VisorIdleVerifyTaskResult res = executeTask(
-            client, VisorIdleVerifyTask.class, new VisorIdleVerifyTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches()));
+            client,
+            VisorIdleVerifyTask.class,
+            new VisorIdleVerifyTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches(), cacheArgs.idleCheckCrc())
+        );
 
         Map<PartitionKey, List<PartitionHashRecord>> conflicts = res.getConflicts();
 
@@ -1174,7 +1181,6 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheResetLostPartitions(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-
         CacheResetLostPartitionsTaskArg taskArg = new CacheResetLostPartitionsTaskArg(cacheArgs.caches());
 
         CacheResetLostPartitionsTaskResult res = executeTaskByNameOnNode(client, CacheResetLostPartitionsTask.class.getName(), taskArg, null);
@@ -1187,12 +1193,15 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheIdleVerifyDump(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        String path = executeTask(
-            client,
-            VisorIdleVerifyDumpTask.class,
-            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches(), cacheArgs.isSkipZeros(), cacheArgs
-                .getCacheFilterEnum())
+        VisorIdleVerifyDumpTaskArg arg = new VisorIdleVerifyDumpTaskArg(
+            cacheArgs.caches(),
+            cacheArgs.excludeCaches(),
+            cacheArgs.isSkipZeros(),
+            cacheArgs.getCacheFilterEnum(),
+            cacheArgs.idleCheckCrc()
         );
+
+        String path = executeTask(client, VisorIdleVerifyDumpTask.class, arg);
 
         log("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
     }
@@ -1203,7 +1212,10 @@ public class CommandHandler {
      */
     private void cacheIdleVerifyV2(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         IdleVerifyResultV2 res = executeTask(
-            client, VisorIdleVerifyTaskV2.class, new VisorIdleVerifyTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches()));
+            client,
+            VisorIdleVerifyTaskV2.class,
+            new VisorIdleVerifyTaskArg(cacheArgs.caches(),cacheArgs.excludeCaches(), cacheArgs.idleCheckCrc())
+        );
 
         res.print(System.out::print);
     }
@@ -1235,6 +1247,10 @@ public class CommandHandler {
                 baselineVersion(client, baselineArgs);
                 break;
 
+            case BASELINE_AUTO_ADJUST:
+                baselineAutoAdjust(client, baselineArgs);
+                break;
+
             case BASELINE_COLLECT:
                 baselinePrint(client);
                 break;
@@ -1255,20 +1271,38 @@ public class CommandHandler {
             case SET:
                 List<String> consistentIds = getConsistentIds(s);
 
-                return new VisorBaselineTaskArg(op, -1, consistentIds);
+                return new VisorBaselineTaskArg(op, -1, consistentIds, null);
 
             case VERSION:
                 try {
                     long topVer = Long.parseLong(s);
 
-                    return new VisorBaselineTaskArg(op, topVer, null);
+                    return new VisorBaselineTaskArg(op, topVer, null, null);
                 }
                 catch (NumberFormatException e) {
                     throw new IllegalArgumentException("Invalid topology version: " + s, e);
                 }
 
+            case AUTOADJUST:
+                if (BASELINE_AUTO_ADJUST_DISABLE.equals(s)) {
+                    VisorBaselineAutoAdjustSettings settings = new VisorBaselineAutoAdjustSettings(false, -1);
+
+                    return new VisorBaselineTaskArg(op, -1, null, settings);
+                }
+                else {
+                    String[] argsArr = s.split(" ");
+
+                    assert argsArr.length == 2;
+
+                    VisorBaselineAutoAdjustSettings settings = new VisorBaselineAutoAdjustSettings(
+                        true,
+                        Long.parseLong(argsArr[1])
+                    );
+
+                    return new VisorBaselineTaskArg(op, -1, null, settings);
+                }
             default:
-                return new VisorBaselineTaskArg(op, -1, null);
+                return new VisorBaselineTaskArg(op, -1, null, new VisorBaselineAutoAdjustSettings(false, -1));
         }
     }
 
@@ -1296,11 +1330,32 @@ public class CommandHandler {
     private void baselinePrint0(VisorBaselineTaskResult res) {
         log("Cluster state: " + (res.isActive() ? "active" : "inactive"));
         log("Current topology version: " + res.getTopologyVersion());
+        VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
+
+        if (autoAdjustSettings != null) {
+            log("Baseline auto adjustment " + (autoAdjustSettings.isEnabled() ? "enabled" : "disabled") +
+                ": softTimeout=" + autoAdjustSettings.getSoftTimeout()
+            );
+        }
+
         nl();
 
         Map<String, VisorBaselineNode> baseline = res.getBaseline();
 
         Map<String, VisorBaselineNode> srvs = res.getServers();
+
+        // if task runs on a node with VisorBaselineNode of old version (V1) we'll get order=null for all nodes.
+
+        String crdStr = srvs.values().stream()
+            // check for not null
+            .filter(node -> node.getOrder() != null)
+            .min(Comparator.comparing(VisorBaselineNode::getOrder))
+            // format
+            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder() + ")")
+            .orElse("");
+
+        log("Current topology version: " + res.getTopologyVersion() + crdStr);
+        nl();
 
         if (F.isEmpty(baseline))
             log("Baseline nodes not found.");
@@ -1308,9 +1363,13 @@ public class CommandHandler {
             log("Baseline nodes:");
 
             for (VisorBaselineNode node : baseline.values()) {
-                boolean online = srvs.containsKey(node.getConsistentId());
+                VisorBaselineNode srvNode = srvs.get(node.getConsistentId());
 
-                log(i("ConsistentID=" + node.getConsistentId() + ", STATE=" + (online ? "ONLINE" : "OFFLINE"), 2));
+                String state = ", State=" + (srvNode != null ? "ONLINE" : "OFFLINE");
+
+                String order = srvNode != null ? ", Order=" + srvNode.getOrder() : "";
+
+                log(i("ConsistentId=" + node.getConsistentId() + state + order, 2));
             }
 
             log(DELIM);
@@ -1331,7 +1390,7 @@ public class CommandHandler {
                 log("Other nodes:");
 
                 for (VisorBaselineNode node : others)
-                    log(i("ConsistentID=" + node.getConsistentId(), 2));
+                    log(i("ConsistentId=" + node.getConsistentId() + ", Order=" + node.getOrder(), 2));
 
                 log("Number of other nodes: " + others.size());
             }
@@ -1423,6 +1482,25 @@ public class CommandHandler {
         }
         catch (Throwable e) {
             log("Failed to set baseline with specified topology version.");
+
+            throw e;
+        }
+    }
+
+    /**
+     * Set baseline autoadjustment settings.
+     *
+     * @param client Client.
+     * @param args Argument from command line. Either {@code disable} or {@code enable <softTimeout>}.
+     */
+    private void baselineAutoAdjust(GridClient client, String args) throws GridClientException {
+        try {
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(AUTOADJUST, args));
+
+            baselinePrint0(res);
+        }
+        catch (Throwable e) {
+            log("Failed to update baseline autoadjustment settings.");
 
             throw e;
         }
@@ -1759,13 +1837,20 @@ public class CommandHandler {
         Map<String, String> map = U.newLinkedHashMap(16);
         switch (cmd) {
             case LIST:
-                map.put(CONFIG, "print a all configuration parameters for each cache.");
-                map.put(OUTPUT_FORMAT + " " + MULTI_LINE.text(), "print configuration parameters per line. This option has effect only when used with " + CONFIG + " and without [groups|seq].");
+                map.put(CONFIG.toString(), "print all configuration parameters for each cache.");
+                map.put(OUTPUT_FORMAT + " " + MULTI_LINE, "print configuration parameters per line. This option has effect only when used with " + CONFIG + " and without " + op(or(GROUP, SEQUENCE)) + ".");
+                map.put(GROUP.toString(), "print information about groups.");
+                map.put(SEQUENCE.toString(), "print information about sequences.");
 
                 break;
             case VALIDATE_INDEXES:
-                map.put(VI_CHECK_FIRST + " N", "validate only the first N keys");
-                map.put(VI_CHECK_THROUGH + " K", "validate every Kth key");
+                map.put(CHECK_FIRST + " N", "validate only the first N keys");
+                map.put(CHECK_THROUGH + " K", "validate every Kth key");
+
+                break;
+
+            case IDLE_VERIFY:
+                map.put(CHECK_CRC.toString(), "check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.");
 
                 break;
         }
@@ -1823,6 +1908,16 @@ public class CommandHandler {
      */
     private static String or(Object... params) {
         return j("|", params);
+    }
+
+    /**
+     * Join input parameters with space and wrap grouping braces {@code ()}.
+     *
+     * @param params Input parameter.
+     * @return Joined parameters wrapped grouped braces.
+     */
+    private static String g(Object... params) {
+        return j(new SB(), "(", " ", params).a(")").toString();
     }
 
     /**
@@ -1914,6 +2009,9 @@ public class CommandHandler {
 
         char sslTrustStorePassword[] = null;
 
+        final String pwdArgWarnFmt = "Warning: %s is insecure. " +
+            "Whenever possible, use interactive prompt for password (just discard %s option).";
+
         while (hasNextArg()) {
             String str = nextArg("").toLowerCase();
 
@@ -1943,13 +2041,44 @@ public class CommandHandler {
                         str = peekNextArg();
 
                         if (str != null) {
-                            str = str.toLowerCase();
+                            switch (str.toLowerCase()) {
+                                case BASELINE_ADD:
+                                case BASELINE_REMOVE:
+                                case BASELINE_SET:
+                                case BASELINE_SET_VERSION:
+                                    baselineAct = nextArg("Expected baseline action");
 
-                            if (BASELINE_ADD.equals(str) || BASELINE_REMOVE.equals(str) ||
-                                BASELINE_SET.equals(str) || BASELINE_SET_VERSION.equals(str)) {
-                                baselineAct = nextArg("Expected baseline action");
+                                    baselineArgs = nextArg("Expected baseline arguments");
 
-                                baselineArgs = nextArg("Expected baseline arguments");
+                                    break;
+
+                                case BASELINE_AUTO_ADJUST:
+                                    baselineAct = nextArg("Expected baseline action");
+
+                                    String enableDisable = nextArg("Expected argument for baseline autoadjust (enable|disable)")
+                                        .toLowerCase();
+
+                                    if (BASELINE_AUTO_ADJUST_DISABLE.equals(enableDisable))
+                                        baselineArgs = enableDisable.toLowerCase();
+                                    else {
+                                        if (!BASELINE_AUTO_ADJUST_ENABLE.equals(enableDisable)) {
+                                            String msg = "Argument after \"--baseline autoadjust\" must be" +
+                                                " either \"enable\" or \"disable\"";
+
+                                            throw new IllegalArgumentException(msg);
+                                        }
+
+                                        long softTimeout = nextLongArg("Expected soft timeout" +
+                                            " argument for baseline autoadjust");
+
+                                        if (softTimeout < 0)
+                                            throw new IllegalArgumentException("Soft timeout value for baseline" +
+                                                " autoadjustment can't be negative");
+
+                                        baselineArgs = enableDisable + " " + softTimeout;
+                                    }
+
+                                    break;
                             }
                         }
 
@@ -2024,6 +2153,8 @@ public class CommandHandler {
                     case CMD_PASSWORD:
                         pwd = nextArg("Expected password");
 
+                        log(String.format(pwdArgWarnFmt, CMD_PASSWORD, CMD_PASSWORD));
+
                         break;
 
                     case CMD_SSL_PROTOCOL:
@@ -2049,6 +2180,8 @@ public class CommandHandler {
                     case CMD_KEYSTORE_PASSWORD:
                         sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
 
+                        log(String.format(pwdArgWarnFmt, CMD_KEYSTORE_PASSWORD, CMD_KEYSTORE_PASSWORD));
+
                         break;
 
                     case CMD_KEYSTORE_TYPE:
@@ -2063,6 +2196,8 @@ public class CommandHandler {
 
                     case CMD_TRUSTSTORE_PASSWORD:
                         sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
+
+                        log(String.format(pwdArgWarnFmt, CMD_TRUSTSTORE_PASSWORD, CMD_TRUSTSTORE_PASSWORD));
 
                         break;
 
@@ -2134,31 +2269,51 @@ public class CommandHandler {
                 while (hasNextCacheArg() && idleVerifyArgsCnt-- > 0) {
                     String nextArg = nextArg("");
 
-                    if (CMD_DUMP.equals(nextArg))
-                        cacheArgs.dump(true);
-                    else if (CMD_EXCLUDE_CACHES.equals(nextArg)) {
-                        if (cacheArgs.caches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
-                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+                    IdleVerifyCommandArg arg = CommandArgUtils.of(nextArg, IdleVerifyCommandArg.class);
 
-                        parseExcludeCacheNames(nextArg("Specify caches, which will be excluded."),
-                            cacheArgs);
-                    }
-                    else if (CMD_SKIP_ZEROS.equals(nextArg))
-                        cacheArgs.skipZeros(true);
-                    else if (CACHE_FILTER.equals(nextArg)) {
-                        if (cacheArgs.caches() != null || cacheArgs.excludeCaches() != null)
-                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
-
-                        String filter = nextArg("The cache filter should be specified. The following values can be " +
-                            "used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
-
-                        cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter.toUpperCase()));
-                    }
-                    else {
+                    if(arg == null) {
                         if (cacheArgs.excludeCaches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
                             throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
 
                         parseCacheNames(nextArg, cacheArgs);
+                    }
+                    else {
+                        switch (arg) {
+                            case DUMP:
+                                cacheArgs.dump(true);
+
+                                break;
+
+                            case SKIP_ZEROS:
+                                cacheArgs.skipZeros(true);
+
+                                break;
+
+                            case CHECK_CRC:
+                                cacheArgs.idleCheckCrc(true);
+
+                                break;
+
+                            case CACHE_FILTER:
+                                if (cacheArgs.caches() != null || cacheArgs.excludeCaches() != null)
+                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+
+                                String filter = nextArg("The cache filter should be specified. The following " +
+                                    "values can be used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
+
+                                cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter.toUpperCase()));
+
+                                break;
+
+                            case EXCLUDE_CACHES:
+                                if (cacheArgs.caches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
+                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+
+                                parseExcludeCacheNames(nextArg("Specify caches, which will be excluded."),
+                                    cacheArgs);
+
+                                break;
+                        }
                     }
                 }
                 break;
@@ -2180,11 +2335,13 @@ public class CommandHandler {
                 int argsCnt = 0;
 
                 while (hasNextCacheArg() && argsCnt++ < 4) {
-                    String arg = nextArg("");
+                    String nextArg = nextArg("");
 
-                    if (VI_CHECK_FIRST.equals(arg) || VI_CHECK_THROUGH.equals(arg)) {
+                    ValidateIndexesCommandArg arg = CommandArgUtils.of(nextArg, ValidateIndexesCommandArg.class);
+
+                    if(arg == CHECK_FIRST || arg == CHECK_THROUGH) {
                         if (!hasNextCacheArg())
-                            throw new IllegalArgumentException("Numeric value for '" + arg + "' parameter expected.");
+                            throw new IllegalArgumentException("Numeric value for '" + nextArg + "' parameter expected.");
 
                         int numVal;
 
@@ -2195,17 +2352,14 @@ public class CommandHandler {
                         }
                         catch (IllegalArgumentException e) {
                             throw new IllegalArgumentException(
-                                "Not numeric value was passed for '"
-                                    + arg
-                                    + "' parameter: "
-                                    + numStr
+                                "Not numeric value was passed for '" + nextArg + "' parameter: " + numStr
                             );
                         }
 
                         if (numVal <= 0)
-                            throw new IllegalArgumentException("Value for '" + arg + "' property should be positive.");
+                            throw new IllegalArgumentException("Value for '" + nextArg + "' property should be positive.");
 
-                        if (VI_CHECK_FIRST.equals(arg))
+                        if (arg == CHECK_FIRST)
                             cacheArgs.checkFirst(numVal);
                         else
                             cacheArgs.checkThrough(numVal);
@@ -2214,7 +2368,7 @@ public class CommandHandler {
                     }
 
                     try {
-                        cacheArgs.nodeId(UUID.fromString(arg));
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
 
                         continue;
                     }
@@ -2222,7 +2376,7 @@ public class CommandHandler {
                         //No-op.
                     }
 
-                    parseCacheNames(arg, cacheArgs);
+                    parseCacheNames(nextArg, cacheArgs);
                 }
 
                 break;
@@ -2235,7 +2389,9 @@ public class CommandHandler {
                 while (hasNextCacheArg()) {
                     String nextArg = nextArg("");
 
-                    if (CMD_USER_ATTRIBUTES.equals(nextArg)) {
+                    DistributionCommandArg arg = CommandArgUtils.of(nextArg, DistributionCommandArg.class);
+
+                    if (arg == USER_ATTRIBUTES) {
                         nextArg = nextArg("User attributes are expected to be separated by commas");
 
                         Set<String> userAttrs = new HashSet<>();
@@ -2268,34 +2424,36 @@ public class CommandHandler {
                 OutputFormat outputFormat = SINGLE_LINE;
 
                 while (hasNextCacheArg()) {
-                    String tmp = nextArg("").toLowerCase();
+                    String nextArg = nextArg("").toLowerCase();
 
-                    switch (tmp) {
-                        case "groups":
-                            cacheCmd = GROUPS;
+                    ListCommandArg arg = CommandArgUtils.of(nextArg, ListCommandArg.class);
+                    if (arg != null) {
+                        switch (arg) {
+                            case GROUP:
+                                cacheCmd = GROUPS;
 
-                            break;
+                                break;
 
-                        case "seq":
-                            cacheCmd = SEQ;
+                            case SEQUENCE:
+                                cacheCmd = SEQ;
 
-                            break;
+                                break;
 
-                        case OUTPUT_FORMAT:
-                            String tmp2 = nextArg("output format must be defined!").toLowerCase();
+                            case OUTPUT_FORMAT:
+                                String tmp2 = nextArg("output format must be defined!").toLowerCase();
 
-                            outputFormat = OutputFormat.fromConsoleName(tmp2);
+                                outputFormat = OutputFormat.fromConsoleName(tmp2);
 
-                            break;
+                                break;
 
-                        case CONFIG:
-                            cacheArgs.fullConfig(true);
+                            case CONFIG:
+                                cacheArgs.fullConfig(true);
 
-                            break;
-
-                        default:
-                            cacheArgs.nodeId(UUID.fromString(tmp));
+                                break;
+                        }
                     }
+                    else
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
                 }
 
                 cacheArgs.cacheCommand(cacheCmd);
@@ -2321,20 +2479,11 @@ public class CommandHandler {
     }
 
     /**
+     * @param cacheNames Cache names string.
      * @param cacheArgs Cache args.
      */
     private void parseCacheNames(String cacheNames, CacheArguments cacheArgs) {
-        String[] cacheNamesArr = cacheNames.split(",");
-        Set<String> cacheNamesSet = new HashSet<>();
-
-        for (String cacheName : cacheNamesArr) {
-            if (F.isEmpty(cacheName))
-                throw new IllegalArgumentException("Non-empty cache names expected.");
-
-            cacheNamesSet.add(cacheName.trim());
-        }
-
-        cacheArgs.caches(cacheNamesSet);
+        cacheArgs.caches(parseCacheNames(cacheNames));
     }
 
     /**
@@ -2342,7 +2491,15 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void parseExcludeCacheNames(String cacheNames, CacheArguments cacheArgs) {
+        cacheArgs.excludeCaches(parseCacheNames(cacheNames));
+    }
+
+    /**
+     * @param cacheNames Cache names string.
+     */
+    private Set<String> parseCacheNames(String cacheNames) {
         String[] cacheNamesArr = cacheNames.split(",");
+
         Set<String> cacheNamesSet = new HashSet<>();
 
         for (String cacheName : cacheNamesArr) {
@@ -2352,7 +2509,7 @@ public class CommandHandler {
             cacheNamesSet.add(cacheName.trim());
         }
 
-        cacheArgs.excludeCaches(cacheNamesSet);
+        return cacheNamesSet;
     }
 
     /**
@@ -2515,8 +2672,6 @@ public class CommandHandler {
      * @return Password.
      */
     private char[] requestPasswordFromConsole(String msg) {
-        Console console = System.console();
-
         if (console == null)
             throw new UnsupportedOperationException("Failed to securely read password (console is unavailable): " + msg);
         else
@@ -2530,8 +2685,6 @@ public class CommandHandler {
      * @return Input user data.
      */
     private String requestDataFromConsole(String msg) {
-        Console console = System.console();
-
         if (console != null)
             return console.readLine(msg);
         else {
@@ -2711,6 +2864,7 @@ public class CommandHandler {
         usage(i("Remove nodes from baseline topology:"), BASELINE, BASELINE_REMOVE, constistIds, op(CMD_AUTO_CONFIRMATION));
         usage(i("Set baseline topology:"), BASELINE, BASELINE_SET, constistIds, op(CMD_AUTO_CONFIRMATION));
         usage(i("Set baseline topology based on version:"), BASELINE, BASELINE_SET_VERSION + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline autoadjustment settings:"), BASELINE, BASELINE_AUTO_ADJUST, "disable|(enable <softTimeout>)", op(CMD_AUTO_CONFIRMATION));
         usage(i("List or kill transactions:"), TX, getTxOptions());
 
         if (enableExperimental) {
@@ -2756,6 +2910,7 @@ public class CommandHandler {
         log("Control utility [ver. " + ACK_VER_STR + "]");
         log(COPYRIGHT);
         log("User: " + System.getProperty("user.name"));
+        log("Time: " + LocalDateTime.now());
         log(DELIM);
 
         try {

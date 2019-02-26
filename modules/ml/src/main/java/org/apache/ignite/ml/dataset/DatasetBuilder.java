@@ -67,7 +67,7 @@ public interface DatasetBuilder<K, V> {
      * @return Returns new instance of {@link DatasetBuilder} with new {@link UpstreamTransformerBuilder} added
      * to chain of upstream transformer builders.
      */
-    public DatasetBuilder<K, V> withUpstreamTransformer(UpstreamTransformerBuilder<K, V> builder);
+    public DatasetBuilder<K, V> withUpstreamTransformer(UpstreamTransformerBuilder builder);
 
     /**
      * Returns new instance of DatasetBuilder using conjunction of internal filter and {@code filterToAdd}.

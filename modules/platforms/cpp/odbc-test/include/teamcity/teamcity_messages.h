@@ -21,35 +21,35 @@
 #include <string>
 #include <iostream>
 
-namespace JetBrains {
+namespace jetbrains { namespace teamcity {
 
 std::string getFlowIdFromEnvironment();
 bool underTeamcity();
 
-class TeamcityMessages {
-    std::ostream *m_out;
-
-protected:
-    std::string escape(std::string s);
-
-    void openMsg(const std::string &name);
-    void writeProperty(std::string name, std::string value);
-    void closeMsg();
+class TeamcityMessages
+{
+    std::ostream* m_out;
 
 public:
+    static const bool StdErr = true;
+    static const bool StdOut = false;
+
     TeamcityMessages();
 
-    void setOutput(std::ostream &);
+    void setOutput(std::ostream&);
 
-    void suiteStarted(std::string name, std::string flowid = "");
-    void suiteFinished(std::string name, std::string flowid = "");
+    void suiteStarted(const std::string& name, const std::string& flowid = std::string());
+    void suiteFinished(const std::string& name, const std::string& flowid = std::string());
 
-    void testStarted(std::string name, std::string flowid = "");
-    void testFailed(std::string name, std::string message, std::string details, std::string flowid = "");
-    void testIgnored(std::string name, std::string message, std::string flowid = "");
-    void testFinished(std::string name, int durationMs = -1, std::string flowid = "");    
+    void testStarted(const std::string& name, const std::string& flowid = std::string(), bool captureStandardOutput = false);
+    void testFinished(const std::string& name, int durationMs = -1, const std::string& flowid = std::string());
+
+    void testFailed(const std::string& name, const std::string& message, const std::string& details, const std::string& flowid = std::string());
+    void testIgnored(const std::string& name, const std::string& message, const std::string& flowid = std::string());
+
+    void testOutput(const std::string& name, const std::string& output, const std::string& flowid, bool isStdErr = StdOut);
 };
 
-}
+}} // namespace teamcity, jetbrains
 
 #endif /* H_TEAMCITY_MESSAGES */
