@@ -26,7 +26,7 @@ public final class GridSqlKeyword extends GridSqlElement {
     /**
      * Default update value - analogous to H2.
      * @see ValueExpression#getDefault()
-     * @see Parser#parseUpdate()
+     * @see GridSqlQueryParser#parseUpdate()
      */
     public static final GridSqlKeyword DEFAULT = new GridSqlKeyword("DEFAULT");
 
