@@ -1048,7 +1048,15 @@ public class GridSqlQueryParser {
             GridSqlColumn col = new GridSqlColumn(c, tbl, null, null, c.getName());
             col.resultType(fromColumn(c));
             cols.add(col);
-            set.put(col.columnName(), parseExpression(srcSet.get(c), true));
+
+            GridSqlElement setVal = parseExpression(srcSet.get(c), true);
+
+            if (containsDefaultKeyword(setVal)) {
+                throw new IgniteSQLException("DEFAULT values are unsupported for UPDATE.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
+
+            set.put(col.columnName(), setVal);
         }
 
         GridSqlElement where = parseExpression(UPDATE_WHERE.get(update), true);
@@ -1058,7 +1066,21 @@ public class GridSqlQueryParser {
         return res;
     }
 
+    /**
+     * @param val SQL expression.
+     * @return {@code true} if the expression contains DEFAULT keyword.
+     */
+    private boolean containsDefaultKeyword(GridSqlAst val) {
+        if (val == GridSqlKeyword.DEFAULT)
+            return true;
 
+        for (int i = 0; i < val.size(); ++i) {
+            if (containsDefaultKeyword(val.child(i)))
+                return true;
+        }
+
+        return false;
+    }
 
     /**
      * Parse {@code DROP INDEX} statement.

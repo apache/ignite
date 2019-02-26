@@ -64,29 +64,18 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Test for unsupported SQL statements in CREATE TABLE statement.
+     * Test for unsupported DEFAULT value at the INSERT/UPDATE/MERGE SQL statements.
      */
     @Test
-    public void testUnsupportedMerge() {
-        execSql(
-            "create table test ( " +
-                "id integer primary key, " +
-                "val varchar DEFAULT 'test_val')");
-
-        assertSqlUnsupported("MERGE INTO test (id, val) VALUES (0, DEFAULT)");
-    }
-
-    /**
-     * Test for unsupported SQL statements in CREATE TABLE statement.
-     */
-    @Test
-    public void testUnsupportedInsert() {
+    public void testUnsupportedDefault() {
         execSql(
             "create table test ( " +
                 "id integer primary key, " +
                 "val varchar DEFAULT 'test_val')");
 
         assertSqlUnsupported("INSERT INTO test (id, val) VALUES (0, DEFAULT)");
+        assertSqlUnsupported("MERGE INTO test (id, val) VALUES (0, DEFAULT)");
+        assertSqlUnsupported("UPDATE test SET val=DEFAULT");
     }
 
     /**
