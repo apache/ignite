@@ -59,6 +59,12 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
     }
 
     /** */
+    @BeforeClass
+    public static void check() {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
+    }
+
+    /** */
     @Before
     public void prepare() throws IOException {
         srcTmpDir = Files.createTempDirectory(getClass().getSimpleName());
@@ -140,9 +146,42 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         Path srcFilePath = Files.write(srcFile.toPath(), source.getBytes(StandardCharsets.UTF_8));
 
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+
         compiler.run(null, null, null, srcFilePath.toString());
 
-        return URLClassLoader.newInstance(new URL[] {srcTmpDir.toUri().toURL()});
+        ClassLoader parentClassLoader = ChildFirstClassLoader.class.getClassLoader();
+
+        return new ChildFirstClassLoader(new URL[] {srcTmpDir.toUri().toURL()}, parentClassLoader);
+    }
+
+    /** */
+    private static class ChildFirstClassLoader extends URLClassLoader {
+        /**
+         * @param urls Urls to include in classpath.
+         * @param parent Parent classloader.
+         */
+        public ChildFirstClassLoader(URL[] urls, ClassLoader parent) {
+            super(urls, parent);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            Class<?> loadedClass = findLoadedClass(name);
+
+            if (loadedClass == null) {
+                try {
+                    loadedClass = findClass(name);
+                }
+                catch (ClassNotFoundException e) {
+                    loadedClass = super.loadClass(name, resolve);
+                }
+            }
+
+            if (resolve)
+                resolveClass(loadedClass);
+
+            return loadedClass;
+        }
     }
 
     /**
