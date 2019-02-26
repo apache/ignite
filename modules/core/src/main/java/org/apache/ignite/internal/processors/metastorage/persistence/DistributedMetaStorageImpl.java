@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,13 +33,16 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -56,14 +60,17 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
+import static org.apache.ignite.internal.IgniteFeatures.DISTRIBUTED_METASTORAGE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
@@ -82,6 +89,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** Default upper bound of history size in bytes. */
     private static final long DFLT_MAX_HISTORY_BYTES = 100 * 1024 * 1024;
+
+    /** Message indicating that clusted is in a mixed state and writing cannot be completed because of that. */
+    public static final String NOT_SUPPORTED_MSG = "Ignite cluster has nodes that don't support distributed metastorage" +
+        " feature. Writing cannot be completed.";
 
     /** Cached subscription processor instance. Exists to make code shorter. */
     private final GridInternalSubscriptionProcessor subscrProcessor;
@@ -159,9 +170,25 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         subscrProcessor = ctx.internalSubscriptionProcessor();
     }
 
+    /**
+     * @return {@code True} if all nodes in the cluster support discributed metastorage feature.
+     * @see IgniteFeatures#DISTRIBUTED_METASTORAGE
+     */
+    private boolean isSupported() {
+        DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
+
+        if (discoSpi instanceof IgniteDiscoverySpi)
+            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(DISTRIBUTED_METASTORAGE);
+        else {
+            Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
+
+            return IgniteFeatures.allNodesSupports(nodes, DISTRIBUTED_METASTORAGE);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         if (isPersistenceEnabled(ctx.config())) {
@@ -216,7 +243,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         if (!isPersistenceEnabled(ctx.config())) {
@@ -246,7 +273,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         synchronized (innerStateLock) {
@@ -444,7 +471,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         assert startupExtras != null;
@@ -463,7 +490,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             hist
         );
 
-        dataBag.addJoiningNodeData(COMPONENT_ID, data);
+        try {
+            dataBag.addJoiningNodeData(COMPONENT_ID, JdkMarshaller.DEFAULT.marshal(data));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Returns current baseline topology id of {@code -1} if there's no baseline topology found. */
@@ -478,29 +510,47 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData
     ) {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return null;
-
-        if (!discoData.hasJoiningNodeData() || !isPersistenceEnabled(ctx.config()))
-            return null;
-
-        DistributedMetaStorageJoiningNodeData joiningData =
-            (DistributedMetaStorageJoiningNodeData)discoData.joiningNodeData();
-
-        DistributedMetaStorageVersion remoteVer = joiningData.ver;
-
-        DistributedMetaStorageHistoryItem[] remoteHist = joiningData.hist;
-
-        int remoteHistSize = remoteHist.length;
-
-        int remoteBltId = joiningData.bltId;
-
-        boolean clusterIsActive = isActive();
-
-        String errorMsg;
 
         synchronized (innerStateLock) {
             DistributedMetaStorageVersion locVer = getActualVersion();
+
+            if (!discoData.hasJoiningNodeData()) {
+                // Joining node doesn't support distributed metastorage feature.
+
+                if (isSupported() && locVer.id > 0 && !(node.isClient() || node.isDaemon())) {
+                    String errorMsg = "Node not supporting distributed metastorage feature" +
+                        " is not allowed to join the cluster";
+
+                    return new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+                }
+                else
+                    return null;
+            }
+
+            DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
+
+            if (joiningData == null) {
+                String errorMsg = "Cannot unmarshal joining node data";
+
+                return new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+            }
+
+            if (!isPersistenceEnabled(ctx.config()))
+                return null;
+
+            DistributedMetaStorageVersion remoteVer = joiningData.ver;
+
+            DistributedMetaStorageHistoryItem[] remoteHist = joiningData.hist;
+
+            int remoteHistSize = remoteHist.length;
+
+            int remoteBltId = joiningData.bltId;
+
+            boolean clusterIsActive = isActive();
+
+            String errorMsg;
 
             int locBltId = getBaselineTopologyId();
 
@@ -572,23 +622,28 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                         " Please check the order in which you start cluster nodes.";
                 }
             }
-        }
 
-        return (errorMsg == null) ? null : new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+            return (errorMsg == null) ? null : new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         if (!discoData.hasJoiningNodeData())
             return;
 
-        DistributedMetaStorageJoiningNodeData joiningData =
-            (DistributedMetaStorageJoiningNodeData)discoData.joiningNodeData();
+        DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
+
+        if (joiningData == null)
+            return;
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
+
+        if (!isSupported() && remoteVer.id > 0)
+            return;
 
         synchronized (innerStateLock) {
             DistributedMetaStorageVersion actualVer = getActualVersion();
@@ -613,7 +668,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.clientNode())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
         if (dataBag.commonDataCollectedFor(COMPONENT_ID))
@@ -624,8 +679,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!discoData.hasJoiningNodeData())
             return;
 
-        DistributedMetaStorageJoiningNodeData joiningData =
-            (DistributedMetaStorageJoiningNodeData)discoData.joiningNodeData();
+        if (!isSupported())
+            return;
+
+        DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
+
+        if (joiningData == null)
+            return;
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
@@ -694,6 +754,24 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     }
                 }
             }
+        }
+    }
+
+    /** */
+    @Nullable private DistributedMetaStorageJoiningNodeData getJoiningNodeData(
+        DiscoveryDataBag.JoiningNodeDiscoveryData discoData
+    ) {
+        byte[] data = (byte[])discoData.joiningNodeData();
+
+        assert data != null;
+
+        try {
+            return JdkMarshaller.DEFAULT.unmarshal(data, U.gridClassLoader());
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Unable to unmarshal joinging node data for distributed metastorage component.", e);
+
+            return null;
         }
     }
 
@@ -795,10 +873,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
+        synchronized (innerStateLock) {
+            DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
 
-        if (nodeData != null) {
-            synchronized (innerStateLock) {
+            if (nodeData != null) {
                 if (nodeData.fullData == null) {
                     if (nodeData.updates != null) {
                         for (DistributedMetaStorageHistoryItem update : nodeData.updates)
@@ -807,6 +885,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
                 else
                     writeFullDataLater(nodeData);
+            }
+            else if (!(ctx.clientNode() || ctx.isDaemon()) && getActualVersion().id > 0) {
+                throw new IgniteException("Cannot join the cluster because it doesn't support distributed metastorage" +
+                    " feature and this node has not empty distributed metastorage data");
             }
         }
     }
@@ -821,6 +903,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * cluster is not active.
      */
     private GridFutureAdapter<?> startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
+       if (!isSupported())
+            throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
+
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
@@ -839,6 +924,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      */
     private GridFutureAdapter<Boolean> startCas(String key, byte[] expValBytes, byte[] newValBytes)
         throws IgniteCheckedException {
+         if (!isSupported())
+            throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
+
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
@@ -865,8 +953,17 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DistributedMetaStorageUpdateMessage msg
     ) {
+        if (msg.errorMessage() != null)
+            return;
+
         if (!isActive()) {
-            msg.setActive(false);
+            msg.errorMessage("Ignite cluster is not active");
+
+            return;
+        }
+
+        if (!isSupported()) {
+            msg.errorMessage(NOT_SUPPORTED_MSG);
 
             return;
         }
@@ -900,7 +997,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         GridFutureAdapter<Boolean> fut = updateFuts.remove(msg.requestId());
 
         if (fut != null) {
-            if (msg.isActive()) {
+            String errorMsg = msg.errorMessage();
+
+            if (errorMsg == null) {
                 Boolean res = msg instanceof DistributedMetaStorageCasAckMessage
                     ? ((DistributedMetaStorageCasAckMessage)msg).updated()
                     : null;
@@ -908,7 +1007,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 fut.onDone(res);
             }
             else
-                fut.onDone(new IllegalStateException("Ignite cluster is not active"));
+                fut.onDone(new IllegalStateException(errorMsg));
         }
     }
 
