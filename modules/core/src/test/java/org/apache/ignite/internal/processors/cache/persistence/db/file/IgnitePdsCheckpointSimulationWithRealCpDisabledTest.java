@@ -36,7 +36,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -106,11 +105,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
-                .setRebalanceMode(CacheRebalanceMode.NONE);
+                .setRebalanceDelay(Long.MAX_VALUE);
 
         CacheConfiguration mvccCfg =  new CacheConfiguration(MVCC_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-                .setRebalanceMode(CacheRebalanceMode.NONE);
+                .setRebalanceDelay(Long.MAX_VALUE);
 
         cfg.setCacheConfiguration(ccfg, mvccCfg);
 

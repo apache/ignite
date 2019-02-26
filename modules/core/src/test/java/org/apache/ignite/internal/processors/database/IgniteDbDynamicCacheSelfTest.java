@@ -21,7 +21,6 @@ package org.apache.ignite.internal.processors.database;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -95,7 +94,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         ccfg.setName("cache1");
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setRebalanceDelay(Long.MAX_VALUE);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         for (int k = 0; k < iterations; k++) {
@@ -130,7 +129,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setRebalanceDelay(Long.MAX_VALUE);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         ccfg.setIndexedTypes(Integer.class, String.class);

@@ -24,7 +24,6 @@ import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -72,7 +71,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
         ccfg.setAffinity(new RendezvousAffinityFunction(true, 1));
 
-        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setRebalanceDelay(Long.MAX_VALUE);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 

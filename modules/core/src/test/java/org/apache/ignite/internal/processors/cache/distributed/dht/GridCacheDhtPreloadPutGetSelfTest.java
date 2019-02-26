@@ -154,6 +154,8 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutGetNone0() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11417", MvccFeatureChecker.forcedMvcc());
+
         preloadMode = NONE;
         backups = 0;
 
