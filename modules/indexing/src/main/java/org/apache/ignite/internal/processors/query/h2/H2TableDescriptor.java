@@ -105,6 +105,12 @@ public class H2TableDescriptor {
     }
 
     /**
+     * @return {@code true} In case table was created from SQL.
+     */
+    public boolean sql(){
+        return isSql;
+    }
+    /**
      * @return Indexing.
      */
     public IgniteH2Indexing indexing() {
