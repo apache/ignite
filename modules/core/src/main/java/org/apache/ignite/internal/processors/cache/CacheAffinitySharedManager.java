@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -1367,8 +1368,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (cache.affinity().lastVersion().equals(AffinityTopologyVersion.NONE)) {
                     initAffinity(desc, cache.affinity(), fut);
 
-                    cctx.exchange().exchangerUpdateHeartbeat();
-
                     fut.timeBag().finishLocalStage("Affinity initialization (new cache) " +
                         "[grp=" + desc.cacheOrGroupName() + ", crd=" + crd + "]");
                 }
@@ -1898,8 +1897,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 cache.aff.calculate(fut.initialVersion(), fut.events(), fut.events().discoveryCache());
 
-                cctx.exchange().exchangerUpdateHeartbeat();
-
                 fut.timeBag().finishLocalStage("Affinity centralized initialization (crd) " +
                     "[grp=" + desc.cacheOrGroupName() + ", crd=" + crd + "]");
             }
@@ -2087,7 +2084,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
 
         cctx.io().addCacheGroupHandler(desc.groupId(), GridDhtAffinityAssignmentResponse.class,
-            this::processAffinityAssignmentResponse);
+            new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
+                @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
+                    processAffinityAssignmentResponse(nodeId, res);
+                }
+            }
+        );
 
         assert (affNode && grp != null) || (!affNode && grp == null);
 
