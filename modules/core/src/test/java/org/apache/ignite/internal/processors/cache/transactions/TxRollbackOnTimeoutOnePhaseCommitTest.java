@@ -147,7 +147,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
             tx.commit();
 
-            // fail(); // TODO IGNITE-10027 throw timeout exception for optimistic timeout.
+            fail();
         }
         catch (Exception e) {
             assertTrue(e.getClass().getName(), X.hasCause(e, TransactionTimeoutException.class));
