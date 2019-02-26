@@ -6455,11 +6455,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             " node [nodeId=" + nodeId +
                             ", rmtAddr=" + sock.getRemoteSocketAddress() + ']');
                     }
-
-                    if (debugMode) {
-                        debugLog(msg, "Initialized connection with remote node [nodeId=" + nodeId +
-                            ", client=" + req.client() + ']');
-                    }
                 }
                 catch (IOException e) {
                     if (log.isDebugEnabled())
