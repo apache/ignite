@@ -43,8 +43,8 @@ export default class ListEditable<T extends {_id?: any}> {
     }
 
     ngModel: ListEditableNgModel<T>;
-    hasItemView: boolean
-    private _cache: Map<ID, T>
+    hasItemView: boolean;
+    private _cache: Map<ID, T>;
 
     id(item: T | undefined, index: number): ID {
         if (item && item._id)
@@ -61,6 +61,7 @@ export default class ListEditable<T extends {_id?: any}> {
         this.ngModel.$isEmpty = (value) => {
             return !Array.isArray(value) || !value.length;
         };
+
         this.ngModel.editListItem = (item) => {
             this.$timeout(() => {
                 this.startEditView(this.id(item, this.ngModel.$viewValue.indexOf(item)));
@@ -69,6 +70,7 @@ export default class ListEditable<T extends {_id?: any}> {
                 this.ngModel.$validate();
             });
         };
+
         this.ngModel.editListIndex = (index) => {
             this.$timeout(() => {
                 this.startEditView(this.id(this.ngModel.$viewValue[index], index));
