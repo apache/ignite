@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -304,7 +305,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         GridTestUtils.runAsync(() -> {
             while (true) {
                 try {
-                    nodeStartBarrier.await(20000, TimeUnit.MILLISECONDS);
+                    nodeStartBarrier.await(10000, TimeUnit.MILLISECONDS);
 
                     Ignite ignite = ignite(0);
 
@@ -320,7 +321,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
                         iter.remove();
                     }
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException | InterruptedException | BrokenBarrierException e) {
                     return;
                 }
                 catch (Exception e) {
