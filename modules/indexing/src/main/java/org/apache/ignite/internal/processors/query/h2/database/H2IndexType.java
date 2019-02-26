@@ -13,20 +13,24 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-import {AppStore, USER, ofType, hideNavigationMenuItem, showNavigationMenuItem} from '..';
-import {map} from 'rxjs/operators';
+package org.apache.ignite.internal.processors.query.h2.database;
 
-export class UIEffects {
-    static $inject = ['Store'];
-    constructor(private store: AppStore) {}
+/**
+ * Type of supported indexed types.
+ */
+public enum H2IndexType {
+    /** Hash index type. */
+    HASH,
 
-    toggleQueriesNavItemEffect$ = this.store.actions$.pipe(
-        ofType(USER),
-        map((action) => {
-            const QUERY_LABEL = 'Queries';
-            return action.user.becomeUsed ? hideNavigationMenuItem(QUERY_LABEL) : showNavigationMenuItem(QUERY_LABEL);
-        })
-    )
+    /** Btree index type. */
+    BTREE,
+
+    /** Scan index type. */
+    SCAN,
+
+    /** Geo Spatial index type. */
+    SPATIAL
 }

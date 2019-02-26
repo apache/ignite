@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
@@ -38,16 +38,15 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
@@ -69,7 +68,6 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -88,8 +86,6 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.CacheException;
-
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
@@ -101,9 +97,6 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
  */
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class H2TreeIndex extends H2TreeIndexBase {
-    /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
-    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
-
     /** */
     private final H2Tree[] segments;
 
@@ -295,6 +288,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
         ctx.io().addMessageListener(msgTopic, msgLsnr);
     }
 
+    /** {@inheritDoc} */
+    @Override public int inlineSize() {
+        return segments[0].inlineSize();
+    }
+
     /**
      * Check if index exists in store.
      *
@@ -319,41 +317,19 @@ public class H2TreeIndex extends H2TreeIndexBase {
         return false;
     }
 
-    /**
-     * @param cols Columns array.
-     * @return List of {@link InlineIndexHelper} objects.
-     */
-    private List<InlineIndexHelper> getAvailableInlineColumns(IndexColumn[] cols) {
-        List<InlineIndexHelper> res = new ArrayList<>();
+    /** {@inheritDoc} */
+    @Override protected void warnCantBeInlined(IndexColumn col) {
+        String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
 
-        for (IndexColumn col : cols) {
-            if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType())) {
-                String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
-
-                U.warn(log, "Column cannot be inlined into the index because it's type doesn't support inlining, " +
-                    "index access may be slow due to additional page reads (change column type if possible) " +
-                    "[cacheName=" + cctx.name() +
-                    ", tableName=" + tblName +
-                    ", idxName=" + idxName +
-                    ", idxType=" + idxType +
-                    ", colName=" + col.columnName +
-                    ", columnType=" + InlineIndexHelper.nameTypeBycode(col.column.getType()) + ']'
-                );
-
-                break;
-            }
-
-            InlineIndexHelper idx = new InlineIndexHelper(
-                col.columnName,
-                col.column.getType(),
-                col.column.getColumnId(),
-                col.sortType,
-                table.getCompareMode());
-
-            res.add(idx);
-        }
-
-        return res;
+        U.warn(log, "Column cannot be inlined into the index because it's type doesn't support inlining, " +
+            "index access may be slow due to additional page reads (change column type if possible) " +
+            "[cacheName=" + cctx.name() +
+            ", tableName=" + tblName +
+            ", idxName=" + idxName +
+            ", idxType=" + idxType +
+            ", colName=" + col.columnName +
+            ", columnType=" + InlineIndexHelper.nameTypeBycode(col.column.getType()) + ']'
+        );
     }
 
     /** {@inheritDoc} */
@@ -534,44 +510,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
             return null;
 
         return new H2TreeFilterClosure(p, v, cctx, log);
-    }
-
-    /**
-     * @param inlineIdxs Inline index helpers.
-     * @param cfgInlineSize Inline size from cache config.
-     * @return Inline size.
-     */
-    private int computeInlineSize(List<InlineIndexHelper> inlineIdxs, int cfgInlineSize) {
-        int confSize = cctx.config().getSqlIndexMaxInlineSize();
-
-        int propSize = confSize == -1 ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE,
-            IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT) : confSize;
-
-        if (cfgInlineSize == 0)
-            return 0;
-
-        if (F.isEmpty(inlineIdxs))
-            return 0;
-
-        if (cfgInlineSize == -1) {
-            if (propSize == 0)
-                return 0;
-
-            int size = 0;
-
-            for (InlineIndexHelper idxHelper : inlineIdxs) {
-                if (idxHelper.size() <= 0) {
-                    size = propSize;
-                    break;
-                }
-                // 1 byte type + size
-                size += idxHelper.size() + 1;
-            }
-
-            return Math.min(PageIO.MAX_PAYLOAD_SIZE, size);
-        }
-        else
-            return Math.min(PageIO.MAX_PAYLOAD_SIZE, cfgInlineSize);
     }
 
     /**
@@ -907,7 +845,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             cols = colsList.toArray(new IndexColumn[0]);
 
             inlineIdx = getAvailableInlineColumns(cols);
-            inlineSize = computeInlineSize(inlineIdx, cfgInlineSize);
+            inlineSize = computeInlineSize(inlineIdx, cfgInlineSize, cctx.config());
         }
 
         /**
