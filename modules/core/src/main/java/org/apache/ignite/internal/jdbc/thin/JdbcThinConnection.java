@@ -153,6 +153,7 @@ public class JdbcThinConnection implements Connection {
     private final Map<UUID, JdbcThinTcpIo> nodeToConnMap = new ConcurrentHashMap<>();
 
     /** Server index. */
+    // TODO: Not ovlatile because already protected.
     private volatile int srvIdx;
 
     /** Ignite server version. */
@@ -759,6 +760,9 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         // TODO: IGNITE-11321: JDBC Thin: implement nodes multi version support.
+
+        // TODO: VO: This is a bug, you cannot rely on some IO. Network timeout should be saved as a class fields
+        // TODO: and passed to all subsequent calls to IO constructors.
         return cliIo().timeout();
     }
 
@@ -776,7 +780,6 @@ public class JdbcThinConnection implements Connection {
      * @return Ignite server version.
      */
     IgniteProductVersion igniteVersion() {
-
         // TODO: IGNITE-11321: JDBC Thin: implement nodes multi version support.
         return cliIo().igniteVersion();
     }
@@ -840,6 +843,7 @@ public class JdbcThinConnection implements Connection {
 
             if (res.status() == IgniteQueryErrorCode.QUERY_CANCELED && stmt != null &&
                 stmt.requestTimeout() != NO_TIMEOUT && reqTimeoutTimerTask != null && reqTimeoutTimerTask.expired.get()) {
+                // TODO: Understand what is going on with TX.
                 txStickyIo = null;
 
                 throw new SQLTimeoutException(QueryCancelledException.ERR_MSG, SqlStateCode.QUERY_CANCELLED,
@@ -1227,6 +1231,7 @@ public class JdbcThinConnection implements Connection {
             return txStickyIo;
 
         // TODO: 15.02.19 probably we need better performance here.
+        // TODO: VO: Preserve array in separate JdbcThinConnection field.
         Object[] vals = nodeToConnMap.values().toArray();
 
         return (JdbcThinTcpIo)vals[RND.nextInt(vals.length)];
@@ -1279,6 +1284,7 @@ public class JdbcThinConnection implements Connection {
                             JdbcThinTcpIo cliIo = new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port),
                                 0);
 
+                            // TODO: VO: Use separate field instead.
                             nodeToConnMap.put(cliIo.nodeId(), cliIo);
 
                             connected = true;
@@ -1335,29 +1341,30 @@ public class JdbcThinConnection implements Connection {
      * or if endpoints versions are not the same.
      */
     private void connectInBestEffortAffinityMode(HostAndPortRange[] srvs) throws SQLException {
-        IgniteProductVersion privIgniteEnpointVer = null;
+        IgniteProductVersion prevIgniteEnpointVer = null;
 
         try {
             for (int i = 0; i < srvs.length; i++) {
+                // TODO: Not needed here, use "i" instead
                 srvIdx = nextServerIndex(srvs.length);
 
                 HostAndPortRange srv = srvs[srvIdx];
 
                 for (InetAddress addr : InetAddress.getAllByName(srv.host())) {
                     for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
+                        // TODO: Do not throw exception if we connected to at least on node.
                         JdbcThinTcpIo cliIo = new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), 0);
 
                         nodeToConnMap.put(cliIo.nodeId(), cliIo);
 
-                        if (privIgniteEnpointVer != null && !privIgniteEnpointVer.equals(cliIo.igniteVersion())) {
-
+                        if (prevIgniteEnpointVer != null && !prevIgniteEnpointVer.equals(cliIo.igniteVersion())) {
                             // TODO: 13.02.19 IGNITE-11321 JDBC Thin: implement nodes multi version support.
                             throw new SQLException("Failed to connect to Ignite cluster [url=" +
                                 connProps.getUrl() + "]. Different versions of nodes are not supported in best effort" +
                                 "affinity mode.", SqlStateCode.INTERNAL_ERROR);
                         }
 
-                        privIgniteEnpointVer = cliIo.igniteVersion();
+                        prevIgniteEnpointVer = cliIo.igniteVersion();
                     }
                 }
             }
@@ -1380,7 +1387,6 @@ public class JdbcThinConnection implements Connection {
      * Request Timeout Timer Task
      */
     private class RequestTimeoutTimerTask extends TimerTask {
-
         /** Request id. */
         private final long reqId;
 

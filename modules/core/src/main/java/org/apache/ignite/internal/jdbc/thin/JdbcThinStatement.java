@@ -983,12 +983,14 @@ public class JdbcThinStatement implements Statement {
      * @param currReqId Sets current request Id.
      */
     void currentRequestId(long currReqId) {
+        // TODO: "assert Thread.holdsLock" instead of nested mutex
         synchronized (cancellationMux) {
             this.currReqId = currReqId;
         }
     }
 
     void currentCliIO(JdbcThinTcpIo currCliIo) {
+        // TODO: "assert Thread.holdsLock" instead of nested mutex
         synchronized (cancellationMux) {
             stickyIo = currCliIo;
         }

@@ -21,8 +21,9 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 /**
  * Jdbc sticky result.
  */
+// TODO: Do we raelly need it? Can IO be inside JDBC result? If the class is needed, then "sticky" is not very
+// TODO: appropriate name
 public final class JdbcStickyResult {
-
     /** JDBC response result. */
     private final JdbcResult res;
 

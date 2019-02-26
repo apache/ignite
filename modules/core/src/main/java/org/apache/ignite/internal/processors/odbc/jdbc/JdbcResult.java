@@ -81,6 +81,8 @@ public class JdbcResult implements JdbcRawBinarylizable {
     private byte type;
 
     /** Signals that there is active transactional context. */
+    // TODO: Rename to "activeTx".
+    // TODO: Make sure that it is written only in requests concerned with transactions
     private boolean transactionalCtx;
 
     /**
@@ -214,6 +216,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /**
      * @return Transactional context.
      */
+    // TODO: Rename to "activeTransaction"
     public boolean isInTransactionalContext() {
         return transactionalCtx;
     }

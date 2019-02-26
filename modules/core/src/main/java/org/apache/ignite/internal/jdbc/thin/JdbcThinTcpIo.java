@@ -142,6 +142,7 @@ public class JdbcThinTcpIo {
         this.connProps = connProps;
         this.sockAddr = sockAddr;
 
+        // TODO: Try to rework to make the whole object immutable (may be except of "connected")
         connect(sockAddr, timeout);
 
         handshake(CURRENT_VER);
@@ -388,6 +389,7 @@ public class JdbcThinTcpIo {
                 sendRequestRaw(req);
 
                 if (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest) {
+                    // TODO: Merge into a single method.
                     stmt.currentRequestId(req.requestId());
                     stmt.currentCliIO(this);
                 }
@@ -605,6 +607,7 @@ public class JdbcThinTcpIo {
     /**
      * @return Socket address.
      */
+    // TODO: Unused
     public InetSocketAddress socketAddress() {
         return sockAddr;
     }
