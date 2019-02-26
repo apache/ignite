@@ -64,13 +64,27 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Test for unsupported SQL statements in CREATE TABLE statement.
+     */
+    @Test
+    public void testUnsupportedCreateIndex() {
+        execSql(
+            "CREATE TABLE test ( " +
+                "id integer PRIMARY KEY, " +
+                "val varchar DEFAULT 'test_val')");
+
+        assertSqlUnsupported("CREATE INDEX test_idx ON test (id NULLS FIRST)");
+        assertSqlUnsupported("CREATE INDEX test_idx ON test (id NULLS LAST)");
+    }
+
+    /**
      * Test for unsupported DEFAULT value at the INSERT/UPDATE/MERGE SQL statements.
      */
     @Test
     public void testUnsupportedDefault() {
         execSql(
-            "create table test ( " +
-                "id integer primary key, " +
+            "CREATE TABLE test ( " +
+                "id integer PRIMARY KEY, " +
                 "val varchar DEFAULT 'test_val')");
 
         assertSqlUnsupported("INSERT INTO test (id, val) VALUES (0, DEFAULT)");
@@ -85,7 +99,7 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
     public void testUnsupportedAlterTableAlterColumn() {
         execSql(
             "CREATE TABLE test ( " +
-                "id integer primary key, " +
+                "id integer PRIMARY KEY, " +
                 "val varchar DEFAULT 'test_val')");
 
         assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SELECTIVITY 1");
@@ -140,8 +154,8 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
     @Test
     public void testUnsupportedSqlStatements() {
         execSql(
-            "create table test ( " +
-                "id integer primary key, " +
+            "CREATE TABLE test ( " +
+                "id integer PRIMARY KEY, " +
                 "val varchar DEFAULT 'test_val')");
 
         assertSqlUnsupported("CREATE SCHEMA my_schema");
