@@ -1865,13 +1865,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             U.warn(diagnosticLog, "First " + warningsLimit + " pending affinity ready futures [total=" +
                 readyFuts.size() + ']');
 
-            int cnt = 0;
+            if (warningsLimit > 0) {
+                int cnt = 0;
 
-            for (AffinityReadyFuture fut : readyFuts.values()) {
-                U.warn(diagnosticLog, ">>> " + fut);
+                for (AffinityReadyFuture fut : readyFuts.values()) {
+                    U.warn(diagnosticLog, ">>> " + fut);
 
-                if (++cnt == warningsLimit)
-                    break;
+                    if (++cnt == warningsLimit)
+                        break;
+                }
             }
         }
 
@@ -1887,13 +1889,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             U.warn(diagnosticLog, "Last " + DIAGNOSTIC_WARN_LIMIT + " exchange futures (total: " +
                 exchFuts.size() + "):");
 
-            int cnt = 0;
+            if (DIAGNOSTIC_WARN_LIMIT > 0) {
+                int cnt = 0;
 
-            for (GridDhtPartitionsExchangeFuture fut : exchFuts.values()) {
-                U.warn(diagnosticLog, ">>> " + fut.shortInfo());
+                for (GridDhtPartitionsExchangeFuture fut : exchFuts.values()) {
+                    U.warn(diagnosticLog, ">>> " + fut.shortInfo());
 
-                if (++cnt == DIAGNOSTIC_WARN_LIMIT)
-                    break;
+                    if (++cnt == DIAGNOSTIC_WARN_LIMIT)
+                        break;
+                }
             }
         }
 
@@ -2741,16 +2745,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * Dump debug info.
          */
         void dumpExchangeDebugInfo() {
-            U.warn(log, "First 10 pending exchange futures [total=" + futQ.size() + ']');
+            U.warn(log, "First " + DIAGNOSTIC_WARN_LIMIT + " pending exchange futures [total=" + futQ.size() + ']');
 
-            int cnt = 0;
+            if (DIAGNOSTIC_WARN_LIMIT > 0) {
+                int cnt = 0;
 
-            for (CachePartitionExchangeWorkerTask task : futQ) {
-                if (task instanceof GridDhtPartitionsExchangeFuture) {
-                    U.warn(log, ">>> " + ((GridDhtPartitionsExchangeFuture)task).shortInfo());
+                for (CachePartitionExchangeWorkerTask task : futQ) {
+                    if (task instanceof GridDhtPartitionsExchangeFuture) {
+                        U.warn(log, ">>> " + ((GridDhtPartitionsExchangeFuture)task).shortInfo());
 
-                    if (++cnt == 10)
-                        break;
+                        if (++cnt == DIAGNOSTIC_WARN_LIMIT)
+                            break;
+                    }
                 }
             }
         }
