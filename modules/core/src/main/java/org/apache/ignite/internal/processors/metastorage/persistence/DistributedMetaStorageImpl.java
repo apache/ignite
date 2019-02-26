@@ -524,12 +524,15 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     return null;
             }
 
-            if (!isPersistenceEnabled(ctx.config()))
-                return null;
-
             DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
 
-            if (joiningData == null)
+            if (joiningData == null) {
+                String errorMsg = "Cannot unmarshal joining node data";
+
+                return new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+            }
+
+            if (!isPersistenceEnabled(ctx.config()))
                 return null;
 
             DistributedMetaStorageVersion remoteVer = joiningData.ver;
