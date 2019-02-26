@@ -603,12 +603,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         if (isFirstTest()) {
             sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
-            info(">>> Starting test class: " + testClassDescription() + ", memUsed=" +
-                GridUnsafe.allocTracker.values().stream().mapToLong(new ToLongFunction<Long>() {
-                    @Override public long applyAsLong(Long val) {
-                        return val;
-                    }
-                }).sum() + " <<<");
+            info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if (isSafeTopology())
                 assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution:" + G.allGrids();
