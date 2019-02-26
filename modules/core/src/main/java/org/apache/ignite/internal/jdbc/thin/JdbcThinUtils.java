@@ -53,6 +53,15 @@ public class JdbcThinUtils {
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
+    /** Byte representation of value "default" */
+    private static final byte BYTE_DEFAULT = 2;
+
+    /** Byte representation of value "disabled". */
+    private static final byte BYTE_ENABLED = 1;
+
+    /** Byte representation of value "disabled". */
+    private static final byte BYTE_DISABLED = 0;
+
     /**
      * Converts Java class name to type from {@link Types}.
      *
@@ -172,11 +181,11 @@ public class JdbcThinUtils {
      */
     @Nullable public static Boolean nullableBooleanFromByte(byte raw) {
         switch (raw) {
-            case (byte)2:
+            case BYTE_DEFAULT:
                 return null;
-            case (byte)1:
+            case BYTE_ENABLED:
                 return Boolean.TRUE;
-            case (byte)0:
+            case BYTE_DISABLED:
                 return Boolean.FALSE;
             default:
                 throw new NumberFormatException("Incorrect byte: " + raw + ". Impossible to read nullable Boolean from it.");
@@ -189,10 +198,10 @@ public class JdbcThinUtils {
      * @param val value to convert.
      * @return byte representation.
      */
-    public static byte nullableBooleanToByte(Boolean val) {
+    public static byte nullableBooleanToByte(@Nullable Boolean val) {
         if (val == null)
-            return (byte)2;
+            return BYTE_DEFAULT;
 
-        return val ? (byte)1 : (byte)0;
+        return val ? BYTE_ENABLED : BYTE_DISABLED;
     }
 }
