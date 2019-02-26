@@ -46,7 +46,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -846,8 +848,12 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                                 (tId, ops) -> ops == null ? 1 : ops + 1);
                         }
                         catch (CacheException e) {
-                            if (e.getCause() instanceof ClusterTopologyException)
-                                ((ClusterTopologyException)e.getCause()).retryReadyFuture().get();
+                            if (e.getCause() instanceof ClusterTopologyException) {
+                                IgniteFuture retryFut = ((ClusterTopologyException)e.getCause()).retryReadyFuture();
+
+                                if (retryFut != null)
+                                    retryFut.get();
+                            }
                         }
                         catch (ClusterTopologyException e) {
                             e.retryReadyFuture().get();
@@ -957,11 +963,10 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         while (U.currentTimeMillis() < startTs + waitMs) {
             Map<Long, Long> view2 = new HashMap<>(threadProgressTracker);
 
-            if (loadError.get() != null) {
-                loadError.get().printStackTrace();
+            Throwable t;
 
-                fail("Unexpected error in load thread: " + loadError.get().toString());
-            }
+            if ((t = loadError.get()) != null)
+                fail("Unexpected error in load thread: " + X.getFullStackTrace(t));
 
             boolean frozenThreadExists = false;
 
