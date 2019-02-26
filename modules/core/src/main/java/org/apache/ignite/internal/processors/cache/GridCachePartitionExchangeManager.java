@@ -1944,7 +1944,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             new IgniteDiagnosticPrepareContext(cctx.localNodeId()) : null;
 
         if (tm != null) {
-            WarningsGroup warnings = new WarningsGroup(diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
+            WarningsGroup warnings = new WarningsGroup("First %d long running transactions [total=%d]",
+                diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
 
             for (IgniteInternalTx tx : tm.activeTransactions()) {
                 if (curTime - tx.startTime() > timeout) {
@@ -1959,47 +1960,51 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
 
-            warnings.flush("First %d long running transactions [total=%d]");
+            warnings.printToLog();
         }
 
         if (mvcc != null) {
-            WarningsGroup warnings = new WarningsGroup(diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
+            WarningsGroup activeWarnings = new WarningsGroup("First %d long running cache futures [total=%d]",
+                diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
 
             for (GridCacheFuture<?> fut : mvcc.activeFutures()) {
                 if (curTime - fut.startTime() > timeout) {
                     found = true;
 
-                    if (warnings.canAddMessage()) {
-                        warnings.add(">>> Future [startTime=" + formatTime(fut.startTime()) +
+                    if (activeWarnings.canAddMessage()) {
+                        activeWarnings.add(">>> Future [startTime=" + formatTime(fut.startTime()) +
                             ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
                     }
                     else
-                        warnings.incTotal();
+                        activeWarnings.incTotal();
 
                     if (diagCtx != null && fut instanceof IgniteDiagnosticAware)
                         ((IgniteDiagnosticAware)fut).addDiagnosticRequest(diagCtx);
                 }
             }
 
-            warnings.flush("First %d long running cache futures [total=%d]", true);
+            activeWarnings.printToLog();
+
+            WarningsGroup atomicWarnings = new WarningsGroup("First %d long running cache futures [total=%d]",
+                diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
 
             for (GridCacheFuture<?> fut : mvcc.atomicFutures()) {
                 if (curTime - fut.startTime() > timeout) {
                     found = true;
 
-                    if (warnings.canAddMessage()) {
-                        warnings.add(">>> Future [startTime=" + formatTime(fut.startTime()) +
+                    if (atomicWarnings.canAddMessage()) {
+                        atomicWarnings.add(">>> Future [startTime=" + formatTime(fut.startTime()) +
                             ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
                     }
                     else
-                        warnings.incTotal();
+                        atomicWarnings.incTotal();
 
                     if (diagCtx != null && fut instanceof IgniteDiagnosticAware)
                         ((IgniteDiagnosticAware)fut).addDiagnosticRequest(diagCtx);
                 }
             }
 
-            warnings.flush("First %d long running cache futures [total=%d]");
+            atomicWarnings.printToLog();
         }
 
         if (diagCtx != null && !diagCtx.empty()) {
@@ -3408,6 +3413,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         private final int warningsLimit;
 
         /** */
+        private final String title;
+
+        /** */
         private List<String> messages;
 
         /** */
@@ -3417,7 +3425,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param log Target logger.
          * @param warningsLimit Warnings limit.
          */
-        private WarningsGroup(IgniteLogger log, int warningsLimit) {
+        private WarningsGroup(String title, IgniteLogger log, int warningsLimit) {
+            this.title = title;
+
             this.log = log;
 
             this.warningsLimit = warningsLimit;
@@ -3460,33 +3470,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /**
          * Print warnings block title and messages.
-         *
-         * @param title Title template.
          */
-        private void flush(String title) {
-            flush(title, false);
-        }
-
-        /**
-         * Print warnings block title and messages.
-         *
-         * @param title Title template.
-         * @param clean Clean messages after flush.
-         */
-        private void flush(String title, boolean clean) {
+        private void printToLog() {
             if (warningsTotal > 0) {
                 U.warn(log, String.format(title, warningsLimit, warningsTotal));
 
                 if (messages != null) {
                     for (String message : messages)
                         U.warn(log, message);
-                }
-
-                if (clean) {
-                    if (messages != null)
-                        messages.clear();
-
-                    warningsTotal = 0;
                 }
             }
         }
