@@ -355,6 +355,8 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
 
             tree.invokeAll(all.iterator(), null, new UpdateAllClosure());
 
+            tree.validateTree();
+
             assertEqualContents(tree, set);
         }
     }

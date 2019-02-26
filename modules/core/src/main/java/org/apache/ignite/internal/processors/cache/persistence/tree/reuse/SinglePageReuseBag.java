@@ -67,6 +67,15 @@ public final class SinglePageReuseBag implements ReuseBag {
     }
 
     /** {@inheritDoc} */
+    @Override public ReuseBag take(int cnt) {
+        assert cnt > 0: cnt;
+
+        long id = pollFreePage();
+
+        return id == 0L ? null : new SinglePageReuseBag(id);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SinglePageReuseBag.class, this, "pageId", U.hexLong(pageId));
     }

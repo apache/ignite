@@ -1301,7 +1301,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             Result res = findDown(g, g.rootId, 0L, g.rootLvl);
 
-            if (!res.retry && !g.nextRow(res))
+            if (!res.retry && !g.switchToNextRow(res))
                 return;
 
             checkInterrupted();
@@ -1322,6 +1322,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
+                if (g.needGetHigher(lvl))
+                    return RETRY;
+
                 g.checkLockRetry();
 
                 // Init args.
@@ -1354,7 +1357,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     case FOUND:
                         g.finish();
 
-                        if (g.nextRow(res))
+                        if (g.switchToNextRow(res))
                             continue;
 
                         // Intentional fallthrough.
@@ -1884,7 +1887,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             assert x.isFinished(): res;
                         }
 
-                        if (x.nextRow(FOUND))
+                        if (x.switchToNextRow(FOUND))
                             continue;
 
                         return;
@@ -1928,6 +1931,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             Result res = RETRY;
 
             for (;;) {
+                if (x.needGetHigher(lvl))
+                    return RETRY;
+
                 if (res == RETRY)
                     x.checkLockRetry();
 
@@ -1960,7 +1966,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         if (res != RETRY)
                             res = invokeDown(x, x.pageId, x.backId, x.fwdId, lvl - 1);
 
-                        if (x.nextRow(res))
+                        if (x.switchToNextRow(res))
                             continue;
 
                         if (res == RETRY_ROOT || x.isFinished())
@@ -1980,7 +1986,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = x.finishOrLockTail(pageId, page, backId, fwdId, lvl);
 
-                        if (x.nextRow(res))
+                        if (x.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -1991,7 +1997,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = x.onNotFound(pageId, page, fwdId, lvl);
 
-                        if (x.nextRow(res))
+                        if (x.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2002,7 +2008,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = x.onFound(pageId, page, backId, fwdId, lvl);
 
-                        if (x.nextRow(res))
+                        if (x.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2059,7 +2065,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             assert r.isFinished();
                         }
 
-                        if (r.nextRow(FOUND))
+                        if (r.switchToNextRow(FOUND))
                             continue;
 
                         return r.rmvdRow;
@@ -2098,6 +2104,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
+                if (r.needGetHigher(lvl))
+                    return RETRY;
+
                 r.checkLockRetry();
 
                 // Init args.
@@ -2126,7 +2135,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     case GO_DOWN:
                         res = removeDown(r, r.pageId, r.backId, r.fwdId, lvl - 1);
 
-                        if (r.nextRow(res))
+                        if (r.switchToNextRow(res))
                             continue;
 
                         if (res == RETRY) {
@@ -2140,7 +2149,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = r.finishOrLockTail(pageId, page, backId, fwdId, lvl);
 
-                        if (r.nextRow(res))
+                        if (r.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2151,7 +2160,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         r.finish();
 
-                        if (r.nextRow(res))
+                        if (r.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2159,7 +2168,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     case FOUND:
                         res = r.tryRemoveFromLeaf(pageId, page, backId, fwdId, lvl);
 
-                        if (r.nextRow(res))
+                        if (r.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2447,7 +2456,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             continue;
                         }
 
-                        if (p.nextRow(FOUND))
+                        if (p.switchToNextRow(FOUND))
                             continue;
 
                         return p.oldRow;
@@ -2593,7 +2602,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @param pageId Page ID.
      * @param page Page pointer.
-     * @param pageAddr Page address
+     * @param pageAddr Page address.
      * @param io IO.
      * @param fwdId Forward page ID.
      * @param fwdBuf Forward buffer.
@@ -2630,7 +2639,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @param pageId Page ID.
      * @param page Page pointer.
-     * @param pageAddr Page address
+     * @param pageAddr Page address.
      * @param walPlc Full page WAL record policy.
      */
     private void writeUnlockAndClose(long pageId, long page, long pageAddr, Boolean walPlc) {
@@ -2669,6 +2678,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
+                if (p.needGetHigher(lvl))
+                    return RETRY;
+
                 p.checkLockRetry();
 
                 // Init args.
@@ -2689,7 +2701,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         if (res != RETRY) // Go down recursively.
                             res = putDown(p, p.pageId, p.fwdId, lvl - 1);
 
-                        if (p.nextRow(res))
+                        if (p.switchToNextRow(res))
                             continue;
 
                         if (res == RETRY_ROOT || p.isFinished())
@@ -2705,7 +2717,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = p.tryReplace(pageId, page, fwdId, lvl);
 
-                        if (p.nextRow(res))
+                        if (p.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2716,7 +2728,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = p.tryInsert(pageId, page, fwdId, lvl);
 
-                        if (p.nextRow(res))
+                        if (p.switchToNextRow(res))
                             continue;
 
                         return res;
@@ -2890,10 +2902,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         int lockRetriesCnt = getLockRetries();
 
         /**
-         * Used when invokeAll operation updated one or more keys on the left side of the tree
+         * Used when {@link InvokeAll} or another batch operation updated one or more keys on the left side of the tree
          * and needs to get high enough to find the rest of rows on the right side.
          */
         boolean gettingHigh;
+
+        /**
+         * Used in batch operations like {@link InvokeAll}:
+         */
+        int gettingHighLvl;
+
+        /** Used in batch operations like {@link InvokeAll}. */
+        L nextRow;
 
         /**
          * @param row Row.
@@ -2906,6 +2926,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Need to have non-null search row here to correctly handle finish() and isFinished().
             this.row = findLast ? (L)Boolean.FALSE : row;
             this.findLast = findLast;
+        }
+
+        /**
+         * @param sortedRows Sorted rows.
+         */
+        final void takeNextRow(Iterator<? extends L> sortedRows) {
+            if (sortedRows.hasNext()) {
+                nextRow = sortedRows.next();
+                assert nextRow != null;
+            }
+            else
+                nextRow = null;
         }
 
         @SuppressWarnings({"unchecked", "WrapperTypeMayBePrimitive"})
@@ -2925,7 +2957,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return The same or new reuse bag containing the given page id.
          */
         protected final ReuseBag addFreePageToBag(ReuseBag reuseBag, long pageId) throws IgniteCheckedException {
-            if (invoke != null && invoke.addFreePage(pageId))
+            if (invoke != null && invoke.addFreePageForReuse(pageId))
                 return reuseBag;
 
             assert pageId != 0L;
@@ -2952,19 +2984,23 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param sortedRows Sorted rows.
          * @return {@code true} If was successfully switched to the next row.
          */
-        protected final boolean doNextRow(Result res, Iterator<? extends L> sortedRows) {
-            if (res.retry || !isFinished() || !sortedRows.hasNext())
+        protected final boolean doSwitchToNextRow(Result res, Iterator<? extends L> sortedRows) {
+            if (nextRow == null || res.retry || !isFinished())
                 return false;
+
+            // Switch to the next row.
+            row = nextRow;
+            takeNextRow(sortedRows);
 
             // Well need to get high enough to start new search.
             assert !gettingHigh;
             gettingHigh = true;
 
+            if (gettingHighLvl < 0) // Unfinalize high level.
+                gettingHighLvl = -gettingHighLvl;
+
             // Reinitialize state to continue working with the next row.
             lockRetriesCnt = getLockRetries();
-
-            row = sortedRows.next();
-            assert row != null;
 
             return true;
         }
@@ -2975,7 +3011,128 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param res Last result.
          * @return {@code true} If we have switched to the next row to process it.
          */
-        boolean nextRow(Result res) throws IgniteCheckedException {
+        boolean switchToNextRow(Result res) throws IgniteCheckedException {
+            return false;
+        }
+
+        /**
+         * Check for batch operations needed after switching to the next row.
+         *
+         * @param lvl Current level.
+         * @return {@code true} If need to get higher.
+         */
+        final boolean needGetHigher(int lvl) {
+            return gettingHigh && lvl < Math.abs(gettingHighLvl);
+        }
+
+        /**
+         * Marks level to get high with the next row after the current row will be processed.
+         *
+         * @param lvl Current level.
+         * @param io Page IO.
+         * @param pageAddr Page address.
+         * @param idx Index of the current row.
+         * @param cnt Row count.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void markHighLevelForNextRow(int lvl, BPlusIO<L> io, long pageAddr, int cnt)
+            throws IgniteCheckedException {
+            // This flag must always be reset at this point:
+            // it makes no sense to mark levels for the next rows while we are getting high.
+            assert !gettingHigh;
+
+            // For empty pages we do nothing: if we finalize the level we may miss better opportunities lower,
+            // on the other hand, no need to mark this level because it is just an empty routing page - we will
+            // waste resources on locking and reading it when we will get high.
+            if (cnt == 0)
+                return;
+
+            boolean retryJustHappened = false;
+
+            // Handle finalized high level.
+            if (gettingHighLvl < 0) {
+                // Do not need to mark levels lower than the finalized high level:
+                // we already know that the next row is in another subtree.
+                if (lvl < -gettingHighLvl)
+                    return;
+
+                // We unfinalize the high level after each switch to the next row,
+                // so we can not get finalized high level from the previous processed row.
+                // The current level is higher or equal to the finalized high level,
+                // thus we have a RETRY (not RETRY_ROOT, because it resets gettingHighLvl field to rootLvl).
+                // Unfinalize the high level to handle the new tree state.
+                retryJustHappened = true;
+                gettingHighLvl = -gettingHighLvl;
+            }
+
+            // Compare the next row with the rightmost row in the page (the next search row must always be greater than the current one).
+            // Mark the level if the rightmost row is greater or equal to the next search row.
+            // For all the rightmost pages with no forwards (including the root page) we always will have valid search.
+            // For empty pages we have to finalize
+            if (fwdId == 0L || compare(io, pageAddr, cnt - 1, nextRow) >= 0)
+                gettingHighLvl = lvl;
+            else {
+                assert gettingHighLvl >= 0;
+
+                // If the marked high level is lower then the current level, it means that we jumped high after
+                // processing previous rows and comparing here the new next row for the first time.
+                // Or otherwise it was a concurrent tree modification that caused the retry in this thread.
+                //
+                // We have already compared this new next row to the page bound and it known to be greater, it means that
+                // the correct high level for the new next row is even higher than the current level and we do not know
+                // exactly where it is. We can only guess it is somewhere between lvl and rootLvl.
+                //
+                // We do not want to mark high levels for more than one next row because in presence of
+                // concurrent modifications these levels often will be wrong, producing pointless extra work,
+                // there also will be space overhead of storing them.
+                if (gettingHighLvl <= lvl) {
+                    assert rootLvl > lvl; // Because otherwise we must be in the root here and must end up marking level in prev branch.
+
+                    // Heuristic to guess the high level for the next row.
+                    // We should not touch the root to avoid contention on it, thus it is good idea to have it < rootLvl.
+                    gettingHighLvl = retryJustHappened ?
+                        lvl + 1 : // If the retry just happened, then we may guess that the tree was not changed much.
+                        guessHighLevel(lvl);
+
+                    // TODO Maybe we can have a better heuristic?
+                }
+
+                // Finalize the previous marked level since the next row is out of bounds in the current subtree.
+                // We do this finalization to avoid extra work on lower levels, where we already know the high level.
+                gettingHighLvl = -gettingHighLvl;
+            }
+        }
+
+        /**
+         * @param lvl Current level.
+         * @return Some level between the current and root.
+         */
+        private int guessHighLevel(int lvl) {
+            // Middle point between the root and the current level.
+            return (lvl + rootLvl) >>> 1;
+        }
+
+        /**
+         * @param lvl Current level.
+         * @param io Page IO.
+         * @param pageAddr Page address.
+         * @param cnt Row count.
+         * @return {@code true} If we need to get higher, {@code false} if we are high enough.
+         * @throws IgniteCheckedException If failed.
+         */
+        private boolean jumpHigher(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
+            assert lvl >= Math.abs(gettingHighLvl); // We should not get here until we are high enough.
+
+            // If it is a routing page or the search row is out of bounds for this page, need to get higher.
+            if (cnt == 0 || compare(lvl, io, pageAddr, cnt - 1, row) < 0) {
+                // Jump higher: avoid moving page by page.
+                gettingHighLvl = guessHighLevel(lvl);
+
+                return true;
+            }
+
+            // Starting from this point we are high enough to have valid search.
+            gettingHigh = false;
             return false;
         }
 
@@ -2987,42 +3144,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return Insertion point.
          * @throws IgniteCheckedException If failed.
          */
-        final int findInsertionPointx(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
-            return gettingHigh ?
-                findInsertionPointGettingHigh(lvl, io, pageAddr, cnt) :
-                findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
-        }
+        final int findInsertionPointx(int lvl, BPlusIO<L> io, long pageAddr, int cnt)
+            throws IgniteCheckedException {
 
-        /**
-         * For compound operations like {@link InvokeAll}.
-         *
-         * @param lvl Level.
-         * @param io Page IO.
-         * @param pageAddr Page address.
-         * @param cnt Row count.
-         * @return Insertion point.
-         */
-        private int findInsertionPointGettingHigh(int lvl, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
-            int idx;
-
-            if (cnt == 0)
-                idx = -1; // The page is empty, nothing to search (and need to get higher if there are forward pages).
-            else {
-                // Try to compare with the rightmost row before doing binary search.
-                int cmp = compare(lvl, io, pageAddr, cnt - 1, row);
-
-                if (cmp > 0) // Search row is less than the last row in the page, need to do binary search.
-                    idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
-                else if (cmp == 0)
-                    idx = cnt - 1; // Search row is equal to the last row in the page.
-                else
-                    idx = -cnt - 1; // Search row is greater than the last row in the page.
+            if (gettingHigh && jumpHigher(lvl, io, pageAddr, cnt)) {
+                // The result will be ignored, we will get higher because gettingHigh flag was not reset.
+                return Integer.MIN_VALUE;
             }
 
-            // If we are not on the right edge of the page or there are no forward pages,
-            // then we are high enough to have valid search from here.
-            if (-idx - 1 != cnt || fwdId == 0L)
-                gettingHigh = false;
+            int idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
+
+            if (nextRow != null)
+                markHighLevelForNextRow(lvl, io, pageAddr, cnt);
 
             return idx;
         }
@@ -3038,6 +3171,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             backId = g.backId;
             shift = g.shift;
             findLast = g.findLast;
+            // Do not copy batch related fields.
         }
 
         /**
@@ -3062,6 +3196,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.rootId = rootId;
             this.rootLvl = rootLvl;
             this.rmvId = rmvId;
+            gettingHigh = false;
+            gettingHighLvl = rootLvl;
         }
 
         /**
@@ -3224,11 +3360,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.sortedRows = sortedRows;
             foundRows = new ArrayList<>();
+
+            takeNextRow(sortedRows);
         }
 
         /** {@inheritDoc} */
-        @Override boolean nextRow(Result res) {
-            if (!doNextRow(res, sortedRows))
+        @Override boolean switchToNextRow(Result res) {
+            if (!doSwitchToNextRow(res, sortedRows))
                 return false;
 
             // Reset state.
@@ -3656,11 +3794,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.sortedRows = sortedRows;
             oldRows = new ArrayList<>();
+
+            takeNextRow(sortedRows);
         }
 
         /** {@inheritDoc} */
-        @Override boolean nextRow(Result res) {
-            if (!doNextRow(res, sortedRows))
+        @Override boolean switchToNextRow(Result res) {
+            if (!doSwitchToNextRow(res, sortedRows))
                 return false;
 
             // Reset state.
@@ -3844,7 +3984,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         private L insertWithSplit(long pageId, long page, long pageAddr, BPlusIO<L> io, int idx, int lvl)
             throws IgniteCheckedException {
-            long fwdId = allocatePage(null);
+            ReuseBag bag = invoke == null ? null : invoke.getReuseBag();
+
+            long fwdId = allocatePage(bag);
             long fwdPage = acquirePage(fwdId);
 
             try {
@@ -3892,7 +4034,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     }
 
                     if (!hadFwd && lvl == getRootLevel()) { // We are splitting root.
-                        long newRootId = allocatePage(null);
+                        long newRootId = allocatePage(bag);
                         long newRootPage = acquirePage(newRootId);
 
                         try {
@@ -4038,7 +4180,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         Function<L, ? extends InvokeClosure<T>> closures;
 
         /** */
-        ReuseBag reuseBag;
+        ReuseBag reuseBag = new LongListReuseBag();
 
         /**
          * @param firstRow The first row.
@@ -4051,14 +4193,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.sortedRows = sortedRows;
             this.closures = closures;
+
+            takeNextRow(sortedRows);
         }
 
         /** {@inheritDoc} */
-        @Override boolean nextRow(Result res) throws IgniteCheckedException {
-            if (!doNextRow(res, sortedRows))
+        @Override boolean switchToNextRow(Result res) throws IgniteCheckedException {
+            if (!doSwitchToNextRow(res, sortedRows))
                 return false;
 
-            reuseFreePagesFromBag(reuseBag, 15);
+            if (reuseBag.size() > 128)
+                reuseFreePagesFromBag(reuseBag.take(64), 0);
 
             // Create a new closure for the switched row.
             clo = closures.apply(row);
@@ -4072,10 +4217,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean addFreePage(long pageId) throws IgniteCheckedException {
+        @Override boolean addFreePageForReuse(long pageId) throws IgniteCheckedException {
             reuseBag = addFreePageToBag(reuseBag, pageId);
 
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ReuseBag getReuseBag() {
+            return reuseBag;
         }
 
         /** {@inheritDoc} */
@@ -4380,8 +4530,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param pageId Page Id for reuse.
          * @return {@code true} If it was accepted.
          */
-        boolean addFreePage(long pageId) throws IgniteCheckedException {
+        boolean addFreePageForReuse(long pageId) throws IgniteCheckedException {
             return false;
+        }
+
+        /**
+         * @return Reuse bag for this operation.
+         */
+        ReuseBag getReuseBag() {
+            return null;
         }
     }
 
@@ -4404,14 +4561,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.sortedRows = sortedRows;
             removedRows = new ArrayList<>();
+
+            takeNextRow(sortedRows);
         }
 
         /** {@inheritDoc} */
-        @Override boolean nextRow(Result res) throws IgniteCheckedException {
-            if (!doNextRow(res, sortedRows))
+        @Override boolean switchToNextRow(Result res) throws IgniteCheckedException {
+            if (!doSwitchToNextRow(res, sortedRows))
                 return false;
 
-            reuseFreePagesFromBag(reuseBag, 15);
+            reuseFreePagesFromBag(reuseBag, 16);
 
             // Reset state.
             rmvdRow = null;

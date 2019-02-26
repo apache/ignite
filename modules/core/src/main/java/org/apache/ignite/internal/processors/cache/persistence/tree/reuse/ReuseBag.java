@@ -41,4 +41,12 @@ public interface ReuseBag {
      * @return Number of pages for reuse in this bag.
      */
     int size();
+
+    /**
+     * Takes and removes {@code cnt} pages from this bag.
+     *
+     * @param cnt Number of pages to take.
+     * @return Bag or {@code null} if there are not enough pages in this bag.
+     */
+    ReuseBag take(int cnt);
 }
