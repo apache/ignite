@@ -616,15 +616,15 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
      * @return {@code True} if data page scan support is enabled for this connection, {@code false} if it's disabled and
      * {@code null} for server default.
      */
-    @Nullable public Boolean getDataPageScan() {
-        return props.getDataPageScan();
+    @Nullable public Boolean isDataPageScanEnabled() {
+        return props.isDataPageScanEnabled();
     }
 
     /**
      * @param dataPageScan if {@code True} then data page scan support is enabled for this connection, if {@code false}
      * then it's disabled, if {@code null} then server should use its default settings.
      */
-    public void setDataPageScan(@Nullable Boolean dataPageScan) {
-        props.setDataPageScan(dataPageScan);
+    public void setDataPageScanEnabled(@Nullable Boolean dataPageScan) {
+        props.setDataPageScanEnabled(dataPageScan);
     }
 }

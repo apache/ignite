@@ -119,7 +119,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
      * @param dps data page scan value to test.
      */
     private void checkDataPageScanInBatch(String qryWithParam, @Nullable Boolean dps) throws Exception {
-        String params = (dps == null) ? null : "dataPageScan=" + dps;
+        String params = (dps == null) ? null : "dataPageScanEnabled=" + dps;
 
         try (Connection conn = GridTestUtils.connect(grid(0), params)) {
             try (PreparedStatement upd = conn.prepareStatement(qryWithParam)) {
@@ -161,7 +161,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
      * @param dps data page scan value to test.
      */
     private void checkDataPageScan(String qry, @Nullable Boolean dps) throws Exception {
-        String params = (dps == null) ? null : "dataPageScan=" + dps;
+        String params = (dps == null) ? null : "dataPageScanEnabled=" + dps;
 
         try (Connection conn = GridTestUtils.connect(grid(0), params)) {
             try (PreparedStatement stmt = conn.prepareStatement(qry)) {

@@ -185,7 +185,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "password", "User's password", null, null, false, null);
 
     /** Data page scan flag. */
-    private BooleanProperty dataPageScan = new BooleanProperty("dataPageScan",
+    private BooleanProperty dataPageScanEnabled = new BooleanProperty("dataPageScanEnabled",
         "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
         null, false);
 
@@ -198,7 +198,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
         user, passwd,
-        dataPageScan
+        dataPageScanEnabled
     };
 
     /** {@inheritDoc} */
@@ -495,13 +495,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Boolean getDataPageScan() {
-        return dataPageScan.value();
+    @Override public @Nullable Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setDataPageScan(@Nullable Boolean dataPageScan) {
-        this.dataPageScan.setValue(dataPageScan);
+    @Override public void setDataPageScanEnabled(@Nullable Boolean dataPageScan) {
+        this.dataPageScanEnabled.setValue(dataPageScan);
     }
 
     /**

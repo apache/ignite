@@ -179,7 +179,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         boolean lazy,
         boolean skipReducerOnUpdate,
         NestedTxMode nestedTxMode,
-        @Nullable Boolean dataPageScan,
+        @Nullable Boolean dataPageScanEnabled,
         AuthorizationContext actx,
         ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
@@ -202,7 +202,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             replicatedOnly,
             lazy,
             skipReducerOnUpdate,
-            dataPageScan
+            dataPageScanEnabled
         );
 
         this.busyLock = busyLock;
@@ -561,7 +561,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setLazy(cliCtx.isLazy());
             qry.setNestedTxMode(nestedTxMode);
             qry.setAutoCommit(req.autoCommit());
-            qry.setDataPageScanEnabled(cliCtx.isDataPageScan());
+            qry.setDataPageScanEnabled(cliCtx.isDataPageScanEnabled());
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
@@ -875,7 +875,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry.setLazy(cliCtx.isLazy());
                     qry.setNestedTxMode(nestedTxMode);
                     qry.setAutoCommit(req.autoCommit());
-                    qry.setDataPageScanEnabled(cliCtx.isDataPageScan());
+                    qry.setDataPageScanEnabled(cliCtx.isDataPageScanEnabled());
 
                     qry.setSchema(schemaName);
                 }

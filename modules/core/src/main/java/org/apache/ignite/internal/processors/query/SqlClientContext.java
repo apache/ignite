@@ -59,7 +59,7 @@ public class SqlClientContext implements AutoCloseable {
     private final boolean skipReducerOnUpdate;
 
     /** Data page scan support for query execution. */
-    private final @Nullable Boolean dataPageScan;
+    private final @Nullable Boolean dataPageScanEnabled;
 
     /** Monitor. */
     private final Object mux = new Object();
@@ -108,7 +108,7 @@ public class SqlClientContext implements AutoCloseable {
     public SqlClientContext(GridKernalContext ctx, Factory<GridWorker> orderedBatchWorkerFactory,
         boolean distributedJoins, boolean enforceJoinOrder,
         boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate,
-        @Nullable Boolean dataPageScan) {
+        @Nullable Boolean dataPageScanEnabled) {
         this.ctx = ctx;
         this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
         this.distributedJoins = distributedJoins;
@@ -117,7 +117,7 @@ public class SqlClientContext implements AutoCloseable {
         this.replicatedOnly = replicatedOnly;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
-        this.dataPageScan = dataPageScan;
+        this.dataPageScanEnabled = dataPageScanEnabled;
 
         log = ctx.log(SqlClientContext.class.getName());
     }
@@ -222,8 +222,8 @@ public class SqlClientContext implements AutoCloseable {
     /**
      * @return data page scan support or {@code null} if not set.
      */
-    public @Nullable Boolean isDataPageScan() {
-        return dataPageScan;
+    public @Nullable Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled;
     }
 
     /**

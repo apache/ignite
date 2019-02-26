@@ -163,12 +163,12 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         }
 
 
-        Boolean dataPageScan = null;
+        Boolean dataPageScanEnabled = null;
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
             byte dpsRaw = reader.readByte();
 
-            dataPageScan = nullableBooleanFromByte(dpsRaw);
+            dataPageScanEnabled = nullableBooleanFromByte(dpsRaw);
         }
 
         if (ver.compareTo(VER_2_5_0) >= 0) {
@@ -204,7 +204,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         };
 
         handler = new JdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, dataPageScan,
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, dataPageScanEnabled,
             actx, ver);
 
         handler.start();

@@ -348,7 +348,7 @@ public class JdbcThinTcpIo {
             writer.writeString(connProps.nestedTxMode());
 
         if (ver.compareTo(VER_2_8_0) >= 0)
-            writer.writeByte(nullableBooleanToByte(connProps.getDataPageScan()));
+            writer.writeByte(nullableBooleanToByte(connProps.isDataPageScanEnabled()));
 
         if (!F.isEmpty(connProps.getUsername())) {
             assert ver.compareTo(VER_2_5_0) >= 0 : "Authentication is supported since 2.5";
