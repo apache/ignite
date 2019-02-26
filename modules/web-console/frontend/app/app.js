@@ -176,7 +176,6 @@ export default angular
         'ui.grid.saveState',
         'ui.grid.selection',
         'ui.router',
-        'ui.router.state.events',
         // Base modules.
         'ignite-console.core',
         'ignite-console.ace',
@@ -370,11 +369,11 @@ export default angular
         }
     ])
     .run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
-    /**
-    * @param {ng.IRootScopeService} $root
-    * @param {ng.IHttpService} $http
-    * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
-    */
+        /**
+         * @param {ng.IRootScopeService} $root
+         * @param {ng.IHttpService} $http
+         * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
+         */
         ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
             $root.revertIdentity = () => {
                 $http.get('/api/v1/admin/revert/identity')
@@ -386,8 +385,8 @@ export default angular
         }
     ])
     .run(['IgniteIcon',
-    /**
-    * @param {import('./components/ignite-icon/service').default} IgniteIcon
-    */
+        /**
+         * @param {import('./components/ignite-icon/service').default} IgniteIcon
+         */
         (IgniteIcon) => IgniteIcon.registerIcons(icons)
     ]);

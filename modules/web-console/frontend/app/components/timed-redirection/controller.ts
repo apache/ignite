@@ -17,6 +17,7 @@
 
 import {StateOrName, StateService} from '@uirouter/angularjs';
 import {RawParams} from '@uirouter/core/lib/params/interface';
+import {default as UserFactory} from 'app/modules/user/User.service';
 
 interface State {
     name: StateOrName,
@@ -24,7 +25,7 @@ interface State {
 }
 
 export class TimedRedirectionCtrl implements ng.IComponentController, ng.IOnInit, ng.IOnDestroy {
-    static $inject = ['$state', '$interval'];
+    static $inject = ['$state', '$interval', 'User'];
 
     lastSuccessState = JSON.parse(localStorage.getItem('lastStateChangeSuccess'));
 
@@ -34,7 +35,7 @@ export class TimedRedirectionCtrl implements ng.IComponentController, ng.IOnInit
 
     countDown: ng.IPromise<ng.IIntervalService>;
 
-    constructor(private $state: StateService, private $interval: ng.IIntervalService) {}
+    constructor(private $state: StateService, private $interval: ng.IIntervalService, private user: ReturnType<typeof UserFactory>) {}
 
     $onInit() {
         this.startCountDown();
@@ -44,8 +45,15 @@ export class TimedRedirectionCtrl implements ng.IComponentController, ng.IOnInit
         this.$interval.cancel(this.countDown);
     }
 
-    go(): void {
-        this.$state.go(this.stateToGo.name, this.stateToGo.params);
+    async go(): void {
+        try {
+            await this.user.load();
+
+            this.$state.go(this.stateToGo.name, this.stateToGo.params);
+        }
+        catch (ignored) {
+            this.$state.go('signin');
+        }
     }
 
     startCountDown(): void {
