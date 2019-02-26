@@ -15,21 +15,17 @@
  * limitations under the License.
  */
 
-import {default as ListEditableController} from '../../controller';
+import {default as ListEditableController, ID, ItemScope} from '../../controller';
+import {ListEditableTransclude} from '../list-editable-transclude/directive';
 
 const CUSTOM_EVENT_TYPE = '$ngModel.change';
 
 /** 
  * Emits $ngModel.change event on every ngModel.$viewValue change
- * @type {ng.IDirectiveFactory}
  */
-export function ngModel() {
+export function ngModel<T>(): ng.IDirective {
     return {
-        /**
-         * @param {JQLite} el
-         * @param {ng.INgModelController} ngModel
-         */
-        link(scope, el, attr, {ngModel, list}) {
+        link(scope, el, attr, {ngModel, list}: {ngModel: ng.INgModelController, list?: ListEditableController<T>}) {
             if (!list)
                 return;
 
@@ -45,17 +41,10 @@ export function ngModel() {
 }
 /** 
  * Triggers $ctrl.save when any ngModel emits $ngModel.change event
- * @type {ng.IDirectiveFactory}
  */
-export function listEditableTransclude() {
+export function listEditableTransclude<T>(): ng.IDirective {
     return {
-        /**
-         * @param {ng.IScope} scope
-         * @param {JQLite} el
-         * @param {ng.IAttributes} attr
-         * @param {ListEditableController} list
-         */
-        link(scope, el, attr, {list, transclude}) {
+        link(scope: ItemScope<T>, el, attr, {list, transclude}: {list?: ListEditableController<T>, transclude: ListEditableTransclude<T>}) {
             if (attr.listEditableTransclude !== 'itemEdit')
                 return;
 
@@ -65,7 +54,7 @@ export function listEditableTransclude() {
             let listener = (e) => {
                 e.stopPropagation();
                 scope.$evalAsync(() => {
-                    if (scope.form.$valid) list.save(scope.item, transclude.$index);
+                    if (scope.form.$valid) list.save(scope.item, list.id(scope.item, transclude.$index));
                 });
             };
 
