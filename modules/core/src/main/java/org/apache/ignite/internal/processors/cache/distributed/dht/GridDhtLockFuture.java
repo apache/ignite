@@ -1200,7 +1200,16 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
          * @return String representation of pending locks.
          */
         private String dumpPendingLocks() {
-            StringBuilder sb = new StringBuilder().append("Timed out waiting for lock response, holding lock on: ");
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("Transaction tx=").append(tx.getClass().getSimpleName());
+            sb.append(" [xid=").append(tx.xid());
+            sb.append(", xidVer=").append(tx.xidVersion());
+            sb.append(", nearXid=").append(tx.nearXidVersion().asGridUuid());
+            sb.append(", nearXidVer=").append(tx.nearXidVersion());
+            sb.append(", nearNodeId=").append(tx.nearNodeId());
+            sb.append(", label=").append(tx.label());
+            sb.append("] timed out, can't acquire lock for ");
 
             Iterator<KeyCacheObject> locks = pendingLocks.iterator();
 
