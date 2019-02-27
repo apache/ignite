@@ -153,6 +153,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
 
         assertTrue("Failed to remove source file.", srcFile.delete());
 
+        // Full classpath URLs should be specified to run test via Maven on TeamCity because of the environment.
         URL[] classpath = U.classLoaderUrls(getClass().getClassLoader());
 
         URL[] urls = new URL[classpath.length + 1];
@@ -160,6 +161,10 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         System.arraycopy(classpath, 0, urls, 0, classpath.length);
 
         urls[urls.length - 1] = srcTmpDir.toUri().toURL();
+
+        for (URL url : urls) {
+            System.out.println("***** " + url);
+        }
 
         return new URLClassLoader(urls);
     }
