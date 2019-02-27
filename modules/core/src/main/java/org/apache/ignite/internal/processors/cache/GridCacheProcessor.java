@@ -2413,12 +2413,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (exchActions == null)
             return;
 
-        if (exchActions.systemCachesStarting() && exchActions.stateChangeRequest() == null) {
-            ctx.dataStructures().restoreStructuresState(ctx);
-
-            ctx.service().updateUtilityCache();
-        }
-
         if (err == null)
             processCacheStopRequestOnExchangeDone(exchActions);
     }
