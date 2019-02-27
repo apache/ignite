@@ -596,13 +596,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             ) {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
-                log.info("MY submit type="+type+" topVer="+topVer+" dis="+ctx.clientDisconnected());
-
                 discoNtfWrk.submit(notificationFut, () -> {
                     synchronized (discoEvtMux) {
-                        log.info("MY before onDiscovery0 type="+type+" topVer="+topVer+" dis="+ctx.clientDisconnected());
                         onDiscovery0(type, topVer, node, topSnapshot, snapshots, spiCustomMsg);
-                        log.info("MY after onDiscovery0 type="+type+" topVer="+topVer+" dis="+ctx.clientDisconnected());
                     }
                 });
 
@@ -790,7 +786,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoWrk.discoCache = discoCache;
 
                     if (!isLocDaemon && !ctx.clientDisconnected()) {
-                        log.info("onLocalJoin simple");
                         ctx.cache().context().coordinators().onLocalJoin(discoEvt, discoCache);
 
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
@@ -853,7 +848,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ((IgniteKernal)ctx.grid()).onReconnected(clusterRestarted);
 
-                    log.info("onLocalJoin reconnected");
                     ctx.cache().context().coordinators().onLocalJoin(localJoinEvent(), discoCache);
 
                     ctx.cache().context().exchange().onLocalJoin(localJoinEvent(), discoCache);
@@ -875,8 +869,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return;
                 }
-
-                log.info("MY DISCO addEvent evt="+type+" node="+node+" n="+locNode.id() + " dis="+ctx.clientDisconnected()+" s="+ctx.isStopping());
 
                 if (type == EVT_CLIENT_NODE_DISCONNECTED || type == EVT_NODE_SEGMENTED || !ctx.clientDisconnected())
                     discoWrk.addEvent(type, nextTopVer, node, discoCache, topSnapshot, customMsg);
@@ -2783,9 +2775,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private void recordEvent(int type, long topVer, ClusterNode node, DiscoCache discoCache, Collection<ClusterNode> topSnapshot) {
             assert node != null;
 
-            log.info("MY RECOD_EVT type="+type + " topVer="+topVer+" node="+node.id()+" dis="+ctx.clientDisconnected()
-                +" isRecordable"+ctx.event().isRecordable(type));
-
             if (ctx.event().isRecordable(type)) {
                 DiscoveryEvent evt = new DiscoveryEvent();
 
@@ -2898,8 +2887,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             if (evt.get4() != null)
                 discoCache = evt.get4();
-
-            System.out.println("MY DISCO process evt="+type+" node="+node+" n="+locNode.id()+" dis="+ctx.clientDisconnected());
 
             switch (type) {
                 case EVT_NODE_JOINED: {

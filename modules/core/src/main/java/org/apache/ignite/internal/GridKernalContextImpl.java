@@ -1189,7 +1189,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param disconnected Disconnected flag.
      */
     void disconnected(boolean disconnected) {
-        U.dumpStack("MY KERNAL disconnected="+disconnected);
         this.disconnected = disconnected;
     }
 
