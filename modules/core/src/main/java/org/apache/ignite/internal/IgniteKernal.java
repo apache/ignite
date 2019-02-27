@@ -1258,7 +1258,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, interval, interval);
         }
 
-        long metricsLogFreq = cfg.getMetricsLogFrequency();
+        long metricsLogFreq = 5000; // cfg.getMetricsLogFrequency();
 
         if (metricsLogFreq > 0) {
             metricsLogTask = ctx.timeout().schedule(new Runnable() {
