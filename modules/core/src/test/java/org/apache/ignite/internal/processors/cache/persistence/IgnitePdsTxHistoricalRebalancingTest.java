@@ -60,15 +60,6 @@ public class IgnitePdsTxHistoricalRebalancingTest extends IgnitePdsTxCacheRebala
 
         super.afterTest();
 
-        String msg = "DBG: memUsed=" +
-            GridUnsafe.allocTracker.values().stream().mapToLong(new ToLongFunction<Long>() {
-                @Override public long applyAsLong(Long val) {
-                    return val;
-                }
-            }).sum();
-
-        log.info(msg);
-
         if (!walRebalanceInvoked)
             throw new AssertionError("WAL rebalance hasn't been invoked.");
     }

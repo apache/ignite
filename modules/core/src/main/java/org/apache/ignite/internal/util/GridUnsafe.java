@@ -28,6 +28,7 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.ToLongFunction;
 import org.apache.ignite.IgniteSystemProperties;
 import org.jetbrains.annotations.NotNull;
 import sun.misc.Unsafe;
@@ -116,6 +117,34 @@ public abstract class GridUnsafe {
     private static final Method NEW_DIRECT_BUF_MTD = newDirectBufferMethod();
 
     public static ConcurrentHashMap<Long, Long> allocTracker = new ConcurrentHashMap<>();
+
+    private static Thread heapDumper = new Thread(new Runnable() {
+        @Override public void run() {
+            while(true) {
+
+                String msg = "DBG: memUsed=" +
+                    GridUnsafe.allocTracker.values().stream().mapToLong(new ToLongFunction<Long>() {
+                        @Override public long applyAsLong(Long val) {
+                            return val;
+                        }
+                    }).sum();
+
+                System.out.println(msg);
+
+                try {
+                    Thread.sleep(5_000);
+                }
+                catch (InterruptedException e) {
+                    return;
+                }
+            }
+        }
+    });
+
+    static {
+        heapDumper.setDaemon(true);
+        heapDumper.start();
+    }
 
     /**
      * Ensure singleton.
