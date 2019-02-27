@@ -149,6 +149,8 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
 
         compiler.run(null, null, null, srcFilePath.toString());
 
+        assertTrue("Failed to remove source file.", srcFile.delete());
+
         ClassLoader parentClassLoader = ChildFirstClassLoader.class.getClassLoader();
 
         return new ChildFirstClassLoader(new URL[] {srcTmpDir.toUri().toURL()}, parentClassLoader);
