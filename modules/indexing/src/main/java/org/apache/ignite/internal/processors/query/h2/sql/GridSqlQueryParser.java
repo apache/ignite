@@ -611,48 +611,6 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * @param stmt Statement to rewrite, if needed.
-     * @param ignoreForUpdate Whether to ignore SELECT FOR UPDATE clause.
-     */
-    @NotNull public static void rewriteQueryForUpdateIfNeeded(GridSqlStatement stmt, boolean ignoreForUpdate) {
-        // We have checked above that it's not an UNION query, so it's got to be SELECT.
-        if (stmt instanceof GridSqlSelect) {
-            GridSqlSelect sel = (GridSqlSelect)stmt;
-
-            if (sel.isForUpdate() && !ignoreForUpdate)
-                appendKeyColumn(sel);
-
-            // We need to remove this flag for final flag we'll feed to H2.
-            sel.forUpdate(false);
-        }
-    }
-
-    /**
-     * Appends _Key column to SELECT. This column is used for SELECT FOR UPDATE statements.
-     *
-     * @param sel Select statement.
-     */
-    static void appendKeyColumn(GridSqlSelect sel) {
-        // It is need to append _KEY column to map query to lock selected rows.
-        GridSqlAst from = sel.from();
-
-        GridSqlTable tbl = from instanceof GridSqlTable ? (GridSqlTable)from :
-            ((GridSqlAlias)from).child();
-
-        GridH2Table gridTbl = tbl.dataTable();
-
-        Column h2KeyCol = gridTbl.getColumn(QueryUtils.KEY_COL);
-
-        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
-        keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
-
-        sel.addColumn(keyCol, true);
-
-        // Clear flag for query - we'll run it as a plain query.
-        sel.forUpdate(false);
-    }
-
-    /**
      * @param qry Query expression to parse.
      * @return Subquery AST.
      */

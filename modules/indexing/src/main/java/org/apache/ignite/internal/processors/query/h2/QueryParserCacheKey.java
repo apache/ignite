@@ -40,7 +40,7 @@ public class QueryParserCacheKey {
     private final boolean isLocal;
 
     /** */
-    private final boolean ignoreForUpdate;
+    private final boolean inTx;
 
     /**
      * @param schemaName Schema name.
@@ -49,7 +49,7 @@ public class QueryParserCacheKey {
      * @param distributedJoins Distributed joins enabled.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param isLocal Query is local flag.
-     * @param ignoreForUpdate Flag whether to ignore SELECT FOR UPDATE clause in implicit transactions.
+     * @param inTx Flag whether this parsing occurs within explicit user tx.
      */
     QueryParserCacheKey(String schemaName,
         String sql,
@@ -57,14 +57,14 @@ public class QueryParserCacheKey {
         boolean distributedJoins,
         boolean enforceJoinOrder,
         boolean isLocal,
-        boolean ignoreForUpdate) {
+        boolean inTx) {
         this.schemaName = schemaName;
         this.sql = sql;
         this.grpByCollocated = grpByCollocated;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
         this.isLocal = isLocal;
-        this.ignoreForUpdate = ignoreForUpdate;
+        this.inTx = inTx;
     }
 
     /** {@inheritDoc} */
@@ -90,7 +90,7 @@ public class QueryParserCacheKey {
         if (schemaName != null ? !schemaName.equals(that.schemaName) : that.schemaName != null)
             return false;
 
-        return isLocal == that.isLocal && sql.equals(that.sql) && ignoreForUpdate == that.ignoreForUpdate;
+        return isLocal == that.isLocal && sql.equals(that.sql) && inTx == that.inTx;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,7 @@ public class QueryParserCacheKey {
         res = res + (distributedJoins ? 2 : 0);
         res = res + (enforceJoinOrder ? 4 : 0);
         res = res + (isLocal ? 8 : 0);
-        res = res + (ignoreForUpdate ? 16 : 0);
+        res = res + (inTx ? 16 : 0);
 
         return res;
     }

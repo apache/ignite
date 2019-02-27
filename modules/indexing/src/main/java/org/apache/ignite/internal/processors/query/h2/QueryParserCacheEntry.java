@@ -33,18 +33,24 @@ public class QueryParserCacheEntry {
     /** Command. */
     private final QueryParserResultCommand cmd;
 
+    /** Query string after the h2 parsing. */
+    private final String qry;
+
     /**
      * Constructor.
      *
+     * @param qry  Query.
      * @param select SELECT.
      * @param dml DML.
      * @param cmd Command.
      */
     public QueryParserCacheEntry(
+        String qry,
         @Nullable QueryParserResultSelect select,
         @Nullable QueryParserResultDml dml,
         @Nullable QueryParserResultCommand cmd
     ) {
+        this.qry = qry;
         this.select = select;
         this.dml = dml;
         this.cmd = cmd;
@@ -69,6 +75,13 @@ public class QueryParserCacheEntry {
      */
     @Nullable public QueryParserResultCommand command() {
         return cmd;
+    }
+
+    /**
+     * @return Query.
+     */
+    public String query() {
+        return qry;
     }
 
     /** {@inheritDoc} */

@@ -439,7 +439,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cancel Query cancel.
      * @param mvccTracker Query tracker.
      * @param dataPageScanEnabled If data page scan is enabled.
-     * @param ignoreForUpdate Flag whether to ignore SELECT FOR UPDATE for implicit transactions.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
@@ -453,10 +452,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         int timeout,
         final GridQueryCancel cancel,
         MvccQueryTracker mvccTracker,
-        Boolean dataPageScanEnabled,
-        boolean ignoreForUpdate
+        Boolean dataPageScanEnabled
     ) throws IgniteCheckedException {
-        GridNearTxLocal tx = null;
+        GridNearTxLocal tx = tx(ctx);
 
         boolean mvccEnabled = false;
 
@@ -470,7 +468,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (params != null)
                 fieldsQry.setArgs(params.toArray());
 
-            QueryParserResult parseRes = parser.parse(schemaName, fieldsQry, false, ignoreForUpdate);
+            QueryParserResult parseRes = parser.parse(schemaName, fieldsQry, false, tx != null);
 
             if (parseRes.isDml()) {
                 UpdateResult updRes = executeUpdate(schemaName, parseRes.dml(), fieldsQry, true, filter, cancel);
@@ -493,14 +491,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (ctx.security().enabled())
                 checkSecurity(select.cacheIds());
 
-            boolean forUpdate = select.forUpdate();
-
             // select.mvccEnabled() may be false in case of select from GridSqlFunctionType.TABLE.
             mvccEnabled = select.mvccEnabled() || mvccTracker != null;
 
             assert !mvccEnabled || mvccEnabled(kernalContext());
 
-            if (forUpdate && !mvccEnabled)
+            if (select.forUpdate() && !mvccEnabled)
                 throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
                     "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
@@ -529,7 +525,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             MvccQueryTracker mvccTracker0 = mvccTracker;
-            String qry0 = forUpdate ? select.statement().getSQL() : qry; // Use qry string with cleaned FOR UPDATE flag.
 
             final QueryContext qctx = new QueryContext(
                 0,
@@ -552,7 +547,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         PreparedStatement stmt = preparedStatementWithParams(
                             conn0,
-                            qry0,
+                            qry,
                             params,
                             true
                         );
@@ -560,7 +555,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         ResultSet rs = executeSqlQueryWithTimer(
                             stmt,
                             conn0,
-                            qry0,
+                            qry,
                             params,
                             timeout,
                             cancel,
@@ -935,8 +930,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         Long qryId,
         MvccQueryTracker tracker,
-        int timeout,
-        boolean ignoreForUpdate
+        int timeout
     ) throws IgniteCheckedException {
         final GridQueryFieldsResult res = executeQueryLocal0(
             schemaName,
@@ -948,8 +942,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             timeout,
             cancel,
             tracker,
-            qry.isDataPageScanEnabled(),
-            ignoreForUpdate
+            qry.isDataPageScanEnabled()
         );
 
         Iterable<List<?>> iter = () -> {
@@ -1103,8 +1096,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SqlFieldsQuery remainingQry = qry;
 
             while (remainingQry != null) {
-                // Parse.
-                QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts, false);
+                /*
+                 * Parse.
+                 * Sometimes parsing results may vary depending on whether we are inside a transaction, or outside it.
+                 * For example, if SELECT ... FOR UPDATE statement is executed within transaction, it should lock selected
+                 * rows. But outside transaction it should be executed as a plain SELECT. So, we need to pass inTx flag
+                 * into the parser.
+                 */
+                QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts, tx(ctx) != null || autoStartTx(qry));
 
                 remainingQry = parseRes.remainingQuery();
 
@@ -1235,23 +1234,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Long qryId = registerRunningQuery(schemaName, cancel, sqlQry, loc, registerAsNewQry);
 
         try {
-            boolean startTx = autoStartTx(qry);
-
             GridCacheContext mvccCctx = select.mvccEnabled() ?
                 ctx.cache().context().cacheContext(select.mvccCacheId()) : null;
 
+            // Start new user tx in case of autocommit == false.
+            if (autoStartTx(qry))
+                txStart(ctx, qry.getTimeout());
+
+            GridNearTxLocal tx = tx(ctx);
+
             final MvccQueryTracker tracker = mvccTracker == null && select.mvccEnabled() ?
-                MvccUtils.mvccTracker(mvccCctx, startTx) : mvccTracker;
-
-            GridNearTxLocal tx = tracker != null ? tx(ctx) : null;
-
-            // Locking has no meaning if SELECT FOR UPDATE is not executed in explicit transaction.
-            // So, we need to rewrite query as a plain SELECT.
-            boolean ignoreForUpdate = select.forUpdate() && checkActive(tx) == null || !select.mvccEnabled();
+                MvccUtils.mvccTracker(mvccCctx, tx) : mvccTracker;
 
             int timeout = operationTimeout(qry.getTimeout(), tx);
 
-            FieldsQueryCursor<List<?>> res = null;
+            FieldsQueryCursor<List<?>> res;
 
             if (select.splitNeeded()) {
                 // Distributed query.
@@ -1261,13 +1258,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 if (ctx.security().enabled())
                     checkSecurity(twoStepQry.cacheIds());
-
-                if (select.forUpdate() && ignoreForUpdate) {
-                    // Parse query once again with ignoreForUpdate=true.
-                    QueryParserResult parseRes = parser.parse(schemaName, qry, false, true);
-
-                    twoStepQry = parseRes.select().twoStepQuery();
-                }
 
                  res = executeQueryWithSplit(
                     schemaName,
@@ -1292,13 +1282,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cancel,
                     qryId,
                     tracker,
-                    timeout,
-                    ignoreForUpdate
+                    timeout
                 );
             }
 
-            if (select.forUpdate() && !ignoreForUpdate)
+            if (select.forUpdate()) {
+                assert tx != null; // We may obtain parsed SFU statement only within transaction.
+
                 return Collections.singletonList(lockSelectedRows(res, mvccCctx, qry.getPageSize(), timeout, select.meta()));
+            }
 
             return Collections.singletonList(res);
         }
@@ -1524,8 +1516,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 fldsQry.getTimeout(),
                 cancel,
                 new StaticMvccQueryTracker(planCctx, mvccSnapshot),
-                null,
-                true
+                null
             );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
@@ -2598,8 +2589,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 fieldsQry.getTimeout(),
                 cancel,
                 null,
-                null,
-                true
+                null
             );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {

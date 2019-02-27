@@ -891,8 +891,7 @@ public final class UpdatePlanBuilder {
                     fieldsQry.isDistributedJoins(),
                     fieldsQry.isEnforceJoinOrder(),
                     false,
-                    idx,
-                    false
+                    idx
                 );
 
                 boolean distributed =
@@ -904,7 +903,7 @@ public final class UpdatePlanBuilder {
                 if (distributed) {
                     List<Integer> cacheIds = H2Utils.collectCacheIds(idx, CU.cacheId(cacheName), qry.tables());
 
-                    H2Utils.checkQuery(idx, cacheIds, qry.mvccEnabled(), qry.forUpdate(), qry.tables());
+                    H2Utils.checkQuery(idx, cacheIds, qry.mvccEnabled(), qry.tables());
 
                     return new DmlDistributedPlanInfo(qry.isReplicatedOnly(), cacheIds, qry.derivedPartitions());
                 }

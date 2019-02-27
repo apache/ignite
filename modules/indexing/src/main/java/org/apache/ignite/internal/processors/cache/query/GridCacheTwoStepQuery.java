@@ -64,9 +64,6 @@ public class GridCacheTwoStepQuery {
     /** */
     private final boolean mvccEnabled;
 
-    /** {@code FOR UPDATE} flag. */
-    private final boolean forUpdate;
-
     /** Number of positional arguments in the sql. */
     private final int paramsCnt;
 
@@ -86,7 +83,6 @@ public class GridCacheTwoStepQuery {
         boolean skipMergeTbl,
         boolean explain,
         boolean distributedJoins,
-        boolean forUpdate,
         PartitionResult derivedPartitions,
         List<Integer> cacheIds,
         boolean mvccEnabled,
@@ -101,7 +97,6 @@ public class GridCacheTwoStepQuery {
         this.skipMergeTbl = skipMergeTbl;
         this.explain = explain;
         this.distributedJoins = distributedJoins;
-        this.forUpdate = forUpdate;
         this.derivedPartitions = derivedPartitions;
         this.cacheIds = cacheIds;
         this.mvccEnabled = mvccEnabled;
@@ -223,12 +218,6 @@ public class GridCacheTwoStepQuery {
         return mvccEnabled;
     }
 
-    /**
-     * @return {@code FOR UPDATE} flag.
-     */
-    public boolean forUpdate() {
-        return forUpdate;
-    }
 
     /**
      * @return Number of parameters

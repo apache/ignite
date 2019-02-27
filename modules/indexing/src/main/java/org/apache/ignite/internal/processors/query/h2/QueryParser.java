@@ -37,16 +37,20 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.SqlStrictParseException;
@@ -66,9 +70,8 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
+import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.rewriteQueryForUpdateIfNeeded;
 
 /**
  * Parser module. Splits incoming request into a series of parsed results.
@@ -113,11 +116,12 @@ public class QueryParser {
      *
      * @param schemaName schema name.
      * @param qry query to parse.
-     * @param remainingAllowed Whether multiple statements are allowed.            
+     * @param remainingAllowed Whether multiple statements are allowed.
+     * @param inTx Flag whether this parsing occurs within explicit user tx.
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
-    public QueryParserResult parse(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed, boolean ignoreForUpdate) {
-        QueryParserResult res = parse0(schemaName, qry, remainingAllowed, ignoreForUpdate);
+    public QueryParserResult parse(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed, boolean inTx) {
+        QueryParserResult res = parse0(schemaName, qry, remainingAllowed, inTx);
 
         checkQueryType(qry, res.isSelect());
 
@@ -130,10 +134,10 @@ public class QueryParser {
      * @param schemaName schema name.
      * @param qry query to parse.
      * @param remainingAllowed Whether multiple statements are allowed.
-     * @param ignoreForUpdate Flag whether to ignore SELECT FOR UPDATE clause in implicit transactions.
+     * @param inTx Flag whether this parsing occurs within explicit user tx.
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
-    private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed, boolean ignoreForUpdate) {
+    private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed, boolean inTx) {
         // First, let's check if we already have a two-step query for this statement...
         QueryParserCacheKey cachedKey = new QueryParserCacheKey(
             schemaName,
@@ -142,24 +146,24 @@ public class QueryParser {
             qry.isDistributedJoins(),
             qry.isEnforceJoinOrder(),
             qry.isLocal(),
-            ignoreForUpdate
+            inTx
         );
 
         QueryParserCacheEntry cached = cache.get(cachedKey);
 
         if (cached != null)
-            return new QueryParserResult(qry, null, cached.select(), cached.dml(), cached.command());
+            return new QueryParserResult(qry.setSql(cached.query()), null, cached.select(), cached.dml(), cached.command());
 
         // Try to parse as a native command.
         QueryParserResult parseRes = parseNative(schemaName, qry, remainingAllowed);
 
         // Otherwise parse with H2.
         if (parseRes == null)
-            parseRes = parseH2(schemaName, qry, remainingAllowed, ignoreForUpdate);
+            parseRes = parseH2(schemaName, qry, remainingAllowed, inTx);
 
         // Add to cache if not multi-statement.
         if (parseRes.remainingQuery() == null) {
-            cached = new QueryParserCacheEntry(parseRes.select(), parseRes.dml(), parseRes.command());
+            cached = new QueryParserCacheEntry(parseRes.query().getSql(), parseRes.select(), parseRes.dml(), parseRes.command());
 
             cache.put(cachedKey, cached);
         }
@@ -248,7 +252,7 @@ public class QueryParser {
      * @param schemaName Schema name.
      * @param qry Query.
      * @param remainingAllowed Whether multiple statements are allowed.
-     * @param ignoreForUpdate Flag whether to ignore SELECT FOR UPDATE clause in implicit transactions.
+     * @param inTx Flag whether to ignore SELECT FOR UPDATE clause in implicit transactions.
      * @return Parsing result.
      */
     @SuppressWarnings("IfMayBeConditional")
@@ -256,7 +260,7 @@ public class QueryParser {
         String schemaName,
         SqlFieldsQuery qry,
         boolean remainingAllowed,
-        boolean ignoreForUpdate
+        boolean inTx
     ) {
         Connection c = connMgr.connectionForThread().connection(schemaName);
 
@@ -303,7 +307,7 @@ public class QueryParser {
             // Prepare new query.
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL());
 
-            int paramsCnt = prepared.getParameters().size();
+            final int paramsCnt = prepared.getParameters().size();
 
             Object[] argsOrig = qry.getArgs();
 
@@ -353,14 +357,76 @@ public class QueryParser {
             }
 
             // Parse SELECT.
+            List<GridQueryFieldMetadata> meta;
+
+            try {
+                meta = H2Utils.meta(stmt.getMetaData());
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
+                    IgniteQueryErrorCode.PARSING, e);
+            }
+
             GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
-            GridSqlStatement stmt0 = parser.parse(prepared);
-
-            rewriteQueryForUpdateIfNeeded(stmt0, ignoreForUpdate);
+            GridSqlStatement selectStmt = parser.parse(prepared);
 
             List<Integer> cacheIds = parser.cacheIds();
             Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
+
+            boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
+
+            /*
+             * In the case of SELECT FOR UPDATE we need to make an additional parsing for the two reasons:
+             * 1. Clear FOR UPDATE flag and clause before feeding query to h2 engine.
+             * 2. Append if needed additional _key column to the query to be able to lock the selected rows.
+             */
+            if (forUpdate) {
+                // We have checked above that it's not an UNION query, so it's got to be SELECT.
+                assert selectStmt instanceof GridSqlSelect;
+
+                // Check FOR UPDATE invariants: only one table, MVCC is there.
+                if (cacheIds.size() != 1)
+                    throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
+                        "that involve single transactional cache.");
+
+                if (mvccCacheId == null)
+                    throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
+                        "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+                GridSqlSelect sel = (GridSqlSelect)selectStmt;
+
+                // Always remove this flag before feeding it to h2.
+                sel.forUpdate(false);
+
+                if (inTx)
+                    appendKeyColumn(sel);
+                else
+                    forUpdate = false;
+
+                // Close old statement.
+                U.close(stmt, log);
+
+                // Create a new statement without "FOR UPDATE" clause.
+                try {
+                    stmt = connMgr.prepareStatementNoCache(c, sel.getSQL());
+                }
+                catch (SQLException e) {
+                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
+                        IgniteQueryErrorCode.PARSING, e);
+                }
+
+                prep = GridSqlQueryParser.preparedWithRemaining(stmt);
+
+                prepared = prep.prepared();
+
+                assert !GridSqlQueryParser.isForUpdateQuery(prepared);
+                assert prep.remainingSql() == null;
+
+                newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL());
+
+                newQry.setArgs(args);
+            }
 
             // Calculate if query is in fact can be executed locally.
             boolean loc = qry.isLocal();
@@ -396,20 +462,15 @@ public class QueryParser {
                         newQry.isDistributedJoins(),
                         newQry.isEnforceJoinOrder(),
                         locSplit,
-                        idx,
-                        ignoreForUpdate
+                        idx
                     );
                 }
 
-                List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
-
-                boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
-
                 QueryParserResultSelect select = new QueryParserResultSelect(
-                    stmt0,
+                    selectStmt,
                     twoStepQry,
                     meta,
-                    prepared.getParameters().size(),
+                    paramsCnt,
                     cacheIds,
                     mvccCacheId,
                     forUpdate
@@ -428,6 +489,28 @@ public class QueryParser {
         finally {
             U.close(stmt, log);
         }
+    }
+
+    /**
+     * Appends _Key column to SELECT. This column is used for SELECT FOR UPDATE statements.
+     *
+     * @param sel Select statement.
+     */
+    private void appendKeyColumn(GridSqlSelect sel) {
+        // It is need to append _KEY column to map query to lock selected rows.
+        GridSqlAst from = sel.from();
+
+        GridSqlTable tbl = from instanceof GridSqlTable ? (GridSqlTable)from :
+            ((GridSqlAlias)from).child();
+
+        GridH2Table gridTbl = tbl.dataTable();
+
+        Column h2KeyCol = gridTbl.getColumn(QueryUtils.KEY_COL);
+
+        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
+        keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
+
+        sel.addColumn(keyCol, true);
     }
 
     /**
