@@ -51,23 +51,23 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    IgnitePdsCacheIntegrationTest.class,
-    IgnitePdsPageEvictionTest.class,
-    IgnitePdsMultiNodePutGetRestartTest.class,
-    IgnitePersistentStoreCacheGroupsTest.class,
-    PersistenceDirectoryWarningLoggingTest.class,
-    WalPathsTest.class,
-    WalRecoveryTxLogicalRecordsTest.class,
-    WalRolloverRecordLoggingFsyncTest.class,
-    WalRolloverRecordLoggingLogOnlyTest.class,
-
-    IgniteWalRecoveryTest.class,
-    IgniteWalRecoveryWithCompactionTest.class,
-    IgnitePdsNoActualWalHistoryTest.class,
-    IgniteWalRebalanceTest.class,
-
-    IgnitePdsAtomicCacheRebalancingTest.class,
-    IgnitePdsAtomicCacheHistoricalRebalancingTest.class,
+//    IgnitePdsCacheIntegrationTest.class,
+//    IgnitePdsPageEvictionTest.class,
+//    IgnitePdsMultiNodePutGetRestartTest.class,
+//    IgnitePersistentStoreCacheGroupsTest.class,
+//    PersistenceDirectoryWarningLoggingTest.class,
+//    WalPathsTest.class,
+//    WalRecoveryTxLogicalRecordsTest.class,
+//    WalRolloverRecordLoggingFsyncTest.class,
+//    WalRolloverRecordLoggingLogOnlyTest.class,
+//
+//    IgniteWalRecoveryTest.class,
+//    IgniteWalRecoveryWithCompactionTest.class,
+//    IgnitePdsNoActualWalHistoryTest.class,
+//    IgniteWalRebalanceTest.class,
+//
+//    IgnitePdsAtomicCacheRebalancingTest.class,
+//    IgnitePdsAtomicCacheHistoricalRebalancingTest.class,
 
     IgnitePdsTxCacheRebalancingTest.class,
     IgnitePdsTxHistoricalRebalancingTest.class,
