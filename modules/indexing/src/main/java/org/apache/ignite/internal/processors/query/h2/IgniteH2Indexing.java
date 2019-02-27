@@ -454,9 +454,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         MvccQueryTracker mvccTracker,
         Boolean dataPageScanEnabled
     ) throws IgniteCheckedException {
-        GridNearTxLocal tx = tx(ctx);
+        boolean mvccEnabled = mvccEnabled(kernalContext());
 
-        boolean mvccEnabled = false;
+        GridNearTxLocal tx = mvccEnabled ? tx(ctx) : null;
 
         try {
             SqlFieldsQuery fieldsQry = new SqlFieldsQuery(qry)
@@ -1103,7 +1103,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                  * rows. But outside transaction it should be executed as a plain SELECT. So, we need to pass inTx flag
                  * into the parser.
                  */
-                QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts, tx(ctx) != null || autoStartTx(qry));
+                boolean inTx = mvccEnabled && tx(ctx) != null || autoStartTx(qry);
+
+                QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts, inTx);
 
                 remainingQry = parseRes.remainingQuery();
 
@@ -1234,17 +1236,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Long qryId = registerRunningQuery(schemaName, cancel, sqlQry, loc, registerAsNewQry);
 
         try {
-            GridCacheContext mvccCctx = select.mvccEnabled() ?
-                ctx.cache().context().cacheContext(select.mvccCacheId()) : null;
+            GridNearTxLocal tx = null;
+            MvccQueryTracker tracker = null;
+            GridCacheContext mvccCctx = null;
 
-            // Start new user tx in case of autocommit == false.
-            if (autoStartTx(qry))
-                txStart(ctx, qry.getTimeout());
+            if (select.mvccEnabled()) {
+                mvccCctx = ctx.cache().context().cacheContext(select.mvccCacheId());
 
-            GridNearTxLocal tx = tx(ctx);
+                // Start new user tx in case of autocommit == false.
+                if (autoStartTx(qry))
+                    txStart(ctx, qry.getTimeout());
 
-            final MvccQueryTracker tracker = mvccTracker == null && select.mvccEnabled() ?
-                MvccUtils.mvccTracker(mvccCctx, tx) : mvccTracker;
+                tx = tx(ctx);
+
+                tracker = mvccTracker == null ? MvccUtils.mvccTracker(mvccCctx, tx) : mvccTracker;
+            }
 
             int timeout = operationTimeout(qry.getTimeout(), tx);
 
