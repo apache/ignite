@@ -108,12 +108,13 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
                             streamer.addData(i, i);
                     }
 
-                    Thread.sleep(timeout * 3);
+                    if (!testLog.firstWarningLatch().await(timeout * 10, TimeUnit.MILLISECONDS))
+                        fail("Warnings were not found");
+
+                    Thread.sleep(timeout);
                 }
             }
         }
-
-        assertTrue("Warnings were not found", testLog.warningsTotal() > 0);
 
         assertTrue("Too much warnings in the logs: " + testLog.warningsTotal(),
             testLog.warningsTotal() < longRunFuturesCnt);
@@ -144,7 +145,10 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
             if (!txStarted.await(10000, TimeUnit.MILLISECONDS))
                 fail("Unable to start transactions");
 
-            Thread.sleep(timeout * 2);
+            if (!testLog.firstWarningLatch().await(timeout * 10, TimeUnit.MILLISECONDS))
+                fail("Warnings were not found");
+
+            Thread.sleep(timeout);
 
             stopTx.countDown();
         }
@@ -154,8 +158,6 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
             if (!excSvc.awaitTermination(10000, TimeUnit.MILLISECONDS))
                 fail("Unable to wait for thread pool termination.");
         }
-
-        assertTrue("Warnings were not found", testLog.warningsTotal() > 0);
 
         assertTrue("Too much warnings in the logs: " + testLog.warningsTotal(),
             testLog.warningsTotal() < transactions);
@@ -267,6 +269,9 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
      */
     private static class CustomTestLogger implements IgniteLogger {
         /** */
+        private final CountDownLatch latch = new CountDownLatch(1);
+
+        /** */
         private final IgniteLogger impl;
 
         /** */
@@ -309,8 +314,13 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         @Override public void warning(String msg, @Nullable Throwable t) {
             impl.warning(msg, t);
 
-            if (substr == null || msg.toLowerCase().contains(substr.toLowerCase()))
+            if (substr == null || msg.toLowerCase().contains(substr.toLowerCase())) {
                 warningsTotal.incrementAndGet();
+
+                if (latch.getCount() > 0)
+                    latch.countDown();
+            }
+
         }
 
         /** {@inheritDoc} */
@@ -348,6 +358,13 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
          */
         private int warningsTotal() {
             return warningsTotal.get();
+        }
+
+        /**
+         * @return First warning latch.
+         */
+        private CountDownLatch firstWarningLatch() {
+            return latch;
         }
     }
 
