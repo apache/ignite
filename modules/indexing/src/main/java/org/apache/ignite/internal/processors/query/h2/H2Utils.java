@@ -25,10 +25,10 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Types;
-import java.text.MessageFormat;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +38,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -69,11 +69,11 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.Row;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.DataType;
@@ -96,13 +96,12 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.CacheException;
-
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_COL;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
 
 /**
  * H2 utility methods.
@@ -233,9 +232,25 @@ public class H2Utils {
             .a(fullTblName)
             .a(" (");
 
+        sb.a(indexColumnsSql(h2Idx.getIndexColumns()));
+
+        sb.a(')');
+
+        return sb.toString();
+    }
+
+    /**
+     * Generate String represenation of given indexed columns.
+     *
+     * @param idxCols Indexed columns.
+     * @return String represenation of given indexed columns.
+     */
+    public static String indexColumnsSql(IndexColumn[] idxCols) {
+        GridStringBuilder sb = new SB();
+
         boolean first = true;
 
-        for (IndexColumn col : h2Idx.getIndexColumns()) {
+        for (IndexColumn col : idxCols) {
             if (first)
                 first = false;
             else
@@ -243,8 +258,6 @@ public class H2Utils {
 
             sb.a(withQuotes(col.columnName)).a(" ").a(col.sortType == SortOrder.ASCENDING ? "ASC" : "DESC");
         }
-
-        sb.a(')');
 
         return sb.toString();
     }
@@ -301,7 +314,7 @@ public class H2Utils {
             if (!ctor.isAccessible())
                 ctor.setAccessible(true);
 
-            final int segments = tbl.rowDescriptor().context().config().getQueryParallelism();
+            final int segments = tbl.rowDescriptor().cacheInfo().config().getQueryParallelism();
 
             return (GridH2IndexBase)ctor.newInstance(tbl, idxName, segments, cols);
         }
@@ -359,10 +372,26 @@ public class H2Utils {
      * @param enforceJoinOrder Enforce join order of tables.
      */
     public static void setupConnection(Connection conn, boolean distributedJoins, boolean enforceJoinOrder) {
+        setupConnection(conn,distributedJoins, enforceJoinOrder, false);
+    }
+
+    /**
+     * @param conn Connection to use.
+     * @param distributedJoins If distributed joins are enabled.
+     * @param enforceJoinOrder Enforce join order of tables.
+     * @param lazy Lazy query execution mode.
+     */
+    public static void setupConnection(
+        Connection conn,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean lazy
+    ) {
         Session s = session(conn);
 
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
+        s.setLazyQueryExecution(lazy);
     }
 
     /**
@@ -720,28 +749,6 @@ public class H2Utils {
     }
 
     /**
-     * Get optimized prepared statement.
-     *
-     * @param c Connection.
-     * @param qry Parsed query.
-     * @param params Query parameters.
-     * @param enforceJoinOrder Enforce join order.
-     * @return Optimized prepared command.
-     * @throws SQLException If failed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static Prepared optimize(Connection c, String qry, Object[] params, boolean distributedJoins,
-        boolean enforceJoinOrder) throws SQLException, IgniteCheckedException {
-        setupConnection(c, distributedJoins, enforceJoinOrder);
-
-        try (PreparedStatement s = c.prepareStatement(qry)) {
-            bindParameters(s, F.asList(params));
-
-            return prepared(s);
-        }
-    }
-
-    /**
      * @param arr Array.
      * @param off Offset.
      * @param cmp Comparator.
@@ -761,7 +768,7 @@ public class H2Utils {
      * @param mainCacheId Id of main cache.
      * @return Result.
      */
-    @Nullable public static List<Integer> collectCacheIds(
+    public static List<Integer> collectCacheIds(
         IgniteH2Indexing idx,
         @Nullable Integer mainCacheId,
         Collection<QueryTable> tbls
@@ -830,6 +837,7 @@ public class H2Utils {
      * @param forUpdate For update flag.
      * @param tbls Tables.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public static void checkQuery(
         IgniteH2Indexing idx,
         List<Integer> cacheIds,
@@ -885,4 +893,65 @@ public class H2Utils {
             }
         }
     }
+
+    /**
+     * Create list of index columns. Where possible _KEY columns will be unwrapped.
+     *
+     * @param tbl GridH2Table instance
+     * @param idxCols List of index columns.
+     *
+     * @return Array of key and affinity columns. Key's, if it possible, splitted into simple components.
+     */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
+    @NotNull public static IndexColumn[] unwrapKeyColumns(GridH2Table tbl, IndexColumn[] idxCols) {
+        ArrayList<IndexColumn> keyCols = new ArrayList<>();
+
+        boolean isSql = tbl.rowDescriptor().tableDescriptor().sql();
+
+        if(!isSql)
+            return idxCols;
+
+        GridQueryTypeDescriptor type = tbl.rowDescriptor().type();
+
+        for (IndexColumn idxCol : idxCols) {
+            if(idxCol.column.getColumnId() == KEY_COL){
+                if(QueryUtils.isSqlType(type.keyClass())) {
+                    int altKeyColId = tbl.rowDescriptor().getAlternativeColumnId(QueryUtils.KEY_COL);
+
+                    //Remap simple key to alternative column.
+                    IndexColumn idxKeyCol = new IndexColumn();
+
+                    idxKeyCol.column = tbl.getColumn(altKeyColId);
+                    idxKeyCol.columnName = idxKeyCol.column.getName();
+                    idxKeyCol.sortType = idxCol.sortType;
+
+                    keyCols.add(idxKeyCol);
+                }
+                else {
+                    boolean added = false;
+
+                    for (String propName : type.fields().keySet()) {
+                        GridQueryProperty prop = type.property(propName);
+
+                        if (prop.key()) {
+                            added = true;
+
+                            Column col = tbl.getColumn(propName);
+
+                            keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
+                        }
+                    }
+
+                    // If key is object but the user has not specified any particular columns,
+                    // we have to fall back to whole-key index.
+                    if (!added)
+                        keyCols.add(idxCol);
+                }
+            } else
+                keyCols.add(idxCol);
+        }
+
+        return keyCols.toArray(new IndexColumn[0]);
+    }
+
 }

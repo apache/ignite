@@ -390,6 +390,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** SSL socket factory. */
     protected SSLSocketFactory sslSockFactory;
 
+    /** SSL enable/disable flag. */
+    protected boolean sslEnable;
+
     /** Context initialization latch. */
     @GridToStringExclude
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
@@ -2058,6 +2061,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        sslEnable = ignite().configuration().getSslContextFactory() != null;
+
         initializeImpl();
 
         registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
@@ -2250,7 +2255,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @return {@code True} if ssl enabled.
      */
     boolean isSslEnabled() {
-        return ignite().configuration().getSslContextFactory() != null;
+        return sslEnable;
     }
 
     /** {@inheritDoc} */
@@ -2495,6 +2500,24 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         /** {@inheritDoc} */
         @Override public String getLocalNodeFormatted() {
             return String.valueOf(getLocalNode());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void excludeNode(String nodeId) {
+            UUID node;
+
+            try {
+                node = UUID.fromString(nodeId);
+            }
+            catch (IllegalArgumentException e) {
+                U.error(log, "Failed to parse node ID: " + nodeId, e);
+
+                return;
+            }
+
+            String msg = "Node excluded, node=" + nodeId + "using JMX interface, initiator=" + getLocalNodeId();
+
+            impl.failNode(node, msg);
         }
 
         /** {@inheritDoc} */

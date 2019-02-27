@@ -38,6 +38,9 @@ public class QueryParserResultSelect {
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> meta;
 
+    /** Number of parameters. */
+    private final int paramsCnt;
+
     /** Involved cache IDs. */
     private final List<Integer> cacheIds;
 
@@ -53,6 +56,7 @@ public class QueryParserResultSelect {
      * @param stmt Statement.
      * @param twoStepQry Distributed query plan.
      * @param meta Fields metadata.
+     * @param paramsCnt Parameters count.
      * @param cacheIds Cache IDs.
      * @param mvccCacheId ID of the first MVCC cache.
      * @param forUpdate Whether this is FOR UPDATE flag.
@@ -61,6 +65,7 @@ public class QueryParserResultSelect {
         GridSqlStatement stmt,
         @Nullable GridCacheTwoStepQuery twoStepQry,
         List<GridQueryFieldMetadata> meta,
+        int paramsCnt,
         List<Integer> cacheIds,
         @Nullable Integer mvccCacheId,
         boolean forUpdate
@@ -68,6 +73,7 @@ public class QueryParserResultSelect {
         this.stmt = stmt;
         this.twoStepQry = twoStepQry;
         this.meta = meta;
+        this.paramsCnt = paramsCnt;
         this.cacheIds = cacheIds;
         this.mvccCacheId = mvccCacheId;
         this.forUpdate = forUpdate;
@@ -127,5 +133,12 @@ public class QueryParserResultSelect {
      */
     public boolean forUpdate() {
         return forUpdate;
+    }
+
+    /**
+     * @return Number of parameters.
+     */
+    public int parametersCount() {
+        return paramsCnt;
     }
 }

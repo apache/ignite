@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk;
 
 import org.apache.curator.test.ByteCodeRewrite;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClientTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryClientReconnectTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslFailedAuthTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslSuccessfulAuthTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryMiscTest;
@@ -46,6 +47,7 @@ import org.junit.runners.Suite;
     ZookeeperDiscoveryTopologyChangeAndReconnectTest.class,
     ZookeeperDiscoveryCommunicationFailureTest.class,
     ZookeeperDiscoveryClientDisconnectTest.class,
+    ZookeeperDiscoveryClientReconnectTest.class,
     ZookeeperDiscoverySplitBrainTest.class,
     ZookeeperDiscoveryCustomEventsTest.class,
     ZookeeperDiscoveryMiscTest.class,

@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -119,7 +118,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -171,7 +169,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
-import static org.apache.ignite.internal.processors.query.h2.H2Utils.bindParameters;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.validateTypeDescriptor;
@@ -404,7 +401,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 );
             }
             else
-                return new H2TreeClientIndex(tbl, name, pk, unwrappedCols);
+                return new H2TreeClientIndex(tbl, name, pk, unwrappedCols, inlineSize);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -853,7 +850,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
         }
 
-        bindParameters(stmt, params);
+        H2Utils.bindParameters(stmt, params);
 
         return stmt;
     }
@@ -870,31 +867,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private ResultSet executeSqlQuery(final Connection conn, final PreparedStatement stmt,
         int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
-        final MapQueryLazyWorker lazyWorker = MapQueryLazyWorker.currentWorker();
-
-        if (cancel != null) {
-            cancel.set(new Runnable() {
-                @Override public void run() {
-                    if (lazyWorker != null) {
-                        lazyWorker.submit(new Runnable() {
-                            @Override public void run() {
-                                cancelStatement(stmt);
-                            }
-                        });
-                    }
-                    else
-                        cancelStatement(stmt);
-                }
-            });
-        }
+        if (cancel != null)
+            cancel.set(() -> cancelStatement(stmt));
 
         Session ses = session(conn);
 
         if (timeoutMillis > 0)
             ses.setQueryTimeout(timeoutMillis);
-
-        if (lazyWorker != null)
-            ses.setLazyQueryExecution(true);
+        else
+            ses.setQueryTimeout(0);
 
         try {
             return stmt.executeQuery();
@@ -905,13 +886,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new QueryCancelledException();
 
             throw new IgniteCheckedException("Failed to execute SQL query. " + e.getMessage(), e);
-        }
-        finally {
-            if (timeoutMillis > 0)
-                ses.setQueryTimeout(0);
-
-            if (lazyWorker != null)
-                ses.setLazyQueryExecution(false);
         }
     }
 
@@ -992,20 +966,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             long time = U.currentTimeMillis() - start;
 
-            long longQryExecTimeout = ctx.config().getLongQueryWarningTimeout();
+            if (time > ctx.config().getLongQueryWarningTimeout()) {
+                // In lazy mode we have to use separate connection to gather plan to print warning.
+                // Otherwise the all tables are unlocked by this query.
+                try (Connection planConn = connMgr.connectionNoCache(conn.getSchema())) {
+                    ResultSet plan = executeSqlQuery(planConn, preparedStatementWithParams(planConn, "EXPLAIN " + sql,
+                        params, false), 0, null);
 
-            if (time > longQryExecTimeout) {
-                ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql,
-                    params, false), 0, null);
+                    plan.next();
 
-                plan.next();
+                    // Add SQL explain result message into log.
+                    String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
+                        ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
+                        (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
 
-                // Add SQL explain result message into log.
-                String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
-                    (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
-
-                LT.warn(log, msg);
+                    LT.warn(log, msg);
+                }
             }
 
             return rs;
@@ -1268,9 +1244,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"StringEquality", "unchecked"})
-    @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-        GridQueryCancel cancel, boolean registerAsNewQry) {
+    @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
+        String schemaName,
+        SqlFieldsQuery qry,
+        @Nullable SqlClientContext cliCtx,
+        boolean keepBinary,
+        boolean failOnMultipleStmts,
+        MvccQueryTracker tracker,
+        GridQueryCancel cancel,
+        boolean registerAsNewQry
+    ) {
         boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
@@ -1279,16 +1262,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SqlFieldsQuery remainingQry = qry;
 
             while (remainingQry != null) {
+                // Parse.
                 QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts);
 
                 remainingQry = parseRes.remainingQuery();
 
+                // Get next command.
                 SqlFieldsQuery newQry = parseRes.query();
 
-                assert newQry.getSql() != null;
+                // Check if there is enough parameters. Batched statements are not checked at this point
+                // since they pass parameters differently.
+                if (!DmlUtils.isBatched(newQry)) {
+                    int qryParamsCnt = F.isEmpty(newQry.getArgs()) ? 0 : newQry.getArgs().length;
 
+                    if (qryParamsCnt < parseRes.parametersCount())
+                        throw new IgniteSQLException("Invalid number of query parameters [expected=" +
+                            parseRes.parametersCount() + ", actual=" + qryParamsCnt + ']');
+                }
+
+                // Check if cluster state is valid.
                 checkClusterState(parseRes);
 
+                // Execute.
                 if (parseRes.isCommand()) {
                     // Execute command.
                     FieldsQueryCursor<List<?>> cmdRes = executeCommand(
@@ -1636,7 +1631,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             int explicitParts[] = qry.getPartitions();
             PartitionResult derivedParts = twoStepQry.derivedPartitions();
 
-            int parts[] = calculatePartitions(explicitParts, derivedParts, qry.getArgs());
+            int parts[] = PartitionResult.calculatePartitions(explicitParts, derivedParts, qry.getArgs());
 
             if (parts != null && parts.length == 0) {
                 failed = false;
@@ -1688,45 +1683,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (!cursorCreated)
                 runningQryMgr.unregister(qryId, failed);
         }
-    }
-
-    /**
-     * Calculate partitions for the query.
-     *
-     * @param explicitParts Explicit partitions provided in SqlFieldsQuery.partitions property.
-     * @param derivedParts Derived partitions found during partition pruning.
-     * @param args Arguments.
-     * @return Calculated partitions or {@code null} if failed to calculate and there should be a broadcast.
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    private int[] calculatePartitions(int[] explicitParts, PartitionResult derivedParts, Object[] args) {
-        if (!F.isEmpty(explicitParts))
-            return explicitParts;
-        else if (derivedParts != null) {
-            try {
-                Collection<Integer> realParts = derivedParts.tree().apply(null, args);
-
-                if (realParts == null)
-                    return null;
-                else if (realParts.isEmpty())
-                    return IgniteUtils.EMPTY_INTS;
-                else {
-                    int[] realParts0 = new int[realParts.size()];
-
-                    int i = 0;
-
-                    for (Integer realPart : realParts)
-                        realParts0[i++] = realPart;
-
-                    return realParts0;
-                }
-            }
-            catch (IgniteCheckedException e) {
-                throw new CacheException("Failed to calculate derived partitions for query.", e);
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -2113,7 +2069,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
-        mapQryExec.cancelLazyWorkers();
+        mapQryExec.stop();
 
         qryCtxRegistry.clearSharedOnLocalNodeStop();
 
@@ -2267,8 +2223,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop() {
-        mapQryExec.cancelLazyWorkers();
-
         connMgr.onKernalStop();
     }
 
@@ -2284,6 +2238,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public ConnectionManager connections() {
         return connMgr;
+    }
+
+    /**
+     * @return Parser.
+     */
+    public QueryParser parser() {
+        return parser;
     }
 
     /**
@@ -2576,25 +2537,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 flags = GridH2QueryRequest.setDataPageScanEnabled(flags,
                     fieldsQry.isDataPageScanEnabled());
 
-                int[] parts = fieldsQry.getPartitions();
+                int[] parts = PartitionResult.calculatePartitions(
+                    fieldsQry.getPartitions(),
+                    distributedPlan.derivedPartitions(),
+                    fieldsQry.getArgs());
 
-                IgniteInternalFuture<Long> fut = tx.updateAsync(
-                    cctx,
-                    ids,
-                    parts,
-                    schemaName,
-                    fieldsQry.getSql(),
-                    fieldsQry.getArgs(),
-                    flags,
-                    fieldsQry.getPageSize(),
-                    timeout);
+                if (parts != null && parts.length == 0)
+                    return new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
+                else {
+                    IgniteInternalFuture<Long> fut = tx.updateAsync(
+                        cctx,
+                        ids,
+                        parts,
+                        schemaName,
+                        fieldsQry.getSql(),
+                        fieldsQry.getArgs(),
+                        flags,
+                        fieldsQry.getPageSize(),
+                        timeout);
 
-                UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
+                    UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
 
-                if (commit)
-                    toCommit.commit();
+                    if (commit)
+                        toCommit.commit();
 
-                return res;
+                    return res;
+                }
             }
             catch (ClusterTopologyServerNotFoundException e) {
                 throw new CacheServerNotFoundException(e.getMessage(), e);

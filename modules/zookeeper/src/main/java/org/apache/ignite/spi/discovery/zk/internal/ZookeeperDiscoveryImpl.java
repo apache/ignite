@@ -564,7 +564,7 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param feature Feature to check.
-     * @return {@code true} if all nodes support the given feature, false otherwise.
+     * @return {@code true} if all nodes support the given feature, {@code false} otherwise.
      */
     public boolean allNodesSupport(IgniteFeatures feature) {
         checkState();

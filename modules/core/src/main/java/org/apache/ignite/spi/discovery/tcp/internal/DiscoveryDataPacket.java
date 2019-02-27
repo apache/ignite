@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -284,8 +285,12 @@ public class DiscoveryDataPacket implements Serializable {
                 if (CONTINUOUS_PROC.ordinal() == binEntry.getKey() &&
                         X.hasCause(e, ClassNotFoundException.class) && clientNode)
                     U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
-                else
+                else if (binEntry.getKey() < GridComponent.DiscoveryDataExchangeType.VALUES.length)
                     U.error(log, "Failed to unmarshal discovery data for component: "  + binEntry.getKey(), e);
+                else {
+                    U.warn(log, "Failed to unmarshal discovery data." +
+                        " Component " + binEntry.getKey() + " is not found.");
+                }
             }
         }
 

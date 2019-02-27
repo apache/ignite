@@ -695,8 +695,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDeclaredBodyEnum() throws Exception {
         final MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
-        ctx.registerClassName((byte)0, 1, EnumObject.class.getName());
-        ctx.registerClassName((byte)0, 2, DeclaredBodyEnum.class.getName());
+        ctx.registerClassName((byte)0, 1, EnumObject.class.getName(), false);
+        ctx.registerClassName((byte)0, 2, DeclaredBodyEnum.class.getName(), false);
 
         BinaryMarshaller marsh = binaryMarshaller();
         marsh.setContext(ctx);

@@ -386,7 +386,10 @@ public final class IgniteSystemProperties {
 
     /**
      * If this property set then debug console will be opened for H2 indexing SPI.
+     *
+     * @deprecated Since 2.8. H2 console is no longer supported.
      */
+    @Deprecated
     public static final String IGNITE_H2_DEBUG_CONSOLE = "IGNITE_H2_DEBUG_CONSOLE";
 
     /**
@@ -394,7 +397,10 @@ public final class IgniteSystemProperties {
      * to start H2 debug console on. If this property is not set or set to 0, H2 debug
      * console will use system-provided dynamic port.
      * This property is only relevant when {@link #IGNITE_H2_DEBUG_CONSOLE} property is set.
+     *
+     * @deprecated Since 2.8. H2 console is no longer supported.
      */
+    @Deprecated
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
@@ -492,7 +498,12 @@ public final class IgniteSystemProperties {
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
-    /** Force all SQL queries to be processed lazily regardless of what clients request. */
+    /**
+     *  Force all SQL queries to be processed lazily regardless of what clients request.
+     *
+     * @deprecated Since version 2.8.
+     */
+    @Deprecated
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
     /** Disable SQL system views. */
@@ -1120,6 +1131,16 @@ public final class IgniteSystemProperties {
      * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
      */
     public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
+
+    /**
+     * Flag to enable baseline auto-adjust by default.
+     */
+    public static final String IGNITE_BASELINE_AUTO_ADJUST_ENABLED = "IGNITE_BASELINE_AUTO_ADJUST_ENABLED";
+
+    /**
+     * Maximum number of diagnostic warning messages per category, when waiting for PME.
+     */
+    public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
      * Enforces singleton.
