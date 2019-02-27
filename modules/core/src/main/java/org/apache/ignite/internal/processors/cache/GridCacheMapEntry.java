@@ -3997,7 +3997,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long expireTime = expireTimeExtras();
 
-            if (!(expireTime > 0 && expireTime < U.currentTimeMillis()))
+            if (!(expireTime > 0 && expireTime <= U.currentTimeMillis()))
                 return false;
 
             CacheObject expiredVal = this.val;
