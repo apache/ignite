@@ -2198,6 +2198,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.cache().completeProxyRestart(resolveCacheRequests(exchActions), initialVersion(), res);
 
+            if (exchActions != null && exchActions.systemCachesStarting() && exchActions.stateChangeRequest() == null) {
+                cctx.kernalContext().dataStructures().restoreStructuresState(cctx.kernalContext());
+
+                cctx.kernalContext().service().updateUtilityCache();
+            }
+
             if (exchActions != null && err0 == null)
                 exchActions.completeRequestFutures(cctx, null);
 
