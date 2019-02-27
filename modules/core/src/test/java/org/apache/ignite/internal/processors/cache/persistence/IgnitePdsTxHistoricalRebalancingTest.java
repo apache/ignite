@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.function.ToLongFunction;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  *
@@ -57,6 +59,15 @@ public class IgnitePdsTxHistoricalRebalancingTest extends IgnitePdsTxCacheRebala
         System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
 
         super.afterTest();
+
+        String msg = "DBG: memUsed=" +
+            GridUnsafe.allocTracker.values().stream().mapToLong(new ToLongFunction<Long>() {
+                @Override public long applyAsLong(Long val) {
+                    return val;
+                }
+            }).sum();
+
+        log.info(msg);
 
         if (!walRebalanceInvoked)
             throw new AssertionError("WAL rebalance hasn't been invoked.");
