@@ -414,17 +414,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         MvccCoordinator curCrd0 = curCrd;
-        log.info("@@read curCrd0="+curCrd0);
-
-        U.dumpStack("SET_CRD onDisconnected n="+ctx.localNodeId()
-            +" curCrd0="+curCrd);
 
         if (!curCrd0.disconnected()) {
             // Notify all listeners waiting for a snapshot.
             onCoordinatorFailed(curCrd0.nodeId());
 
             curCrd = MvccCoordinator.DISCONNECTED_COORDINATOR;
-            log.info("@@set disconnected");
 
             readyVer = AffinityTopologyVersion.NONE;
         }
@@ -448,10 +443,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         checkMvccSupported(nodes);
 
         MvccCoordinator curCrd0 = curCrd;
-        log.info("@@read curCrd022="+curCrd0);
 
-        log.info("MY onDiscovery evt="+evt.message()+" type="+evt.type() + " nodeId="+nodeId+" curCrd0.nodeId()="+curCrd0.nodeId()
-            +" di="+curCrd0.disconnected()+" di2="+ctx.clientDisconnected());
+        if (ctx.clientDisconnected())
+            return;
 
         if (evt.type() == EVT_NODE_JOINED) {
             if (curCrd0.disconnected()) // Handle join event only if coordinator has not been elected yet.
@@ -525,25 +519,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private void onCoordinatorChanged(AffinityTopologyVersion topVer, Collection<ClusterNode> nodes, boolean sndQrys) {
         MvccCoordinator newCrd = pickMvccCoordinator(nodes, topVer);
 
-        U.dumpStack("SET_CRD onCoordinatorChanged curCrd="+curCrd+" newCrd="+newCrd+" n="+ctx.localNodeId()+ " dis="+ctx.clientDisconnected());
-
         if (newCrd.disconnected()) {
             curCrd = newCrd;
-            log.info("@@set newCrd="+newCrd);
 
             return;
         }
 
-        if (newCrd.topologyVersion().compareTo(curCrd.topologyVersion()) <= 0)
-            U.dumpStack("@@read FAIL FAIL FAIL curCrd="+curCrd);
-
-        assert newCrd.topologyVersion().compareTo(curCrd.topologyVersion()) > 0 : "curCrd:"+curCrd.topologyVersion()+
-            " new="+newCrd.topologyVersion()+"\n\n dis="+ctx.clientDisconnected()+" stop="+ctx.isStopping()
-            + " curCrd.disconnected="+curCrd.disconnected() + "\n\n newCrd="+newCrd + "\n\n curCrd="+curCrd
-            + " ";
+        assert newCrd.topologyVersion().compareTo(curCrd.topologyVersion()) > 0;
 
         curCrd = newCrd;
-        log.info("@@set newCrd2="+newCrd);
 
         processActiveQueries(nodes, newCrd, sndQrys);
     }

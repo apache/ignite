@@ -38,7 +38,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
     /**
      * @throws Exception If failed.
      */
-//    @Test
+    @Test
     public void testReconnectServersRestart_1() throws Exception {
         reconnectServersRestart(1);
     }
