@@ -2582,65 +2582,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             this.cctx = cctx;
         }
 
-        /**
-         * @param cctx Context.
-         * @param grpDesc Cache group descriptor.
-         * @param topVer Current exchange version.
-         * @return Cache holder.
-         * @throws IgniteCheckedException If failed.
-         */
-        CacheGroupNoAffOrFiltredHolder create(
-            GridCacheSharedContext cctx,
-            CacheGroupDescriptor grpDesc,
-            AffinityTopologyVersion topVer
-        ) throws IgniteCheckedException {
-            return create(cctx, grpDesc, topVer, null);
-        }
-
-        /**
-         * @param cctx Context.
-         * @param grpDesc Cache group descriptor.
-         * @param topVer Current exchange version.
-         * @param initAff Current affinity.
-         * @return Cache holder.
-         * @throws IgniteCheckedException If failed.
-         */
-        CacheGroupNoAffOrFiltredHolder create(
-            GridCacheSharedContext cctx,
-            CacheGroupDescriptor grpDesc,
-            AffinityTopologyVersion topVer,
-            @Nullable GridAffinityAssignmentCache initAff
-        ) throws IgniteCheckedException {
-            assert grpDesc != null;
-            assert !cctx.kernalContext().clientNode() || !CU.affinityNode(cctx.localNode(), grpDesc.config().getNodeFilter());
-
-            CacheConfiguration<?, ?> ccfg = grpDesc.config();
-
-            assert ccfg != null : grpDesc;
-            assert ccfg.getCacheMode() != LOCAL : ccfg.getName();
-
-            assert !cctx.discovery().cacheGroupAffinityNodes(grpDesc.groupId(),
-                topVer).contains(cctx.localNode()) : grpDesc.cacheOrGroupName();
-
-            AffinityFunction affFunc = cctx.cache().clone(ccfg.getAffinity());
-
-            cctx.kernalContext().resource().injectGeneric(affFunc);
-            cctx.kernalContext().resource().injectCacheName(affFunc, ccfg.getName());
-
-            U.startLifecycleAware(F.asList(affFunc));
-
-            GridAffinityAssignmentCache aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
-                grpDesc.cacheOrGroupName(),
-                grpDesc.groupId(),
-                affFunc,
-                ccfg.getNodeFilter(),
-                ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL,
-                grpDesc.persistenceEnabled());
-
-            return new CacheGroupNoAffOrFiltredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
-        }
-
         /** {@inheritDoc} */
         @Override public boolean nonAffNode() {
             return true;
@@ -2684,6 +2625,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             ccfg.getBackups(),
             ccfg.getCacheMode() == LOCAL,
             grpDesc.persistenceEnabled());
+
+        U.debug(log, "Created holder [aff=" + aff + ']');
 
         return new CacheGroupNoAffOrFiltredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
     }
@@ -2780,6 +2723,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param caches Registered caches.
          */
         void init(Map<Integer, CacheGroupDescriptor> grps, Map<String, DynamicCacheDescriptor> caches) {
+            U.debug(log, "Init CachesInfo [grps=" + grps + ", caches=" + caches + ']');
+
             for (CacheGroupDescriptor grpDesc : grps.values())
                 registerGroup(grpDesc);
 
@@ -2873,6 +2818,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          *
          */
         void clear() {
+            U.debug(log, "Cleared CachesInfo");
+
             registeredGrps.clear();
 
             registeredCaches.clear();
