@@ -23,10 +23,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.junit.Assume.assumeTrue;
+
 /**
  *
  */
-public class DistributedConfigurationTest extends GridCommonAbstractTest {
+public abstract class DistributedConfigurationAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_PROP = "someLong";
 
@@ -57,7 +59,7 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
         storageCfg.getDefaultDataRegionConfiguration()
-            .setPersistenceEnabled(true)
+            .setPersistenceEnabled(isPersistent())
             .setMaxSize(500L * 1024 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg);
@@ -65,40 +67,16 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    @Test
-//    public void test() throws Exception {
-//        IgniteEx ignite0 = startGrid(0);
-//        IgniteEx ignite1 = startGrid(1);
-//
-//        ignite0.cluster().active(true);
-//
-//        Assert.assertEquals(0, ignite0.cluster().baselineConfiguration().getBaselineAutoAdjustTimeout());
-//        Assert.assertEquals(0, ignite1.cluster().baselineConfiguration().getBaselineAutoAdjustTimeout());
-//
-//        ignite0.cluster().baselineConfiguration().setBaselineAutoAdjustTimeout(2);
-//
-//        Assert.assertEquals(2, ignite0.cluster().baselineConfiguration().getBaselineAutoAdjustTimeout());
-//        Assert.assertEquals(2, ignite1.cluster().baselineConfiguration().getBaselineAutoAdjustTimeout());
-//
-//        stopAllGrids();
-//
-//        ignite0 = startGrid(0);
-//        ignite1 = startGrid(1);
-//
-//        ignite0.cluster().active(true);
-//
-//        Assert.assertEquals(2, ignite0.cluster().baselineConfiguration().getBaselineAutoAdjustTimeout());
-//        Assert.assertEquals(2, ignite1.cluster().baselineConfiguration().getBaselineAutoAdjustTimeout());
-//    }
+    /** */
+    protected abstract boolean isPersistent();
 
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testSuccessClusterWideUpdate() throws Exception {
+        assumeTrue(isPersistent());
+
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
@@ -135,6 +113,8 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReadLocalValueOnInactiveGrid() throws Exception {
+        assumeTrue(isPersistent());
+
         IgniteEx ignite0 = startGrid(0);
         startGrid(1);
 
@@ -193,6 +173,8 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
      */
     @Test(expected = NotWritablePropertyException.class)
     public void testPropagateValueOnInactiveGridShouldThrowException() throws Exception {
+        assumeTrue(isPersistent());
+
         IgniteEx ignite0 = (IgniteEx)startGrids(2);
 
         DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
@@ -205,6 +187,8 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReadInitValueBeforeOnReadyForReady() throws Exception {
+        assumeTrue(isPersistent());
+
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 

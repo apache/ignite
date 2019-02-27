@@ -368,7 +368,8 @@ public final class GridTestUtils {
 
             while (t != null) {
                 if (cls == t.getClass() && (msg == null || (t.getMessage() != null && t.getMessage().contains(msg)))) {
-                    log.info("Caught expected exception: " + t.getMessage());
+                    if (log != null && log.isInfoEnabled())
+                        log.info("Caught expected exception: " + t.getMessage());
 
                     return t;
                 }
