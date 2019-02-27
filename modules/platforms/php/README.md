@@ -1,4 +1,4 @@
-# PHP Thin Client #
+# PHP Thin Client for GridGain #
 
 ## Installation ##
 
@@ -34,4 +34,4 @@ To use the client in your application, include `vendor/autoload.php` file, gener
 require_once "<local_ignite_path>/vendor/autoload.php";
 ```
 
-For more information, see [Apache Ignite PHP Thin Client documentation](https://apacheignite.readme.io/docs/php-thin-client).
+For more information, see [GridGain PHP Thin Client documentation](https://apacheignite.readme.io/docs/php-thin-client).
