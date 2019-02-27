@@ -101,7 +101,7 @@ namespace ignite
         {
             namespace icc = ignite::common::concurrent;
 
-            bool IsJava9OrLater()
+            bool IGNITE_IMPORT_EXPORT IsJava9OrLater()
             {
                 JavaVMInitArgs args;
 

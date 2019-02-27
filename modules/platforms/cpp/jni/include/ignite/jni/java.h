@@ -119,7 +119,7 @@ namespace ignite
              *
              * @return true if the Java 9 or later is in use.
              */
-            bool IsJava9OrLater();
+            bool IGNITE_IMPORT_EXPORT IsJava9OrLater();
 
             /**
              * JNI handlers holder.
