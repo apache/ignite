@@ -25,6 +25,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -49,14 +50,24 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
      */
     @Test
     public void testInsertWithExplicitKey() {
-        IgniteCache<String, Person> p = ignite(0).cache("S2P").withKeepBinary();
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_COLUMNS");
 
-        p.query(new SqlFieldsQuery("insert into Person (_key, id, firstName) values ('s', ?, ?), " +
-            "('a', 2, 'Alex')").setArgs(1, "Sergi"));
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
 
-        assertEquals(createPerson(1, "Sergi"), p.get("s"));
+        try {
+            IgniteCache<String, Person> p = ignite(0).cache("S2P").withKeepBinary();
 
-        assertEquals(createPerson(2, "Alex"), p.get("a"));
+            p.query(new SqlFieldsQuery("insert into Person (_key, id, firstName) values ('s', ?, ?), " +
+                "('a', 2, 'Alex')").setArgs(1, "Sergi"));
+
+            assertEquals(createPerson(1, "Sergi"), p.get("s"));
+
+            assertEquals(createPerson(2, "Alex"), p.get("a"));
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", oldAllowColumnsVal);
+        }
     }
 
     /**
@@ -205,33 +216,43 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
      */
     @Test
     public void testNestedFieldsHandling1() {
-        IgniteCache<Integer, AllTypes> p = ignite(0).cache("I2AT");
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_COLUMNS");
 
-        final int ROOT_KEY = 1;
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
 
-        // Create 1st level value
-        AllTypes rootVal = new AllTypes(1L);
+        try {
+            IgniteCache<Integer, AllTypes> p = ignite(0).cache("I2AT");
 
-        // With random inner field
-        rootVal.innerTypeCol = new AllTypes.InnerType(42L);
+            final int ROOT_KEY = 1;
+
+            // Create 1st level value
+            AllTypes rootVal = new AllTypes(1L);
+
+            // With random inner field
+            rootVal.innerTypeCol = new AllTypes.InnerType(42L);
 
 
-        p.query(new SqlFieldsQuery(
-            "INSERT INTO AllTypes(_key,_val) VALUES (?, ?)").setArgs(ROOT_KEY, rootVal)
-        ).getAll();
+            p.query(new SqlFieldsQuery(
+                "INSERT INTO AllTypes(_key,_val) VALUES (?, ?)").setArgs(ROOT_KEY, rootVal)
+            ).getAll();
 
-        // Update inner fields just by their names
-        p.query(new SqlFieldsQuery("UPDATE AllTypes SET innerLongCol = ?, innerStrCol = ?, arrListCol = ?;")
-            .setArgs(50L, "sss", new ArrayList<>(Arrays.asList(3L, 2L, 1L)))).getAll();
+            // Update inner fields just by their names
+            p.query(new SqlFieldsQuery("UPDATE AllTypes SET innerLongCol = ?, innerStrCol = ?, arrListCol = ?;")
+                .setArgs(50L, "sss", new ArrayList<>(Arrays.asList(3L, 2L, 1L)))).getAll();
 
-        AllTypes res = p.get(ROOT_KEY);
+            AllTypes res = p.get(ROOT_KEY);
 
-        AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
+            AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
 
-        resInner.innerStrCol = "sss";
-        resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
+            resInner.innerStrCol = "sss";
+            resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
 
-        assertEquals(resInner, res.innerTypeCol);
+            assertEquals(resInner, res.innerTypeCol);
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", oldAllowColumnsVal);
+        }
     }
 
     /**

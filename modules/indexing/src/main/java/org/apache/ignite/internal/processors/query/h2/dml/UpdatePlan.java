@@ -212,7 +212,7 @@ public final class UpdatePlan {
         if (QueryUtils.isSqlType(desc.valueClass())) {
             assert valColIdx != -1;
 
-            val = DmlUtils.convert(val, rowDesc, desc.valueClass(), colTypes[valColIdx], colNames[keyColIdx]);
+            val = DmlUtils.convert(val, rowDesc, desc.valueClass(), colTypes[valColIdx], colNames[valColIdx]);
         }
 
         if (key == null) {

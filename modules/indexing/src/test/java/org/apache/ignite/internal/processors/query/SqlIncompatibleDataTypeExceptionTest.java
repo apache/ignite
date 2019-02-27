@@ -45,9 +45,6 @@ public class SqlIncompatibleDataTypeExceptionTest extends AbstractIndexingCommon
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
-            "ALLOW_KEY_VAL_COLUMNS");
-
         super.afterTestsStopped();
     }
 
