@@ -1200,14 +1200,14 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
          * @return String representation of pending locks.
          */
         private String dumpPendingLocks() {
-            StringBuilder sb = new StringBuilder().append("Timed out waiting for lock response, pending locks: [");
+            StringBuilder sb = new StringBuilder().append("Timed out waiting for lock response, holding lock on: ");
 
             Iterator<KeyCacheObject> locks = pendingLocks.iterator();
 
-            while (locks.hasNext()) {
-                KeyCacheObject key = locks.next();
+            boolean found = false;
 
-                sb.append("[key=").append(key).append(", owner=");
+            while (!found && locks.hasNext()) {
+                KeyCacheObject key = locks.next();
 
                 GridCacheEntryEx entry = cctx.cache().entryEx(key, topVer);
 
@@ -1215,28 +1215,24 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     try {
                         Collection<GridCacheMvccCandidate> candidates = entry.localCandidates();
 
-                        Iterator<GridCacheMvccCandidate> candidateIter = candidates.iterator();
+                        for (GridCacheMvccCandidate candidate : candidates) {
+                            IgniteInternalTx itx = cctx.tm().tx(candidate.version());
 
-                        while (candidateIter.hasNext()) {
-                            GridCacheMvccCandidate candidate = candidateIter.next();
-                            IgniteInternalTx tx = cctx.tm().tx(candidate.version());
-
-                            if (tx != null && candidate.owner()) {
-                                sb.append("[xid=").append(tx.xid()).append(", ");
-                                sb.append("xidVer=").append(tx.xidVersion()).append(", ");
-                                sb.append("nearXid=").append(tx.nearXidVersion().asGridUuid()).append(", ");
-                                sb.append("nearXidVer=").append(tx.nearXidVersion()).append(", ");
-                                sb.append("label=").append(tx.label()).append(", ");
+                            if (itx != null && candidate.owner() && !candidate.version().equals(tx.xidVersion())) {
+                                sb.append("key=").append(key).append(", owner=");
+                                sb.append("[xid=").append(itx.xid()).append(", ");
+                                sb.append("xidVer=").append(itx.xidVersion()).append(", ");
+                                sb.append("nearXid=").append(itx.nearXidVersion().asGridUuid()).append(", ");
+                                sb.append("nearXidVer=").append(itx.nearXidVersion()).append(", ");
+                                sb.append("label=").append(itx.label()).append(", ");
                                 sb.append("nearNodeId=").append(candidate.otherNodeId()).append("]");
+                                sb.append(", queueSize=").append(candidates.isEmpty() ? 0 : candidates.size() - 1);
+
+                                found = true;
 
                                 break;
                             }
-
-                            if (!candidateIter.hasNext())
-                                sb.append("null");
                         }
-
-                        sb.append(", queueSize=").append(candidates.isEmpty() ? 0 : candidates.size() - 1).append("]");
 
                         break;
                     }
@@ -1244,11 +1240,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         entry = cctx.cache().entryEx(key, topVer);
                     }
                 }
-
-                if (locks.hasNext())
-                    sb.append(", ");
-                else
-                    sb.append("]");
             }
 
             return sb.toString();

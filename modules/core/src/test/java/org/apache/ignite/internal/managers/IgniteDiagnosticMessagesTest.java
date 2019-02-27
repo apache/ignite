@@ -403,7 +403,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
         try {
             IgniteEx grid1 = startGrid(0);
 
-            LogListener lsnr = LogListener.matches("Timed out waiting for lock response, pending locks")
+            LogListener lsnr = LogListener.matches("Timed out waiting for lock response, holding lock on: ")
                     .andMatches(Pattern.compile(".*xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=lock, " +
                             "nearNodeId=" + grid1.cluster().localNode().id() + ".*"))
                     .build();
