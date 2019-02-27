@@ -81,7 +81,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
      */
     @Test
     public void serviceHotRedeploymentTest() throws Exception {
-        ClassLoader clsLdr = classLoader(1);
+        URLClassLoader clsLdr = prepareClassLoader(1);
         Class<?> cls = clsLdr.loadClass("MyRenewServiceImpl");
 
         MyRenewService srvc = (MyRenewService)cls.newInstance();
@@ -102,7 +102,9 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
             ignite.services().cancel(SERVICE_NAME);
             depSpi.unregister(srvc.getClass().getName());
 
-            clsLdr = classLoader(2);
+            clsLdr.close();
+
+            clsLdr = prepareClassLoader(2);
             depSpi.register(clsLdr, srvc.getClass());
 
             ignite.services().deployClusterSingleton(SERVICE_NAME, srvc);
@@ -127,7 +129,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
      * @return Prepared classloader.
      * @throws Exception In case of an error.
      */
-    private ClassLoader classLoader(int ver) throws Exception {
+    private URLClassLoader prepareClassLoader(int ver) throws Exception {
         String source = "import org.apache.ignite.internal.processors.service.ServiceHotRedeploymentViaDeploymentSpiTest;\n" +
             "import org.apache.ignite.services.ServiceContext;\n" +
             "public class MyRenewServiceImpl implements ServiceHotRedeploymentViaDeploymentSpiTest.MyRenewService {\n" +
@@ -151,39 +153,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
 
         assertTrue("Failed to remove source file.", srcFile.delete());
 
-        ClassLoader parentClassLoader = ChildFirstClassLoader.class.getClassLoader();
-
-        return new ChildFirstClassLoader(new URL[] {srcTmpDir.toUri().toURL()}, parentClassLoader);
-    }
-
-    /** */
-    private static class ChildFirstClassLoader extends URLClassLoader {
-        /**
-         * @param urls Urls to include in classpath.
-         * @param parent Parent classloader.
-         */
-        public ChildFirstClassLoader(URL[] urls, ClassLoader parent) {
-            super(urls, parent);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-            Class<?> loadedClass = findLoadedClass(name);
-
-            if (loadedClass == null) {
-                try {
-                    loadedClass = findClass(name);
-                }
-                catch (ClassNotFoundException e) {
-                    loadedClass = super.loadClass(name, resolve);
-                }
-            }
-
-            if (resolve)
-                resolveClass(loadedClass);
-
-            return loadedClass;
-        }
+        return new URLClassLoader(new URL[] {srcTmpDir.toUri().toURL()});
     }
 
     /**
