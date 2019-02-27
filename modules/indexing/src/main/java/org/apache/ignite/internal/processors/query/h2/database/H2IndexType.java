@@ -13,24 +13,24 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.testsuites;
-
-import org.apache.ignite.internal.processors.query.h2.H2IndexingGeoSelfTest;
-import org.apache.ignite.internal.processors.query.h2.H2IndexingSegmentedGeoSelfTest;
-import org.apache.ignite.internal.processors.query.h2.H2IndexesSystemViewTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.internal.processors.query.h2.database;
 
 /**
- * Geospatial indexing tests.
+ * Type of supported indexed types.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    H2IndexingGeoSelfTest.class,
-    H2IndexingSegmentedGeoSelfTest.class,
-    H2IndexesSystemViewTest.class
-})
-public class GeoSpatialIndexingTestSuite {
+public enum H2IndexType {
+    /** Hash index type. */
+    HASH,
+
+    /** Btree index type. */
+    BTREE,
+
+    /** Scan index type. */
+    SCAN,
+
+    /** Geo Spatial index type. */
+    SPATIAL
 }

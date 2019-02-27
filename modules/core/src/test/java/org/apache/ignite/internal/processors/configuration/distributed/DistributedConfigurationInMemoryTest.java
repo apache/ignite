@@ -15,22 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.configuration.distributed;
 
-import org.apache.ignite.internal.processors.query.h2.H2IndexingGeoSelfTest;
-import org.apache.ignite.internal.processors.query.h2.H2IndexingSegmentedGeoSelfTest;
-import org.apache.ignite.internal.processors.query.h2.H2IndexesSystemViewTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Geospatial indexing tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    H2IndexingGeoSelfTest.class,
-    H2IndexingSegmentedGeoSelfTest.class,
-    H2IndexesSystemViewTest.class
-})
-public class GeoSpatialIndexingTestSuite {
+/** */
+public class DistributedConfigurationInMemoryTest extends DistributedConfigurationAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected boolean isPersistent() {
+        return false;
+    }
 }
