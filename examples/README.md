@@ -1,13 +1,13 @@
-# Apache Ignite Examples
+# GridGain Examples
 
-This module contains examples of how to run [Apache Ignite](ignite.apache.org) and [Apache Ignite](ignite.apache.org) with 3rd party components.
+This module contains examples of how to run GridGain.
 
 Instructions on how to start examples can be found in [README.txt](README.txt).
 
 How to start examples in the developer's environment, please see [DEVNOTES.txt](DEVNOTES.txt).
 
 ## Running examples on JDK 9/10/11
-Ignite uses proprietary SDK APIs that are not available by default. See also [How to run Ignite on JDK 9,10 and 11](https://apacheignite.readme.io/docs/getting-started#section-running-ignite-with-java-9-10-11)
+GridGain uses proprietary SDK APIs that are not available by default. See also [How to run GridGain on JDK 9,10 and 11](https://docs.gridgain.com/docs/getting-started#section-running-gridgain-with-java-9-10-11)
 
 To set up local IDE to easier access to examples, it is possible to add following options as default for all applications
 
