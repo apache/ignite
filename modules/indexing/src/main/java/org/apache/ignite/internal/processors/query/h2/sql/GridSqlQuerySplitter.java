@@ -267,8 +267,6 @@ public class GridSqlQuerySplitter {
         // Do the actual query split. We will update the original query AST, need to be careful.
         splitter.splitQuery(qry);
 
-        String normalizedOriginalSql = qry.getSQL();
-
         assert !F.isEmpty(splitter.mapSqlQrys): "map"; // We must have at least one map query.
         assert splitter.rdcSqlQry != null: "rdc"; // We must have a reduce query.
 
@@ -309,8 +307,7 @@ public class GridSqlQuerySplitter {
             splitter.extractor.mergeMapQueries(splitter.mapSqlQrys),
             cacheIds,
             mvccEnabled,
-            locSplit,
-            normalizedOriginalSql
+            locSplit
         );
     }
 

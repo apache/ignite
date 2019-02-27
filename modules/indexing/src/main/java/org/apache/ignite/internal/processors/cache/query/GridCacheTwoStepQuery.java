@@ -67,9 +67,6 @@ public class GridCacheTwoStepQuery {
     /** Number of positional arguments in the sql. */
     private final int paramsCnt;
 
-    /** Normalized (after h2 parser) initial SQL string. */
-    private final String normalizedOriginalSql;
-
     /**
      * @param originalSql Original query SQL.
      * @param tbls Tables in query.
@@ -86,8 +83,7 @@ public class GridCacheTwoStepQuery {
         PartitionResult derivedPartitions,
         List<Integer> cacheIds,
         boolean mvccEnabled,
-        boolean locSplit,
-        String normalizedOriginalSql
+        boolean locSplit
     ) {
         this.originalSql = originalSql;
         this.paramsCnt = paramsCnt;
@@ -101,7 +97,6 @@ public class GridCacheTwoStepQuery {
         this.cacheIds = cacheIds;
         this.mvccEnabled = mvccEnabled;
         this.locSplit = locSplit;
-        this.normalizedOriginalSql = normalizedOriginalSql;
     }
 
     /**
@@ -224,13 +219,6 @@ public class GridCacheTwoStepQuery {
      */
     public int parametersCount() {
         return paramsCnt;
-    }
-
-    /**
-     * @return Normalized (after h2 parser) initial SQL string.
-     */
-    public String normalizedOriginalSql() {
-        return normalizedOriginalSql;
     }
 
     /** {@inheritDoc} */
