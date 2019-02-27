@@ -313,7 +313,14 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
             // By reserving, we make sure that partition won't be unloaded while processed.
             if (part.reserve()) {
-                if (forceKeys || (part.state() == OWNING || part.state() == LOST)) {
+                boolean mvccNoOwners = false;
+
+                // Force key request is disabled for MVCC. So if there are no partition owners for the given key
+                // we need to set flag forceKeys to true to avoid useless remapping to other non-owning partitions.
+                if (cctx.mvccEnabled())
+                    mvccNoOwners = cctx.topology().owners(cctx.affinity().partition(key), topVer).isEmpty();
+
+                if (forceKeys || (part.state() == OWNING || part.state() == LOST) || mvccNoOwners) {
                     this.part = part.id();
 
                     return true;

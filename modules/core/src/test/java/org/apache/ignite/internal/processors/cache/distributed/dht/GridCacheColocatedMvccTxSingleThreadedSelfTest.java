@@ -44,8 +44,6 @@ public class GridCacheColocatedMvccTxSingleThreadedSelfTest extends IgniteMvccTx
 
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
 
-        ccfg.setRebalanceDelay(Long.MAX_VALUE);;
-
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
