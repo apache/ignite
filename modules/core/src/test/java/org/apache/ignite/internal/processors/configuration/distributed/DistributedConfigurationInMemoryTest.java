@@ -15,18 +15,12 @@
  * limitations under the License.
  */
 
-import {AppStore, USER, ofType, hideNavigationMenuItem, showNavigationMenuItem} from '..';
-import {map} from 'rxjs/operators';
+package org.apache.ignite.internal.processors.configuration.distributed;
 
-export class UIEffects {
-    static $inject = ['Store'];
-    constructor(private store: AppStore) {}
-
-    toggleQueriesNavItemEffect$ = this.store.actions$.pipe(
-        ofType(USER),
-        map((action) => {
-            const QUERY_LABEL = 'Queries';
-            return action.user.becomeUsed ? hideNavigationMenuItem(QUERY_LABEL) : showNavigationMenuItem(QUERY_LABEL);
-        })
-    )
+/** */
+public class DistributedConfigurationInMemoryTest extends DistributedConfigurationAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected boolean isPersistent() {
+        return false;
+    }
 }
