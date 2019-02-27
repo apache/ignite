@@ -40,6 +40,7 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
@@ -173,7 +174,7 @@ class GridUpdateNotifier {
 
             for (PluginProvider provider : pluginProviders)
                 pluginsBuilder.a("&").a(provider.name() + "-plugin-version").a("=").
-                    a(encode(provider.version(), CHARSET));
+                    a(encode(Optional.ofNullable(provider.version()).orElse("UNKNOWN"), CHARSET));
 
             pluginsVers = pluginsBuilder.toString();
 
