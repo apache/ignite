@@ -48,6 +48,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.FOR_VACUUM;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
 
@@ -259,7 +260,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
                         grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
-                    if (incomplete == null || (rowData == KEY_ONLY && key != null))
+                    if (incomplete == null || ((rowData == KEY_ONLY || rowData == FOR_VACUUM) && key != null))
                         return;
 
                     nextLink = incomplete.getNextLink();
@@ -487,7 +488,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
 
-            if (rowData == RowData.KEY_ONLY)
+            if (rowData == RowData.KEY_ONLY || rowData == FOR_VACUUM)
                 return;
         }
         else
@@ -856,7 +857,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
         LINK_ONLY,
 
         /** */
-        LINK_WITH_HEADER
+        LINK_WITH_HEADER,
+
+        /** */
+        FOR_VACUUM,
     }
 
     /** {@inheritDoc} */

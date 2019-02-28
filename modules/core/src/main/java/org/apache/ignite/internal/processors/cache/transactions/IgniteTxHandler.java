@@ -1914,8 +1914,6 @@ public class IgniteTxHandler {
 
                             try {
                                 if (entries == null) {
-                                    assert locPart.state() == GridDhtPartitionState.OWNING;
-
                                     switch (op) {
                                         case DELETE:
                                             updRes = entry.mvccRemove(

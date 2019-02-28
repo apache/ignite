@@ -382,12 +382,7 @@ public class TxLog implements DbCheckpointListener {
             TxLogIO logIO = (TxLogIO)io;
             int offset = io.offset(idx);
 
-            long major = logIO.getMajor(pageAddr, offset);
-            long minor = logIO.getMinor(pageAddr, offset);
-
-            assert (major == major() && minor <= minor()) || major < major();
-
-            rows.add(new TxKey(major, minor));
+            rows.add(new TxKey(logIO.getMajor(pageAddr, offset), logIO.getMinor(pageAddr, offset)));
 
             return true;
         }

@@ -303,7 +303,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         int opCntr = rawNewMvccOperationCounter(addr, 0);
 
-        rawNewMvccOperationCounter(addr, 0, (opCntr & ~MVCC_HINTS_MASK) | (txState << MVCC_HINTS_BIT_OFF));
+        rawNewMvccOperationCounter(addr, 0, (opCntr & ~MVCC_HINTS_MASK) | ((int)txState << MVCC_HINTS_BIT_OFF));
     }
 
     /**

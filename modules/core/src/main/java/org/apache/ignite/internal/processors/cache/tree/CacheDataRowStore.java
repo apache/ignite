@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -102,7 +104,7 @@ public class CacheDataRowStore extends RowStore {
      * @return Search row.
      */
     MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr, int opCntr) {
-        MvccDataRow dataRow = new MvccDataRow(
+        MvccDataRow row = new MvccDataRow(
             grp,
             hash,
             link,
@@ -114,7 +116,18 @@ public class CacheDataRowStore extends RowStore {
             SKIP_VER.get()
         );
 
-        return initDataRow(dataRow, cacheId);
+        // Actualize row state instantly for all readers, but vacuum.
+        if (rowData != CacheDataRowAdapter.RowData.FOR_VACUUM) {
+            assert MvccUtils.mvccVersionIsValid(row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter());
+
+            if (row.mvccTxState() == TxState.NA)
+                row.mvccTxState(MvccUtils.state(grp, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter()));
+
+            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA && row.newMvccTxState() == TxState.NA)
+                row.newMvccTxState(MvccUtils.state(grp, row.newMvccCoordinatorVersion(), row.newMvccCounter(), row.newMvccOperationCounter()));
+        }
+
+        return initDataRow(row, cacheId);
     }
 
     /**

@@ -725,8 +725,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @return History entries.
      * @throws IgniteCheckedException, if failed.
      */
-    private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist)
-        throws IgniteCheckedException {
+    private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist) {
         List<GridCacheEntryInfo> res = new ArrayList<>();
 
         for (int i = 0; i < hist.size(); i++) {
@@ -759,12 +758,11 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                     MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter()));
             }
 
-            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA) {
-                if (MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0) {
-                    entry.newMvccTxState(row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
-                        MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                            row.newMvccOperationCounter()));
-                }
+            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA
+                && MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0) {
+                entry.newMvccTxState(row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
+                    MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
+                        row.newMvccOperationCounter()));
             }
 
             res.add(entry);
