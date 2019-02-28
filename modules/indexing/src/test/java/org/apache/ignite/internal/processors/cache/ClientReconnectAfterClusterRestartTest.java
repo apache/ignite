@@ -37,6 +37,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,6 +53,9 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     /** Cache params. */
     private static final String CACHE_PARAMS = "PPRB_PARAMS";
 
+    /** */
+    private int joinTimeout;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -66,6 +70,9 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             cfg.setCacheConfiguration(ccfg);
         }
+
+        if (joinTimeout != 0 && getTestIgniteInstanceName(1).equals(igniteInstanceName))
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(joinTimeout);
 
         return cfg;
     }
@@ -112,8 +119,33 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         return ccfg;
     }
 
-    /** */
+    /**
+     * @throws Exception if failed.
+     */
     public void testReconnectClient() throws Exception {
+        checkReconnectClient();
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testReconnectClient10sTimeout() throws Exception {
+        joinTimeout = 10_000;
+
+        checkReconnectClient();
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testReconnectClient2sTimeout() throws Exception {
+        joinTimeout = 2_000;
+
+        checkReconnectClient();
+    }
+
+    /** */
+    public void checkReconnectClient() throws Exception {
         try {
             startGrid(SERVER_ID);
 
