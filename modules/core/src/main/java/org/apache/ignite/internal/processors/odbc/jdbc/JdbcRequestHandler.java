@@ -595,7 +595,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 JdbcQueryExecuteResult res;
 
                 if (cur.isQuery())
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext());
+                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
+                        ((QueryCursorImpl<List<?>>)fieldsCur).partitionResult());
                 else {
                     List<List<Object>> items = cur.fetchRows();
 

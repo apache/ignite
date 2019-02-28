@@ -1675,6 +1675,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             cursor.fieldsMeta(meta);
 
+            // TODO: 28.02.19 Consider using constructor instead of setter.
+            cursor.partitionResult(derivedParts);
+
             cursorCreated = true;
 
             return cursor;

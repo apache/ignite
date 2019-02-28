@@ -17,15 +17,37 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRawBinarylizable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Common node of partition tree.
  */
-public interface PartitionNode {
+public interface PartitionNode extends JdbcRawBinarylizable{
+
+    /** {@link PartitionAllNode} type. */
+    static final byte ALL_NODE = 1;
+
+    /** {@link PartitionCompositeNode} type. */
+    static final byte COMPOSITE_NODE = 2;
+
+    /** {@link PartitionConstantNode} type. */
+    static final byte CONST_NODE = 3;
+
+    /** {@link PartitionGroupNode} type. */
+    static final byte GROUP_NODE = 4;
+
+    /** {@link PartitionNoneNode} type. */
+    static final byte NONE_NODE = 5;
+
+    /** {@link PartitionParameterNode} type. */
+    static final byte PARAM_NODE = 6;
+
     /**
      * Get partitions.
      *
@@ -48,5 +70,42 @@ public interface PartitionNode {
      */
     default PartitionNode optimize() {
         return this;
+    }
+
+    /**
+     * Returns debinarized partition node.
+     *
+     * @param reader Binary reader.
+     * @param ver Protocol verssion.
+     * @return Debinarized partition node.
+     * @throws BinaryObjectException On error.
+     */
+    public static PartitionNode readNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+
+        int nodeType = reader.readByte();
+
+        switch (nodeType) {
+            case ALL_NODE:
+                return PartitionAllNode.INSTANCE;
+
+//            case COMPOSITE_NODE:
+//                return new PartitionCompositeNode();
+//
+            case CONST_NODE:
+                return PartitionConstantNode.readNode(reader, ver);
+//
+//            case GROUP_NODE:
+//                return new PartitionGroupNode();
+
+            case NONE_NODE:
+                return PartitionNoneNode.INSTANCE;
+
+//            case PARAM_NODE:
+//                return new PartitionParameterNode();
+
+            default:
+                throw new IllegalArgumentException("Partition node type " + nodeType + " not supported.");
+        }
     }
 }

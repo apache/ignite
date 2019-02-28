@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
@@ -49,5 +53,17 @@ public class PartitionNoneNode implements PartitionNode {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionNoneNode.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        writer.writeByte(NONE_NODE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        // No-op.
     }
 }

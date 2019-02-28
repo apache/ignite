@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRe
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -92,6 +94,9 @@ public class JdbcThinConnection implements Connection {
 
     /** Zero timeout as query timeout means no timeout. */
     static final int NO_TIMEOUT = 0;
+
+    /** Partition tree query cache size. */
+    public static final int PART_TREE_QRY_CACHE_SIZE = 100_000;
 
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
@@ -134,6 +139,10 @@ public class JdbcThinConnection implements Connection {
 
     /** Query timeout timer */
     private final Timer timer;
+
+    /** Partition tree query cache with partition results in order to use them for best effort affinity. */
+    private final GridBoundedLinkedHashMap<String, String> partTreeQryCache =
+        new GridBoundedLinkedHashMap<>(PART_TREE_QRY_CACHE_SIZE);
 
     /**
      * Creates new connection.
@@ -793,6 +802,10 @@ public class JdbcThinConnection implements Connection {
             }
             else if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
+
+            if (res.response() instanceof JdbcQueryExecuteResult)
+                partTreeQryCache.put(((JdbcQueryExecuteRequest)req).sqlQuery(),
+                    ((JdbcQueryExecuteResult)res.response()).partitionResult().toString());
 
             return (R)res.response();
         }

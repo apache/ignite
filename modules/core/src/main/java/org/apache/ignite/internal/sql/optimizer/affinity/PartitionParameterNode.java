@@ -18,6 +18,10 @@
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -90,5 +94,17 @@ public class PartitionParameterNode extends PartitionSingleNode {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionParameterNode.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        writer.writeByte(PARAM_NODE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        // No-op.
     }
 }

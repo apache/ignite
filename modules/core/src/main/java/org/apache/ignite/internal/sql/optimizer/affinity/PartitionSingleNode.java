@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Node with a single partition.
