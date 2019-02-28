@@ -93,6 +93,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_UPDATE_NOTIFIER = "IGNITE_UPDATE_NOTIFIER";
 
     /**
+     * Url of updates service.
+     */
+    public static final String GRIDGAIN_UPDATE_URL = "GRIDGAIN_UPDATE_URL";
+
+    /**
      * This system property defines interval in milliseconds in which Ignite will check
      * thread pool state for starvation. Zero value will disable this checker.
      */

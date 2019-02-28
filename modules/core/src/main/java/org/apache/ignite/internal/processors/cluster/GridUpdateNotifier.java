@@ -18,28 +18,45 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.io.IOException;
-import java.util.Comparator;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteProperties;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
+
+import static java.net.URLEncoder.encode;
 
 /**
  * This class is responsible for notification about new version availability.
  * <p>
  * Note also that this connectivity is not necessary to successfully start the system as it will
- * gracefully ignore any errors occurred during notification and verification process.
+ * gracefully ignore any errors occurred during notification and verification process.</p>
+ * <p>
+ * TODO GG-14736 rework this for GridGain Community versions.</p>
  */
 class GridUpdateNotifier {
     /** Default encoding. */
-    private static final String CHARSET = "UTF-8";
+    static final String CHARSET = "UTF-8";
 
-    /** Version comparator. */
-    private static final VersionComparator VER_COMPARATOR = new VersionComparator();
+    /** Access URL to be used to access latest version data. */
+    private final String updStatusParams = IgniteProperties.get("ignite.update.status.params");
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
@@ -47,14 +64,14 @@ class GridUpdateNotifier {
     /** Sleep milliseconds time for worker thread. */
     private static final int WORKER_THREAD_SLEEP_TIME = 5000;
 
-    /** Default URL for request Ignite updates. */
-    private final static String DEFAULT_IGNITE_UPDATES_URL = "https://ignite.apache.org/latest";
-
-    /** Default HTTP parameter for request Ignite updates. */
-    private final static String DEFAULT_IGNITE_UPDATES_PARAMS = "?ver=";
+    /** Default url for request GridGain updates. */
+    static final String DEFAULT_GRIDGAIN_UPDATES_URL = "https://www.gridgain.com/notifier/update";
 
     /** Grid version. */
     private final String ver;
+
+    /** Discovery SPI. */
+    private final GridDiscoveryManager discoSpi;
 
     /** Error during obtaining data. */
     private volatile Exception err;
@@ -71,6 +88,18 @@ class GridUpdateNotifier {
     /** Whether or not to report only new version. */
     private volatile boolean reportOnlyNew;
 
+    /** System properties. */
+    private final String vmProps;
+
+    /** Plugins information for request. */
+    private final String pluginsVers;
+
+    /** Kernal gateway. */
+    private final GridKernalGateway gw;
+
+    /** Number of server nodes in topology. */
+    private int srvNodes = 0;
+
     /** */
     private long lastLog = -1;
 
@@ -80,58 +109,128 @@ class GridUpdateNotifier {
     /** Worker thread to process http request. */
     private final Thread workerThread;
 
-    /** Http client for getting Ignite updates */
+    /** Http client for getting Ignite updates. */
     private final HttpIgniteUpdatesChecker updatesChecker;
+
+    /** Excluded VM props. */
+    private static final Set<String> PROPS_TO_EXCLUDE = new HashSet<>();
+
+    static {
+        PROPS_TO_EXCLUDE.add("sun.boot.library.path");
+        PROPS_TO_EXCLUDE.add("sun.boot.class.path");
+        PROPS_TO_EXCLUDE.add("java.class.path");
+        PROPS_TO_EXCLUDE.add("java.endorsed.dirs");
+        PROPS_TO_EXCLUDE.add("java.library.path");
+        PROPS_TO_EXCLUDE.add("java.home");
+        PROPS_TO_EXCLUDE.add("java.ext.dirs");
+        PROPS_TO_EXCLUDE.add("user.dir");
+        PROPS_TO_EXCLUDE.add("user.home");
+        PROPS_TO_EXCLUDE.add("user.name");
+        PROPS_TO_EXCLUDE.add("IGNITE_HOME");
+        PROPS_TO_EXCLUDE.add("IGNITE_CONFIG_URL");
+    }
 
     /**
      * Creates new notifier with default values.
      *
      * @param igniteInstanceName igniteInstanceName
      * @param ver Compound Ignite version.
+     * @param gw Kernal gateway.
+     * @param discovery Discovery SPI.
+     * @param pluginProviders Kernal gateway.
      * @param reportOnlyNew Whether or not to report only new version.
      * @param updatesChecker Service for getting Ignite updates
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(
-        String igniteInstanceName,
-        String ver,
-        boolean reportOnlyNew,
-        HttpIgniteUpdatesChecker updatesChecker
-    ) throws IgniteCheckedException {
-        this.ver = ver;
-        this.igniteInstanceName = igniteInstanceName == null ? "null" : igniteInstanceName;
-        this.updatesChecker = updatesChecker;
-        this.reportOnlyNew = reportOnlyNew;
+    GridUpdateNotifier(String igniteInstanceName, String ver, GridKernalGateway gw,
+        GridDiscoveryManager discovery,
+        Collection<PluginProvider> pluginProviders,
+        boolean reportOnlyNew, HttpIgniteUpdatesChecker updatesChecker) throws IgniteCheckedException {
+        try {
+            this.ver = regularize(ver);
+            this.igniteInstanceName = igniteInstanceName == null ? "null" : igniteInstanceName;
+            this.gw = gw;
+            this.updatesChecker = updatesChecker;
 
-        workerThread = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    while(!Thread.currentThread().isInterrupted()) {
-                        Runnable cmd0 = cmd.getAndSet(null);
+            SB pluginsBuilder = new SB();
 
-                        if (cmd0 != null)
-                            cmd0.run();
-                        else
-                            Thread.sleep(WORKER_THREAD_SLEEP_TIME);
+            for (PluginProvider provider : pluginProviders)
+                pluginsBuilder.a("&").a(provider.name() + "-plugin-version").a("=").
+                    a(encode(provider.version(), CHARSET));
+
+            pluginsVers = pluginsBuilder.toString();
+
+            this.reportOnlyNew = reportOnlyNew;
+
+            vmProps = getSystemProperties();
+
+            discoSpi = discovery;
+
+            workerThread = new Thread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        while (!Thread.currentThread().isInterrupted()) {
+                            Runnable cmd0 = cmd.getAndSet(null);
+
+                            if (cmd0 != null)
+                                cmd0.run();
+                            else
+                                //noinspection BusyWait
+                                Thread.sleep(WORKER_THREAD_SLEEP_TIME);
+                        }
+                    }
+                    catch (InterruptedException ignore) {
+                        // No-op.
                     }
                 }
-                catch (InterruptedException ignore) {
-                    // No-op.
-                }
-            }
-        }, "upd-ver-checker");
+            }, "upd-ver-checker");
 
-        workerThread.setDaemon(true);
+            workerThread.setDaemon(true);
 
-        workerThread.start();
+            workerThread.start();
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new IgniteCheckedException("Failed to encode.", e);
+        }
     }
 
     /**
-     * Creates new notifier with default Ignite updates URL
+     * Regularize version. Version 8.7.3-pXXX should be equal to 8.7.3-pYYY
+     *
+     * @param ver Version.
+     * @return Regularized version.
      */
-    GridUpdateNotifier(String igniteInstanceName, String ver, boolean reportOnlyNew) throws IgniteCheckedException {
-        this(igniteInstanceName, ver, reportOnlyNew,
-            new HttpIgniteUpdatesChecker(DEFAULT_IGNITE_UPDATES_URL, DEFAULT_IGNITE_UPDATES_PARAMS + ver, CHARSET));
+    private String regularize(String ver) {
+        int pos = ver.indexOf('-');
+        return ver.substring(0, pos >= 0 ? pos : ver.length());
+    }
+
+    /**
+     * Gets system properties.
+     *
+     * @return System properties.
+     */
+    private static String getSystemProperties() {
+        try {
+            StringWriter sw = new StringWriter();
+
+            try {
+                Properties snapshot = IgniteSystemProperties.snapshot();
+
+                for (String toExclude : PROPS_TO_EXCLUDE)
+                    snapshot.remove(toExclude);
+
+                snapshot.store(new PrintWriter(sw), "");
+            }
+            catch (IOException ignore) {
+                return null;
+            }
+
+            return sw.toString();
+        }
+        catch (SecurityException ignore) {
+            return null;
+        }
     }
 
     /**
@@ -159,15 +258,14 @@ class GridUpdateNotifier {
      * Starts asynchronous process for retrieving latest version data.
      *
      * @param log Logger.
-     * @param first First checking.
      */
-    void checkForNewVersion(IgniteLogger log, boolean first) {
+    void checkForNewVersion(IgniteLogger log) {
         assert log != null;
 
         log = log.getLogger(getClass());
 
         try {
-            cmd.set(new UpdateChecker(log, first));
+            cmd.set(new UpdateChecker(log));
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to schedule a thread due to execution rejection (safely ignoring): " +
@@ -190,30 +288,25 @@ class GridUpdateNotifier {
 
         downloadUrl = downloadUrl != null ? downloadUrl : IgniteKernal.SITE;
 
-        if (latestVer != null) {
-            int cmp = VER_COMPARATOR.compare(latestVer, ver);
-
-            if (cmp == 0) {
+        if (latestVer != null)
+            if (latestVer.equals(ver)) {
                 if (!reportOnlyNew)
                     throttle(log, false, "Your version is up to date.");
             }
-            else if (cmp > 0)
+            else
                 throttle(log, true, "New version is available at " + downloadUrl + ": " + latestVer);
-        }
-        else
-            if (!reportOnlyNew)
-                throttle(log, false, "Update status is not available.");
+        else if (!reportOnlyNew)
+            throttle(log, false, "Update status is not available.");
     }
 
     /**
-     *
      * @param log Logger to use.
      * @param warn Whether or not this is a warning.
      * @param msg Message to log.
      */
     private void throttle(IgniteLogger log, boolean warn, String msg) {
-        assert(log != null);
-        assert(msg != null);
+        assert (log != null);
+        assert (msg != null);
 
         long now = U.currentTimeMillis();
 
@@ -245,33 +338,43 @@ class GridUpdateNotifier {
         /** Logger. */
         private final IgniteLogger log;
 
-        /** First. */
-        private final boolean first;
-
         /**
          * Creates checked with given logger.
          *
          * @param log Logger.
          */
-        UpdateChecker(IgniteLogger log, boolean first) {
+        UpdateChecker(IgniteLogger log) {
             super(igniteInstanceName, "grid-version-checker", log);
 
             this.log = log.getLogger(getClass());
-            this.first = first;
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
+                String stackTrace = gw != null ? gw.userStackTrace() : null;
+
+                srvNodes = discoSpi.serverNodes(discoSpi.topologyVersionEx()).size();
+
+                String postParams =
+                    "igniteInstanceName=" + encode(igniteInstanceName, CHARSET) +
+                        (!F.isEmpty(updStatusParams) ? "&" + updStatusParams : "") +
+                        "&srvNodes=" + srvNodes +
+                        (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
+                        (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
+                        pluginsVers;
+
+                System.out.println(postParams);
+
                 if (!isCancelled()) {
                     try {
-                        String updatesRes = updatesChecker.getUpdates(first);
+                        String updatesRes = updatesChecker.getUpdates(postParams);
 
                         String[] lines = updatesRes.split("\n");
 
                         for (String line : lines) {
                             if (line.contains("version"))
-                                latestVer = obtainVersionFrom(line);
+                                latestVer = regularize(obtainVersionFrom(line));
                             else if (line.contains("downloadUrl"))
                                 downloadUrl = obtainDownloadUrlFrom(line);
                         }
@@ -297,8 +400,8 @@ class GridUpdateNotifier {
         /**
          * Gets the version from the current {@code node}, if one exists.
          *
-         * @param  line Line which contains value for extract.
-         * @param  metaName Name for extract.
+         * @param line Line which contains value for extract.
+         * @param metaName Name for extract.
          * @return Version or {@code null} if one's not found.
          */
         @Nullable private String obtainMeta(String metaName, String line) {
@@ -311,7 +414,7 @@ class GridUpdateNotifier {
         /**
          * Gets the version from the current {@code node}, if one exists.
          *
-         * @param  line Line which contains value for extract.
+         * @param line Line which contains value for extract.
          * @return Version or {@code null} if one's not found.
          */
         @Nullable private String obtainVersionFrom(String line) {
@@ -326,37 +429,6 @@ class GridUpdateNotifier {
          */
         @Nullable private String obtainDownloadUrlFrom(String line) {
             return obtainMeta("downloadUrl=", line);
-        }
-    }
-
-    /**
-     * Ignite version comparator.
-     */
-    private static final class VersionComparator implements Comparator<String> {
-        /** Dot pattern. */
-        private static final String DOT_PATTERN = "\\.";
-
-        /** Dash pattern. */
-        private static final String DASH_PATTERN = "-";
-
-        /** {@inheritDoc} */
-        @Override public int compare(String o1, String o2) {
-            if (o1.equals(o2))
-                return 0;
-
-            String[] ver1 = o1.split(DOT_PATTERN, 3);
-            String[] ver2 = o2.split(DOT_PATTERN, 3);
-
-            assert ver1.length == 3;
-            assert ver2.length == 3;
-
-            if (Integer.valueOf(ver1[0]) >= Integer.valueOf(ver2[0]) &&
-                Integer.valueOf(ver1[1]) >= Integer.valueOf(ver2[1]) &&
-                Integer.valueOf(ver1[2].split(DASH_PATTERN)[0]) >= Integer.valueOf(ver2[2].split(DASH_PATTERN)[0]))
-
-                return 1;
-            else
-                return -1;
         }
     }
 }
