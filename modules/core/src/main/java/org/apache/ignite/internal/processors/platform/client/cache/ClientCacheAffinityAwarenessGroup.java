@@ -146,6 +146,8 @@ class ClientCacheAffinityAwarenessGroup
      * @param writer Writer.
      */
     public void write(BinaryRawWriter writer) {
+        writer.writeBoolean(applicable);
+
         writer.writeInt(cacheDescs.size());
 
         for (DynamicCacheDescriptor desc: cacheDescs.values()) {
@@ -167,8 +169,6 @@ class ClientCacheAffinityAwarenessGroup
                 writer.writeInt(affinityKeyFieldId);
             }
         }
-
-        writer.writeBoolean(applicable);
 
         if (!applicable)
             return;
