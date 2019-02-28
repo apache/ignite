@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface PartitionUpdateCounter {
     /** */
-    public static PartitionUpdateCounter EMPTY = new PartitionUpdateCounter() {
+    public static final PartitionUpdateCounter EMPTY = new PartitionUpdateCounter() {
         @Override public void init(long initUpdCntr, @Nullable byte[] rawData) {
             throw new UnsupportedOperationException();
         }
