@@ -403,6 +403,12 @@ public final class UpdatePlanBuilder {
                 IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
         if (fastUpdate != null) {
+            if (!ALLOW_KEY_VAL_COLUMNS) {
+                throw new IgniteSQLException(
+                    "Composite _VAL column is not supported at INSERT/UPDATE/MERGE statements",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
+
             return new UpdatePlan(
                 mode,
                 h2Tbl,
