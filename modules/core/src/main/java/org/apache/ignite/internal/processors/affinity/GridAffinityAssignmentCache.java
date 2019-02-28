@@ -370,7 +370,7 @@ public class GridAffinityAssignmentCache {
             }
 
             if (skipCalculation)
-                assignment = prevAssignment;
+                assignment = IdealAffinityAssignment.createWithPreservedPrimaries(topVer, prevAssignment.assignment(), prevAssignment);
             else if (hasBaseline && !changedBaseline) {
                 if (baselineAssignment == null) {
                     List<ClusterNode> baselineAffinityNodes = discoCache.state().baselineTopology()

@@ -1274,7 +1274,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             return cctx.kernalContext().cache().cacheGroups().stream()
                 .filter(grp -> !grp.isLocal())
                 .filter(grp -> !grp.isRecoveryMode())
-                .map(grp -> getOrCreateGroupHolder(topVer, cachesRegistry.group(grp.groupId())))
+                .map(grp -> getOrCreateGroupHolder(topVer, cctx.cache().cacheGroupDescriptors().get(grp.groupId())))
                 .collect(Collectors.toList());
         }
         else
@@ -2171,13 +2171,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             crd ? allAffinityHolders(evts.topologyVersion()) : existedAffinityHolders(evts.topologyVersion()),
             aff -> aff.calculate(evts.topologyVersion(), evts, evts.discoveryCache()),
             holder -> {
-                CacheGroupContext grp = cctx.cache().cacheGroup(holder.groupId());
-
-                assert grp != null;
-
                 initAffinityOnNodeJoin(
                     evts,
-                    evts.nodeJoined(grp.receivedFrom()),
+                    evts.nodeJoined(holder.desc.receivedFrom()),
                     holder.affinity(),
                     waitRebalanceInfo,
                     holder.rebalanceEnabled
@@ -2206,7 +2202,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
 
                 fut.timeBag().finishLocalStage("Affinity initialization (node join) " +
-                    "[grp=" + grp.cacheOrGroupName() + ", crd=" + crd + "]");
+                    "[grp=" + holder.desc.cacheOrGroupName() + ", crd=" + crd + "]");
 
                 return null;
             });
@@ -2260,10 +2256,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert aff.idealAffinityAssignment() != null : "Ideal affinity assignment is not available.";
         assert aff.idealAffinityAssignment().topologyVersion().equals(evts.topologyVersion()) :
             "Ideal affinity assignment is not calculated for given version [grp=" + aff.cacheOrGroupName()
-                + ",topVer=" + evts.topologyVersion() + "]";
+                + ",calculatedVer=" + aff.idealAffinityAssignment().topologyVersion() + ",topVer=" + evts.topologyVersion() + "]";
 
-        if (addedOnExchnage && !aff.lastVersion().equals(evts.topologyVersion())) {
-            aff.initialize(evts.topologyVersion(), aff.idealAssignment());
+        if (addedOnExchnage) {
+            if (!aff.lastVersion().equals(evts.topologyVersion()))
+                aff.initialize(evts.topologyVersion(), aff.idealAssignment());
 
             return;
         }
@@ -2280,6 +2277,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (latePrimary) {
             for (ClusterNode joinedNode : evts.joinedServerNodes()) {
                 List<Integer> primaries = idealAssignment.idealPrimaries(joinedNode);
+
+                if (primaries == null)
+                    continue;
 
                 for (int p : primaries) {
                     List<ClusterNode> curNodes = curAssignment.get(p);
