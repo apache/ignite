@@ -2050,7 +2050,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * @param msg
+     * Sweeps failedNodes collection in msg and fills it with failed nodes observed by local node.
+     *
+     * @param msg {@link TcpDiscoveryAbstractMessage} to sweep failed nodes from.
      */
     private void sweepMessageFailedNodes(TcpDiscoveryAbstractMessage msg) {
         msg.failedNodes(null);
