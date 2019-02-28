@@ -165,12 +165,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     private PendingEntriesTree pendingEntries;
 
     /** */
-    protected volatile boolean hasPendingEntries;
-
-    /** Timestamp when next clean try will be allowed. Used for throttling on per-group basis. */
-    protected volatile long nextCleanTime;
-
-    /** */
     private final GridAtomicLong globalRmvId = new GridAtomicLong(U.currentTimeMillis() * 1000_000);
 
     /** */
@@ -1335,16 +1329,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     ) throws IgniteCheckedException {
         assert !cctx.isNear() : cctx.name();
 
-        if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
-            return false;
-
         assert pendingEntries != null;
 
         int cleared = expireInternal(cctx, c, amount);
-
-        // Throttle if there is nothing to clean anymore.
-        if (cleared < amount)
-            nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
 
         return amount != -1 && cleared >= amount;
     }
@@ -2248,7 +2235,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            boolean cleanup = cctx.queries().enabled() || hasPendingEntries;
+            boolean cleanup = cctx.queries().enabled() || cctx.ttl().hasPendingEntries();
 
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -2536,7 +2523,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (pendingTree() != null && expireTime != 0) {
                 pendingTree().putx(new PendingRow(cacheId, expireTime, newRow.link()));
 
-                hasPendingEntries = true;
+                cctx.ttl().hasPendingEntries(true);
             }
         }
 

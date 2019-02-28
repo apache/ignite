@@ -259,7 +259,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             @Override public boolean apply() {
                 return cache.size() == 0;
             }
-        }, TimeUnit.SECONDS.toMillis(EXPIRATION_TIMEOUT + 1));
+        }, TimeUnit.SECONDS.toMillis(EXPIRATION_TIMEOUT + EXPIRATION_TIMEOUT / 2));
 
         assertTrue("Cache is not empty.", awaited);
 
