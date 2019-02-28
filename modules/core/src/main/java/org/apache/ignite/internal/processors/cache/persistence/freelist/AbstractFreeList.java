@@ -653,21 +653,45 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
-        put(bag, 0, 0, 0L, REUSE_BUCKET, IoStatisticsHolderNoOp.INSTANCE);
+        try {
+            put(bag, 0, 0, 0L, REUSE_BUCKET, IoStatisticsHolderNoOp.INSTANCE);
+        }
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to add page for recycle", t);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public long takeRecycledPage() throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
-        return takeEmptyPage(REUSE_BUCKET, null, IoStatisticsHolderNoOp.INSTANCE);
+        try {
+            return takeEmptyPage(REUSE_BUCKET, null, IoStatisticsHolderNoOp.INSTANCE);
+        }
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to take recycled page", t);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public long recycledPagesCount() throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
-        return storedPagesCount(REUSE_BUCKET);
+        try {
+            return storedPagesCount(REUSE_BUCKET);
+        }
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to count recycled pages", t);
+        }
     }
 
     /**
