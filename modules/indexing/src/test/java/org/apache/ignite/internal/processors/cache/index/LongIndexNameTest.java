@@ -34,8 +34,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,26 +45,6 @@ import org.junit.Test;
  * Regression test for the long index name.
  */
 public class LongIndexNameTest extends AbstractIndexingCommonTest {
-    /**
-     * To mask tree segment name, up to this value additional characters could be added:
-     *
-     * -------------+------------
-     * Added token  : bytes count
-     * -------------+------------
-     * typeId       : 11 (int)
-     * "_"          : 1
-     * "##"         : 2
-     * "H2Tree"     : 6
-     *  "%"         : 1
-     *  segmentsCnt : 11 (int)
-     *  cacheGroup  : 11 (int)
-     *  "_"         : 1
-     * -------------+------------
-     *  In total    : 44
-     */
-    private static final int ADDED_CHARS_MAX_LEN = 44;
-
-
     /**
      * Create configuration with persistence disabled.
      */
@@ -172,7 +152,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
                 // No-op. Just try to start the grid
                 return null;
             }
-        }, IgniteCheckedException.class, "Too long encoded indexName [maxAllowed=255");
+        }, IgniteCheckedException.class, "Index name is too long in UTF-8 encoding [maxAllowed=211");
     }
 
     @Test
@@ -225,7 +205,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
                 return null;
             }
-        }, IgniteSQLException.class, "Too long encoded indexName [maxAllowed=255");
+        }, IgniteSQLException.class, "Index name is too long in UTF-8 encoding [maxAllowed=211");
     }
 
     /**
@@ -253,23 +233,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
      * @param segmentsCnt Segments count.
      */
     private int maxIdxNameLength(int segmentsCnt) {
-        int otherLen = 0;
-
-        // Warning fragile!
-        int typeId = Person.class.getCanonicalName().toLowerCase().hashCode();
-
-        String typeIdToken = String.valueOf(typeId);
-
-        int longestSegLen = String.valueOf(segmentsCnt - 1).length();
-
-        otherLen += typeIdToken.length();
-        otherLen++; // _
-        otherLen += 2; // ##
-        otherLen += "H2Tree".length();
-        otherLen++; // %
-        otherLen += longestSegLen;
-
-        return IndexStorageImpl.MAX_IDX_NAME_LEN - otherLen;
+        return H2TreeIndex.MAX_PDS_UNMASKED_LEN;
     }
 
     // 11 + 1 + 2 + 6 + 1 + 11 + 11 + 1

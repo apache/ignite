@@ -249,6 +249,16 @@ public interface GridQueryIndexing {
         boolean isSql) throws IgniteCheckedException;
 
     /**
+     * Checks if {@linkplain #registerType} could be performed.
+     *
+     * @param cacheInfo Cache context info.
+     * @param desc Type descriptor.
+     * @throws IgniteCheckedException if cache described by specified descriptors could not be created.
+     */
+    public void validateTypeToRegister(GridCacheContextInfo cacheInfo, GridQueryTypeDescriptor desc)
+        throws IgniteCheckedException;
+
+    /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
      * the key should be removed from indexes other than one being updated.
      *

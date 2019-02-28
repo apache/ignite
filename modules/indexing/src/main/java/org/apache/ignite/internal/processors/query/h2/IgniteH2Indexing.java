@@ -335,6 +335,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void dynamicIndexCreate(String schemaName, String tblName, QueryIndexDescriptorImpl idxDesc,
         boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
+        H2TreeIndex.validatePdsIndexName(idxDesc.name());
+
         schemaMgr.createIndex(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor);
     }
 
@@ -1749,6 +1751,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public void validateTypeToRegister(GridCacheContextInfo cacheInfo,
+        GridQueryTypeDescriptor desc) throws IgniteCheckedException {
+
+        for (String idxName : desc.indexes().keySet()) {
+            if (CU.isPersistentCache(cacheInfo.config(), ctx.config().getDataStorageConfiguration()))
+                H2TreeIndex.validatePdsIndexName(idxName);
+        }
+
+        H2TreeIndex.validatePdsIndexName(H2TableDescriptor.PK_IDX_NAME);
+        H2TreeIndex.validatePdsIndexName(H2TableDescriptor.AFFINITY_KEY_IDX_NAME);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheContextInfo registeredCacheInfo(String cacheName) {
         for (H2TableDescriptor tbl : schemaMgr.tablesForCache(cacheName)) {
             if (F.eq(tbl.cacheName(), cacheName))
@@ -2112,6 +2127,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo)
         throws IgniteCheckedException {
+
         rowCache.onCacheRegistered(cacheInfo);
 
         schemaMgr.onCacheCreated(cacheName, schemaName, cacheInfo.config().getSqlFunctionClasses());

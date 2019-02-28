@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -45,9 +48,9 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
@@ -88,8 +91,6 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.CacheException;
-
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
@@ -103,6 +104,31 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
 public class H2TreeIndex extends H2TreeIndexBase {
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
     public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
+
+    /**
+     * To mask tree segment name, up to this number additional characters could be added. All added characters are
+     * ASCII symbols which means this number is the same as number of added UTF-8 bytes.
+     *
+     * <pre>
+     * -------------+-------------
+     *  Added token : bytes count
+     * -------------+-------------
+     *  typeId      : 11 (int)
+     *  "_"         : 1
+     *  "##"        : 2
+     *  "H2Tree"    : 6
+     *  "%"         : 1
+     *  segmentsCnt : 11 (int)
+     *  cacheGroup  : 11 (int)
+     *  "_"         : 1
+     * -------------+-------------
+     *  In total    : 44
+     *  <pre/>
+     */
+    public static final int MASKING_CHARS_MAX_LEN = 44;
+
+    /** Max index name before masking. */
+    public static final int MAX_PDS_UNMASKED_LEN = IndexStorageImpl.MAX_IDX_NAME_LEN - MASKING_CHARS_MAX_LEN;
 
     /** */
     private final H2Tree[] segments;
@@ -201,6 +227,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
 
+        // NOTE: this code should be consistent with H2TreeIndex.MASKING_CHARS_MAX_LEN
         treeName = BPlusTree.treeName((table.rowDescriptor() == null ? "" : typeId + "_") + idxName, "H2Tree");
 
         IndexColumnsInfo unwrappedColsInfo = new IndexColumnsInfo(unwrappedColsList, inlineSize);
@@ -930,5 +957,19 @@ public class H2TreeIndex extends H2TreeIndexBase {
         public List<InlineIndexHelper> inlineIdx() {
             return inlineIdx;
         }
+    }
+
+    /**
+     * Checks that index name is not too long in the UTF-8 encoding.
+     *
+     * @param name index name before masking.
+     */
+    public static void validatePdsIndexName(String name) throws IgniteCheckedException {
+        int encLen = name.getBytes(StandardCharsets.UTF_8).length;
+
+        if (encLen > MAX_PDS_UNMASKED_LEN)
+            throw new IgniteCheckedException("Index name is too long in UTF-8 encoding " +
+                "[maxAllowed=" + MAX_PDS_UNMASKED_LEN + ", endodedLength=" + encLen +
+                ", indexName=" + name + "].");
     }
 }

@@ -360,6 +360,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return false;
         }
 
+        @Override public void validateTypeToRegister(GridCacheContextInfo cacheInfo,
+            GridQueryTypeDescriptor desc) throws IgniteCheckedException {
+            // No validation.
+        }
+
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
             CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
