@@ -465,7 +465,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             QueryParserResult parseRes = parser.parse(schemaName, fieldsQry, false);
 
             if (parseRes.isDml()) {
-                UpdateResult updRes = executeUpdate(schemaName, parseRes.dml(), fieldsQry, true, filter, cancel);
+                QueryParserResultDml dml = parseRes.dml();
+
+                assert dml != null;
+
+                UpdateResult updRes = executeUpdate(schemaName, dml, fieldsQry, true, filter, cancel);
 
                 List<?> updResRow = Collections.singletonList(updRes.counter());
 
@@ -744,7 +748,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean fail = false;
 
         try {
-            UpdatePlan plan = updatePlan(dml);
+            UpdatePlan plan = dml.plan();
 
             List<List<?>> planRows = plan.createRows(args != null ? args : X.EMPTY_OBJECT_ARRAY);
 
@@ -1275,14 +1279,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 // Execute.
                 if (parseRes.isCommand()) {
-                    assert parseRes.command() != null;
+                    QueryParserResultCommand cmd = parseRes.command();
+
+                    assert cmd != null;
 
                     // Execute command.
                     FieldsQueryCursor<List<?>> cmdRes = executeCommand(
                         schemaName,
                         newQry,
                         cliCtx,
-                        parseRes.command()
+                        cmd
                     );
 
                     res.add(cmdRes);
@@ -1357,6 +1363,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             boolean fail = false;
 
             try {
+                if (!dml.mvccEnabled() && !updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
+                    throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
+                        "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
+                        "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
+                        "\"-DIGNITE_ALLOW_DML_INSIDE_TRANSACTION=true\")");
+                }
+
                 if (!loc)
                     return executeUpdateDistributed(schemaName, dml , qry, cancel);
                 else {
@@ -1529,7 +1542,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         IndexingQueryFilter filter = backupFilter(topVer, parts);
 
-        UpdatePlan plan = updatePlan(dml);
+        UpdatePlan plan = dml.plan();
 
         GridCacheContext planCctx = plan.cacheContext();
 
@@ -1577,6 +1590,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
                     try {
                         return res.iterator();
@@ -2168,10 +2182,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void awaitForReadyTopologyVersion(AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        IgniteInternalFuture<?> fut = ctx.cache().context().exchange().affinityReadyFuture(topVer);
-
-        if (fut != null)
-            fut.get();
+        ctx.cache().context().exchange().affinityReadyFuture(topVer).get();
     }
 
     /** {@inheritDoc} */
@@ -2270,7 +2281,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             List<Object[]> argss = fieldsQry0.batchedArguments();
 
-            UpdatePlan plan = updatePlan(dml);
+            UpdatePlan plan = dml.plan();
 
             GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -2382,7 +2393,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         long items = 0;
 
-        UpdatePlan plan = updatePlan(dml);
+        UpdatePlan plan = dml.plan();
 
         GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -2631,6 +2642,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
                     try {
                         return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), true);
@@ -2645,28 +2657,5 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
         return DmlUtils.processSelectResult(plan, cur, pageSize);
-    }
-
-    /**
-     * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
-     * if available.
-     *
-     * @param dml Command.
-     * @return Update plan.
-     */
-    @SuppressWarnings("IfMayBeConditional")
-    private UpdatePlan updatePlan(QueryParserResultDml dml
-    ) {
-        // Disallow updates inside transaction if this is not MVCC mode.
-        boolean inTx = ctx.cache().context().tm().inUserTx();
-
-        if (!dml.mvccEnabled() && !updateInTxAllowed && inTx) {
-            throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
-                "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
-                "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
-                "\"IGNITE_ALLOW_DML_INSIDE_TRANSACTION\"");
-        }
-
-        return dml.plan();
     }
 }
