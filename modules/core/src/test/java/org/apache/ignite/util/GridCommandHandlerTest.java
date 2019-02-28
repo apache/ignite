@@ -126,6 +126,7 @@ import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -652,11 +653,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(3, ignite.cluster().currentBaselineTopology().size());
 
-        Thread.sleep(3000L);
+        assertTrue(waitForCondition(() -> ignite.cluster().currentBaselineTopology().size() == 2, 10000));
 
         Collection<BaselineNode> baselineNodesAfter = ignite.cluster().currentBaselineTopology();
-
-        assertEquals(2, baselineNodesAfter.size());
 
         assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "disable"));
 
@@ -693,11 +692,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--baseline"));
 
-        Thread.sleep(3000L);
+        assertTrue(waitForCondition(() -> ignite.cluster().currentBaselineTopology().size() == 2, 10000));
 
         Collection<BaselineNode> baselineNodesAfter = ignite.cluster().currentBaselineTopology();
-
-        assertEquals(2, baselineNodesAfter.size());
 
         assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "disable"));
 
@@ -1054,7 +1051,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             Collection<IgniteInternalTx> txs = ((IgniteEx)ignite).context().cache().context().tm().activeTransactions();
 
-            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     for (IgniteInternalTx tx : txs)
                         if (!tx.local()) {
