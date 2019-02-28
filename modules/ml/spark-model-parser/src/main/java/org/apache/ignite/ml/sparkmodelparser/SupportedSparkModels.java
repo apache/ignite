@@ -20,18 +20,53 @@ package org.apache.ignite.ml.sparkmodelparser;
 /**
  * List of supported Spark models.
  *
- * NOTE: Valid for Spark 2.4.
+ * It doesn't support old models from MLLib package.
+ *
+ * NOTE: Valid for Spark 2.2-2.4.
  */
 public enum SupportedSparkModels {
     /** Logistic regression. */
-    LOG_REGRESSION,
+    LOG_REGRESSION("org.apache.spark.ml.classification.LogisticRegressionModel"),
 
     /** Linear regression. */
-    LINEAR_REGRESSION,
+    LINEAR_REGRESSION("org.apache.spark.ml.regression.LinearRegressionModel"),
 
     /** Decision tree. */
-    DECISION_TREE,
+    DECISION_TREE("org.apache.spark.ml.classification.DecisionTreeClassificationModel"),
 
     /** Support Vector Machine . */
-    LINEAR_SVM
+    LINEAR_SVM("org.apache.spark.ml.classification.LinearSVCModel"),
+
+    /** Random forest. */
+    RANDOM_FOREST("org.apache.spark.ml.classification.RandomForestClassificationModel"),
+
+    /** K-Means. */
+    KMEANS("org.apache.spark.ml.clustering.KMeansModel"),
+
+    /** Decision tree regression. */
+    DECISION_TREE_REGRESSION("org.apache.spark.ml.regression.DecisionTreeRegressionModel"),
+
+    /** Random forest regression. */
+    RANDOM_FOREST_REGRESSION("org.apache.spark.ml.regression.RandomForestRegressionModel"),
+
+    /** Gradient boosted trees regression. */
+    GRADIENT_BOOSTED_TREES_REGRESSION("org.apache.spark.ml.regression.GBTRegressionModel"),
+
+    /**
+     * Gradient boosted trees.
+     * NOTE: support binary classification only with raw labels 0 and 1
+     */
+    GRADIENT_BOOSTED_TREES("org.apache.spark.ml.classification.GBTClassificationModel");
+
+
+    /** The separator between words. */
+    private final String mdlClsNameInSpark;
+
+    SupportedSparkModels(String mdlClsNameInSpark) {
+        this.mdlClsNameInSpark = mdlClsNameInSpark;
+    }
+
+    public String getMdlClsNameInSpark() {
+        return mdlClsNameInSpark;
+    }
 }

@@ -17,22 +17,28 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
+import java.util.TimeZone;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.Column;
+import org.h2.util.DateTimeUtils;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
-import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
+import org.h2.value.ValueTimestampTimeZone;
 
 /**
  * Local system view base class (which uses only local node data).
  */
+@SuppressWarnings("IfMayBeConditional")
 public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
+
+    public static final int MILLIS_IN_MIN = 60_000;
+
     /**
      * @param tblName Table name.
      * @param desc Description.
@@ -40,7 +46,7 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      * @param indexes Indexes.
      * @param cols Columns.
      */
-    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String[] indexes,
+    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String[] indexes,
         Column... cols) {
         super(tblName, desc, ctx, cols, indexes);
 
@@ -56,7 +62,8 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      * @param indexedCols Indexed columns.
      * @param cols Columns.
      */
-    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String indexedCols, Column... cols) {
+    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String indexedCols,
+        Column... cols) {
         this(tblName, desc, ctx, new String[] {indexedCols}, cols);
     }
 
@@ -66,8 +73,9 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      * @param ctx Context.
      * @param cols Columns.
      */
-    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, Column ... cols) {
-        this(tblName, desc, ctx, new String[] {}, cols);
+    @SuppressWarnings("ZeroLengthArrayAllocation")
+    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, Column ... cols) {
+        this(tblName, desc, ctx, new String[] {} , cols);
     }
 
     /**
@@ -135,19 +143,6 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     }
 
     /**
-     * Converts millis to ValueTime
-     *
-     * @param millis Millis.
-     */
-    protected static Value valueTimeFromMillis(long millis) {
-        if (millis == -1L || millis == Long.MAX_VALUE)
-            return ValueNull.INSTANCE;
-        else
-            // Note: ValueTime.fromMillis(long) method trying to convert time using timezone and return wrong result.
-            return ValueTime.fromNanos(millis * 1_000_000L);
-    }
-
-    /**
      * Converts millis to ValueTimestamp
      *
      * @param millis Millis.
@@ -157,5 +152,21 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
             return ValueNull.INSTANCE;
         else
             return ValueTimestamp.fromMillis(millis);
+    }
+
+    /**
+     * Converts millis to H2 ValueTimestamp in default time zone.
+     *
+     * @param millis Millis.
+     */
+    protected static Value valueTimestampZoneFromMillis(long millis) {
+        long dateVal = DateTimeUtils.dateValueFromDate(millis);
+        long nanos = DateTimeUtils.nanosFromDate(millis);
+        int tzOff = TimeZone.getDefault().getRawOffset();
+
+        if(tzOff % MILLIS_IN_MIN == 0)
+            return ValueTimestampTimeZone.fromDateValueAndNanos(dateVal, nanos, (short)(tzOff / MILLIS_IN_MIN));
+        else
+            return DateTimeUtils.timestampTimeZoneFromLocalDateValueAndNanos(dateVal, nanos);
     }
 }

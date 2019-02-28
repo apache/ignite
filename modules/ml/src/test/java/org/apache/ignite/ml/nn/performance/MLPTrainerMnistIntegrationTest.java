@@ -37,13 +37,10 @@ import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests {@link MLPTrainer} on the MNIST dataset that require to start the whole Ignite infrastructure.
  */
-@RunWith(JUnit4.class)
 public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -55,11 +52,6 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 1; i <= NODE_COUNT; i++)
             startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
     }
 
     /**

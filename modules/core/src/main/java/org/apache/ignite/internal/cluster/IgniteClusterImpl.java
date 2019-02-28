@@ -113,7 +113,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
-        distributedBaselineConfiguration = new DistributedBaselineConfiguration(cfg, ctx.internalSubscriptionProcessor());
+        distributedBaselineConfiguration = new DistributedBaselineConfiguration(
+            cfg, ctx.internalSubscriptionProcessor(), ctx.log(DistributedBaselineConfiguration.class)
+        );
     }
 
     /** {@inheritDoc} */
@@ -368,6 +370,17 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         }
     }
 
+    /**
+     * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds only if
+     * the cluster topology has not changed). All client and daemon nodes will be filtered out of the resulting
+     * baseline.
+     *
+     * @param topVer Topology version to set.
+     */
+    public void triggerBaselineAutoAdjust(long topVer) {
+        setBaselineTopology(topVer, true);
+    }
+
     /** */
     private boolean isInMemoryMode() {
         return !CU.isPersistenceEnabled(cfg);
@@ -460,6 +473,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void setBaselineTopology(long topVer) {
+        setBaselineTopology(topVer, false);
+    }
+
+    private void setBaselineTopology(long topVer, boolean isBaselineAutoAdjust) {
         guard();
 
         try {
@@ -480,7 +497,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
             validateBeforeBaselineChange(target);
 
-            ctx.state().changeGlobalState(true, target, true).get();
+            ctx.state().changeGlobalState(true, target, true, isBaselineAutoAdjust).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

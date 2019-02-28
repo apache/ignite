@@ -43,9 +43,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
@@ -56,7 +55,6 @@ import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT;
  * #DC_NODE_ATTR}. If only nodes from single DC are left in topology, grid is moved into inoperative state until special
  * activator node'll enter a topology, enabling grid operations.
  */
-@RunWith(JUnit4.class)
 public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopologySplitAbstractTest {
     /** */
     private static final String DC_NODE_ATTR = "dc";
@@ -202,8 +200,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
 
         super.beforeTest();
 

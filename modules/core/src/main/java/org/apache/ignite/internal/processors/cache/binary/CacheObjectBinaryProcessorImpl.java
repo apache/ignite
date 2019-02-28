@@ -55,6 +55,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
@@ -541,18 +542,17 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     GridFutureAdapter<MetadataUpdateResult> fut =
                         transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
 
+                    if (failIfUnregistered && !fut.isDone())
+                        throw new UnregisteredBinaryTypeException(typeId, fut);
+
                     fut.get();
                 }
+
                 return;
             }
 
             if (failIfUnregistered)
-                throw new UnregisteredBinaryTypeException(
-                    "Attempted to update binary metadata inside a critical synchronization block (will be " +
-                        "automatically retried). This exception must not be wrapped to any other exception class. " +
-                        "If you encounter this exception outside of EntryProcessor, please report to Apache Ignite " +
-                        "dev-list.",
-                    typeId, mergedMeta);
+                throw new UnregisteredBinaryTypeException(typeId, mergedMeta);
 
             long t0 = System.nanoTime();
 
@@ -579,7 +579,15 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 throw res.error();
         }
         catch (IgniteCheckedException e) {
-            throw new BinaryObjectException("Failed to update metadata for type: " + newMeta.typeName(), e);
+            IgniteCheckedException ex = e;
+
+            if (ctx.isStopping()) {
+                ex = new NodeStoppingException("Node is stopping.");
+
+                ex.addSuppressed(e);
+            }
+
+            throw new BinaryObjectException("Failed to update metadata for type: " + newMeta.typeName(), ex);
         }
     }
 
@@ -939,11 +947,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         AffinityKeyMapper cacheAffMapper = ccfg.getAffinityMapper();
 
-        boolean customAffMapper =
-            cacheAffMapper != null &&
-            !(cacheAffMapper instanceof CacheDefaultBinaryAffinityKeyMapper) &&
-            !(cacheAffMapper instanceof GridCacheDefaultAffinityKeyMapper);
-
         AffinityKeyMapper dfltAffMapper = binaryEnabled ?
             new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
             new GridCacheDefaultAffinityKeyMapper();
@@ -953,7 +956,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return new CacheObjectContext(ctx,
             ccfg.getName(),
             dfltAffMapper,
-            customAffMapper,
+            QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()),
             ccfg.isCopyOnRead(),
             storeVal,
             ctx.config().isPeerClassLoadingEnabled() && !isBinaryEnabled(ccfg),

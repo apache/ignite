@@ -31,8 +31,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * This test checks metrics cacheSize.
@@ -42,7 +40,6 @@ import org.junit.runners.JUnit4;
  * <li>Check sum {@code cache.localMetrics().getCacheSize()} of all nodes.</li>
  * </ul>
  */
-@RunWith(JUnit4.class)
 public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;

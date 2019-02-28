@@ -25,6 +25,7 @@ import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
+import org.apache.ignite.internal.ConsistentIdImplicitlyExplicitlyTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
@@ -46,6 +47,8 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Te
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
+import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTestNoOptimization;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
@@ -62,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionInteg
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationInMemoryTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
@@ -71,6 +75,7 @@ import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
@@ -126,6 +131,8 @@ import org.junit.runners.Suite;
     GridProductVersionSelfTest.class,
     GridAffinityAssignmentV2Test.class,
     GridAffinityAssignmentV2TestNoOptimizations.class,
+    GridHistoryAffinityAssignmentTest.class,
+    GridHistoryAffinityAssignmentTestNoOptimization.class,
     GridAffinityProcessorRendezvousSelfTest.class,
     GridAffinityProcessorMemoryLeakTest.class,
     GridClosureProcessorSelfTest.class,
@@ -158,12 +165,6 @@ import org.junit.runners.Suite;
     OdbcEscapeSequenceSelfTest.class,
 
     DynamicProxySerializationMultiJvmSelfTest.class,
-
-    // Tests against configuration variations framework.
-    ParametersTest.class,
-    VariationsIteratorTest.class,
-    ConfigVariationsTestSuiteBuilderTest.class,
-    NotStringSystemPropertyTest.class,
 
     MarshallerContextLockingSelfTest.class,
     MarshallerContextSelfTest.class,
@@ -211,6 +212,18 @@ import org.junit.runners.Suite;
     CacheLocalGetSerializationTest.class,
 
     PluginNodeValidationTest.class,
+
+    // In-memory Distributed MetaStorage.
+    DistributedMetaStorageTest.class,
+    DistributedConfigurationInMemoryTest.class,
+
+    ConsistentIdImplicitlyExplicitlyTest.class,
+
+        // Tests against configuration variations framework.
+        ParametersTest.class,
+        VariationsIteratorTest.class,
+        NotStringSystemPropertyTest.class,
+        ConfigVariationsTestSuiteBuilderTest.class,
 })
 public class IgniteBasicTestSuite {
 }

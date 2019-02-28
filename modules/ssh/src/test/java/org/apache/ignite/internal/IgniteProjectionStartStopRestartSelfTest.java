@@ -46,8 +46,6 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -75,7 +73,6 @@ import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.UNA
  * credentials.</p>
  */
 @SuppressWarnings("ConstantConditions")
-@RunWith(JUnit4.class)
 public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String SSH_UNAME = getProperty("test.ssh.username", "ssh.username");

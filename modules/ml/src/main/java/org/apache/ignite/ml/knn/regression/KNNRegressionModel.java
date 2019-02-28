@@ -72,7 +72,7 @@ public class KNNRegressionModel extends KNNClassificationModel {
     private double weightedRegression(List<LabeledVector> neighbors, Vector v) {
         double sum = 0.0;
         double div = 0.0;
-        for (LabeledVector<Vector, Double> neighbor : neighbors) {
+        for (LabeledVector<Double> neighbor : neighbors) {
             double distance = distanceMeasure.compute(v, neighbor.features());
             sum += neighbor.label() * distance;
             div += distance;
@@ -85,7 +85,7 @@ public class KNNRegressionModel extends KNNClassificationModel {
     /** */
     private double simpleRegression(List<LabeledVector> neighbors) {
         double sum = 0.0;
-        for (LabeledVector<Vector, Double> neighbor : neighbors)
+        for (LabeledVector<Double> neighbor : neighbors)
             sum += neighbor.label();
         return sum / (double)k;
     }

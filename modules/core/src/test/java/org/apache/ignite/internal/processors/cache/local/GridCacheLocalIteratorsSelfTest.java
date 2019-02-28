@@ -44,7 +44,7 @@ public class GridCacheLocalIteratorsSelfTest extends GridCacheAbstractIteratorsS
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         super.beforeTestsStarted();
     }

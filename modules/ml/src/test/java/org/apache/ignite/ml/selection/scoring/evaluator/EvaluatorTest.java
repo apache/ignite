@@ -17,14 +17,6 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
-import java.text.NumberFormat;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -40,7 +32,7 @@ import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -48,17 +40,19 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.ml.TestUtils.testEnvBuilder;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link BinaryClassificationEvaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
+ * Tests for {@link Evaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
  * Step_8_CV_with_Param_Grid example.
  */
-@RunWith(JUnit4.class)
 public class EvaluatorTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -70,11 +64,6 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 1; i <= NODE_COUNT; i++)
             startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
     }
 
     /**
@@ -267,7 +256,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 lbExtractor
             );
 
-            actualAccuracy.set(BinaryClassificationEvaluator.evaluate(
+            actualAccuracy.set(Evaluator.evaluate(
                 cache,
                 split.getTestFilter(),
                 bestMdl,
@@ -276,7 +265,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 new Accuracy<>()
             ));
 
-            actualAccuracy2.set(BinaryClassificationEvaluator.evaluate(
+            actualAccuracy2.set(Evaluator.evaluate(
                 cache,
                 bestMdl,
                 preprocessor,

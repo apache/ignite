@@ -223,6 +223,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                     long page = pageMem.acquirePage(grpId, pageId);
 
                     try {
+                        boolean skipVer = CacheDataRowStore.getSkipVersion();
+
                         long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
 
                         try {
@@ -246,7 +248,18 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                             for (int i = 0; i < rowsCnt; i++) {
                                 if (c == null || c.applyMvcc(io, pageAddr, i, pageSize)) {
                                     DataRow row = mvccEnabled ? new MvccDataRow() : new DataRow();
-                                    row.initFromDataPage(io, pageAddr, i, grp, shared, pageMem, rowData);
+
+                                    row.initFromDataPage(
+                                        io,
+                                        pageAddr,
+                                        i,
+                                        grp,
+                                        shared,
+                                        pageMem,
+                                        rowData,
+                                        skipVer
+                                    );
+
                                     rows[r++] = row;
                                 }
                             }

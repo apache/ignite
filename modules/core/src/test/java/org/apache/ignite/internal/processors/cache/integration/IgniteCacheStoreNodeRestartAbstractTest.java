@@ -23,13 +23,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCacheAbstractTest {
     /** */
     protected static final String CACHE_NAME1 = "cache1";

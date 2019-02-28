@@ -39,8 +39,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -52,7 +50,6 @@ import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.S
 /**
  * Config Variations query tests.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVariationsAbstractTest {
     /** */
     public static final int CNT = 50;

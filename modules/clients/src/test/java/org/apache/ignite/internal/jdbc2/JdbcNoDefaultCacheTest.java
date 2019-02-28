@@ -30,15 +30,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     /** First cache name. */
     private static final String CACHE1_NAME = "cache1";

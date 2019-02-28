@@ -25,6 +25,7 @@ import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Type used to adapt input and output types of wrapped {@link DatasetTrainer}.
@@ -50,10 +51,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     private final IgniteFunction<OW, O> after;
 
     /** Function which is applied after feature extractor. */
-    private final IgniteFunction<Vector, Vector> afterFeatureExtractor;
-
-    /** Function which is applied after label extractor. */
-    private final IgniteFunction<L, L> afterLabelExtractor;
+    private final IgniteFunction<LabeledVector<L>, LabeledVector<L>> afterExtractor;
 
     /** Upstream transformer builder which will be used in dataset builder. */
     private final UpstreamTransformerBuilder upstreamTransformerBuilder;
@@ -74,7 +72,6 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
             wrapped,
             IgniteFunction.identity(),
             IgniteFunction.identity(),
-            IgniteFunction.identity(),
             UpstreamTransformerBuilder.identity());
     }
 
@@ -83,30 +80,26 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
      *
      * @param before Function used to convert input type of wrapped trainer.
      * @param wrapped Wrapped trainer.
-     * @param after Function used to convert output type of wrapped trainer.
-     * @param extractor Function which is applied after label extractor.
      * @param builder Upstream transformer builder which will be used in dataset builder.
      */
     private AdaptableDatasetTrainer(IgniteFunction<I, IW> before, DatasetTrainer<M, L> wrapped,
         IgniteFunction<OW, O> after,
-        IgniteFunction<Vector, Vector> afterFeatureExtractor,
-        IgniteFunction<L, L> extractor, UpstreamTransformerBuilder builder) {
+        IgniteFunction<LabeledVector<L>, LabeledVector<L>> afterExtractor,
+        UpstreamTransformerBuilder builder) {
         this.before = before;
         this.wrapped = wrapped;
         this.after = after;
-        this.afterFeatureExtractor = afterFeatureExtractor;
-        afterLabelExtractor = extractor;
+        this.afterExtractor = afterExtractor;
         upstreamTransformerBuilder = builder;
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor) {
-        M fit = wrapped.fit(
-            datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
-            featureExtractor.andThen(afterFeatureExtractor),
-            lbExtractor.andThen(afterLabelExtractor));
+        FeatureLabelExtractor<K, V, L> extractor) {
+        M fit = wrapped.
+            withEnvironmentBuilder(envBuilder)
+            .fit(datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
+                extractor.andThen(afterExtractor));
 
         return new AdaptableDatasetModel<>(before, fit, after);
     }
@@ -119,12 +112,12 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     /** {@inheritDoc} */
     @Override protected <K, V> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(
         AdaptableDatasetModel<I, O, IW, OW, M> mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        M updated = wrapped.updateModel(
-            mdl.innerModel(),
-            datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
-            featureExtractor.andThen(afterFeatureExtractor),
-            lbExtractor.andThen(afterLabelExtractor));
+        FeatureLabelExtractor<K, V, L> extractor) {
+        M updated = wrapped.withEnvironmentBuilder(envBuilder)
+            .updateModel(
+                mdl.innerModel(),
+                datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
+                extractor.andThen(afterExtractor));
 
         return mdl.withInnerModel(updated);
     }
@@ -142,8 +135,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
         return new AdaptableDatasetTrainer<>(before,
             wrapped,
             i -> after.apply(this.after.apply(i)),
-            afterFeatureExtractor,
-            afterLabelExtractor,
+            afterExtractor,
             upstreamTransformerBuilder);
     }
 
@@ -161,8 +153,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
         return new AdaptableDatasetTrainer<>(function,
             wrapped,
             after,
-            afterFeatureExtractor,
-            afterLabelExtractor,
+            afterExtractor,
             upstreamTransformerBuilder);
     }
 
@@ -185,6 +176,13 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
                     le);
             }
 
+            /** {@inheritDoc} */
+            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
+                FeatureLabelExtractor<K, V, L> extractor) {
+                return wrapped.fit(datasetBuilder, extractor);
+            }
+
+            /** {@inheritDoc} */
             @Override public <K, V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
                 return wrapped.update(mdl, datasetBuilder,
@@ -192,12 +190,14 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
                     lbExtractor.andThen((IgniteFunction<L, L>)mapping::mapLabels));
             }
 
+            /** {@inheritDoc} */
             @Override public boolean isUpdateable(M mdl) {
                 return false;
             }
 
+            /** {@inheritDoc} */
             @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                FeatureLabelExtractor<K, V, L> extractor) {
                 return null;
             }
         }).beforeTrainedModel(before).afterTrainedModel(after);
@@ -215,8 +215,8 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
      */
     public <O1, M1 extends IgniteModel<O, O1>> TrainersSequentialComposition<I, O, O1, L> andThen(
         DatasetTrainer<M1, L> tr,
-        IgniteFunction<AdaptableDatasetModel<I, O, IW, OW, M>, DatasetMapping<L, L>> datasetMappingProducer) {
-        IgniteFunction<IgniteModel<I, O>, DatasetMapping<L, L>> coercedMapping = mdl ->
+        IgniteFunction<AdaptableDatasetModel<I, O, IW, OW, M>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMappingProducer) {
+        IgniteFunction<IgniteModel<I, O>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> coercedMapping = mdl ->
             datasetMappingProducer.apply((AdaptableDatasetModel<I, O, IW, OW, M>)mdl);
         return new TrainersSequentialComposition<>(this,
             tr,
@@ -231,11 +231,12 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
      * after feature extractor.
      */
     public AdaptableDatasetTrainer<I, O, IW, OW, M, L> afterFeatureExtractor(IgniteFunction<Vector, Vector> after) {
+        IgniteFunction<LabeledVector<L>, LabeledVector<L>> newExtractor = afterExtractor.andThen((IgniteFunction<LabeledVector<L>, LabeledVector<L>>)
+            slv -> new LabeledVector<>(after.apply(slv.features()), slv.label()));
         return new AdaptableDatasetTrainer<>(before,
             wrapped,
             this.after,
-            after,
-            afterLabelExtractor,
+            newExtractor,
             upstreamTransformerBuilder);
     }
 
@@ -247,11 +248,12 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
      * after label extractor.
      */
     public AdaptableDatasetTrainer<I, O, IW, OW, M, L> afterLabelExtractor(IgniteFunction<L, L> after) {
+        IgniteFunction<LabeledVector<L>, LabeledVector<L>> newExtractor = afterExtractor.andThen((IgniteFunction<LabeledVector<L>, LabeledVector<L>>)
+            slv -> new LabeledVector<>(slv.features(), after.apply(slv.label())));
         return new AdaptableDatasetTrainer<>(before,
             wrapped,
             this.after,
-            afterFeatureExtractor,
-            after,
+            newExtractor,
             upstreamTransformerBuilder);
     }
 
@@ -266,8 +268,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
         return new AdaptableDatasetTrainer<>(before,
             wrapped,
             after,
-            afterFeatureExtractor,
-            afterLabelExtractor,
+            afterExtractor,
             upstreamTransformerBuilder);
     }
 }

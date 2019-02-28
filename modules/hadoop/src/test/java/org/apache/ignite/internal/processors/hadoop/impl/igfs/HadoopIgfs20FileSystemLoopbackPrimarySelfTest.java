@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT;
@@ -73,5 +75,12 @@ public class HadoopIgfs20FileSystemLoopbackPrimarySelfTest extends HadoopIgfs20F
         assert false;
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9919")
+    @Test
+    @Override public void testRenameIfSrcPathIsAlreadyBeingOpenedToRead() throws Exception {
+        super.testRenameIfSrcPathIsAlreadyBeingOpenedToRead();
     }
 }

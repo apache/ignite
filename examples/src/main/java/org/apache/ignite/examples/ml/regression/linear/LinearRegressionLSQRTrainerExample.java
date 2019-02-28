@@ -17,18 +17,21 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.io.FileNotFoundException;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.FileNotFoundException;
 
 /**
  * Run linear regression model based on <a href="http://web.stanford.edu/group/SOL/software/lsqr/">LSQR algorithm</a>
@@ -59,32 +62,33 @@ public class LinearRegressionLSQRTrainerExample {
             LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
             System.out.println(">>> Perform the training to get the model.");
+
+             // This object is used to extract features and vectors from upstream entities which are
+             // essentialy tuples of the form (key, value) (in our case (Integer, Vector)).
+             // Key part of tuple in our example is ignored.
+             // Label is extracted from 0th entry of the value (which is a Vector)
+             // and features are all remaining vector part. Alternatively we could use
+             // DatasetTrainer#fit(Ignite, IgniteCache, IgniteBiFunction, IgniteBiFunction) method call
+             // where there is a separate lambda for extracting label from (key, value) and a separate labmda for
+             // extracting features.
+            FeatureLabelExtractor<Integer, Vector, Double> extractor =
+                (k, v) -> new LabeledVector<>(v.copyOfRange(1, v.size()), v.get(0));
+
             LinearRegressionModel mdl = trainer.fit(
                 ignite,
                 dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
+                extractor
             );
 
-            System.out.println(">>> Linear regression model: " + mdl);
+            double rmse = Evaluator.evaluate(
+                dataCache,
+                mdl,
+                CompositionUtils.asFeatureExtractor(extractor),
+                CompositionUtils.asLabelExtractor(extractor),
+                new RegressionMetrics()
+            );
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
-
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
-
-                    double prediction = mdl.predict(inputs);
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
-            }
-
-            System.out.println(">>> ---------------------------------");
+            System.out.println("\n>>> Rmse = " + rmse);
 
             System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
         }

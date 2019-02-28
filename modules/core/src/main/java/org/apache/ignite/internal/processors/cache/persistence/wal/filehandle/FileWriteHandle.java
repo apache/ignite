@@ -110,4 +110,9 @@ public interface FileWriteHandle {
      * @return Absolute WAL segment file index (incremental counter).
      */
     long getSegmentId();
+
+    /**
+     * @return SwitchSegmentRecord offset (0 if undef)
+     */
+    int getSwitchSegmentRecordOffset();
 }
