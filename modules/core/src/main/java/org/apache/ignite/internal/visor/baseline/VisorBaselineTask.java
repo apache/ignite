@@ -233,11 +233,11 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
             DistributedBaselineConfiguration baselineConfiguration = ignite.cluster().baselineConfiguration();
 
             try {
-                if (settings.softTimeout != null)
-                    baselineConfiguration.updateBaselineAutoAdjustTimeoutAsync(settings.softTimeout).get();
+                if (settings.getSoftTimeout() != null)
+                    baselineConfiguration.updateBaselineAutoAdjustTimeoutAsync(settings.getSoftTimeout()).get();
 
-                if (settings.enabled != null)
-                    baselineConfiguration.updateBaselineAutoAdjustEnabledAsync(settings.enabled).get();
+                if (settings.getEnabled() != null)
+                    baselineConfiguration.updateBaselineAutoAdjustEnabledAsync(settings.getEnabled()).get();
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
