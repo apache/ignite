@@ -137,6 +137,7 @@ import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -1279,8 +1280,8 @@ public class CommandHandler {
         VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
 
         if (autoAdjustSettings != null) {
-            log("Baseline auto adjustment " + (autoAdjustSettings.isEnabled() ? "enabled" : "disabled") +
-                ": softTimeout=" + autoAdjustSettings.getSoftTimeout()
+            log("Baseline auto adjustment " + (TRUE.equals(autoAdjustSettings.getEnabled()) ? "enabled" : "disabled")
+                + ": softTimeout=" + autoAdjustSettings.getSoftTimeout()
             );
         }
 
