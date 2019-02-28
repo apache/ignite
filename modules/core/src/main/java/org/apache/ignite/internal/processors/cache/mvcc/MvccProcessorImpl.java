@@ -225,6 +225,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      */
     private final ConcurrentHashMap<UUID, RecoveryBallotBox> recoveryBallotBoxes = new ConcurrentHashMap<>();
 
+    /** Client disconnected flag. */
+    private volatile boolean disconnected;
+
     /**
      * @param ctx Context.
      */
@@ -413,6 +416,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        disconnected = true;
+
         MvccCoordinator curCrd0 = curCrd;
 
         if (!curCrd0.disconnected()) {
@@ -442,10 +447,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         checkMvccSupported(nodes);
 
-        MvccCoordinator curCrd0 = curCrd;
+        if (disconnected) {
+            if (evt.type() == EVT_NODE_JOINED && evt.eventNode().isLocal())
+                disconnected = false;
+            else
+                return;
+        }
 
-        if (ctx.clientDisconnected())
-            return;
+        MvccCoordinator curCrd0 = curCrd;
 
         if (evt.type() == EVT_NODE_JOINED) {
             if (curCrd0.disconnected()) // Handle join event only if coordinator has not been elected yet.
