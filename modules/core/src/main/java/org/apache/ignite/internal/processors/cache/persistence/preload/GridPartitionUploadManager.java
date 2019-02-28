@@ -78,6 +78,8 @@ public class GridPartitionUploadManager {
      * @param ktx Kernal context to process.
      */
     public GridPartitionUploadManager(GridKernalContext ktx) {
+        assert CU.isPersistenceEnabled(ktx.config());
+
         cctx = ktx.cache().context();
 
         log = ktx.log(getClass());
@@ -101,7 +103,9 @@ public class GridPartitionUploadManager {
     }
 
     /** */
-    public void start0() throws IgniteCheckedException {
+    public void start0(GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
+        this.cctx = cctx;
+
         backupMgr = cctx.storeBackup();
 
         if (persistenceRebalanceApplicable(cctx)) {

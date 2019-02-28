@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.managers.communication.GridIoChannelListener;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -50,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -89,28 +89,16 @@ public class GridPartitionDownloadManager {
      * @param ktx Kernal context to process.
      */
     public GridPartitionDownloadManager(GridKernalContext ktx) {
-        cctx = ktx.cache().context();
+        assert CU.isPersistenceEnabled(ktx.config());
 
         log = ktx.log(getClass());
     }
 
-    /**
-     * @param assigns A generated cache assignments in a cut of cache group [grpId, [nodeId, parts]].
-     * @param grp The corresponding to assignments cache group context.
-     * @return {@code True} if cache might be rebalanced by sending cache partition files.
-     */
-    public boolean rebalanceByPartitionSupports(CacheGroupContext grp, GridDhtPreloaderAssignments assigns) {
-        if (assigns == null || assigns.isEmpty())
-            return false;
-
-        return cctx.preloadMgr().isPresistenceRebalanceEnabled() &&
-            grp.persistenceEnabled() &&
-            IgniteFeatures.allNodesSupports(assigns.keySet(), IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE);
-    }
-
     /** */
-    public void start0() throws IgniteCheckedException {
-        assert cctx.pageStore() instanceof FilePageStoreManager;
+    public void start0(GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
+        assert cctx.pageStore() instanceof FilePageStoreManager : cctx.pageStore();
+
+        this.cctx = cctx;
 
         filePageStore = (FilePageStoreManager)cctx.pageStore();
 
@@ -308,7 +296,7 @@ public class GridPartitionDownloadManager {
             int grpId = grpEntry.getKey();
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-            if (rebalanceByPartitionSupports(grp, grpEntry.getValue())) {
+            if (cctx.preloadMgr().rebalanceByPartitionSupported(grp, grpEntry.getValue())) {
                 int grpOrderNo = grp.config().getRebalanceOrder();
 
                 result.putIfAbsent(grpOrderNo, new HashMap<>());

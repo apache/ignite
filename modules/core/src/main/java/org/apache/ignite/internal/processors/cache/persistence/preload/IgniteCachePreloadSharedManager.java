@@ -19,13 +19,17 @@ package org.apache.ignite.internal.processors.cache.persistence.preload;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /** */
 public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapter {
     /** */
-    private final boolean presistenceRebalanceEnabled = IgniteSystemProperties.getBoolean(
-        IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED, false);
+    private final boolean presistenceRebalanceEnabled;
 
     /** */
     private GridPartitionDownloadManager downloadMgr;
@@ -33,13 +37,24 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
     /** */
     private GridPartitionUploadManager uploadMgr;
 
+    /**
+     * @param ktx Kernal context.
+     */
+    public IgniteCachePreloadSharedManager(GridKernalContext ktx) {
+        assert CU.isPersistenceEnabled(ktx.config()) :
+            "Persistence must be enabled to preload any of cache partition files";
+
+        downloadMgr = new GridPartitionDownloadManager(ktx);
+        uploadMgr = new GridPartitionUploadManager(ktx);
+
+        presistenceRebalanceEnabled = IgniteSystemProperties.getBoolean(
+            IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED, false);
+    }
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        downloadMgr = new GridPartitionDownloadManager(cctx.kernalContext());
-        uploadMgr = new GridPartitionUploadManager(cctx.kernalContext());
-
-        downloadMgr.start0();
-        uploadMgr.start0();
+        downloadMgr.start0(cctx);
+        uploadMgr.start0(cctx);
     }
 
     /** {@inheritDoc} */
@@ -53,6 +68,20 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
      */
     public boolean isPresistenceRebalanceEnabled() {
         return presistenceRebalanceEnabled;
+    }
+
+    /**
+     * @param assigns A generated cache assignments in a cut of cache group [grpId, [nodeId, parts]].
+     * @param grp The corresponding to assignments cache group context.
+     * @return {@code True} if cache might be rebalanced by sending cache partition files.
+     */
+    public boolean rebalanceByPartitionSupported(CacheGroupContext grp, GridDhtPreloaderAssignments assigns) {
+        if (assigns == null || assigns.isEmpty())
+            return false;
+
+        return presistenceRebalanceEnabled &&
+            grp.persistenceEnabled() &&
+            IgniteFeatures.allNodesSupports(assigns.keySet(), IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE);
     }
 
     /** */

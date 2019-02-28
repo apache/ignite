@@ -23,16 +23,12 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -41,13 +37,12 @@ import org.junit.Test;
 /**
  * Test cases for checking cancellation rebalancing process if some events occurs.
  */
-public class GridCacheRebalancingByPartitionsSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final String DHT_PARTITIONED_CACHE = "cacheP";
-
+public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTest {
     /** */
     @Before
-    public void setBefore() {
+    public void setBefore() throws Exception {
+        cleanPersistenceDir();
+
         System.setProperty(IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED, "true");
     }
 
@@ -57,24 +52,48 @@ public class GridCacheRebalancingByPartitionsSelfTest extends GridCommonAbstract
         System.setProperty(IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED, "false");
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                        .setMaxSize(100L * 1024 * 1024)
+                        .setPersistenceEnabled(true))
+                    .setWalMode(WALMode.LOG_ONLY))
+            .setCacheConfiguration(
+                new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
+                    .setCacheMode(CacheMode.REPLICATED)
+                    .setRebalanceMode(CacheRebalanceMode.ASYNC)
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setBackups(1)
+                    .setAffinity(new RendezvousAffinityFunction(false)
+                        .setPartitions(8)));
+    }
+
     /** */
     @Test
     public void testClientNodeJoinAtRebalancing() throws Exception {
-        final IgniteEx ignite0 = startGrid(0);
+        IgniteEx ignite0 = startGrid(0);
 
-        IgniteCache<Integer, Integer> cache = ignite0.createCache(
-            new CacheConfiguration<Integer, Integer>(DHT_PARTITIONED_CACHE)
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setRebalanceMode(CacheRebalanceMode.ASYNC)
-                .setBackups(1)
-                .setRebalanceOrder(2)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setAffinity(new RendezvousAffinityFunction(false)));
+        ignite0.cluster().active(true);
+
+        IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 2048; i++)
-            cache.put(i, i);
+            cache.put(i, new byte[2048]);
 
-        final IgniteEx ignite1 = startGrid(1);
+        awaitPartitionMapExchange();
+
+        log.info("##### node 2");
+
+        IgniteEx ignite1 = startGrid(1);
+
+        ignite0.cluster().active(false);
+
+        ignite0.cluster().active(true);
+
+        assert ignite0.cluster().active();
 
         awaitPartitionMapExchange();
     }

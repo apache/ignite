@@ -3066,8 +3066,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
-                                if (preloadMgr != null &&
-                                    preloadMgr.download().rebalanceByPartitionSupports(grp, assigns))
+                                if (preloadMgr != null && preloadMgr.rebalanceByPartitionSupported(grp, assigns))
                                     continue;
 
                                 Runnable cur = grp.preloader().addAssignments(assigns,
