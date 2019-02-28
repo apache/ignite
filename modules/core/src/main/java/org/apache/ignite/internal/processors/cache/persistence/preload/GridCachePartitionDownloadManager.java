@@ -20,10 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -60,19 +58,26 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePartitionUploadManager.persistenceRebalanceApplicable;
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePartitionUploadManager.rebalanceThreadTopic;
+import static org.apache.ignite.internal.util.GridIntList.getAsIntList;
 
 /**
  *
  */
 public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAdapter {
     /** */
+    private static final int REBALANCE_TOPIC_IDX = 0;
+
+    /** */
     private final ConcurrentMap<UUID, RebalanceDownloadFuture> futMap = new ConcurrentHashMap<>();
+
+    /** */
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** */
     private FilePageStoreManager filePageStore;
 
     /** */
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private volatile RebalanceDownloadFuture headFut = new RebalanceDownloadFuture();
 
     /**
      * @param ctx The kernal context.
@@ -86,7 +91,10 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
      * @param grp The corresponding to assignments cache group context.
      * @return {@code True} if cache might be rebalanced by sending cache partition files.
      */
-    static boolean groupRebalancedByPartitions(CacheGroupContext grp, GridDhtPreloaderAssignments assigns) {
+    public static boolean rebalanceByPartitionSupports(CacheGroupContext grp, GridDhtPreloaderAssignments assigns) {
+        if (assigns == null || assigns.isEmpty())
+            return false;
+
         return grp.persistenceEnabled() && IgniteFeatures.allNodesSupports(assigns.keySet(),
             IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE);
     }
@@ -98,53 +106,58 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
         filePageStore = (FilePageStoreManager)cctx.pageStore();
 
         if (persistenceRebalanceApplicable(cctx)) {
-            for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++) {
-                final int topicId = cnt;
+            // Register channel listeners for each rebalance thread.
+            cctx.gridIO().addChannelListener(rebalanceThreadTopic(REBALANCE_TOPIC_IDX), new GridIoChannelListener() {
+                @Override public void onChannelCreated(UUID nodeId, IgniteSocketChannel channel) {
+                    if (lock.readLock().tryLock())
+                        return;
 
-                // Register channel listeners for each rebalance thread.
-                cctx.gridIO().addChannelListener(rebalanceThreadTopic(topicId), new GridIoChannelListener() {
-                    @Override public void onChannelCreated(UUID nodeId, IgniteSocketChannel channel) {
-                        if (lock.readLock().tryLock())
+                    try {
+                        RebalanceDownloadFuture fut0 = futMap.get(nodeId);
+
+                        if (fut0 == null || fut0.isComplete())
                             return;
 
-                        try {
-                            onChannelCreated0(topicId, nodeId, channel);
-                        }
-                        finally {
-                            lock.readLock().unlock();
-                        }
+                        onChannelCreated0(REBALANCE_TOPIC_IDX, nodeId, channel, fut0);
                     }
-                });
-            }
+                    finally {
+                        lock.readLock().unlock();
+                    }
+                }
+            });
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++)
-            cctx.gridIO().removeChannelListener(rebalanceThreadTopic(cnt), null);
+        cctx.gridIO().removeChannelListener(rebalanceThreadTopic(REBALANCE_TOPIC_IDX), null);
     }
 
     /**
      * @param topicId The index of rebalance pool thread.
      * @param nodeId The remote node id.
      * @param channel A blocking socket channel to handle rebalance partitions.
+     * @param rebFut The future of assignments handling.
      */
-    private void onChannelCreated0(int topicId, UUID nodeId, IgniteSocketChannel channel) {
+    private void onChannelCreated0(
+        int topicId,
+        UUID nodeId,
+        IgniteSocketChannel channel,
+        RebalanceDownloadFuture rebFut
+    ) {
+        assert rebFut.nodeId.equals(nodeId);
+
         U.log(log, "Handle channel created event [topicId=" + topicId + ", channel=" + channel + ']');
-
-        RebalanceDownloadFuture fut0 = futMap.get(nodeId);
-
-        if (fut0 == null || fut0.isDone())
-            return;
 
         FileTransferManager<PartitionFileMetaInfo> source = null;
 
-        int totalParts = fut0.nodeAssigns.values().stream()
+        int totalParts = rebFut.nodeAssigns.values().stream()
             .mapToInt(GridIntList::size)
             .sum();
 
-        AffinityTopologyVersion topVer = fut0.topVer;
+        AffinityTopologyVersion topVer = rebFut.topVer;
+        Integer grpId = null;
+        Integer partId = null;
 
         try {
             source = new FileTransferManager<>(cctx.kernalContext(), channel.channel());
@@ -157,8 +170,8 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
 
                 assert meta.getType() == 0 : meta;
 
-                int grpId = meta.getGrpId();
-                int partId = meta.getPartId();
+                grpId = meta.getGrpId();
+                partId = meta.getPartId();
 
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
                 AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
@@ -194,7 +207,7 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
 
                             applyPartitionDeltaPages(source, store, meta.getSize());
 
-                            fut0.markProcessed(grpId, partId);
+                            rebFut.markProcessed(grpId, partId);
 
                             // Validate partition
 
@@ -204,6 +217,7 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
                         }
                         finally {
                             part.unlock();
+                            part.release();
                         }
                     }
                     else {
@@ -216,12 +230,14 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
                 }
             }
 
-            fut0.onDone(true);
+            rebFut.onCompleteSuccess(true);
         }
         catch (IOException | IgniteCheckedException e) {
-            U.error(log, "Error of handling channel creation event", e);
+            U.error(log, "An error during receiving binary data from channel: " + channel, e);
 
-            fut0.onDone(e);
+            rebFut.onDone(new IgniteCheckedException("Error with downloading binary data from remote node " +
+                "[grpId=" + String.valueOf(grpId) + ", partId=" + String.valueOf(partId) + ", topicId=" + topicId +
+                ", nodeId=" + nodeId + ']', e));
         }
         finally {
             U.closeQuiet(source);
@@ -271,90 +287,131 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
     }
 
     /**
-     * @param nodeAssignsMap A map of cache assignments grouped by nodeId to request.
-     * @param force {@code true} if must cancel previous rebalance.
-     * @param rebalanceId Current rebalance id.
-     * @param next A task to build the chained rebalance process.
+     * @param assignsMap The map of cache groups assignments to process.
+     * @return The map of cache assignments <tt>[group_order, [node, [group_id, partitions]]]</tt>
      */
-    public void addNodeAssignments(
-        Map<ClusterNode, Map<Integer, GridIntList>> nodeAssignsMap,
-        AffinityTopologyVersion topVer,
-        boolean force,
-        int rebalanceId,
-        Runnable next
-    ) {
-        int totalStripes = cctx.gridConfig().getRebalanceThreadPoolSize();
-
-        // Start from the only first stripe.
-        int topicId = 1;
-
-        Map.Entry<ClusterNode, Map<Integer, GridIntList>> nodeAssigns = nodeAssignsMap.entrySet().iterator().next();
-
-        UUID nodeId = nodeAssigns.getKey().id();
-
-        RebalanceDownloadFuture downloadFut = futMap.get(nodeId);
-
-        if (downloadFut == null || !downloadFut.isDone()) {
-            downloadFut.cancel();
-
-            downloadFut = new RebalanceDownloadFuture(nodeId, nodeAssigns.getValue(), topVer);
-        }
-
-        try {
-            GridPartitionsCopyDemandMessage msg0 = new GridPartitionsCopyDemandMessage(rebalanceId, topVer,
-                nodeAssigns.getValue());
-
-            cctx.gridIO().sendOrderedMessage(nodeAssigns.getKey(), rebalanceThreadTopic(topicId),
-                msg0, SYSTEM_POOL, DFLT_REBALANCE_TIMEOUT, false);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Error sending partition copy demand message", e);
-        }
-    }
-
-    /**
-     * @param assignMap A generated cache assignments in a cut of cache group [grpId, [nodeId, parts]].
-     * @param grpOrderMap A map of caches grouped by #getRebalanceOrder() [orderNo, grpIds].
-     * @return A map of cache assignments in a cut of cache group order number, grouped by nodeId.
-     * Filtered by supported feature of rebalance with partition files enabled.
-     */
-    public NavigableMap<Integer, Map<ClusterNode, Map<Integer, GridIntList>>> splitNodeCacheAssignments(
-        Map<Integer, GridDhtPreloaderAssignments> assignMap,
-        Map<Integer, List<Integer>> grpOrderMap
+    private NavigableMap<Integer, Map<ClusterNode, Map<Integer, GridIntList>>> sliceNodeCacheAssignments(
+        Map<Integer, GridDhtPreloaderAssignments> assignsMap
     ) {
         NavigableMap<Integer, Map<ClusterNode, Map<Integer, GridIntList>>> result = new TreeMap<>();
 
-        for (Map.Entry<Integer, List<Integer>> grpOrderEntry : grpOrderMap.entrySet()) {
-            int orderNo = grpOrderEntry.getKey();
-            List<Integer> grps = grpOrderEntry.getValue();
+        for (Map.Entry<Integer, GridDhtPreloaderAssignments> grpEntry : assignsMap.entrySet()) {
+            int grpId = grpEntry.getKey();
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-            for (int grpId : grps) {
-                GridDhtPreloaderAssignments grpAssigns = assignMap.get(grpId);
+            if (rebalanceByPartitionSupports(grp, grpEntry.getValue())) {
+                int grpOrderNo = grp.config().getRebalanceOrder();
 
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+                result.putIfAbsent(grpOrderNo, new HashMap<>());
 
-                if (groupRebalancedByPartitions(grp, grpAssigns)) {
-                    for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> nodeMsgEntry : grpAssigns.entrySet()) {
-                        // TODO will not work, need putIfAbsent
-                        Map<ClusterNode, Map<Integer, GridIntList>> splitByUuid =
-                            result.getOrDefault(orderNo, new HashMap<>());
+                for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> grpAssigns : grpEntry.getValue().entrySet()) {
+                    ClusterNode node = grpAssigns.getKey();
 
-                        Map<Integer, GridIntList> splitByGrpId =
-                            splitByUuid.getOrDefault(nodeMsgEntry.getKey(), new HashMap<>());
+                    result.get(grpOrderNo).putIfAbsent(node, new HashMap<>());
 
-                        Set<Integer> fullParts = nodeMsgEntry.getValue().partitions().fullSet();
+                    GridIntList intParts = getAsIntList(grpAssigns.getValue().partitions().fullSet());
 
-                        for (int partId : fullParts) {
-                            GridIntList grpParts = splitByGrpId.getOrDefault(grpId, new GridIntList());
-
-                            grpParts.add(partId);
-                        }
-                    }
+                    if (!intParts.isEmpty())
+                        result.get(grpOrderNo).get(node).putIfAbsent(grpId, intParts);
                 }
             }
         }
 
         return result;
+    }
+
+    /**
+     * @param assignsMap A map of cache assignments grouped by grpId.
+     * @param force {@code true} if must cancel previous rebalance.
+     * @param rebalanceId Current rebalance id.
+     * @return Runnable to execute the chain.
+     */
+    public Runnable addNodeAssignments(
+        Map<Integer, GridDhtPreloaderAssignments> assignsMap,
+        AffinityTopologyVersion topVer,
+        boolean force,
+        int rebalanceId
+    ) {
+        // Start new rebalance session.
+        final RebalanceDownloadFuture headFut0 = headFut;
+
+        if (!headFut0.isDone())
+            headFut0.cancel();
+
+        NavigableMap<Integer, Map<ClusterNode, Map<Integer, GridIntList>>> nodeOrderAssignsMap =
+            sliceNodeCacheAssignments(assignsMap);
+
+        // TODO Start eviction.
+
+        RebalanceDownloadFuture rqFut = null;
+        Runnable rq = null;
+
+        for (Map<ClusterNode, Map<Integer, GridIntList>> descNodeMap : nodeOrderAssignsMap.descendingMap().values()) {
+            for (Map.Entry<ClusterNode, Map<Integer, GridIntList>> assignEntry : descNodeMap.entrySet()) {
+                RebalanceDownloadFuture rebFut = new RebalanceDownloadFuture(assignEntry.getKey().id(), rebalanceId,
+                    assignEntry.getValue(), topVer);
+
+                final Runnable nextRq0 = rq;
+
+                if (rqFut != null) {
+                    rqFut.listen(f -> {
+                        try {
+                            if (f.get()) // Not cancelled.
+                                nextRq0.run();
+                        }
+                        catch (IgniteCheckedException e) {
+                            rebFut.onDone(e);
+
+                            U.error(log, "Cache partitions rebalance failed", e);
+                        }
+                    });
+                }
+                else {
+                    // The first seen rebalance fut.
+                    headFut = rebFut;
+                }
+
+                rq = requestNodePartitions(assignEntry.getKey(), REBALANCE_TOPIC_IDX, rebFut);
+                rqFut = rebFut;
+            }
+        }
+
+        return rq;
+    }
+
+    /**
+     * @param node Clustre node to send inital demand message to.
+     * @param topicId Rebalacne thread topic.
+     * @param rebFut The future to handle demand request.
+     */
+    private Runnable requestNodePartitions(
+        ClusterNode node,
+        int topicId,
+        RebalanceDownloadFuture rebFut
+    ) {
+        return new Runnable() {
+            @Override public void run() {
+                if (rebFut.isComplete())
+                    return;
+
+                try {
+                    GridPartitionsCopyDemandMessage msg0 = new GridPartitionsCopyDemandMessage(rebFut.rebalanceId,
+                        rebFut.topVer, rebFut.nodeAssigns);
+
+                    futMap.put(node.id(), rebFut);
+
+                    cctx.gridIO().sendOrderedMessage(node, rebalanceThreadTopic(topicId),
+                        msg0, SYSTEM_POOL, DFLT_REBALANCE_TIMEOUT, false);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Error sending request for demanded cache partitions", e);
+
+                    rebFut.onDone(e);
+
+                    futMap.remove(node.id());
+                }
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -368,6 +425,9 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
         private UUID nodeId;
 
         /** */
+        private int rebalanceId;
+
+        /** */
         private Map<Integer, GridIntList> nodeAssigns;
 
         /** */
@@ -377,15 +437,24 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
         private Map<Integer, GridIntList> remaining;
 
         /**
+         * Default constructor for the dummy future.
+         */
+        public RebalanceDownloadFuture() {
+            onDone();
+        }
+
+        /**
          * @param nodeId The remote nodeId.
          * @param nodeAssigns Map of assignments to request from remote.
          */
         public RebalanceDownloadFuture(
             UUID nodeId,
+            int rebalanceId,
             Map<Integer, GridIntList> nodeAssigns,
             AffinityTopologyVersion topVer
         ) {
             this.nodeId = nodeId;
+            this.rebalanceId = rebalanceId;
             this.nodeAssigns = nodeAssigns;
             this.topVer = topVer;
 
@@ -398,6 +467,22 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
         /** {@inheritDoc} */
         @Override public boolean cancel() {
             return onCancelled();
+        }
+
+        /**
+         * @param res Result to set.
+         */
+        public synchronized void onCompleteSuccess(Boolean res) {
+            assert remaining.isEmpty();
+
+            onDone(res);
+        }
+
+        /**
+         * @return {@code True} if current future cannot be processed.
+         */
+        public boolean isComplete() {
+            return isCancelled() || isFailed() || isDone();
         }
 
         /**
@@ -414,6 +499,9 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
             int partIdx = parts.removeValue(0, partId);
 
             assert partIdx >= 0;
+
+            if (parts.isEmpty())
+                remaining.remove(grpId);
         }
 
         /** {@inheritDoc} */

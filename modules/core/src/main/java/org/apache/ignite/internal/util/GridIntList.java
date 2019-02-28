@@ -26,6 +26,7 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -239,6 +240,22 @@ public class GridIntList implements Message, Externalizable {
         }
 
         return new GridIntList(newArr, newIdx);
+    }
+
+    /**
+     * @param parts The set of partitions.
+     * @return Representation as primitive list.
+     */
+    public static GridIntList getAsIntList(Set<Integer> parts) {
+        if (parts == null)
+            return new GridIntList(0);
+
+        GridIntList intParts = new GridIntList(parts.size());
+
+        for (Integer partId : parts)
+            intParts.add(partId);
+
+        return intParts;
     }
 
     /**
