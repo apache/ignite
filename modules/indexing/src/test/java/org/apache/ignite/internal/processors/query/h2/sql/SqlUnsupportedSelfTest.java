@@ -33,6 +33,9 @@ import org.junit.Test;
  * Tests for unsupported SQL statements.
  */
 public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
+    /** Local. */
+    private boolean local;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -96,7 +99,7 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
      * Test for unsupported SQL statements in CREATE TABLE statement.
      */
     @Test
-    public void testUnsupportedAlterTableAlterColumn() {
+    public void testUnsupportedAlterTableColumn() {
         execSql(
             "CREATE TABLE test ( " +
                 "id integer PRIMARY KEY, " +
@@ -113,6 +116,8 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
         assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SET INVISIBLE");
 
         assertSqlUnsupported("ALTER TABLE test ADD COLUMN (q integer) FIRST");
+        assertSqlUnsupported("ALTER TABLE test ADD COLUMN (q integer) BEFORE val");
+        assertSqlUnsupported("ALTER TABLE test ADD COLUMN (q integer) AFTER val");
     }
 
     /**
@@ -162,16 +167,22 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
         assertSqlUnsupported("DROP SCHEMA my_schema");
         assertSqlUnsupported("ALTER SCHEMA public RENAME TO private");
 
+        assertSqlUnsupported("ALTER TABLE test ADD CONSTRAINT c0 UNIQUE(val)");
+        assertSqlUnsupported("ALTER TABLE test RENAME CONSTRAINT c0 TO c1");
+        assertSqlUnsupported("ALTER TABLE test DROP CONSTRAINT c0");
+        assertSqlUnsupported("ALTER TABLE test RENAME TO new_test");
+
+        assertSqlUnsupported("ALTER TABLE test SET REFERENTIAL_INTEGRITY FALSE");
+
         assertSqlUnsupported("ANALYZE TABLE test");
 
         assertSqlUnsupported("ALTER INDEX idx0 RENAME TO idx1");
-
-        assertSqlUnsupported("ALTER TABLE test RENAME TO new_test");
 
         assertSqlUnsupported("CREATE VIEW test_view AS SELECT * FROM test WHERE id < 100");
         assertSqlUnsupported("DROP VIEW test_view");
 
         assertSqlUnsupported("CREATE SEQUENCE SEQ_0");
+        assertSqlUnsupported("ALTER SEQUENCE SEQ_ID RESTART WITH 1000");
         assertSqlUnsupported("DROP SEQUENCE SEQ_0");
 
         assertSqlUnsupported("CREATE TRIGGER trig_0 BEFORE INSERT ON TEST FOR EACH ROW CALL \"MyTrigger\"");
@@ -182,7 +193,35 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
         assertSqlUnsupported("RUNSCRIPT FROM 'q.sql'");
         assertSqlUnsupported("SCRIPT NODATA");
-        assertSqlUnsupported("SCRIPT NODATA");
+
+        assertSqlUnsupported("BACKUP TO 'q.bak'");
+        assertSqlUnsupported("CALL 15*25");
+
+        assertSqlUnsupported("COMMENT ON TABLE test IS 'Table used for testing'");
+
+        assertSqlUnsupported("CREATE AGGREGATE testAgg FOR \"class_name\"");
+
+        assertSqlUnsupported("CREATE ALIAS my_sqrt FOR \"java.lang.Math.sqrt\"");
+        assertSqlUnsupported("DROP ALIAS my_sqrt");
+
+        assertSqlUnsupported("CREATE CONSTANT ONE VALUE 1");
+        assertSqlUnsupported("DROP CONSTANT ONE");
+
+        assertSqlUnsupported("CREATE DOMAIN EMAIL AS VARCHAR(255) CHECK (POSITION('@', VALUE) > 1)");
+        assertSqlUnsupported("DROP DOMAIN EMAIL");
+
+        assertSqlUnsupported("CREATE LINKED TABLE link('', '', '', '', '(SELECT * FROM test WHERE ID>0)');");
+
+        assertSqlUnsupported("DROP ALL OBJECTS");
+
+        assertSqlUnsupported("TRUNCATE TABLE test");
+
+        assertSqlUnsupported("COMMIT TRANSACTION t0");
+
+        assertSqlUnsupported("SAVEPOINT sp0");
+
+        // Any set command
+        assertSqlUnsupported("SET LOG 1");
     }
 
     /**
@@ -193,7 +232,7 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
      */
     @SuppressWarnings("unchecked")
     private List<List<?>> execSql(Ignite ignite, String sql, Object... args) {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setLocal(local);
 
         if (args != null && args.length > 0)
             qry.setArgs(args);
@@ -214,6 +253,21 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
      * @param sql Sql.
      */
     private void assertSqlUnsupported(final String sql) {
+        try {
+            local = false;
+            assertSqlUnsupported0(sql);
+
+            local = true;
+            assertSqlUnsupported0(sql);
+        }
+        finally {
+            local = false;
+        }
+    }
+    /**
+     * @param sql Sql.
+     */
+    private void assertSqlUnsupported0(final String sql) {
         Throwable t = GridTestUtils.assertThrowsWithCause((Callable<Void>)() -> {
             execSql(sql);
 
