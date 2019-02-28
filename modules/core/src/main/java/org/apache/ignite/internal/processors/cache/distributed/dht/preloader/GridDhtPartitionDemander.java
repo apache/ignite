@@ -65,6 +65,7 @@ import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -866,7 +867,7 @@ public class GridDhtPartitionDemander {
 
         List<GridCacheMvccEntryInfo> entryHist = new ArrayList<>();
 
-        GridCacheContext cctx = null;
+        GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
         // Loop through all received entries and try to preload them.
         while (infos.hasNext() || !entryHist.isEmpty()) {
@@ -898,8 +899,11 @@ public class GridDhtPartitionDemander {
 
                         int cacheId = entryHist.get(0).cacheId();
 
-                        if (cctx == null || (grp.sharedGroup() && cacheId != cctx.cacheId()))
-                            cctx = grp.sharedGroup() ? grp.shared().cacheContext(cacheId) : grp.singleCacheContext();
+                        if (grp.sharedGroup() && (cctx == null || cacheId != cctx.cacheId())) {
+                            assert cacheId != CU.UNDEFINED_CACHE_ID;
+
+                            cctx = grp.shared().cacheContext(cacheId);
+                        }
 
                         if (cctx != null) {
                             if (!mvccPreloadEntry(cctx, node, entryHist, topVer, p)) {

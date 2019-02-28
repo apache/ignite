@@ -6727,7 +6727,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             for (int i = 0; i < entries.size(); i++) {
                 GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)entries.get(i);
 
-                assert info.mvccTxState() == TxState.COMMITTED || MvccUtils.compare(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0
+                assert info.mvccTxState() == TxState.COMMITTED || MvccUtils.compare(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0;
                 assert info.newMvccTxState() == TxState.COMMITTED ||
                     MvccUtils.compareNewVersion(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0 ||
                     info.newMvccCoordinatorVersion() == MvccUtils.MVCC_CRD_COUNTER_NA;
@@ -6867,10 +6867,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return Mvcc data entry.
      */
     private @NotNull MvccDataEntry toMvccDataEntry(@NotNull  GridCacheMvccEntryInfo info, @Nullable IgniteInternalTx tx) {
-        KeyCacheObject key = info.key();
-
-        assert key != null;
-
         return new MvccDataEntry(
             cctx.cacheId(),
             key,

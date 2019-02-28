@@ -1833,7 +1833,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     assert info.newMvccTxState() == TxState.NA || info.newMvccCoordinatorVersion() > MVCC_CRD_COUNTER_NA;
                     assert MvccUtils.mvccVersionIsValid(info.mvccCoordinatorVersion(), info.mvccCounter(), info.mvccOperationCounter());
 
+                    if (!grp.storeCacheIdInDataPage() && cacheId != CU.UNDEFINED_CACHE_ID)
+                        row.cacheId(CU.UNDEFINED_CACHE_ID);
+
                     rowStore.addRow(row, grp.statisticsHolderData());
+
+                    row.cacheId(cacheId);
 
                     boolean hasOld = dataTree.putx(row);
 
