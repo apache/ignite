@@ -1006,9 +1006,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                     int updCnt = stmt.executeUpdate();
 
-                    if (updCnt != 1)
-                        U.warn(log, "Unexpected number of updated entries [table=" + em.fullTableName() +
-                            ", entry=" + entry + "expected=1, actual=" + updCnt + "]");
+                    if (updCnt < 0 || updCnt > 2)
+                        U.warn(log, "Unexpected return value for update operation [table=" + em.fullTableName() +
+                                ", entry=" + entry + ", updCnt=" + updCnt + "]");
                 }
                 finally {
                     U.closeQuiet(stmt);
