@@ -96,7 +96,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public boolean enabled() {
-        return enabled;
+        return true;
     }
 
     /** {@inheritDoc} */
