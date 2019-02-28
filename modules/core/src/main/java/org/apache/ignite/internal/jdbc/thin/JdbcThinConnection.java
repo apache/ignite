@@ -69,7 +69,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStickyResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPinnedResult;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
@@ -819,7 +819,7 @@ public class JdbcThinConnection implements Connection {
      * @return Server response.
      * @throws SQLException On any error.
      */
-    JdbcStickyResult sendRequest(JdbcRequest req, @Nullable JdbcThinTcpIo stickyIo) throws SQLException {
+    JdbcPinnedResult sendRequest(JdbcRequest req, @Nullable JdbcThinTcpIo stickyIo) throws SQLException {
         return sendRequest(req, null, stickyIo);
     }
 
@@ -832,7 +832,7 @@ public class JdbcThinConnection implements Connection {
      * @return Server response.
      * @throws SQLException On any error.
      */
-    JdbcStickyResult sendRequest(JdbcRequest req, JdbcThinStatement stmt, @Nullable JdbcThinTcpIo stickyIo)
+    JdbcPinnedResult sendRequest(JdbcRequest req, JdbcThinStatement stmt, @Nullable JdbcThinTcpIo stickyIo)
         throws SQLException {
         ensureConnected();
 
@@ -872,7 +872,7 @@ public class JdbcThinConnection implements Connection {
             else if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
 
-            return new JdbcStickyResult(res.response(), cliIo);
+            return new JdbcPinnedResult(res.response(), cliIo);
         }
         catch (SQLException e) {
             throw e;
