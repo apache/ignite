@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -947,11 +948,13 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeLong(rebalancingBytesRate);
         out.writeLong(rebalancingKeysRate);
 
-        out.writeLong(rebalancedKeys);
-        out.writeLong(estimatedRebalancingKeys);
-        out.writeLong(rebalanceStartTime);
-        out.writeLong(rebalanceFinishTime);
-        out.writeLong(rebalanceClearingPartitionsLeft);
+        if (!(out instanceof OptimizedObjectOutputStream)) {
+            out.writeLong(rebalancedKeys);
+            out.writeLong(estimatedRebalancingKeys);
+            out.writeLong(rebalanceStartTime);
+            out.writeLong(rebalanceFinishTime);
+            out.writeLong(rebalanceClearingPartitionsLeft);
+        }
     }
 
     /** {@inheritDoc} */
