@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -41,8 +42,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -53,7 +52,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class CacheBinaryKeyConcurrentQueryTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 3;
@@ -228,6 +226,8 @@ public class CacheBinaryKeyConcurrentQueryTest extends GridCommonAbstractTest {
 
         qryEntity.addQueryField("id", Integer.class.getName(), null);
         qryEntity.addQueryField("val", Integer.class.getName(), null);
+
+        qryEntity.setKeyFields(Collections.singleton("id"));
 
         qryEntity.setIndexes(F.asList(new QueryIndex("id"), new QueryIndex("val")));
 

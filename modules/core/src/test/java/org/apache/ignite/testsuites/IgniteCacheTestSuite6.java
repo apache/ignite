@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMerg
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossDetectionOnNodeLeftTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheTryLockMultithreadedTest;
+import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThreadLocalTxTest;
@@ -53,14 +54,13 @@ import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTime
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(IgniteCacheTestSuite6.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheTestSuite6 {
     /**
      * @return IgniteCache test suite.
@@ -81,6 +81,7 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, IgnitePessimisticTxSuspendResumeTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheExchangeMergeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ExchangeMergeStaleServerNodesTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, TxRollbackOnTimeoutTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxRollbackOnTimeoutNoDeadlockDetectionTest.class, ignoredTests);
@@ -132,13 +133,5 @@ public class IgniteCacheTestSuite6 {
         //GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientMultiNodeUpdateTopologyLockTest.class, ignoredTests);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

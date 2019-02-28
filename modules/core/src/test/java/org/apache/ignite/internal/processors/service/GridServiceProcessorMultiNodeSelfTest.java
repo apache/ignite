@@ -27,13 +27,10 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Single node services test.
  */
-@RunWith(JUnit4.class)
 public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {

@@ -28,14 +28,13 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingUnmarshallingFailedSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(IgniteCacheTestSuite8.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheTestSuite8 {
     /**
      * @return IgniteCache test suite.
@@ -73,13 +72,5 @@ public class IgniteCacheTestSuite8 {
         GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingCancelTest.class, ignoredTests);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

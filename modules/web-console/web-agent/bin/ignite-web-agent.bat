@@ -92,7 +92,8 @@ if %ERRORLEVEL% equ 0 (
     if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m
 )
 
-set JVM_OPTS=%JVM_OPTS% -Djava.net.useSystemProxies=true
+:: https://confluence.atlassian.com/kb/basic-authentication-fails-for-outgoing-proxy-in-java-8u111-909643110.html
+set JVM_OPTS=%JVM_OPTS% -Djava.net.useSystemProxies=true -Djdk.http.auth.tunneling.disabledSchemes=
 
 ::
 :: Final JVM_OPTS for Java 9+ compatibility

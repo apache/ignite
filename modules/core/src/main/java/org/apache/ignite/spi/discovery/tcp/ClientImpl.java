@@ -65,6 +65,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
@@ -372,6 +373,11 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
         return U.arrayList(rmtNodes.values(), TcpDiscoveryNodesRing.VISIBLE_NODES);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean allNodesSupport(IgniteFeatures feature) {
+        return IgniteFeatures.allNodesSupports(upcast(rmtNodes.values()), feature);
     }
 
     /** {@inheritDoc} */
@@ -740,6 +746,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                         discoveryData = spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId()));
 
                     msg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
+
+                    // During marshalling, SPI didn't know whether all nodes support compression as we didn't join yet.
+                    // The only way to know is passing flag directly with handshake response.
+                    if (!res.isDiscoveryDataPacketCompression())
+                        ((TcpDiscoveryJoinRequestMessage)msg).gridDiscoveryData().unzipData(log);
                 }
                 else
                     msg = new TcpDiscoveryClientReconnectMessage(getLocalNodeId(), rmtNodeId, lastMsgId);

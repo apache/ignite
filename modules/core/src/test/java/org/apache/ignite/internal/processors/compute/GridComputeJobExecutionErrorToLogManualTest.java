@@ -23,13 +23,10 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Manual test to reproduce IGNITE-4053
  */
-@RunWith(JUnit4.class)
 public class GridComputeJobExecutionErrorToLogManualTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 2;

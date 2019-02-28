@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.regression.logistic.binary;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,9 +27,11 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.FileNotFoundException;
 
 /**
  * Run logistic regression model based on <a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">
@@ -84,7 +85,7 @@ public class LogisticRegressionSGDTrainerExample {
 
             System.out.println(">>> Logistic regression model: " + mdl);
 
-            double accuracy = BinaryClassificationEvaluator.evaluate(
+            double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,

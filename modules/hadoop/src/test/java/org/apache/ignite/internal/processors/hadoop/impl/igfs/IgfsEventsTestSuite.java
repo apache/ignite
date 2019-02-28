@@ -31,6 +31,7 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -43,7 +44,7 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Test suite for IGFS event tests.
  */
-@RunWith(IgfsEventsTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgfsEventsTestSuite {
     /**
      * @return Test suite.
@@ -79,14 +80,6 @@ public class IgfsEventsTestSuite {
         suite.add(ldr.loadClass(LoopbackDualAsync.class.getName()));
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws ClassNotFoundException, InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 
     /** */

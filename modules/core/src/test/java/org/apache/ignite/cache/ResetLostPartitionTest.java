@@ -36,9 +36,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
@@ -48,7 +47,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ResetLostPartitionTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String[] CACHE_NAMES = {"cacheOne", "cacheTwo", "cacheThree"};
@@ -57,8 +55,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10560");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10560", MvccFeatureChecker.forcedMvcc());
 
         super.beforeTest();
 

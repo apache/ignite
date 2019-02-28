@@ -57,15 +57,12 @@ import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Test class for {@link CamelStreamer}.
  */
-@RunWith(JUnit4.class)
 public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     /** text/plain media type. */
     private static final MediaType TEXT_PLAIN = MediaType.parse("text/plain;charset=utf-8");

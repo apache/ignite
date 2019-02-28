@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
@@ -75,8 +74,6 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
         else
             filter = tab -> true;
 
-        final AtomicLong keys = new AtomicLong();
-
         return schemaMgr.dataTables().stream()
             .filter(filter)
             .map(tbl -> {
@@ -92,7 +89,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                         tbl.rowDescriptor().type().valueTypeName()
                     };
 
-                    return createRow(ses, keys.incrementAndGet(), data);
+                    return createRow(ses, data);
                 }
             ).iterator();
     }

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Cursor;
@@ -31,7 +31,7 @@ import org.h2.result.SearchRow;
  */
 public class H2Cursor implements Cursor {
     /** */
-    private final GridCursor<GridH2Row> cursor;
+    private final GridCursor<H2Row> cursor;
 
     /** */
     private final long time = U.currentTimeMillis();
@@ -39,7 +39,7 @@ public class H2Cursor implements Cursor {
     /**
      * @param cursor Cursor.
      */
-    public H2Cursor(GridCursor<GridH2Row> cursor) {
+    public H2Cursor(GridCursor<H2Row> cursor) {
         assert cursor != null;
 
         this.cursor = cursor;
@@ -64,7 +64,7 @@ public class H2Cursor implements Cursor {
     @Override public boolean next() {
         try {
             while (cursor.next()) {
-                GridH2Row row = cursor.get();
+                H2Row row = cursor.get();
 
                 if (row.expireTime() > 0 && row.expireTime() <= time)
                     continue;

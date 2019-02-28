@@ -101,13 +101,29 @@ public interface MvccProcessor extends GridProcessor {
      * @param blockerVer Version the entry is locked by.
      * @return Future, which is completed as soon as the lock is released.
      */
-    IgniteInternalFuture<Void> waitForLock(GridCacheContext cctx, MvccVersion waiterVer,
-        MvccVersion blockerVer);
+    IgniteInternalFuture<Void> waitForLock(GridCacheContext cctx, MvccVersion waiterVer, MvccVersion blockerVer);
 
     /**
      * @param locked Version the entry is locked by.
      */
     void releaseWaiters(MvccVersion locked);
+
+    /**
+     * Checks whether one tx is waiting for another tx.
+     * It is assumed that locks on data nodes are requested one by one, so tx can wait only for one another tx here.
+     *
+     * @param mvccVer Version of transaction which is checked for being waiting.
+     * @return Version of tx which blocks checked tx.
+     */
+    Optional<? extends MvccVersion> checkWaiting(MvccVersion mvccVer);
+
+    /**
+     * Unfreezes waiter for specific version failing it with passed exception.
+     *
+     * @param mvccVer Version of a waiter to fail.
+     * @param e Exception reflecting failure reason.
+     */
+    void failWaiter(MvccVersion mvccVer, Exception e);
 
     /**
      * @param tracker Query tracker.
@@ -118,12 +134,6 @@ public interface MvccProcessor extends GridProcessor {
      * @param id Query tracker id.
      */
     void removeQueryTracker(Long id);
-
-    /**
-     * @return {@link MvccSnapshot} if this is a coordinator node and coordinator is initialized.
-     * {@code Null} in other cases.
-     */
-    MvccSnapshot requestWriteSnapshotLocal();
 
     /**
      * @return {@link MvccSnapshot} if this is a coordinator node and coordinator is initialized.
@@ -141,6 +151,20 @@ public interface MvccProcessor extends GridProcessor {
     /**
      * Requests snapshot on Mvcc coordinator.
      *
+     * @param crd Expected coordinator.
+     * @param lsnr Request listener.
+     */
+    void requestReadSnapshotAsync(MvccCoordinator crd, MvccSnapshotResponseListener lsnr);
+
+    /**
+     * @return {@link MvccSnapshot} if this is a coordinator node and coordinator is initialized.
+     * {@code Null} in other cases.
+     */
+    MvccSnapshot requestWriteSnapshotLocal();
+
+    /**
+     * Requests snapshot on Mvcc coordinator.
+     *
      * @return Result future.
      */
     IgniteInternalFuture<MvccSnapshot> requestWriteSnapshotAsync();
@@ -151,15 +175,13 @@ public interface MvccProcessor extends GridProcessor {
      * @param crd Expected coordinator.
      * @param lsnr Request listener.
      */
-    void requestReadSnapshotAsync(MvccCoordinator crd, MvccSnapshotResponseListener lsnr);
+    void requestWriteSnapshotAsync(MvccCoordinator crd, MvccSnapshotResponseListener lsnr);
 
     /**
-     * Requests snapshot on Mvcc coordinator.
-     *
-     * @param crd Expected coordinator.
-     * @param lsnr Request listener.
+     * @param snapshot Query version.
+     * @param qryId Query tracker ID.
      */
-    void requestWriteSnapshotAsync(MvccCoordinator crd, MvccSnapshotResponseListener lsnr);
+    void ackQueryDone(MvccSnapshot snapshot, long qryId);
 
     /**
      * @param updateVer Transaction update version.
@@ -171,18 +193,6 @@ public interface MvccProcessor extends GridProcessor {
      * @param updateVer Transaction update version.
      */
     void ackTxRollback(MvccVersion updateVer);
-
-    /**
-     * @param snapshot Query version.
-     * @param qryId Query tracker ID.
-     */
-    void ackQueryDone(MvccSnapshot snapshot, long qryId);
-
-    /**
-     * @param log Logger.
-     * @param diagCtx Diagnostic request.
-     */
-    void dumpDebugInfo(IgniteLogger log, @Nullable IgniteDiagnosticPrepareContext diagCtx);
 
     /**
      * @return {@code True} if at least one cache with
@@ -213,19 +223,20 @@ public interface MvccProcessor extends GridProcessor {
     void ensureStarted() throws IgniteCheckedException;
 
     /**
-     * Checks whether one tx is waiting for another tx.
-     * It is assumed that locks on data nodes are requested one by one, so tx can wait only for one another tx here.
+     * Cache stop callback.
+     * @param cctx Cache context.
      *
-     * @param mvccVer Version of transaction which is checked for being waiting.
-     * @return Version of tx which blocks checked tx.
      */
-    Optional<? extends MvccVersion> checkWaiting(MvccVersion mvccVer);
+    void onCacheStop(GridCacheContext cctx);
 
     /**
-     * Unfreezes waiter for specific version failing it with passed exception.
-     *
-     * @param mvccVer Version of a waiter to fail.
-     * @param e Exception reflecting failure reason.
+     * Force txLog stop.
      */
-    void failWaiter(MvccVersion mvccVer, Exception e);
+    void stopTxLog();
+
+    /**
+     * @param log Logger.
+     * @param diagCtx Diagnostic request.
+     */
+    void dumpDebugInfo(IgniteLogger log, @Nullable IgniteDiagnosticPrepareContext diagCtx);
 }

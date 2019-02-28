@@ -30,13 +30,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link AttributeNodeFilter}.
  */
-@RunWith(JUnit4.class)
 public class AttributeNodeFilterSelfTest extends GridCommonAbstractTest {
     /** */
     private Map<String, ?> attrs;

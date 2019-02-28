@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxPreloadAbstractTest;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -29,11 +30,10 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests cache transaction during preloading.
  */
 public class GridCacheNearTxPreloadSelfTest extends IgniteTxPreloadAbstractTest {
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.setUp();
+    /** */
+    @Before
+    public void beforeGridCacheNearTxPreloadSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */

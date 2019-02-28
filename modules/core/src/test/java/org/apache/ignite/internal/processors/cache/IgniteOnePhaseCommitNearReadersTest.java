@@ -33,8 +33,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -43,7 +41,6 @@ import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest {
     /** */
     private boolean client;

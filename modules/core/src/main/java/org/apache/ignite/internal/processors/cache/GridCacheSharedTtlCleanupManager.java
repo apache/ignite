@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -132,7 +133,14 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
             Throwable err = null;
 
             try {
-                cctx.discovery().localJoin();
+                blockingSectionBegin();
+
+                try {
+                    cctx.discovery().localJoin();
+                }
+                finally {
+                    blockingSectionEnd();
+                }
 
                 assert !cctx.kernalContext().recoveryMode();
 
@@ -164,7 +172,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                     return;
                 }
 
-                if (!(t instanceof IgniteInterruptedCheckedException))
+                if (!(t instanceof IgniteInterruptedCheckedException || t instanceof InterruptedException))
                     err = t;
 
                 throw t;

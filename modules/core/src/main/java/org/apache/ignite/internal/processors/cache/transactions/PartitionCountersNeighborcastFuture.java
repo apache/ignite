@@ -28,12 +28,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,21 +46,14 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdentityFuture<Void> {
     /** */
     private final IgniteUuid futId = IgniteUuid.randomUuid();
-
     /** */
     @GridToStringExclude
     private boolean trackable = true;
-
     /** */
-    @GridToStringExclude
     private final GridCacheSharedContext<?, ?> cctx;
-
     /** */
-    @GridToStringExclude
     private final IgniteInternalTx tx;
-
     /** */
-    @GridToStringExclude
     private final IgniteLogger log;
 
     /** */
@@ -153,9 +144,10 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
      * @param nodeId Remote peer node id.
      */
     public void onResult(UUID nodeId) {
-        if (log.isInfoEnabled())
+        if (log.isInfoEnabled()) {
             log.info("Remote peer acked partition counters delivery [futId=" + futId +
                 ", node=" + nodeId + ']');
+        }
 
         completeMini(nodeId);
     }
@@ -180,8 +172,14 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
             if (mini.nodeId.equals(nodeId)) {
                 cctx.kernalContext().closure().runLocalSafe(mini::onDone);
 
-                break;
+                return;
             }
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("Failed to find mini future corresponding to node, can prevent parent future completion [" +
+                "futId=" + futId +
+                ", nodeId=" + nodeId + ']');
         }
     }
 
@@ -211,17 +209,7 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).nodeId +
-                    ", done=" + f.isDone() + "]";
-            }
-        });
-
-        return S.toString(PartitionCountersNeighborcastFuture.class, this,
-            "xid", tx.xidVersion(),
-            "innerFuts", futs,
-            "super", super.toString());
+        return S.toString(PartitionCountersNeighborcastFuture.class, this, "innerFuts", futures());
     }
 
     /**
@@ -234,6 +222,11 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
         /** */
         private MiniFuture(UUID nodeId) {
             this.nodeId = nodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MiniFuture.class, this, "done", isDone());
         }
     }
 }

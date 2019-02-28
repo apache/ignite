@@ -47,13 +47,10 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
     /**
      * @param ignite Ignite.

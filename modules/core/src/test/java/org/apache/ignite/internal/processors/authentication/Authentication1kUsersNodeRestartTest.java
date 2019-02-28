@@ -27,13 +27,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
  */
-@RunWith(JUnit4.class)
 public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest {
     /** */
     private static final int USERS_COUNT = 1000;

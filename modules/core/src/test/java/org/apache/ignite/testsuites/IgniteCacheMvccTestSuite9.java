@@ -25,8 +25,12 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
+import org.apache.ignite.internal.stat.IoStatisticsCachePersistenceSelfTest;
+import org.apache.ignite.internal.stat.IoStatisticsCacheSelfTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryOneBackupTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest;
@@ -38,15 +42,11 @@ import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCount
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateWithFilterTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({})
-//@RunWith(IgniteCacheMvccTestSuite9.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheMvccTestSuite9 {
     /**
      * @return IgniteCache test suite.
@@ -60,6 +60,7 @@ public class IgniteCacheMvccTestSuite9 {
         ignoredTests.add(IgniteTxConcurrentRemoveObjectsTest.class);
 
         // Non supported modes.
+        ignoredTests.add(IgniteCachePrimarySyncTest.class);
         ignoredTests.add(IgniteTxCachePrimarySyncTest.class);
 
         // Atomic caches.
@@ -80,14 +81,10 @@ public class IgniteCacheMvccTestSuite9 {
         ignoredTests.add(TxPartitionCounterStateWithFilterTest.class);
         ignoredTests.add(TxPartitionCounterStateUpdatesOrderTest.class);
 
-        return new ArrayList<>(IgniteCacheTestSuite9.suite(ignoredTests));
-    }
+        // IO statistics.
+        ignoredTests.add(IoStatisticsCacheSelfTest.class);
+        ignoredTests.add(IoStatisticsCachePersistenceSelfTest.class);
 
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
+        return new ArrayList<>(IgniteCacheTestSuite9.suite(ignoredTests));
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.affinity;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,13 +27,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.BitSetIntSet;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cached affinity calculations.
+ *
+ * Deprecated GridAffinityAssignment doesn't support versioning.
+ * Use GridAffinityAssignmentV2 instead.
  */
+@Deprecated
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridAffinityAssignment implements AffinityAssignment, Serializable {
     /** */
@@ -53,7 +54,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     private final Map<UUID, Set<Integer>> backup;
 
     /** Assignment node IDs */
-    private transient volatile List<Collection<UUID>> assignmentIds;
+    private transient volatile List<HashSet<UUID>> assignmentIds;
 
     /** Nodes having primary or backup partition assignments. */
     private transient volatile Set<ClusterNode> nodes;
@@ -71,8 +72,8 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      */
     GridAffinityAssignment(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
-        primary = Collections.emptyMap();
-        backup = Collections.emptyMap();
+        primary = new HashMap<>();
+        backup = new HashMap<>();
     }
 
     /**
@@ -80,48 +81,21 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param assignment Assignment.
      * @param idealAssignment Ideal assignment.
      */
-    public GridAffinityAssignment(AffinityTopologyVersion topVer,
+    GridAffinityAssignment(AffinityTopologyVersion topVer,
         List<List<ClusterNode>> assignment,
-        List<List<ClusterNode>> idealAssignment
-    ) {
+        List<List<ClusterNode>> idealAssignment) {
         assert topVer != null;
         assert assignment != null;
         assert idealAssignment != null;
 
         this.topVer = topVer;
-        this.assignment = Collections.unmodifiableList(assignment);
-        this.idealAssignment = Collections.unmodifiableList(
-            idealAssignment.equals(assignment) ? assignment : idealAssignment
-        );
+        this.assignment = assignment;
+        this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
 
-        // Temporary mirrors with modifiable partition's collections.
-        Map<UUID, Set<Integer>> tmpPrimary = new HashMap<>();
-        Map<UUID, Set<Integer>> tmpBackup = new HashMap<>();
-        boolean isPrimary;
+        primary = new HashMap<>();
+        backup = new HashMap<>();
 
-        for (int partsCnt = assignment.size(), p = 0; p < partsCnt; p++) {
-            isPrimary = true;
-
-            for (ClusterNode node : assignment.get(p)) {
-                UUID id = node.id();
-
-                Map<UUID, Set<Integer>> tmp = isPrimary ? tmpPrimary : tmpBackup;
-
-                /*
-                    https://issues.apache.org/jira/browse/IGNITE-4554 BitSet performs better than HashSet at most cases.
-                    However with 65k partition and high number of nodes (700+) BitSet is loosing HashSet.
-                    We need to replace it with sparse bitsets.
-                 */
-                tmp.computeIfAbsent(id, uuid ->
-                    !IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION ? new BitSetIntSet() : new HashSet<>()
-                ).add(p);
-
-                isPrimary =  false;
-            }
-        }
-
-        primary = Collections.unmodifiableMap(tmpPrimary);
-        backup = Collections.unmodifiableMap(tmpBackup);
+        initPrimaryBackupMaps();
     }
 
     /**
@@ -138,14 +112,14 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     }
 
     /**
-     * @return Unmodifiable ideal affinity assignment computed by affinity function.
+     * @return Affinity assignment computed by affinity function.
      */
     @Override public List<List<ClusterNode>> idealAssignment() {
         return idealAssignment;
     }
 
     /**
-     * @return Unmodifiable affinity assignment.
+     * @return Affinity assignment.
      */
     @Override public List<List<ClusterNode>> assignment() {
         return assignment;
@@ -172,39 +146,28 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     }
 
     /**
-     * Get affinity node IDs for partition as unmodifiable collection.
-     * Depending on AFFINITY_BACKUPS_THRESHOLD we returned newly allocated HashSet or view on List.
+     * Get affinity node IDs for partition.
+     *
      * @param part Partition.
      * @return Affinity nodes IDs.
      */
-    @Override public Collection<UUID> getIds(int part) {
+    @Override public HashSet<UUID> getIds(int part) {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
-            return getOrCreateAssignmentsIds(part);
-        else {
-            List<ClusterNode> nodes = assignment.get(part);
-
-            return nodes.size() > GridAffinityAssignment.IGNITE_AFFINITY_BACKUPS_THRESHOLD
-                    ? getOrCreateAssignmentsIds(part)
-                    : F.viewReadOnly(nodes, F.node2id());
-        }
-    }
-
-    /**
-     *
-     * @param part Partition ID.
-     * @return Collection of UUIDs.
-     */
-    private Collection<UUID> getOrCreateAssignmentsIds(int part) {
-        List<Collection<UUID>> assignmentIds0 = assignmentIds;
+        List<HashSet<UUID>> assignmentIds0 = assignmentIds;
 
         if (assignmentIds0 == null) {
-            assignmentIds0 = new ArrayList<>(assignment.size());
+            assignmentIds0 = new ArrayList<>();
 
-            for (List<ClusterNode> assignmentPart : assignment)
-                assignmentIds0.add(assignments2ids(assignmentPart));
+            for (List<ClusterNode> assignmentPart : assignment) {
+                HashSet<UUID> partIds = new HashSet<>();
+
+                for (ClusterNode node : assignmentPart)
+                    partIds.add(node.id());
+
+                assignmentIds0.add(partIds);
+            }
 
             assignmentIds = assignmentIds0;
         }
@@ -226,7 +189,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
                     res.addAll(nodes);
             }
 
-            nodes = Collections.unmodifiableSet(res);
+            nodes = res;
         }
 
         return res;
@@ -246,7 +209,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
                     res.add(nodes.get(0));
             }
 
-            primaryPartsNodes = Collections.unmodifiableSet(res);
+            primaryPartsNodes = res;
         }
 
         return res;
@@ -261,7 +224,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     @Override public Set<Integer> primaryPartitions(UUID nodeId) {
         Set<Integer> set = primary.get(nodeId);
 
-        return set == null ? Collections.emptySet() : Collections.unmodifiableSet(set);
+        return set == null ? Collections.<Integer>emptySet() : set;
     }
 
     /**
@@ -273,7 +236,39 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     @Override public Set<Integer> backupPartitions(UUID nodeId) {
         Set<Integer> set = backup.get(nodeId);
 
-        return set == null ? Collections.emptySet() : Collections.unmodifiableSet(set);
+        return set == null ? Collections.<Integer>emptySet() : set;
+    }
+
+    /**
+     * Initializes primary and backup maps.
+     */
+    private void initPrimaryBackupMaps() {
+        // Temporary mirrors with modifiable partition's collections.
+        Map<UUID, Set<Integer>> tmpPrm = new HashMap<>();
+        Map<UUID, Set<Integer>> tmpBkp = new HashMap<>();
+
+        for (int partsCnt = assignment.size(), p = 0; p < partsCnt; p++) {
+            // Use the first node as primary, other - backups.
+            Map<UUID, Set<Integer>> tmp = tmpPrm;
+            Map<UUID, Set<Integer>> map = primary;
+
+            for (ClusterNode node : assignment.get(p)) {
+                UUID id = node.id();
+
+                Set<Integer> set = tmp.get(id);
+
+                if (set == null) {
+                    tmp.put(id, set = new HashSet<>());
+                    map.put(id, Collections.unmodifiableSet(set));
+                }
+
+                set.add(p);
+
+                // Use the first node as primary, other - backups.
+                tmp = tmpBkp;
+                map = backup;
+            }
+        }
     }
 
     /** {@inheritDoc} */

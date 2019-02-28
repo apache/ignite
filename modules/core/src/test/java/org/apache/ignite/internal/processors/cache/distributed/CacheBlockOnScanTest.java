@@ -21,9 +21,8 @@ import java.util.Objects;
 import java.util.Random;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -33,7 +32,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
@@ -81,30 +79,34 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
     @Test
     @Override public void testStartClientAtomicReplicated() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9987");
+        // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
     @Test
     @Override public void testStartClientTransactionalReplicated() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9987");
+        // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
     @Test
     @Override public void testStopClientAtomicReplicated() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9987");
+        // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
     @Test
     @Override public void testStopClientTransactionalReplicated() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9987");
+        // No-op
     }
 
     /** {@inheritDoc} */

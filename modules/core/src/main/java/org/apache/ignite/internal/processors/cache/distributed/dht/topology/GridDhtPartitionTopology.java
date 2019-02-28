@@ -82,6 +82,11 @@ public interface GridDhtPartitionTopology {
     ) throws IgniteInterruptedCheckedException;
 
     /**
+     * @return {@code True} If ready version initialized. {@code False} If not initialized.
+     */
+    public boolean initialized();
+
+    /**
      * @return Result topology version of last finished exchange.
      */
     public AffinityTopologyVersion readyTopologyVersion();

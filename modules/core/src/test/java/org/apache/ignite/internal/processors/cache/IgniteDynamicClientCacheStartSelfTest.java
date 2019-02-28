@@ -41,8 +41,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -55,7 +53,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 /**
  * Tests that cache specified in configuration start on client nodes.
  */
-@RunWith(JUnit4.class)
 public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTest {
     /** */
     private CacheConfiguration ccfg;

@@ -515,16 +515,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         });
 
-        getTestCounters().incrementStarted();
-
         super.setUp();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        getTestCounters().incrementStopped();
-
-        super.tearDown();
     }
 
     /** {@inheritDoc} */

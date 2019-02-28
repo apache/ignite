@@ -26,8 +26,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -36,7 +34,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Partitioned affinity test for projections.
  */
-@RunWith(JUnit4.class)
 public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAbstractTest {
     /** Backup count. */
     private static final int BACKUPS = 1;

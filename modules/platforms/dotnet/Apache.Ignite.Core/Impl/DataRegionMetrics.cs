@@ -44,9 +44,15 @@ namespace Apache.Ignite.Core.Impl
             PageReplaceAge = reader.ReadFloat();
             PhysicalMemoryPages = reader.ReadLong();
             PhysicalMemorySize = reader.ReadLong();
-            CheckpointBufferPages = reader.ReadLong();
-            CheckpointBufferSize = reader.ReadLong();
+            UsedCheckpointBufferPages = reader.ReadLong();
+            UsedCheckpointBufferSize = reader.ReadLong();
             PageSize = reader.ReadInt();
+            CheckpointBufferSize = reader.ReadLong();
+            PagesRead = reader.ReadLong();
+            PagesWritten = reader.ReadLong();
+            PagesReplaced = reader.ReadLong();
+            OffHeapSize = reader.ReadLong();
+            OffheapUsedSize = reader.ReadLong();
         }
 
         /** <inheritdoc /> */
@@ -84,14 +90,41 @@ namespace Apache.Ignite.Core.Impl
 
         /** <inheritdoc /> */
         public long PhysicalMemorySize { get; private set; }
-
-        /** <inheritdoc /> */
-        public long CheckpointBufferPages { get; private set; }
+        
+        /** <inheritdoc /> */ 
+        public long CheckpointBufferPages
+        {
+            get
+            {
+                return 0L;
+            }
+        }
 
         /** <inheritdoc /> */
         public long CheckpointBufferSize { get; private set; }
 
         /** <inheritdoc /> */
+        public long UsedCheckpointBufferPages { get; private set; }
+
+        /** <inheritdoc /> */
+        public long UsedCheckpointBufferSize { get; private set; }
+
+        /** <inheritdoc /> */
         public int PageSize { get; private set; }
+        
+        /** <inheritdoc /> */
+        public long PagesRead { get; private set; }
+        
+        /** <inheritdoc /> */
+        public long PagesWritten { get; private set; }
+        
+        /** <inheritdoc /> */
+        public long PagesReplaced { get; private set; }
+        
+        /** <inheritdoc /> */
+        public long OffHeapSize { get; private set; }
+        
+        /** <inheritdoc /> */
+        public long OffheapUsedSize { get; private set; }
     }
 }

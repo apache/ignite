@@ -28,7 +28,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 public class GridCacheLocalTxStoreExceptionSelfTest extends IgniteTxStoreExceptionAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         super.beforeTestsStarted();
     }
@@ -41,9 +41,5 @@ public class GridCacheLocalTxStoreExceptionSelfTest extends IgniteTxStoreExcepti
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return LOCAL;
-    }
-
-    @Override public void testPutMultipleKeysTx() throws Exception {
-        super.testPutMultipleKeysTx();
     }
 }

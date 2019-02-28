@@ -91,16 +91,11 @@ import org.apache.ignite.internal.processors.cache.integration.IgniteCacheJdbcBl
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalAtomicSwapDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedAtomicSelfTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
-/**
- *
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({})
-//@RunWith(IgniteCacheMvccTestSuite4.DynamicSuite.class)
+/** */
+@RunWith(DynamicSuite.class)
 public class IgniteCacheMvccTestSuite4 {
     /**
      * @return IgniteCache test suite.
@@ -198,13 +193,5 @@ public class IgniteCacheMvccTestSuite4 {
         suite.add(IgniteCrossCacheMvccTxSelfTest.class);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

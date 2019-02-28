@@ -31,32 +31,29 @@ import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Test cases for multi-threaded tests.
  */
-@RunWith(JUnit4.class)
 public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.setUp();
-    }
-
     /** Grid. */
-    private Ignite ignite;
+    private static Ignite ignite;
 
     /**
      *
      */
     public GridCacheLocalLockSelfTest() {
         super(true /*start grid. */);
+    }
+
+    /** */
+    @Before
+    public void beforeGridCacheLocalLockSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */
@@ -71,6 +68,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         IgniteConfiguration cfg = super.getConfiguration();
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

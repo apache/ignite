@@ -164,7 +164,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
-        return false;
+        return addDepInfo;
     }
 
     /**

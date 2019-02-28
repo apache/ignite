@@ -58,16 +58,11 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMet
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
-/**
- *
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({})
-//@RunWith(IgniteCacheMvccTestSuite8.DynamicSuite.class)
+/** */
+@RunWith(DynamicSuite.class)
 public class IgniteCacheMvccTestSuite8 {
     /**
      * @return IgniteCache test suite.
@@ -131,13 +126,5 @@ public class IgniteCacheMvccTestSuite8 {
         suite.add(GridCacheMvccNearEvictionSelfTest.class);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

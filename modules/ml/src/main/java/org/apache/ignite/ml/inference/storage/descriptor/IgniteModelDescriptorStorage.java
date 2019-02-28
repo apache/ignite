@@ -47,6 +47,11 @@ public class IgniteModelDescriptorStorage implements ModelDescriptorStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putIfAbsent(String mdlId, ModelDescriptor mdl) {
+        return models.putIfAbsent(mdlId, mdl);
+    }
+
+    /** {@inheritDoc} */
     @Override public ModelDescriptor get(String mdlId) {
         return models.get(mdlId);
     }
