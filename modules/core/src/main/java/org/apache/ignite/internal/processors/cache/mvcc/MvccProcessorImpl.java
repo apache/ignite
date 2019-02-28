@@ -108,6 +108,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -239,7 +240,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.event().addDiscoveryEventListener(this::onDiscovery, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
+        ctx.event().addDiscoveryEventListener(this::onDiscovery, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED,
+            EVT_CLIENT_NODE_RECONNECTED);
 
         ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, new MvccMessageListener());
 
@@ -439,20 +441,22 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private void onDiscovery(DiscoveryEvent evt, DiscoCache discoCache) {
         assert evt.type() == EVT_NODE_FAILED
             || evt.type() == EVT_NODE_LEFT
-            || evt.type() == EVT_NODE_JOINED;
+            || evt.type() == EVT_NODE_JOINED
+            || evt.type() == EVT_CLIENT_NODE_RECONNECTED;
+
+        if (evt.type() == EVT_CLIENT_NODE_RECONNECTED && evt.eventNode().isLocal()) {
+            disconnected = false;
+
+            return;
+        }
+        else if (disconnected)
+            return;
 
         UUID nodeId = evt.eventNode().id();
         AffinityTopologyVersion topVer = discoCache.version();
         List<ClusterNode> nodes = discoCache.allNodes();
 
         checkMvccSupported(nodes);
-
-        if (disconnected) {
-            if (evt.type() == EVT_NODE_JOINED && evt.eventNode().isLocal())
-                disconnected = false;
-            else
-                return;
-        }
 
         MvccCoordinator curCrd0 = curCrd;
 
