@@ -15,33 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metastorage.persistence;
-
-import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.internal.S;
+package org.apache.ignite.internal.processors.configuration.distributed;
 
 /** */
-class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageUpdateAckMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private final boolean updated;
-
-    /** */
-    public DistributedMetaStorageCasAckMessage(UUID reqId, String errorMsg, boolean updated) {
-        super(reqId, errorMsg);
-
-        this.updated = updated;
-    }
-
-    /** */
-    public boolean updated() {
-        return updated;
-    }
-
+public class DistributedConfigurationPersistentTest extends DistributedConfigurationAbstractTest {
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(DistributedMetaStorageCasAckMessage.class, this);
+    @Override protected boolean isPersistent() {
+        return true;
     }
 }

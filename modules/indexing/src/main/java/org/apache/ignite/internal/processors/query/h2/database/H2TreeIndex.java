@@ -84,6 +84,7 @@ import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
@@ -351,7 +352,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 tree.compareRows((H2Row)lower, (H2Row)upper) == 0) {
                 H2Row row = tree.findOne((H2Row)lower, filter(qryCtxRegistry.getThreadLocal()), null);
 
-                return (row == null) ? GridH2Cursor.EMPTY : new SingleRowCursor(row);
+                if (row == null || isExpired(row))
+                    return GridH2Cursor.EMPTY;
+
+                return new SingleRowCursor(row);
             }
             else {
                 return new H2Cursor(tree.find((H2Row)lower,
@@ -450,11 +454,26 @@ public class H2TreeIndex extends H2TreeIndexBase {
             H2Tree tree = treeForRead(threadLocalSegment());
             QueryContext qctx = qryCtxRegistry.getThreadLocal();
 
-            return new SingleRowCursor(b ? tree.findFirst(filter(qctx)): tree.findLast(filter(qctx)));
+            H2Row found = b ? tree.findFirst(filter(qctx)) : tree.findLast(filter(qctx));
+
+            if (found == null || isExpired(found))
+                return GridH2Cursor.EMPTY;
+
+            return new SingleRowCursor(found);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
+    }
+
+    /**
+     * Determines if provided row can be treated as expired at the current moment.
+     *
+     * @param row row to check.
+     * @throws NullPointerException if provided row is {@code null}.
+     */
+    private static boolean isExpired(@NotNull H2Row row) {
+        return row.expireTime() > 0 && row.expireTime() <= U.currentTimeMillis();
     }
 
     /** {@inheritDoc} */
