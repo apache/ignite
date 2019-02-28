@@ -586,6 +586,15 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * @return True if best effort affinity supported, false otherwise.
+     */
+    boolean isBestEffortAffinitySupported() {
+        assert srvProtoVer != null;
+
+        return srvProtoVer.compareTo(VER_2_8_0) >= 0;
+    }
+
+    /**
      * Enable/disable socket timeout with specified timeout.
      *
      * @param ms the specified timeout, in milliseconds.

@@ -63,13 +63,13 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPinnedResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPinnedResult;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
@@ -1358,47 +1358,85 @@ public class JdbcThinConnection implements Connection {
      * or if endpoints versions are not the same.
      */
     private void connectInBestEffortAffinityMode(HostAndPortRange[] srvs) throws SQLException {
+        List<Exception> exceptions = null;
+
         IgniteProductVersion prevIgniteEnpointVer = null;
 
-        try {
-            for (int i = 0; i < srvs.length; i++) {
-                HostAndPortRange srv = srvs[i];
+        for (int i = 0; i < srvs.length; i++) {
+            HostAndPortRange srv = srvs[i];
 
-                for (InetAddress addr : InetAddress.getAllByName(srv.host())) {
+            try {
+                InetAddress[] addrs = InetAddress.getAllByName(srv.host());
+
+                for (InetAddress addr : addrs) {
                     for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
-                        // TODO: Do not throw exception if we connected to at least on node.
-                        JdbcThinTcpIo cliIo = new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), 0);
+                        try {
+                            JdbcThinTcpIo cliIo =
+                                new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), 0);
 
-                        cliIo.timeout(netTimeout);
+                            if (!cliIo.isBestEffortAffinitySupported()) {
+                                throw new SQLException("Failed to connect to Ignite node [url=" +
+                                    connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
+                                    "Node doesn't support best affort affinity mode.",
+                                    SqlStateCode.INTERNAL_ERROR);
+                            }
 
-                        nodeToConnMap.put(cliIo.nodeId(), cliIo);
+                            if (prevIgniteEnpointVer != null && !prevIgniteEnpointVer.equals(cliIo.igniteVersion())) {
+                                // TODO: 13.02.19 IGNITE-11321 JDBC Thin: implement nodes multi version support.
+                                throw new SQLException("Failed to connect to Ignite node [url=" +
+                                    connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
+                                    "Different versions of nodes are not supported in best effort affinity mode.",
+                                    SqlStateCode.INTERNAL_ERROR);
+                            }
 
-                        if (prevIgniteEnpointVer != null && !prevIgniteEnpointVer.equals(cliIo.igniteVersion())) {
-                            // TODO: 13.02.19 IGNITE-11321 JDBC Thin: implement nodes multi version support.
-                            throw new SQLException("Failed to connect to Ignite cluster [url=" +
-                                connProps.getUrl() + "]. Different versions of nodes are not supported in best effort" +
-                                "affinity mode.", SqlStateCode.INTERNAL_ERROR);
+                            cliIo.timeout(netTimeout);
+
+                            nodeToConnMap.put(cliIo.nodeId(), cliIo);
+
+                            connected = true;
+
+                            prevIgniteEnpointVer = cliIo.igniteVersion();
                         }
+                        catch (Exception exception) {
+                            if (exceptions == null)
+                                exceptions = new ArrayList<>();
 
-                        prevIgniteEnpointVer = cliIo.igniteVersion();
+                            exceptions.add(exception);
+                        }
                     }
                 }
             }
+            catch (Exception exception) {
+                if (exceptions == null)
+                    exceptions = new ArrayList<>();
 
-            connected = true;
-
-            connections = (JdbcThinTcpIo[])nodeToConnMap.values().toArray();
-        }
-        catch (Exception ex) {
-            close();
-
-            if (ex instanceof SQLException)
-                throw (SQLException)ex;
-            else {
-                throw new SQLException("Failed to connect to Ignite cluster [url=" + connProps.getUrl() + ']',
-                    SqlStateCode.CLIENT_CONNECTION_FAILED, ex);
+                exceptions.add(exception);
             }
         }
+
+        if (!connected && exceptions != null) {
+            close();
+
+            if (exceptions.size() == 1) {
+                Exception ex = exceptions.get(0);
+
+                if (ex instanceof SQLException)
+                    throw (SQLException)ex;
+                else if (ex instanceof IOException)
+                    throw new SQLException("Failed to connect to Ignite cluster [url=" + connProps.getUrl() + ']',
+                        SqlStateCode.CLIENT_CONNECTION_FAILED, ex);
+            }
+
+            SQLException e = new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED);
+
+            for (Exception ex : exceptions)
+                e.addSuppressed(ex);
+
+            throw e;
+        }
+
+        connections = (JdbcThinTcpIo[])nodeToConnMap.values().toArray();
     }
 
     /**
