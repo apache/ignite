@@ -2033,7 +2033,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSslClientAndPlainServer()  {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        Throwable e = GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 DriverManager.getConnection(url + "/?sslMode=require" +
                     "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
@@ -2043,7 +2043,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, SQLException.class, "Failed to SSL connect to server");
+        }, SQLException.class, bestEffortAffinity ? "Failed to connect to server" : "Failed to SSL connect to server");
+
+        if (bestEffortAffinity) {
+            for (Throwable t: e.getSuppressed()) {
+                assertEquals(SQLException.class, t.getClass());
+                assertTrue(t.getMessage().contains("Failed to SSL connect to server"));
+            }
+        }
     }
 
     /**

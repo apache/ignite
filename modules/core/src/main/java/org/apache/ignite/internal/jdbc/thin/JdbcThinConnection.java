@@ -156,7 +156,7 @@ public class JdbcThinConnection implements Connection {
     private final Map<UUID, JdbcThinTcpIo> nodeToConnMap = new ConcurrentHashMap<>();
 
     /** Ignite endpoints to use for better performance in case of random access. */
-    private JdbcThinTcpIo[] connections;
+    private Object[] connections;
 
     /** Server index. */
     private int srvIdx;
@@ -1250,7 +1250,7 @@ public class JdbcThinConnection implements Connection {
         if (txStickyIo != null)
             return txStickyIo;
 
-        return bestEffortAffinity ? connections[RND.nextInt(connections.length)] : cliIo;
+        return bestEffortAffinity ? (JdbcThinTcpIo)connections[RND.nextInt(connections.length)] : cliIo;
     }
 
     /**
@@ -1436,7 +1436,7 @@ public class JdbcThinConnection implements Connection {
             throw e;
         }
 
-        connections = (JdbcThinTcpIo[])nodeToConnMap.values().toArray();
+        connections = nodeToConnMap.values().toArray();
     }
 
     /**
