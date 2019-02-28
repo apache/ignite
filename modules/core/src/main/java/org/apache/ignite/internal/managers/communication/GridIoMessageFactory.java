@@ -141,7 +141,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
-import org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionsCopyDemandMessage;
+import org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionCopyDemandMessage;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -1158,7 +1158,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 172:
-                msg = new GridPartitionsCopyDemandMessage();
+                msg = new GridPartitionCopyDemandMessage();
 
                 break;
 

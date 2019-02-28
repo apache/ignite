@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.preload;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -35,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * The demand request for partitions according to given assignments.
  */
-public class GridPartitionsCopyDemandMessage implements Message {
+public class GridPartitionCopyDemandMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,7 +51,7 @@ public class GridPartitionsCopyDemandMessage implements Message {
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridPartitionsCopyDemandMessage() {
+    public GridPartitionCopyDemandMessage() {
         // No-op.
     }
 
@@ -60,7 +59,7 @@ public class GridPartitionsCopyDemandMessage implements Message {
      * @param rebId Rebalance id for this node.
      * @param topVer Topology version.
      */
-    public GridPartitionsCopyDemandMessage(
+    public GridPartitionCopyDemandMessage(
         long rebId,
         AffinityTopologyVersion topVer,
         Map<Integer, GridIntList> assigns0
@@ -171,7 +170,7 @@ public class GridPartitionsCopyDemandMessage implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridPartitionsCopyDemandMessage.class);
+        return reader.afterMessageRead(GridPartitionCopyDemandMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -191,6 +190,6 @@ public class GridPartitionsCopyDemandMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPartitionsCopyDemandMessage.class, this);
+        return S.toString(GridPartitionCopyDemandMessage.class, this);
     }
 }

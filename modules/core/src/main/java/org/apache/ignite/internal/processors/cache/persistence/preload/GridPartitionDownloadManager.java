@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -37,7 +38,7 @@ import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -49,23 +50,28 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_TIMEOUT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
-import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePartitionUploadManager.persistenceRebalanceApplicable;
-import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePartitionUploadManager.rebalanceThreadTopic;
+import static org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionUploadManager.persistenceRebalanceApplicable;
+import static org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionUploadManager.rebalanceThreadTopic;
 import static org.apache.ignite.internal.util.GridIntList.getAsIntList;
 
 /**
  *
  */
-public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAdapter {
+public class GridPartitionDownloadManager {
     /** */
     private static final int REBALANCE_TOPIC_IDX = 0;
+
+    /** */
+    private GridCacheSharedContext<?, ?> cctx;
+
+    /** */
+    private IgniteLogger log;
 
     /** */
     private final ConcurrentMap<UUID, RebalanceDownloadFuture> futMap = new ConcurrentHashMap<>();
@@ -80,10 +86,12 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
     private volatile RebalanceDownloadFuture headFut = new RebalanceDownloadFuture();
 
     /**
-     * @param ctx The kernal context.
+     * @param ktx Kernal context to process.
      */
-    public GridCachePartitionDownloadManager(GridKernalContext ctx) {
-        assert CU.isPersistenceEnabled(ctx.config());
+    public GridPartitionDownloadManager(GridKernalContext ktx) {
+        cctx = ktx.cache().context();
+
+        log = ktx.log(getClass());
     }
 
     /**
@@ -91,16 +99,17 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
      * @param grp The corresponding to assignments cache group context.
      * @return {@code True} if cache might be rebalanced by sending cache partition files.
      */
-    public static boolean rebalanceByPartitionSupports(CacheGroupContext grp, GridDhtPreloaderAssignments assigns) {
+    public boolean rebalanceByPartitionSupports(CacheGroupContext grp, GridDhtPreloaderAssignments assigns) {
         if (assigns == null || assigns.isEmpty())
             return false;
 
-        return grp.persistenceEnabled() && IgniteFeatures.allNodesSupports(assigns.keySet(),
-            IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE);
+        return cctx.preloadMgr().isPresistenceRebalanceEnabled() &&
+            grp.persistenceEnabled() &&
+            IgniteFeatures.allNodesSupports(assigns.keySet(), IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void start0() throws IgniteCheckedException {
+    /** */
+    public void start0() throws IgniteCheckedException {
         assert cctx.pageStore() instanceof FilePageStoreManager;
 
         filePageStore = (FilePageStoreManager)cctx.pageStore();
@@ -128,8 +137,8 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
+    /** */
+    public void stop0(boolean cancel) {
         cctx.gridIO().removeChannelListener(rebalanceThreadTopic(REBALANCE_TOPIC_IDX), null);
     }
 
@@ -209,11 +218,11 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
 
                             rebFut.markProcessed(grpId, partId);
 
-                            // Validate partition
+                            // TODO Validate partition
 
-                            // Rebuild indexes by partition
+                            // TODO Rebuild indexes by partition
 
-                            // Own partition
+                            // TODO Own partition
                         }
                         finally {
                             part.unlock();
@@ -330,7 +339,7 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
         Map<Integer, GridDhtPreloaderAssignments> assignsMap,
         AffinityTopologyVersion topVer,
         boolean force,
-        int rebalanceId
+        long rebalanceId
     ) {
         // Start new rebalance session.
         final RebalanceDownloadFuture headFut0 = headFut;
@@ -376,7 +385,7 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
             }
         }
 
-        return rq;
+        return rq == null ? () -> {} : rq;
     }
 
     /**
@@ -395,7 +404,7 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
                     return;
 
                 try {
-                    GridPartitionsCopyDemandMessage msg0 = new GridPartitionsCopyDemandMessage(rebFut.rebalanceId,
+                    GridPartitionCopyDemandMessage msg0 = new GridPartitionCopyDemandMessage(rebFut.rebalanceId,
                         rebFut.topVer, rebFut.nodeAssigns);
 
                     futMap.put(node.id(), rebFut);
@@ -416,7 +425,7 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCachePartitionDownloadManager.class, this);
+        return S.toString(GridPartitionDownloadManager.class, this);
     }
 
     /** */
@@ -425,7 +434,7 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
         private UUID nodeId;
 
         /** */
-        private int rebalanceId;
+        private long rebalanceId;
 
         /** */
         private Map<Integer, GridIntList> nodeAssigns;
@@ -449,7 +458,7 @@ public class GridCachePartitionDownloadManager extends GridCacheSharedManagerAda
          */
         public RebalanceDownloadFuture(
             UUID nodeId,
-            int rebalanceId,
+            long rebalanceId,
             Map<Integer, GridIntList> nodeAssigns,
             AffinityTopologyVersion topVer
         ) {

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.persistence.preload;
 
 import java.io.File;
@@ -27,12 +28,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -54,7 +55,13 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_REBALANCE;
 /**
  *
  */
-public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapter {
+public class GridPartitionUploadManager {
+    /** */
+    private GridCacheSharedContext<?, ?> cctx;
+
+    /** */
+    private IgniteLogger log;
+
     /** The default factory to provide IO oprations over uploading files. */
     private static final FileIOFactory dfltIoFactory = new RandomAccessFileIOFactory();
 
@@ -68,11 +75,12 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
     private IgniteBackupPageStoreManager backupMgr;
 
     /**
-     * @param ctx The kernal context.
+     * @param ktx Kernal context to process.
      */
-    public GridCachePartitionUploadManager(GridKernalContext ctx) {
-        assert CU.isPersistenceEnabled(ctx.config());
+    public GridPartitionUploadManager(GridKernalContext ktx) {
+        cctx = ktx.cache().context();
 
+        log = ktx.log(getClass());
     }
 
     /**
@@ -92,8 +100,8 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
         return TOPIC_REBALANCE.topic("Rebalance", idx);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void start0() throws IgniteCheckedException {
+    /** */
+    public void start0() throws IgniteCheckedException {
         backupMgr = cctx.storeBackup();
 
         if (persistenceRebalanceApplicable(cctx)) {
@@ -102,13 +110,13 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
 
                 cctx.gridIO().addMessageListener(rebalanceThreadTopic(topicId), new GridMessageListener() {
                     @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                        if (msg instanceof GridPartitionsCopyDemandMessage) {
+                        if (msg instanceof GridPartitionCopyDemandMessage) {
                             // Start to checkpoint and upload process.
                             if (lock.readLock().tryLock())
                                 return;
 
                             try {
-                                onDemandMessage0(nodeId, topicId, (GridPartitionsCopyDemandMessage)msg, plc);
+                                onDemandMessage0(nodeId, topicId, (GridPartitionCopyDemandMessage)msg, plc);
                             }
                             finally {
                                 lock.readLock().unlock();
@@ -120,8 +128,8 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
+    /** */
+    public void stop0(boolean cancel) {
         lock.writeLock().lock();
 
         try {
@@ -145,7 +153,7 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
      * @param topicId The index of rebalance pool thread.
      * @param msg Message containing rebalance request params.
      */
-    private void onDemandMessage0(UUID nodeId, int topicId, GridPartitionsCopyDemandMessage msg, byte plc) {
+    private void onDemandMessage0(UUID nodeId, int topicId, GridPartitionCopyDemandMessage msg, byte plc) {
         if (msg.rebalanceId() < 0) // Demand node requested context cleanup.
             return;
 
@@ -202,7 +210,7 @@ public class GridCachePartitionUploadManager extends GridCacheSharedManagerAdapt
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCachePartitionUploadManager.class, this);
+        return S.toString(GridPartitionUploadManager.class, this);
     }
 
     /** */
