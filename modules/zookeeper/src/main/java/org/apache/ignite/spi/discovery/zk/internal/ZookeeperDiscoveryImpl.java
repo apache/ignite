@@ -569,7 +569,7 @@ public class ZookeeperDiscoveryImpl {
     public boolean allNodesSupport(IgniteFeatures feature) {
         checkState();
 
-        return rtState.top.isAllNodes(n -> IgniteFeatures.nodeSupports(n, feature));
+        return rtState != null && rtState.top.isAllNodes(n -> IgniteFeatures.nodeSupports(n, feature));
     }
 
     /**
