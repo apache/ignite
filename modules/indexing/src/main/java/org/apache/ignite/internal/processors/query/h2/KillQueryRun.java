@@ -25,9 +25,11 @@ import java.util.UUID;
  */
 class KillQueryRun {
     /** Node id. */
+    // TODO: Final
     private UUID nodeId;
 
     /** Node query id. */
+    // TODO: Final
     private long nodeQryId;
 
     /**

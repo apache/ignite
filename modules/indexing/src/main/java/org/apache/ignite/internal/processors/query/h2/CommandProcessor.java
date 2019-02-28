@@ -174,18 +174,22 @@ public class CommandProcessor {
      * Start executor.
      */
     public void start() {
+        // TODO: Ticket for separate pool or MGMT pool + non-blocking processing through futures
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, (nodeId, msg, plc) -> onMessage(nodeId, msg));
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
+                // TODO: RW lock for cleanup. Otherwise we are risking future:
+                // TODO: write lock for cleanup, read lock for normal operations
                 Iterator<Map.Entry<KillQueryRun, GridFutureAdapter<String>>> it = cancellationRuns.entrySet().iterator();
 
                 while(it.hasNext()){
                     Map.Entry<KillQueryRun, GridFutureAdapter<String>> entry = it.next();
 
                     if(entry.getKey().nodeId().equals(nodeId)){
+                        // TODO: Is it ok that we do not inform user about query result?
                         entry.getValue().onDone();
 
                         it.remove();
@@ -199,6 +203,8 @@ public class CommandProcessor {
      * Close executor.
      */
     public void stop() {
+        // TODO: Most likely lock is needed as well.
+        // TODO: Moreover, we should add "stop" flag to avoid concurrent addition of new user operations
         Iterator<Map.Entry<KillQueryRun, GridFutureAdapter<String>>> it = cancellationRuns.entrySet().iterator();
 
         while (it.hasNext()) {
@@ -348,6 +354,14 @@ public class CommandProcessor {
      * @param cmd Command.
      */
     private void processKillQueryCommand(SqlKillQueryCommand cmd) {
+        // TODO: Proposed semantics:
+        // 1. SYNC vs ASYNC: both modes require response, but ASYNC will send IO msg back after locating running query
+        // but before actual cancel
+        // 2.1. No node (before send) - error
+        // 2.2. Node left the grid before response is received - another error
+        // 3. No query with the given ID is found on a node - another error
+
+        // TODO: Need to check whether node is alive under *read lock*
         ClusterNode node = ctx.discovery().node(cmd.nodeId());
 
         if (node != null) {
@@ -358,6 +372,7 @@ public class CommandProcessor {
 
             KillQueryRun run = null;
 
+            // TODO: Need to review carefully
             if (resRequired) {
                 fut = new GridFutureAdapter<>();
 
@@ -374,7 +389,7 @@ public class CommandProcessor {
             }
 
             if(sndReqRequired){
-
+                // TODO: Need to validate that target node is >= 2.8
                 boolean snd = idx.send(GridTopic.TOPIC_QUERY,
                     GridTopic.TOPIC_QUERY.ordinal(),
                     Collections.singleton(node),
@@ -405,6 +420,9 @@ public class CommandProcessor {
                         + cmd.nodeQueryId() + "err=" + e + "]", e);
                 }
             }
+        }
+        else {
+            // TODO:
         }
     }
 

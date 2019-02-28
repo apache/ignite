@@ -58,7 +58,7 @@ public class SqlKillQueryCommand implements SqlCommand {
      * @param lex Lexer.
      */
     private void parseGlobalQueryId(SqlLexer lex) {
-        if(lex.shift()) {
+        if (lex.shift()) {
             if (lex.tokenType() == SqlLexerTokenType.STRING) {
                 String tok = lex.token();
 
