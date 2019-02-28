@@ -442,7 +442,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
                 @Override public boolean apply() {
                     return qryCntr.get() >= ITERATION_CNT * threadCnt * NODES;
                 }
-            }, TimeUnit.MINUTES.toMillis(2));
+            }, getTestTimeout());
 
             for (Set<T2<QueryTestKey, QueryTestValue>> set : rcvdEvts)
                 checkEvents(set, ITERATION_CNT * threadCnt, grid(0).cache(ccfg.getName()), false);
@@ -454,7 +454,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
                     @Override public boolean apply() {
                         return cbCntr.get() >= expCnt;
                     }
-                }, TimeUnit.SECONDS.toMillis(180));
+                }, getTestTimeout());
 
                 assertTrue("Failed to wait events [exp=" + expCnt + ", act=" + cbCntr.get() + "]", res);
 
@@ -471,7 +471,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
                     @Override public boolean apply() {
                         return filterCbCntr.get() >= expInvkCnt;
                     }
-                }, TimeUnit.SECONDS.toMillis(180));
+                }, getTestTimeout());
 
                 assertEquals(expInvkCnt, filterCbCntr.get());
 
@@ -499,7 +499,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
             @Override public boolean apply() {
                 return set.size() >= expCnt;
             }
-        }, 10000L));
+        }, getTestTimeout()));
 
         final int setSize = set.size();
 
