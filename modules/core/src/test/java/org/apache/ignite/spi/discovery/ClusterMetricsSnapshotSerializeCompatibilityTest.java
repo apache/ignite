@@ -25,13 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
-/**
- * Grid discovery metrics test.
- */
-@GridCommonTest(group = "Utils")
+/** */
 public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommonAbstractTest {
     /** */
     public ClusterMetricsSnapshotSerializeCompatibilityTest() {
