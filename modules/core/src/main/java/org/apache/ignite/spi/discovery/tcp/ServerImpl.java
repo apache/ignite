@@ -186,7 +186,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 /**
  *
  */
-@SuppressWarnings({"MissortedModifiers", "IfMayBeConditional"})
+@SuppressWarnings({"IfMayBeConditional"})
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
@@ -1313,6 +1313,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
+
+                    // During marshalling, SPI didn't know whether all nodes support compression as we didn't join yet.
+                    // The only way to know is passing flag directly with handshake response.
+                    if (!res.isDiscoveryDataPacketCompression())
+                        ((TcpDiscoveryJoinRequestMessage)msg).gridDiscoveryData().unzipData(log);
 
                     synchronized (mux) {
                         for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
@@ -3970,7 +3975,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 err = spi.getSpiContext().validateNode(node);
 
                 if (err == null)
-                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), false, log));
+                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(
+                        spi.marshaller(),
+                        U.resolveClassLoader(spi.ignite().configuration()),
+                        false,
+                        isDiscoDataPaketCompressed(node),
+                        log));
 
                 if (err != null) {
                     final IgniteNodeValidationResult err0 = err;
@@ -4279,6 +4289,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
             }
+        }
+
+        /**
+         * @param node Joined node.
+         * @return <code>true</code> if packet is compressed.
+         */
+        private boolean isDiscoDataPaketCompressed(TcpDiscoveryNode node) {
+            return IgniteFeatures.nodeSupports(node, IgniteFeatures.DATA_PACKET_COMPRESSION) &&
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION);
         }
 
         /**
@@ -6271,6 +6290,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
+
+                    res.setDiscoveryDataPacketCompression(allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION));
 
                     if (req.client())
                         res.clientAck(true);
