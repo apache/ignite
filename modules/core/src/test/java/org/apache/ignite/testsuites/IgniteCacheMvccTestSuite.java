@@ -42,33 +42,33 @@ import org.junit.runners.Suite;
 /** */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//    CacheMvccTransactionsTest.class,
-//    CacheMvccProcessorTest.class,
-//    CacheMvccVacuumTest.class,
-//    CacheMvccConfigurationValidationTest.class,
-//
-//    DataStreamProcessorMvccSelfTest.class,
-//    DataStreamProcessorMvccPersistenceSelfTest.class,
-//    CacheMvccOperationChecksTest.class,
-//
-//    CacheMvccRemoteTxOnNearNodeStartTest.class,
-//
-//    MvccUnsupportedTxModesTest.class,
-//
-//    MvccCachePeekTest.class,
-//
-//    // Concurrent ops tests.
-//    CacheMvccIteratorWithConcurrentTransactionTest.class,
-//    CacheMvccLocalEntriesWithConcurrentTransactionTest.class,
-//    CacheMvccScanQueryWithConcurrentTransactionTest.class,
-//    CacheMvccSizeWithConcurrentTransactionTest.class,
-//
-//    // Failover tests.
-//    CacheMvccTxFailoverTest.class,
-//    CacheMvccClusterRestartTest.class,
-//    CacheMvccPartitionedCoordinatorFailoverTest.class,
-//    CacheMvccReplicatedCoordinatorFailoverTest.class,
-//    CacheMvccProcessorLazyStartTest.class
+    CacheMvccTransactionsTest.class,
+    CacheMvccProcessorTest.class,
+    CacheMvccVacuumTest.class,
+    CacheMvccConfigurationValidationTest.class,
+
+    DataStreamProcessorMvccSelfTest.class,
+    DataStreamProcessorMvccPersistenceSelfTest.class,
+    CacheMvccOperationChecksTest.class,
+
+    CacheMvccRemoteTxOnNearNodeStartTest.class,
+
+    MvccUnsupportedTxModesTest.class,
+
+    MvccCachePeekTest.class,
+
+    // Concurrent ops tests.
+    CacheMvccIteratorWithConcurrentTransactionTest.class,
+    CacheMvccLocalEntriesWithConcurrentTransactionTest.class,
+    CacheMvccScanQueryWithConcurrentTransactionTest.class,
+    CacheMvccSizeWithConcurrentTransactionTest.class,
+
+    // Failover tests.
+    CacheMvccTxFailoverTest.class,
+    CacheMvccClusterRestartTest.class,
+    CacheMvccPartitionedCoordinatorFailoverTest.class,
+    CacheMvccReplicatedCoordinatorFailoverTest.class,
+    CacheMvccProcessorLazyStartTest.class
 })
 public class IgniteCacheMvccTestSuite {
 }
