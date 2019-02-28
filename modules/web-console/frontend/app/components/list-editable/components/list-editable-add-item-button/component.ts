@@ -22,33 +22,20 @@ import './style.scss';
 
 /**
  * Adds "add new item" button to list-editable-no-items slot and after list-editable
- * @type {ng.IComponentController}
  */
-export class ListEditableAddItemButton {
+export class ListEditableAddItemButton<T> {
     /** 
      * Template for button that's inserted after list-editable
-     * @type {string}
      */
-    static hasItemsTemplate = hasItemsTemplate;
-    /** @type {ListEditable} */
-    _listEditable;
-    /** @type {string} */
-    labelSingle;
-    /** @type {string} */
-    labelMultiple;
-    /** @type {ng.ICompiledExpression} */
-    _addItem;
+    static hasItemsTemplate: string = hasItemsTemplate;
+    _listEditable: ListEditable<T>;
+    labelSingle: string;
+    labelMultiple: string;
+    _addItem: ng.ICompiledExpression;
 
     static $inject = ['$compile', '$scope'];
 
-    /**
-     * @param {ng.ICompileService} $compile
-     * @param {ng.IScope} $scope
-     */
-    constructor($compile, $scope) {
-        this.$compile = $compile;
-        this.$scope = $scope;
-    }
+    constructor(private $compile: ng.ICompileService, private $scope: ng.IScope) {}
 
     $onDestroy() {
         this._listEditable = this._hasItemsButton = null;
