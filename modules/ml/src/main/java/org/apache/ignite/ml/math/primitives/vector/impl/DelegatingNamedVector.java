@@ -17,13 +17,13 @@
 
 package org.apache.ignite.ml.math.primitives.vector.impl;
 
+import org.apache.ignite.ml.math.primitives.vector.NamedVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import org.apache.ignite.ml.math.primitives.vector.NamedVector;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-
 
 /**
  * Delegating named vector that delegates all operations to underlying vector and adds implementation of

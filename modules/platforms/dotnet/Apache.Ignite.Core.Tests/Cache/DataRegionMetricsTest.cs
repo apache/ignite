@@ -222,8 +222,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             cacheWithMetricsAndPersistence.Put(1, 1);
             cacheWithMetricsAndPersistence.Get(1);
 
-            // Wait for checkpoint.
-            Thread.Sleep(CheckpointFrequency);
+            // Wait for checkpoint. Wait for two times than CheckpointFrequency.
+            Thread.Sleep(CheckpointFrequency.Add(CheckpointFrequency));
             
             return ignite;
         }
