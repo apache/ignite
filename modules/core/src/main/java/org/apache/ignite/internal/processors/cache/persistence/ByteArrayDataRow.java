@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
  */
 public class ByteArrayDataRow extends DataRow {
     public ByteArrayDataRow(CacheGroupContext grp, long link, int part) {
-        super(grp, 0, link, part, RowData.NO_KEY);
+        super(grp, 0, link, part, RowData.NO_KEY, true);
     }
 
     public ByteArrayDataRow(CacheObjectContext ctx, int part, int grpId, byte[] data) throws IgniteCheckedException {
