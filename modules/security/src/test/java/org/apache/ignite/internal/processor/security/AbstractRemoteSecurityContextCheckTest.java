@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processor.security;
 
+import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -40,8 +43,22 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     /**
      * Checks that current security context is valid and incriments invoke's counter.
      */
-    public static void verify(){
+    protected static void verify(){
         VERIFIER.verify((IgniteEx)Ignition.localIgnite());
+    }
+
+    /**
+     * @return IgniteCompute is produced by passed node for cluster group that contains nodes with ids from collection.
+     */
+    protected static IgniteCompute compute(Ignite ignite, Collection<UUID> ids) {
+        return ignite.compute(ignite.cluster().forNodeIds(ids));
+    }
+
+    /**
+     * @return IgniteCompute is produced by passed node for cluster group that contains node with id.
+     */
+    protected static IgniteCompute compute(Ignite ignite, UUID id) {
+        return ignite.compute(ignite.cluster().forNodeId(id));
     }
 
     /**
@@ -50,6 +67,22 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
      */
     protected UUID secSubjectId(IgniteEx ign) {
         return ign.context().security().securityContext().subject().id();
+    }
+
+    /**
+     * @param name Security subject id of passed node.
+     * @return Security subject id of passed node.
+     */
+    protected UUID secSubjectId(String name) {
+        return secSubjectId(grid(name));
+    }
+
+    /**
+     * @param name Node name.
+     * @return Node id.
+     */
+    protected UUID nodeId(String name) {
+        return grid(name).context().discovery().localNode().id();
     }
 
     /**

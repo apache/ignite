@@ -189,20 +189,6 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
     }
 
     /**
-     * @return IgniteCompute is produced by passed node for cluster group that contains nodes with ids from collection.
-     */
-    private static IgniteCompute compute(Ignite ignite, Collection<UUID> ids) {
-        return ignite.compute(ignite.cluster().forNodeIds(ids));
-    }
-
-    /**
-     * @return IgniteCompute is produced by passed node for cluster group that contains node with id.
-     */
-    private static IgniteCompute compute(Ignite ignite, UUID id) {
-        return ignite.compute(ignite.cluster().forNodeId(id));
-    }
-
-    /**
      * Common closure for tests.
      */
     static class CommonClosure implements IgniteRunnable, IgniteCallable<Object>,
