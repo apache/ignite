@@ -226,6 +226,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      */
     private final ConcurrentHashMap<UUID, RecoveryBallotBox> recoveryBallotBoxes = new ConcurrentHashMap<>();
 
+    /** State mutex. */
+    private final Object stateMux = new Object();
+
     /** Client disconnected flag. */
     private volatile boolean disconnected;
 
@@ -413,22 +416,26 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         checkMvccSupported(discoCache.allNodes());
 
-        onCoordinatorChanged(discoCache.version(), discoCache.allNodes(), false);
+        synchronized (stateMux) {
+            onCoordinatorChanged(discoCache.version(), discoCache.allNodes(), false);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
-        disconnected = true;
+        synchronized (stateMux) {
+            disconnected = true;
 
-        MvccCoordinator curCrd0 = curCrd;
+            MvccCoordinator curCrd0 = curCrd;
 
-        if (!curCrd0.disconnected()) {
-            // Notify all listeners waiting for a snapshot.
-            onCoordinatorFailed(curCrd0.nodeId());
+            if (!curCrd0.disconnected()) {
+                // Notify all listeners waiting for a snapshot.
+                onCoordinatorFailed(curCrd0.nodeId());
 
-            curCrd = MvccCoordinator.DISCONNECTED_COORDINATOR;
+                curCrd = MvccCoordinator.DISCONNECTED_COORDINATOR;
 
-            readyVer = AffinityTopologyVersion.NONE;
+                readyVer = AffinityTopologyVersion.NONE;
+            }
         }
     }
 
@@ -443,14 +450,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             || evt.type() == EVT_NODE_LEFT
             || evt.type() == EVT_NODE_JOINED
             || evt.type() == EVT_CLIENT_NODE_RECONNECTED;
-
-        if (evt.type() == EVT_CLIENT_NODE_RECONNECTED && evt.eventNode().isLocal()) {
-            disconnected = false;
-
-            return;
-        }
-        else if (disconnected)
-            return;
+//        log.info("MY mvcc event="+evt.type()+" evt.eventNode()="+evt.eventNode()+" dis="+disconnected
+//            +" dis2="+ctx.clientDisconnected()+" n="+ctx.localNodeId());
 
         UUID nodeId = evt.eventNode().id();
         AffinityTopologyVersion topVer = discoCache.version();
@@ -460,19 +461,30 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         MvccCoordinator curCrd0 = curCrd;
 
-        if (evt.type() == EVT_NODE_JOINED) {
-            if (curCrd0.disconnected()) // Handle join event only if coordinator has not been elected yet.
-                onCoordinatorChanged(topVer, nodes, true);
-        }
-        else if (Objects.equals(nodeId, curCrd0.nodeId())) {
-            // 1. Notify all listeners waiting for a snapshot.
-            onCoordinatorFailed(nodeId);
+        synchronized (stateMux) {
+            if (evt.type() == EVT_CLIENT_NODE_RECONNECTED && evt.eventNode().isLocal()) {
+                disconnected = false;
 
-            // 2. Process coordinator change.
-            onCoordinatorChanged(topVer, nodes, true);
+                return;
+            }
+            else if (disconnected)
+                return;
+
+            if (evt.type() == EVT_NODE_JOINED) {
+                if (curCrd0.disconnected()) // Handle join event only if coordinator has not been elected yet.
+                    onCoordinatorChanged(topVer, nodes, true);
+            }
+            else if (Objects.equals(nodeId, curCrd0.nodeId())) {
+                // 1. Notify all listeners waiting for a snapshot.
+                onCoordinatorFailed(nodeId);
+
+                // 2. Process coordinator change.
+                onCoordinatorChanged(topVer, nodes, true);
+            }
         }
+
         // Process node left event on the current mvcc coordinator.
-        else if (curCrd0.local()) {
+         if (curCrd0.local()) {
             // 1. Notify active queries.
             activeQueries.onNodeFailed(nodeId);
 
