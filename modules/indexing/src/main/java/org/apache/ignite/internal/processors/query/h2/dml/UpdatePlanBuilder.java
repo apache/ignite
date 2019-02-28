@@ -403,9 +403,10 @@ public final class UpdatePlanBuilder {
                 IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
         if (fastUpdate != null) {
-            if (!ALLOW_KEY_VAL_COLUMNS) {
+            if (!ALLOW_KEY_VAL_COLUMNS && (!QueryUtils.isSqlType(desc.type().keyClass())
+                || (!QueryUtils.isSqlType(desc.type().valueClass()) && mode != UpdateMode.DELETE))) {
                 throw new IgniteSQLException(
-                    "Composite _VAL column is not supported at INSERT/UPDATE/MERGE statements",
+                    "Composite _KEY / _VAL columns are not supported at INSERT/UPDATE/MERGE statements",
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
