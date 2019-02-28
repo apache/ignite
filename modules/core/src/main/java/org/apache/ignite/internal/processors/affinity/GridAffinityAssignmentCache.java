@@ -328,7 +328,7 @@ public class GridAffinityAssignmentCache {
         IdealAffinityAssignment prevAssignment = idealAssignment;
 
         // Already calculated.
-        if (prevAssignment.topologyVersion().equals(topVer))
+        if (prevAssignment != null && prevAssignment.topologyVersion().equals(topVer))
             return prevAssignment;
 
         // Resolve nodes snapshot for specified topology version.

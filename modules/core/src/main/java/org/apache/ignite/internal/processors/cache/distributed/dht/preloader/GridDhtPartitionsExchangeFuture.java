@@ -683,11 +683,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (newCrd) {
             IgniteInternalFuture<?> fut = cctx.affinity().initCoordinatorCaches(this, false);
 
-            if (fut != null) {
-                fut.get();
+            fut.get();
 
-                cctx.exchange().exchangerUpdateHeartbeat();
-            }
+            cctx.exchange().exchangerUpdateHeartbeat();
 
             cctx.exchange().onCoordinatorInitialized();
 
