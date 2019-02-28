@@ -299,23 +299,11 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        CountDownLatch grid1MetaStorageStartLatch = new CountDownLatch(1);
-
-        grid(1).context().internalSubscriptionProcessor().registerDistributedMetastorageListener(
-            new DistributedMetastorageLifecycleListener() {
-                @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-                    grid1MetaStorageStartLatch.countDown();
-                }
-            }
-        );
-
         grid(0).cluster().active(true);
 
         assertEquals("value1", metastorage(0).read("key1"));
 
         assertEquals("value2", metastorage(0).read("key2"));
-
-        grid1MetaStorageStartLatch.await(1, TimeUnit.SECONDS);
 
         assertDistributedMetastoragesAreEqual(grid(0), grid(1));
     }
