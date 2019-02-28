@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.tree;
+package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CorruptedPersistenceException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception to distinguish {@link BPlusTree} tree broken invariants.
+ * Exception to distinguish {@link AbstractFreeList} broken invariants.
  */
-public class CorruptedTreeException extends IgniteCheckedException implements CorruptedPersistenceException {
+public class CorruptedFreeListException extends IgniteCheckedException implements CorruptedPersistenceException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,7 +32,7 @@ public class CorruptedTreeException extends IgniteCheckedException implements Co
      * @param msg Message.
      * @param cause Cause.
      */
-    public CorruptedTreeException(String msg, @Nullable Throwable cause) {
+    public CorruptedFreeListException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }
