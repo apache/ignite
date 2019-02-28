@@ -911,8 +911,11 @@ public class GridDhtPartitionDemander {
                                 return; // Skip current partition.
                             }
 
-                            if (cctx.statisticsEnabled())
-                                cctx.cache().metrics0().onRebalanceKeyReceived();
+                            //TODO: IGNITE-11330: Update metrics for touched cache only.
+                            for (GridCacheContext ctx : grp.caches()) {
+                                if (ctx.statisticsEnabled())
+                                    ctx.cache().metrics0().onRebalanceKeyReceived();
+                            }
                         }
 
                         if (!hasMore)
@@ -954,13 +957,14 @@ public class GridDhtPartitionDemander {
 
                     GridCacheEntryInfo entry = infos.next();
 
-                    if (cctx == null || (grp.sharedGroup() && entry.cacheId() != cctx.cacheId()))
+                    if (cctx == null || (grp.sharedGroup() && entry.cacheId() != cctx.cacheId())) {
                         cctx = grp.sharedGroup() ? grp.shared().cacheContext(entry.cacheId()) : grp.singleCacheContext();
 
-                    if (cctx == null)
-                        continue;
-                    else if (cctx.isNear())
-                        cctx = cctx.dhtCache().context();
+                        if (cctx == null)
+                            continue;
+                        else if (cctx.isNear())
+                            cctx = cctx.dhtCache().context();
+                    }
 
                     if (!preloadEntry(node, p, entry, topVer, cctx)) {
                         if (log.isTraceEnabled())
@@ -970,8 +974,11 @@ public class GridDhtPartitionDemander {
                         return;
                     }
 
-                    if (cctx.statisticsEnabled())
-                        cctx.cache().metrics0().onRebalanceKeyReceived();
+                    //TODO: IGNITE-11330: Update metrics for touched cache only.
+                    for (GridCacheContext ctx : grp.caches()) {
+                        if (ctx.statisticsEnabled())
+                            ctx.cache().metrics0().onRebalanceKeyReceived();
+                    }
                 }
             }
             finally {

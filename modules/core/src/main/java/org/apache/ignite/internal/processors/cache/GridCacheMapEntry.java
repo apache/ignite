@@ -6727,12 +6727,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             for (int i = 0; i < entries.size(); i++) {
                 GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)entries.get(i);
 
-                assert info.mvccTxState() == TxState.COMMITTED ||
-                    (MvccUtils.compare(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0 && i < entries.size() -1)
-                    || entries.size() == 1;
-                assert i != 0 || info.newMvccTxState() == TxState.NA && info.newMvccCoordinatorVersion() == MvccUtils.MVCC_CRD_COUNTER_NA;
-                assert i == 0 || info.newMvccTxState() == TxState.COMMITTED ||
-                    MvccUtils.compareNewVersion(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0;
+                assert info.mvccTxState() == TxState.COMMITTED || MvccUtils.compare(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0
+                assert info.newMvccTxState() == TxState.COMMITTED ||
+                    MvccUtils.compareNewVersion(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0 ||
+                    info.newMvccCoordinatorVersion() == MvccUtils.MVCC_CRD_COUNTER_NA;
 
                 boolean added = !cctx.offheap().mvccUpdateRowWithPreloadInfo(this,
                     info.value(),
