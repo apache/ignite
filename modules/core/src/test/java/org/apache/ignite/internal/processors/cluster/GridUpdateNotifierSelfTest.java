@@ -34,9 +34,15 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteProperties;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -44,11 +50,15 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import static org.mockito.Matchers.anyString;
+
 /**
  * Update notifier test.
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
+    /** Server nodes count. */
+    public static final int SERVER_NODES = 3;
     /** */
     private String updateStatusParams;
 
@@ -89,12 +99,20 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
         HttpIgniteUpdatesChecker updatesCheckerMock = Mockito.mock(HttpIgniteUpdatesChecker.class);
 
         // Return current node version and some other info
-        Mockito.when(updatesCheckerMock.getUpdates(true))
+        Mockito.when(updatesCheckerMock.getUpdates(anyString()))
                 .thenReturn("meta=meta" + "\n" + "version=" + nodeVer + "\n" + "downloadUrl=url");
 
-        GridUpdateNotifier ntf = new GridUpdateNotifier(null, nodeVer, false, updatesCheckerMock);
+        GridKernalContext ctx = Mockito.mock(GridKernalContext.class);
+        GridDiscoveryManager discovery = Mockito.mock(GridDiscoveryManager.class);
+        List<ClusterNode> srvNodes = Mockito.mock(List.class);
 
-        ntf.checkForNewVersion(log, true);
+        Mockito.when(srvNodes.size()).thenReturn(SERVER_NODES);
+        Mockito.when(discovery.serverNodes(Mockito.any(AffinityTopologyVersion.class))).thenReturn(srvNodes);
+        Mockito.when(ctx.discovery()).thenReturn(discovery);
+
+        GridUpdateNotifier ntf = new GridUpdateNotifier(null, nodeVer,null, ctx.discovery(), Collections.emptyList(), false, updatesCheckerMock);
+
+        ntf.checkForNewVersion(log);
 
         String ver = ntf.latestVersion();
 
