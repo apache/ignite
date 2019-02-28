@@ -21,8 +21,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -312,7 +310,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testWriteTwice() throws Exception {
+    public void testOptimizedWriteTwice() throws Exception {
         startGrid(0).cluster().active(true);
 
         assertEquals(0, metastorage(0).getUpdatesCount());

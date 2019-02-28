@@ -24,12 +24,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
 @SuppressWarnings("PublicField")
-class DistributedMetaStorageKeyValuePair implements Serializable {
-    /** */
-    public static final DistributedMetaStorageKeyValuePair[] EMPTY_ARRAY = {};
-
+final class DistributedMetaStorageKeyValuePair implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final DistributedMetaStorageKeyValuePair[] EMPTY_ARRAY = {};
 
     /** */
     @GridToStringInclude

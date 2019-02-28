@@ -24,12 +24,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
 @SuppressWarnings("PublicField")
-class DistributedMetaStorageHistoryItem implements Serializable {
-    /** */
-    public static final DistributedMetaStorageHistoryItem[] EMPTY_ARRAY = {};
-
+final class DistributedMetaStorageHistoryItem implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final DistributedMetaStorageHistoryItem[] EMPTY_ARRAY = {};
 
     /** */
     @GridToStringInclude
@@ -105,7 +105,7 @@ class DistributedMetaStorageHistoryItem implements Serializable {
             }
 
             if (hash == 0L)
-                hash = 1L; // Avoid collisions.
+                hash = 1L; // Avoid rehashing.
 
             longHash = hash;
         }
