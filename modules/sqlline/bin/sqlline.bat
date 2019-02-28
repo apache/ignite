@@ -42,13 +42,12 @@ if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
 goto error_finish
 
 :checkJdkVersion
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"version .9\..*" /c:"version .1\.8\..*" > nul
-if %ERRORLEVEL% equ 0 goto checkIgniteHome1
-    echo %0, ERROR:
-    echo The version of JAVA installed in %JAVA_HOME% is incorrect.
-    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
-    echo You can also download latest JDK at http://java.com/download.
-goto error_finish
+set cmd="%JAVA_HOME%\bin\java.exe"
+for /f "tokens=* USEBACKQ" %%f in (`%cmd% -version 2^>^&1`) do (
+    set var=%%f
+    goto :LoopEscape
+)
+:LoopEscape
 
 :: Check IGNITE_HOME.
 :checkIgniteHome1
@@ -103,9 +102,45 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
 
+for /f "tokens=1-3  delims= " %%a in ("%var%") do set JAVA_VER_STR=%%c
+set JAVA_VER_STR=%JAVA_VER_STR:"=%
+
+for /f "tokens=1,2 delims=." %%a in ("%JAVA_VER_STR%.x") do set MAJOR_JAVA_VER=%%a& set MINOR_JAVA_VER=%%b
+
+if %MAJOR_JAVA_VER% == 8 (
+    set JVM_OPTS= ^
+    -XX:+AggressiveOpts ^
+    %JVM_OPTS%
+)
+
+if %MAJOR_JAVA_VER% GEQ 9 if %MAJOR_JAVA_VER% LSS 11 (
+    set JVM_OPTS= ^
+    -XX:+AggressiveOpts ^
+    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
+    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
+    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
+    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
+    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
+    --illegal-access=permit ^
+    --add-modules=java.transaction ^
+    --add-modules=java.xml.bind ^
+    %JVM_OPTS%
+)
+
+if %MAJOR_JAVA_VER% == 11 (
+    set JVM_OPTS= ^
+    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
+    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
+    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
+    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
+    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
+    --illegal-access=permit ^
+    %JVM_OPTS%
+)
+
 set CP=%IGNITE_LIBS%
 set CP=%CP%;%IGNITE_HOME%\bin\include\sqlline\*
 
-"%JAVA_HOME%\bin\java.exe" -cp "%CP%" sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver %*
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver %*
 
 :error_finish
