@@ -383,7 +383,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
     static _toObject(clsName, val) {
         const items = _.isArray(val) ? val : [val];
 
-        if (clsName === 'ARRAY_EVENTS') {
+        if (clsName === 'EVENTS') {
             const lastIdx = items.length - 1;
 
             return [..._.map(items, (v, idx) => (idx === 0 ? 'new int[] {' : ' ') + v.label + (lastIdx === idx ? '}' : ''))];
@@ -520,8 +520,12 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
     static _constructMap(sb, map, vars = []) {
         const keyClsName = this.javaTypes.shortClassName(map.keyClsName);
-        const keyClsGeneric = map.keyClsGenericName ? `<${map.keyClsGenericExtends ? '? extends ' : ''}${this.javaTypes.shortClassName(map.keyClsGenericName)}>` : '';
         const valClsName = this.javaTypes.shortClassName(map.valClsName);
+
+        const genericTypeShort = this.javaTypes.shortClassName(map.keyClsGenericType);
+        const keyClsGeneric = map.keyClsGenericType ?
+            map.isKeyClsGenericTypeExtended ? `<? extends ${genericTypeShort}>` : `<${genericTypeShort}>`
+            : '';
 
         const mapClsName = map.ordered ? 'LinkedHashMap' : 'HashMap';
 
@@ -731,8 +735,8 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         imports.push(prop.keyClsName);
         imports.push(prop.valClsName);
 
-        if (prop.keyClsGenericName)
-            imports.push(prop.keyClsGenericName);
+        if (prop.keyClsGenericType)
+            imports.push(prop.keyClsGenericType);
 
         return imports;
     }
@@ -850,12 +854,9 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                     break;
 
                 case 'MAP':
-                    if (prop.valClsNameShow === 'ARRAY_EVENTS') {
+                    if (prop.valClsNameShow === 'EVENTS') {
                         _.forEach(prop.entries, (lnr) => {
-                            _.forEach(lnr.eventTypes, (type) => {
-                                console.log(type);
-                                imports.push(`${type.class}.${type.label}`);
-                            });
+                            _.forEach(lnr.eventTypes, (type) => imports.push(`${type.class}.${type.label}`));
                         });
                     }
 

@@ -90,7 +90,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
     static _toObject(clsName, val) {
         const items = _.isArray(val) ? val : [val];
 
-        if (clsName === 'ARRAY_EVENTS')
+        if (clsName === 'EVENTS')
             return ['<list>', ..._.map(items, (item) => `    <util:constant static-field="${item.class}.${item.label}"/>`), '</list>'];
 
         return _.map(items, (item) => {

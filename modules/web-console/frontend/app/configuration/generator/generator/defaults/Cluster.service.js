@@ -424,10 +424,10 @@ const DFLT_CLUSTER = {
     },
     localEventListeners: {
         keyClsName: 'org.apache.ignite.lang.IgnitePredicate',
-        keyClsGenericName: 'org.apache.ignite.events.Event',
-        keyClsGenericExtends: true,
+        keyClsGenericType: 'org.apache.ignite.events.Event',
+        isKeyClsGenericTypeExtended: true,
         valClsName: 'int[]',
-        valClsNameShow: 'ARRAY_EVENTS',
+        valClsNameShow: 'EVENTS',
         keyField: 'className',
         valField: 'eventTypes'
     }

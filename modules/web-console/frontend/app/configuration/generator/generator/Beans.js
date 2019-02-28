@@ -370,8 +370,8 @@ export class Bean extends EmptyBean {
                 valClsNameShow: dflt.valClsNameShow,
                 valField: dflt.valField || 'value',
                 entries,
-                keyClsGenericName: dflt.keyClsGenericName,
-                keyClsGenericExtends: dflt.keyClsGenericExtends
+                keyClsGenericType: dflt.keyClsGenericType,
+                isKeyClsGenericTypeExtended: dflt.isKeyClsGenericTypeExtended
             });
         }
 
