@@ -4468,7 +4468,7 @@ public class ZookeeperDiscoveryImpl {
             id = IgniteUuid.fromUuid(node.id());
 
             endTime = System.currentTimeMillis() + node.sessionTimeout() + 1000;
-        };
+        }
 
         /** {@inheritDoc} */
         @Override public IgniteUuid id() {

@@ -54,7 +54,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
     /**
      * @throws Exception If failed.
      */
-//    @Test
+    @Test
     public void testReconnectServersRestart_3() throws Exception {
         startGrid(0);
 
@@ -93,7 +93,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
      *
      * @throws Exception If failed.
      */
-//    @Test
+    @Test
     public void testReconnectServersRestart_4() throws Exception {
         startGrid(0);
 
