@@ -980,20 +980,16 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
-     * @param currReqId Sets current request Id.
+     * Sets current request id and sticky IO.
+     *
+     * @param currReqId Current request Id.
+     * @param currCliIo Current ignite endpoint IO.
      */
-    void currentRequestId(long currReqId) {
-        // TODO: "assert Thread.holdsLock" instead of nested mutex
-        synchronized (cancellationMux) {
-            this.currReqId = currReqId;
-        }
-    }
+    void currentRequestMeta(long currReqId, JdbcThinTcpIo currCliIo) {
+        assert Thread.holdsLock(cancellationMux);
 
-    void currentCliIO(JdbcThinTcpIo currCliIo) {
-        // TODO: "assert Thread.holdsLock" instead of nested mutex
-        synchronized (cancellationMux) {
-            stickyIo = currCliIo;
-        }
+        this.currReqId = currReqId;
+        stickyIo = currCliIo;
     }
 
     /**

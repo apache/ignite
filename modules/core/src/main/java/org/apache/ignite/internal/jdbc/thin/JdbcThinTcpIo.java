@@ -104,28 +104,28 @@ public class JdbcThinTcpIo {
     private final InetSocketAddress sockAddr;
 
     /** Endpoint. */
-    private IpcClientTcpEndpoint endpoint;
+    private final IpcClientTcpEndpoint endpoint;
 
     /** Output stream. */
-    private BufferedOutputStream out;
+    private final BufferedOutputStream out;
 
     /** Input stream. */
-    private BufferedInputStream in;
+    private final BufferedInputStream in;
 
     /** Connected flag. */
     private boolean connected;
 
     /** Ignite server version. */
-    private IgniteProductVersion igniteVer;
+    private final IgniteProductVersion igniteVer;
 
     /** Node Id. */
-    private UUID nodeId;
+    private final UUID nodeId;
 
     /** Connection mutex. */
     private final Object connMux = new Object();
 
     /** Current protocol version used to connection to Ignite. */
-    private ClientListenerProtocolVersion srvProtoVer;
+    private final ClientListenerProtocolVersion srvProtoVer;
 
     /**
      * Start connection and perform handshake.
@@ -142,35 +142,20 @@ public class JdbcThinTcpIo {
         this.connProps = connProps;
         this.sockAddr = sockAddr;
 
-        // TODO: Try to rework to make the whole object immutable (may be except of "connected")
-        connect(sockAddr, timeout);
-
-        handshake(CURRENT_VER);
-    }
-
-    /**
-     * Connect to host.
-     *
-     * @param addr Address.
-     * @param timeout Socket connection timeout in ms.
-     * @throws IOException On IO error.
-     * @throws SQLException On connection reject.
-     */
-    private void connect(InetSocketAddress addr, int timeout) throws IOException, SQLException {
         Socket sock = null;
 
         try {
             if (ConnectionProperties.SSL_MODE_REQUIRE.equalsIgnoreCase(connProps.getSslMode()))
-                sock = JdbcThinSSLUtil.createSSLSocket(addr, connProps);
+                sock = JdbcThinSSLUtil.createSSLSocket(sockAddr, connProps);
             else if (ConnectionProperties.SSL_MODE_DISABLE.equalsIgnoreCase(connProps.getSslMode())) {
                 sock = new Socket();
 
                 try {
-                    sock.connect(addr, timeout);
+                    sock.connect(sockAddr, timeout);
                 }
                 catch (IOException e) {
-                    throw new SQLException("Failed to connect to server [host=" + addr.getHostName() +
-                        ", port=" + addr.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                    throw new SQLException("Failed to connect to server [host=" + sockAddr.getHostName() +
+                        ", port=" + sockAddr.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
                 }
             }
             else {
@@ -186,6 +171,9 @@ public class JdbcThinTcpIo {
 
             sock.setTcpNoDelay(connProps.isTcpNoDelay());
 
+            BufferedOutputStream out = null;
+            BufferedInputStream in = null;
+
             try {
                 endpoint = new IpcClientTcpEndpoint(sock);
 
@@ -193,21 +181,32 @@ public class JdbcThinTcpIo {
                 in = new BufferedInputStream(endpoint.inputStream());
 
                 connected = true;
+
+                this.in = in;
+                this.out = out;
             }
             catch (IgniteCheckedException e) {
+                U.closeQuiet(in);
+                U.closeQuiet(out);
+
                 throw new SQLException("Failed to connect to server [url=" + connProps.getUrl() +
-                    " address=" + addr + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                    " address=" + sockAddr + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
         }
         catch (Exception e) {
             if (sock != null && !sock.isClosed())
                 U.closeQuiet(sock);
 
-            U.closeQuiet(in);
-            U.closeQuiet(out);
-
             throw e;
         }
+
+        HandshakeResult handshakeRes = handshake(CURRENT_VER);
+
+        igniteVer = handshakeRes.igniteVer;
+
+        nodeId = handshakeRes.nodeId;
+
+        srvProtoVer = handshakeRes.srvProtoVer;
     }
 
     /**
@@ -217,7 +216,7 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error.
      * @throws SQLException On connection reject.
      */
-    private void handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
+    private HandshakeResult handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
@@ -255,6 +254,8 @@ public class JdbcThinTcpIo {
         boolean accepted = reader.readBoolean();
 
         if (accepted) {
+            HandshakeResult handshakeRes = new HandshakeResult();
+
             if (reader.available() > 0) {
                 byte maj = reader.readByte();
                 byte min = reader.readByte();
@@ -266,14 +267,18 @@ public class JdbcThinTcpIo {
                 byte[] hash = reader.readByteArray();
 
                 if (ver.compareTo(VER_2_8_0) >= 0)
-                    nodeId = reader.readUuid();
+                    handshakeRes.nodeId = reader.readUuid();
 
-                igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
+                handshakeRes.igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
             }
-            else
-                igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
+            else {
+                handshakeRes.igniteVer =
+                    new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
+            }
 
-            srvProtoVer = ver;
+            handshakeRes.srvProtoVer = ver;
+
+            return handshakeRes;
         }
         else {
             short maj = reader.readShort();
@@ -295,9 +300,9 @@ public class JdbcThinTcpIo {
                 || VER_2_4_0.equals(srvProtoVer0)
                 || VER_2_3_0.equals(srvProtoVer0)
                 || VER_2_1_5.equals(srvProtoVer0))
-                handshake(srvProtoVer0);
+                return handshake(srvProtoVer0);
             else if (VER_2_1_0.equals(srvProtoVer0))
-                handshake_2_1_0();
+                return handshake_2_1_0();
             else {
                 throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
                     ", remoteNodeProtocolVer=" + srvProtoVer0 + ", err=" + err + ']',
@@ -312,7 +317,7 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error.
      * @throws SQLException On connection reject.
      */
-    private void handshake_2_1_0() throws IOException, SQLException {
+    private HandshakeResult handshake_2_1_0() throws IOException, SQLException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
@@ -338,9 +343,14 @@ public class JdbcThinTcpIo {
         boolean accepted = reader.readBoolean();
 
         if (accepted) {
-            igniteVer = new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown", 0L, null);
+            HandshakeResult handshakeRes = new HandshakeResult();
 
-            srvProtoVer = VER_2_1_0;
+            handshakeRes.igniteVer =
+                new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown", 0L, null);
+
+            handshakeRes.srvProtoVer = VER_2_1_0;
+
+            return handshakeRes;
         }
         else {
             short maj = reader.readShort();
@@ -388,11 +398,8 @@ public class JdbcThinTcpIo {
 
                 sendRequestRaw(req);
 
-                if (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest) {
-                    // TODO: Merge into a single method.
-                    stmt.currentRequestId(req.requestId());
-                    stmt.currentCliIO(this);
-                }
+                if (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest)
+                    stmt.currentRequestMeta(req.requestId(), this);
             }
         }
         else
@@ -605,11 +612,16 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @return Socket address.
+     *  Handshake result.
      */
-    // TODO: Unused
-    public InetSocketAddress socketAddress() {
-        return sockAddr;
-    }
+    private static final class HandshakeResult {
+        /** Ignite server version. */
+        private IgniteProductVersion igniteVer;
 
+        /** Node Id. */
+        private UUID nodeId;
+
+        /** Current protocol version used to connection to Ignite. */
+        private ClientListenerProtocolVersion srvProtoVer;
+    }
 }
