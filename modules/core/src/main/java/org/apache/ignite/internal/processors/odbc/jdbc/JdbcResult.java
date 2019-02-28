@@ -23,8 +23,6 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
-
 /**
  * JDBC response result.
  */
@@ -80,11 +78,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Success status. */
     private byte type;
 
-    /** Signals that there is active transactional context. */
-    // TODO: Rename to "activeTx".
-    // TODO: Make sure that it is written only in requests concerned with transactions
-    private boolean transactionalCtx;
-
     /**
      * Constructs result.
      *
@@ -98,17 +91,11 @@ public class JdbcResult implements JdbcRawBinarylizable {
     @Override public void writeBinary(BinaryWriterExImpl writer,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         writer.writeByte(type);
-
-        if (ver.compareTo(VER_2_8_0) >= 0)
-            writer.writeBoolean(transactionalCtx);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
-
-        if (ver.compareTo(VER_2_8_0) >= 0)
-            transactionalCtx = reader.readBoolean();
     }
 
     /**
@@ -211,13 +198,5 @@ public class JdbcResult implements JdbcRawBinarylizable {
         res.readBinary(reader, ver);
 
         return res;
-    }
-
-    /**
-     * @return Transactional context.
-     */
-    // TODO: Rename to "activeTransaction"
-    public boolean isInTransactionalContext() {
-        return transactionalCtx;
     }
 }

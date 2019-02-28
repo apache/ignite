@@ -149,12 +149,17 @@ public class JdbcThinConnection implements Connection {
     /** Query timeout timer */
     private final Timer timer;
 
+    /** Ignite endpoint. */
+    private volatile JdbcThinTcpIo cliIo;
+
     /** Node Ids tp ignite endpoints. */
     private final Map<UUID, JdbcThinTcpIo> nodeToConnMap = new ConcurrentHashMap<>();
 
+    /** Ignite endpoints to use for better performance in case of random access. */
+    private JdbcThinTcpIo[] connections;
+
     /** Server index. */
-    // TODO: Not ovlatile because already protected.
-    private volatile int srvIdx;
+    private int srvIdx;
 
     /** Ignite server version. */
     private Thread ownThread;
@@ -167,6 +172,9 @@ public class JdbcThinConnection implements Connection {
 
     /** Random generator. */
     private static final Random RND = new Random(System.currentTimeMillis());
+
+    /** Network timeout. */
+    private int netTimeout;
 
     /**
      * Creates new connection.
@@ -191,13 +199,15 @@ public class JdbcThinConnection implements Connection {
     /**
      * @throws SQLException On connection error.
      */
-    private synchronized void ensureConnected() throws SQLException {
+    private void ensureConnected() throws SQLException {
         if (connected)
             return;
 
         assert !closed;
 
         assert nodeToConnMap.isEmpty();
+
+        assert connections == null;
 
         HostAndPortRange[] srvs = connProps.getAddresses();
 
@@ -429,10 +439,18 @@ public class JdbcThinConnection implements Connection {
 
         closed = true;
 
-        for (JdbcThinTcpIo clioIo : nodeToConnMap.values())
-            clioIo.close();
+        if (bestEffortAffinity) {
+            for (JdbcThinTcpIo clioIo : nodeToConnMap.values())
+                clioIo.close();
 
-        nodeToConnMap.clear();
+            nodeToConnMap.clear();
+
+            connections = null;
+        }
+        else {
+            if (cliIo != null)
+                cliIo.close();
+        }
 
         timer.cancel();
     }
@@ -751,19 +769,21 @@ public class JdbcThinConnection implements Connection {
         if (secMgr != null)
             secMgr.checkPermission(new SQLPermission(SET_NETWORK_TIMEOUT_PERM));
 
-        for (JdbcThinTcpIo clioIo : nodeToConnMap.values())
-            clioIo.timeout(ms);
+        netTimeout = ms;
+
+        if (bestEffortAffinity) {
+            for (JdbcThinTcpIo clioIo : nodeToConnMap.values())
+                clioIo.timeout(ms);
+        }
+        else
+            cliIo.timeout(ms);
     }
 
     /** {@inheritDoc} */
     @Override public int getNetworkTimeout() throws SQLException {
         ensureNotClosed();
 
-        // TODO: IGNITE-11321: JDBC Thin: implement nodes multi version support.
-
-        // TODO: VO: This is a bug, you cannot rely on some IO. Network timeout should be saved as a class fields
-        // TODO: and passed to all subsequent calls to IO constructors.
-        return cliIo().timeout();
+        return netTimeout;
     }
 
     /**
@@ -841,24 +861,16 @@ public class JdbcThinConnection implements Connection {
 
             JdbcResponse res = cliIo.sendRequest(req, stmt);
 
+            txStickyIo = res.activeTransaction() ? cliIo : null;
+
             if (res.status() == IgniteQueryErrorCode.QUERY_CANCELED && stmt != null &&
                 stmt.requestTimeout() != NO_TIMEOUT && reqTimeoutTimerTask != null && reqTimeoutTimerTask.expired.get()) {
-                // TODO: Understand what is going on with TX.
-                txStickyIo = null;
 
                 throw new SQLTimeoutException(QueryCancelledException.ERR_MSG, SqlStateCode.QUERY_CANCELLED,
                     IgniteQueryErrorCode.QUERY_CANCELED);
             }
-            else if (res.status() != ClientListenerResponse.STATUS_SUCCESS) {
-                txStickyIo = null;
-
+            else if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
-            }
-
-            if (res.response() != null && res.response().isInTransactionalContext())
-                txStickyIo = cliIo;
-            else if (res.response() != null && ! res.response().isInTransactionalContext())
-                txStickyIo = null;
 
             return new JdbcStickyResult(res.response(), cliIo);
         }
@@ -960,10 +972,18 @@ public class JdbcThinConnection implements Connection {
         if (!connected)
             return;
 
-        for (JdbcThinTcpIo clioIo : nodeToConnMap.values())
-            clioIo.close();
+        if (bestEffortAffinity) {
+            for (JdbcThinTcpIo clioIo : nodeToConnMap.values())
+                clioIo.close();
 
-        nodeToConnMap.clear();
+            nodeToConnMap.clear();
+
+            connections = null;
+        }
+        else {
+            if (cliIo != null)
+                cliIo.close();
+        }
 
         connected = false;
 
@@ -1230,11 +1250,7 @@ public class JdbcThinConnection implements Connection {
         if (txStickyIo != null)
             return txStickyIo;
 
-        // TODO: 15.02.19 probably we need better performance here.
-        // TODO: VO: Preserve array in separate JdbcThinConnection field.
-        Object[] vals = nodeToConnMap.values().toArray();
-
-        return (JdbcThinTcpIo)vals[RND.nextInt(vals.length)];
+        return bestEffortAffinity ? connections[RND.nextInt(connections.length)] : cliIo;
     }
 
     /**
@@ -1284,8 +1300,9 @@ public class JdbcThinConnection implements Connection {
                             JdbcThinTcpIo cliIo = new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port),
                                 0);
 
-                            // TODO: VO: Use separate field instead.
-                            nodeToConnMap.put(cliIo.nodeId(), cliIo);
+                            cliIo.timeout(netTimeout);
+
+                            this.cliIo = cliIo;
 
                             connected = true;
 
@@ -1345,15 +1362,14 @@ public class JdbcThinConnection implements Connection {
 
         try {
             for (int i = 0; i < srvs.length; i++) {
-                // TODO: Not needed here, use "i" instead
-                srvIdx = nextServerIndex(srvs.length);
-
-                HostAndPortRange srv = srvs[srvIdx];
+                HostAndPortRange srv = srvs[i];
 
                 for (InetAddress addr : InetAddress.getAllByName(srv.host())) {
                     for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
                         // TODO: Do not throw exception if we connected to at least on node.
                         JdbcThinTcpIo cliIo = new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), 0);
+
+                        cliIo.timeout(netTimeout);
 
                         nodeToConnMap.put(cliIo.nodeId(), cliIo);
 
@@ -1370,6 +1386,8 @@ public class JdbcThinConnection implements Connection {
             }
 
             connected = true;
+
+            connections = (JdbcThinTcpIo[])nodeToConnMap.values().toArray();
         }
         catch (Exception ex) {
             close();
