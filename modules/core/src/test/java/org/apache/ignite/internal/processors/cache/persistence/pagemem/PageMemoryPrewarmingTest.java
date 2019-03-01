@@ -84,7 +84,8 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
                 .setPersistenceEnabled(true)
                 .setPrewarmingConfiguration(new PrewarmingConfiguration()
                     .setWaitPrewarmingOnStart(waitPrewarmingOnStart)
-                    .setRuntimeDumpDelay(prewarmingRuntimeDumpDelay))
+                    .setRuntimeDumpDelay(prewarmingRuntimeDumpDelay)
+                    .setPageLoadThreads(1))
             );
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -169,8 +170,7 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setGridLogger(log);
 
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().getPrewarmingConfiguration()
-            .setThrottleAccuracy(0.9)
-            .setDumpReadThreads(1);
+            .setThrottleAccuracy(0.9);
 
         GridTestUtils.runMultiThreadedAsync(getLoadRunnable(stop), 10, "put-thread");
 
@@ -182,7 +182,7 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
                     stopLsnr.reset();
                     throttleLsnr.reset();
 
-                    ignite = startGrid(cfg);
+                    ignite = startGrid(new IgniteConfiguration(cfg));
 
                     res = GridTestUtils.waitForCondition(stopLsnr::check, 60_000) && throttleLsnr.check();
 
