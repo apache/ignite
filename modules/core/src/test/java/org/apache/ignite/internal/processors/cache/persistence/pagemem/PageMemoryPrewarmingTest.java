@@ -164,7 +164,7 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
         ListeningTestLogger log = new ListeningTestLogger(false, log());
 
         LogListener throttleLsnr = throttleListener(true);
-        LogListener stopLsnr = LogListener.matches("Warming-up of DataRegion [name=default] finished in ")
+        LogListener stopLsnr = LogListener.matches("Prewarming of DataRegion [name=default] finished in ")
             .times(1).build();
 
         log.registerListener(throttleLsnr);
@@ -172,37 +172,33 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setGridLogger(log);
 
-        PrewarmingConfiguration pcfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration()
-            .getPrewarmingConfiguration()
+        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().getPrewarmingConfiguration()
             .setThrottleAccuracy(0.9)
             .setDumpReadThreads(1);
 
-        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPrewarmingConfiguration(null);
-
         GridTestUtils.runMultiThreadedAsync(getLoadRunnable(stop), 10, "put-thread");
-
-        ignite = startGrid(cfg);
-
-        ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration()
-            .setPrewarmingConfiguration(pcfg);
 
         boolean res = false;
 
         try {
             for (int i = 0; i < 10 && !res; i++) {
                 try {
+                    System.out.println("asd123 start "+i);
                     stopLsnr.reset();
                     throttleLsnr.reset();
 
-                    ((PageMemoryEx) ignite.context().cache().context().database().dataRegion(null).pageMemory())
-                        .startWarmingUp();
+                    ignite = startGrid(cfg);
 
                     res = GridTestUtils.waitForCondition(stopLsnr::check, 60_000) && throttleLsnr.check();
+                    System.out.println("asd123 end "+i);
                 }
                 catch (Throwable t) {
+                    System.out.println("asd123 "+i+" err="+t.getClass().getSimpleName()+", msg="+t.getMessage());
                     Thread.interrupted();
                 }
             }
+
+            stop.set(true);
 
             assertTrue(res);
         }
