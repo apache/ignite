@@ -76,3 +76,8 @@ test {
         "--illegal-access=permit",
         "-Djdk.tls.client.protocols=TLSv1.2");
 }
+
+tasks.withType(Test) {
+    scanForTestClasses = false
+    include "**/*Test.class" // whatever Ant pattern matches your test class files
+}
