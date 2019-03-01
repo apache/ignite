@@ -260,17 +260,27 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
      */
     @Test
     public void testCacheRestartHandling() {
-        for (int i = 0; i < 4; i++) {
-            IgniteCache<Integer, AllTypes> p =
-                ignite(0).getOrCreateCache(cacheConfig("I2AT", true, false, Integer.class,
-                    AllTypes.class));
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_COLUMNS");
 
-            p.query(new SqlFieldsQuery("INSERT INTO AllTypes(_key, _val) VALUES (1, ?)")
-                .setArgs(new AllTypes(1L))).getAll();
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
 
-            p.query(new SqlFieldsQuery("UPDATE AllTypes SET dateCol = null;")).getAll();
+        try {
+            for (int i = 0; i < 4; i++) {
+                IgniteCache<Integer, AllTypes> p =
+                    ignite(0).getOrCreateCache(cacheConfig("I2AT", true, false, Integer.class,
+                        AllTypes.class));
 
-            p.destroy();
+                p.query(new SqlFieldsQuery("INSERT INTO AllTypes(_key, _val) VALUES (1, ?)")
+                    .setArgs(new AllTypes(1L))).getAll();
+
+                p.query(new SqlFieldsQuery("UPDATE AllTypes SET dateCol = null;")).getAll();
+
+                p.destroy();
+            }
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", oldAllowColumnsVal);
         }
     }
 }

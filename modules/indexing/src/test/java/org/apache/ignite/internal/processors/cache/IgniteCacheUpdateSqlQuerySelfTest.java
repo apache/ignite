@@ -100,30 +100,40 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
      */
     @Test
     public void testUpdateSingle() {
-        IgniteCache p = cache();
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_COLUMNS");
 
-        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set _val = ? where _key = ?")
-            .setArgs(createPerson(2, "Jo", "White"), "FirstKey"));
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
 
-        c.iterator();
+        try {
+            IgniteCache p = cache();
 
-        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id, _key"));
+            QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set _val = ? where _key = ?")
+                .setArgs(createPerson(2, "Jo", "White"), "FirstKey"));
 
-        List<List<?>> leftovers = c.getAll();
+            c.iterator();
 
-        assertEquals(4, leftovers.size());
+            c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id, _key"));
 
-        assertEqualsCollections(Arrays.asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
-            leftovers.get(0));
+            List<List<?>> leftovers = c.getAll();
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
-            leftovers.get(1));
+            assertEquals(4, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
-            leftovers.get(2));
+            assertEqualsCollections(Arrays.asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
+                leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
-            leftovers.get(3));
+            assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+                leftovers.get(1));
+
+            assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+                leftovers.get(2));
+
+            assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+                leftovers.get(3));
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", oldAllowColumnsVal);
+        }
     }
 
     /**
