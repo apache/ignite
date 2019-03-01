@@ -184,7 +184,7 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
 
                     ignite = startGrid(new IgniteConfiguration(cfg));
 
-                    res = GridTestUtils.waitForCondition(stopLsnr::check, 60_000) && throttleLsnr.check();
+                    res = GridTestUtils.waitForCondition(stopLsnr::check, 120_000) && throttleLsnr.check();
 
                     if (res)
                         break;
