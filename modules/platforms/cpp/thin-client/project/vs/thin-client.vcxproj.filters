@@ -81,9 +81,6 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\writable_key.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\impl\connectable_node_partitions.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\impl\data_channel.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
@@ -121,6 +118,15 @@
       <Filter>Code\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\impl\affinity_topology_version.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\node_partitions.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\cache_affinity_configs.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\affinity_awareness_group.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
   </ItemGroup>

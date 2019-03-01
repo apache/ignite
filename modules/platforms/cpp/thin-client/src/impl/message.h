@@ -28,8 +28,9 @@
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
-#include "impl/node_partitions.h"
 #include "impl/protocol_version.h"
+#include "impl/affinity_topology_version.h"
+#include "impl/affinity_awareness_group.h"
 
 namespace ignite
 {
@@ -739,9 +740,9 @@ namespace ignite
                 /**
                  * Constructor.
                  *
-                 * @param nodeParts Node partitions.
+                 * @param groups Affinity Awareness Groups.
                  */
-                CachePartitionsResponse(std::vector<NodePartitions>& nodeParts);
+                CachePartitionsResponse(std::vector<AffinityAwarenessGroup>& groups);
 
                 /**
                  * Destructor.
@@ -756,12 +757,11 @@ namespace ignite
                 virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
             private:
-                /** Applicable for optimization. */
-                bool applicable;
+                /** Affinity topology version. */
+                AffinityTopologyVersion topologyVersion;
 
-
-                /** Node partitions. */
-                std::vector<NodePartitions>& nodeParts;
+                /** Affinity awareness groups. */
+                std::vector<AffinityAwarenessGroup>& groups;
             };
 
             /**

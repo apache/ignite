@@ -21,7 +21,6 @@
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
-#include "impl/affinity_topology_version.h"
 #include "impl/response_status.h"
 #include "impl/data_channel.h"
 #include "impl/message.h"
@@ -149,49 +148,30 @@ namespace ignite
                     nodeParts[i].Read(reader);
             }
 
+            CachePartitionsResponse::CachePartitionsResponse(std::vector<AffinityAwarenessGroup>& groups) :
+                groups(groups)
+            {
+                // No-op.
+            }
+
+            CachePartitionsResponse::~CachePartitionsResponse()
+            {
+                // No-op.
+            }
+
             void CachePartitionsResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
                 AffinityTopologyVersion topologyVersion;
 
                 topologyVersion.Read(reader);
 
-                int32_t mappingsNum = reader.ReadInt32();
+                int32_t groupsNum = reader.ReadInt32();
 
-                // Partition Mapping
-                for (int32_t i = 0; i < mappingsNum; ++i)
-                {
-                    applicable = reader.ReadBool();
+                groups.clear();
+                groups.resize(static_cast<size_t>(groupsNum));
 
-                    int32_t cachesNum = reader.ReadInt32();
-
-                    std::vector<int32_t> guids;
-
-                    for (int32_t j = 0; j < cachesNum; ++j)
-                    {
-                        int32_t cacheId = reader.ReadInt32();
-
-                        // Cache key configuration
-                        if (applicable)
-                        {
-                            int32_t configsNum = reader.ReadInt32();
-
-                            for (int k = 0; k < configsNum; ++k)
-                            {
-                                int32_t keyTypeId = reader.ReadInt32();
-                                int32_t affinityKeyFieldId = reader.ReadInt32();
-                            }
-                        }
-                    }
-
-                    if (applicable)
-                    {
-                        int32_t nodeNum = reader.ReadInt32();
-
-                        // Node Partitions
-                        for (int32_t j = 0; j < nodeNum; ++j)
-                            nodeParts[j].Read(reader);
-                    }
-                }
+                for (int32_t i = 0; i < groupsNum; ++i)
+                    groups[i].Read(reader);
             }
 
             CacheValueResponse::CacheValueResponse(Readable& value) :

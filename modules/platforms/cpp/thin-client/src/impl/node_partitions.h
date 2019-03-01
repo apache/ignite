@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_THIN_CONNECTABLE_NODE_PARTITIONS
-#define _IGNITE_IMPL_THIN_CONNECTABLE_NODE_PARTITIONS
+#ifndef _IGNITE_IMPL_THIN_NODE_PARTITIONS
+#define _IGNITE_IMPL_THIN_NODE_PARTITIONS
 
 #include <stdint.h>
 #include <vector>
 
 #include <ignite/guid.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
-#include <ignite/network/end_point.h>
 
 namespace ignite
 {
@@ -32,8 +31,7 @@ namespace ignite
         namespace thin
         {
             /**
-             * Address of the node, connectible for the thin client, associated
-             * with cache partitions info.
+             * GUID of the node associated with cache partitions info.
              */
             class NodePartitions
             {
@@ -44,14 +42,6 @@ namespace ignite
                 NodePartitions() :
                     guid(),
                     partitions()
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Destructor.
-                 */
-                ~NodePartitions()
                 {
                     // No-op.
                 }
@@ -105,4 +95,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_IMPL_THIN_CONNECTABLE_NODE_PARTITIONS
+#endif //_IGNITE_IMPL_THIN_NODE_PARTITIONS

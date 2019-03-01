@@ -17,7 +17,7 @@
 
 #include <ignite/impl/thin/writable_key.h>
 
-#include "impl/connectable_node_partitions.h"
+#include "impl/node_partitions.h"
 #include "impl/cache/cache_affinity_info.h"
 
 namespace ignite
@@ -35,7 +35,7 @@ namespace ignite
                     for (InfoIterator it = info.begin(); it != info.end(); ++it)
                     {
                         const std::vector<int32_t>& parts = it->GetPartitions();
-                        const network::EndPoints& endPoints = it->GetEndPoints();
+                        // const network::EndPoints& endPoints = it->GetEndPoints();
 
                         for (size_t i = 0; i < parts.size(); ++i)
                         {
@@ -48,8 +48,8 @@ namespace ignite
 
                             IgniteNodes& dst = affinityMapping[uPart];
 
-                            for (network::EndPoints::const_iterator ep = endPoints.begin(); ep != endPoints.end(); ++ep)
-                                dst.push_back(IgniteNode(*ep));
+                            // for (network::EndPoints::const_iterator ep = endPoints.begin(); ep != endPoints.end(); ++ep)
+                            //     dst.push_back(IgniteNode(*ep));
                         }
                     }
                 }
