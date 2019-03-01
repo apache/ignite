@@ -109,22 +109,24 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         Collection<IgniteTxEntry> writeEntries,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable String txLbl
     ) throws IgniteCheckedException {
         super(
-            ctx, 
-            nodeId, 
+            ctx,
+            nodeId,
             xidVer,
             commitVer,
-            sys, 
-            plc, 
-            concurrency, 
-            isolation, 
-            invalidate, 
+            sys,
+            plc,
+            concurrency,
+            isolation,
+            invalidate,
             timeout,
             txSize,
-            subjId, 
-            taskNameHash
+            subjId,
+            taskNameHash,
+            txLbl
         );
 
         assert nearNodeId != null;
@@ -185,22 +187,24 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         long timeout,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable String txLbl
     ) {
         super(
-            ctx, 
-            nodeId, 
+            ctx,
+            nodeId,
             xidVer,
             commitVer,
             sys,
             plc,
-            concurrency, 
-            isolation, 
-            invalidate, 
+            concurrency,
+            isolation,
+            invalidate,
             timeout,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            txLbl
         );
 
         assert nearNodeId != null;
@@ -243,9 +247,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         return nearXidVer;
     }
 
-    /**
-     * @param cntrs Partition indexes.
-     */
+    /** {@inheritDoc} */
     @Override public void setPartitionUpdateCounters(long[] cntrs) {
         // No-op.
     }

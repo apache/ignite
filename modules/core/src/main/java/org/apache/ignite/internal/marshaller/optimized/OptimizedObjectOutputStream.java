@@ -63,7 +63,7 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 /**
  * Optimized object output stream.
  */
-class OptimizedObjectOutputStream extends ObjectOutputStream {
+public class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private final GridHandleTable handles = new GridHandleTable(10, 3.00f);
 

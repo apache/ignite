@@ -769,6 +769,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param taskName Task name.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
+     * @param txLbl Transaction label.
      * @return Get future.
      */
     IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> getDhtAllAsync(
@@ -779,7 +780,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
-        boolean recovery
+        boolean recovery,
+        @Nullable String txLbl
     ) {
         return getAllAsync0(keys,
             readerArgs,
@@ -792,7 +794,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             /*keep cache objects*/true,
             recovery,
-            /*need version*/true);
+            /*need version*/true,
+            txLbl);
     }
 
     /**
@@ -806,6 +809,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param taskNameHash Task name hash code.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
+     * @param txLbl Transaction label.
      * @return DHT future.
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo>> getDhtAsync(UUID reader,
@@ -818,7 +822,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
-        boolean recovery
+        boolean recovery,
+        @Nullable String txLbl
     ) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
@@ -831,7 +836,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             recovery,
-            addReaders);
+            addReaders,
+            txLbl);
 
         fut.init();
 
@@ -849,6 +855,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param taskNameHash Task name hash.
      * @param expiry Expiry.
      * @param skipVals Skip vals flag.
+     * @param txLbl Transaction label.
      * @return Future for the operation.
      */
     public GridDhtGetSingleFuture getDhtSingleAsync(
@@ -862,7 +869,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
-        boolean recovery
+        boolean recovery,
+        String txLbl
     ) {
         GridDhtGetSingleFuture fut = new GridDhtGetSingleFuture<>(
             ctx,
@@ -876,7 +884,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             taskNameHash,
             expiry,
             skipVals,
-            recovery);
+            recovery,
+            txLbl);
 
         fut.init();
 
@@ -904,7 +913,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.taskNameHash(),
                 expiryPlc,
                 req.skipValues(),
-                req.recovery());
+                req.recovery(),
+                req.txLabel());
 
         fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
             @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> f) {
@@ -1008,7 +1018,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.taskNameHash(),
                 expiryPlc,
                 req.skipValues(),
-                req.recovery());
+                req.recovery(),
+                req.txLabel());
 
         fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {

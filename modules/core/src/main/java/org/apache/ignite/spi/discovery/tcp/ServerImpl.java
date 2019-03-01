@@ -186,7 +186,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 /**
  *
  */
-@SuppressWarnings({"MissortedModifiers", "IfMayBeConditional"})
+@SuppressWarnings({"IfMayBeConditional"})
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
@@ -1314,6 +1314,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
 
+                    // During marshalling, SPI didn't know whether all nodes support compression as we didn't join yet.
+                    // The only way to know is passing flag directly with handshake response.
+                    if (!res.isDiscoveryDataPacketCompression())
+                        ((TcpDiscoveryJoinRequestMessage)msg).gridDiscoveryData().unzipData(log);
+
                     synchronized (mux) {
                         for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                             if (failedNode.id().equals(res.creatorNodeId())) {
@@ -2238,6 +2243,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         void add(TcpDiscoveryAbstractMessage msg) {
             assert spi.ensured(msg) && msg.verified() : msg;
 
+            assert U.hasDeclaredAnnotation(msg, TcpDiscoveryRedirectToClient.class) : msg;
+
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                 TcpDiscoveryNodeAddedMessage addedMsg =
                     new TcpDiscoveryNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
@@ -2299,6 +2306,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                 clearClientAddFinished(msg.creatorNodeId());
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 clearClientAddFinished(((TcpDiscoveryNodeFailedMessage)msg).failedNodeId());
+            else if (msg instanceof TcpDiscoveryCustomEventMessage) {
+                TcpDiscoveryCustomEventMessage msg0 = (TcpDiscoveryCustomEventMessage)msg;
+
+                msg = new TcpDiscoveryCustomEventMessage(msg0);
+
+                // We shoulgn't store deserialized message in the queue because of msg is transient.
+                ((TcpDiscoveryCustomEventMessage)msg).clearMessage();
+            }
 
             synchronized (msgs) {
                 msgs.add(msg);
@@ -2762,11 +2777,21 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Adds message to queue.
+         * Adds message to queue. Equivalent to {@code addMessage(msg, false)}.
          *
          * @param msg Message to add.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
+            addMessage(msg, false);
+        }
+
+        /**
+         * Adds message to queue.
+         *
+         * @param msg Message to add.
+         * @param ignoreHighPriority If {@code true}, high priority messages will be added to the top of the queue.
+         */
+        void addMessage(TcpDiscoveryAbstractMessage msg, boolean ignoreHighPriority) {
             DebugLogger log = messageLogger(msg);
 
             if ((msg instanceof TcpDiscoveryStatusCheckMessage ||
@@ -2780,7 +2805,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (msg.highPriority())
+            if (msg.highPriority() && !ignoreHighPriority)
                 queue.addFirst(msg);
             else
                 queue.add(msg);
@@ -3091,7 +3116,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         !(msg instanceof TcpDiscoveryStatusCheckMessage && msg.creatorNodeId().equals(locNodeId))) {
                         msg.senderNodeId(locNodeId);
 
-                        addMessage(msg);
+                        addMessage(msg, true);
                     }
 
                     break;
@@ -3960,7 +3985,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 err = spi.getSpiContext().validateNode(node);
 
                 if (err == null)
-                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), false, log));
+                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(
+                        spi.marshaller(),
+                        U.resolveClassLoader(spi.ignite().configuration()),
+                        false,
+                        isDiscoDataPaketCompressed(node),
+                        log));
 
                 if (err != null) {
                     final IgniteNodeValidationResult err0 = err;
@@ -4269,6 +4299,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
             }
+        }
+
+        /**
+         * @param node Joined node.
+         * @return <code>true</code> if packet is compressed.
+         */
+        private boolean isDiscoDataPaketCompressed(TcpDiscoveryNode node) {
+            return IgniteFeatures.nodeSupports(node, IgniteFeatures.DATA_PACKET_COMPRESSION) &&
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION);
         }
 
         /**
@@ -6261,6 +6300,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
+
+                    res.setDiscoveryDataPacketCompression(allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION));
 
                     if (req.client())
                         res.clientAck(true);

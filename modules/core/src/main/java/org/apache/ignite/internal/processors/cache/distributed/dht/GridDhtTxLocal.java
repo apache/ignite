@@ -97,6 +97,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     @GridToStringExclude
     private volatile GridDhtTxPrepareFuture prepFut;
 
+    /** Transaction label. */
+    private @Nullable String lb;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -119,6 +122,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param storeEnabled Store enabled flag.
      * @param txSize Expected transaction size.
      * @param txNodes Transaction nodes mapping.
+     * @param lb Transaction label.
      */
     public GridDhtTxLocal(
         GridCacheSharedContext cctx,
@@ -142,7 +146,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         int txSize,
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable String lb
     ) {
         super(
             cctx,
@@ -161,6 +166,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             txSize,
             subjId,
             taskNameHash);
+
+        this.lb = lb;
 
         assert nearNodeId != null;
         assert nearFutId != null;
@@ -532,6 +539,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
         return commitDhtLocalAsync();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String label() {
+        return lb;
     }
 
     /** {@inheritDoc} */

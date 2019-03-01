@@ -57,6 +57,8 @@ import org.jetbrains.annotations.Nullable;
  * Colocated get future.
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
+    /** Transaction label. */
+    private String txLbl;
 
     /**
      * @param cctx Context.
@@ -72,6 +74,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
+     * @param txLbl Transaction label.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
@@ -85,7 +88,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObjects
+        boolean keepCacheObjects,
+        @Nullable String txLbl
     ) {
         super(
             cctx,
@@ -100,6 +104,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             needVer,
             keepCacheObjects,
             recovery);
+
+        this.txLbl = txLbl;
 
         initLogger(GridPartitionedGetFuture.class);
     }
@@ -223,7 +229,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
                         skipVals,
-                        recovery);
+                        recovery,
+                        txLbl);
 
                 Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -424,6 +431,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             if (evt) {
                                 cctx.events().readEvent(key,
                                     null,
+                                    txLbl,
                                     row.value(),
                                     subjId,
                                     taskName,
@@ -627,7 +635,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 false,
                 skipVals,
                 cctx.deploymentEnabled(),
-                recovery
+                recovery,
+                txLbl
             );
         }
 

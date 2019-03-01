@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -79,7 +78,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -263,7 +261,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.txSize(),
                                     req.subjectId(),
                                     req.taskNameHash(),
-                                    !req.skipStore() && req.storeUsed());
+                                    !req.skipStore() && req.storeUsed(),
+                                    req.txLabel());
 
                                 tx = ctx.tm().onCreated(null, tx);
 
@@ -1081,7 +1080,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.txSize(),
                             null,
                             req.subjectId(),
-                            req.taskNameHash());
+                            req.taskNameHash(),
+                            req.txLabel());
 
                         if (req.syncCommit())
                             tx.syncMode(FULL_SYNC);
@@ -1315,11 +1315,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         null,
                                         req.keepBinary());
 
-                                assert e.lockedBy(mappedVer) || ctx.mvcc().isRemoved(e.context(), mappedVer) :
+                                assert e.lockedBy(mappedVer) ||
+                                    ctx.mvcc().isRemoved(e.context(), mappedVer) ||
+                                    tx != null && tx.isRollbackOnly():
                                     "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
                                         ", entry=" + e +
                                         ", mappedVer=" + mappedVer + ", ver=" + ver +
-                                        ", tx=" + tx + ", req=" + req + ']';
+                                        ", tx=" + CU.txString(tx) + ", req=" + req + ']';
 
                                 boolean filterPassed = false;
 

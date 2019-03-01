@@ -50,6 +50,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -81,7 +82,9 @@ import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
@@ -894,7 +897,28 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!cctx.kernalContext().clientNode())
             cctx.cache().shutdownNotFinishedRecoveryCaches();
 
+        ensureClientCachesStarted();
+
         return cachesRegistrationFut;
+    }
+
+    /**
+     * Start client caches if absent.
+     */
+    private void ensureClientCachesStarted() {
+        GridCacheProcessor cacheProcessor = cctx.cache();
+
+        Set<String> cacheNames = new HashSet<>(cacheProcessor.cacheNames());
+
+        List<CacheConfiguration> notStartedCacheConfigs = new ArrayList<>();
+
+        for (CacheConfiguration cCfg : cctx.gridConfig().getCacheConfiguration()) {
+            if (!cacheNames.contains(cCfg.getName()) && !GridCacheUtils.isCacheTemplateName(cCfg.getName()))
+                notStartedCacheConfigs.add(cCfg);
+        }
+
+        if (!notStartedCacheConfigs.isEmpty())
+            cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
     }
 
     /**
@@ -4674,6 +4698,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         /** */
         NONE
     }
+
     /**
      *
      */

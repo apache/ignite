@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeStripedLruSefTes
 import org.apache.ignite.internal.util.tostring.CircularStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
+import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeCompatibilityTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
@@ -97,6 +98,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
 
         // Metrics.
         suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);
+        suite.addTestSuite(ClusterMetricsSnapshotSerializeCompatibilityTest.class);
 
         // Unsafe.
         suite.addTestSuite(GridUnsafeMemorySelfTest.class);
