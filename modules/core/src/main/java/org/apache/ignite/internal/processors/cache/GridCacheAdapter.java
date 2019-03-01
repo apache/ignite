@@ -73,6 +73,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -110,6 +111,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.transactions.TransactionCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -147,7 +149,6 @@ import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -944,7 +945,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws GridCacheEntryRemovedException If entry removed.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     @Nullable private CacheObject localCachePeek0(KeyCacheObject key,
         boolean heap,
         boolean offheap)
@@ -2319,12 +2319,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (!ctx.mvccEnabled())
             return ctx.tm().threadLocalTx(ctx);
 
-        try {
-            return MvccUtils.currentTx(ctx.kernalContext(), null);
-        }
-        catch (MvccUtils.UnsupportedTxModeException | MvccUtils.NonMvccTransactionException e) {
-            throw new TransactionException(e.getMessage());
-        }
+        return MvccUtils.tx(ctx.kernalContext(), null);
     }
 
     /**
@@ -3419,12 +3414,24 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
 
-        return new CacheMetricsSnapshot(ctx.cache().localMetrics(), metrics);
+
+        return isCacheMetricsV2Supported() ? new CacheMetricsSnapshotV2(ctx.cache().localMetrics(), metrics) :
+            new CacheMetricsSnapshot(ctx.cache().localMetrics(), metrics);
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics localMetrics() {
-        return new CacheMetricsSnapshot(metrics);
+        return isCacheMetricsV2Supported() ? new CacheMetricsSnapshotV2(metrics) :
+            new CacheMetricsSnapshot(metrics);
+    }
+
+    /**
+     * @return checks cluster server nodes version is compatible with Cache Metrics V2
+     */
+    private boolean isCacheMetricsV2Supported() {
+        Collection<ClusterNode> nodes = ctx.discovery().allNodes();
+
+        return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_METRICS_V2);
     }
 
     /** {@inheritDoc} */
@@ -3473,15 +3480,31 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean isInterrupted = false;
 
         try {
-            while (true) {
+            IgniteCheckedException e = null;
+
+            while (!ctx.shared().kernalContext().isStopping()) {
                 try {
                     return fut.get();
                 }
-                catch (IgniteInterruptedCheckedException ignored) {
+                catch (IgniteInterruptedCheckedException ex) {
                     // Interrupted status of current thread was cleared, retry to get lock.
                     isInterrupted = true;
+
+                    e = ex;
                 }
             }
+
+            try {
+                fut.cancel();
+            }
+            catch (IgniteCheckedException ex) {
+                if (e != null)
+                    ex.addSuppressed(e);
+
+                e = ex;
+            }
+
+            throw new NodeStoppingException(e);
         }
         finally {
             if (isInterrupted)
@@ -4255,8 +4278,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         try {
                             tx.rollback();
 
-                            e = new IgniteTxRollbackCheckedException("Transaction has been rolled back: " +
-                                tx.xid(), e);
+                            if (!(e instanceof TransactionCheckedException))
+                                e = new IgniteTxRollbackCheckedException("Transaction has been rolled back: " +
+                                    tx.xid(), e);
                         }
                         catch (IgniteCheckedException | AssertionError | RuntimeException e1) {
                             U.error(log, "Failed to rollback transaction (cache may contain stale locks): " +

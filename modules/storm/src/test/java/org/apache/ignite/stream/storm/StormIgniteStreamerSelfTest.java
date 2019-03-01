@@ -43,15 +43,12 @@ import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.tuple.Values;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests for {@link StormStreamer}.
  */
-@RunWith(JUnit4.class)
 public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String TEST_CACHE = "testCache";

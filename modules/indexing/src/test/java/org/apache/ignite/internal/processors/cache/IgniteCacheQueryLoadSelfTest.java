@@ -39,8 +39,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -48,7 +46,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test that entries are indexed on load/reload methods.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /** Puts count. */
     private static final int PUT_CNT = 10;

@@ -34,20 +34,21 @@ import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessim
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
+import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutOnePhaseCommitTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(IgniteCacheMvccTestSuite6.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheMvccTestSuite6 {
     /**
      * @return IgniteCache test suite.
@@ -63,6 +64,7 @@ public class IgniteCacheMvccTestSuite6 {
         // Atomic cache tests.
         ignoredTests.add(ReplicatedAtomicCacheGetsDistributionTest.class);
         ignoredTests.add(PartitionedAtomicCacheGetsDistributionTest.class);
+        ignoredTests.add(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
 
         // Irrelevant Tx tests.
         ignoredTests.add(IgniteOptimisticTxSuspendResumeTest.class);
@@ -75,6 +77,7 @@ public class IgniteCacheMvccTestSuite6 {
 
         // Other non-tx tests.
         ignoredTests.add(CacheExchangeMergeTest.class);
+        ignoredTests.add(ExchangeMergeStaleServerNodesTest.class);
         ignoredTests.add(IgniteExchangeLatchManagerCoordinatorFailTest.class);
         ignoredTests.add(PartitionsExchangeCoordinatorFailoverTest.class);
         ignoredTests.add(CacheParallelStartTest.class);
@@ -91,13 +94,5 @@ public class IgniteCacheMvccTestSuite6 {
         suite.add(ReplicatedMvccTxPessimisticCacheGetsDistributionTest.class);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

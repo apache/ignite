@@ -75,6 +75,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
@@ -104,6 +105,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -203,15 +205,19 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -220,7 +226,7 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -248,10 +254,14 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -953,6 +963,24 @@ public abstract class IgniteUtils {
                     ((IgniteClientDisconnectedCheckedException)e).reconnectFuture(),
                     e.getMessage(),
                     e);
+            }
+        });
+
+        m.put(IgniteTxSerializationCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new TransactionSerializationException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxDuplicateKeyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new TransactionDuplicateKeyException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxAlreadyCompletedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new TransactionAlreadyCompletedException(e.getMessage(), e);
             }
         });
 
@@ -4070,13 +4098,14 @@ public abstract class IgniteUtils {
      * @param log Logger to log possible checked exception with (optional).
      */
     public static void close(@Nullable AutoCloseable rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
+        if (rsrc != null) {
             try {
                 rsrc.close();
             }
             catch (Exception e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
+                warn(log, "Failed to close resource: " + e.getMessage(), e);
             }
+        }
     }
 
     /**
@@ -9962,6 +9991,33 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param zipBytes Zipped bytes.
+     * @return Raw bytes.
+     * @throws IgniteCheckedException If unzip resulted in error.
+     */
+    public static byte[] unzip(byte[] zipBytes) throws IgniteCheckedException {
+        assert zipBytes != null;
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+
+            in.getNextEntry();
+
+            byte[] tmp = new byte[4 << 10];
+
+            int size;
+
+            while ((size = in.read(tmp)) != -1)
+                baos.write(tmp, 0, size);
+
+            return baos.toByteArray();
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
      * <p/>
@@ -10714,7 +10770,7 @@ public abstract class IgniteUtils {
     public static <T, R> Collection<R> doInParallel(
         ExecutorService executorSvc,
         Collection<T> srcDatas,
-        IgniteThrowableConsumer<T, R> operation
+        IgniteThrowableFunction<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
         return doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
     }
@@ -10734,7 +10790,7 @@ public abstract class IgniteUtils {
         int parallelismLvl,
         ExecutorService executorSvc,
         Collection<T> srcDatas,
-        IgniteThrowableConsumer<T, R> operation
+        IgniteThrowableFunction<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
         if(srcDatas.isEmpty())
             return Collections.emptyList();
@@ -10774,7 +10830,7 @@ public abstract class IgniteUtils {
                 Collection<R> results = new ArrayList<>(batch.tasks.size());
 
                 for (T item : batch.tasks)
-                    results.add(operation.accept(item));
+                    results.add(operation.apply(item));
 
                 return results;
             }))
@@ -10793,7 +10849,7 @@ public abstract class IgniteUtils {
 
             try {
                 for (T item : batch.tasks)
-                    res.add(operation.accept(item));
+                    res.add(operation.apply(item));
 
                 batch.result(res);
             }
@@ -10874,6 +10930,17 @@ public abstract class IgniteUtils {
             root.addSuppressed(err);
 
         return root;
+    }
+
+    /**
+     * @return {@code true} if local node is coordinator.
+     */
+    public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoveryManager) {
+        DiscoverySpi spi = discoveryManager.getInjectedDiscoverySpi();
+
+        return spi instanceof TcpDiscoverySpi
+            ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
+            : F.eq(discoveryManager.localNode(), U.oldest(discoveryManager.aliveServerNodes(), null));
     }
 
     /**
@@ -11164,5 +11231,59 @@ public abstract class IgniteUtils {
         catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     *  Safely write buffer fully to blocking socket channel.
+     *  Will throw assert if non blocking channel passed.
+     *
+     * @param sockCh WritableByteChannel.
+     * @param buf Buffer.
+     * @throws IOException IOException.
+     */
+    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
+        int totalWritten = 0;
+
+        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
+
+        while (buf.hasRemaining()) {
+            int written = sockCh.write(buf);
+
+            if (written < 0)
+                throw new IOException("Error writing buffer to channel " +
+                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
+
+            totalWritten += written;
+        }
+    }
+
+    /**
+     * @return New identity hash set.
+     */
+    public static <X> Set<X> newIdentityHashSet() {
+        return Collections.newSetFromMap(new IdentityHashMap<>());
+    }
+
+    /**
+     * @param stripes Number of stripes.
+     * @param grpId Group Id.
+     * @param partId Partition Id.
+     * @return Stripe idx.
+     */
+    public static int stripeIdx(int stripes, int grpId, int partId) {
+        assert partId >= 0;
+
+        return Math.abs((Math.abs(grpId) + partId)) % stripes;
+    }
+
+    /**
+     * Check if flag set.
+     *
+     * @param flags Flags.
+     * @param flag Flag.
+     * @return {@code True} if set.
+     */
+    public static boolean isFlagSet(int flags, int flag) {
+        return (flags & flag) == flag;
     }
 }

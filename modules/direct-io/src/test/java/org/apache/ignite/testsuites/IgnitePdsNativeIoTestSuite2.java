@@ -22,14 +22,13 @@ import org.apache.ignite.internal.processors.cache.persistence.DiskPageCompressi
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
  */
-@RunWith(IgnitePdsNativeIoTestSuite2.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgnitePdsNativeIoTestSuite2 {
     /**
      * @return Suite.
@@ -50,13 +49,5 @@ public class IgnitePdsNativeIoTestSuite2 {
         suite.add(IgniteNativeIoWalFlushFsyncSelfTest.class);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

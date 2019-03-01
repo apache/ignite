@@ -55,8 +55,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -65,7 +63,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnectAbstractTest {
 
     /** Cache key for test put and invoke operation after reconnect */

@@ -41,14 +41,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Client connector configuration validation tests.
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAbstractTest {
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();

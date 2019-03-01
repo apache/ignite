@@ -79,7 +79,7 @@ class ConnectionState {
         return cluster;
     }
 
-    update(demo, count, clusters) {
+    update(demo, count, clusters, hasDemo) {
         this.clusters = clusters;
 
         if (_.isEmpty(this.clusters))
@@ -90,6 +90,8 @@ class ConnectionState {
 
         if (this.cluster)
             this.cluster.connected = !!_.find(clusters, {id: this.cluster.id});
+
+        this.hasDemo = hasDemo;
 
         if (count === 0)
             this.state = State.AGENT_DISCONNECTED;
@@ -193,6 +195,11 @@ export default class AgentManager {
             pluck('active')
         );
 
+        this.clusterIsAvailable$ = this.connectionSbj.pipe(
+            pluck('cluster'),
+            map((cluster) => !!cluster)
+        );
+
         if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({
                 next: ({cluster}) => {
@@ -235,10 +242,10 @@ export default class AgentManager {
 
         this.socket.on('disconnect', onDisconnect);
 
-        this.socket.on('agents:stat', ({clusters, count}) => {
+        this.socket.on('agents:stat', ({clusters, count, hasDemo}) => {
             const conn = this.connectionSbj.getValue();
 
-            conn.update(this.isDemoMode(), count, clusters);
+            conn.update(this.isDemoMode(), count, clusters, hasDemo);
 
             this.connectionSbj.next(conn);
         });
@@ -352,58 +359,6 @@ export default class AgentManager {
         });
 
         return this.awaitAgent();
-    }
-
-    /**
-     * @param {String} backText
-     * @param {String} [backState]
-     * @returns {ng.IPromise}
-     */
-    startClusterWatch(backText, backState) {
-        this.backText = backText;
-        this.backState = backState;
-
-        const conn = this.connectionSbj.getValue();
-
-        conn.useConnectedCluster();
-
-        this.connectionSbj.next(conn);
-
-        this.modalSubscription && this.modalSubscription.unsubscribe();
-
-        this.modalSubscription = this.connectionSbj.subscribe({
-            next: ({state}) => {
-                switch (state) {
-                    case State.CONNECTED:
-                        this.agentModal.hide();
-
-                        break;
-
-                    case State.AGENT_DISCONNECTED:
-                        this.agentModal.agentDisconnected(this.backText, this.backState);
-                        this.ClusterLoginSrv.cancel();
-
-                        break;
-
-                    case State.CLUSTER_DISCONNECTED:
-                        this.agentModal.clusterDisconnected(this.backText, this.backState);
-                        this.ClusterLoginSrv.cancel();
-
-                        break;
-
-                    default:
-                    // Connection to backend is not established yet.
-                }
-            }
-        });
-
-        const stopWatchUnsubscribe = this.$transitions.onExit({}, () => {
-            this.stopWatch();
-
-            stopWatchUnsubscribe();
-        });
-
-        return this.awaitCluster();
     }
 
     stopWatch() {

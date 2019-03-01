@@ -47,14 +47,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
     /** */
     private static final int KEYS_COUNT = 20_000;
@@ -472,8 +470,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      */
     @Test
     public void testSizeClear() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
 
         final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 

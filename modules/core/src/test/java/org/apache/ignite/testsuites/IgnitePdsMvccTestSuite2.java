@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeNoCha
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsWithCompactionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteShutdownOnSupplyMessageFailureTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.filename.IgniteUidAsConsistentIdMigrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.FsyncWalRolloverDoesNotBlockTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWALTailIsReachedDuringIterationOverArchiveTest;
@@ -45,14 +46,11 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteReplayWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteStandaloneWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
-/**
- *
- */
-@RunWith(IgnitePdsMvccTestSuite2.DynamicSuite.class)
+/** */
+@RunWith(DynamicSuite.class)
 public class IgnitePdsMvccTestSuite2 {
     /**
      * @return Suite.
@@ -61,6 +59,9 @@ public class IgnitePdsMvccTestSuite2 {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         Collection<Class> ignoredTests = new HashSet<>();
+
+        // TODO IGNITE-7384: include test when implemented.
+        ignoredTests.add(IgniteShutdownOnSupplyMessageFailureTest.class);
 
         // Classes that are contained mvcc test already.
         ignoredTests.add(LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest.class);
@@ -95,13 +96,5 @@ public class IgnitePdsMvccTestSuite2 {
         ignoredTests.add(FsyncWalRolloverDoesNotBlockTest.class);
 
         return IgnitePdsTestSuite2.suite(ignoredTests);
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

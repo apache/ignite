@@ -32,13 +32,10 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for IGNITE-10700.
  */
-@RunWith(JUnit4.class)
 public class KeepBinaryTest extends GridCommonAbstractTest {
     /** Number of nodes in grid. */
     private static final int NODE_COUNT = 2;
@@ -81,15 +78,16 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
 
         IgniteBiFunction<Integer, BinaryObject, Double> lbExtractor = (k, v) -> (double) v.field("label");
 
-        KMeansTrainer trainer = new KMeansTrainer().withSeed(123L);
+        KMeansTrainer trainer = new KMeansTrainer();
 
         CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
             new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
 
         KMeansModel kmdl = trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
 
-        assertTrue(kmdl.predict(VectorUtils.num2Vec(0.0)) == 0);
-        assertTrue(kmdl.predict(VectorUtils.num2Vec(10.0)) == 1);
+        Integer zeroCentre = kmdl.predict(VectorUtils.num2Vec(0.0));
+
+        assertTrue(kmdl.getCenters()[zeroCentre].get(0) == 0);
     }
 
     /**

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,6 +131,101 @@ class ClusterCachesInfo {
         this.ctx = ctx;
 
         log = ctx.log(getClass());
+    }
+
+    /**
+     * Filters all dynamic cache descriptors and groups that were not presented on node start
+     * and were received with grid discovery data.
+     *
+     * @param localConfigData node's local cache configurations
+     * (both from static config and stored with persistent caches).
+     *
+     */
+    public void filterDynamicCacheDescriptors(CacheJoinNodeDiscoveryData localConfigData) {
+        if (ctx.isDaemon())
+            return;
+
+        filterRegisteredCachesAndCacheGroups(localConfigData.caches());
+
+        List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = locJoinCachesCtx.caches();
+
+        filterLocalJoinStartCaches(locJoinStartCaches);
+
+        List<DynamicCacheDescriptor> initCaches = locJoinCachesCtx.initCaches();
+
+        filterInitCaches(initCaches);
+
+        locJoinCachesCtx = new LocalJoinCachesContext(
+            locJoinStartCaches,
+            initCaches,
+            registeredCacheGrps,
+            registeredCaches);
+    }
+
+    /**
+     * Filters from registered caches all caches that are not presented in node's local configuration.
+     *
+     * Then filters from registered cache groups all groups that became empty after registered caches were filtered.
+     *
+     * @param locCaches Caches from local node configuration (static configuration and persistent caches).
+     */
+    private void filterRegisteredCachesAndCacheGroups(Map<String, CacheJoinNodeDiscoveryData.CacheInfo> locCaches) {
+        //filter registered caches
+        Iterator<Map.Entry<String, DynamicCacheDescriptor>> cachesIter = registeredCaches.entrySet().iterator();
+
+        while (cachesIter.hasNext()) {
+            Map.Entry<String, DynamicCacheDescriptor> e = cachesIter.next();
+
+            if (!locCaches.containsKey(e.getKey())) {
+                cachesIter.remove();
+
+                ctx.discovery().removeCacheFilter(e.getKey());
+            }
+        }
+
+        //filter registered cache groups
+        Iterator<Map.Entry<Integer, CacheGroupDescriptor>> grpsIter = registeredCacheGrps.entrySet().iterator();
+
+        while (grpsIter.hasNext()) {
+            Map.Entry<Integer, CacheGroupDescriptor> e = grpsIter.next();
+
+            boolean removeGrp = true;
+
+            for (DynamicCacheDescriptor cacheDescr : registeredCaches.values()) {
+                if (cacheDescr.groupId() == e.getKey()) {
+                    removeGrp = false;
+
+                    break;
+                }
+            }
+
+            if (removeGrp) {
+                grpsIter.remove();
+
+                ctx.discovery().removeCacheGroup(e.getValue());
+            }
+        }
+    }
+
+    /**
+     * Filters from local join context cache descriptors that should be started on join.
+     *
+     * @param locJoinStartCaches Collection to filter.
+     */
+    private void filterLocalJoinStartCaches(
+        List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches) {
+
+        locJoinStartCaches.removeIf(next -> !registeredCaches.containsKey(next.getKey().cacheName()));
+    }
+
+    /**
+     * Filters from local join context cache descriptors that require init of query infrastructure without cache
+     * start.
+     *
+     * @param initCaches Collection to filter.
+     */
+    private void filterInitCaches(List<DynamicCacheDescriptor> initCaches) {
+        initCaches.removeIf(desc -> !registeredCaches.containsKey(desc.cacheName()));
     }
 
     /**
@@ -1376,8 +1472,6 @@ class ClusterCachesInfo {
      * @param firstNode {@code True} if first node in cluster starts.
      */
     private void initStartCachesForLocalJoin(boolean firstNode, boolean reconnect) {
-        assert locJoinCachesCtx == null : locJoinCachesCtx;
-
         if (ctx.state().clusterState().transition()) {
             joinOnTransition = true;
 

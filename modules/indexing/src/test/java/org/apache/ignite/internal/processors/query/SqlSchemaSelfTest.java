@@ -35,13 +35,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for schemas.
  */
-@RunWith(JUnit4.class)
 public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";

@@ -29,13 +29,10 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for injected logger category.
  */
-@RunWith(JUnit4.class)
 public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implements Externalizable {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

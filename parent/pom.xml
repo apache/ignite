@@ -77,16 +77,20 @@
         <httpcore.version>4.4.3</httpcore.version>
         <jackson.version>2.9.6</jackson.version>
         <jackson1.version>1.9.13</jackson1.version>
+        <jaxb.api.version>2.1</jaxb.api.version>
+        <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
+        <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
         <jetty.version>9.4.11.v20180605</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
         <jnr.posix.version>3.0.46</jnr.posix.version>
+        <jotm.version>2.2.3</jotm.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
         <jsch.version>0.1.54</jsch.version>
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
@@ -107,7 +111,7 @@
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
         <postgres.connector.version>42.2.5.jre7</postgres.connector.version>
-        <rocketmq.version>4.3.0</rocketmq.version>
+        <rocketmq.version>4.4.0</rocketmq.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
@@ -251,6 +255,13 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>${javassist.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -526,7 +537,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2018 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2019 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -618,7 +629,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.20.1</version>
+                <version>3.0.0-M3</version>
                 <configuration>
                     <forkCount>0</forkCount>
                 </configuration>
@@ -723,7 +734,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.4</version>
+                <version>3.0.0-M2</version>
                 <configuration>
                     <rules>
                         <requireJavaVersion>
@@ -1003,7 +1014,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.20.1</version>
+                        <version>3.0.0-M3</version>
                         <configuration>
                             <forkCount>1</forkCount>
                         </configuration>
@@ -1013,13 +1024,13 @@
         </profile>
 
         <profile>
-            <id>java-9</id>
+            <id>java-9+</id>
             <activation>
                 <jdk>[1.9,)</jdk>
             </activation>
             <properties>
-                <maven.compiler.source>9</maven.compiler.source>
-                <maven.compiler.target>9</maven.compiler.target>
+                <maven.compiler.source>1.8</maven.compiler.source>
+                <maven.compiler.target>11</maven.compiler.target>
                 <scala.library.version>2.12.6</scala.library.version>
             </properties>
             <dependencies/>
@@ -1042,36 +1053,44 @@
                             </compilerArgs>
                         </configuration>
                     </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit</argLine>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
 
-              <dependencyManagement>
-				<dependencies>
-					<dependency>
-						<groupId>org.apache.hadoop</groupId>
-						<artifactId>hadoop-common</artifactId>
-						<exclusions>
-							<exclusion>
-								<!-- This dependency is not available with java 9.-->
-								<groupId>jdk.tools</groupId>
-								<artifactId>jdk.tools</artifactId>
-							</exclusion>
-						</exclusions>
-					</dependency>
- 					<dependency>
-						<groupId>org.apache.hadoop</groupId>
-						<artifactId>hadoop-common</artifactId>
-						<type>test-jar</type>
-						<exclusions>
-							<exclusion>
-								<!-- This dependency is not available with java 9.-->
-								<groupId>jdk.tools</groupId>
-								<artifactId>jdk.tools</artifactId>
-							</exclusion>
-						</exclusions>
-					</dependency>
-				</dependencies>
-			</dependencyManagement>
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-common</artifactId>
+                        <exclusions>
+                            <exclusion>
+                                <!-- This dependency is not available with java 9.-->
+                                <groupId>jdk.tools</groupId>
+                                <artifactId>jdk.tools</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-common</artifactId>
+                        <type>test-jar</type>
+                        <exclusions>
+                            <exclusion>
+                                <!-- This dependency is not available with java 9.-->
+                                <groupId>jdk.tools</groupId>
+                                <artifactId>jdk.tools</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
 
         </profile>
 

@@ -35,13 +35,10 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests that server nodes do not need class definitions to execute queries.
  */
-@RunWith(JUnit4.class)
 public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTest {
     /** */
     public static final String PERSON_KEY_CLS_NAME = "org.apache.ignite.tests.p2p.cache.PersonKey";

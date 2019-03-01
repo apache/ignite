@@ -27,8 +27,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.lang.Thread.sleep;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -36,7 +34,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalStateAbstractTest {
     /** {@inheritDoc} */
     @Override protected int primaryNodes() {

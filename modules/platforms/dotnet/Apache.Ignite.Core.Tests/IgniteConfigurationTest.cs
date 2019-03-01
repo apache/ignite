@@ -261,10 +261,7 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(cfg.MvccVacuumFrequency, resCfg.MvccVacuumFrequency);
                 Assert.AreEqual(cfg.MvccVacuumThreadCount, resCfg.MvccVacuumThreadCount);
-
-                Assert.AreEqual(cfg.InitBaselineAutoAdjustEnabled, resCfg.InitBaselineAutoAdjustEnabled);
-                Assert.AreEqual(cfg.InitBaselineAutoAdjustTimeout, resCfg.InitBaselineAutoAdjustTimeout);
-                Assert.AreEqual(cfg.InitBaselineAutoAdjustMaxTimeout, resCfg.InitBaselineAutoAdjustMaxTimeout);
+                Assert.AreEqual(cfg.SqlQueryHistorySize, resCfg.SqlQueryHistorySize);
 
                 Assert.IsNotNull(resCfg.SqlSchemas);
                 Assert.AreEqual(2, resCfg.SqlSchemas.Count);
@@ -879,6 +876,7 @@ namespace Apache.Ignite.Core.Tests
                 AuthenticationEnabled = false,
                 MvccVacuumFrequency = 20000,
                 MvccVacuumThreadCount = 8,
+                SqlQueryHistorySize = 99,
 
                 SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" }
             };

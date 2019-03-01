@@ -22,10 +22,10 @@ import 'angular-animate';
 import 'angular-sanitize';
 import 'angular-strap';
 import 'angular-strap/dist/angular-strap.tpl';
+import 'angular1-async-filter';
 
 import 'angular-messages';
 import '@uirouter/angularjs';
-import '@uirouter/angularjs/lib/legacy/stateEvents';
 
 import 'resize-observer-polyfill';
 

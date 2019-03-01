@@ -126,7 +126,7 @@ public class RecordV2Serializer implements RecordSerializer {
                 && recordFilter != null && !recordFilter.apply(recType, ptr)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
 
-                assert toSkip >= 0 : "Too small saved record length: " + ptr;
+                assert toSkip >= 0 : "Too small saved record length: ptr=" + ptr + ", type=" + recType;
 
                 if (in.skipBytes(toSkip) < toSkip)
                     throw new EOFException("Reached end of file while reading record: " + ptr);

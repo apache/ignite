@@ -95,7 +95,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /**
      * @return An simple iterator.
      */
-    private Iterator<T> iter() {
+    protected Iterator<T> iter() {
         if (!STATE_UPDATER.compareAndSet(this, IDLE, EXECUTION))
             throw new IgniteException("Iterator is already fetched or query was cancelled.");
 

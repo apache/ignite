@@ -111,7 +111,7 @@ module.exports = {
                     .then((agentSocks) => {
                         const stat = _.reduce(agentSocks, (acc, agentSock) => {
                             acc.count += 1;
-                            acc.hasDemo |= _.get(agentSock, 'demo.enabled');
+                            acc.hasDemo = acc.hasDemo || _.get(agentSock, 'demo.enabled');
 
                             if (agentSock.cluster)
                                 acc.clusters.push(agentSock.cluster);
@@ -130,7 +130,12 @@ module.exports = {
             clusterChanged(account, cluster) {
                 const socks = this._browserSockets.get(account);
 
-                _.forEach(socks, (sock) => sock.emit('cluster:changed', cluster));
+                _.forEach(socks, (sock) => {
+                    if (sock)
+                        sock.emit('cluster:changed', cluster);
+                    else
+                        console.log(`Fount closed socket [account=${account}, cluster=${cluster}]`);
+                });
             }
 
             pushInitialData(sock) {

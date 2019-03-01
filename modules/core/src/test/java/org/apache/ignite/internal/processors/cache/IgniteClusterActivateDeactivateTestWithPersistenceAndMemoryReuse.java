@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Test;
 
 /**
  *
@@ -38,30 +36,5 @@ public class IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse ex
         super.afterTest();
 
         System.clearProperty(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testDeactivateDuringEvictionAndRebalance() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10788");
-
-        super.testDeactivateDuringEvictionAndRebalance();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testDeactivateInactiveCluster() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10788");
-
-        super.testDeactivateInactiveCluster();
-    }
-
-    @Override public void testReActivateSimple_5_Servers_4_Clients_FromServer() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10750");
-
-        super.testReActivateSimple_5_Servers_4_Clients_FromServer();
     }
 }

@@ -111,14 +111,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePart
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorExternalizableFailedTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorNonSerializableTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(IgniteCacheMvccTestSuite1.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheMvccTestSuite1 {
     /**
      * @return IgniteCache test suite.
@@ -244,13 +243,5 @@ public class IgniteCacheMvccTestSuite1 {
         suite.add(IgniteCacheMvccTxNearEnabledInvokeTest.class);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

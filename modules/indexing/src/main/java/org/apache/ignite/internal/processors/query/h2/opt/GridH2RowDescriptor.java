@@ -27,18 +27,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VAL_COL;
 
 /**
  * Row descriptor.
@@ -93,13 +89,21 @@ public class GridH2RowDescriptor {
     }
 
     /**
+     * Gets table descriptor.
+     *
+     * @return Table descriptor.
+     */
+    public H2TableDescriptor tableDescriptor(){
+        return tbl;
+    }
+
+    /**
      * Update metadata of this row descriptor according to current state of type descriptor.
      */
-    @SuppressWarnings("WeakerAccess")
+    @SuppressWarnings({"WeakerAccess", "ToArrayCallWithZeroLengthArrayArgument"})
     public final void refreshMetadataFromTypeDescriptor() {
-        Map<String, Class<?>> allFields = new LinkedHashMap<>();
 
-        allFields.putAll(type.fields());
+        Map<String, Class<?>> allFields = new LinkedHashMap<>(type.fields());
 
         fields = allFields.keySet().toArray(new String[allFields.size()]);
 
@@ -123,10 +127,10 @@ public class GridH2RowDescriptor {
         List<String> fieldsList = Arrays.asList(fields);
 
         keyAliasColId = (type.keyFieldName() != null) ?
-            DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : COL_NOT_EXISTS;
+            QueryUtils.DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : COL_NOT_EXISTS;
 
         valAliasColId = (type.valueFieldName() != null) ?
-            DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : COL_NOT_EXISTS;
+            QueryUtils.DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : COL_NOT_EXISTS;
     }
 
     /**
@@ -167,21 +171,17 @@ public class GridH2RowDescriptor {
     }
 
     /**
-     * Creates new row.
+     * Create new row for update operation.
      *
      * @param dataRow Data row.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheDataRow dataRow) throws IgniteCheckedException {
-        GridH2Row row;
+    public H2CacheRow createRow(CacheDataRow dataRow) throws IgniteCheckedException {
+        H2CacheRow row;
 
         try {
-            if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
-                row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType));
-            }
-            else
-                row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
+            row = new H2CacheRow(this, dataRow);
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +
@@ -190,6 +190,13 @@ public class GridH2RowDescriptor {
         }
 
         return row;
+    }
+
+    /**
+     * @return Key type.
+     */
+    public int keyType() {
+        return keyType;
     }
 
     /**
@@ -268,7 +275,7 @@ public class GridH2RowDescriptor {
      */
     public boolean isKeyColumn(int colId) {
         assert colId >= 0;
-        return colId == KEY_COL || colId == keyAliasColId;
+        return colId == QueryUtils.KEY_COL || colId == keyAliasColId;
     }
 
     /**
@@ -290,7 +297,7 @@ public class GridH2RowDescriptor {
      */
     public boolean isValueColumn(int colId) {
         assert colId >= 0;
-        return colId == VAL_COL || colId == valAliasColId;
+        return colId == QueryUtils.VAL_COL || colId == valAliasColId;
     }
 
     /**
@@ -315,7 +322,7 @@ public class GridH2RowDescriptor {
     public boolean isKeyValueOrVersionColumn(int colId) {
         assert colId >= 0;
 
-        if (colId < DEFAULT_COLUMNS_COUNT)
+        if (colId < QueryUtils.DEFAULT_COLUMNS_COUNT)
             return true;
 
         if (colId == keyAliasColId)
@@ -334,14 +341,15 @@ public class GridH2RowDescriptor {
      * @param mask Index Condition to check.
      * @return Result.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public boolean checkKeyIndexCondition(int masks[], int mask) {
         assert masks != null;
         assert masks.length > 0;
 
         if (keyAliasColId < 0)
-            return (masks[KEY_COL] & mask) != 0;
+            return (masks[QueryUtils.KEY_COL] & mask) != 0;
         else
-            return (masks[KEY_COL] & mask) != 0 || (masks[keyAliasColId] & mask) != 0;
+            return (masks[QueryUtils.KEY_COL] & mask) != 0 || (masks[keyAliasColId] & mask) != 0;
     }
 
     /**
@@ -360,10 +368,10 @@ public class GridH2RowDescriptor {
         for (int idx = 0; idx < data.length; idx++)
             data[idx] = row.getValue(idx);
 
-        copyAliasColumnData(data, KEY_COL, keyAliasColId);
-        copyAliasColumnData(data, VAL_COL, valAliasColId);
+        copyAliasColumnData(data, QueryUtils.KEY_COL, keyAliasColId);
+        copyAliasColumnData(data, QueryUtils.VAL_COL, valAliasColId);
 
-        return GridH2PlainRowFactory.create(data);
+        return H2PlainRowFactory.create(data);
     }
 
     /**
@@ -397,16 +405,16 @@ public class GridH2RowDescriptor {
      */
     public int getAlternativeColumnId(int colId) {
         if (keyAliasColId > 0) {
-            if (colId == KEY_COL)
+            if (colId == QueryUtils.KEY_COL)
                 return keyAliasColId;
             else if (colId == keyAliasColId)
-                return KEY_COL;
+                return QueryUtils.KEY_COL;
         }
         if (valAliasColId > 0) {
-            if (colId == VAL_COL)
+            if (colId == QueryUtils.VAL_COL)
                 return valAliasColId;
             else if (colId == valAliasColId)
-                return VAL_COL;
+                return QueryUtils.VAL_COL;
         }
 
         return colId;
