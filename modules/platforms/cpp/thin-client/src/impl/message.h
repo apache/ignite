@@ -28,7 +28,7 @@
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
-#include "impl/connectable_node_partitions.h"
+#include "impl/node_partitions.h"
 #include "impl/protocol_version.h"
 
 namespace ignite
@@ -711,7 +711,7 @@ namespace ignite
                  *
                  * @param nodeParts Node partitions.
                  */
-                ClientCacheNodePartitionsResponse(std::vector<ConnectableNodePartitions>& nodeParts);
+                ClientCacheNodePartitionsResponse(std::vector<NodePartitions>& nodeParts);
 
                 /**
                  * Destructor.
@@ -727,7 +727,41 @@ namespace ignite
 
             private:
                 /** Node partitions. */
-                std::vector<ConnectableNodePartitions>& nodeParts;
+                std::vector<NodePartitions>& nodeParts;
+            };
+
+            /**
+             * Cache node list request.
+             */
+            class CachePartitionsResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param nodeParts Node partitions.
+                 */
+                CachePartitionsResponse(std::vector<NodePartitions>& nodeParts);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~CachePartitionsResponse();
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Applicable for optimization. */
+                bool applicable;
+
+
+                /** Node partitions. */
+                std::vector<NodePartitions>& nodeParts;
             };
 
             /**

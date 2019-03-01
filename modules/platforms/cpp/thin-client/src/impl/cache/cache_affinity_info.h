@@ -37,7 +37,7 @@ namespace ignite
             class WritableKey;
 
             /* Forward declaration. */
-            class ConnectableNodePartitions;
+            class NodePartitions;
 
             namespace cache
             {
@@ -52,7 +52,7 @@ namespace ignite
                      *
                      * @param info Node partitions info.
                      */
-                    CacheAffinityInfo(const std::vector<ConnectableNodePartitions>& info);
+                    CacheAffinityInfo(const std::vector<NodePartitions>& info);
 
                     /**
                      * Destructor.

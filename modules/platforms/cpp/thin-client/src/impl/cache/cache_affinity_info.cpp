@@ -28,9 +28,9 @@ namespace ignite
         {
             namespace cache
             {
-                CacheAffinityInfo::CacheAffinityInfo(const std::vector<ConnectableNodePartitions>& info)
+                CacheAffinityInfo::CacheAffinityInfo(const std::vector<NodePartitions>& info)
                 {
-                    typedef std::vector<ConnectableNodePartitions>::const_iterator InfoIterator;
+                    typedef std::vector<NodePartitions>::const_iterator InfoIterator;
 
                     for (InfoIterator it = info.begin(); it != info.end(); ++it)
                     {

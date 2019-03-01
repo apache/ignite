@@ -118,7 +118,7 @@ namespace ignite
 
             void DataRouter::RefreshAffinityMapping(int32_t cacheId, bool binary)
             {
-                std::vector<ConnectableNodePartitions> nodeParts;
+                std::vector<NodePartitions> nodeParts;
 
                 CacheRequest<RequestType::CACHE_NODE_PARTITIONS> req(cacheId, binary);
                 ClientCacheNodePartitionsResponse rsp(nodeParts);

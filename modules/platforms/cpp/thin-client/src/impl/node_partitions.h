@@ -19,7 +19,10 @@
 #define _IGNITE_IMPL_THIN_CONNECTABLE_NODE_PARTITIONS
 
 #include <stdint.h>
+#include <vector>
 
+#include <ignite/guid.h>
+#include <ignite/impl/binary/binary_reader_impl.h>
 #include <ignite/network/end_point.h>
 
 namespace ignite
@@ -32,14 +35,14 @@ namespace ignite
              * Address of the node, connectible for the thin client, associated
              * with cache partitions info.
              */
-            class ConnectableNodePartitions
+            class NodePartitions
             {
             public:
                 /**
                  * Default constructor.
                  */
-                ConnectableNodePartitions() :
-                    endPoints(),
+                NodePartitions() :
+                    guid(),
                     partitions()
                 {
                     // No-op.
@@ -48,19 +51,19 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~ConnectableNodePartitions()
+                ~NodePartitions()
                 {
                     // No-op.
                 }
 
                 /**
-                 * Get end points.
+                 * Get node GUID.
                  *
-                 * @return End points.
+                 * @return GUID.
                  */
-                const std::vector<network::EndPoint>& GetEndPoints() const
+                const Guid& GetGuid() const
                 {
-                    return endPoints;
+                    return guid;
                 }
 
                 /**
@@ -80,33 +83,20 @@ namespace ignite
                  */
                 void Read(binary::BinaryReaderImpl& reader)
                 {
-                    int32_t port = reader.ReadInt32();
-
-                    int32_t addrNum = reader.ReadInt32();
-
-                    endPoints.clear();
-                    endPoints.reserve(addrNum);
-
-                    for (int32_t i = 0; i < addrNum; ++i)
-                    {
-                        std::string addr;
-                        reader.ReadString(addr);
-
-                        endPoints.push_back(network::EndPoint(addr, static_cast<uint16_t>(port)));
-                    }
+                    guid = reader.ReadGuid();
 
                     int32_t partsNum = reader.ReadInt32();
 
                     partitions.clear();
-                    partitions.reserve(addrNum);
+                    partitions.reserve(partsNum);
 
                     for (int32_t i = 0; i < partsNum; ++i)
                         partitions.push_back(reader.ReadInt32());
                 }
 
             private:
-                /** Node end points. */
-                std::vector<network::EndPoint> endPoints;
+                /** Node GUID. */
+                Guid guid;
 
                 /** Cache partitions. */
                 std::vector<int32_t> partitions;

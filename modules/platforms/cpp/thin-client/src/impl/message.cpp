@@ -126,7 +126,7 @@ namespace ignite
             }
 
             ClientCacheNodePartitionsResponse::ClientCacheNodePartitionsResponse(
-                std::vector<ConnectableNodePartitions>& nodeParts):
+                std::vector<NodePartitions>& nodeParts):
                 nodeParts(nodeParts)
             {
                 // No-op.
@@ -147,6 +147,51 @@ namespace ignite
 
                 for (int32_t i = 0; i < num; ++i)
                     nodeParts[i].Read(reader);
+            }
+
+            void CachePartitionsResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                AffinityTopologyVersion topologyVersion;
+
+                topologyVersion.Read(reader);
+
+                int32_t mappingsNum = reader.ReadInt32();
+
+                // Partition Mapping
+                for (int32_t i = 0; i < mappingsNum; ++i)
+                {
+                    applicable = reader.ReadBool();
+
+                    int32_t cachesNum = reader.ReadInt32();
+
+                    std::vector<int32_t> guids;
+
+                    for (int32_t j = 0; j < cachesNum; ++j)
+                    {
+                        int32_t cacheId = reader.ReadInt32();
+
+                        // Cache key configuration
+                        if (applicable)
+                        {
+                            int32_t configsNum = reader.ReadInt32();
+
+                            for (int k = 0; k < configsNum; ++k)
+                            {
+                                int32_t keyTypeId = reader.ReadInt32();
+                                int32_t affinityKeyFieldId = reader.ReadInt32();
+                            }
+                        }
+                    }
+
+                    if (applicable)
+                    {
+                        int32_t nodeNum = reader.ReadInt32();
+
+                        // Node Partitions
+                        for (int32_t j = 0; j < nodeNum; ++j)
+                            nodeParts[j].Read(reader);
+                    }
+                }
             }
 
             CacheValueResponse::CacheValueResponse(Readable& value) :
