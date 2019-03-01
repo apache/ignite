@@ -390,6 +390,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** SSL socket factory. */
     protected SSLSocketFactory sslSockFactory;
 
+    /** SSL enable/disable flag. */
+    protected boolean sslEnable;
+
     /** Context initialization latch. */
     @GridToStringExclude
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
@@ -1956,9 +1959,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected IgniteSpiException duplicateIdError(TcpDiscoveryDuplicateIdMessage msg) {
         assert msg != null;
 
-        return new IgniteSpiException("Local node has the same ID as existing node in topology " +
-            "(fix configuration and restart local node) [localNode=" + locNode +
-            ", existingNode=" + msg.node() + ']');
+        StringBuilder errorMsgBldr = new StringBuilder();
+        errorMsgBldr
+            .append("Node with the same ID was found in node IDs history ")
+            .append("or existing node in topology has the same ID ")
+            .append("(fix configuration and restart local node) [localNode=")
+            .append(locNode)
+            .append(", existingNode=")
+            .append(msg.node())
+            .append(']');
+
+        return new IgniteSpiException(errorMsgBldr.toString());
     }
 
     /**
@@ -2019,9 +2030,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         //marshall collected bag into packet, return packet
         if (dataPacket.joiningNodeId().equals(locNode.id()))
-            dataPacket.marshalJoiningNodeData(dataBag, marshaller(), log);
+            dataPacket.marshalJoiningNodeData(
+                dataBag,
+                marshaller(),
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
+                ignite.configuration().getNetworkCompressionLevel(),
+                log);
         else
-            dataPacket.marshalGridNodeData(dataBag, locNode.id(), marshaller(), log);
+            dataPacket.marshalGridNodeData(
+                dataBag,
+                locNode.id(),
+                marshaller(),
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
+                ignite.configuration().getNetworkCompressionLevel(),
+                log);
 
         return dataPacket;
     }
@@ -2040,9 +2062,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         DiscoveryDataBag dataBag;
 
         if (dataPacket.joiningNodeId().equals(locNode.id()))
-            dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
+            dataBag = dataPacket.unmarshalGridData(marshaller(),
+                clsLdr,
+                locNode.clientRouterNodeId() != null,
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
+                log);
         else
-            dataBag = dataPacket.unmarshalJoiningNodeData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
+            dataBag = dataPacket.unmarshalJoiningNodeData(marshaller(),
+                clsLdr,
+                locNode.clientRouterNodeId() != null,
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
+                log);
 
 
         exchange.onExchange(dataBag);
@@ -2050,6 +2080,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        sslEnable = ignite().configuration().getSslContextFactory() != null;
+
         initializeImpl();
 
         registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
@@ -2242,7 +2274,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @return {@code True} if ssl enabled.
      */
     boolean isSslEnabled() {
-        return ignite().configuration().getSslContextFactory() != null;
+        return sslEnable;
     }
 
     /** {@inheritDoc} */
@@ -2487,6 +2519,24 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         /** {@inheritDoc} */
         @Override public String getLocalNodeFormatted() {
             return String.valueOf(getLocalNode());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void excludeNode(String nodeId) {
+            UUID node;
+
+            try {
+                node = UUID.fromString(nodeId);
+            }
+            catch (IllegalArgumentException e) {
+                U.error(log, "Failed to parse node ID: " + nodeId, e);
+
+                return;
+            }
+
+            String msg = "Node excluded, node=" + nodeId + "using JMX interface, initiator=" + getLocalNodeId();
+
+            impl.failNode(node, msg);
         }
 
         /** {@inheritDoc} */

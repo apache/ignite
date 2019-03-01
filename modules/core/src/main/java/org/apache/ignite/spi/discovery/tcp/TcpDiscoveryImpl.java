@@ -56,6 +56,9 @@ abstract class TcpDiscoveryImpl {
     /** Response WAIT. */
     protected static final int RES_WAIT = 200;
 
+    /** Response join impossible. */
+    protected static final int RES_JOIN_IMPOSSIBLE = 255;
+
     /** */
     protected final TcpDiscoverySpi spi;
 
@@ -215,7 +218,7 @@ abstract class TcpDiscoveryImpl {
 
     /**
      * @param feature Feature to check.
-     * @return {@code True} if all nodes support the given featire, {@code false} otherwise.
+     * @return {@code true} if all nodes support the given feature, {@code false} otherwise.
      */
     public abstract boolean allNodesSupport(IgniteFeatures feature);
 

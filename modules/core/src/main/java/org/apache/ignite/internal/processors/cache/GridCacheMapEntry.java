@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -227,7 +227,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** Read Lock for continuous query listener */
     @GridToStringExclude
-    private final Lock listenerLock;
+    private final ReadWriteLock listenerLock;
 
     /**
      * Flags:
@@ -257,7 +257,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         this.key = key;
         this.hash = key.hashCode();
         this.cctx = cctx;
-        this.listenerLock = cctx.group().listenerLock().readLock();
+        this.listenerLock = cctx.group().listenerLock();
 
         ver = cctx.shared().versions().startVersion();
     }
@@ -4981,7 +4981,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * query notified before the next cache listener update
      */
     private void lockListenerReadLock() {
-        listenerLock.lock();
+        listenerLock.readLock().lock();
     }
 
     /**
@@ -4990,7 +4990,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @see #lockListenerReadLock()
      */
     private void unlockListenerReadLock() {
-        listenerLock.unlock();
+        listenerLock.readLock().unlock();
     }
 
     /** {@inheritDoc} */
@@ -6668,10 +6668,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 return null;
             }
+            catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+                throw e;
+            }
             catch (Exception e) {
-                if (e instanceof UnregisteredClassException || e instanceof UnregisteredBinaryTypeException)
-                    throw (IgniteException)e;
-
                 writeObj = invokeEntry.valObj;
 
                 return new IgniteBiTuple<>(null, e);

@@ -718,7 +718,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable final CacheEntryPredicate filter
     ) {
         try {
-            MvccUtils.requestSnapshot(cacheCtx, this);
+            MvccUtils.requestSnapshot(this);
 
             beforePut(cacheCtx, retval, true);
         }
@@ -1898,7 +1898,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable final CacheEntryPredicate filter
     ) {
         try {
-            MvccUtils.requestSnapshot(cacheCtx, this);
+            MvccUtils.requestSnapshot(this);
 
             beforeRemove(cacheCtx, retval, true);
         }
