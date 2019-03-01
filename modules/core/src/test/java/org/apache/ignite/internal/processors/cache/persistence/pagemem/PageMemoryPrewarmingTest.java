@@ -172,11 +172,19 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setGridLogger(log);
 
-        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().getPrewarmingConfiguration()
+        PrewarmingConfiguration pcfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration()
+            .getPrewarmingConfiguration()
             .setThrottleAccuracy(0.9)
             .setDumpReadThreads(1);
 
+        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPrewarmingConfiguration(null);
+
         GridTestUtils.runMultiThreadedAsync(getLoadRunnable(stop), 10, "put-thread");
+
+        ignite = startGrid(cfg);
+
+        ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration()
+            .setPrewarmingConfiguration(pcfg);
 
         boolean res = false;
 
@@ -186,9 +194,10 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
                     stopLsnr.reset();
                     throttleLsnr.reset();
 
-                    ignite = startGrid(cfg);
+                    ((PageMemoryEx) ignite.context().cache().context().database().dataRegion(null).pageMemory())
+                        .startWarmingUp();
 
-                    res = GridTestUtils.waitForCondition(stopLsnr::check, 180_000) && throttleLsnr.check();
+                    res = GridTestUtils.waitForCondition(stopLsnr::check, 60_000) && throttleLsnr.check();
                 }
                 catch (Throwable t) {
                     Thread.interrupted();
@@ -278,14 +287,14 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
                             else
                                 cache0.remove(k);
 
-                            IgniteKernal primaryNode = (IgniteKernal)primaryCache(k, CACHE_NAME).unwrap(Ignite.class);
-                            GridCacheEntryEx entry = primaryNode.internalCache(CACHE_NAME).entryEx(k);
-
-                            try {
-                                entry.unswap();
-                            }
-                            catch (IgniteCheckedException | GridCacheEntryRemovedException ignore) {
-                            }
+//                            IgniteKernal primaryNode = (IgniteKernal)primaryCache(k, CACHE_NAME).unwrap(Ignite.class);
+//                            GridCacheEntryEx entry = primaryNode.internalCache(CACHE_NAME).entryEx(k);
+//
+//                            try {
+//                                entry.unswap();
+//                            }
+//                            catch (IgniteCheckedException | GridCacheEntryRemovedException ignore) {
+//                            }
                         }
                     }
                     catch (Throwable ignore) {}
