@@ -68,7 +68,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     private static final int EXPIRATION_TIMEOUT = 10;
 
     /** */
-    public static final int ENTRIES = 100_000;
+    public static final int ENTRIES = 50_000;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -107,8 +107,28 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        final CacheConfiguration ccfg = new CacheConfiguration();
-        ccfg.setName(CACHE_NAME);
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setMaxSize(2L * 1024 * 1024 * 1024)
+                        .setPersistenceEnabled(true)
+                ).setWalMode(WALMode.LOG_ONLY));
+
+        cfg.setCacheConfiguration(getCacheConfiguration(CACHE_NAME));
+
+        return cfg;
+    }
+
+    /**
+     * Returns a new cache configuration with the given name and {@code GROUP_NAME} group.
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration getCacheConfiguration(String name) {
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        ccfg.setName(name);
         ccfg.setGroupName(GROUP_NAME);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, PART_SIZE));
         ccfg.setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, EXPIRATION_TIMEOUT)));
@@ -116,17 +136,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setMaxSize(192L * 1024 * 1024)
-                        .setPersistenceEnabled(true)
-                ).setWalMode(WALMode.LOG_ONLY));
-
-        cfg.setCacheConfiguration(ccfg);
-
-        return cfg;
+        return ccfg;
     }
 
     /**
@@ -135,6 +145,31 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     @Test
     public void testTtlIsApplied() throws Exception {
         loadAndWaitForCleanup(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testTtlIsAppliedForMultipleCaches() throws Exception {
+        IgniteEx srv = startGrid(0);
+        srv.cluster().active(true);
+
+        int cacheCnt = 2;
+
+        // Create a new caches in the same group.
+        // It is important that initially created cache CACHE_NAME remains empty.
+        for (int i = 0; i < cacheCnt; ++i) {
+            String cacheName = CACHE_NAME + "-" + i;
+
+            srv.getOrCreateCache(getCacheConfiguration(cacheName));
+
+            fillCache(srv.cache(cacheName));
+        }
+
+        waitAndCheckExpired(srv, srv.cache(CACHE_NAME + "-" + (cacheCnt - 1)));
+
+        stopAllGrids();
     }
 
     /**
@@ -261,7 +296,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             }
         }, TimeUnit.SECONDS.toMillis(EXPIRATION_TIMEOUT + EXPIRATION_TIMEOUT / 2));
 
-        assertTrue("Cache is not empty.", awaited);
+        assertTrue("Cache is not empty. size=" + cache.size(), awaited);
 
         printStatistics((IgniteCacheProxy)cache, "After timeout");
 
