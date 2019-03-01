@@ -22,6 +22,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -38,13 +39,16 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
+import org.h2.table.Column;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
@@ -124,6 +128,18 @@ public class GridSqlQuerySplitter {
 
     /** Partition extractor. */
     private final PartitionExtractor extractor;
+
+    /** */
+    private boolean forUpdate;
+
+    /** For update version of reduce query. */
+    private GridCacheSqlQuery rdcSqlQryForUpdate;
+
+    /** For update version of map query. */
+    private List<GridCacheSqlQuery> mapSqlQrysForUpdate;
+
+    /** Original query rewritten without SELECT FOR UPDATE clause. */
+    private String originalNoForUpdateSql;
 
     /**
      * @param paramsCnt Parameters count.
@@ -307,7 +323,10 @@ public class GridSqlQuerySplitter {
             splitter.extractor.mergeMapQueries(splitter.mapSqlQrys),
             cacheIds,
             mvccEnabled,
-            locSplit
+            locSplit,
+            splitter.mapSqlQrysForUpdate,
+            splitter.rdcSqlQryForUpdate,
+            splitter.originalNoForUpdateSql
         );
     }
 
@@ -343,18 +362,30 @@ public class GridSqlQuerySplitter {
         else if (!model.needSplit())  // Just split the top level query.
             model.forceSplit();
 
+        // We need to clear for update flag because we'll run it as a plain query.
+        if (qry instanceof GridSqlSelect) {
+            GridSqlSelect sel = (GridSqlSelect)qry;
+
+            forUpdate = sel.isForUpdate();
+
+            sel.forUpdate(false);
+
+            if (forUpdate) {
+                GridSqlSelect selFu = copySelect(sel);
+                GridSqlAlias keyCol = keyColumn(selFu);
+
+                selFu.addColumn(keyCol, true);
+
+                // Original query rewritten with _KEY column and without SELECT FOR UPDATE clause.
+                originalNoForUpdateSql = selFu.getSQL();
+            }
+        }
+
         // Split the query model into multiple map queries and a single reduce query.
         splitQueryModel(model);
 
         // Get back the updated query from the fake parent. It will be our reduce query.
         qry = fakeQryParent.subquery();
-
-        // Always reset SELECT FOR UPDATE flag for reduce query.
-        if (qry instanceof GridSqlSelect) {
-            GridSqlSelect sel = (GridSqlSelect)qry;
-
-            sel.forUpdate(false);
-        }
 
         String rdcQry = qry.getSQL();
 
@@ -1135,9 +1166,6 @@ public class GridSqlQuerySplitter {
 
         final GridSqlSelect mapQry = parent.child(childIdx);
 
-        // Always reset this flag to false to prevent H2 locking.
-        mapQry.forUpdate(false);
-
         final int visibleCols = mapQry.visibleColumns();
 
         List<GridSqlAst> rdcExps = new ArrayList<>(visibleCols);
@@ -1186,6 +1214,8 @@ public class GridSqlQuerySplitter {
 
         // -- GROUP BY
         if (mapQry.groupColumns() != null && !collocatedGrpBy) {
+            assert !forUpdate;
+
             rdcQry.groupColumns(mapQry.groupColumns());
 
             // Grouping with distinct aggregates cannot be performed on map phase
@@ -1195,6 +1225,8 @@ public class GridSqlQuerySplitter {
 
         // -- HAVING
         if (havingCol >= 0 && !collocatedGrpBy) {
+            assert !forUpdate;
+
             // We need to find HAVING column in reduce query.
             for (int i = visibleCols; i < rdcQry.allColumns(); i++) {
                 GridSqlAst c = rdcQry.column(i);
@@ -1221,6 +1253,8 @@ public class GridSqlQuerySplitter {
 
         // -- LIMIT
         if (mapQry.limit() != null) {
+            assert !forUpdate;
+
             rdcQry.limit(mapQry.limit());
 
             // Will keep limits on map side when collocatedGrpBy is true,
@@ -1231,6 +1265,8 @@ public class GridSqlQuerySplitter {
 
         // -- OFFSET
         if (mapQry.offset() != null) {
+            assert !forUpdate;
+
             rdcQry.offset(mapQry.offset());
 
             if (mapQry.limit() != null) // LIMIT off + lim
@@ -1241,6 +1277,8 @@ public class GridSqlQuerySplitter {
 
         // -- DISTINCT
         if (mapQry.distinct()) {
+            assert !forUpdate;
+
             mapQry.distinct(!aggregateFound && mapQry.groupColumns() == null && mapQry.havingColumn() < 0);
             rdcQry.distinct(true);
         }
@@ -1262,6 +1300,108 @@ public class GridSqlQuerySplitter {
             map.derivedPartitions(extractor.extract(mapQry));
 
         mapSqlQrys.add(map);
+
+        /*
+         * In case of FOR UPDATE query we need to prepare special variants of map
+         * and reduce query with appended _key column. This column is used for locking rows.
+         */
+        if (forUpdate) {
+            assert  F.isEmpty(mapSqlQrysForUpdate); // It should be the only one map SELECT FOR UPDATE query.
+
+            GridSqlAlias keyCol = keyColumn(mapQry);
+
+            // Get copy of map query with _key column.
+            GridSqlSelect mapQryFu = copySelect(mapQry);
+            mapQryFu.addColumn(keyCol, true);
+
+            GridCacheSqlQuery mapFu = copySqlQuery(mapQryFu, map, true);
+            setupParameters(mapFu, mapQryFu, paramsCnt);
+
+            // Get copy of reduce query with _key column.
+            GridSqlSelect rdcQryFu = copySelect(rdcQry);
+            rdcQryFu.addColumn(keyCol, true);
+
+            GridCacheSqlQuery rdcFu = copySqlQuery(rdcQryFu, new GridCacheSqlQuery(rdcQry.getSQL()),  false);
+            setupParameters(rdcFu, rdcQry, paramsCnt);
+
+            mapSqlQrysForUpdate = Collections.singletonList(mapFu);
+            rdcSqlQryForUpdate = rdcFu;
+        }
+    }
+
+    /**
+     * Copies select AST.
+     *
+     * @param sel Select to be copied.
+     * @return Copy of select.
+     */
+    public static GridSqlSelect copySelect(GridSqlSelect sel) {
+        GridSqlSelect qryForUpdate = new GridSqlSelect();
+
+        qryForUpdate
+            .from(sel.from())
+            .where(sel.where());
+
+        int vis = sel.visibleColumns();
+
+        for (int i = 0; i < sel.columns(false).size(); i++)
+            qryForUpdate.addColumn(sel.column(i), i < vis);
+
+        if (!sel.sort().isEmpty()) {
+            for (GridSqlSortColumn sortCol : sel.sort())
+                qryForUpdate.addSort(sortCol);
+        }
+
+        return qryForUpdate;
+    }
+
+    /**
+     * Copies select query.
+     *
+     * @param sel Select AST
+     * @param qry Query to be copied.
+     * @param setCols {@True} if need to set columns to query.
+     * @return Copu of select query.
+     */
+    private GridCacheSqlQuery copySqlQuery(GridSqlSelect sel, GridCacheSqlQuery qry, boolean setCols) {
+        GridCacheSqlQuery fu = qry.copy();
+
+        fu.query(sel.getSQL());
+
+        if (setCols) {
+            List<GridSqlAst> cols = new ArrayList<>(sel.allColumns());
+
+            cols.addAll(sel.columns(false));
+
+            fu.columns(collectColumns(cols));
+        }
+
+        return fu;
+    }
+
+
+    /**
+     * Retrieves _KEY column from SELECT. This column is used for SELECT FOR UPDATE statements.
+     *
+     * @param sel Select statement.
+     * @return Key column alias.
+     */
+    public static GridSqlAlias keyColumn(GridSqlSelect sel) {
+        GridSqlAst from = sel.from();
+
+        GridSqlTable tbl = from instanceof GridSqlTable ? (GridSqlTable)from :
+            ((GridSqlElement)from).child();
+
+        GridH2Table gridTbl = tbl.dataTable();
+
+        Column h2KeyCol = gridTbl.getColumn(QueryUtils.KEY_COL);
+
+        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
+        keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
+
+        GridSqlAlias al = SplitterUtils.alias(QueryUtils.KEY_FIELD_NAME, keyCol);
+
+        return al;
     }
 
     /**

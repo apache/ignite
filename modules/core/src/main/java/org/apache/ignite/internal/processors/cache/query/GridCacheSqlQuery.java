@@ -265,6 +265,8 @@ public class GridCacheSqlQuery implements Message {
         cp.partitioned = partitioned;
         cp.derivedPartitions = derivedPartitions;
         cp.hasSubQries = hasSubQries;
+        cp.node = node;
+        cp.alias = alias;
 
         return cp;
     }

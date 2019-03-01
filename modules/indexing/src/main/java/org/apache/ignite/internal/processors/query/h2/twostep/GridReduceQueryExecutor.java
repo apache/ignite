@@ -55,6 +55,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -414,6 +415,20 @@ public class GridReduceQueryExecutor {
 
         assert !qry.mvccEnabled() || mvccTracker != null;
 
+        boolean forUpdate = false;
+
+        try {
+            GridNearTxLocal tx = null;
+
+            if (qry.mvccEnabled())
+                tx = checkActive(tx(ctx));
+
+            forUpdate = qry.reduceQueryForUpdate() != null && tx != null;
+        }
+        catch (IgniteTxAlreadyCompletedCheckedException e) {
+            throw new TransactionAlreadyCompletedException(e.getMessage(), e);
+        }
+
         final boolean singlePartMode = parts != null && parts.length == 1;
 
         if (F.isEmpty(params))
@@ -422,12 +437,14 @@ public class GridReduceQueryExecutor {
         List<GridCacheSqlQuery> mapQueries;
 
         if (singlePartMode)
-            mapQueries = prepareMapQueryForSinglePartition(qry, params);
+            mapQueries = prepareMapQueryForSinglePartition(qry, params, forUpdate);
         else {
             mapQueries = new ArrayList<>(qry.mapQueries().size());
 
+            List<GridCacheSqlQuery> mQrs = forUpdate ? qry.mapQueriesForUpdate() : qry.mapQueries();
+
             // Copy queries here because node ID will be changed below.
-            for (GridCacheSqlQuery mapQry : qry.mapQueries())
+            for (GridCacheSqlQuery mapQry : mQrs)
                 mapQueries.add(mapQry.copy());
         }
 
@@ -462,14 +479,6 @@ public class GridReduceQueryExecutor {
             }
 
             List<Integer> cacheIds = qry.cacheIds();
-
-            try {
-                if (qry.mvccEnabled())
-                    checkActive(tx(ctx));
-            }
-            catch (IgniteTxAlreadyCompletedCheckedException e) {
-                throw new TransactionAlreadyCompletedException(e.getMessage(), e);
-            }
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
@@ -724,7 +733,7 @@ public class GridReduceQueryExecutor {
                             if (qry.explain())
                                 return explainPlan(r.connection(), qry, params);
 
-                            GridCacheSqlQuery rdc = qry.reduceQuery();
+                            GridCacheSqlQuery rdc = forUpdate ? qry.reduceQueryForUpdate() : qry.reduceQuery();
 
                             ResultSet res = h2.executeSqlQueryWithTimer(r.connection(),
                                 rdc.query(),
@@ -1291,7 +1300,8 @@ public class GridReduceQueryExecutor {
      * @param params Query parameters.
      * @return Updated map query list with one map query.
      */
-    private List<GridCacheSqlQuery> prepareMapQueryForSinglePartition(GridCacheTwoStepQuery qry, Object[] params) {
+    private List<GridCacheSqlQuery> prepareMapQueryForSinglePartition(GridCacheTwoStepQuery qry, Object[] params,
+        boolean forUpdate) {
         boolean hasSubQries = false;
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
@@ -1302,7 +1312,9 @@ public class GridReduceQueryExecutor {
             }
         }
 
-        GridCacheSqlQuery originalQry = new GridCacheSqlQuery(qry.originalSql());
+        String originalSql = forUpdate ? qry.originalNoForUpdateSql() : qry.originalSql();
+
+        GridCacheSqlQuery originalQry = new GridCacheSqlQuery(originalSql);
 
         if (!F.isEmpty(params)) {
             int[] paramIdxs = new int[params.length];

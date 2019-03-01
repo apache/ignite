@@ -108,6 +108,15 @@ public class CacheMvccSelectForUpdateQueryTest extends GridCommonAbstractTest {
      *
      */
     @Test
+    public void testSelectForUpdateWithOffset() {
+        assertQueryThrows("select id from person offset 10 for update",
+            "LIMIT/OFFSET clauses are not supported for SELECT FOR UPDATE.");
+    }
+
+    /**
+     *
+     */
+    @Test
     public void testSelectForUpdateWithDistinct() {
         assertQueryThrows("select distinct firstName from PERSON for update",
             "DISTINCT clause is not supported for SELECT FOR UPDATE.");

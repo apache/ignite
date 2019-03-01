@@ -468,7 +468,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (params != null)
                 fieldsQry.setArgs(params.toArray());
 
-            QueryParserResult parseRes = parser.parse(schemaName, fieldsQry, false, tx != null);
+            QueryParserResult parseRes = parser.parse(schemaName, fieldsQry, false);
 
             if (parseRes.isDml()) {
                 UpdateResult updRes = executeUpdate(schemaName, parseRes.dml(), fieldsQry, true, filter, cancel);
@@ -719,7 +719,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return DML.
      */
     private QueryParserResultDml streamerParse(String schemaName, String qry) {
-        QueryParserResult parseRes = parser.parse(schemaName, new SqlFieldsQuery(qry), false, true);
+        QueryParserResult parseRes = parser.parse(schemaName, new SqlFieldsQuery(qry), false);
 
         QueryParserResultDml dml = parseRes.dml();
 
@@ -930,11 +930,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         Long qryId,
         MvccQueryTracker tracker,
-        int timeout
+        int timeout,
+        boolean forUpdate
     ) throws IgniteCheckedException {
         final GridQueryFieldsResult res = executeQueryLocal0(
             schemaName,
-            qry.getSql(),
+            forUpdate ? qry.selectForUpdateSql() : qry.getSql(),
             F.asList(qry.getArgs()),
             meta,
             filter,
@@ -1096,16 +1097,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SqlFieldsQuery remainingQry = qry;
 
             while (remainingQry != null) {
-                /*
-                 * Parse.
-                 * Sometimes parsing results may vary depending on whether we are inside a transaction, or outside it.
-                 * For example, if SELECT ... FOR UPDATE statement is executed within transaction, it should lock selected
-                 * rows. But outside transaction it should be executed as a plain SELECT. So, we need to pass inTx flag
-                 * into the parser.
-                 */
-                boolean inTx = mvccEnabled && tx(ctx) != null || autoStartTx(qry);
-
-                QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts, inTx);
+                QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts);
 
                 remainingQry = parseRes.remainingQuery();
 
@@ -1240,6 +1232,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             MvccQueryTracker tracker = null;
             GridCacheContext mvccCctx = null;
 
+            boolean forUpdate = false;
+
             if (select.mvccEnabled()) {
                 mvccCctx = ctx.cache().context().cacheContext(select.mvccCacheId());
 
@@ -1248,6 +1242,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     txStart(ctx, qry.getTimeout());
 
                 tx = tx(ctx);
+
+                forUpdate = select.forUpdate() && tx != null;
+
 
                 tracker = mvccTracker == null ? MvccUtils.mvccTracker(mvccCctx, tx) : mvccTracker;
             }
@@ -1288,11 +1285,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cancel,
                     qryId,
                     tracker,
-                    timeout
+                    timeout,
+                    forUpdate
                 );
             }
 
-            if (select.forUpdate()) {
+            if (select.forUpdate() && tx != null) {
                 assert tx != null; // We may obtain parsed SFU statement only within transaction.
 
                 return Collections.singletonList(lockSelectedRows(res, mvccCctx, qry.getPageSize(), timeout, select.meta()));
@@ -1351,13 +1349,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Override public KeyCacheObject nextX() throws IgniteCheckedException {
                 List<?> res = it.next();
 
-                rowsCache.add(res.subList(0, res.size() - 1));
+                // next() can be called from the different threads.
+                synchronized (rowsCache) {
+                    rowsCache.add(res.subList(0, res.size() - 1));
 
-                if (rowsCache.size() > TX_SIZE_THRESHOLD) {
-                    throw new IgniteCheckedException("Too many rows are locked by SELECT FOR UPDATE statement. " +
-                        "Consider locking fewer keys or increase the limit by setting a " +
-                        IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD + " system property. Current value is " +
-                        TX_SIZE_THRESHOLD + " rows.");
+                    if (rowsCache.size() > TX_SIZE_THRESHOLD) {
+                        throw new IgniteCheckedException("Too many rows are locked by SELECT FOR UPDATE statement. " +
+                            "Consider locking fewer keys or increase the limit by setting a " +
+                            IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD + " system property. Current value is " +
+                            TX_SIZE_THRESHOLD + " rows.");
+                    }
                 }
 
                 // The last column is expected to be a _key.
@@ -1469,7 +1470,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             loc = false;
         }
 
-        QueryParserResult parseRes = parser.parse(schema, fldsQry, false, true);
+        QueryParserResult parseRes = parser.parse(schema, fldsQry, false);
 
         assert parseRes.remainingQuery() == null;
 
@@ -1668,7 +1669,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         boolean loc
     ) throws IgniteCheckedException {
-        QueryParserResult parseRes = parser.parse(schemaName, qry, false, true);
+        QueryParserResult parseRes = parser.parse(schemaName, qry, false);
 
         assert parseRes.remainingQuery() == null;
 
