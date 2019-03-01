@@ -44,7 +44,6 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -332,15 +331,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             GridCacheContext<Object, Object> cctx = ctx.cache().context().cacheContext(CU.cacheId(cacheName));
 
-            if (persistentCache(cctx.config()))
+            if (CU.isPersistentCache(cctx.config(), ctx.config().getDataStorageConfiguration()))
                 H2TreeIndex.validatePdsIndexName(idxDesc.name(), idxDesc.typeDescriptor(), cctx);
         }
 
         schemaMgr.createIndex(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor);
-    }
-
-    private boolean persistentCache(CacheConfiguration ccfg) {
-        return CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration());
     }
 
     /** {@inheritDoc} */
