@@ -22,7 +22,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -31,9 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PrewarmingConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -181,31 +177,20 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
         boolean res = false;
 
         try {
-            for (int i = 0; i < 10 && !res; i++) {
-                try {
-                    System.out.println("asd123 start "+i);
-                    stopLsnr.reset();
-                    throttleLsnr.reset();
+            stopLsnr.reset();
+            throttleLsnr.reset();
 
-                    ignite = startGrid(cfg);
+            ignite = startGrid(cfg);
 
-                    res = GridTestUtils.waitForCondition(stopLsnr::check, 60_000) && throttleLsnr.check();
-                    System.out.println("asd123 end "+i);
-                }
-                catch (Throwable t) {
-                    System.out.println("asd123 "+i+" err="+t.getClass().getSimpleName()+", msg="+t.getMessage());
-                    Thread.interrupted();
-                }
-            }
-
-            stop.set(true);
-
-            assertTrue(res);
+            res = GridTestUtils.waitForCondition(stopLsnr::check, 60_000) && throttleLsnr.check();
+        }
+        catch (Throwable t) {
+            Thread.interrupted();
         }
         finally {
             stop.set(true);
 
-            ignite.close();
+            assertTrue(res);
         }
     }
 
