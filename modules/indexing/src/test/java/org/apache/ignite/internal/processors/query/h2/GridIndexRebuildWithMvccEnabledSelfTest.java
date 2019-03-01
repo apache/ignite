@@ -45,8 +45,8 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testIndexRebuild() throws Exception {
+    @Test
+    @Override public void testIndexRebuild() throws Exception {
         IgniteEx srv = startServer();
 
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +

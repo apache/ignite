@@ -48,6 +48,7 @@ public class CacheQueryAfterDynamicCacheStartFailureTest extends IgniteAbstractD
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void checkCacheOperations(IgniteCache<Integer, Value> cache) throws Exception {
         super.checkCacheOperations(cache);
 

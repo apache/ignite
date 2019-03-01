@@ -78,8 +78,8 @@ public class BundleDelegatingClassLoader extends ClassLoader {
      * @return URLs of resources.
      * @throws IOException
      */
-    @Override @SuppressWarnings({"unchecked", "rawtypes"})
-    protected Enumeration findResources(String name) throws IOException {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override protected Enumeration findResources(String name) throws IOException {
         return bundle.getResources(name);
     }
 
