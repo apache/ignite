@@ -499,10 +499,50 @@ final class ClientUtils {
     <T> T readObject(BinaryInputStream in, boolean keepBinary) {
         Object val = marsh.unmarshal(in);
 
-        if (val instanceof BinaryObject && !keepBinary)
-            val = ((BinaryObject)val).deserialize();
+        if (!keepBinary)
+            val = readBinaryObject(val);
 
         return (T)val;
+    }
+
+    /** Read Ignite binary object from input object. */
+    Object readBinaryObject(Object obj) {
+        if (obj instanceof BinaryObject) {
+            obj = ((BinaryObject)obj).deserialize();
+        } else if (obj instanceof Collection) {
+            Collection<Object> collection = (Collection<Object>)obj;
+            Collection<Object> cacheCollection = new ArrayList<>();
+
+            collection.forEach(
+                value -> {
+                    cacheCollection.add(value);
+                }
+            );
+            collection.clear();
+
+            cacheCollection.forEach(
+                value -> {
+                    collection.add(readBinaryObject(value));
+                }
+            );
+        } else if (obj instanceof Map) {
+            Map<Object, Object> map = (Map<Object, Object>)obj;
+            Map<Object, Object> cacheMap = new HashMap<>();
+
+            map.forEach(
+                (key, value) -> {
+                    cacheMap.put(key, value);
+                }
+            );
+            map.clear();
+
+            cacheMap.forEach(
+                (key, value) -> {
+                    map.put(readBinaryObject(key), readBinaryObject(value));
+                }
+            );
+        }
+        return obj;
     }
 
     /** A helper class to translate query fields. */
