@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -26,10 +25,12 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
+
+import java.io.FileNotFoundException;
 
 /**
  * Add yet two numerical features "age", "fare" to improve our model over {@link Step_3_Categorial}.
@@ -41,7 +42,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * Then, it trains the model based on the processed data using decision tree classification.</p>
  * <p>
- * Finally, this example uses {@link BinaryClassificationEvaluator} functionality to compute metrics from predictions.</p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_4_Add_age_fare {
     /** Run example. */
@@ -87,7 +88,7 @@ public class Step_4_Add_age_fare {
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
-                double accuracy = BinaryClassificationEvaluator.evaluate(
+                double accuracy = Evaluator.evaluate(
                     dataCache,
                     mdl,
                     imputingPreprocessor,

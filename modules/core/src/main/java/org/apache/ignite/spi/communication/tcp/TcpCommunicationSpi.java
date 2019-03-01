@@ -3348,6 +3348,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     break;
                 }
 
+                long timeout = 0;
+
                 try {
                     if (getSpiContext().node(node.id()) == null)
                         throw new ClusterTopologyCheckedException("Failed to send message (node left topology): " + node);
@@ -3393,9 +3395,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     GridSslMeta sslMeta = null;
 
                     try {
-                        long currTimeout = connTimeoutStgy.nextTimeout();
+                        timeout = connTimeoutStgy.nextTimeout();
 
-                        ch.socket().connect(addr, (int) currTimeout);
+                        ch.socket().connect(addr, (int) timeout);
 
                         if (getSpiContext().node(node.id()) == null)
                             throw new ClusterTopologyCheckedException("Failed to send message (node left topology): " + node);
@@ -3416,9 +3418,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             throw new IgniteCheckedException("Local node has not been started or " +
                                 "fully initialized [isStopping=" + getSpiContext().isStopping() + ']');
 
+                        timeout = connTimeoutStgy.nextTimeout(timeout);
+
                         rcvCnt = safeTcpHandshake(ch,
                             node.id(),
-                            connTimeoutStgy.nextTimeout(currTimeout),
+                            timeout,
                             sslMeta,
                             new HandshakeMessage2(locNode.id(),
                                 recoveryDesc.incrementConnectCount(),
@@ -3439,8 +3443,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                     "[node=" + node.id() +
                                     ", connTimeoutStgy=" + connTimeoutStgy +
                                     ", addr=" + addr +
-                                    ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
-                                    ", totalTimeout" + totalTimeout + ']');
+                                    ", failureDetectionTimeoutEnabled=" + failureDetectionTimeoutEnabled() +
+                                    ", timeout=" + timeout + ']');
 
                                 throw new ClusterTopologyCheckedException("Failed to connect to node " +
                                     "(current or target node is out of topology on target node within timeout). " +
@@ -3497,8 +3501,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         U.warn(log, "Handshake timed out (will stop attempts to perform the handshake) " +
                             "[node=" + node.id() + ", connTimeoutStrategy=" + connTimeoutStgy +
                             ", err=" + e.getMessage() + ", addr=" + addr +
-                            ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
-                            ", totalTimeout" + totalTimeout + ']');
+                            ", failureDetectionTimeoutEnabled=" + failureDetectionTimeoutEnabled() +
+                            ", timeout=" + timeout + ']');
 
                         String msg = "Failed to connect to node (is node still alive?). " +
                             "Make sure that each ComputeTask and cache Transaction has a timeout set " +
@@ -3533,8 +3537,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (connTimeoutStgy.checkTimeout()) {
                         U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
                                 "[node=" + node.id() + ", connTimeoutStgy=" + connTimeoutStgy +
-                                ", failureDetectionTimeoutEnabled" + failureDetectionTimeoutEnabled() +
-                                ", totalTimeout" + totalTimeout +
+                                ", failureDetectionTimeoutEnabled=" + failureDetectionTimeoutEnabled() +
+                                ", timeout=" + timeout +
                                 ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                         String msg = "Failed to connect to node (is node still alive?). " +

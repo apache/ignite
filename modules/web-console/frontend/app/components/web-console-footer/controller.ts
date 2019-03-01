@@ -18,9 +18,12 @@
 import {default as Version} from '../../services/Version.service';
 
 export default class WebConsoleFooter {
-    static $inject = ['IgniteVersion', '$rootScope']
+    static $inject = ['IgniteVersion', '$rootScope'];
+
     constructor(private Version: Version, private $root: ng.IRootScopeService) {}
-    year = new Date().getFullYear()
+
+    year = new Date().getFullYear();
+
     get userIsAuthorized() {
         return !!this.$root.user;
     }

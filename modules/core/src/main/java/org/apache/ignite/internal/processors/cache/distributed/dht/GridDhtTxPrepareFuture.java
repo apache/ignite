@@ -75,7 +75,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -534,9 +533,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to get result value for cache entry: " + cached, e);
+
+                onError(e);
             }
             catch (GridCacheEntryRemovedException e) {
-                assert false : "Got entry removed exception while holding transactional lock on entry [e=" + e + ", cached=" + cached + ']';
+                // Entry was unlocked by concurrent rollback.
+                onError(tx.rollbackException());
             }
             finally {
                 cctx.database().checkpointReadUnlock();
@@ -1977,8 +1979,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 lockKeys.clear();
             }
 
-            onError(new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
-                "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+            onError(tx.timeoutException());
         }
 
         /** {@inheritDoc} */
