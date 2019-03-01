@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.nio.ByteBuffer;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
@@ -195,6 +196,10 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
             flags |= RECOVERY_FLAG_MASK;
 
         return flags;
+    }
+
+    public void sort(Comparator<KeyCacheObject> cmp) {
+        // No-op.
     }
 
     /**

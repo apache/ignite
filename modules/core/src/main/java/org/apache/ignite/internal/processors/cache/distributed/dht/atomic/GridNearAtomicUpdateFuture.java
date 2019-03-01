@@ -680,6 +680,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         for (PrimaryRequestState reqState : mappings.values()) {
             GridNearAtomicAbstractUpdateRequest req = reqState.req;
 
+            req.sort(cctx.offheap().updateKeysComparator());
+
             if (locNodeId.equals(req.nodeId())) {
                 assert locUpdate == null : "Cannot have more than one local mapping [locUpdate=" + locUpdate +
                     ", req=" + req + ']';

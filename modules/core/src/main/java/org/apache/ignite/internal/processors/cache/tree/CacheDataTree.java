@@ -530,7 +530,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      * @param bytes2 Second key bytes.
      * @return Comparison result.
      */
-    private static int compareKeyBytes(byte[] bytes1, byte[] bytes2) {
+    public static int compareKeyBytes(byte[] bytes1, byte[] bytes2) {
         int lenCmp = Integer.compare(bytes1.length, bytes2.length);
 
         if (lenCmp != 0)

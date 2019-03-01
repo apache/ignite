@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
@@ -172,6 +173,68 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         initSize = Math.min(maxEntryCnt, 10);
 
         keys = new ArrayList<>(initSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sort(Comparator<KeyCacheObject> cmp) {
+        sort0(cmp, 0, keys.size() - 1);
+    }
+
+    private void sort0(Comparator<KeyCacheObject> cmp, int low, int high) {
+        if (keys.size() < 2)
+            return;
+
+        if (low >= high)
+            return;
+
+        KeyCacheObject pivot = keys.get(low + (high - low) / 2);
+
+        int i = low;
+        int j = high;
+
+        while (i <= j) {
+            while (cmp.compare(keys.get(i), pivot) < 0)
+                i++;
+
+            while (cmp.compare(keys.get(j), pivot) > 0)
+                j--;
+
+            if (i <= j) {
+                swap((ArrayList)keys, i, j);
+                swap((ArrayList)vals, i, j);
+                swap((ArrayList)entryProcessors, i, j);
+                swap((ArrayList)conflictVers, i, j);
+                swap(conflictTtls, i, j);
+                swap(conflictExpireTimes, i, j);
+
+                i++;
+                j--;
+            }
+        }
+
+        if (low < j)
+            sort0(cmp, low, j);
+
+        if (high > i)
+            sort0(cmp, i, high);
+    }
+
+    private static void swap(@Nullable ArrayList list, int i, int j) {
+        if (list == null)
+            return;
+
+        Object tmp = list.get(i);
+        list.set(i, list.get(j));
+        list.set(j, tmp);
+    }
+
+    private static void swap(@Nullable GridLongList list, int i, int j) {
+        if (list == null)
+            return;
+
+        long tmp = list.get(i);
+        list.set(i, list.get(j));
+        list.set(j, tmp);
     }
 
     /** {@inheritDoc} */

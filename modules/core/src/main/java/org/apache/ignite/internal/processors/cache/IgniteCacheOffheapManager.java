@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
+import org.apache.ignite.internal.processors.cache.tree.SearchRowEx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -151,6 +152,8 @@ public interface IgniteCacheOffheapManager {
      * @return Data store.
      */
     public CacheDataStore dataStore(GridDhtLocalPartition part);
+
+    public Comparator<KeyCacheObject> updateKeysComparator();
 
     /**
      * @param store Data store.
@@ -900,7 +903,7 @@ public interface IgniteCacheOffheapManager {
          * @return Cache search row.
          * @throws IgniteCheckedException If failed.
          */
-        public CacheSearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key, Object data) throws IgniteCheckedException;
+        public SearchRowEx createSearchRow(GridCacheContext cctx, KeyCacheObject key, Object data) throws IgniteCheckedException;
 
         /**
          * @return Rows comparator.

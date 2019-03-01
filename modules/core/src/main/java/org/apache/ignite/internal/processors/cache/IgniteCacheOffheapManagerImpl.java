@@ -188,6 +188,28 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** */
     protected GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
 
+    /** */
+    private final Comparator<KeyCacheObject> updateKeysCmp = new Comparator<KeyCacheObject>() {
+        @Override public int compare(KeyCacheObject key1, KeyCacheObject key2) {
+            try {
+                int cmp = Integer.compare(key1.partition(), key2.partition());
+
+                if (cmp != 0)
+                    return cmp;
+
+                cmp = Integer.compare(key1.hashCode(), key2.hashCode());
+
+                if (cmp != 0)
+                    return cmp;
+
+                return CacheDataTree.compareKeyBytes(key1.valueBytes(grp.cacheObjectContext()), key2.valueBytes(grp.cacheObjectContext()));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        };
+    };
+
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
         return globalRmvId;
@@ -403,6 +425,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         CacheDataStore store = partitionData(part);
 
         return store == null ? 0 : store.cacheSize(cacheId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Comparator<KeyCacheObject> updateKeysComparator() {
+        return updateKeysCmp;
     }
 
     /**
@@ -1652,10 +1679,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public SearchRow createSearchRow(GridCacheContext cctx, KeyCacheObject key, Object data) {
+        @Override public SearchRowEx createSearchRow(GridCacheContext cctx, KeyCacheObject key, Object data) {
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            return data != null ? new SearchRowEx<>(cacheId, key, data) : new SearchRow(cacheId, key);
+            return new SearchRowEx<>(cacheId, key, data);
         }
 
         /** {@inheritDoc} */
