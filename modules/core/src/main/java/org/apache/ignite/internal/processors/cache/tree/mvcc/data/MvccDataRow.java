@@ -203,7 +203,7 @@ public class MvccDataRow extends DataRow {
         if (newMvccCrd != MVCC_CRD_COUNTER_NA) {
             keyAbsentFlag = (withHint & MVCC_KEY_ABSENT_BEFORE_MASK) != 0;
 
-            if (addHints && mvccTxState == TxState.NA)
+            if (addHints && newMvccTxState == TxState.NA)
                 newMvccTxState = MvccUtils.state(sharedCtx.coordinators(), newMvccCrd, newMvccCntr, newMvccOpCntr);
         }
 
