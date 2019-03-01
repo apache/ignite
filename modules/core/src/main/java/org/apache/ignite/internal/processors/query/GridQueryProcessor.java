@@ -1513,14 +1513,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param backups Backups.
      * @param ifNotExists Quietly ignore this command if table already exists.
      * @param encrypted Encrypted flag.
+     * @param qryParallelism query parallelism value for configuration of underlying cache.
      * @throws IgniteCheckedException If failed.
      */
-    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheName,
-        String cacheGroup, @Nullable String dataRegion, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
-        @Nullable CacheWriteSynchronizationMode writeSyncMode, @Nullable Integer backups, boolean ifNotExists,
-        boolean encrypted) throws IgniteCheckedException {
+    public void dynamicTableCreate(
+        String schemaName,
+        QueryEntity entity,
+        String templateName,
+        String cacheName,
+        String cacheGroup,
+        @Nullable String dataRegion,
+        String affinityKey,
+        @Nullable CacheAtomicityMode atomicityMode,
+        @Nullable CacheWriteSynchronizationMode writeSyncMode,
+        @Nullable Integer backups,
+        boolean ifNotExists,
+        boolean encrypted,
+        @Nullable Integer qryParallelism
+    ) throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
         assert backups == null || backups >= 0;
+        assert qryParallelism == null || qryParallelism > 0;
 
         CacheConfiguration<?, ?> ccfg = ctx.cache().getConfigFromTemplate(templateName);
 
@@ -1561,6 +1574,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (backups != null)
             ccfg.setBackups(backups);
+
+        if (qryParallelism != null)
+            ccfg.setQueryParallelism(qryParallelism);
 
         ccfg.setEncryptionEnabled(encrypted);
         ccfg.setSqlSchema(schemaName);

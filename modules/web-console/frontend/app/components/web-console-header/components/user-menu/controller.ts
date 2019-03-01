@@ -16,7 +16,8 @@
  */
 
 export default class UserMenu {
-    static $inject = ['$rootScope', 'IgniteUserbar', 'AclService', '$state', 'gettingStarted']
+    static $inject = ['$rootScope', 'IgniteUserbar', 'AclService', '$state', 'gettingStarted'];
+
     constructor(
         private $root: ng.IRootScopeService,
         private IgniteUserbar: any,
@@ -24,6 +25,7 @@ export default class UserMenu {
         private $state: any,
         private gettingStarted: any
     ) {}
+
     $onInit() {
         this.items = [
             {text: 'Profile', sref: 'base.settings.profile'},
@@ -47,6 +49,7 @@ export default class UserMenu {
 
         this.$root.$on('user', _rebuildSettings);
     }
+
     get user() {
         return this.$root.user;
     }
