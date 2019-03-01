@@ -2030,9 +2030,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         //marshall collected bag into packet, return packet
         if (dataPacket.joiningNodeId().equals(locNode.id()))
-            dataPacket.marshalJoiningNodeData(dataBag, marshaller(), log);
+            dataPacket.marshalJoiningNodeData(
+                dataBag,
+                marshaller(),
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
+                ignite.configuration().getNetworkCompressionLevel(),
+                log);
         else
-            dataPacket.marshalGridNodeData(dataBag, locNode.id(), marshaller(), log);
+            dataPacket.marshalGridNodeData(
+                dataBag,
+                locNode.id(),
+                marshaller(),
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
+                ignite.configuration().getNetworkCompressionLevel(),
+                log);
 
         return dataPacket;
     }
@@ -2051,9 +2062,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         DiscoveryDataBag dataBag;
 
         if (dataPacket.joiningNodeId().equals(locNode.id()))
-            dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
+            dataBag = dataPacket.unmarshalGridData(marshaller(),
+                clsLdr,
+                locNode.clientRouterNodeId() != null,
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
+                log);
         else
-            dataBag = dataPacket.unmarshalJoiningNodeData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
+            dataBag = dataPacket.unmarshalJoiningNodeData(marshaller(),
+                clsLdr,
+                locNode.clientRouterNodeId() != null,
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
+                log);
 
 
         exchange.onExchange(dataBag);
