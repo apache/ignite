@@ -39,7 +39,7 @@ public class HelloWorldFitnessFunction implements IFitnessFunction {
      * @param genes List of Genes.
      * @return Fitness value.
      */
-    public double evaluate(List<Gene> genes) {
+    @Override public double evaluate(List<Gene> genes) {
         double matches = 0;
 
         for (int i = 0; i < genes.size(); i++) {

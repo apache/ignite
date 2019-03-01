@@ -38,7 +38,7 @@ public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
 
-    public void setup() throws Exception {
+    @Override public void setup() throws Exception {
         super.setup();
 
         IgniteDataStreamer<Integer, IntValue> dataLdr = node.dataStreamer(cache.getName());

@@ -71,7 +71,7 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     /**
      * @return Matrix elements storage mode.
      */
-    public int storageMode() {
+    @Override public int storageMode() {
         return stoMode;
     }
 

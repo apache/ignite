@@ -44,7 +44,7 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
      * @param genes List of genes.
      * @return Fitness value.
      */
-    public double evaluate(List<Gene> genes) {
+    @Override public double evaluate(List<Gene> genes) {
         int changeAmount = getAmountOfChange(genes);
         int totalCoins = getTotalNumberOfCoins(genes);
         int changeDifference = Math.abs(targetAmount - changeAmount);

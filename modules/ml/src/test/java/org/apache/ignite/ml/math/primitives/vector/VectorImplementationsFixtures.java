@@ -216,7 +216,7 @@ class VectorImplementationsFixtures {
         }
 
         /** */
-        void selfTest() {
+        @Override void selfTest() {
             final Set<Integer> extraIdxs = new HashSet<>();
 
             int cnt = 0;

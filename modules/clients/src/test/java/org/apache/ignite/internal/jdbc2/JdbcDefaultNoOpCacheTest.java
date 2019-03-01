@@ -27,7 +27,7 @@ public class JdbcDefaultNoOpCacheTest extends org.apache.ignite.jdbc.JdbcDefault
     private static final String CFG_URL = "modules/clients/src/test/config/jdbc-config.xml";
 
     /** {@inheritDoc} */
-    protected String getUrl() {
+    @Override protected String getUrl() {
         return CFG_URL_PREFIX + "cache=noop@" + CFG_URL;
     }
 }

@@ -57,7 +57,7 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
      * @param currGeneration Current generation.
      * @return Status whether condition is met or not.
      */
-    public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
+    @Override public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currGeneration) {
         boolean isTerminate = true;
 

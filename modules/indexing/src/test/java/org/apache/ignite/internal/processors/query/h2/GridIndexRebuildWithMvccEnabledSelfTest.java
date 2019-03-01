@@ -45,7 +45,7 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
     }
 
     /** {@inheritDoc} */
-    @Test
+    @Override @Test
     public void testIndexRebuild() throws Exception {
         IgniteEx srv = startServer();
 
@@ -90,7 +90,7 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
     }
 
     /** {@inheritDoc} */
-    protected void checkDataState(IgniteEx srv, boolean afterRebuild) throws IgniteCheckedException {
+    @Override protected void checkDataState(IgniteEx srv, boolean afterRebuild) throws IgniteCheckedException {
         IgniteInternalCache icache = srv.cachex(CACHE_NAME);
 
         assertNotNull(icache);

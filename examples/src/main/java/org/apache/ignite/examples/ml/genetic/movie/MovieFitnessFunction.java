@@ -52,7 +52,7 @@ public class MovieFitnessFunction implements IFitnessFunction {
      * @param genes List of Genes.
      * @return Fitness score.
      */
-    public double evaluate(List<Gene> genes) {
+    @Override public double evaluate(List<Gene> genes) {
         double score = 0;
         List<String> duplicates = new ArrayList<>();
         int badSolution = 1;

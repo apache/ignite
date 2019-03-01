@@ -1143,16 +1143,12 @@ public class ConcurrentLinkedDeque8<E>
         return null;
     }
 
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
+    /** */
     public E getFirst() {
         return screenNullResult(peekFirst());
     }
 
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
+    /** */
     public E getLast() {
         return screenNullResult(peekLast());
     }
@@ -1179,16 +1175,12 @@ public class ConcurrentLinkedDeque8<E>
         return null;
     }
 
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
+    /** */
     public E removeFirst() {
         return screenNullResult(pollFirst());
     }
 
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
+    /** */
     public E removeLast() {
         return screenNullResult(pollLast());
     }

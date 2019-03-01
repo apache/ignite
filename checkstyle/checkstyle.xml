@@ -27,5 +27,8 @@
 
         <!--Modifiers Checks. See: http://checkstyle.sourceforge.net/config_modifier.html-->
         <module name="ModifierOrder"/>
+
+        <!--Annotation checks. See: http://checkstyle.sourceforge.net/config_annotation.html-->
+        <module name="MissingOverride"/>
     </module>
 </module>

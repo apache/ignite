@@ -37,7 +37,7 @@ public class KnapsackFitnessFunction implements IFitnessFunction {
      * @param genes List of Genes.
      * @return Fitness value.
      */
-    public double evaluate(List<Gene> genes) {
+    @Override public double evaluate(List<Gene> genes) {
         double val = 0;
         double weight = 0;
 

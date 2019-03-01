@@ -89,7 +89,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected abstract boolean printMemoryStats();
 
-    /** {@inheritDoc} */
+    /** */
     private void debug(String msg) {
         if (isTestDebug())
             info(msg);

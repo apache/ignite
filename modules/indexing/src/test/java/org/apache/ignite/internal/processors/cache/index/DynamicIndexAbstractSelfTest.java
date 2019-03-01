@@ -126,7 +126,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @return Configuration.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+    @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
 
         cfg.setFailureHandler(new StopNodeFailureHandler());

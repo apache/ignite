@@ -194,7 +194,7 @@ public class DenseMatrixStorage implements MatrixStorage {
     }
 
     /** Get the access mode of this storage. */
-    public int accessMode() {
+    @Override public int accessMode() {
         return stoMode;
     }
 

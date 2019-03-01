@@ -69,7 +69,7 @@ public class MyPojo implements Serializable {
      * @param obj POJO to compare with.
      * @return {@code true} if equals.
      */
-    public boolean equals(Object obj) {
+    @Override public boolean equals(Object obj) {
         if (!(obj instanceof MyPojo))
             return false;
 

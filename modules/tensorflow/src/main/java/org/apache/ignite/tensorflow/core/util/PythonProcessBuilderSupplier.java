@@ -53,7 +53,7 @@ public class PythonProcessBuilderSupplier implements SerializableSupplier<Proces
      *
      * @return Process builder to be used to start Python process.
      */
-    public ProcessBuilder get() {
+    @Override public ProcessBuilder get() {
         String python = System.getenv(PYTHON_ENV_NAME);
 
         if (python == null)

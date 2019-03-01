@@ -308,7 +308,7 @@ public class HadoopJobMetadata implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(HadoopJobMetadata.class, this, "pendingMaps", pendingSplits.size(),
             "pendingReduces", pendingReducers.size(), "failCause", failCause == null ? null :
                 failCause.getClass().getName());

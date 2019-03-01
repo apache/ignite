@@ -59,7 +59,7 @@ public class MutateJob extends ComputeJobAdapter {
      *
      * @return Boolean value
      */
-    public Boolean execute() throws IgniteException {
+    @Override public Boolean execute() throws IgniteException {
 
         IgniteCache<Long, Chromosome> populationCache = ignite.cache(GAGridConstants.POPULATION_CACHE);
 
