@@ -177,20 +177,28 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
         boolean res = false;
 
         try {
-            stopLsnr.reset();
-            throttleLsnr.reset();
+            for (int i = 0; i < 10 && !res; i++) {
+                try {
+                    stopLsnr.reset();
+                    throttleLsnr.reset();
 
-            ignite = startGrid(cfg);
+                    ignite = startGrid(cfg);
 
-            res = GridTestUtils.waitForCondition(stopLsnr::check, 60_000) && throttleLsnr.check();
-        }
-        catch (Throwable t) {
-            Thread.interrupted();
+                    res = GridTestUtils.waitForCondition(stopLsnr::check, 60_000) && throttleLsnr.check();
+
+                    ignite.close();
+                }
+                catch (Throwable t) {
+                    Thread.interrupted();
+                }
+            }
+
+            assertTrue(res);
         }
         finally {
             stop.set(true);
 
-            assertTrue(res);
+            ignite.close();
         }
     }
 
