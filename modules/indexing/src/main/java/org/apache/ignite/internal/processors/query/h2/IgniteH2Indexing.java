@@ -490,10 +490,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             assert !mvccEnabled || mvccEnabled(kernalContext());
 
-            if (select.forUpdate() && !mvccEnabled)
-                throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
-                    "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
             MvccSnapshot mvccSnapshot = null;
 
             if (mvccEnabled) {
@@ -917,7 +913,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private FieldsQueryCursor<List<?>> executeQueryLocal(
         String schemaName,
-        SqlFieldsQuery qry,
+        String qry,
         List<GridQueryFieldMetadata> meta,
         final boolean keepBinary,
         IndexingQueryFilter filter,
@@ -925,19 +921,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Long qryId,
         MvccQueryTracker tracker,
         int timeout,
-        boolean forUpdate
+        @Nullable final Collection<Object> params,
+        boolean enforceJoinOrder,
+        Boolean dataPageScanEnabled
     ) throws IgniteCheckedException {
         final GridQueryFieldsResult res = executeQueryLocal0(
             schemaName,
-            forUpdate ? qry.selectForUpdateSql() : qry.getSql(),
-            F.asList(qry.getArgs()),
+            qry,
+            params,
             meta,
             filter,
-            qry.isEnforceJoinOrder(),
+            enforceJoinOrder,
             timeout,
             cancel,
             tracker,
-            qry.isDataPageScanEnabled()
+            dataPageScanEnabled
         );
 
         Iterable<List<?>> iter = () -> {
@@ -1091,6 +1089,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SqlFieldsQuery remainingQry = qry;
 
             while (remainingQry != null) {
+                // Parse.
                 QueryParserResult parseRes = parser.parse(schemaName, remainingQry, !failOnMultipleStmts);
 
                 remainingQry = parseRes.remainingQuery();
@@ -1250,7 +1249,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 forUpdate = select.forUpdate() && tx != null;
 
-
                 tracker = mvccTracker == null ? MvccUtils.mvccTracker(mvccCctx, tx) : mvccTracker;
             }
 
@@ -1283,7 +1281,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // Local query.
                 res = executeQueryLocal(
                     schemaName,
-                    qry,
+                    forUpdate ? select.sqlQueryForUpdate() : select.sqlQuery(),
                     select.meta(),
                     keepBinary,
                     filter,
@@ -1291,15 +1289,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     qryId,
                     tracker,
                     timeout,
-                    forUpdate
+                    F.asList(qry.getArgs()),
+                    qry.isEnforceJoinOrder(),
+                    qry.isDataPageScanEnabled()
                 );
             }
 
-            if (select.forUpdate() && tx != null) {
-                assert tx != null; // We may obtain parsed SFU statement only within transaction.
-
+            // SELECT FOR UPDATE locking.
+            if (select.forUpdate() && tx != null)
                 return Collections.singletonList(lockSelectedRows(res, mvccCctx, qry.getPageSize(), timeout, select.meta()));
-            }
 
             return Collections.singletonList(res);
         }
@@ -1336,7 +1334,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridNearTxLocal tx = tx(ctx);
 
         if (tx == null)
-            throw new IgniteSQLException("Failed to perform SELECT FOR UPDATE operation: transaction has already finished.");
+            throw new IgniteSQLException("Failed to perform SELECT FOR UPDATE operation: transaction has already " +
+                "finished.");
 
         List<List<?>> rowsCache = new ArrayList<>();
 
@@ -1381,7 +1380,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw U.convertException(e);
         }
 
-        QueryCursorImpl newCur = new QueryCursorImpl<List<?>>(rowsCache);
+        QueryCursorImpl newCur = new QueryCursorImpl<>(rowsCache);
 
         newCur.fieldsMeta(meta);
 

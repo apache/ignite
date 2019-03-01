@@ -903,7 +903,7 @@ public final class UpdatePlanBuilder {
                 if (distributed) {
                     List<Integer> cacheIds = H2Utils.collectCacheIds(idx, CU.cacheId(cacheName), qry.tables());
 
-                    H2Utils.checkQuery(idx, cacheIds, qry.mvccEnabled(), qry.tables());
+                    H2Utils.checkQuery(idx, cacheIds, qry.tables());
 
                     return new DmlDistributedPlanInfo(qry.isReplicatedOnly(), cacheIds, qry.derivedPartitions());
                 }

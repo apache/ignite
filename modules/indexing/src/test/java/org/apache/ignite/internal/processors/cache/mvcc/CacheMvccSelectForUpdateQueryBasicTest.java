@@ -326,7 +326,7 @@ public class CacheMvccSelectForUpdateQueryBasicTest  extends CacheMvccAbstractTe
         String sql = "SELECT name, id  FROM person WHERE MOD(salary, 3) = 0 ORDER BY id";
         String sqlForUpdate = sql + " FOR UPDATE";
 
-        // Check cached statement doesn't lock keys without tx.
+        // Check statement doesn't lock keys without tx.
         {
             List<List<?>> res = runSql(node, sqlForUpdate, loc).getAll();
 

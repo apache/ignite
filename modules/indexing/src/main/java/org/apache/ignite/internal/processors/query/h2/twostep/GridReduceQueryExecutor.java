@@ -415,7 +415,7 @@ public class GridReduceQueryExecutor {
 
         assert !qry.mvccEnabled() || mvccTracker != null;
 
-        boolean forUpdate = false;
+        boolean forUpdate;
 
         try {
             GridNearTxLocal tx = null;
@@ -423,7 +423,7 @@ public class GridReduceQueryExecutor {
             if (qry.mvccEnabled())
                 tx = checkActive(tx(ctx));
 
-            forUpdate = qry.reduceQueryForUpdate() != null && tx != null;
+            forUpdate = qry.forUpdate() && tx != null;
         }
         catch (IgniteTxAlreadyCompletedCheckedException e) {
             throw new TransactionAlreadyCompletedException(e.getMessage(), e);
@@ -1298,6 +1298,7 @@ public class GridReduceQueryExecutor {
      *
      * @param qry Two step query.
      * @param params Query parameters.
+     * @param forUpdate For update flag.
      * @return Updated map query list with one map query.
      */
     private List<GridCacheSqlQuery> prepareMapQueryForSinglePartition(GridCacheTwoStepQuery qry, Object[] params,

@@ -33,16 +33,9 @@ public class QueryParserCacheEntry {
     /** Command. */
     private final QueryParserResultCommand cmd;
 
-    /** Query with cleaned FOR UPDATE clause. */
-    private final String qry;
-
-    /** Query with cleaned FOR UPDATE clause and with _key column.  */
-    private final String qryForUpdate;
-
     /**
      * Constructor.
      *
-     * @param qry  Query.
      * @param select SELECT.
      * @param dml DML.
      * @param cmd Command.
@@ -50,15 +43,11 @@ public class QueryParserCacheEntry {
     public QueryParserCacheEntry(
         @Nullable QueryParserResultSelect select,
         @Nullable QueryParserResultDml dml,
-        @Nullable QueryParserResultCommand cmd,
-        String qry,
-        String qryForUpdate
+        @Nullable QueryParserResultCommand cmd
     ) {
         this.select = select;
         this.dml = dml;
         this.cmd = cmd;
-        this.qry = qry;
-        this.qryForUpdate = qryForUpdate;
     }
 
     /**
@@ -80,20 +69,6 @@ public class QueryParserCacheEntry {
      */
     @Nullable public QueryParserResultCommand command() {
         return cmd;
-    }
-
-    /**
-     * @return Query.
-     */
-    public String query() {
-        return qry;
-    }
-
-    /**
-     * @return Query.
-     */
-    public String queryForUpdate() {
-        return qryForUpdate;
     }
 
     /** {@inheritDoc} */

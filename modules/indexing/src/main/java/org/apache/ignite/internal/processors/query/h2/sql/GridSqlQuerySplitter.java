@@ -308,7 +308,7 @@ public class GridSqlQuerySplitter {
         List<Integer> cacheIds = H2Utils.collectCacheIds(idx, null, splitter.tbls);
         boolean mvccEnabled = H2Utils.collectMvccEnabled(idx, cacheIds);
 
-        H2Utils.checkQuery(idx, cacheIds, mvccEnabled, splitter.tbls);
+        H2Utils.checkQuery(idx, cacheIds, splitter.tbls);
 
         // Setup resulting two step query and return it.
         return new GridCacheTwoStepQuery(
@@ -362,7 +362,7 @@ public class GridSqlQuerySplitter {
         else if (!model.needSplit())  // Just split the top level query.
             model.forceSplit();
 
-        // We need to clear for update flag because we'll run it as a plain query.
+        // We should clear for update flag because we'll run it as a plain query.
         if (qry instanceof GridSqlSelect) {
             GridSqlSelect sel = (GridSqlSelect)qry;
 
@@ -1303,7 +1303,7 @@ public class GridSqlQuerySplitter {
 
         /*
          * In case of FOR UPDATE query we need to prepare special variants of map
-         * and reduce query with appended _key column. This column is used for locking rows.
+         * and reduce queries with appended _key column. This column is used for locking rows.
          */
         if (forUpdate) {
             assert  F.isEmpty(mapSqlQrysForUpdate); // It should be the only one map SELECT FOR UPDATE query.

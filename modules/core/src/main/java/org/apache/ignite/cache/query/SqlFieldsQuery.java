@@ -89,9 +89,6 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private Boolean dataPageScanEnabled;
 
-    /** Sql string for SELECT FOR UPDATE query execution. Whit _key column and without FOR UPDATE clause. */
-    private String selForUpdateSql;
-
     /**
      * Copy constructs SQL fields query.
      *
@@ -109,7 +106,6 @@ public class SqlFieldsQuery extends Query<List<?>> {
         parts = qry.parts;
         schema = qry.schema;
         dataPageScanEnabled = qry.dataPageScanEnabled;
-        selForUpdateSql = qry.selForUpdateSql;
     }
 
     /**
@@ -411,22 +407,6 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public Boolean isDataPageScanEnabled() {
         return dataPageScanEnabled;
-    }
-
-    /**
-     * @return Sql string for SELECT FOR UPDATE query execution. Whit _key column and without FOR UPDATE clause.
-     */
-    public String selectForUpdateSql() {
-        return selForUpdateSql;
-    }
-
-    /**
-     * @return Sql string for SELECT FOR UPDATE query execution. Whit _key column and without FOR UPDATE clause.
-     */
-     public SqlFieldsQuery selectForUpdateSql(String selForUpdateSql) {
-        this.selForUpdateSql = selForUpdateSql;
-
-        return this;
     }
 
     /**

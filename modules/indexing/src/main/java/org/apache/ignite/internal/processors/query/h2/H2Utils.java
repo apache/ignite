@@ -833,14 +833,12 @@ public class H2Utils {
      *
      * @param idx Indexing.
      * @param cacheIds Cache IDs.
-     * @param forUpdate For update flag.
      * @param tbls Tables.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public static void checkQuery(
         IgniteH2Indexing idx,
         List<Integer> cacheIds,
-        boolean forUpdate,
         Collection<QueryTable> tbls
     ) {
         GridCacheSharedContext sharedCtx = idx.kernalContext().cache().context();

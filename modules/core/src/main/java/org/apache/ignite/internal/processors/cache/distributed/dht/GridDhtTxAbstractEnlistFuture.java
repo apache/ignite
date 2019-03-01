@@ -266,9 +266,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      *
      * @param key Entry key.
      * @param res Update result.
-     * @param op Operation.
      */
-    protected abstract void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult res, EnlistOperation op);
+    protected abstract void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult res);
 
     /**
      *
@@ -639,7 +638,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         assert updRes != null && updRes.updateFuture() == null;
 
-        onEntryProcessed(entry.key(), updRes, op);
+        if (op != EnlistOperation.LOCK)
+            onEntryProcessed(entry.key(), updRes);
 
         if (!updRes.success()
             || updRes.filtered()

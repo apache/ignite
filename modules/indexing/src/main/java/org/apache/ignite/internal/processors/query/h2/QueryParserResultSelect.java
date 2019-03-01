@@ -47,8 +47,11 @@ public class QueryParserResultSelect {
     /** ID of the first MVCC cache. */
     private final Integer mvccCacheId;
 
-    /** FOR UPDATE flag. */
-    private final boolean forUpdate;
+    /** Sql query. */
+    private final String sqlQry;
+
+    /** Sql query for update string. */
+    private final String sqlQryForUpdate;
 
     /**
      * Constructor.
@@ -59,7 +62,8 @@ public class QueryParserResultSelect {
      * @param paramsCnt Parameters count.
      * @param cacheIds Cache IDs.
      * @param mvccCacheId ID of the first MVCC cache.
-     * @param forUpdate Whether this is FOR UPDATE flag.
+     * @param sqlQry Sql query string.
+     * @param sqlQryForUpdate Sql query FOR UPDATE version.
      */
     public QueryParserResultSelect(
         GridSqlStatement stmt,
@@ -68,7 +72,8 @@ public class QueryParserResultSelect {
         int paramsCnt,
         List<Integer> cacheIds,
         @Nullable Integer mvccCacheId,
-        boolean forUpdate
+        String sqlQry,
+        String sqlQryForUpdate
     ) {
         this.stmt = stmt;
         this.twoStepQry = twoStepQry;
@@ -76,7 +81,8 @@ public class QueryParserResultSelect {
         this.paramsCnt = paramsCnt;
         this.cacheIds = cacheIds;
         this.mvccCacheId = mvccCacheId;
-        this.forUpdate = forUpdate;
+        this.sqlQry = sqlQry;
+        this.sqlQryForUpdate = sqlQryForUpdate;
     }
 
     /**
@@ -132,7 +138,21 @@ public class QueryParserResultSelect {
      * @return Whether this is FOR UPDATE query.
      */
     public boolean forUpdate() {
-        return forUpdate;
+        return sqlQryForUpdate != null;
+    }
+
+    /**
+     * @return Sql query.
+     */
+    public String sqlQuery() {
+        return sqlQry;
+    }
+
+    /**
+     * @return Sql query FOR UPDATE.
+     */
+    public String sqlQueryForUpdate() {
+        return sqlQryForUpdate;
     }
 
     /**

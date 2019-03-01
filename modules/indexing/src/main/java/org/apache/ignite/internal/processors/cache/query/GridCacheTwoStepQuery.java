@@ -271,6 +271,15 @@ public class GridCacheTwoStepQuery {
         return originalNoForUpdateSql;
     }
 
+    /**
+     * @return {@code True} if this is a FOR UPDATE query
+     */
+    public boolean forUpdate() {
+        assert (mapForUpdate == null) == (rdcForUpdate == null);
+
+        return rdcForUpdate != null;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheTwoStepQuery.class, this);

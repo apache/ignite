@@ -150,12 +150,8 @@ public class QueryParser {
 
         QueryParserCacheEntry cached = cache.get(cachedKey);
 
-        if (cached != null) {
-            if (cached.select() != null && cached.select().forUpdate()) // Remove "FOR UPDATE" clause from query string.
-                qry.selectForUpdateSql(cached.queryForUpdate()).setSql(cached.query());
-
+        if (cached != null)
             return new QueryParserResult(qry, null, cached.select(), cached.dml(), cached.command());
-        }
 
         // Try to parse as a native command.
         QueryParserResult parseRes = parseNative(schemaName, qry, remainingAllowed);
@@ -166,8 +162,7 @@ public class QueryParser {
 
         // Add to cache if not multi-statement.
         if (parseRes.remainingQuery() == null) {
-            cached = new QueryParserCacheEntry( parseRes.select(), parseRes.dml(), parseRes.command(),
-                parseRes.query().getSql(), parseRes.query().selectForUpdateSql());
+            cached = new QueryParserCacheEntry(parseRes.select(), parseRes.dml(), parseRes.command());
 
             cache.put(cachedKey, cached);
         }
@@ -359,16 +354,6 @@ public class QueryParser {
             }
 
             // Parse SELECT.
-            List<GridQueryFieldMetadata> meta;
-
-            try {
-                meta = H2Utils.meta(stmt.getMetaData());
-            }
-            catch (SQLException e) {
-                throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
-                    IgniteQueryErrorCode.PARSING, e);
-            }
-
             GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
             GridSqlStatement selectStmt = parser.parse(prepared);
@@ -376,13 +361,11 @@ public class QueryParser {
             List<Integer> cacheIds = parser.cacheIds();
             Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
 
+            String sqlQry = newQry.getSql();
+            String sqlQryForUpdate = null;
+
             boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
 
-            /*
-             * In the case of SELECT FOR UPDATE we need to make an additional parsing for the two reasons:
-             * 1. Clear FOR UPDATE flag and clause before feeding query to h2 engine.
-             * 2. Append if needed additional _key column to the query to be able to lock the selected rows.
-             */
             if (forUpdate) {
                 // We have checked above that it's not an UNION query, so it's got to be SELECT.
                 assert selectStmt instanceof GridSqlSelect;
@@ -398,16 +381,18 @@ public class QueryParser {
 
                 GridSqlSelect sel = copySelect((GridSqlSelect)selectStmt);
 
-                // Always remove this flag before feeding it to h2.
+                // Clear this flag to run it as a plain query.
                 sel.forUpdate(false);
 
-                newQry.setSql(sel.getSQL());
+                // Remember sql string without FOR UPDATE clause.
+                sqlQry = sel.getSQL();
 
                 GridSqlAlias keyCol = keyColumn(sel);
 
                 sel.addColumn(keyCol, true);
 
-                newQry.selectForUpdateSql(sel.getSQL());
+                // Remember sql string without FOR UPDATE clause and with _key column.
+                sqlQryForUpdate = sel.getSQL();
             }
 
             // Calculate if query is in fact can be executed locally.
@@ -448,6 +433,8 @@ public class QueryParser {
                     );
                 }
 
+                List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
+
                 QueryParserResultSelect select = new QueryParserResultSelect(
                     selectStmt,
                     twoStepQry,
@@ -455,7 +442,8 @@ public class QueryParser {
                     paramsCnt,
                     cacheIds,
                     mvccCacheId,
-                    forUpdate
+                    sqlQry,
+                    sqlQryForUpdate
                 );
 
                 return new QueryParserResult(newQry, remainingQry, select, null, null);
@@ -472,8 +460,6 @@ public class QueryParser {
             U.close(stmt, log);
         }
     }
-
-
 
     /**
      * Throw exception is multiple statements are not allowed.
