@@ -285,7 +285,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** WAL data records buffer for enlisted entries. */
     @GridToStringExclude
-    private List<MvccDataEntry> enlistWalBuffer;
+    private volatile List<MvccDataEntry> enlistWalBuffer;
 
     /** {@code True} if tx should skip adding itself to completed version map on finish. */
     private boolean skipCompletedVers;
@@ -466,10 +466,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if (enlistWalBuffer == null)
             enlistWalBuffer = new ArrayList<>(DFLT_MVCC_ENLIST_WAL_BUFFER_SIZE);
 
-        enlistWalBuffer.add(rec);
+        synchronized (enlistWalBuffer) {
+            enlistWalBuffer.add(rec);
 
-        if (enlistWalBuffer.size() == DFLT_MVCC_ENLIST_WAL_BUFFER_SIZE)
-            flushEnlistBuffer();
+            if (enlistWalBuffer.size() == DFLT_MVCC_ENLIST_WAL_BUFFER_SIZE)
+                flushEnlistBuffer();
+        }
     }
 
     /**
@@ -477,11 +479,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @throws IgniteCheckedException If fails.
      */
     void flushEnlistBuffer() throws IgniteCheckedException {
-        // No need to log garbage for rolled backed tx.
-        if (!isRollbackOnly() && enlistWalBuffer != null)
-            cctx.wal().log(new MvccDataRecord(enlistWalBuffer));
+        if (enlistWalBuffer == null)
+            return;
 
-        enlistWalBuffer.clear();
+        synchronized (enlistWalBuffer) {
+            // No need to log garbage for rolled backed tx.
+            if (!isRollbackOnly() && enlistWalBuffer != null)
+                cctx.wal().log(new MvccDataRecord(enlistWalBuffer));
+
+            enlistWalBuffer.clear();
+        }
     }
 
     /**

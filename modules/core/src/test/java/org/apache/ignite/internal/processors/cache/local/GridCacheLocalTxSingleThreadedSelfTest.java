@@ -36,8 +36,6 @@ public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThread
     @Before
     public void beforeGridCacheLocalTxSingleThreadedSelfTest() {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.beforeTest();
     }
 
     /** Cache debug flag. */
