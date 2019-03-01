@@ -403,11 +403,36 @@ public class PartitionCompositeNode implements PartitionNode {
     @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         writer.writeByte(COMPOSITE_NODE);
+
+        left.writeBinary(writer, ver);
+
+        right.writeBinary(writer, ver);
+
+        op.writeBinary(writer, ver);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         // No-op.
+    }
+
+    /**
+     * Returns debinarized partition composite node.
+     *
+     * @param reader Binary reader.
+     * @param ver Protocol verssion.
+     * @return Debinarized partition composite node.
+     * @throws BinaryObjectException On error.
+     */
+    public static PartitionCompositeNode readCompositeNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        PartitionNode left = PartitionNode.readNode(reader, ver);
+
+        PartitionNode right = PartitionNode.readNode(reader, ver);
+
+        PartitionCompositeNodeOperator op = PartitionCompositeNodeOperator.readOperator(reader, ver);
+
+        return new PartitionCompositeNode(left, right, op);
     }
 }

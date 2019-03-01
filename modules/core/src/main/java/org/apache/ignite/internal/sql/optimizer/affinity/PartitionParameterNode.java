@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class PartitionParameterNode extends PartitionSingleNode {
     /** Indexing. */
     @GridToStringExclude
-    private final PartitionResolver partResolver;
+    private final PartitionResolver partRslvr;
 
     /** Index. */
     private final int idx;
@@ -46,16 +46,16 @@ public class PartitionParameterNode extends PartitionSingleNode {
      * Constructor.
      *
      * @param tbl Table descriptor.
-     * @param partResolver Partition resolver.
+     * @param partRslvr Partition resolver.
      * @param idx Parameter index.
      * @param type Parameter data type.
      * @param mappedType Mapped parameter type to be used by thin clients.
      */
-    public PartitionParameterNode(PartitionTable tbl, PartitionResolver partResolver, int idx, int type,
+    public PartitionParameterNode(PartitionTable tbl, PartitionResolver partRslvr, int idx, int type,
         PartitionParameterType mappedType) {
         super(tbl);
 
-        this.partResolver = partResolver;
+        this.partRslvr = partRslvr;
         this.idx = idx;
         this.type = type;
         this.mappedType = mappedType;
@@ -71,9 +71,9 @@ public class PartitionParameterNode extends PartitionSingleNode {
         if (cliCtx != null)
             return cliCtx.partition(arg, mappedType, tbl.cacheName());
         else {
-            assert partResolver != null;
+            assert partRslvr != null;
 
-            return partResolver.partition(
+            return partRslvr.partition(
                 arg,
                 type,
                 tbl.cacheName()
@@ -100,11 +100,42 @@ public class PartitionParameterNode extends PartitionSingleNode {
     @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         writer.writeByte(PARAM_NODE);
+
+        writer.writeInt(idx);
+
+        writer.writeInt(type);
+
+        writer.writeInt(mappedType.ordinal());
+
+        tbl.writeBinary(writer, ver);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         // No-op.
+    }
+
+    /**
+     * Returns debinarized parameter node.
+     *
+     * @param reader Binary reader.
+     * @param ver Protocol verssion.
+     * @return Debinarized parameter node.
+     * @throws BinaryObjectException On error.
+     */
+    public static PartitionParameterNode readParameterNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        int part = reader.readInt();
+
+        int idx = reader.readInt();
+
+        int type = reader.readInt();
+
+        PartitionParameterType mappedType = PartitionParameterType.readParameterType(reader, ver);
+
+        PartitionTable tbl = PartitionTable.readTable(reader, ver);
+
+        return new PartitionParameterNode(tbl, null, part, type, mappedType);
     }
 }

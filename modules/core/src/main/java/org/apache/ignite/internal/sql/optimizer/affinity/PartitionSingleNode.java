@@ -20,6 +20,9 @@ package org.apache.ignite.internal.sql.optimizer.affinity;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -103,5 +106,29 @@ public abstract class PartitionSingleNode implements PartitionNode {
 
         return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) &&
             F.eq(tbl.alias(), other.tbl.alias());
+    }
+
+    /**
+     * Returns debinarized partition single node.
+     *
+     * @param reader Binary reader.
+     * @param ver Protocol verssion.
+     * @return Debinarized partition single node.
+     * @throws BinaryObjectException On error.
+     */
+    public static PartitionSingleNode readNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        int nodeType = reader.readByte();
+
+        switch (nodeType) {
+            case CONST_NODE:
+                return PartitionConstantNode.readConstantNode(reader, ver);
+
+            case PARAM_NODE:
+                return PartitionParameterNode.readParameterNode(reader, ver);
+
+            default:
+                throw new IllegalArgumentException("Partition node type " + nodeType + " is not valid signle node.");
+        }
     }
 }

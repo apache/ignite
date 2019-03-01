@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Common node of partition tree.
  */
-public interface PartitionNode extends JdbcRawBinarylizable{
+public interface PartitionNode extends JdbcRawBinarylizable {
 
     /** {@link PartitionAllNode} type. */
     static final byte ALL_NODE = 1;
@@ -82,27 +82,26 @@ public interface PartitionNode extends JdbcRawBinarylizable{
      */
     public static PartitionNode readNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
-
         int nodeType = reader.readByte();
 
         switch (nodeType) {
             case ALL_NODE:
                 return PartitionAllNode.INSTANCE;
 
-//            case COMPOSITE_NODE:
-//                return new PartitionCompositeNode();
-//
+            case COMPOSITE_NODE:
+                return PartitionCompositeNode.readCompositeNode(reader, ver);
+
             case CONST_NODE:
-                return PartitionConstantNode.readNode(reader, ver);
-//
-//            case GROUP_NODE:
-//                return new PartitionGroupNode();
+                return PartitionConstantNode.readConstantNode(reader, ver);
+
+            case GROUP_NODE:
+                return PartitionGroupNode.readGroupNode(reader, ver);
 
             case NONE_NODE:
                 return PartitionNoneNode.INSTANCE;
 
-//            case PARAM_NODE:
-//                return new PartitionParameterNode();
+            case PARAM_NODE:
+                return PartitionParameterNode.readParameterNode(reader, ver);
 
             default:
                 throw new IllegalArgumentException("Partition node type " + nodeType + " not supported.");

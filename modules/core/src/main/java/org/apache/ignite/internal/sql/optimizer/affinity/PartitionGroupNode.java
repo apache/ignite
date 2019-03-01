@@ -122,11 +122,37 @@ public class PartitionGroupNode implements PartitionNode {
     @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         writer.writeByte(GROUP_NODE);
+
+        writer.writeInt(siblings == null ? 0 : siblings.size());
+
+        for (PartitionSingleNode singleNode: siblings) {
+            singleNode.writeBinary(writer, ver);    
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         // No-op.
+    }
+
+    /**
+     * Returns debinarized partition group node.
+     *
+     * @param reader Binary reader.
+     * @param ver Protocol verssion.
+     * @return Debinarized partition group node.
+     * @throws BinaryObjectException On error.
+     */
+    public static PartitionGroupNode readGroupNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        int siblingsCnt =  reader.readInt();
+
+        Set<PartitionSingleNode> siblings = new HashSet<>(siblingsCnt);
+
+        for (int i = 0; i < siblingsCnt; i++)
+            siblings.add(PartitionSingleNode.readNode(reader, ver));
+
+        return new PartitionGroupNode(siblings);
     }
 }

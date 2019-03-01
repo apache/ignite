@@ -68,6 +68,8 @@ public class PartitionConstantNode extends PartitionSingleNode {
         writer.writeByte(CONST_NODE);
 
         writer.writeInt(part);
+
+        tbl.writeBinary(writer, ver);
     }
 
     /** {@inheritDoc} */
@@ -84,7 +86,7 @@ public class PartitionConstantNode extends PartitionSingleNode {
      * @return Debinarized partition node.
      * @throws BinaryObjectException On error.
      */
-    public static PartitionNode readNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+    public static PartitionConstantNode readConstantNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         int part = reader.readInt();
 
