@@ -60,7 +60,7 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
     protected int tmpFileMBytes = 2 * 1024;
 
     /** Size of int[] array values, x4 in bytes. */
-    protected int valSize = 5 * 1024 * 1024;
+    protected int valSize = 1024 * 1024;
 
     /** Value count. */
     protected int valCnt = 20;
