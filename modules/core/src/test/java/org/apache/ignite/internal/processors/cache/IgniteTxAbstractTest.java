@@ -32,11 +32,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -208,6 +210,9 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                     throw e;
                 }
+            }
+            catch (TransactionSerializationException ex) {
+                assert MvccFeatureChecker.forcedMvcc();
             }
             catch (Throwable e) {
                 log.error("Unexpected error: " + e, e);
