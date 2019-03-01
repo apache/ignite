@@ -28,9 +28,8 @@ targetCompatibility = 11
 ext {
     //ignVer = '2.8.0-SNAPSHOT'
     ignVer = '2.7.0'
+    moduleName = 'ignite_modules_test'
 }
-
-ext.moduleName = 'ignite_modules_test'
 
 compileJava {
     inputs.property("moduleName", moduleName)
@@ -64,6 +63,13 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 
     compile group: 'org.apache.ignite', name: 'ignite-core', version: ignVer
+    //todo https://issues.apache.org/jira/browse/IGNITE-11464 - Fix indexing modularity:
+    /* compile (group: 'org.apache.ignite', name: 'ignite-indexing', version: ignVer) {
+        //transitive=false; // to remove "lucene-sandbox"
+    }*/
+    // compile group: 'org.apache.ignite', name: 'ignite-direct-io', version: ignVer
+    // compile group: 'org.apache.ignite', name: 'ignite-compress', version: ignVer
+    //compile group: 'org.apache.ignite', name: 'ignite-spring', version: ignVer
 }
 
 test {

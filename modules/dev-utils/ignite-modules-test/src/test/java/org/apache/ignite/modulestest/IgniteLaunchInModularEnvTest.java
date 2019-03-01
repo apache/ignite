@@ -23,9 +23,17 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static junit.framework.TestCase.assertTrue;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -47,11 +55,13 @@ public class IgniteLaunchInModularEnvTest {
     public void testPdsEnabledSimpleLaunch() {
         IgniteConfiguration cfg = igniteConfiguration();
 
-        DataRegionConfiguration regCfg = new DataRegionConfiguration();
-        regCfg.setMaxSize(256L*1024*1024);
-        regCfg.setPersistenceEnabled(true);
+        DataRegionConfiguration regCfg = new DataRegionConfiguration()
+            .setMaxSize(256L * 1024 * 1024)
+            .setPersistenceEnabled(true);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(regCfg));
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(regCfg));
 
         Ignite ignite = Ignition.start(cfg);
 
@@ -60,6 +70,17 @@ public class IgniteLaunchInModularEnvTest {
         String cacheName = "CACHE";
         ignite.getOrCreateCache(cacheName).put("key", "value");
         ignite.close();
+    }
+
+
+    @Before
+    public void cleanPersistenceDir() throws Exception {
+        assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
     }
 
     /**
