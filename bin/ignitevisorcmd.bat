@@ -172,16 +172,16 @@ if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -ea
 if "%ARGS%" == "" set ARGS=%*
 
 ::
-:: Final JVM_OPTS for Java 9+ compatibility
+:: Final JVM_OPTS_VISOR for Java 9+ compatibility
 ::
 if %MAJOR_JAVA_VER% == 8 (
-    set JVM_OPTS= ^
+    set JVM_OPTS_VISOR= ^
     -XX:+AggressiveOpts ^
-    %JVM_OPTS%
+    %JVM_OPTS_VISOR%
 )
 
 if %MAJOR_JAVA_VER% GEQ 9 if %MAJOR_JAVA_VER% LSS 11 (
-    set JVM_OPTS= ^
+    set JVM_OPTS_VISOR= ^
     -XX:+AggressiveOpts ^
     --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
     --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
@@ -191,18 +191,18 @@ if %MAJOR_JAVA_VER% GEQ 9 if %MAJOR_JAVA_VER% LSS 11 (
     --illegal-access=permit ^
     --add-modules=java.transaction ^
     --add-modules=java.xml.bind ^
-    %JVM_OPTS%
+    %JVM_OPTS_VISOR%
 )
 
 if %MAJOR_JAVA_VER% == 11 (
-    set JVM_OPTS= ^
+    set JVM_OPTS_VISOR= ^
     --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
     --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
     --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
     --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
     --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
     --illegal-access=permit ^
-    %JVM_OPTS%
+    %JVM_OPTS_VISOR%
 )
 
 ::
