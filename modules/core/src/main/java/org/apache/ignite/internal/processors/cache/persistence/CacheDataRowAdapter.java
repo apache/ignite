@@ -48,7 +48,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.FOR_VACUUM;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
 
@@ -260,7 +259,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
                         grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
-                    if (incomplete == null || ((rowData == KEY_ONLY || rowData == FOR_VACUUM) && key != null))
+                    if (incomplete == null || (rowData == KEY_ONLY && key != null))
                         return;
 
                     nextLink = incomplete.getNextLink();
@@ -320,7 +319,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             }
 
             // Assume that row header is always located entirely on the very first page.
-            hdrLen = readHeader(pageAddr, data.offset());
+            hdrLen = readHeader(sharedCtx, pageAddr, data.offset(), rowData);
 
             if (rowData == LINK_WITH_HEADER)
                 return null;
@@ -347,11 +346,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /**
      * Reads row header (i.e. MVCC info) which should be located on the very first page od data.
      *
+     * @param sharedCtx Shared context.
      * @param addr Address.
      * @param off Offset
+     * @param rowData Required row data.
      * @return Number of bytes read.
      */
-    protected int readHeader(long addr, int off) {
+    protected int readHeader(GridCacheSharedContext<?, ?> sharedCtx, long addr, int off, RowData rowData) {
         // No-op.
         return 0;
     }
@@ -462,7 +463,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
     ) throws IgniteCheckedException {
         int off = 0;
 
-        off += readHeader(addr, off);
+        off += readHeader(sharedCtx, addr, off, rowData);
 
         if (rowData == LINK_WITH_HEADER)
             return;
@@ -488,7 +489,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
 
-            if (rowData == RowData.KEY_ONLY || rowData == FOR_VACUUM)
+            if (rowData == RowData.KEY_ONLY)
                 return;
         }
         else
@@ -859,8 +860,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
         /** */
         LINK_WITH_HEADER,
 
-        /** */
-        FOR_VACUUM,
+        /** Force instant hints actualization. Used to avoid races in rebalance with concurrent vacuum. */
+        FULL_WITH_HINTS,
     }
 
     /** {@inheritDoc} */

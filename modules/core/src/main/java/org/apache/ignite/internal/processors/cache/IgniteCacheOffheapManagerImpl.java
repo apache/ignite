@@ -1143,7 +1143,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         CacheDataStore data = partitionData(part);
 
-        final GridCursor<? extends CacheDataRow> cur = data.cursor();
+        final GridCursor<? extends CacheDataRow> cur = data.cursor(CacheDataRowAdapter.RowData.FULL_WITH_HINTS);
 
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */

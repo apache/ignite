@@ -129,7 +129,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisib
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.FOR_VACUUM;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 
 /**
  * MVCC processor.
@@ -2188,7 +2188,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 if (!shared && (cctx = F.first(part.group().caches())) == null)
                     return metrics;
 
-                GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(FOR_VACUUM);
+                GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
 
                 while (cursor.next()) {
                     if (isCancelled())
