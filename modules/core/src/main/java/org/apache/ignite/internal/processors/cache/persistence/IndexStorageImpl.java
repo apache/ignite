@@ -61,9 +61,6 @@ public class IndexStorageImpl implements IndexStorage {
     /** Cache group ID. */
     private final int grpId;
 
-    /** Whether group is shared. */
-    private final boolean grpShared;
-
     /** */
     private final int allocPartId;
 
@@ -79,7 +76,6 @@ public class IndexStorageImpl implements IndexStorage {
         final IgniteWriteAheadLogManager wal,
         final AtomicLong globalRmvId,
         final int grpId,
-        boolean grpShared,
         final int allocPartId,
         final byte allocSpace,
         final ReuseList reuseList,
@@ -90,7 +86,6 @@ public class IndexStorageImpl implements IndexStorage {
         try {
             this.pageMem = pageMem;
             this.grpId = grpId;
-            this.grpShared = grpShared;
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;
             this.reuseList = reuseList;

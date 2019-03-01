@@ -141,7 +141,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.wal(),
             globalRemoveId(),
             grp.groupId(),
-            grp.sharedGroup(),
             PageIdAllocator.INDEX_PARTITION,
             PageIdAllocator.FLAG_IDX,
             reuseList,
