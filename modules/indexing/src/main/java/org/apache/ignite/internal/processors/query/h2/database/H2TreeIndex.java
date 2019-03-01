@@ -154,7 +154,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** */
     private final String idxName;
 
-    /** Tree name. */
+    /** Cached tree name. */
     private final String treeName;
 
     /** */
@@ -225,10 +225,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         GridQueryTypeDescriptor typeDesc = table.rowDescriptor().type();
 
-        int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
-
-        // NOTE: this code should be consistent with H2TreeIndex.MASKING_CHARS_MAX_LEN
-        treeName = BPlusTree.treeName((table.rowDescriptor() == null ? "" : typeId + "_") + idxName, "H2Tree");
+        treeName = treeName(idxName, typeDesc, cctx);
 
         IndexColumnsInfo unwrappedColsInfo = new IndexColumnsInfo(unwrappedColsList, inlineSize);
 
@@ -254,7 +251,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
             db.checkpointReadLock();
 
             try {
-                RootPage page = getMetaPage(i);
+                String segmentName = segmentName(treeName, i);
+
+                RootPage page = getMetaPage(segmentName);
 
                 segments[i] = new H2Tree(
                     cctx,
@@ -519,7 +518,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
                     tree.destroy();
 
-                    dropMetaPage(i);
+                    String segmentName = segmentName(treeName, i);
+
+                    dropMetaPage(segmentName);
                 }
             }
         }
@@ -602,20 +603,21 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /**
-     * @param segIdx Segment index.
+     * @param segName Segment index.
      * @return RootPage for meta page.
      * @throws IgniteCheckedException If failed.
      */
-    private RootPage getMetaPage(int segIdx) throws IgniteCheckedException {
-        return cctx.offheap().rootPageForIndex(cctx.cacheId(), treeName, segIdx);
+    private RootPage getMetaPage(String segName) throws IgniteCheckedException {
+
+        return cctx.offheap().rootPageForIndex(segName);
     }
 
     /**
-     * @param segIdx Segment index.
+     * @param segName Full segment name.
      * @throws IgniteCheckedException If failed.
      */
-    private void dropMetaPage(int segIdx) throws IgniteCheckedException {
-        cctx.offheap().dropRootPageForIndex(cctx.cacheId(), treeName, segIdx);
+    private void dropMetaPage(String segName) throws IgniteCheckedException {
+        cctx.offheap().dropRootPageForIndex(segName);
     }
 
     /** {@inheritDoc} */
@@ -969,7 +971,42 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         if (encLen > MAX_PDS_UNMASKED_LEN)
             throw new IgniteCheckedException("Index name is too long in UTF-8 encoding " +
-                "[maxAllowed=" + MAX_PDS_UNMASKED_LEN + ", endodedLength=" + encLen +
+                "[maxAllowed=" + MAX_PDS_UNMASKED_LEN + ", encodedLength=" + encLen +
                 ", indexName=" + name + "].");
+    }
+
+
+    public static void validatePdsIndexName(String idxName,
+        GridQueryTypeDescriptor desc,
+        GridCacheContext cctx) throws IgniteCheckedException {
+
+        int segCnt = cctx.config().getQueryParallelism();
+        int maxLenSeg = segCnt - 1;
+
+        String segName = segmentName(treeName(idxName, desc, cctx), maxLenSeg);
+
+        int encLen = segName.getBytes(StandardCharsets.UTF_8).length;
+
+        if (encLen > IndexStorageImpl.MAX_IDX_NAME_LEN)
+            throw new IgniteCheckedException("Index name is too long in UTF-8 encoding " +
+                "[maxAllowed=" + IndexStorageImpl.MAX_IDX_NAME_LEN + ", encodedLength=" + encLen +
+                ", indexName=" + segName + "].");
+    }
+
+    public static String treeName(String idxName,
+        GridQueryTypeDescriptor desc,
+        GridCacheContext cctx) {
+        int typeId = cctx.binaryMarshaller() ? desc.typeId() : desc.valueClass().hashCode();
+
+        String masked = BPlusTree.treeName((typeId + "_") + idxName, "H2Tree");
+
+        if (cctx.group().sharedGroup())
+            masked = cctx.cacheId() + "_" + masked;
+
+        return masked;
+    }
+
+    public static String segmentName(String treeName, int segId){
+        return treeName + "%" + segId;
     }
 }

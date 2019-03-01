@@ -104,14 +104,6 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage allocateCacheIndex(Integer cacheId, String idxName, int segment)
-        throws IgniteCheckedException {
-        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
-
-        return allocateIndex(maskedIdxName);
-    }
-
-    /** {@inheritDoc} */
     @Override public RootPage allocateIndex(String idxName) throws IgniteCheckedException {
         final MetaTree tree = metaTree;
 
@@ -145,14 +137,6 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage dropCacheIndex(Integer cacheId, String idxName, int segment)
-        throws IgniteCheckedException {
-        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
-
-        return dropIndex(maskedIdxName);
-    }
-
-    /** {@inheritDoc} */
     @Override public RootPage dropIndex(final String idxName) throws IgniteCheckedException {
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
@@ -177,12 +161,12 @@ public class IndexStorageImpl implements IndexStorage {
      * @param idxName Index name.
      * @return Masked name.
      */
-    private String maskCacheIndexName(Integer cacheId, String idxName, int segment) {
-        if (grpShared)
-            idxName = Integer.toString(cacheId) + "_" + idxName;
-
-        return idxName + "%" + segment;
-    }
+//    private String maskCacheIndexName(Integer cacheId, String idxName, int segment) {
+//        if (grpShared)
+//            idxName = Integer.toString(cacheId) + "_" + idxName;
+//
+//        return idxName + "%" + segment;
+//    }
 
     /**
      *

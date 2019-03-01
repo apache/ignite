@@ -34,8 +34,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -152,7 +152,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
                 // No-op. Just try to start the grid
                 return null;
             }
-        }, IgniteCheckedException.class, "Index name is too long in UTF-8 encoding [maxAllowed=211");
+        }, IgniteCheckedException.class, "Index name is too long in UTF-8 encoding [maxAllowed=255, encodedLength=256");
     }
 
     @Test
@@ -205,7 +205,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
                 return null;
             }
-        }, IgniteSQLException.class, "Index name is too long in UTF-8 encoding [maxAllowed=211");
+        }, IgniteSQLException.class, "Schema change operation failed: Index name is too long in UTF-8 encoding [maxAllowed=255, encodedLength=256,");
     }
 
     /**
@@ -233,7 +233,23 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
      * @param segmentsCnt Segments count.
      */
     private int maxIdxNameLength(int segmentsCnt) {
-        return H2TreeIndex.MAX_PDS_UNMASKED_LEN;
+        int otherLen = 0;
+
+        // Warning fragile!
+        int typeId = Person.class.getCanonicalName().toLowerCase().hashCode();
+
+        String typeIdToken = String.valueOf(typeId);
+
+        int longestSegLen = String.valueOf(segmentsCnt - 1).length();
+
+        otherLen += typeIdToken.length();
+        otherLen++; // _
+        otherLen += 2; // ##
+        otherLen += "H2Tree".length();
+        otherLen++; // %
+        otherLen += longestSegLen;
+
+        return IndexStorageImpl.MAX_IDX_NAME_LEN - otherLen;
     }
 
     // 11 + 1 + 2 + 6 + 1 + 11 + 11 + 1

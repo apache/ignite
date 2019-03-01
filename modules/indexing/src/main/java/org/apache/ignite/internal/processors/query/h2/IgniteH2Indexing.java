@@ -45,6 +45,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -335,9 +336,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void dynamicIndexCreate(String schemaName, String tblName, QueryIndexDescriptorImpl idxDesc,
         boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
-        H2TreeIndex.validatePdsIndexName(idxDesc.name());
+
+        if (!ctx.clientNode()) {
+            String cacheName = idxDesc.typeDescriptor().cacheName();
+
+            GridCacheContext<Object, Object> cctx = ctx.cache().context().cacheContext(CU.cacheId(cacheName));
+
+            if (persistentCache(cctx.config()))
+                H2TreeIndex.validatePdsIndexName(idxDesc.name(), idxDesc.typeDescriptor(), cctx);
+        }
 
         schemaMgr.createIndex(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor);
+    }
+
+    private boolean persistentCache(CacheConfiguration ccfg) {
+        return CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -1754,13 +1767,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void validateTypeToRegister(GridCacheContextInfo cacheInfo,
         GridQueryTypeDescriptor desc) throws IgniteCheckedException {
 
-        for (String idxName : desc.indexes().keySet()) {
-            if (CU.isPersistentCache(cacheInfo.config(), ctx.config().getDataStorageConfiguration()))
-                H2TreeIndex.validatePdsIndexName(idxName);
-        }
+        boolean persistenceEnabled = CU.isPersistentCache(cacheInfo.config(), ctx.config().getDataStorageConfiguration());
 
-        H2TreeIndex.validatePdsIndexName(H2TableDescriptor.PK_IDX_NAME);
-        H2TreeIndex.validatePdsIndexName(H2TableDescriptor.AFFINITY_KEY_IDX_NAME);
+        if (!ctx.clientNode() && persistenceEnabled) {
+            for (String idxName : desc.indexes().keySet())
+                H2TreeIndex.validatePdsIndexName(idxName, desc, cacheInfo.cacheContext());
+
+            H2TreeIndex.validatePdsIndexName(H2TableDescriptor.PK_IDX_NAME, desc, cacheInfo.cacheContext());
+            H2TreeIndex.validatePdsIndexName(H2TableDescriptor.AFFINITY_KEY_IDX_NAME, desc, cacheInfo.cacheContext());
+        }
     }
 
     /** {@inheritDoc} */
