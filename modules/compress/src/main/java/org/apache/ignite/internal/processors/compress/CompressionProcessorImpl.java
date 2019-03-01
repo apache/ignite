@@ -100,7 +100,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         DiskPageCompression compression,
         int compressLevel
     ) throws IgniteCheckedException {
-        assert compression != null;
+        assert compression != null && compression != DiskPageCompression.DISABLED : compression;
         assert U.isPow2(blockSize): blockSize;
         assert page.position() == 0 && page.limit() >= pageSize;
 
@@ -296,7 +296,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @return Level.
      */
     private static byte getCompressionType(DiskPageCompression compression) {
-        if (compression == null)
+        if (compression == DiskPageCompression.DISABLED)
             return UNCOMPRESSED_PAGE;
 
         switch (compression) {
@@ -383,7 +383,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
                 : "Wrong compacted page size [compactSize=" + compactSize + ", pageSize=" + pageSize + ']';
         }
 
-        setCompressionInfo(page, null, 0, 0);
+        setCompressionInfo(page, DiskPageCompression.DISABLED, 0, 0);
     }
 
     /** */

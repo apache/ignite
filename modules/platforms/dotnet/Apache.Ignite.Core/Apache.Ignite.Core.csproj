@@ -62,6 +62,7 @@
     <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
     <Compile Include="Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Configuration\DiskPageCompression.cs" />
     <Compile Include="Configuration\DataRegionConfiguration.cs" />
     <Compile Include="Configuration\DataStorageConfiguration.cs" />
     <Compile Include="Cache\Configuration\MemoryPolicyConfiguration.cs" />

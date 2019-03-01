@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -55,7 +56,7 @@ public class WalPageCompressionIntegrationTest extends AbstractPageCompressionIn
         // Ignite instance with compressed WAL page records.
         IgniteEx ignite0 = startGrid(0);
 
-        compression = null;
+        compression = DiskPageCompression.DISABLED;
         compressionLevel = null;
 
         // Reference ignite instance with uncompressed WAL page records.

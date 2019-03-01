@@ -118,6 +118,16 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="diskPageCompression" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="SkipGarbage" />
+            <xs:enumeration value="Zstd" />
+            <xs:enumeration value="LZ4" />
+            <xs:enumeration value="Snappy" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -1933,6 +1943,16 @@
                                 <xs:documentation>
                                     Timeout for checkpoint read lock acquisition.
                                 </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompression" type="diskPageCompression">
+                            <xs:annotation>
+                                <xs:documentation>Compression algorithm for WAL page snapshot records.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompressionLevel" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Compression level for WAL page snapshot records.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>

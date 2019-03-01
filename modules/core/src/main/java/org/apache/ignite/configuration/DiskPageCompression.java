@@ -28,6 +28,9 @@ import org.jetbrains.annotations.Nullable;
  * @see DataStorageConfiguration#setWalPageCompressionLevel
  */
 public enum DiskPageCompression {
+    /** Compression disabled. */
+    DISABLED,
+
     /** Retain only useful data from half-filled pages, but do not apply any compression. */
     SKIP_GARBAGE,
 

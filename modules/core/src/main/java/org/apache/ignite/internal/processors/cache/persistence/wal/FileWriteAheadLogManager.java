@@ -490,7 +490,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             pageCompression = dsCfg.getWalPageCompression();
 
-            if (pageCompression != null) {
+            if (pageCompression != DiskPageCompression.DISABLED) {
                 if (serializerVer < 2) {
                     throw new IgniteCheckedException("WAL page snapshots compression not supported for serializerVer=" +
                         serializerVer);
@@ -801,7 +801,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return null;
 
         // Do page snapshots compression if configured.
-        if (pageCompression != null && rec instanceof PageSnapshot) {
+        if (pageCompression != DiskPageCompression.DISABLED && rec instanceof PageSnapshot) {
             PageSnapshot pageSnapshot = (PageSnapshot)rec;
 
             int pageSize = pageSnapshot.realPageSize();

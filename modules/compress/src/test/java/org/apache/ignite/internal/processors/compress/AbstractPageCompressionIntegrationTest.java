@@ -46,7 +46,7 @@ public abstract class AbstractPageCompressionIntegrationTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        compression = null;
+        compression = DiskPageCompression.DISABLED;
         compressionLevel = null;
 
         cleanPersistenceDir();

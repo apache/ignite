@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
@@ -25,14 +24,7 @@ import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 /**
  *
  */
-public class WalRecoveryWithPageCompressionAndTdeTest extends IgniteWalRecoveryTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        walPageCompression = DiskPageCompression.ZSTD;
-    }
-
+public class WalRecoveryWithPageCompressionAndTdeTest extends WalRecoveryWithPageCompressionTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

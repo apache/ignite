@@ -167,6 +167,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal compaction level. */
     public static final int DFLT_WAL_COMPACTION_LEVEL = Deflater.BEST_SPEED;
 
+    /** Default compression algorithm for WAL page snapshot records. */
+    public static final DiskPageCompression DFLT_WAL_PAGE_COMPRESSION = DiskPageCompression.DISABLED;
+
     /** Initial size of a memory chunk reserved for system cache. */
     private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
 
@@ -291,7 +294,7 @@ public class DataStorageConfiguration implements Serializable {
     private Long checkpointReadLockTimeout;
 
     /** Compression algorithm for WAL page snapshot records. */
-    private DiskPageCompression walPageCompression;
+    private DiskPageCompression walPageCompression = DFLT_WAL_PAGE_COMPRESSION;
 
     /** Compression level for WAL page snapshot records. */
     private Integer walPageCompressionLevel;
@@ -1033,7 +1036,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return Page compression algorithm.
      */
     public DiskPageCompression getWalPageCompression() {
-        return walPageCompression;
+        return walPageCompression == null ? DFLT_WAL_PAGE_COMPRESSION : walPageCompression;
     }
 
     /**
