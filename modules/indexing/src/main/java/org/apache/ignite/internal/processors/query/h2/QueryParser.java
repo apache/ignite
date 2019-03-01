@@ -30,8 +30,11 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
@@ -333,7 +336,7 @@ public class QueryParser {
                 return new QueryParserResult(newQry, remainingQry, null, null, cmd);
             }
             else if (GridSqlQueryParser.isDml(prepared)) {
-                QueryParserResultDml dml = prepareDmlStatement(prepared);
+                QueryParserResultDml dml = prepareDmlStatement(schemaName, qry, prepared);
 
                 return new QueryParserResult(newQry, remainingQry, null, dml, null);
             }
@@ -475,10 +478,16 @@ public class QueryParser {
     /**
      * Prepare DML statement.
      *
+     * @param schemaName Schema name.
+     * @param qry Query.
      * @param prepared Prepared.
      * @return Statement.
      */
-    private QueryParserResultDml prepareDmlStatement(Prepared prepared) {
+    private QueryParserResultDml prepareDmlStatement(String schemaName, SqlFieldsQuery qry, Prepared prepared) {
+        if (F.eq(QueryUtils.SCHEMA_SYS, schemaName))
+            throw new IgniteSQLException("DML statements are not supported on " + schemaName + " schema",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         // Prepare AST.
         GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
@@ -517,11 +526,32 @@ public class QueryParser {
             streamTbl = DmlAstUtils.gridTableForElement(insert.into()).dataTable();
         }
 
+
+        // Create update plan.
+        UpdatePlan plan;
+
+        try {
+            plan = UpdatePlanBuilder.planForStatement(
+                schemaName,
+                stmt,
+                mvccEnabled,
+                idx,
+                qry
+            );
+        }
+        catch (Exception e) {
+            if (e instanceof IgniteSQLException)
+                throw (IgniteSQLException)e;
+            else
+                throw new IgniteSQLException("Failed to prepare update plan.", e);
+        }
+
         return new QueryParserResultDml(
             stmt,
             prepared.getParameters().size(),
             mvccEnabled,
-            streamTbl
+            streamTbl,
+            plan
         );
     }
 
