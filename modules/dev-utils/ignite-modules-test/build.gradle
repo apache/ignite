@@ -52,3 +52,14 @@ dependencies {
 
     compile group: 'org.apache.ignite', name: 'ignite-core', version: ignVer
 }
+
+test {
+    // set JVM arguments for the test JVM(s)
+    jvmArgs("--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
+        "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
+        "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
+        "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
+        "--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED",
+        "--illegal-access=permit",
+        "-Djdk.tls.client.protocols=TLSv1.2");
+}

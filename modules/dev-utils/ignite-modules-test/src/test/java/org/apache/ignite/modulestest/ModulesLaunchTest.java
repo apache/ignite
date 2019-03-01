@@ -19,6 +19,7 @@ package org.apache.ignite.modulestest;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
 
 /**
@@ -30,7 +31,9 @@ public class ModulesLaunchTest {
      */
     @Test
     public void testSimpleLaunch() {
-        Ignite ignite = Ignition.start();
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        Ignite ignite = Ignition.start(cfg);
 
         ignite.close();
     }

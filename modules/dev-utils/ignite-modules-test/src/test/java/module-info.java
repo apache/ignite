@@ -16,4 +16,6 @@
  */
 
 module ignite_modules_test {
+    requires ignite.core;
+    requires junit;
 }
