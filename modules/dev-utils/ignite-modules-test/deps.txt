@@ -1,0 +1,106 @@
+
+> Task :dependencies
+
+------------------------------------------------------------
+Root project
+------------------------------------------------------------
+
+annotationProcessor - Annotation processors and their dependencies for source set 'main'.
+No dependencies
+
+apiElements - API elements for main. (n)
+No dependencies
+
+archives - Configuration for archive artifacts.
+No dependencies
+
+compile - Dependencies for source set 'main' (deprecated, use 'implementation' instead).
+\--- org.apache.ignite:ignite-core:2.7.0
+     +--- javax.cache:cache-api:1.0.0
+     +--- org.jetbrains:annotations:13.0
+     \--- org.gridgain:ignite-shmem:1.0.0
+
+compileClasspath - Compile classpath for source set 'main'.
+\--- org.apache.ignite:ignite-core:2.7.0
+     +--- javax.cache:cache-api:1.0.0
+     +--- org.jetbrains:annotations:13.0
+     \--- org.gridgain:ignite-shmem:1.0.0
+
+compileOnly - Compile only dependencies for source set 'main'.
+No dependencies
+
+default - Configuration for default artifacts.
+\--- org.apache.ignite:ignite-core:2.7.0
+     +--- javax.cache:cache-api:1.0.0
+     +--- org.jetbrains:annotations:13.0
+     \--- org.gridgain:ignite-shmem:1.0.0
+
+implementation - Implementation only dependencies for source set 'main'. (n)
+No dependencies
+
+runtime - Runtime dependencies for source set 'main' (deprecated, use 'runtimeOnly' instead).
+\--- org.apache.ignite:ignite-core:2.7.0
+     +--- javax.cache:cache-api:1.0.0
+     +--- org.jetbrains:annotations:13.0
+     \--- org.gridgain:ignite-shmem:1.0.0
+
+runtimeClasspath - Runtime classpath of source set 'main'.
+\--- org.apache.ignite:ignite-core:2.7.0
+     +--- javax.cache:cache-api:1.0.0
+     +--- org.jetbrains:annotations:13.0
+     \--- org.gridgain:ignite-shmem:1.0.0
+
+runtimeElements - Elements of runtime for main. (n)
+No dependencies
+
+runtimeOnly - Runtime only dependencies for source set 'main'. (n)
+No dependencies
+
+testAnnotationProcessor - Annotation processors and their dependencies for source set 'test'.
+No dependencies
+
+testCompile - Dependencies for source set 'test' (deprecated, use 'testImplementation' instead).
++--- org.apache.ignite:ignite-core:2.7.0
+|    +--- javax.cache:cache-api:1.0.0
+|    +--- org.jetbrains:annotations:13.0
+|    \--- org.gridgain:ignite-shmem:1.0.0
+\--- junit:junit:4.12
+     \--- org.hamcrest:hamcrest-core:1.3
+
+testCompileClasspath - Compile classpath for source set 'test'.
++--- org.apache.ignite:ignite-core:2.7.0
+|    +--- javax.cache:cache-api:1.0.0
+|    +--- org.jetbrains:annotations:13.0
+|    \--- org.gridgain:ignite-shmem:1.0.0
+\--- junit:junit:4.12
+     \--- org.hamcrest:hamcrest-core:1.3
+
+testCompileOnly - Compile only dependencies for source set 'test'.
+No dependencies
+
+testImplementation - Implementation only dependencies for source set 'test'. (n)
+No dependencies
+
+testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testRuntimeOnly' instead).
++--- org.apache.ignite:ignite-core:2.7.0
+|    +--- javax.cache:cache-api:1.0.0
+|    +--- org.jetbrains:annotations:13.0
+|    \--- org.gridgain:ignite-shmem:1.0.0
+\--- junit:junit:4.12
+     \--- org.hamcrest:hamcrest-core:1.3
+
+testRuntimeClasspath - Runtime classpath of source set 'test'.
++--- org.apache.ignite:ignite-core:2.7.0
+|    +--- javax.cache:cache-api:1.0.0
+|    +--- org.jetbrains:annotations:13.0
+|    \--- org.gridgain:ignite-shmem:1.0.0
+\--- junit:junit:4.12
+     \--- org.hamcrest:hamcrest-core:1.3
+
+testRuntimeOnly - Runtime only dependencies for source set 'test'. (n)
+No dependencies
+
+A web-based, searchable dependency report is available by adding the --scan option.
+
+BUILD SUCCESSFUL in 1s
+1 actionable task: 1 executed

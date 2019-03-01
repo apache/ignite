@@ -64,9 +64,22 @@ dependencies {
 
     compile group: 'org.apache.ignite', name: 'ignite-core', version: ignVer
     //todo https://issues.apache.org/jira/browse/IGNITE-11464 - Fix indexing modularity:
-    /* compile (group: 'org.apache.ignite', name: 'ignite-indexing', version: ignVer) {
+    /* 
+    compile(group: 'org.apache.ignite', name: 'ignite-indexing', version: ignVer) {
         //transitive=false; // to remove "lucene-sandbox"
-    }*/
+        exclude group: 'org.apache.lucene', module: 'lucene-sandbox'
+    }
+
+    def luceneVer = '7.7.1'
+    compile 'org.apache.lucene:lucene-core:' + luceneVer
+    compile 'org.apache.lucene:lucene-analyzers-common:' + luceneVer
+    compile 'org.apache.lucene:lucene-core:' + luceneVer
+    compile ('org.apache.lucene:lucene-queryparser:' + luceneVer){
+        //transitive=false; // to remove "lucene-sandbox"
+        exclude group: 'org.apache.lucene', module: 'lucene-sandbox'
+    }
+    */
+    
     // compile group: 'org.apache.ignite', name: 'ignite-direct-io', version: ignVer
     // compile group: 'org.apache.ignite', name: 'ignite-compress', version: ignVer
     //compile group: 'org.apache.ignite', name: 'ignite-spring', version: ignVer

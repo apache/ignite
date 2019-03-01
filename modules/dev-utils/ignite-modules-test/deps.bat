@@ -1,0 +1,1 @@
+gradle dependencies > deps.txt
