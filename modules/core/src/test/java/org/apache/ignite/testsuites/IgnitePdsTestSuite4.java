@@ -55,16 +55,16 @@ public class IgnitePdsTestSuite4 {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
-        addRealPageStoreTestsNotForDirectIo(suite, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, FileDownloaderTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsTaskCancelingTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsPartitionPreloadTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, ResetLostPartitionTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteRebalanceOnCachesStoppingOrDestroyingTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, CachePageWriteLockUnlockTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheWalDisabledOnRebalancingTest.class, ignoredTests);
+//        addRealPageStoreTestsNotForDirectIo(suite, ignoredTests);
+//
+//        GridTestUtils.addTestIfNeeded(suite, FileDownloaderTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsTaskCancelingTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsPartitionPreloadTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, ResetLostPartitionTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteRebalanceOnCachesStoppingOrDestroyingTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, CachePageWriteLockUnlockTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheWalDisabledOnRebalancingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageMemoryPrewarmingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MultithreadedPageMemoryPrewarmingTest.class, ignoredTests);
 
