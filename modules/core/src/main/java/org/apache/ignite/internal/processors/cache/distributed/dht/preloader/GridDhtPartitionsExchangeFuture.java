@@ -683,11 +683,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (newCrd) {
             IgniteInternalFuture<?> fut = cctx.affinity().initCoordinatorCaches(this, false);
 
-            if (fut != null) {
-                fut.get();
+            fut.get();
 
-                cctx.exchange().exchangerUpdateHeartbeat();
-            }
+            cctx.exchange().exchangerUpdateHeartbeat();
 
             cctx.exchange().onCoordinatorInitialized();
 
@@ -4398,7 +4396,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             for (int i = 0; i < grp.affinity().partitions(); i++)
                 affAssignment.add(empty);
 
-            grp.affinity().idealAssignment(affAssignment);
+            grp.affinity().idealAssignment(initialVersion(), affAssignment);
 
             grp.affinity().initialize(initialVersion(), affAssignment);
 

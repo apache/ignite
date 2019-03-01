@@ -38,6 +38,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -93,6 +94,27 @@ public class CacheGroupAffinityMessage implements Message {
 
                 assignsDiff.put(e.getKey(), l);
             }
+        }
+    }
+
+    /**
+     * Creates affinity message from given assignment diff.
+     *
+     * @param assignmentDiff Map (partition, List of node orders).
+     *                       Each list represents affinity nodes for given partition if it differs from ideal assignment.
+     */
+    public CacheGroupAffinityMessage(@NotNull Map<Integer, List<Long>> assignmentDiff) {
+        assignsDiff = U.newHashMap(assignmentDiff.size());
+
+        for (Map.Entry<Integer, List<Long>> e : assignmentDiff.entrySet()) {
+            List<Long> orders = e.getValue();
+
+            GridLongList l = new GridLongList(orders.size());
+
+            for (int n = 0; n < orders.size(); n++)
+                l.add(orders.get(n));
+
+            assignsDiff.put(e.getKey(), l);
         }
     }
 
@@ -188,7 +210,7 @@ public class CacheGroupAffinityMessage implements Message {
         for (int n = 0; n < assign.size(); n++) {
             long order = assign.get(n);
 
-            ClusterNode affNode = nodesByOrder.computeIfAbsent(order, o -> discoCache.serverNodeByOrder(order));
+            ClusterNode affNode = nodesByOrder.get(order);
 
             assert affNode != null : "Failed to find node by order [order=" + order +
                 ", topVer=" + discoCache.version() + ']';

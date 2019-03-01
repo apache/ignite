@@ -1792,8 +1792,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         long topVer = 0;
 
+        int ops[] = {0, 6, 1, 4, 4, 5, 3, 3, 5, 4, 0, 6, 2, 0};
+
         for (int i = 0; i < 100; i++) {
-            int op = i == 0 ? 0 : rnd.nextInt(7);
+            int op = i < ops.length ? ops[i] : i == 0 ? 0 : rnd.nextInt(7);
 
             log.info("Iteration [iter=" + i + ", op=" + op + ']');
 

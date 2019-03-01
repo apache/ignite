@@ -97,8 +97,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
         IgniteInternalFuture<?> fut = cctx.affinity().initCoordinatorCaches(exchFut, newAff);
 
-        if (fut != null)
-            add(fut);
+        add(fut);
 
         if (restoreState) {
             DiscoCache curDiscoCache = cctx.discovery().discoCache();
