@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.knn;
+package org.apache.ignite.examples.ml.selection.scoring;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -27,6 +27,7 @@ import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
 import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
@@ -35,9 +36,6 @@ import java.io.FileNotFoundException;
 
 /**
  * Run kNN regression trainer ({@link KNNRegressionTrainer}) over distributed dataset.
- * <p>
- * Code in this example launches Ignite grid and fills the cache with test data points (based on the
- * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
  * <p>
  * After that it trains the model based on the specified data using
  * <a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">kNN</a> regression algorithm.</p>
@@ -48,7 +46,7 @@ import java.io.FileNotFoundException;
  * You can change the test data used in this example or trainer object settings and re-run it to explore
  * this algorithm further.</p>
  */
-public class KNNRegressionExample {
+public class RegressionMetricExample {
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
@@ -74,15 +72,16 @@ public class KNNRegressionExample {
                 .withDistanceMeasure(new ManhattanDistance())
                 .withStrategy(NNStrategy.WEIGHTED);
 
-            double rmse = Evaluator.evaluate(
+
+            double mae = Evaluator.evaluate(
                 dataCache,
                 knnMdl,
                 featureExtractor,
                 lbExtractor,
-                new RegressionMetrics()
+                new RegressionMetrics().withMetric(RegressionMetricValues::mae)
             );
 
-            System.out.println("\n>>> Rmse = " + rmse);
+            System.out.println("\n>>> Mae " + mae);
         }
     }
 }
