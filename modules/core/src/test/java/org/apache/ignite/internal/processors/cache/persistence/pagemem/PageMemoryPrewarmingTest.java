@@ -22,8 +22,13 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -117,36 +122,143 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param prewarmingEnabled Whether prewarming is enabled.
+     * @param prewarmingMultithreaded If {@code true} default threads count for warming-up will be used,
+     * else one thread will be used. Ignored if prewarmingEnabled equals false.
+     * @return Average elapsed cache reading time.
+     * @throws Exception If failed.
+     */
+    public long doCachePersistenceRead(boolean prewarmingEnabled, boolean prewarmingMultithreaded, IgniteLogger log) throws Exception {
+        fillPersistence();
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setGridLogger(log);
+
+        DataRegionConfiguration dataRegionCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
+
+        if (prewarmingEnabled && !prewarmingMultithreaded)
+            dataRegionCfg.getPrewarmingConfiguration()
+                .setDumpReadThreads(1)
+                .setPageLoadThreads(1);
+
+        if (!prewarmingEnabled)
+            dataRegionCfg.setPrewarmingConfiguration(null);
+
+        long totalReadingDuration = 0;
+
+        try (IgniteEx ignite = startGrid(cfg)) {
+            pushOutDiskCache();
+
+            IgniteCache<Integer, int[]> cache = ignite.getOrCreateCache(CACHE_NAME);
+
+            for (int i = valCnt; i >= 0; i--) {
+                long startTs = U.currentTimeMillis();
+
+                int key = i % valCnt; // Key '0' supposed as cold.
+
+                int[] val = cache.get(key);
+
+                long elapsed = U.currentTimeMillis() - startTs;
+
+                totalReadingDuration += elapsed;
+
+                info("### " + key + " get in " + elapsed + " ms, val=" +
+                    (val != null ? val.getClass().getSimpleName() + " [" + val.length + "]" : null));
+            }
+        }
+
+        return totalReadingDuration / valCnt;
+    }
+
+    /**
      *
      */
     @Test
-    public void testPrewarming() throws Exception {
-        fillPersistence();
-
+    public void testWarmingUpWithoutLoad() throws Exception{
         ListeningTestLogger log = new ListeningTestLogger(false, log());
 
         LogListener throttleLsnr = throttleListener(false);
 
         log.registerListener(throttleLsnr);
 
-        IgniteEx ignite = startGrid(getConfiguration(getTestIgniteInstanceName(0)).setGridLogger(log));
-
-        pushOutDiskCache();
-
-        IgniteCache<Integer, int[]> cache = ignite.getOrCreateCache(CACHE_NAME);
-
-        for (int i = valCnt; i >= 0; i--) {
-            long startTs = U.currentTimeMillis();
-
-            int key = i % valCnt; // Key '0' supposed as cold.
-
-            int[] val = cache.get(key);
-
-            info("### " + key + " get in " + (U.currentTimeMillis() - startTs) + " ms, val=" +
-                (val != null ? val.getClass().getSimpleName() + " [" + val.length + "]" : null));
-        }
+        doCachePersistenceRead(true, false, log);
 
         assertTrue(throttleLsnr.check());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testMultithreadedPrewarming() throws Exception {
+        ListeningTestLogger log = new ListeningTestLogger(false, log());
+
+        AtomicInteger elapsed = new AtomicInteger(0);
+
+        LogListener prewarmingDurationLsnr = new LogListener() {
+            @Override public boolean check() {
+                return false;
+            }
+
+            @Override public void reset() {
+                // No-op
+            }
+
+            @Override public void accept(String s) {
+                Pattern pattern = Pattern.compile("Prewarming of DataRegion \\[name=(.*)\\] finished in (.*?) ms");
+                Matcher matcher = pattern.matcher(s);
+
+                if (matcher.find())
+                    elapsed.addAndGet(Integer.parseInt(matcher.group(2)));
+            }
+        };
+
+        log.registerListener(prewarmingDurationLsnr);
+
+        doCachePersistenceRead(true, true, log);
+
+        assertTrue(elapsed.get() != 0);
+
+        int elapsedMultithreaded = elapsed.get();
+
+        stopAllGrids(false);
+
+        cleanPersistenceDir();
+
+        elapsed.set(0);
+
+        doCachePersistenceRead(true, false, log);
+
+        assertTrue(elapsed.get() != 0);
+
+        int elapsedOnethreaded = elapsed.get();
+
+        log().info("Cache prewarming duration with multithreaded enabled: " + elapsedMultithreaded);
+
+        log().info("Cache prewarming duration with multithreading disabled: " + elapsedOnethreaded);
+
+        assertTrue(elapsedMultithreaded < elapsedOnethreaded);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testPrewarming() throws Exception {
+        ListeningTestLogger log = new ListeningTestLogger(false, log());
+
+        long prewarmedCacheReadDuration = doCachePersistenceRead(true, false, log);
+
+        stopAllGrids(false);
+
+        cleanPersistenceDir();
+
+        long cacheReadDuration = doCachePersistenceRead(false, false, log);
+
+        log().info("Cache average reading duration with prewarming enabled: " + prewarmedCacheReadDuration);
+
+        log().info("Cache average reading duration with prewarming disabled: " + cacheReadDuration);
+
+        assertTrue(cacheReadDuration > prewarmedCacheReadDuration) ;
     }
 
     /**
@@ -276,15 +388,6 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
                                 cache0.put(k, val);
                             else
                                 cache0.remove(k);
-
-//                            IgniteKernal primaryNode = (IgniteKernal)primaryCache(k, CACHE_NAME).unwrap(Ignite.class);
-//                            GridCacheEntryEx entry = primaryNode.internalCache(CACHE_NAME).entryEx(k);
-//
-//                            try {
-//                                entry.unswap();
-//                            }
-//                            catch (IgniteCheckedException | GridCacheEntryRemovedException ignore) {
-//                            }
                         }
                     }
                     catch (Throwable ignore) {}

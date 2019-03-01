@@ -158,12 +158,16 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
         this.ctx = ctx;
         this.log = ctx.logger(PageMemoryPrewarmingImpl.class);
 
-        dumpReadSvc = new ThreadPoolExecutor(
-            prewarmCfg.getDumpReadThreads(),
-            prewarmCfg.getDumpReadThreads(),
-            60L,
-            TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>());
+        int dumpReadThread = prewarmCfg.getDumpReadThreads();
+
+        if (dumpReadThread > 1) {
+            dumpReadSvc = new ThreadPoolExecutor(
+                dumpReadThread,
+                dumpReadThread,
+                60L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>());
+        }
 
         pageLoadThreadFactory = new IgniteThreadFactory(ctx.igniteInstanceName(),
             dataRegName + "-prewarm-seg");
@@ -271,7 +275,9 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
     private void warmUp() {
         ExecutorService[] workers = null;
 
-        boolean multithreaded = prewarmCfg.getDumpReadThreads() > 1;
+        boolean dumpReadMultithreaded = prewarmCfg.getDumpReadThreads() > 1;
+
+        boolean pageLoadMultithreaded = prewarmCfg.getPageLoadThreads() > 1;
 
         try {
             if (log.isInfoEnabled())
@@ -297,11 +303,12 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
                 log.info("Detected need to throttle warming up.");
 
             long startTs = U.currentTimeMillis();
+
             readRatesLastTs.set(startTs);
 
             SegmentLoader segmentLdr = new SegmentLoader();
 
-            if (multithreaded) {
+            if (pageLoadMultithreaded) {
                 int pageLoadThreads = prewarmCfg.getPageLoadThreads();
 
                 workers = new ExecutorService[pageLoadThreads];
@@ -328,7 +335,7 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
                     }
                 };
 
-                if (multithreaded)
+                if (dumpReadMultithreaded)
                     dumpReadSvc.execute(dumpReader);
                 else
                     dumpReader.run();
