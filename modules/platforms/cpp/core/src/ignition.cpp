@@ -100,8 +100,9 @@ namespace ignite
             Deinit();
 
             const size_t REQ_OPTS_CNT = 4;
+            const size_t JAVA9_OPTS_CNT = 6;
 
-            opts.reserve(cfg.jvmOpts.size() + REQ_OPTS_CNT);
+            opts.reserve(cfg.jvmOpts.size() + REQ_OPTS_CNT + JAVA9_OPTS_CNT);
 
             std::string fileEncParam = "-Dfile.encoding=";
 
@@ -139,6 +140,16 @@ namespace ignite
                 std::string fileEncFull = fileEncParam + "UTF-8";
 
                 opts.push_back(CopyChars(fileEncFull.c_str()));
+            }
+
+            // Adding options for Java 9 or later
+            if (IsJava9OrLater()) {
+                opts.push_back(CopyChars("--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=java.base/sun.nio.ch=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--illegal-access=permit"));
             }
         }
 

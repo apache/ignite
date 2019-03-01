@@ -386,7 +386,10 @@ public final class IgniteSystemProperties {
 
     /**
      * If this property set then debug console will be opened for H2 indexing SPI.
+     *
+     * @deprecated Since 2.8. H2 console is no longer supported.
      */
+    @Deprecated
     public static final String IGNITE_H2_DEBUG_CONSOLE = "IGNITE_H2_DEBUG_CONSOLE";
 
     /**
@@ -394,7 +397,10 @@ public final class IgniteSystemProperties {
      * to start H2 debug console on. If this property is not set or set to 0, H2 debug
      * console will use system-provided dynamic port.
      * This property is only relevant when {@link #IGNITE_H2_DEBUG_CONSOLE} property is set.
+     *
+     * @deprecated Since 2.8. H2 console is no longer supported.
      */
+    @Deprecated
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
@@ -1133,6 +1139,11 @@ public final class IgniteSystemProperties {
 
     /** Flag to enable persistence rebalance. */
     public static final String IGNITE_PERSISTENCE_REBALANCE_ENABLED = "IGNITE_PERSISTENCE_REBALANCE_ENABLED";
+
+    /**
+     * Maximum number of diagnostic warning messages per category, when waiting for PME.
+     */
+    public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
      * Enforces singleton.
