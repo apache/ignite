@@ -186,7 +186,10 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
 
                     res = GridTestUtils.waitForCondition(stopLsnr::check, 60_000) && throttleLsnr.check();
 
-                    ignite.close();
+                    if (res)
+                        break;
+
+                    stopGrid(0, true);
                 }
                 catch (Throwable t) {
                     Thread.interrupted();
@@ -197,8 +200,6 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
         }
         finally {
             stop.set(true);
-
-            ignite.close();
         }
     }
 
