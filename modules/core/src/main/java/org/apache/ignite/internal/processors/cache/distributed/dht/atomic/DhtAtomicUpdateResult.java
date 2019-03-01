@@ -51,9 +51,6 @@ class DhtAtomicUpdateResult {
      */
     private int processedEntriesCount;
 
-    /** */
-    private BitSet retryEntries;
-
     /**
      *
      */
@@ -162,29 +159,5 @@ class DhtAtomicUpdateResult {
      */
     public int processedEntriesCount() {
         return processedEntriesCount;
-    }
-
-    /**
-     * @param retryEntries Indexes of entries to retry update for.
-     */
-    @Nullable public BitSet retryEntries() {
-        return retryEntries;
-    }
-
-    /**
-     * @param retryEntries Indexes of entries to retry update for.
-     */
-    public void retryEntries(@Nullable BitSet retryEntries) {
-        this.retryEntries = retryEntries;
-    }
-
-    /**
-     * @param idx Entry index in updated request.
-     */
-    public void addRetryEntry(int idx) {
-        if (retryEntries == null)
-            retryEntries = new BitSet();
-
-        retryEntries.set(idx, true);
     }
 }

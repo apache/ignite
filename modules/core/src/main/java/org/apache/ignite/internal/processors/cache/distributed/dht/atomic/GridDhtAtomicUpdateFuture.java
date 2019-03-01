@@ -60,7 +60,7 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
 
     /** {@inheritDoc} */
     @Override protected void addDhtKey(KeyCacheObject key, List<ClusterNode> dhtNodes) {
-        assert updateCntr < updateReq.size();
+        assert updateCntr < updateReq.size() : updateCntr;
 
         updateCntr++;
     }
