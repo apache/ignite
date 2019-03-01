@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.jetbrains.annotations.Nullable;
@@ -37,6 +38,9 @@ public class QueryParserResultDml {
     /** Streamer table. */
     private final GridH2Table streamTbl;
 
+    /** Update plan. */
+    private final UpdatePlan plan;
+
     /**
      * Constructor.
      *
@@ -44,17 +48,20 @@ public class QueryParserResultDml {
      * @param paramsCnt Number of parameters.
      * @param mvccEnabled Whether MVCC is enabled.
      * @param streamTbl Streamer table.
+     * @param plan Update plan.
      */
     public QueryParserResultDml(
         GridSqlStatement stmt,
         int paramsCnt,
         boolean mvccEnabled,
-        @Nullable GridH2Table streamTbl
+        @Nullable GridH2Table streamTbl,
+        UpdatePlan plan
     ) {
         this.stmt = stmt;
         this.paramsCnt = paramsCnt;
         this.mvccEnabled = mvccEnabled;
         this.streamTbl = streamTbl;
+        this.plan = plan;
     }
 
     /**
@@ -90,5 +97,12 @@ public class QueryParserResultDml {
      */
     public int parametersCount() {
         return paramsCnt;
+    }
+
+    /**
+     * @return Update plan.
+     */
+    public UpdatePlan plan() {
+        return plan;
     }
 }
