@@ -38,9 +38,7 @@ public abstract class GridSqlElement implements GridSqlAst {
         this.children = children;
     }
 
-    /**
-     * @return Optional expression result type (if this is an expression and result type is known).
-     */
+    /** {@inheritDoc} */
     @Override public GridSqlType resultType() {
         return resultType;
     }
@@ -87,9 +85,7 @@ public abstract class GridSqlElement implements GridSqlAst {
         children.set(idx, child);
     }
 
-    /**
-     * @return Number of children.
-     */
+    /** {@inheritDoc} */
     @Override public int size() {
         return children.size();
     }

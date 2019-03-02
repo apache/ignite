@@ -46,12 +46,7 @@ public class MovieFitnessFunction implements IFitnessFunction {
         this.genres = genres;
     }
 
-    /**
-     * Calculate fitness score.
-     *
-     * @param genes List of Genes.
-     * @return Fitness score.
-     */
+    /** {@inheritDoc} */
     @Override public double evaluate(List<Gene> genes) {
         double score = 0;
         List<String> duplicates = new ArrayList<>();

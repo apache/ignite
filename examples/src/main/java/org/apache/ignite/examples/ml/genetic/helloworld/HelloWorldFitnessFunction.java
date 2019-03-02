@@ -33,12 +33,7 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  * contains 11 characters.</p>
  */
 public class HelloWorldFitnessFunction implements IFitnessFunction {
-    /**
-     * Calculate fitness.
-     *
-     * @param genes List of Genes.
-     * @return Fitness value.
-     */
+    /** {@inheritDoc} */
     @Override public double evaluate(List<Gene> genes) {
         double matches = 0;
 

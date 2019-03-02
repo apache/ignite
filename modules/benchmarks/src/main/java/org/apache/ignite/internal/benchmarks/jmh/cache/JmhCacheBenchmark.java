@@ -32,12 +32,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @SuppressWarnings("unchecked")
 public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
-    /**
-     * Set up routine.
-     *
-     * @throws Exception If failed.
-     */
-
+    /** {@inheritDoc} */
     @Override public void setup() throws Exception {
         super.setup();
 

@@ -38,12 +38,7 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
         this.targetAmount = targetAmount;
     }
 
-    /**
-     * Calculate fitness.
-     *
-     * @param genes List of genes.
-     * @return Fitness value.
-     */
+    /** {@inheritDoc} */
     @Override public double evaluate(List<Gene> genes) {
         int changeAmount = getAmountOfChange(genes);
         int totalCoins = getTotalNumberOfCoins(genes);

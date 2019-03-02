@@ -198,8 +198,8 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
     }
 
     /** {@inheritDoc} */
-    @Override @TearDown
-    public void tearDown() throws Exception {
+    @TearDown
+    @Override public void tearDown() throws Exception {
         Ignition.stopAll(true);
     }
 

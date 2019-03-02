@@ -48,11 +48,7 @@ public class PythonProcessBuilderSupplier implements SerializableSupplier<Proces
         this.meta = meta;
     }
 
-    /**
-     * Returns process builder to be used to start Python process.
-     *
-     * @return Process builder to be used to start Python process.
-     */
+    /** {@inheritDoc} */
     @Override public ProcessBuilder get() {
         String python = System.getenv(PYTHON_ENV_NAME);
 

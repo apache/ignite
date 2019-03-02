@@ -1143,13 +1143,13 @@ public class ConcurrentLinkedDeque8<E>
         return null;
     }
 
-    /** */
-    public E getFirst() {
+    /** {@inheritDoc} */
+    @Override public E getFirst() {
         return screenNullResult(peekFirst());
     }
 
-    /** */
-    public E getLast() {
+    /** {@inheritDoc} */
+    @Override public E getLast() {
         return screenNullResult(peekLast());
     }
 
@@ -1175,13 +1175,13 @@ public class ConcurrentLinkedDeque8<E>
         return null;
     }
 
-    /** */
-    public E removeFirst() {
+    /** {@inheritDoc} */
+    @Override public E removeFirst() {
         return screenNullResult(pollFirst());
     }
 
-    /** */
-    public E removeLast() {
+    /**{@inheritDoc} */
+    @Override public E removeLast() {
         return screenNullResult(pollLast());
     }
 

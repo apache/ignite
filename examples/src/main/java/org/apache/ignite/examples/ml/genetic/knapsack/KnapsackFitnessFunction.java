@@ -31,12 +31,7 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  * To do this, we total the weights and values of all the genes within a chromosome.</p>
  */
 public class KnapsackFitnessFunction implements IFitnessFunction {
-    /**
-     * Calculate fitness.
-     *
-     * @param genes List of Genes.
-     * @return Fitness value.
-     */
+    /** {@inheritDoc} */
     @Override public double evaluate(List<Gene> genes) {
         double val = 0;
         double weight = 0;
