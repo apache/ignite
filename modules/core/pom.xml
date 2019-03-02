@@ -391,7 +391,7 @@
 
                                         <replaceregexp file="${props.file}" byline="true">
                                             <regexp pattern="ignite.update.status.params=.*" />
-                                            <substitution expression="ignite.update.status.params=ver=${project.version}&amp;product=${ignite.update.notifier.product}" />
+                                            <substitution expression="ignite.update.status.params=ver=${project.version}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
