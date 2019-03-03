@@ -329,7 +329,10 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private int GetPartition<TKey>(TKey key)
         {
-            var keyHash = key.GetHashCode(); // TODO: Calc with
+            // TODO: See cpp\thin-client\include\ignite\impl\thin\writable_key.h
+            // We'll have to do the same - implement hash for every primitive
+            // And for non-primitive we have to get it somehow from the writer BEFORE sending the request
+            var keyHash = key.GetHashCode();
             var partitionCount = 0; // TODO: Use affinityMapping.size
             return ClientRendezvousAffinityFunction.GetPartitionForKey(keyHash, partitionCount);
         }
