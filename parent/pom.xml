@@ -162,16 +162,9 @@
     <version>1</version>
     <packaging>pom</packaging>
 
-    <url>http://ignite.apache.org</url>
+    <url>https://www.gridgain.com/</url>
 
     <description>Java-based middleware for in-memory processing of big data in a distributed environment.</description>
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
 
     <mailingLists>
         <mailingList>
