@@ -329,8 +329,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private int GetPartition<TKey>(TKey key)
         {
-            // TODO: Use built-in Rendezvous func.
-            return 0;
+            var keyHash = key.GetHashCode(); // TODO: Calc with
+            var partitionCount = 0; // TODO: Use affinityMapping.size
+            return ClientRendezvousAffinityFunction.GetPartitionForKey(keyHash, partitionCount);
         }
     }
 }
