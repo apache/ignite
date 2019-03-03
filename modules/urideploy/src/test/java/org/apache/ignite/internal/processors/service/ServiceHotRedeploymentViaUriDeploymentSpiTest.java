@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.service;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 
-/**
- * Tests services hot redeployment via {@link UriDeploymentSpi}.
- */
+/** {@inheritDoc} */
 public class ServiceHotRedeploymentViaUriDeploymentSpiTest extends ServiceHotRedeploymentViaDeploymentSpiTest {
     /** {@inheritDoc} */
     @Override protected DeploymentSpi deploymentSpi() {
