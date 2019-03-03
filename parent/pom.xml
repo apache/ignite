@@ -776,6 +776,18 @@
                             <excludeTransitive>true</excludeTransitive>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>copy-ignite-shmem</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeArtifactIds>ignite-shmem</includeArtifactIds>
+                            <outputDirectory>target/libs</outputDirectory>
+                            <excludeTransitive>true</excludeTransitive>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
