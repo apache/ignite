@@ -83,6 +83,7 @@
     <Compile Include="Impl\Client\Cache\ClientRendezvousAffinityFunction.cs" />
     <Compile Include="Impl\Client\ClientFlags.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
+    <Compile Include="Impl\Client\IClientAffinitySocket.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
     <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
     <Compile Include="Ssl\ISslContextFactory.cs" />
