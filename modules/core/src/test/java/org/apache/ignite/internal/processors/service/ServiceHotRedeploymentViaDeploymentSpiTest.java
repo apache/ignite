@@ -41,6 +41,9 @@ import org.junit.Test;
 
 /**
  * Tests services hot redeployment via {@link DeploymentSpi}.
+ *
+ * <b>NOTE:</b> to run test via Maven Surefire Plugin, the property "forkCount' should be set great than '0' or profile
+ * 'surefire-fork-count-1' enabled.
  */
 public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstractTest {
     /** */
@@ -153,20 +156,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
 
         assertTrue("Failed to remove source file.", srcFile.delete());
 
-        // Full classpath URLs should be specified to run test via Maven on TeamCity because of the environment.
-        URL[] classpath = U.classLoaderUrls(getClass().getClassLoader());
-
-        URL[] urls = new URL[classpath.length + 1];
-
-        System.arraycopy(classpath, 0, urls, 0, classpath.length);
-
-        urls[urls.length - 1] = srcTmpDir.toUri().toURL();
-
-        for (URL url : urls) {
-            System.out.println("***** " + url);
-        }
-
-        return new URLClassLoader(urls);
+        return new URLClassLoader(new URL[] {srcTmpDir.toUri().toURL()});
     }
 
     /**
