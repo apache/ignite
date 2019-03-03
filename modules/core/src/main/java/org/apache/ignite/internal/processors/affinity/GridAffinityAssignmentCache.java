@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
  */
 public class GridAffinityAssignmentCache {
     /** Cleanup history size. */
-    private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
+    private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 50);
 
     /** Partition distribution. */
     private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 50f);
@@ -491,7 +491,11 @@ public class GridAffinityAssignmentCache {
 
         GridAffinityAssignmentV2 assignmentCpy = new GridAffinityAssignmentV2(topVer, aff);
 
-        HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignmentCpy, backups));
+        Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> prevHistEntry = affCache.lastEntry();
+
+        HistoryAffinityAssignment hAff = (prevHistEntry == null) ?
+            affCache.put(topVer, new HistoryAffinityAssignment(assignmentCpy, backups)) :
+            affCache.put(topVer, prevHistEntry.getValue());
 
         head.set(assignmentCpy);
 
@@ -505,8 +509,8 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        // In case if value was replaced there is no sense to clean the history.
-        if (hAff == null)
+        // There is no sense to clean the history if value was replaced or we added shallow copy of previous value.
+        if (hAff == null && prevHistEntry == null)
             onHistoryAdded();
     }
 
@@ -680,10 +684,14 @@ public class GridAffinityAssignmentCache {
     /**
      * Get cached affinity for specified topology version.
      *
-     * @param topVer Topology version.
+     * @param topVer Topology version for which affinity assignment is requested.
+     * @param lastAffChangeTopVer Topology version of last affinity assignment change.
      * @return Cached affinity.
      */
-    public AffinityAssignment cachedAffinity(AffinityTopologyVersion topVer, AffinityTopologyVersion lastAffChangeTopVer) {
+    public AffinityAssignment cachedAffinity(
+        AffinityTopologyVersion topVer,
+        AffinityTopologyVersion lastAffChangeTopVer
+    ) {
         if (topVer.equals(AffinityTopologyVersion.NONE))
             topVer = lastAffChangeTopVer = lastVersion();
         else {
@@ -705,11 +713,23 @@ public class GridAffinityAssignmentCache {
             if (e != null)
                 cache = e.getValue();
 
-            if (cache == null || cache.topologyVersion().compareTo(topVer) > 0) {
+            if (cache == null) {
+                throw new IllegalStateException("Getting affinity for too old topology version that is already " +
+                    "out of history [locNode=" + ctx.discovery().localNode() +
+                    ", grp=" + cacheOrGrpName +
+                    ", topVer=" + topVer +
+                    ", lastAffChangeTopVer=" + lastAffChangeTopVer +
+                    ", head=" + head.get().topologyVersion() +
+                    ", history=" + affCache.keySet() +
+                    ']');
+            }
+
+            if (cache.topologyVersion().compareTo(topVer) > 0) {
                 throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +
                     "calculated [locNode=" + ctx.discovery().localNode() +
                     ", grp=" + cacheOrGrpName +
                     ", topVer=" + topVer +
+                    ", lastAffChangeTopVer=" + lastAffChangeTopVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
                     ']');
@@ -819,16 +839,25 @@ public class GridAffinityAssignmentCache {
 
             AffinityTopologyVersion topVerRmv = null;
 
-            while (it.hasNext() && rmvCnt > 0) {
-                AffinityAssignment aff0 = it.next();
+            HistoryAffinityAssignment prevRmv = null;
+
+            while (it.hasNext()) {
+                HistoryAffinityAssignment aff0 = it.next();
+
+                if (aff0 != prevRmv) { // Don't decrement counter in case of shallow copy remove.
+                    if (rmvCnt == 0)
+                        break; // We have already removed enough entries along with their shallow copies.
+
+                    rmvCnt--;
+
+                    fullHistSize.decrementAndGet();
+                }
 
                 it.remove();
 
-                rmvCnt--;
-
-                fullHistSize.decrementAndGet();
-
                 topVerRmv = aff0.topologyVersion();
+
+                prevRmv = aff0;
             }
 
             topVerRmv = it.hasNext() ? it.next().topologyVersion() : topVerRmv;

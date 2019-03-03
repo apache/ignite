@@ -19,17 +19,23 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
@@ -46,6 +52,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 /**
@@ -77,6 +84,11 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(new TestDiscoverySpi().setIpFinder(IP_FINDER));
 
+        cfg.setActiveOnStart(false);
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024)));
+
         if (startClient) {
             cfg.setClientMode(true);
 
@@ -90,6 +102,8 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        startClient = false;
 
         super.afterTest();
     }
@@ -222,6 +236,8 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         try {
             Ignite ig = startGridsMultiThreaded(4);
 
+            ig.cluster().active(true);
+
             IgniteCache<Integer, Integer> atomicCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
                 .setName("atomic").setAtomicityMode(CacheAtomicityMode.ATOMIC).setCacheMode(CacheMode.REPLICATED));
 
@@ -283,6 +299,80 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         }
         finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_EXCHANGE_MERGE_DELAY);
+        }
+    }
+
+    /**
+     * Tests that multiple client events won't fail transactions due to affinity assignment history expiration.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMulipleClientLeaveJoin() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, "10");
+
+        try {
+            Ignite ig = startGrids(2);
+
+            ig.cluster().active(true);
+
+            startClient = true;
+
+            IgniteEx stableClient = startGrid(2);
+
+            IgniteCache<Integer, Integer> stableClientTxCacheProxy = stableClient.createCache(
+                new CacheConfiguration<Integer, Integer>()
+                    .setName("tx")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setBackups(1)
+                    .setAffinity(new RendezvousAffinityFunction(false, 32)));
+
+            awaitPartitionMapExchange();
+
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    for (int i = 0; i < 10; i++) {
+                        try {
+                            startGrid(3);
+
+                            stopGrid(3);
+                        }
+                        catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            });
+
+            CountDownLatch clientTxLatch = new CountDownLatch(1);
+
+            IgniteInternalFuture loadFut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try (Transaction tx = stableClient.transactions().txStart()) {
+                        ThreadLocalRandom r = ThreadLocalRandom.current();
+
+                        stableClientTxCacheProxy.put(r.nextInt(100), r.nextInt());
+
+                        try {
+                            clientTxLatch.await();
+                        }
+                        catch (InterruptedException e) {
+                            throw new IgniteInterruptedException(e);
+                        }
+
+                        tx.commit();
+                    }
+                }
+            });
+
+            fut.get();
+
+            clientTxLatch.countDown();
+
+            loadFut.get();
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE);
         }
     }
 
