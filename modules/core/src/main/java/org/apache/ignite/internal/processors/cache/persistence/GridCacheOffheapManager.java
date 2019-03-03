@@ -185,7 +185,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         if (!ctx.nextSnapshot())
             syncMetadata(ctx);
     }
@@ -484,7 +484,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
 
-                // TODO FIXME this should only be called if partition is newly created.
+                // Triggers initialization of existing(having datafile) partition.
+                // Partition will not be reset to zero.
                 onPartitionInitialCounterUpdated(p, 0);
 
                 ctx.database().checkpointReadLock();

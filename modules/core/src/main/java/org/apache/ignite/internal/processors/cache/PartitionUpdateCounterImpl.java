@@ -81,7 +81,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      * @param initUpdCntr Initial update counter.
      * @param rawData Byte array of holes raw data.
      */
-    public void init(long initUpdCntr, @Nullable byte[] rawData) {
+    @Override public void init(long initUpdCntr, @Nullable byte[] rawData) {
         cntr.set(initUpdCntr);
 
         initCntr = initUpdCntr;
@@ -92,14 +92,14 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /**
      * @return Initial counter value.
      */
-    public long initial() {
+    @Override public long initial() {
         return initCntr;
     }
 
     /**
      * @return Current update counter value.
      */
-    public long get() {
+    @Override public long get() {
         return cntr.get();
     }
 
@@ -114,7 +114,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /**
      * @return Next update counter.
      */
-    public long next() {
+    @Override public long next() {
         return cntr.incrementAndGet();
     }
 
@@ -123,7 +123,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      *
      * @param val Values.
      */
-    public synchronized void update(long val) throws IgniteCheckedException {
+    @Override public synchronized void update(long val) throws IgniteCheckedException {
         // New counter should be not less than last seen update.
         // Otherwise supplier doesn't contain some updates and rebalancing couldn't restore consistency.
         // Best behavior is to stop node by failure handler in such a case.
@@ -149,7 +149,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      *  @param start Start.
      * @param delta Delta.
      */
-    public synchronized boolean update(long start, long delta) {
+    @Override public synchronized boolean update(long start, long delta) {
         long cur = cntr.get(), next;
 
         if (cur > start) {
@@ -207,24 +207,21 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /**
-     * Updates initial counter on recovery.
+     * Updates initial counter on recovery. Not thread-safe.
      *
      * @param cntr Initial counter.
      */
-    public void updateInitial(long cntr) {
+    @Override public void updateInitial(long cntr) {
         long cntr0 = get();
 
-        if (cntr <= cntr0) // These counter updates was already applied before checkpoint.
+        // The method is called with zero counter to trigger data store initialization before checkpoints are started
+        // (or cp read lock will never be taken).
+        if (cntr == 0)
             return;
 
-        // TODO FIXME fix inefficient assertion next 3 lines.
-        long tmp = cntr - 1;
+        assert cntr > cntr0 : "Illegal update counters order: cur=" + cntr0 + ", new=" + cntr;
 
-        NavigableSet<Item> items = queue.headSet(new Item(tmp, 0), true);
-
-        assert items.isEmpty() || !items.last().within(tmp) : "Invalid counter";
-
-        update(tmp, 1); // We expecting only unapplied updates.
+        update(cntr - 1, 1);
 
         initCntr = get();
     }
@@ -258,7 +255,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      *
      * @return Even-length array of pairs [start, end] for each gap.
      */
-    public synchronized GridLongList finalizeUpdateCounters() {
+    @Override public synchronized GridLongList finalizeUpdateCounters() {
         Item item = poll();
 
         GridLongList gaps = null;
@@ -287,7 +284,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      *
      * @param delta Delta.
      */
-    public long reserve(long delta) {
+    @Override public long reserve(long delta) {
         long cntr = this.cntr.get();
 
         long newCntr = reserveCntr.getAndAdd(delta);
@@ -345,7 +342,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return gaps().isEmpty();
     }
 
-    public @Nullable byte[] getBytes() {
+    @Override public @Nullable byte[] getBytes() {
         if (queue.isEmpty())
             return null;
 
@@ -503,7 +500,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return this.cntr.get() == cntr.cntr.get();
     }
 
-    public long reserved() {
+    @Override public long reserved() {
         return reserveCntr.get();
     }
 
