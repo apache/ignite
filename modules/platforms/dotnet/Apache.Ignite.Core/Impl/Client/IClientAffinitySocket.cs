@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     internal interface IClientAffinitySocket : IClientSocket
@@ -28,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         T DoOutInOpAffinity<T, TKey>(
             ClientOp opId,
-            Action<IBinaryStream> writeAction,
+            Action<BinaryWriter> writeAction,
             Func<IBinaryStream, T> readFunc,
             int cacheId,
             TKey key,

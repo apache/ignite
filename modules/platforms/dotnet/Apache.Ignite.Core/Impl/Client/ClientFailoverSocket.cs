@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritdoc /> */
         public T DoOutInOpAffinity<T, TKey>( // TODO: This does not belong in Socket class. Move to IgniteClient?
             ClientOp opId,
-            Action<IBinaryStream> writeAction,
+            Action<BinaryWriter> writeAction,
             Func<IBinaryStream, T> readFunc,
             int cacheId,
             TKey key,
@@ -122,20 +122,34 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (partMap != null)
             {
+                // TODO: Hash Code
+                // * Primitives and strings: calculate right here
+                // * Complex types: write to a byte array to get hash from binary writer.
+                //   Copy that byte array to target stream afterwards.
                 var partition = GetPartition(key);
                 var nodeId = partMap.PartitionMap.SingleOrDefault(x => x.Value.Contains(partition));
 
                 ClientSocket socket;
                 if (_nodeSocketMap.TryGetValue(nodeId.Key, out socket))
                 {
-                    return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+                    return socket.DoOutInOp(opId, s =>
+                    {
+                        var writer = _marsh.StartMarshal(s);
+                        writeAction(writer);
+                        _marsh.FinishMarshal(writer);
+                    }, readFunc, errorFunc);
                 }
             }
 
             // TODO: Request partition map if it is out of date or unknown
             // TODO: Calculate target node for given cache and given key.
             // TODO: Move the method to IClientAffinitySocket or something like that?
-            return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
+            return GetSocket().DoOutInOp(opId, s =>
+            {
+                var writer = _marsh.StartMarshal(s);
+                writeAction(writer);
+                _marsh.FinishMarshal(writer);
+            }, readFunc, errorFunc);
         }
 
         /** <inheritdoc /> */
