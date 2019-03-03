@@ -31,12 +31,18 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
         public ClientCacheAffinityAwarenessGroup(IBinaryStream stream)
         {
+            // Whether this group is eligible for client-side partition awareness.
+            bool applicable = stream.ReadBool();
+
             var cachesCount = stream.ReadInt();
             _keyConfigs = new List<ClientCacheKeyConfiguration>(cachesCount);
 
             for (int i = 0; i < cachesCount; i++)
             {
                 var cacheId = stream.ReadInt();
+                if (!applicable)
+                    continue;
+
                 var keyCfgCount = stream.ReadInt();
 
                 for (int j = 0; j < keyCfgCount; j++)
@@ -44,6 +50,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                     _keyConfigs.Add(new ClientCacheKeyConfiguration(cacheId, stream.ReadInt(), stream.ReadInt()));
                 }
             }
+
+            if (!applicable)
+                return;
 
             var partMapSize = stream.ReadInt();
             _partitionMap = new List<KeyValuePair<Guid, List<int>>>(partMapSize);
