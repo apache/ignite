@@ -1917,7 +1917,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                     joinError(err);
 
                                 cancel();
-                                
+
                                 break;
                             }
                         }
@@ -2191,6 +2191,16 @@ class ClientImpl extends TcpDiscoveryImpl {
         private void processNodeAddFinishedMessage(TcpDiscoveryNodeAddFinishedMessage msg) {
             if (spi.getSpiContext().isStopping())
                 return;
+
+            if (log.isInfoEnabled()) {
+                for (ClusterNode node : getRemoteNodes()) {
+                    if (node.id().equals(locNode.clientRouterNodeId())) {
+                        log.info("Router node: " + node);
+
+                        break;
+                    }
+                }
+            }
 
             if (getLocalNodeId().equals(msg.nodeId())) {
                 if (joining()) {
