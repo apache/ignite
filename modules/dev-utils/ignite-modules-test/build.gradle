@@ -91,7 +91,11 @@ dependencies {
 
     compile group: 'org.apache.ignite', name: 'ignite-log4j', version: ignVer
     compile group: 'org.apache.ignite', name: 'ignite-log4j2', version: ignVer
-    //compile group: 'org.apache.ignite', name: 'ignite-zookeeper', version: ignVer
+    compile group: 'org.apache.ignite', name: 'ignite-slf4j', version: ignVer
+
+    // compile group: 'org.apache.ignite', name: 'ignite-rest-http', version: ignVer
+    // compile group: 'org.apache.ignite', name: 'ignite-hibernate_5.3', version: ignVer
+    // compile group: 'org.apache.ignite', name: 'ignite-zookeeper', version: ignVer
 }
 
 test {

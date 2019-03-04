@@ -26,11 +26,14 @@ compile - Dependencies for source set 'main' (deprecated, use 'implementation' i
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
-\--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
++--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0
+|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+\--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
      +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     +--- org.apache.logging.log4j:log4j-api:2.11.0
-     \--- org.apache.logging.log4j:log4j-core:2.11.0
-          \--- org.apache.logging.log4j:log4j-api:2.11.0
+     \--- org.slf4j:slf4j-api:1.7.7
 
 compileClasspath - Compile classpath for source set 'main'.
 +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
@@ -44,11 +47,14 @@ compileClasspath - Compile classpath for source set 'main'.
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
-\--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
++--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0
+|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+\--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
      +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     +--- org.apache.logging.log4j:log4j-api:2.11.0
-     \--- org.apache.logging.log4j:log4j-core:2.11.0
-          \--- org.apache.logging.log4j:log4j-api:2.11.0
+     \--- org.slf4j:slf4j-api:1.7.7
 
 compileOnly - Compile only dependencies for source set 'main'.
 No dependencies
@@ -65,11 +71,14 @@ default - Configuration for default artifacts.
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
-\--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
++--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0
+|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+\--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
      +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     +--- org.apache.logging.log4j:log4j-api:2.11.0
-     \--- org.apache.logging.log4j:log4j-core:2.11.0
-          \--- org.apache.logging.log4j:log4j-api:2.11.0
+     \--- org.slf4j:slf4j-api:1.7.7
 
 implementation - Implementation only dependencies for source set 'main'. (n)
 No dependencies
@@ -86,11 +95,14 @@ runtime - Runtime dependencies for source set 'main' (deprecated, use 'runtimeOn
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
-\--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
++--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0
+|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+\--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
      +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     +--- org.apache.logging.log4j:log4j-api:2.11.0
-     \--- org.apache.logging.log4j:log4j-core:2.11.0
-          \--- org.apache.logging.log4j:log4j-api:2.11.0
+     \--- org.slf4j:slf4j-api:1.7.7
 
 runtimeClasspath - Runtime classpath of source set 'main'.
 +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
@@ -104,11 +116,14 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
-\--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
++--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0
+|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+\--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
      +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     +--- org.apache.logging.log4j:log4j-api:2.11.0
-     \--- org.apache.logging.log4j:log4j-core:2.11.0
-          \--- org.apache.logging.log4j:log4j-api:2.11.0
+     \--- org.slf4j:slf4j-api:1.7.7
 
 runtimeElements - Elements of runtime for main. (n)
 No dependencies
@@ -136,6 +151,9 @@ testCompile - Dependencies for source set 'test' (deprecated, use 'testImplement
 |    +--- org.apache.logging.log4j:log4j-api:2.11.0
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
 |         \--- org.apache.logging.log4j:log4j-api:2.11.0
++--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    \--- org.slf4j:slf4j-api:1.7.7
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -156,6 +174,9 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    +--- org.apache.logging.log4j:log4j-api:2.11.0
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
 |         \--- org.apache.logging.log4j:log4j-api:2.11.0
++--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    \--- org.slf4j:slf4j-api:1.7.7
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -182,6 +203,9 @@ testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testR
 |    +--- org.apache.logging.log4j:log4j-api:2.11.0
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
 |         \--- org.apache.logging.log4j:log4j-api:2.11.0
++--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    \--- org.slf4j:slf4j-api:1.7.7
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -202,6 +226,9 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    +--- org.apache.logging.log4j:log4j-api:2.11.0
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
 |         \--- org.apache.logging.log4j:log4j-api:2.11.0
++--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    \--- org.slf4j:slf4j-api:1.7.7
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -212,5 +239,5 @@ No dependencies
 
 A web-based, searchable dependency report is available by adding the --scan option.
 
-BUILD SUCCESSFUL in 1s
+BUILD SUCCESSFUL in 0s
 1 actionable task: 1 executed
