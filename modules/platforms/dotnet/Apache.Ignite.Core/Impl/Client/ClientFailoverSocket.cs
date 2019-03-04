@@ -117,16 +117,13 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             UpdatePartitionMapping(cacheId);
 
-            // TODO: If T is a complex type, we need to extract affinity key?
             var partMap = _affinityGroups.SingleOrDefault(g => g.KeyConfigs.Any(c => c.CacheId == cacheId));
 
             if (partMap != null)
             {
-                // TODO: Hash Code
-                // * Primitives and strings: calculate right here
-                // * Complex types: write to a byte array to get hash from binary writer.
-                //   Copy that byte array to target stream afterwards.
-                // OR: Extract serialization logic from ClientSocket (WriteMessage logic)!
+                // TODO: Extract affinity key and hash code
+                // 1) Extract serialization logic from ClientSocket (WriteMessage) so we can serialize before selecting the Socket
+                // 2) Add optional callback to BinaryWriter so we can extract both AffinityKey (by field id) and hash code (in case it's a BinaryObject)
                 var partition = GetPartition(key);
                 var nodeId = partMap.PartitionMap.SingleOrDefault(x => x.Value.Contains(partition));
 

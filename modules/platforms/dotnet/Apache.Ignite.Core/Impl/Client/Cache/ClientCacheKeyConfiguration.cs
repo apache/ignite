@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     internal class ClientCacheKeyConfiguration  // TODO: Struct?
     {
         /** Cache ID. */
-        private int _cacheId;
+        private readonly int _cacheId;
 
         /** Key type ID. */
         private readonly int _keyTypeId;
