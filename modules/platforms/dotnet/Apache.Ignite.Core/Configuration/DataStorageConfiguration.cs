@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Default value for <see cref="WalPageCompression"/>.
         /// </summary>
-        public const DiskPageCompression DefaultWalPageCompression = DiskPageCompression.DISABLED;
+        public const DiskPageCompression DefaultWalPageCompression = DiskPageCompression.Disabled;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
