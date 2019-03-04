@@ -102,31 +102,6 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
  */
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class H2TreeIndex extends H2TreeIndexBase {
-    /**
-     * To mask tree segment name, up to this number additional characters could be added. All added characters are
-     * ASCII symbols which means this number is the same as number of added UTF-8 bytes.
-     *
-     * <pre>
-     * -------------+-------------
-     *  Added token : bytes count
-     * -------------+-------------
-     *  typeId      : 11 (int)
-     *  "_"         : 1
-     *  "##"        : 2
-     *  "H2Tree"    : 6
-     *  "%"         : 1
-     *  segmentsCnt : 11 (int)
-     *  cacheGroup  : 11 (int)
-     *  "_"         : 1
-     * -------------+-------------
-     *  In total    : 44
-     *  <pre/>
-     */
-    public static final int MASKING_CHARS_MAX_LEN = 44;
-
-    /** Max index name before masking. */
-    public static final int MAX_PDS_UNMASKED_LEN = IndexStorageImpl.MAX_IDX_NAME_LEN - MASKING_CHARS_MAX_LEN;
-
     /** */
     private final H2Tree[] segments;
 
@@ -922,21 +897,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /**
-     * Checks that index name is not too long in the UTF-8 encoding.
-     *
-     * @param name index name before masking.
-     */
-    public static void validatePdsIndexName(String name) throws IgniteCheckedException {
-        int encLen = name.getBytes(StandardCharsets.UTF_8).length;
-
-        if (encLen > MAX_PDS_UNMASKED_LEN)
-            throw new IgniteCheckedException("Index name is too long in UTF-8 encoding " +
-                "[maxAllowed=" + MAX_PDS_UNMASKED_LEN + ", encodedLength=" + encLen +
-                ", indexName=" + name + "].");
-    }
-
-
-    /**
      * Validates that index name after masking is not too long to store in persistence storage.
      *
      * @param idxName Index name.
@@ -960,7 +920,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /**
-     * Create tree name 
+     * Create tree name
      *
      * @param idxName Index name.
      * @param ccfg Ccfg.
@@ -975,7 +935,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         return masked;
     }
 
-    public static String segmentName(String treeName, int segId){
+    public static String segmentName(String treeName, int segId) {
         return treeName + "%" + segId;
     }
 }
