@@ -39,10 +39,12 @@ import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
+import static org.apache.ignite.internal.sql.SqlKeyword.GRANT;
 import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
 import static org.apache.ignite.internal.sql.SqlKeyword.HELP;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
+import static org.apache.ignite.internal.sql.SqlKeyword.REVOKE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
 import static org.apache.ignite.internal.sql.SqlKeyword.SET;
 import static org.apache.ignite.internal.sql.SqlKeyword.SHOW;
@@ -189,6 +191,16 @@ public class SqlParser {
 
                         case SHOW:
                             cmd = processShow();
+
+                            break;
+
+                        case GRANT:
+                            cmd = processGrant();
+
+                            break;
+
+                        case REVOKE:
+                            cmd = processRevoke();
 
                             break;
                     }
@@ -387,7 +399,7 @@ public class SqlParser {
     }
 
     /**
-     * Process ALTER keyword.
+     * Process HELP keyword.
      *
      * @return Command.
      */
@@ -397,7 +409,7 @@ public class SqlParser {
     }
 
     /**
-     * Process ALTER keyword.
+     * Process SHOW keyword.
      *
      * @return Command.
      */
@@ -405,6 +417,27 @@ public class SqlParser {
         throw new IgniteSQLException("SHOW command are not supported.",
             IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
+
+    /**
+     * Process GRANT keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processGrant() {
+        throw new IgniteSQLException("GRANT command are not supported.",
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Process REVOKE keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processRevoke() {
+        throw new IgniteSQLException("REVOKE command are not supported.",
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
 
     /**
      * Not yet parsed part of the sql query. Result is invalid if parsing error was thrown.
