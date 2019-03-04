@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processor.security.compute.closure;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.Ignite;
@@ -43,14 +42,20 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
     /** Name of client initiator node. */
     private static final String CLNT_INITIATOR = "clnt_initiator";
 
-    /** Name of server transition node. */
-    private static final String SRV_TRANSITION = "srv_transition";
+    /** Name of server feature call node. */
+    private static final String SRV_FEATURE_CALL = "srv_feature_call";
+
+    /** Name of client feature call node. */
+    private static final String CLNT_FEATURE_CALL = "clnt_feature_call";
+
+    /** Name of server feature transit node. */
+    private static final String SRV_FEATURE_TRANSITION = "srv_feature_transition";
+
+    /** Name of client feature transit node. */
+    private static final String CLNT_FEATURE_TRANSITION = "clnt_feature_transition";
 
     /** Name of server endpoint node. */
     private static final String SRV_ENDPOINT = "srv_endpoint";
-
-    /** Name of client transition node. */
-    private static final String CLNT_TRANSITION = "clnt_transition";
 
     /** Name of client endpoint node. */
     private static final String CLNT_ENDPOINT = "clnt_endpoint";
@@ -63,13 +68,17 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
 
         startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
 
-        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
 
-        startGrid(CLNT_TRANSITION, allowAllPermissionSet(), true);
+        startGrid(CLNT_FEATURE_CALL, allowAllPermissionSet(), true);
+
+        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
+
+        startGrid(CLNT_FEATURE_TRANSITION, allowAllPermissionSet(), true);
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
-        startGrid(CLNT_ENDPOINT, allowAllPermissionSet());
+        startGrid(CLNT_ENDPOINT, allowAllPermissionSet(), true);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -77,10 +86,12 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .add(SRV_TRANSITION, 1)
-            .add(CLNT_TRANSITION, 1)
-            .add(SRV_ENDPOINT, 2)
-            .add(CLNT_ENDPOINT, 2);
+            .add(SRV_FEATURE_CALL, 1)
+            .add(CLNT_FEATURE_CALL, 1)
+            .add(SRV_FEATURE_TRANSITION, 2)
+            .add(CLNT_FEATURE_TRANSITION, 2)
+            .add(SRV_ENDPOINT, 4)
+            .add(CLNT_ENDPOINT, 4);
     }
 
     /**
@@ -97,27 +108,46 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
      */
     private void runAndCheck(IgniteEx initiator) {
         runAndCheck(secSubjectId(initiator),
-            () -> {
-                for (UUID nodeId : transitions()) {
-                    ExecutorService svc = initiator.executorService(initiator.cluster().forNodeId(nodeId));
+            () -> compute(initiator, featureCalls()).broadcast(
+                new IgniteRunnable() {
+                    @Override public void run() {
+                        register();
 
-                    try {
-                        svc.submit(new TestIgniteRunnable(endpoints())).get();
-                    }
-                    catch (Exception e) {
-                        throw new RuntimeException(e);
+                        Ignite loc = Ignition.localIgnite();
+
+                        for (UUID nodeId : featureTransitions()) {
+                            ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
+
+                            try {
+                                svc.submit(new TestIgniteRunnable(endpoints())).get();
+                            }
+                            catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                     }
                 }
-            });
+            )
+        );
     }
 
     /**
-     * @return Collection of transition node ids.
+     * @return Collection of feature call nodes ids.
      */
-    private Collection<UUID> transitions() {
+    private Collection<UUID> featureCalls() {
         return Arrays.asList(
-            grid(SRV_TRANSITION).localNode().id(),
-            grid(CLNT_TRANSITION).localNode().id()
+            nodeId(SRV_FEATURE_CALL),
+            nodeId(CLNT_FEATURE_CALL)
+        );
+    }
+
+    /**
+     * @return Collection of feature transit nodes ids.
+     */
+    private Collection<UUID> featureTransitions() {
+        return Arrays.asList(
+            nodeId(SRV_FEATURE_TRANSITION),
+            nodeId(CLNT_FEATURE_TRANSITION)
         );
     }
 
@@ -126,8 +156,8 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
      */
     private Collection<UUID> endpoints() {
         return Arrays.asList(
-            grid(SRV_ENDPOINT).localNode().id(),
-            grid(CLNT_ENDPOINT).localNode().id()
+            nodeId(SRV_ENDPOINT),
+            nodeId(CLNT_ENDPOINT)
         );
     }
 
@@ -142,27 +172,20 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
          * @param endpoints Collection of endpoint node ids.
          */
         public TestIgniteRunnable(Collection<UUID> endpoints) {
+            assert !endpoints.isEmpty();
+
             this.endpoints = endpoints;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            verify();
+            register();
 
-            if (!endpoints.isEmpty()) {
-                Ignite ignite = Ignition.localIgnite();
-
-                try {
-                    for (UUID nodeId : endpoints) {
-                        ignite.executorService(ignite.cluster().forNodeId(nodeId))
-                            .submit(new TestIgniteRunnable(Collections.emptyList()))
-                            .get();
-                    }
+            compute(Ignition.localIgnite(), endpoints).broadcast(new IgniteRunnable() {
+                @Override public void run() {
+                    register();
                 }
-                catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            });
         }
     }
 }

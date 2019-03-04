@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.processor.security.cache.closure;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -41,11 +44,20 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /** Name of client initiator node. */
     private static final String CLNT_INITIATOR = "clnt_initiator";
 
-    /** Name of server transition node. */
-    private static final String SRV_TRANSITION = "srv_transition";
+    /** Name of server feature call node. */
+    private static final String SRV_FEATURE_CALL = "srv_feature_call";
+
+    /** Name of server feature transit node. */
+    private static final String SRV_FEATURE_TRANSITION = "srv_feature_transition";
+
+    /** Name of client feature call node. */
+    private static final String CLNT_FEATURE_CALL = "clnt_feature_call";
 
     /** Name of server endpoint node. */
     private static final String SRV_ENDPOINT = "srv_endpoint";
+
+    /** Name of client endpoint node. */
+    private static final String CLNT_ENDPOINT = "clnt_endpoint";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -55,9 +67,15 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
         startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
 
-        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
+
+        startGrid(CLNT_FEATURE_CALL, allowAllPermissionSet(), true);
+
+        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+
+        startGrid(CLNT_ENDPOINT, allowAllPermissionSet(), true);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -65,8 +83,11 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .add(SRV_TRANSITION, 1)
-            .add(SRV_ENDPOINT, 1);
+            .add(SRV_FEATURE_CALL, 1)
+            .add(CLNT_FEATURE_CALL, 1)
+            .add(SRV_FEATURE_TRANSITION, 2)
+            .add(SRV_ENDPOINT, 2)
+            .add(CLNT_ENDPOINT, 2);
     }
 
     /**
@@ -74,120 +95,125 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
      */
     @Test
     public void test() throws Exception {
-        IgniteEx srvInitiator = grid(SRV_INITIATOR);
-        IgniteEx clntInitiator = grid(CLNT_INITIATOR);
-        IgniteEx srvTransition = grid(SRV_TRANSITION);
-        IgniteEx srvEndpoint = grid(SRV_ENDPOINT);
-
-        srvInitiator.cache(CACHE_NAME).put(prmKey(srvTransition), 1);
-        srvInitiator.cache(CACHE_NAME).put(prmKey(srvEndpoint), 2);
+        grid(SRV_INITIATOR).cache(CACHE_NAME)
+            .put(prmKey(grid(SRV_FEATURE_TRANSITION)), 1);
 
         awaitPartitionMapExchange();
 
-        runAndCheck(secSubjectId(srvInitiator), () -> query(srvInitiator));
-        runAndCheck(secSubjectId(clntInitiator), () -> query(clntInitiator));
-
-        runAndCheck(secSubjectId(srvInitiator), () -> transform(srvInitiator));
-        runAndCheck(secSubjectId(clntInitiator), () -> transform(clntInitiator));
+        runAndCheck(SRV_INITIATOR);
+        runAndCheck(CLNT_INITIATOR);
     }
 
     /**
-     * @param initiator Initiator node.
+     * @param name Inintiator node name.
      */
-    private void query(IgniteEx initiator) {
-        initiator.cache(CACHE_NAME).query(
-            new ScanQuery<>(
-                new QueryFilter(SRV_TRANSITION, SRV_ENDPOINT)
-            )
-        ).getAll();
-    }
-
-    /**
-     * @param initiator Initiator node.
-     */
-    private void transform(IgniteEx initiator) {
-        initiator.cache(CACHE_NAME).query(
-            new ScanQuery<>((k, v) -> true),
-            new Transformer(SRV_TRANSITION, SRV_ENDPOINT)
-        ).getAll();
-    }
-
-    /**
-     * Test query filter.
-     */
-    static class QueryFilter implements IgniteBiPredicate<Integer, Integer> {
-        /** Local ignite. */
-        @IgniteInstanceResource
-        private Ignite loc;
-
-        /** Expected local node name. */
-        private final String node;
-
-        /** Endpoint node name. */
-        private final String endpoint;
-
-        /**
-         * @param node Expected local node name.
-         * @param endpoint Endpoint node name.
-         */
-        public QueryFilter(String node, String endpoint) {
-            this.node = node;
-            this.endpoint = endpoint;
+    private void runAndCheck(String name) {
+        for (IgniteRunnable r : runnables()) {
+            runAndCheck(secSubjectId(name),
+                () -> compute(grid(name), featureCalls()).broadcast(r));
         }
+    }
 
-        /** {@inheritDoc} */
-        @Override public boolean apply(Integer s, Integer i) {
-            if (node.equals(loc.name())) {
-                verify();
+    /**
+     *
+     */
+    private IgniteRunnable[] runnables() {
+        return new IgniteRunnable[] {
+            new IgniteRunnable() {
+                @Override public void run() {
+                    register();
 
-                if (endpoint != null) {
-                    loc.cache(CACHE_NAME).query(
-                        new ScanQuery<>(new QueryFilter(endpoint, null))
+                    Ignition.localIgnite().cache(CACHE_NAME).query(
+                        new ScanQuery<>(
+                            new CommonClosure(SRV_FEATURE_TRANSITION, endpoints())
+                        )
+                    ).getAll();
+                }
+            },
+            new IgniteRunnable() {
+                @Override public void run() {
+                    register();
+
+                    Ignition.localIgnite().cache(CACHE_NAME).query(
+                        new ScanQuery<>((k, v) -> true),
+                        new CommonClosure(SRV_FEATURE_TRANSITION, endpoints())
                     ).getAll();
                 }
             }
-
-            return false;
-        }
+        };
     }
 
     /**
-     * Test transformer.
+     * @return Collection of feature call nodes ids.
      */
-    static class Transformer implements IgniteClosure<Cache.Entry<Integer, Integer>, Integer> {
-        /** Local ignite. */
-        @IgniteInstanceResource
-        private Ignite loc;
+    private Collection<UUID> featureCalls() {
+        return Arrays.asList(
+            nodeId(SRV_FEATURE_CALL),
+            nodeId(CLNT_FEATURE_CALL)
+        );
+    }
 
+    /**
+     * @return Collection of endpont nodes ids.
+     */
+    private Collection<UUID> endpoints() {
+        return Arrays.asList(
+            nodeId(SRV_ENDPOINT),
+            nodeId(CLNT_ENDPOINT)
+        );
+    }
+
+    /**
+     * Common closure for tests.
+     */
+    static class CommonClosure implements IgniteClosure<Cache.Entry<Integer, Integer>, Integer>,
+        IgniteBiPredicate<Integer, Integer> {
         /** Expected local node name. */
         private final String node;
 
-        /** Endpoint node name. */
-        private final String endpoint;
+        /** Collection of endpont nodes ids. */
+        private final Collection<UUID> endpoints;
 
         /**
          * @param node Expected local node name.
-         * @param endpoint Endpoint node name.
+         * @param endpoints Collection of endpont nodes ids.
          */
-        public Transformer(String node, String endpoint) {
+        public CommonClosure(String node, Collection<UUID> endpoints) {
+            assert !endpoints.isEmpty();
+
             this.node = node;
-            this.endpoint = endpoint;
+            this.endpoints = endpoints;
         }
 
         /** {@inheritDoc} */
         @Override public Integer apply(Cache.Entry<Integer, Integer> entry) {
-            if (node.equals(loc.name())) {
-                verify();
-
-                if (endpoint != null) {
-                    loc.cache(CACHE_NAME).query(
-                        new ScanQuery<>((k, v) -> true),
-                        new Transformer(endpoint, null)
-                    ).getAll();
-                }
-            }
+            verifyAndBroadcast();
 
             return entry.getValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Integer s, Integer i) {
+            verifyAndBroadcast();
+
+            return false;
+        }
+
+        /**
+         *
+         */
+        private void verifyAndBroadcast() {
+            Ignite loc = Ignition.localIgnite();
+
+            if (node.equals(loc.name())) {
+                register();
+
+                compute(loc, endpoints).broadcast(new IgniteRunnable() {
+                    @Override public void run() {
+                        register();
+                    }
+                });
+            }
         }
     }
 }

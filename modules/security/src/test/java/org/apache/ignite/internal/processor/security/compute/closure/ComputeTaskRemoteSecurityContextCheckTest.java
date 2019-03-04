@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processor.security.compute.closure;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -34,6 +34,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -48,14 +49,20 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     /** Name of client initiator node. */
     private static final String CLNT_INITIATOR = "clnt_initiator";
 
-    /** Name of server transition node. */
-    private static final String SRV_TRANSITION = "srv_transition";
+    /** Name of server feature call node. */
+    private static final String SRV_FEATURE_CALL = "srv_feature_call";
+
+    /** Name of client feature call node. */
+    private static final String CLNT_FEATURE_CALL = "clnt_feature_call";
+
+    /** Name of server feature transit node. */
+    private static final String SRV_FEATURE_TRANSITION = "srv_feature_transition";
+
+    /** Name of client feature transit node. */
+    private static final String CLNT_FEATURE_TRANSITION = "clnt_feature_transition";
 
     /** Name of server endpoint node. */
     private static final String SRV_ENDPOINT = "srv_endpoint";
-
-    /** Name of client transition node. */
-    private static final String CLNT_TRANSITION = "clnt_transition";
 
     /** Name of client endpoint node. */
     private static final String CLNT_ENDPOINT = "clnt_endpoint";
@@ -68,13 +75,17 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
 
         startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
 
-        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
 
-        startGrid(CLNT_TRANSITION, allowAllPermissionSet(), true);
+        startGrid(CLNT_FEATURE_CALL, allowAllPermissionSet(), true);
+
+        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
+
+        startGrid(CLNT_FEATURE_TRANSITION, allowAllPermissionSet(), true);
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
-        startGrid(CLNT_ENDPOINT, allowAllPermissionSet());
+        startGrid(CLNT_ENDPOINT, allowAllPermissionSet(), true);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -82,10 +93,12 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .add(SRV_TRANSITION, 1)
-            .add(CLNT_TRANSITION, 1)
-            .add(SRV_ENDPOINT, 2)
-            .add(CLNT_ENDPOINT, 2);
+            .add(SRV_FEATURE_CALL, 1)
+            .add(CLNT_FEATURE_CALL, 1)
+            .add(SRV_FEATURE_TRANSITION, 2)
+            .add(CLNT_FEATURE_TRANSITION, 2)
+            .add(SRV_ENDPOINT, 4)
+            .add(CLNT_ENDPOINT, 4);
     }
 
     /**
@@ -102,25 +115,51 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
      */
     private void runAndCheck(IgniteEx initiator) {
         runAndCheck(secSubjectId(initiator),
-            () -> initiator.compute().execute(
-                new TestComputeTask(transitions(), endpoints(), false), 0
+            () -> compute(initiator, featureCalls()).broadcast(
+                new IgniteRunnable() {
+                    @Override public void run() {
+                        register();
+
+                        Ignition.localIgnite().compute().execute(
+                            new TestComputeTask(featureTransitions(), endpoints()), 0
+                        );
+                    }
+                }
             )
         );
 
         runAndCheck(secSubjectId(initiator),
-            () -> initiator.compute().executeAsync(
-                new TestComputeTask(transitions(), endpoints(), true), 0
-            ).get()
+            () -> compute(initiator, featureCalls()).broadcast(
+                new IgniteRunnable() {
+                    @Override public void run() {
+                        register();
+
+                        Ignition.localIgnite().compute().executeAsync(
+                            new TestComputeTask(featureTransitions(), endpoints()), 0
+                        ).get();
+                    }
+                }
+            )
         );
     }
 
     /**
-     * @return Collection of transition node ids.
+     * @return Collection of feature call nodes ids.
      */
-    private Collection<UUID> transitions() {
+    private Collection<UUID> featureCalls() {
         return Arrays.asList(
-            grid(SRV_TRANSITION).localNode().id(),
-            grid(CLNT_TRANSITION).localNode().id()
+            nodeId(SRV_FEATURE_CALL),
+            nodeId(CLNT_FEATURE_CALL)
+        );
+    }
+
+    /**
+     * @return Collection of feature transit nodes ids.
+     */
+    private Collection<UUID> featureTransitions() {
+        return Arrays.asList(
+            nodeId(SRV_FEATURE_TRANSITION),
+            nodeId(CLNT_FEATURE_TRANSITION)
         );
     }
 
@@ -129,8 +168,8 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
      */
     private Collection<UUID> endpoints() {
         return Arrays.asList(
-            grid(SRV_ENDPOINT).localNode().id(),
-            grid(CLNT_ENDPOINT).localNode().id()
+            nodeId(SRV_ENDPOINT),
+            nodeId(CLNT_ENDPOINT)
         );
     }
 
@@ -144,9 +183,6 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
         /** Collection of endpoint node ids. */
         private final Collection<UUID> endpoints;
 
-        /** If true then run async. */
-        private final boolean isAsync;
-
         /** Local ignite. */
         @IgniteInstanceResource
         protected Ignite loc;
@@ -154,19 +190,13 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
         /**
          * @param remotes Collection of transition node ids.
          * @param endpoints Collection of endpoint node ids.
-         * @param isAsync If true then run async.
          */
-        public TestComputeTask(Collection<UUID> remotes, Collection<UUID> endpoints, boolean isAsync) {
+        public TestComputeTask(Collection<UUID> remotes, Collection<UUID> endpoints) {
+            assert !remotes.isEmpty();
+            assert !endpoints.isEmpty();
+
             this.remotes = remotes;
             this.endpoints = endpoints;
-            this.isAsync = isAsync;
-        }
-
-        /**
-         * @param remotes Collection of transition node ids.
-         */
-        public TestComputeTask(Collection<UUID> remotes) {
-            this(remotes, Collections.emptyList(), false);
         }
 
         /** {@inheritDoc} */
@@ -185,14 +215,15 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
                         }
 
                         @Override public Object execute() throws IgniteException {
-                            verify();
+                            register();
 
-                            if (!endpoints.isEmpty()) {
-                                if (isAsync)
-                                    loc.compute().executeAsync(new TestComputeTask(endpoints), 0).get();
-                                else
-                                    loc.compute().execute(new TestComputeTask(endpoints), 0);
-                            }
+                            compute(loc, endpoints).broadcast(
+                                new IgniteRunnable() {
+                                    @Override public void run() {
+                                        register();
+                                    }
+                                }
+                            );
 
                             return null;
                         }

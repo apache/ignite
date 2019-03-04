@@ -17,16 +17,19 @@
 
 package org.apache.ignite.internal.processor.security.cache.closure;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
-import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -42,11 +45,17 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
     /** Name of client initiator node. */
     private static final String CLNT_INITIATOR = "clnt_initiator";
 
-    /** Name of server transition node. */
-    private static final String SRV_TRANSITION = "srv_transition";
+    /** Name of server feature call node. */
+    private static final String SRV_FEATURE_CALL = "srv_feature_call";
+
+    /** Name of server feature transit node. */
+    private static final String SRV_FEATURE_TRANSITION = "srv_feature_transition";
 
     /** Name of server endpoint node. */
     private static final String SRV_ENDPOINT = "srv_endpoint";
+
+    /** Name of client endpoint node. */
+    private static final String CLNT_ENDPOINT = "clnt_endpoint";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -56,9 +65,13 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
         startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
 
-        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
+
+        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+
+        startGrid(CLNT_ENDPOINT, allowAllPermissionSet(), true);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -66,8 +79,10 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .add(SRV_TRANSITION, 1)
-            .add(SRV_ENDPOINT, 1);
+            .add(SRV_FEATURE_CALL, 1)
+            .add(SRV_FEATURE_TRANSITION, 1)
+            .add(SRV_ENDPOINT, 1)
+            .add(CLNT_ENDPOINT, 1);
     }
 
     /**
@@ -88,38 +103,56 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
         for (InvokeMethodEnum ime : InvokeMethodEnum.values()) {
             runAndCheck(
                 secSubjectId,
-                () -> invoke(ime, initiator,
-                    new TestEntryProcessor(grid(SRV_ENDPOINT).localNode().id()), prmKey(grid(SRV_TRANSITION)))
+                () -> compute(initiator, nodeId(SRV_FEATURE_CALL)).broadcast(
+                    new IgniteRunnable() {
+                        @Override public void run() {
+                            register();
+
+                            invoke(ime, Ignition.localIgnite(),
+                                new TestEntryProcessor(endpoints()), prmKey(grid(SRV_FEATURE_TRANSITION)));
+                        }
+                    }
+                )
             );
         }
     }
 
     /**
+     * @return Collection of endpont nodes ids.
+     */
+    private Collection<UUID> endpoints() {
+        return Arrays.asList(
+            nodeId(SRV_ENDPOINT),
+            nodeId(CLNT_ENDPOINT)
+        );
+    }
+
+    /**
      * @param ime Invoke Method.
-     * @param initiator Initiator.
+     * @param node Node.
      * @param ep Entry Processor.
      * @param key Key.
      */
-    private void invoke(InvokeMethodEnum ime, IgniteEx initiator,
+    private void invoke(InvokeMethodEnum ime, Ignite node,
         EntryProcessor<Integer, Integer, Object> ep, Integer key) {
         switch (ime) {
             case INVOKE:
-                initiator.<Integer, Integer>cache(CACHE_NAME)
+                node.<Integer, Integer>cache(CACHE_NAME)
                     .invoke(key, ep);
 
                 break;
             case INVOKE_ALL:
-                initiator.<Integer, Integer>cache(CACHE_NAME)
+                node.<Integer, Integer>cache(CACHE_NAME)
                     .invokeAll(Collections.singleton(key), ep);
 
                 break;
             case INVOKE_ASYNC:
-                initiator.<Integer, Integer>cache(CACHE_NAME)
+                node.<Integer, Integer>cache(CACHE_NAME)
                     .invokeAsync(key, ep).get();
 
                 break;
             case INVOKE_ALL_ASYNC:
-                initiator.<Integer, Integer>cache(CACHE_NAME)
+                node.<Integer, Integer>cache(CACHE_NAME)
                     .invokeAllAsync(Collections.singleton(key), ep).get();
 
                 break;
@@ -144,29 +177,28 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
      * Entry processor for tests with transition invoke call.
      */
     static class TestEntryProcessor implements EntryProcessor<Integer, Integer, Object> {
-        /** Endpoint node id. */
-        private final UUID endpointId;
+        /** Collection of endpont nodes ids. */
+        private final Collection<UUID> endpoints;
 
         /**
-         * @param endpointId Endpoint node id.
+         * @param endpoints Collection of endpont nodes ids.
          */
-        public TestEntryProcessor(UUID endpointId) {
-            this.endpointId = endpointId;
+        public TestEntryProcessor(Collection<UUID> endpoints) {
+            assert !endpoints.isEmpty();
+
+            this.endpoints = endpoints;
         }
 
         /** {@inheritDoc} */
-        @Override public Object process(MutableEntry<Integer, Integer> entry,
-            Object... objects) throws EntryProcessorException {
-            verify();
+        @Override public Object process(MutableEntry<Integer, Integer> entry, Object... objects)
+            throws EntryProcessorException {
+            register();
 
-            if (endpointId != null) {
-                IgniteEx loc = (IgniteEx)Ignition.localIgnite();
-
-                loc.compute(loc.cluster().forNodeId(endpointId))
-                    .broadcast(
-                        AbstractRemoteSecurityContextCheckTest::verify
-                    );
-            }
+            compute(Ignition.localIgnite(), endpoints).broadcast(new IgniteRunnable() {
+                @Override public void run() {
+                    register();
+                }
+            });
 
             return null;
         }

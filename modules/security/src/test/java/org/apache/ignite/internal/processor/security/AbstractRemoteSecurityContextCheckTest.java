@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processor.security;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
@@ -41,10 +44,10 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     private static final Verifier VERIFIER = new Verifier();
 
     /**
-     * Checks that current security context is valid and incriments invoke's counter.
+     * Registers current security context and incriments invoke's counter.
      */
-    protected static void verify(){
-        VERIFIER.verify((IgniteEx)Ignition.localIgnite());
+    protected static void register() {
+        VERIFIER.register((IgniteEx)Ignition.localIgnite());
     }
 
     /**
@@ -65,7 +68,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
      * @param ign Node.
      * @return Security subject id of passed node.
      */
-    protected UUID secSubjectId(IgniteEx ign) {
+    protected static UUID secSubjectId(IgniteEx ign) {
         return ign.context().security().securityContext().subject().id();
     }
 
@@ -123,6 +126,11 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private final ConcurrentHashMap<String, T2<Integer, Integer>> map = new ConcurrentHashMap<>();
 
         /**
+         * List of registered security subjects.
+         */
+        private final List<T2<UUID, String>> list = Collections.synchronizedList(new ArrayList<>());
+
+        /**
          * Expected security subject id.
          */
         private UUID expSecSubjId;
@@ -135,14 +143,15 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private Verifier start(UUID expSecSubjId) {
             this.expSecSubjId = expSecSubjId;
 
+            list.clear();
             map.clear();
 
             return this;
         }
 
         /**
-         * Adds expected behaivior the method {@link #verify(IgniteEx)} will be invoke exp times on the node with passed
-         * name.
+         * Adds expected behaivior the method {@link #register(IgniteEx)} will be invoke exp times on the node with
+         * passed name.
          *
          * @param nodeName Node name.
          * @param exp Expected number of invokes.
@@ -154,18 +163,15 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
 
         /**
-         * Checks that current security context is valid and incriments invoke's counter.
+         * Registers current security context and incriments invoke's counter.
          *
          * @param ignite Local node.
          */
-        private void verify(IgniteEx ignite) {
+        private void register(IgniteEx ignite) {
             assert expSecSubjId != null;
             assert ignite != null;
 
-            assertThat(
-                ignite.context().security().securityContext().subject().id(),
-                is(expSecSubjId)
-            );
+            list.add(new T2<>(secSubjectId(ignite), ignite.name()));
 
             map.computeIfPresent(ignite.name(),
                 new BiFunction<String, T2<Integer, Integer>, T2<Integer, Integer>>() {
@@ -185,10 +191,16 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private void checkResult() {
             assert !map.isEmpty();
 
+            list.forEach(t ->
+                assertThat("Invalide security context on node " + t.get2(),
+                    t.get1(), is(expSecSubjId))
+            );
+
             map.forEach((key, value) ->
-                assertThat("Node " + key + ". Execution of verify: ",
+                assertThat("Node " + key + ". Execution of register: ",
                     value.get2(), is(value.get1())));
 
+            list.clear();
             map.clear();
 
             expSecSubjId = null;

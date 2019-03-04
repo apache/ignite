@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processor.security.datastreamer.closure;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -44,11 +45,17 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     /** Name of client initiator node. */
     private static final String CLNT_INITIATOR = "clnt_initiator";
 
-    /** Name of server transition node. */
-    private static final String SRV_TRANSITION = "srv_transition";
+    /** Name of server feature call node. */
+    private static final String SRV_FEATURE_CALL = "srv_feature_call";
+
+    /** Name of server feature transit node. */
+    private static final String SRV_FEATURE_TRANSITION = "srv_feature_transition";
 
     /** Name of server endpoint node. */
     private static final String SRV_ENDPOINT = "srv_endpoint";
+
+    /** Name of client endpoint node. */
+    private static final String CLNT_ENDPOINT = "clnt_endpoint";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -58,9 +65,13 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
 
         startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
 
-        startGrid(SRV_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
+
+        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+
+        startGrid(CLNT_ENDPOINT, allowAllPermissionSet(), true);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -68,8 +79,10 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .add(SRV_TRANSITION, 1)
-            .add(SRV_ENDPOINT, 1);
+            .add(SRV_FEATURE_CALL, 1)
+            .add(SRV_FEATURE_TRANSITION, 1)
+            .add(SRV_ENDPOINT, 1)
+            .add(CLNT_ENDPOINT, 1);
     }
 
     /**
@@ -77,21 +90,46 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
      */
     @Test
     public void testDataStreamer() {
-        IgniteEx srvInitiator = grid(SRV_INITIATOR);
-        IgniteEx clntInitiator = grid(CLNT_INITIATOR);
-
-        runAndCheck(secSubjectId(srvInitiator), () -> dataStreamer(srvInitiator));
-        runAndCheck(secSubjectId(clntInitiator), () -> dataStreamer(clntInitiator));
+        runAndCheck(SRV_INITIATOR);
+        runAndCheck(CLNT_INITIATOR);
     }
 
     /**
-     * @param initiator Initiator node.
+     * @param name Initiator node name.
      */
-    private void dataStreamer(Ignite initiator) {
-        try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_NAME)) {
-            strm.receiver(StreamVisitor.from(new TestClosure(grid(SRV_ENDPOINT).localNode().id())));
+    private void runAndCheck(String name){
+        runAndCheck(
+            secSubjectId(name),
+            () -> compute(grid(name), nodeId(SRV_FEATURE_CALL)).broadcast(
+                new IgniteRunnable() {
+                    @Override public void run() {
+                        register();
 
-            strm.addData(prmKey(grid(SRV_TRANSITION)), 100);
+                        dataStreamer(Ignition.localIgnite());
+                    }
+                }
+            )
+        );
+    }
+
+    /**
+     * @return Collection of endpont nodes ids.
+     */
+    private Collection<UUID> endpoints() {
+        return Arrays.asList(
+            nodeId(SRV_ENDPOINT),
+            nodeId(CLNT_ENDPOINT)
+        );
+    }
+
+    /**
+     * @param node Node.
+     */
+    private void dataStreamer(Ignite node) {
+        try (IgniteDataStreamer<Integer, Integer> strm = node.dataStreamer(CACHE_NAME)) {
+            strm.receiver(StreamVisitor.from(new TestClosure(endpoints())));
+
+            strm.addData(prmKey(grid(SRV_FEATURE_TRANSITION)), 100);
         }
     }
 
@@ -101,25 +139,25 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     static class TestClosure implements
         IgniteBiInClosure<IgniteCache<Integer, Integer>, Map.Entry<Integer, Integer>> {
         /** Endpoint node id. */
-        private final UUID endpoint;
+        private final Collection<UUID> endpoints;
 
         /**
-         * @param endpoint Endpoint node id.
+         * @param endpoints Collection of endpont nodes ids.
          */
-        public TestClosure(UUID endpoint) {
-            this.endpoint = endpoint;
+        public TestClosure(Collection<UUID> endpoints) {
+            assert !endpoints.isEmpty();
+
+            this.endpoints = endpoints;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(IgniteCache<Integer, Integer> entries,
             Map.Entry<Integer, Integer> entry) {
-            verify();
+            register();
 
-            IgniteEx loc = (IgniteEx)Ignition.localIgnite();
-
-            loc.compute(loc.cluster().forNodeId(endpoint)).broadcast(new IgniteRunnable() {
+            compute(Ignition.localIgnite(), endpoints).broadcast(new IgniteRunnable() {
                 @Override public void run() {
-                    verify();
+                    register();
                 }
             });
         }
