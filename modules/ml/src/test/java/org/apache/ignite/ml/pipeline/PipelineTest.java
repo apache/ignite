@@ -62,8 +62,8 @@ public class PipelineTest extends TrainerTest {
         PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
             .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
             .addLabelExtractor((k, v) -> v[0])
-            .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
-            .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
+            .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
+            .addPreprocessingTrainer(new NormalizationTrainer<Integer, Object[]>()
                 .withP(1))
             .addTrainer(trainer)
             .fit(
@@ -93,8 +93,8 @@ public class PipelineTest extends TrainerTest {
         PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
             .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
             .addLabelExtractor((k, v) -> v[0])
-            .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
-            .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
+            .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
+            .addPreprocessingTrainer(new NormalizationTrainer<Integer, Object[]>()
                 .withP(1))
             .fit(
                 cacheMock,

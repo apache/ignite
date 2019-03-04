@@ -43,13 +43,16 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  */
 public class Pipeline<K, V, R> {
     /** Feature extractor. */
+    private IgniteBiFunction<K, V, R> featureExtractor;
+
+    /** Final Feature extractor. */
     private IgniteBiFunction<K, V, R> finalFeatureExtractor;
 
     /** Label extractor. */
     private IgniteBiFunction<K, V, Double> lbExtractor;
 
     /** Preprocessor stages. */
-    private List<PreprocessingTrainer> preprocessors = new ArrayList<>();
+    private List<PreprocessingTrainer> preprocessingTrainers = new ArrayList<>();
 
     /** Final trainer stage. */
     private DatasetTrainer finalStage;
@@ -64,7 +67,7 @@ public class Pipeline<K, V, R> {
      * @return The updated Pipeline.
      */
     public Pipeline<K, V, R> addFeatureExtractor(IgniteBiFunction<K, V, R> featureExtractor) {
-        this.finalFeatureExtractor = featureExtractor;
+        this.featureExtractor = featureExtractor;
         return this;
     }
 
@@ -82,11 +85,11 @@ public class Pipeline<K, V, R> {
     /**
      * Adds a preprocessor.
      *
-     * @param preprocessor The parameter value.
+     * @param preprocessingTrainer The parameter value.
      * @return The updated Pipeline.
      */
-    public Pipeline<K, V, R> addPreprocessor(PreprocessingTrainer preprocessor) {
-        preprocessors.add(preprocessor);
+    public Pipeline<K, V, R> addPreprocessingTrainer(PreprocessingTrainer preprocessingTrainer) {
+        preprocessingTrainers.add(preprocessingTrainer);
         return this;
     }
 
@@ -100,6 +103,18 @@ public class Pipeline<K, V, R> {
         this.finalStage = trainer;
         return this;
     }
+
+    /**
+     * Returns trainer.
+     */
+    public DatasetTrainer getTrainer() {
+        return finalStage;
+    }
+
+    public IgniteBiFunction<K, V, R> getFinalFeatureExtractor() {
+        return finalFeatureExtractor;
+    }
+
 
     /**
      * Fits the pipeline to the input cache.
@@ -135,14 +150,17 @@ public class Pipeline<K, V, R> {
     }
 
     /** Fits the pipeline to the input dataset builder. */
-    private PipelineMdl<K, V> fit(DatasetBuilder datasetBuilder) {
+    public PipelineMdl<K, V> fit(DatasetBuilder datasetBuilder) {
         assert lbExtractor != null;
-        assert finalFeatureExtractor != null;
+        assert featureExtractor != null;
 
         if (finalStage == null)
             throw new IllegalStateException("The Pipeline should be finished with the Training Stage.");
 
-        preprocessors.forEach(e -> {
+        // Reload for new fit
+        finalFeatureExtractor = featureExtractor;
+
+        preprocessingTrainers.forEach(e -> {
 
             finalFeatureExtractor = e.fit(
                 envBuilder,
