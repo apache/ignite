@@ -54,14 +54,6 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
     private boolean cache;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -129,7 +121,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
                         }
                         catch (Exception e) {
                             if (!X.hasCause(e, ClusterTopologyCheckedException.class))
-                                throw e;
+                                MvccFeatureChecker.assertMvccWriteConflict(e);
                         }
                     }
 
