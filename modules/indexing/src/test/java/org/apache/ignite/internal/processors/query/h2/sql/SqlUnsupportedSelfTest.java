@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
@@ -28,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.h2.api.TimestampWithTimeZone;
 import org.junit.Test;
 
 /**
@@ -56,7 +54,7 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Test for unsupported SQL statements in CREATE TABLE statement.
+     * Test for unsupported SQL types.
      */
     @Test
     public void testUnsupportedTypes() {
