@@ -21,18 +21,17 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Date;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.helpers.FileWatchdog;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Checking that Log4j configuration is updated when its source file is changed.
  */
-@RunWith(JUnit4.class)
-public class GridLog4jConfigUpdateTest extends TestCase {
+public class GridLog4jConfigUpdateTest {
     /** Path to log4j configuration with INFO enabled. */
     private static final String LOG_CONFIG_INFO = "modules/log4j/src/test/config/log4j-info.xml";
 

@@ -29,24 +29,15 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.query.h2.H2TwoStepCachedQuery;
+import org.apache.ignite.internal.processors.query.h2.QueryParserCacheEntry;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for behavior in various cases of local and distributed queries.
  */
-@RunWith(JUnit4.class)
 public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String SELECT =
         "select count(*) from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
@@ -66,12 +57,6 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
         cfg.setCacheKeyConfiguration(keyCfg);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -334,14 +319,14 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     private GridCacheTwoStepQuery cachedTwoStepQuery() {
         GridQueryIndexing idx = grid(0).context().query().getIndexing();
 
-        Map<?, H2TwoStepCachedQuery> m = U.field(idx, "twoStepCache");
+        Map<?, QueryParserCacheEntry> m = U.field((Object)U.field(idx, "parser"), "cache");
 
         if (m.isEmpty())
             return null;
 
-        H2TwoStepCachedQuery q = m.values().iterator().next();
+        QueryParserCacheEntry q = m.values().iterator().next();
 
-        return q.query();
+        return q.select().twoStepQuery();
     }
 
     /**

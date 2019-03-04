@@ -25,17 +25,18 @@ const passport = require('passport');
 
 module.exports = {
     implements: 'routes/public',
-    inject: ['mongo', 'services/mails', 'services/users', 'services/auth']
+    inject: ['mongo', 'settings', 'services/users', 'services/auth', 'errors']
 };
 
-/**
+/**                             
  * @param mongo
- * @param mailsService
+ * @param settings
  * @param {UsersService} usersService
  * @param {AuthService} authService
+ * @param errors
  * @returns {Promise}
  */
-module.exports.factory = function(mongo, mailsService, usersService, authService) {
+module.exports.factory = function(mongo, settings, usersService, authService, errors) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -76,14 +77,34 @@ module.exports.factory = function(mongo, mailsService, usersService, authService
         router.post('/signin', (req, res, next) => {
             passport.authenticate('local', (errAuth, user) => {
                 if (errAuth)
-                    return res.status(401).send(errAuth.message);
+                    return res.api.error(new errors.AuthFailedException(errAuth.message));
 
                 if (!user)
-                    return res.status(401).send('Invalid email or password');
+                    return res.api.error(new errors.AuthFailedException('Invalid email or password'));
 
-                req.logIn(user, {}, (errLogIn) => {
+                if (settings.activation.enabled) {
+                    const activationToken = req.body.activationToken;
+
+                    const errToken = authService.validateActivationToken(user, activationToken);
+
+                    if (errToken)
+                        return res.api.error(errToken);
+
+                    if (authService.isActivationTokenExpired(user, activationToken)) {
+                        authService.resetActivationToken(req.origin(), user.email)
+                            .catch((ignored) => {
+                                // No-op.
+                            });
+
+                        return res.api.error(new errors.AuthFailedException('This activation link was expired. We resend a new one. Please open the most recent email and click on the activation link.'));
+                    }
+
+                    user.activated = true;
+                }
+
+                return req.logIn(user, {}, (errLogIn) => {
                     if (errLogIn)
-                        return res.status(401).send(errLogIn.message);
+                        return res.api.error(new errors.AuthFailedException(errLogIn.message));
 
                     return res.sendStatus(200);
                 });
@@ -103,10 +124,8 @@ module.exports.factory = function(mongo, mailsService, usersService, authService
          * Send e-mail to user with reset token.
          */
         router.post('/password/forgot', (req, res) => {
-            authService.resetPasswordToken(req.body.email)
-                .then((user) => mailsService.emailUserResetLink(req.origin(), user))
-                .then(() => 'An email has been sent with further instructions.')
-                .then(res.api.ok)
+            authService.resetPasswordToken(req.origin(), req.body.email)
+                .then(() => res.api.ok('An email has been sent with further instructions.'))
                 .catch(res.api.error);
         });
 
@@ -116,8 +135,7 @@ module.exports.factory = function(mongo, mailsService, usersService, authService
         router.post('/password/reset', (req, res) => {
             const {token, password} = req.body;
 
-            authService.resetPasswordByToken(token, password)
-                .then((user) => mailsService.emailPasswordChanged(req.origin(), user))
+            authService.resetPasswordByToken(req.origin(), token, password)
                 .then(res.api.ok)
                 .catch(res.api.error);
         });
@@ -128,6 +146,13 @@ module.exports.factory = function(mongo, mailsService, usersService, authService
 
             authService.validateResetToken(token)
                 .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        /* Send e-mail to user with account confirmation token. */
+        router.post('/activation/resend', (req, res) => {
+            authService.resetActivationToken(req.origin(), req.body.email)
+                .then(() => res.api.ok('An email has been sent with further instructions.'))
                 .catch(res.api.error);
         });
 

@@ -47,14 +47,11 @@ import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTest {
     /** */
     public IgniteExplicitImplicitDeploymentSelfTest() {
@@ -125,7 +122,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     private void execExplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
         Ignite ignite = null;
 
@@ -191,7 +187,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-   @SuppressWarnings("unchecked")
    private void execImplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
        Ignite ignite = null;
 
@@ -270,7 +265,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     private void execExplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
        Ignite ignite1 = null;
        Ignite ignite2 = null;
@@ -342,7 +336,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-   @SuppressWarnings("unchecked")
    private void execImplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
       Ignite ignite1 = null;
       Ignite ignite2 = null;

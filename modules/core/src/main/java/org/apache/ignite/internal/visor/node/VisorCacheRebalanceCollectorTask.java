@@ -158,7 +158,7 @@ public class VisorCacheRebalanceCollectorTask extends VisorMultiNodeTask<VisorCa
                 else if (total == 0 && rebalanceInProgress)
                     res.setRebalance(MINIMAL_REBALANCE);
                 else
-                    res.setRebalance(total > 0 ? Math.max(ready / total, MINIMAL_REBALANCE) : REBALANCE_COMPLETE);
+                    res.setRebalance(total > 0 && rebalanceInProgress ? Math.max(ready / total, MINIMAL_REBALANCE) : REBALANCE_COMPLETE);
             }
             catch (Exception e) {
                 res.setRebalance(REBALANCE_NOT_AVAILABLE);
@@ -173,9 +173,13 @@ public class VisorCacheRebalanceCollectorTask extends VisorMultiNodeTask<VisorCa
 
                 Collection<? extends BaselineNode> baseline = cluster.currentBaselineTopology();
 
-                boolean inBaseline = baseline.stream().anyMatch(n -> consistentId.equals(n.consistentId()));
+                if (baseline != null) {
+                    boolean inBaseline = baseline.stream().anyMatch(n -> consistentId.equals(n.consistentId()));
 
-                res.setBaseline(inBaseline ? NODE_IN_BASELINE : NODE_NOT_IN_BASELINE);
+                    res.setBaseline(inBaseline ? NODE_IN_BASELINE : NODE_NOT_IN_BASELINE);
+                }
+                else
+                    res.setBaseline(BASELINE_NOT_AVAILABLE);
             }
             else
                 res.setBaseline(BASELINE_NOT_AVAILABLE);

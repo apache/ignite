@@ -49,8 +49,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -62,7 +60,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private Integer lastKey = 0;
@@ -697,7 +694,6 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @param resMap Result map.
      * @param exp Expected results.
      */
-    @SuppressWarnings("unchecked")
     private void checkResult(Map resMap, Map<Object, Object> exp) {
         assertNotNull(resMap);
 

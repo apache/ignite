@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -137,9 +138,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         else {
             AffinityTopologyVersion mapTopVer = topVer;
 
-            if (mapTopVer == null) {
+            if (mapTopVer == null)
                 mapTopVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
-            }
 
             map(keys, Collections.emptyMap(), mapTopVer);
         }
@@ -370,8 +370,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            null,
-                            null); // TODO IGNITE-7371
+                            null);
 
                         if (res != null) {
                             v = res.value();
@@ -389,8 +388,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary,
-                            null); // TODO IGNITE-7371
+                            !deserializeBinary);
                     }
                 }
 
@@ -401,6 +399,11 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         try {
                             if (localDhtGet(key, part, topVer, isNear))
                                 break;
+                        }
+                        catch (IgniteException ex) {
+                            onDone(ex);
+
+                            return saved;
                         }
                         finally {
                             cctx.releaseForFastLocalGet(part, topVer);
@@ -465,7 +468,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             }
             finally {
                 if (entry != null && tx == null)
-                    entry.touch(topVer);
+                    entry.touch();
             }
         }
 
@@ -512,8 +515,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            null,
-                            null); // TODO IGNITE-7371
+                            null);
 
                         if (res != null) {
                             v = res.value();
@@ -531,8 +533,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary,
-                            null); // TODO IGNITE-7371
+                            !deserializeBinary);
                     }
 
                     // Entry was not in memory or in swap, so we remove it from cache.
@@ -570,7 +571,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 if (dhtEntry != null)
                     // Near cache is enabled, so near entry will be enlisted in the transaction.
                     // Always touch DHT entry in this case.
-                    dhtEntry.touch(topVer);
+                    dhtEntry.touch();
             }
         }
     }
@@ -580,7 +581,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param v Value.
      * @param ver Version.
      */
-    @SuppressWarnings("unchecked")
     private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver) {
         if (keepCacheObjects) {
             K key0 = (K)key;
@@ -716,7 +716,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 entry.releaseEviction();
 
                 if (tx == null)
-                    entry.touch(topVer);
+                    entry.touch();
             }
         }
     }

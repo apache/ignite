@@ -37,7 +37,7 @@ module.exports.factory = function(mongoose) {
     const Account = new Schema({
         firstName: String,
         lastName: String,
-        email: String,
+        email: {type: String, unique: true},
         phone: String,
         company: String,
         country: String,
@@ -46,7 +46,10 @@ module.exports.factory = function(mongoose) {
         lastActivity: Date,
         admin: Boolean,
         token: String,
-        resetPasswordToken: String
+        resetPasswordToken: String,
+        activated: {type: Boolean, default: false},
+        activationSentAt: Date,
+        activationToken: String
     });
 
     // Install passport plugin.

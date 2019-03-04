@@ -62,6 +62,6 @@ public class DiscreteNaiveBayesTest {
         );
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 
-        Assert.assertEquals(scottish, model.apply(observation), PRECISION);
+        Assert.assertEquals(scottish, model.predict(observation), PRECISION);
     }
 }

@@ -57,7 +57,6 @@ public final class NearTxResultHandler implements CI1<IgniteInternalFuture<GridC
      * @param future Enlist future.
      * @return Enlist response.
      */
-    @SuppressWarnings("unchecked")
     public static <T> T createResponse(IgniteInternalFuture<?> future) {
         assert future != null;
 

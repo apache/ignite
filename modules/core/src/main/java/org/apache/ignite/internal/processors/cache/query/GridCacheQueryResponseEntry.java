@@ -87,7 +87,6 @@ public class GridCacheQueryResponseEntry<K, V> implements Map.Entry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         key = (K)in.readObject();
         val = (V)in.readObject();

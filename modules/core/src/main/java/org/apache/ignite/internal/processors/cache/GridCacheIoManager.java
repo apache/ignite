@@ -44,6 +44,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
@@ -543,7 +544,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridIO().removeMessageListener(TOPIC_CACHE);
 
@@ -569,7 +569,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler closure.
      * @param plc Message policy.
      */
-    @SuppressWarnings({"ConstantConditions"})
     private void onMessage0(final UUID nodeId, final GridCacheMessage cacheMsg,
         final IgniteBiInClosure<UUID, GridCacheMessage> c, byte plc) {
         try {
@@ -1376,10 +1375,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param type Type of message.
      * @param c Handler.
      */
-    public void addCacheHandler(
+    public <Msg extends GridCacheMessage> void addCacheHandler(
         int hndId,
-        Class<? extends GridCacheMessage> type,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        Class<Msg> type,
+        IgniteBiInClosure<UUID, ? super Msg> c
+    ) {
         assert !type.isAssignableFrom(GridCacheGroupIdMessage.class) : type;
 
         addHandler(hndId, type, c, cacheHandlers);
@@ -1390,10 +1390,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param type Type of message.
      * @param c Handler.
      */
-    public void addCacheGroupHandler(
+    public <Msg extends GridCacheGroupIdMessage> void addCacheGroupHandler(
         int hndId,
-        Class<? extends GridCacheGroupIdMessage> type,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        Class<Msg> type,
+        IgniteBiInClosure<UUID, ? super Msg> c
+    ) {
         assert !type.isAssignableFrom(GridCacheIdMessage.class) : type;
 
         addHandler(hndId, type, c, grpHandlers);
@@ -1405,12 +1406,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler.
      * @param msgHandlers Message handlers.
      */
-    @SuppressWarnings({"unchecked"})
-    private void addHandler(
+    private <Msg extends GridCacheMessage> void addHandler(
         int hndId,
-        Class<? extends GridCacheMessage> type,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c,
-        MessageHandlers msgHandlers) {
+        Class<Msg> type,
+        IgniteBiInClosure<UUID, ? super Msg> c,
+        MessageHandlers msgHandlers
+    ) {
         int msgIdx = messageIndex(type);
 
         if (msgIdx != -1) {
@@ -1477,6 +1478,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         for (Iterator<ListenerKey> iter = msgHandlers.clsHandlers.keySet().iterator(); iter.hasNext(); ) {
             ListenerKey key = iter.next();
 
+            if (key.msgCls.equals(GridDhtAffinityAssignmentResponse.class))
+                continue;
+
             if (key.hndId == hndId)
                 iter.remove();
         }
@@ -1537,7 +1541,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    @SuppressWarnings({"unchecked"})
     private void addOrderedHandler(GridCacheSharedContext cctx, boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
         MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
 

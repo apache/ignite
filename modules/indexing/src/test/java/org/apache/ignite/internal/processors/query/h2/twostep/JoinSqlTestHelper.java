@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Join sql test helper
@@ -145,6 +144,10 @@ public class JoinSqlTestHelper {
         @QuerySqlField(index = true)
         private String name;
 
+        /** Debt capital. */
+        @QuerySqlField
+        private Integer debtCapital;
+
         /** */
         public String getName() {
             return name;
@@ -153,6 +156,20 @@ public class JoinSqlTestHelper {
         /** */
         public void setName(String name) {
             this.name = name;
+        }
+
+        /**
+         * @return Debt capital.
+         */
+        public Integer debtCapital() {
+            return debtCapital;
+        }
+
+        /**
+         * @param debtCapital Debt capital.
+         */
+        public void debtCapital(Integer debtCapital) {
+            this.debtCapital = debtCapital;
         }
     }
 }

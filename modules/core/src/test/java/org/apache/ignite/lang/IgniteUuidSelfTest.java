@@ -31,14 +31,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link org.apache.ignite.lang.IgniteUuid}.
  */
 @GridCommonTest(group = "Lang")
-@RunWith(JUnit4.class)
 public class IgniteUuidSelfTest extends GridCommonAbstractTest {
     /** Sample size. */
     private static final int NUM = 100000;
@@ -226,7 +223,6 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
      * @throws ClassNotFoundException If failed.
      * @throws IOException If failed.
      */
-    @SuppressWarnings({"unchecked"})
     private <T> T read(byte[] bytes) throws ClassNotFoundException, IOException {
         ByteArrayInputStream bin = new ByteArrayInputStream(bytes);
 

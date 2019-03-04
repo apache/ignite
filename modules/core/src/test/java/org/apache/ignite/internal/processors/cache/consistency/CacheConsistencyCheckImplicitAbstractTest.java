@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.consistency;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.typedef.G;
+import org.junit.Test;
 
 /**
  *
@@ -27,6 +28,7 @@ public abstract class CacheConsistencyCheckImplicitAbstractTest extends CacheCon
     /**
      *
      */
+    @Test
     public void test() throws Exception {
         test(true);
         test(false);

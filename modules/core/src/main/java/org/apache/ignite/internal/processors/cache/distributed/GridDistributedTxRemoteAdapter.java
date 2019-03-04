@@ -121,9 +121,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @GridToStringInclude
     protected IgniteTxRemoteState txState;
 
-    /** {@code True} if tx should skip adding itself to completed version map on finish. */
-    private boolean skipCompletedVers;
-
     /** Transaction label. */
     @GridToStringInclude
     @Nullable private String txLbl;
@@ -628,8 +625,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                txEntry.updateCounter(),
-                                                mvccSnapshot());
+                                                txEntry.updateCounter());
                                         else {
                                             assert val != null : txEntry;
 
@@ -653,8 +649,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                txEntry.updateCounter(),
-                                                mvccSnapshot());
+                                                txEntry.updateCounter());
 
                                             txEntry.updateCounter(updRes.updateCounter());
 
@@ -691,8 +686,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
                                             dhtVer,
-                                            txEntry.updateCounter(),
-                                            mvccSnapshot());
+                                            txEntry.updateCounter());
 
                                         txEntry.updateCounter(updRes.updateCounter());
 
@@ -819,8 +813,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 cctx.tm().commitTx(this);
 
-                cctx.tm().mvccFinish(this, true);
-
                 state(COMMITTED);
             }
         }
@@ -918,7 +910,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
-                cctx.tm().rollbackTx(this, false, skipCompletedVers);
+                cctx.tm().rollbackTx(this, false, skipCompletedVersions());
 
                 TxCounters counters = txCounters(false);
 
@@ -929,7 +921,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 cctx.mvccCaching().onTxFinished(this, false);
 
-                cctx.tm().mvccFinish(this, false);
             }
         }
         catch (IgniteCheckedException | RuntimeException | Error e) {
@@ -961,20 +952,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public void commitError(Throwable e) {
         // No-op.
-    }
-
-    /**
-     * @return {@code True} if tx should skip adding itself to completed version map on finish.
-     */
-    public boolean skipCompletedVersions() {
-        return skipCompletedVers;
-    }
-
-    /**
-     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed version map on finish.
-     */
-    public void skipCompletedVersions(boolean skipCompletedVers) {
-        this.skipCompletedVers = skipCompletedVers;
     }
 
     /**

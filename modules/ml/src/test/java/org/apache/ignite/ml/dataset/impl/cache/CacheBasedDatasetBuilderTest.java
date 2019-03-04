@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link CacheBasedDatasetBuilder}.
@@ -46,10 +47,6 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -62,6 +59,7 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
     /**
      * Tests that partitions of the dataset cache are placed on the same nodes as upstream cache.
      */
+    @Test
     public void testBuild() {
         IgniteCache<Integer, String> upstreamCache = createTestCache(100, 10);
         CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
@@ -91,6 +89,7 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
     /**
      * Tests that predicate works correctly.
      */
+    @Test
     public void testBuildWithPredicate() {
         CacheConfiguration<Integer, Integer> upstreamCacheConfiguration = new CacheConfiguration<>();
         upstreamCacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 1));

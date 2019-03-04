@@ -38,7 +38,9 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,18 +48,27 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Cache metrics test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int KEY_CNT = 500;
+
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
+        configuration.setMetricsUpdateFrequency(2000);
+        return configuration;
+    }
+
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration configuration = super.cacheConfiguration(igniteInstanceName);
+        configuration.setStatisticsEnabled(true);
+        return configuration;
+    }
 
     /** Entry processor, performing removal. */
     private final CacheEntryProcessor<Integer, Integer, Object> removingProcessor =
@@ -808,35 +819,37 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testCacheSizeWorksAsSize() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
+        cache.clear();
 
-        for (int i = 0; i < KEY_CNT; i++) {
+        awaitMetricsUpdate(1);
+
+        assertEquals(0, cache.metrics().getCacheSize());
+
+        for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
-            CacheMetrics metrics = cache.metrics();
+        awaitMetricsUpdate(1);
 
-            assertEquals(metrics.getSize(), metrics.getCacheSize());
+        assertEquals(KEY_CNT, cache.metrics().getCacheSize());
 
-            CacheMetrics localMetrics = cache.localMetrics();
+        assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
 
-            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
-        }
-
-        for (int i = 0; i < KEY_CNT / 2; i++) {
+        for (int i = 0; i < KEY_CNT / 2; i++)
             cache.remove(i, i);
 
-            CacheMetrics metrics = cache.metrics();
+        awaitMetricsUpdate(1);
 
-            assertEquals(metrics.getSize(), metrics.getCacheSize());
+        assertEquals(KEY_CNT/2, cache.metrics().getCacheSize());
 
-            CacheMetrics localMetrics = cache.localMetrics();
-
-            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
-        }
+        assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
 
         cache.removeAll();
 
-        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
+        awaitMetricsUpdate(1);
+
+        assertEquals(0, cache.metrics().getCacheSize());
+
+        assertEquals(0, cache.localMetrics().getCacheSize());
     }
 
     /**
@@ -1029,7 +1042,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         storeStgy.removeFromStore(key);
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-            @SuppressWarnings("unchecked")
             @Override public boolean applyx() {
                 try {
                     if (c.get(key) != null)

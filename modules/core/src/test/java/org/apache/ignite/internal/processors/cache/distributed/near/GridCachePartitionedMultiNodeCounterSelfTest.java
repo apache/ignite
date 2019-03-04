@@ -49,14 +49,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -67,8 +62,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Multiple put test.
  */
-@SuppressWarnings({"UnusedAssignment", "TooBroadScope"})
-@RunWith(JUnit4.class)
+@SuppressWarnings({"TooBroadScope"})
 public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbstractTest {
     /** Debug flag. */
     private static final boolean DEBUG = false;
@@ -84,9 +78,6 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
     /** */
     private static final String CNTR_KEY = "CNTR_KEY";
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static CountDownLatch startLatchMultiNode;
@@ -108,12 +99,6 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         // Default cache configuration.
         CacheConfiguration cacheCfg = defaultCacheConfiguration();

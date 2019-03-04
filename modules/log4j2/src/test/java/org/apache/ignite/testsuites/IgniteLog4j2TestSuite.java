@@ -17,28 +17,22 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.logger.log4j2.Log4j2ConfigUpdateTest;
 import org.apache.ignite.logger.log4j2.Log4j2LoggerMarkerTest;
 import org.apache.ignite.logger.log4j2.Log4j2LoggerSelfTest;
 import org.apache.ignite.logger.log4j2.Log4j2LoggerVerboseModeSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Log4j2 logging tests.
  */
-public class IgniteLog4j2TestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Log4j2 Logging Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(Log4j2LoggerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(Log4j2LoggerVerboseModeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(Log4j2LoggerMarkerTest.class));
-        suite.addTest(new JUnit4TestAdapter(Log4j2ConfigUpdateTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    Log4j2LoggerSelfTest.class,
+    Log4j2LoggerVerboseModeSelfTest.class,
+    Log4j2LoggerMarkerTest.class,
+    Log4j2ConfigUpdateTest.class
+})
+public class IgniteLog4j2TestSuite {
 }

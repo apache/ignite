@@ -32,26 +32,17 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  * Test affinity mapper.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int KEY_CNT = 1000;
-
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     public static final AffinityKeyMapper AFFINITY_MAPPER = new UsersAffinityKeyMapper();
@@ -82,12 +73,6 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         cacheCfg.setAffinityMapper(AFFINITY_MAPPER);
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
 
         return cfg;
     }

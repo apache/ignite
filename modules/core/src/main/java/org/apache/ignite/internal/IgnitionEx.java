@@ -132,8 +132,8 @@ import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
 import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_START_JAVA7;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
@@ -199,55 +199,6 @@ public class IgnitionEx {
 
     /** */
     private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
-
-    /*
-     * Checks runtime version to be 1.7.x or 1.8.x.
-     * This will load pretty much first so we must do these checks here.
-     */
-    static {
-        // Check 1.8 just in case for forward compatibility.
-        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
-
-        if (majorJavaVer < 7) {
-            throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
-                "is not supported: " + U.jdkVersion());
-        }
-
-        String jreVer = U.jreVersion();
-
-        if (jreVer.startsWith("1.7")) {
-            int upd = jreVer.indexOf('_');
-            int beta = jreVer.indexOf('-');
-
-            if (beta < 0)
-                beta = jreVer.length();
-
-            if (upd > 0 && beta > 0) {
-                try {
-                    int update = Integer.parseInt(jreVer.substring(upd + 1, beta));
-
-                    boolean forceJ7 = IgniteSystemProperties.getBoolean(IGNITE_FORCE_START_JAVA7, false);
-
-                    if (update < 71 && !forceJ7) {
-                        throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
-                            "is not supported: " + jreVer);
-                    }
-                    else if (forceJ7)
-                        System.err.println("Ignite requires Java 1.7.0_71 or above. Start on your own risk.");
-                }
-                catch (NumberFormatException ignore) {
-                    // No-op
-                }
-            }
-        }
-
-        // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.
-        // For details please see:
-        // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7071826
-        // http://www.oracle.com/technetwork/java/javase/2col/6u34-bugfixes-1733379.html
-        // http://hg.openjdk.java.net/jdk6/jdk6/jdk/rev/563d392b3e5c
-        UUID.randomUUID();
-    }
 
     /**
      * Enforces singleton.
@@ -1749,7 +1700,6 @@ public class IgnitionEx {
          * @param startCtx Starting context.
          * @throws IgniteCheckedException If start failed.
          */
-        @SuppressWarnings({"TooBroadScope"})
         private void start0(GridStartContext startCtx) throws IgniteCheckedException {
             assert grid == null : "Grid is already started: " + name;
 
@@ -1850,7 +1800,8 @@ public class IgnitionEx {
                             grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                     }
                 },
-                workerRegistry);
+                workerRegistry,
+                cfg.getFailureDetectionTimeout());
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1899,7 +1850,8 @@ public class IgnitionEx {
                     }
                 },
                 true,
-                workerRegistry);
+                workerRegistry,
+                cfg.getFailureDetectionTimeout());
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
@@ -2187,6 +2139,11 @@ public class IgnitionEx {
             UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
 
             myCfg.setNodeId(nodeId);
+
+            String predefineConsistentId = IgniteSystemProperties.getString(IGNITE_OVERRIDE_CONSISTENT_ID);
+
+            if (!F.isEmpty(predefineConsistentId))
+                myCfg.setConsistentId(predefineConsistentId);
 
             IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId, workDir);
 

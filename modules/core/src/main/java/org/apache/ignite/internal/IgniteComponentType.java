@@ -242,7 +242,6 @@ public enum IgniteComponentType {
      * @return Created component or no-op implementation.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private <T> T createOptional0(@Nullable GridKernalContext ctx) throws IgniteCheckedException {
         Class<?> cls;
 
@@ -283,7 +282,6 @@ public enum IgniteComponentType {
      * @return Component instance.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private <T> T create0(@Nullable GridKernalContext ctx, String clsName) throws IgniteCheckedException {
         try {
             Class<?> cls = Class.forName(clsName);

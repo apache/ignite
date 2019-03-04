@@ -26,20 +26,14 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
     /** */
     public static final int GRIDS_CNT = 5;
@@ -50,9 +44,6 @@ public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
     /** */
     public static final int CACHES_CNT = 10;
 
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -62,12 +53,6 @@ public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
         cfg.setMetricsUpdateFrequency(10);
 
         cfg.setActiveOnStart(false);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         AtomicConfiguration atomicCfg = atomicConfiguration();
 

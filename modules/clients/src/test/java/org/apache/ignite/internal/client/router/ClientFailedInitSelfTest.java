@@ -38,13 +38,8 @@ import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
@@ -56,7 +51,6 @@ import static org.apache.ignite.internal.client.integration.ClientAbstractSelfTe
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int RECONN_CNT = 3;
@@ -69,9 +63,6 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final int ROUTER_JETTY_PORT = 8081;
-
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -94,12 +85,6 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
         clientCfg.setJettyPath(REST_JETTY_CFG);
 
         cfg.setConnectorConfiguration(clientCfg);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }

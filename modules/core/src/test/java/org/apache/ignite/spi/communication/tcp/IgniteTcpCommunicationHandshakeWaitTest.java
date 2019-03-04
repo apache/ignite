@@ -35,6 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Testing {@link TcpCommunicationSpi} that will send the wait handshake message on received connections until SPI
@@ -61,13 +62,15 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
 
         TcpDiscoverySpi discoSpi = new SlowTcpDiscoverySpi();
 
+        discoSpi.setIpFinder(sharedStaticIpFinder);
+
         cfg.setDiscoverySpi(discoSpi);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setConnectTimeout(COMMUNICATION_TIMEOUT);
-        commSpi.setMaxConnectTimeout(COMMUNICATION_TIMEOUT);
-        commSpi.setReconnectCount(1);
+        commSpi.setMaxConnectTimeout(4 * COMMUNICATION_TIMEOUT);
+        commSpi.setReconnectCount(3);
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -80,6 +83,7 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHandshakeOnNodeJoining() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
 
@@ -90,7 +94,7 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
         slowNet.set(true);
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            latch.await(2 * COMMUNICATION_TIMEOUT, TimeUnit.MILLISECONDS);
+            latch.await(expectedTimeout(), TimeUnit.MILLISECONDS);
 
             Collection<ClusterNode> nodes = ignite.context().discovery().aliveServerNodes();
 
@@ -102,6 +106,16 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
         startGrid("srv3");
 
         fut.get();
+    }
+
+    /** */
+    private long expectedTimeout() {
+        long maxBackoffTimeout = COMMUNICATION_TIMEOUT;
+
+        for (int i = 1; i < 3 && maxBackoffTimeout < 3 * COMMUNICATION_TIMEOUT; i++)
+            maxBackoffTimeout += Math.min(2 * maxBackoffTimeout, 3 * COMMUNICATION_TIMEOUT);
+
+        return maxBackoffTimeout;
     }
 
     /** {@inheritDoc} */

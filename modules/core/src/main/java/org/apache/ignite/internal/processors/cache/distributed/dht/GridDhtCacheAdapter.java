@@ -262,7 +262,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 res.addInfo(info);
                         }
 
-                        entry.touch(msg.topologyVersion());
+                        entry.touch();
 
                         break;
                     }
@@ -701,7 +701,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
                 finally {
                     if (entry != null)
-                        entry.touch(topVer);
+                        entry.touch();
 
                     part.release();
 
@@ -1157,7 +1157,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public void sendTtlUpdateRequest(@Nullable final IgniteCacheExpiryPolicy expiryPlc) {
         if (expiryPlc != null && expiryPlc.entries() != null) {
             ctx.closures().runLocalSafe(new Runnable() {
-                @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
+                @SuppressWarnings({"ForLoopReplaceableByForEach"})
                 @Override public void run() {
                     Map<KeyCacheObject, GridCacheVersion> entries = expiryPlc.entries();
 
@@ -1288,7 +1288,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
                 finally {
                     if (entry != null)
-                        entry.touch(AffinityTopologyVersion.NONE);
+                        entry.touch();
                 }
             }
             catch (IgniteCheckedException e) {

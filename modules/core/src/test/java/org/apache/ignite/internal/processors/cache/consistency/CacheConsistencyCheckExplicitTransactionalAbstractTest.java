@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 /**
  *
@@ -35,6 +36,7 @@ public abstract class CacheConsistencyCheckExplicitTransactionalAbstractTest ext
     /**
      *
      */
+    @Test
     public abstract void test() throws Exception;
 
     /**

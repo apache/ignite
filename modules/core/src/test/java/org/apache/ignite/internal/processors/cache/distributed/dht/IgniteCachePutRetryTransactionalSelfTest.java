@@ -34,8 +34,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -44,7 +42,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetryAbstractSelfTest {
     /** */
     private static final int FACTOR = 1000;
@@ -298,7 +295,6 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Void call() throws Exception {
             String key1 = "key-" + base + "-" + i;
             String key2 = "key-" + base;

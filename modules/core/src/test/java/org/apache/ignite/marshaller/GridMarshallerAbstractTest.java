@@ -75,8 +75,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
@@ -84,7 +82,6 @@ import static org.apache.ignite.events.EventType.EVTS_CACHE;
 /**
  * Common test for marshallers.
  */
-@RunWith(JUnit4.class)
 public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final String CACHE_NAME = "namedCache";
@@ -548,7 +545,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testNodeLocalMarshalling() throws Exception {
         ConcurrentMap<String, String> loc = grid().cluster().nodeLocalMap();

@@ -107,7 +107,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return Metadata previously associated with given name, or {@code null} if there was none.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <V> V addMeta(int key, V val) {
         assert val != null;
 
@@ -132,7 +131,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <V> V meta(int key) {
         synchronized (this) {
             return data != null && data.length > key ? (V)data[key] : null;
@@ -146,7 +144,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <V> V removeMeta(int key) {
         synchronized (this) {
             if (data == null || data.length <= key)
@@ -168,7 +165,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Value type.
      * @return {@code True} if value was removed, {@code false} otherwise.
      */
-    @SuppressWarnings({"unchecked"})
     public <V> boolean removeMeta(int key, V val) {
         assert val != null;
 
@@ -243,7 +239,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return {@code null} if new value was put, or current value if put didn't happen.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <V> V putMetaIfAbsent(int key, V val) {
         assert val != null;
 
@@ -266,7 +261,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return The value of the metadata after execution of this method.
      */
-    @SuppressWarnings({"unchecked"})
     public <V> V addMetaIfAbsent(int key, V val) {
         assert val != null;
 
@@ -291,7 +285,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return The value of the metadata after execution of this method.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <V> V addMetaIfAbsent(int key, @Nullable Callable<V> c) {
         assert c != null;
 

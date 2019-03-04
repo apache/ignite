@@ -17,15 +17,16 @@
 
 package org.apache.ignite.testframework;
 
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionSerializationException;
+import org.junit.Assume;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 import static org.junit.Assert.fail;
 
 /**
@@ -54,12 +55,31 @@ public class MvccFeatureChecker {
      *
      * @param f feature.
      * @throws AssertionError If failed.
+     * @deprecated Use {@link #skipIfNotSupported(Feature)} instead.
      */
+    @Deprecated
     public static void failIfNotSupported(Feature f) {
         if (!forcedMvcc())
             return;
 
-        validateFeature(f);
+        String reason = unsupportedReason(f);
+
+        if (reason != null)
+            fail(reason);
+    }
+
+    /**
+     * Skips test if feature is not supported.
+     *
+     * @param f feature.
+     */
+    public static void skipIfNotSupported(Feature f) {
+        if (!forcedMvcc())
+            return;
+
+        String reason = unsupportedReason(f);
+
+        Assume.assumeTrue(reason, reason == null);
     }
 
     /**
@@ -76,14 +96,7 @@ public class MvccFeatureChecker {
      * @return {@code True} if feature is supported, {@code False} otherwise.
      */
     public static boolean isSupported(Feature f) {
-        try {
-            validateFeature(f);
-
-            return true;
-        }
-        catch (AssertionError ignore) {
-            return false;
-        }
+        return unsupportedReason(f) == null;
     }
 
     /**
@@ -116,10 +129,12 @@ public class MvccFeatureChecker {
      * @param e Exception.
      */
     public static void assertMvccWriteConflict(Exception e) {
-        IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
+        assert e != null;
 
-        if (sqlEx == null ||  sqlEx.statusCode() != TRANSACTION_SERIALIZATION_ERROR)
-            fail("Unexpected exception: " + X.getFullStackTrace(e));
+        if (e instanceof CacheException && e.getCause() instanceof TransactionSerializationException)
+            return;
+
+        fail("Unexpected exception: " + X.getFullStackTrace(e));
     }
 
     /**
@@ -128,35 +143,36 @@ public class MvccFeatureChecker {
      * @param feature Mvcc feature.
      * @throws AssertionError If failed.
      */
-    @SuppressWarnings("fallthrough")
-    private static void validateFeature(Feature feature) {
+    private static String unsupportedReason(Feature feature) {
         switch (feature) {
             case NEAR_CACHE:
-                fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+                return "https://issues.apache.org/jira/browse/IGNITE-7187";
 
             case LOCAL_CACHE:
-                fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+                return "https://issues.apache.org/jira/browse/IGNITE-9530";
 
             case CACHE_STORE:
-                fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+                return "https://issues.apache.org/jira/browse/IGNITE-8582";
 
             case ENTRY_LOCK:
-                fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+                return "https://issues.apache.org/jira/browse/IGNITE-9324";
 
             case CACHE_EVENTS:
-                fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+                return "https://issues.apache.org/jira/browse/IGNITE-9321";
 
             case EVICTION:
-                fail("https://issues.apache.org/jira/browse/IGNITE-7956");
+                return "https://issues.apache.org/jira/browse/IGNITE-7956";
 
             case EXPIRATION:
-                fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+                return "https://issues.apache.org/jira/browse/IGNITE-7311";
 
             case METRICS:
-                fail("https://issues.apache.org/jira/browse/IGNITE-9224");
+                return "https://issues.apache.org/jira/browse/IGNITE-9224";
 
             case INTERCEPTOR:
-                fail("https://issues.apache.org/jira/browse/IGNITE-9323");
+                return "https://issues.apache.org/jira/browse/IGNITE-9323";
         }
+
+        return null;
     }
 }

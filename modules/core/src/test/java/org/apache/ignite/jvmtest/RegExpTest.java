@@ -19,18 +19,14 @@ package org.apache.ignite.jvmtest;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Java reg exp test.
  */
-@RunWith(JUnit4.class)
-public class RegExpTest extends TestCase {
+public class RegExpTest {
     /**
      * @throws Exception If failed.
      */

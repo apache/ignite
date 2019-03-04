@@ -788,7 +788,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType,
         MessageCollectionItemType valType, MessageWriter writer) {
         if (map != null) {
@@ -1164,7 +1163,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
             if (buf.remaining() < Message.DIRECT_TYPE_SIZE) {
@@ -1208,7 +1206,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls,
         MessageReader reader) {
         if (readSize == -1) {
@@ -1248,7 +1245,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType,
         MessageReader reader) {
         if (readSize == -1) {
@@ -1288,7 +1284,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
         MessageCollectionItemType valType, boolean linked, MessageReader reader) {
         if (readSize == -1) {
@@ -1466,7 +1461,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param off Base offset.
      * @return Array or special value if it was not fully read.
      */
-    @SuppressWarnings("unchecked")
     <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
         assert creator != null;
 
@@ -1530,7 +1524,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param off Base offset.
      * @return Array or special value if it was not fully read.
      */
-    @SuppressWarnings("unchecked")
     <T> T readArrayLE(ArrayCreator<T> creator, int typeSize, int lenShift, long off) {
         assert creator != null;
 

@@ -32,15 +32,12 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "P2P")
-@RunWith(JUnit4.class)
 public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
     private DeploymentMode depMode;
@@ -71,7 +68,6 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processTestUndeployLocalTasks(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
@@ -123,7 +119,6 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processTestUndeployP2PTasks(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;

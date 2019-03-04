@@ -27,14 +27,9 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -46,7 +41,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.CLEAR
 /**
  * Test {@link IgniteCache#localClearAll(java.util.Set)} operations in multinode environment with nodes having caches with different names.
  */
-@RunWith(JUnit4.class)
 public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     /** Local cache. */
     private static final String CACHE_LOCAL = "cache_local";
@@ -62,9 +56,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
     /** Grid nodes count. */
     private static final int GRID_CNT = 3;
-
-    /** VM IP finder for TCP discovery SPI. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Local caches. */
     private IgniteCache<Integer, Integer>[] cachesLoc;
@@ -119,12 +110,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
         ccfgReplicated.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfgLoc, ccfgPartitioned, ccfgColocated, ccfgReplicated);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }

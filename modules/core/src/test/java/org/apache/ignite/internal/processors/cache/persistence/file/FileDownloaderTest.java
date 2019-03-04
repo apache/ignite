@@ -29,8 +29,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.*;
@@ -38,7 +36,6 @@ import static org.junit.Assert.*;
 /**
  * FileDownloader test
  */
-@RunWith(JUnit4.class)
 public class FileDownloaderTest extends GridCommonAbstractTest {
     /** */
     private static final Path DOWNLOADER_PATH = new File("download").toPath();

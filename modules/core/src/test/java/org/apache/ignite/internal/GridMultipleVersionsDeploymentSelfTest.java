@@ -45,8 +45,6 @@ import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
@@ -55,7 +53,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  *
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTest {
     /** Excluded classes. */
     private static final String[] EXCLUDE_CLASSES = new String[] {
@@ -104,7 +101,6 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testMultipleVersionsLocalDeploy() throws Exception {
         try {
@@ -164,7 +160,6 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testMultipleVersionsP2PDeploy() throws Exception {
         try {

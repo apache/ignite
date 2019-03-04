@@ -28,23 +28,14 @@ import org.apache.ignite.internal.processors.authentication.IgniteAccessControlE
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserManagementException;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for leaks JdbcConnection on SqlFieldsQuery execute.
  */
-@RunWith(JUnit4.class)
 public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Nodes count. */
     private static final int NODES_COUNT = 3;
 
@@ -60,12 +51,6 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
         if (getTestIgniteInstanceIndex(igniteInstanceName) == CLI_NODE)
             cfg.setClientMode(true);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
 
         cfg.setAuthenticationEnabled(true);
 

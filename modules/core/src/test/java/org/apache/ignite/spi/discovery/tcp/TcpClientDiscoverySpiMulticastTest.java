@@ -24,6 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -31,8 +32,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -41,7 +40,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
     /** */
     private boolean forceSrv;
@@ -218,11 +216,6 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         Collection<Object> addrSnds = GridTestUtils.getFieldValue(spi0.getIpFinder(), "addrSnds");
 
-        assertNotNull(addrSnds);
-
-        if (client)
-            assertTrue(addrSnds.isEmpty()); // Check client does not send its address.
-        else
-            assertFalse(addrSnds.isEmpty());
+        assertEquals(client, F.isEmpty(addrSnds));
     }
 }

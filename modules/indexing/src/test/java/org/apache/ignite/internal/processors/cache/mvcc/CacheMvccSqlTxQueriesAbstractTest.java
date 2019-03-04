@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,9 +41,12 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -61,10 +65,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -78,8 +83,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests for transactional SQL.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        return super.getConfiguration(gridName)
+            .setTransactionConfiguration(new TransactionConfiguration().setDeadlockTimeout(0));
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -1116,7 +1126,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         Ignite checkNode = grid(rnd.nextInt(4));
         Ignite updateNode = grid(rnd.nextInt(4));
 
-        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
             1, new MvccTestSqlIndexValue(1),
@@ -1143,6 +1153,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
      */
     @Test
     public void testQueryInsertMultithread() throws Exception {
+        // Reopen https://issues.apache.org/jira/browse/IGNITE-10764 if test starts failing with timeout
         final int THREAD_CNT = 8;
         final int BATCH_SIZE = 1000;
         final int ROUNDS = 10;
@@ -1182,11 +1193,10 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                     Ignite checkNode = grid(rnd.nextInt(4));
                     Ignite updateNode = grid(rnd.nextInt(4));
 
-                    IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+                    IgniteCache<Object, Object> cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
+                    // no tx timeout here, deadlocks should not happen because all keys are unique
                     try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TX_TIMEOUT);
-
                         SqlFieldsQuery qry = new SqlFieldsQuery(bldr.toString()).setPageSize(100);
 
                         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
@@ -1209,10 +1219,9 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testQueryInsertUpdateMultithread() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
@@ -1376,10 +1385,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
             }
         }, 2, "tx-thread");
 
-        IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
-
-        assertNotNull("Exception has not been thrown.", ex0);
-        assertTrue(ex0.getMessage().startsWith("Cannot serialize transaction due to write conflict"));
+        MvccFeatureChecker.assertMvccWriteConflict(ex.get());
     }
 
     /**
@@ -1589,7 +1595,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
                 return null;
             }
-        }, CacheException.class, "Duplicate key during INSERT [key=KeyCacheObjectImpl");
+        }, TransactionDuplicateKeyException.class, "Duplicate key during INSERT [key=KeyCacheObjectImpl");
     }
 
     /**
@@ -1746,6 +1752,100 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
             assertEquals(6, cur.getAll().size());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUpdateExplicitPartitionsWithoutReducer() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, 10)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        Ignite ignite = startGridsMultiThreaded(4);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        Affinity<Object> affinity = internalCache0(cache).affinity();
+
+        int keysCnt = 10, retryCnt = 0;
+
+        Integer test = 0;
+
+        Map<Integer, Integer> vals = new LinkedHashMap<>();
+
+        while (vals.size() < keysCnt) {
+            int partition = affinity.partition(test);
+
+            if (partition == 1 || partition == 2)
+                vals.put(test, 0);
+            else
+                assertTrue("Maximum retry number exceeded", ++retryCnt < 1000);
+
+            test++;
+        }
+
+        cache.putAll(vals);
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=2").setPartitions(1,2);
+
+        List<List<?>> all = cache.query(qry).getAll();
+
+        assertEquals(Long.valueOf(keysCnt), all.stream().findFirst().orElseThrow(AssertionError::new).get(0));
+
+        List<List<?>> rows = cache.query(new SqlFieldsQuery("SELECT _val FROM Integer")).getAll();
+
+        assertEquals(keysCnt, rows.size());
+        assertTrue(rows.stream().map(r -> r.get(0)).map(Integer.class::cast).allMatch(v -> v == 2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUpdateExplicitPartitionsWithReducer() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, 10)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        Ignite ignite = startGridsMultiThreaded(4);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        Affinity<Object> affinity = internalCache0(cache).affinity();
+
+        int keysCnt = 10, retryCnt = 0;
+
+        Integer test = 0;
+
+        Map<Integer, Integer> vals = new LinkedHashMap<>();
+
+        while (vals.size() < keysCnt) {
+            int partition = affinity.partition(test);
+
+            if (partition == 1 || partition == 2)
+                vals.put(test, 0);
+            else
+                assertTrue("Maximum retry number exceeded", ++retryCnt < 1000);
+
+            test++;
+        }
+
+        cache.putAll(vals);
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=(SELECT 2 FROM DUAL)").setPartitions(1,2);
+
+        List<List<?>> all = cache.query(qry).getAll();
+
+        assertEquals(Long.valueOf(keysCnt), all.stream().findFirst().orElseThrow(AssertionError::new).get(0));
+
+        List<List<?>> rows = cache.query(new SqlFieldsQuery("SELECT _val FROM Integer")).getAll();
+
+        assertEquals(keysCnt, rows.size());
+        assertTrue(rows.stream().map(r -> r.get(0)).map(Integer.class::cast).allMatch(v -> v == 2));
     }
 
     /**

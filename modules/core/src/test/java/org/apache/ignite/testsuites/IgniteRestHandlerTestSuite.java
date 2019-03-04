@@ -17,30 +17,26 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.rest.RestProtocolStartTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheAtomicCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.query.GridQueryCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.top.CacheTopologyCommandHandlerTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * REST support tests.
  */
-public class IgniteRestHandlerTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("REST Support Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(GridCacheCommandHandlerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicCommandHandlerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridLogCommandHandlerTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridQueryCommandHandlerTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheTopologyCommandHandlerTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheCommandHandlerSelfTest.class,
+    GridCacheAtomicCommandHandlerSelfTest.class,
+    GridLogCommandHandlerTest.class,
+    GridQueryCommandHandlerTest.class,
+    CacheTopologyCommandHandlerTest.class,
+    RestProtocolStartTest.class
+})
+public class IgniteRestHandlerTestSuite {
 }

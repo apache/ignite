@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-import {BehaviorSubject} from 'rxjs/BehaviorSubject';
-import {Subject} from 'rxjs/Subject';
+import {BehaviorSubject, Subject, merge} from 'rxjs';
 import {scan, tap} from 'rxjs/operators';
-import {merge} from 'rxjs/observable/merge';
 
 interface Reducer<State, Actions> {
     (state: State, action: Actions): State
@@ -27,9 +25,9 @@ interface Reducer<State, Actions> {
 export class Store<Actions, State> {
     static $inject = ['$injector'];
 
-    actions$: Subject<Actions>
-    state$: BehaviorSubject<State>
-    private _reducers: Array<Reducer<State, Actions>>
+    actions$: Subject<Actions>;
+    state$: BehaviorSubject<State>;
+    private _reducers: Array<Reducer<State, Actions>>;
 
     constructor(private $injector: ng.auto.IInjectorService) {
         this.$injector = $injector;

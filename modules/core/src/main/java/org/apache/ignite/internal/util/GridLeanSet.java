@@ -63,7 +63,6 @@ public class GridLeanSet<E> extends GridSetWrapper<E> implements Cloneable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
     @Override public Object clone() {
         try {
             GridLeanSet<E> clone = (GridLeanSet<E>)super.clone();

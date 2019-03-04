@@ -36,13 +36,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests grid future adapter use cases.
  */
-@RunWith(JUnit4.class)
 public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

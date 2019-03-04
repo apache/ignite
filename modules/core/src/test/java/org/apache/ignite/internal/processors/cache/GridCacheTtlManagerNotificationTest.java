@@ -33,15 +33,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -49,7 +44,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest {
     /** Count of caches in multi caches test. */
     private static final int CACHES_CNT = 10;
@@ -57,21 +51,12 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
     /** Prefix for cache name fir multi caches test. */
     private static final String CACHE_PREFIX = "cache-";
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test cache mode. */
     protected CacheMode cacheMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT + 1];
 

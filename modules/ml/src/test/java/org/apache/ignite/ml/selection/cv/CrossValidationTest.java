@@ -17,16 +17,19 @@
 
 package org.apache.ignite.ml.selection.cv;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertTrue;
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link CrossValidation}.
@@ -50,6 +53,46 @@ public class CrossValidationTest {
         verifyScores(folds, scoreCalculator.score(
             trainer,
             new Accuracy<>(),
+            data,
+            1,
+            (k, v) -> VectorUtils.of(k),
+            (k, v) -> v,
+            folds
+        ));
+
+        verifyScores(folds, scoreCalculator.score(
+            trainer,
+            new Accuracy<>(),
+            data,
+            (e1, e2) -> true,
+            1,
+            (k, v) -> VectorUtils.of(k),
+            (k, v) -> v,
+            folds
+        ));
+    }
+
+    /** */
+    @Test
+    public void testScoreWithGoodDatasetAndBinaryMetrics() {
+        Map<Integer, Double> data = new HashMap<>();
+
+        for (int i = 0; i < 1000; i++)
+            data.put(i, i > 500 ? 1.0 : 0.0);
+
+        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
+
+        CrossValidation<DecisionTreeNode, Double, Integer, Double> scoreCalculator =
+            new CrossValidation<>();
+
+        int folds = 4;
+
+        BinaryClassificationMetrics metrics = (BinaryClassificationMetrics) new BinaryClassificationMetrics()
+            .withMetric(BinaryClassificationMetricValues::accuracy);
+
+        verifyScores(folds, scoreCalculator.score(
+            trainer,
+            metrics,
             data,
             1,
             (k, v) -> VectorUtils.of(k),

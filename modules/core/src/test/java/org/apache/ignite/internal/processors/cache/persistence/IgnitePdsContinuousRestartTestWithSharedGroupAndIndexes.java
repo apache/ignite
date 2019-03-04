@@ -22,17 +22,11 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /**
  * Adding shared group and indexes to testing. It would impact how we evict partitions.
  */
 public class IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes extends IgnitePdsContinuousRestartTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache 2 singleton group name. */
     public static final String CACHE_GROUP_NAME = "Group2";
 
@@ -46,9 +40,6 @@ public class IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes extends Ign
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        discoverySpi.setIpFinder(ipFinder);
 
         CacheConfiguration ccfg2 = new CacheConfiguration();
 

@@ -38,11 +38,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.value.DataType;
 
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.connect;
@@ -50,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSe
 /**
  * Common stuff for dynamic columns tests.
  */
-public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest {
+public abstract class DynamicColumnsAbstractTest extends AbstractIndexingCommonTest {
     /** SQL to create test table. */
     static final String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
 
@@ -60,9 +56,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
     /** SQL to drop test table. */
     static final String DROP_SQL = "DROP TABLE Person";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * Check that given columns are seen by client.
@@ -180,8 +173,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      */
     protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
             new DataRegionConfiguration().setMaxSize(128L * 1024 * 1024));

@@ -43,7 +43,6 @@ public class GridSetWrapper<E> extends GridSerializableSet<E> {
      *
      * @param map Map to be used for set implementation.
      */
-    @SuppressWarnings({"unchecked"})
     public GridSetWrapper(Map<E, ?> map) {
         A.notNull(map, "map");
 
@@ -77,7 +76,6 @@ public class GridSetWrapper<E> extends GridSerializableSet<E> {
      *
      * @return Wrapped map.
      */
-    @SuppressWarnings({"unchecked"})
     protected final <T extends Map<E, Object>> T  map() {
         return (T)map;
     }

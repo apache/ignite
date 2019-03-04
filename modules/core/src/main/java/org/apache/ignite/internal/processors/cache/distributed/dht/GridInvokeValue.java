@@ -25,9 +25,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -41,7 +44,7 @@ public class GridInvokeValue implements Message {
     private Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    private byte[] invokeArgsBytes;
+    private byte[][] invokeArgsBytes;
 
     /** Entry processors. */
     @GridDirectTransient
@@ -88,12 +91,11 @@ public class GridInvokeValue implements Message {
      * @throws IgniteCheckedException If failed.
      */
     public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-        if (entryProcessor != null && entryProcessorBytes == null) {
+        if (entryProcessor != null && entryProcessorBytes == null)
             entryProcessorBytes = CU.marshal(ctx, entryProcessor);
-        }
 
         if (invokeArgsBytes == null)
-            invokeArgsBytes = CU.marshal(ctx, invokeArgs);
+            invokeArgsBytes = marshalInvokeArguments(invokeArgs, ctx);
     }
 
     /**
@@ -105,10 +107,60 @@ public class GridInvokeValue implements Message {
      */
     public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (entryProcessorBytes != null && entryProcessor == null)
-            entryProcessor = U.unmarshal(ctx, entryProcessorBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            entryProcessor = U.unmarshal(ctx.marshaller(), entryProcessorBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (invokeArgs == null)
-            invokeArgs = U.unmarshal(ctx, invokeArgsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, U.resolveClassLoader(ldr, ctx.gridConfig()));
+    }
+
+    /**
+     * @param byteCol Collection to unmarshal.
+     * @param ctx Context.
+     * @param ldr Loader.
+     * @return Unmarshalled collection.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected final Object[] unmarshalInvokeArguments(@Nullable byte[][] byteCol,
+        GridCacheSharedContext ctx,
+        ClassLoader ldr) throws IgniteCheckedException {
+        assert ldr != null;
+        assert ctx != null;
+
+        if (byteCol == null)
+            return null;
+
+        Object[] args = new Object[byteCol.length];
+
+        Marshaller marsh = ctx.marshaller();
+
+        for (int i = 0; i < byteCol.length; i++)
+            args[i] = byteCol[i] == null ? null : U.unmarshal(marsh, byteCol[i], ldr);
+
+        return args;
+    }
+
+    /**
+     * @param args Arguments to marshal.
+     * @param ctx Context.
+     * @return Marshalled collection.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected final byte[][] marshalInvokeArguments(@Nullable Object[] args, GridCacheContext ctx)
+        throws IgniteCheckedException {
+        assert ctx != null;
+
+        if (args == null || args.length == 0)
+            return null;
+
+        byte[][] argsBytes = new byte[args.length][];
+
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+
+            argsBytes[i] = arg == null ? null : CU.marshal(ctx, arg);
+        }
+
+        return argsBytes;
     }
 
     /** {@inheritDoc} */
@@ -130,7 +182,7 @@ public class GridInvokeValue implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("invokeArgsBytes", invokeArgsBytes))
+                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -157,7 +209,7 @@ public class GridInvokeValue implements Message {
                 reader.incrementState();
 
             case 1:
-                invokeArgsBytes = reader.readByteArray("invokeArgsBytes");
+                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;

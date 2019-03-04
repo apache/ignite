@@ -57,14 +57,10 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -74,11 +70,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests putAll() method along with failover and different configurations.
  */
-@RunWith(JUnit4.class)
 public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Size of the test map. */
     private static final int TEST_MAP_SIZE = 30_000;
 
@@ -108,7 +100,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** Filter to include only worker nodes. */
     private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
-        @SuppressWarnings("unchecked")
         @Override public boolean apply(ClusterNode n) {
              return "worker".equals(n.attribute("segment"));
         }
@@ -122,18 +113,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** Test failover SPI. */
     private MasterFailoverSpi failoverSpi = new MasterFailoverSpi((IgnitePredicate)workerNodesFilter);
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
-    }
 
     /**
      * @throws Exception If failed.
@@ -686,10 +665,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
 
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         discoverySpi.setAckTimeout(60000);
-        discoverySpi.setIpFinder(ipFinder);
         discoverySpi.setForceServerMode(true);
 
         cfg.setDiscoverySpi(discoverySpi);

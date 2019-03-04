@@ -42,6 +42,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -63,6 +64,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -74,8 +76,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -89,7 +89,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 /**
  * Client-based discovery tests.
  */
-@RunWith(JUnit4.class)
 public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -165,6 +164,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientFailureDetectionTimeout(clientFailureDetectionTimeout());
+
+        // Override default settings to speed up reconnection.
+        cfg.setCommunicationSpi(
+            new TcpCommunicationSpi()
+                .setConnectTimeout(500)
+                .setMaxConnectTimeout(1000)
+                .setReconnectCount(2)
+        );
 
         TcpDiscoverySpi disco = getDiscoverySpi();
 
@@ -553,10 +560,19 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         ((TestTcpDiscoverySpi)client.configuration().getDiscoverySpi()).resumeAll();
 
-        Thread.sleep(2000);
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    boolean ping1 = ((IgniteEx) srv1).context().discovery().pingNode(client.cluster().localNode().id());
 
-        assert ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
-        assert ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
+                    boolean ping2 = ((IgniteEx) srv0).context().discovery().pingNode(client.cluster().localNode().id());
+
+                    return ping1 && ping2;
+                } catch (IgniteClientDisconnectedException | IgniteClientDisconnectedCheckedException e) {
+                    return false;
+                }
+            }
+        }, 5_000);
     }
 
     /**
@@ -2371,7 +2387,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param ignite Grid.
      * @param expCnt Expected nodes count.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private void checkRemoteNodes(Ignite ignite, int expCnt) {
         Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
 

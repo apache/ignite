@@ -242,7 +242,6 @@ public class IgniteTestResources {
      * @return Marshaller.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public static synchronized Marshaller getMarshaller() throws IgniteCheckedException {
         String marshallerName =
             System.getProperty(MARSH_CLASS_NAME, GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME));

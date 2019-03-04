@@ -43,10 +43,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -61,16 +58,13 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Colocated get future.
  */
-public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V>
-    implements MvccSnapshotResponseListener {
+public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
+
     /** Transaction label. */
     protected final String txLbl;
 
     /** */
     protected final MvccSnapshot mvccSnapshot;
-
-    /** */
-    private MvccQueryTracker mvccTracker;
 
     /** Premapped node (always backup). */
     private ClusterNode premapped;
@@ -126,7 +120,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             consistency
         );
 
-        assert mvccSnapshot == null || cctx.mvccEnabled();
+        assert (mvccSnapshot == null) == !cctx.mvccEnabled();
 
         this.mvccSnapshot = mvccSnapshot;
         this.txLbl = txLbl;
@@ -139,17 +133,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @return Mvcc snapshot if mvcc is enabled for cache.
      */
     @Nullable private MvccSnapshot mvccSnapshot() {
-        if (!cctx.mvccEnabled())
-            return null;
-
-        if (mvccSnapshot != null)
-            return mvccSnapshot;
-
-        MvccSnapshot snapshot = mvccTracker.snapshot();
-
-        assert snapshot != null : "[fut=" + this + ", mvccTracker=" + mvccTracker + "]";
-
-        return snapshot;
+        return mvccSnapshot;
     }
 
     /**
@@ -166,20 +150,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
             canRemap = false;
         }
-        else{
+        else {
             // Use affinity topology version if constructor version is not specify.
             topVer = topVer.topologyVersion() > 0 ? topVer : cctx.affinity().affinityTopologyVersion();
         }
 
-        if (!cctx.mvccEnabled() || mvccSnapshot != null)
-            initialMap(topVer);
-        else {
-            mvccTracker = new MvccQueryTrackerImpl(cctx, canRemap);
-
-            registrateFutureInMvccManager(this);
-
-            mvccTracker.requestSnapshot(topVer, this);
-        }
+        initialMap(topVer);
     }
 
     /**
@@ -192,29 +168,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /** {@inheritDoc} */
-    @Override public void onResponse(MvccSnapshot res) {
-        AffinityTopologyVersion topVer = mvccTracker.topologyVersion();
-
-        assert topVer != null;
-
-        initialMap(topVer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError(IgniteCheckedException e) {
-        onDone(e);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean onDone(Map<K, V> res, Throwable err) {
         if (super.onDone(res, err)) {
             if (trackable)
                 cctx.mvcc().removeFuture(futId);
-
-            MvccQueryTracker mvccTracker = this.mvccTracker;
-
-            if (mvccTracker != null)
-                mvccTracker.onDone();
 
             cache().sendTtlUpdateRequest(expiryPlc);
 
@@ -497,9 +454,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 GridCacheVersion ver = null;
 
                 if (readNoEntry) {
+                    KeyCacheObject key0 = (KeyCacheObject)cctx.cacheObjects().prepareForCache(key, cctx);
+
                     CacheDataRow row = cctx.mvccEnabled() ?
-                        cctx.offheap().mvccRead(cctx, key, mvccSnapshot()) :
-                        cctx.offheap().read(cctx, key);
+                        cctx.offheap().mvccRead(cctx, key0, mvccSnapshot()) :
+                        cctx.offheap().read(cctx, key0);
 
                     if (row != null) {
                         long expireTime = row.expireTime();
@@ -543,7 +502,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 taskName,
                                 expiryPlc,
                                 !deserializeBinary,
-                                mvccSnapshot(),
                                 null);
 
                             if (getRes != null) {
@@ -562,11 +520,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 null,
                                 taskName,
                                 expiryPlc,
-                                !deserializeBinary,
-                                mvccSnapshot());
+                                !deserializeBinary);
                         }
 
-                        entry.touch(topVer);
+                        entry.touch();
 
                         // Entry was not in memory or in swap, so we remove it from cache.
                         if (v == null) {

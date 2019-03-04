@@ -361,7 +361,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     public class Replace extends GetPageHandler<Put> {
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
             throws IgniteCheckedException  {
             // Check the triangle invariant.
@@ -979,13 +978,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Check if the tree is getting destroyed.
      */
-    private void checkDestroyed() {
+    protected final void checkDestroyed() {
         if (destroyed.get())
             throw new IllegalStateException("Tree is being concurrently destroyed: " + getName());
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+    @Override public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
         return find(lower, upper, null);
     }
 
@@ -1002,7 +1001,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public final GridCursor<T> find(L lower, L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
+    public GridCursor<T> find(L lower, L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
@@ -1192,7 +1191,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public T findLast() throws IgniteCheckedException {
         return findLast(null);
     }
@@ -1242,7 +1240,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Found result or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public final <R> R findOne(L row, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
@@ -1269,7 +1266,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Found row.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     @Override public final T findOne(L row) throws IgniteCheckedException {
         return findOne(row, null, null);
     }
@@ -2898,7 +2894,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override boolean found(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
             // Check if we are on an inner page and can't get row from it.
             if (lvl != 0 && !canGetRowFromInner)
@@ -3042,7 +3037,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param cnt Number of rows in the buffer.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         private void visit(long pageAddr, BPlusIO<L> io, int startIdx, int cnt)
                 throws IgniteCheckedException {
             assert io.isLeaf() : io;
@@ -3983,7 +3977,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public long pollFreePage() {
             if (freePages == null)
                 return 0L;
@@ -4002,7 +3995,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void addFreePage(long pageId) {
             assert pageId != 0L;
 
@@ -4410,7 +4402,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param idx Index to remove.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         private void removeDataRowFromLeaf(long pageId, long page, long pageAddr, Boolean walPlc, BPlusIO<L> io, int cnt,
             int idx)
             throws IgniteCheckedException {
@@ -4642,7 +4633,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         private void reuseFreePages() throws IgniteCheckedException {
             // If we have a bag, then it will be processed at the upper level.
             if (reuseList != null && freePages != null)
@@ -5178,7 +5168,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    @SuppressWarnings("unchecked")
     private abstract class AbstractForwardCursor {
         /** */
         long nextPageId;
@@ -5310,7 +5299,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return {@code true} If we were able to fetch rows from this page.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         private boolean fillFromBuffer(long pageAddr, BPlusIO<L> io, int startIdx, int cnt)
             throws IgniteCheckedException {
             assert io.isLeaf() : io;
@@ -5406,7 +5394,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Closure cursor.
      */
-    @SuppressWarnings("unchecked")
     private final class ClosureCursor extends AbstractForwardCursor {
         /** */
         private final TreeRowClosure<L, T> p;
@@ -5502,7 +5489,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Forward cursor.
      */
-    @SuppressWarnings("unchecked")
     private final class ForwardCursor extends AbstractForwardCursor implements GridCursor<T> {
         /** */
         final Object x;
@@ -5592,7 +5578,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("SimplifiableIfStatement")
         @Override public boolean next() throws IgniteCheckedException {
             if (rows == null)
                 return false;
@@ -5643,7 +5628,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private abstract class GetPageHandler<G extends Get> extends PageHandler<G, Result> {
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Result run(int cacheId, long pageId, long page, long pageAddr, PageIO iox, Boolean walPlc,
             G g, int lvl, IoStatisticsHolder statHolder) throws IgniteCheckedException {
             assert PageIO.getPageId(pageAddr) == pageId;

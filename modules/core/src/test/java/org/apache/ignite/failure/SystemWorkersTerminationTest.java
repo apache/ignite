@@ -29,13 +29,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests system critical workers termination.
  */
-@RunWith(JUnit4.class)
 public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
     /** */
     private static volatile String failureHndThreadName;

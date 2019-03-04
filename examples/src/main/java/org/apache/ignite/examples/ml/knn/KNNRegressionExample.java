@@ -17,20 +17,21 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.io.FileNotFoundException;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.FileNotFoundException;
 
 /**
  * Run kNN regression trainer ({@link KNNRegressionTrainer}) over distributed dataset.
@@ -61,51 +62,27 @@ public class KNNRegressionExample {
 
             KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
+            final IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
+            final IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+
             KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
                 ignite,
                 dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
+                featureExtractor,
+                lbExtractor
             ).withK(5)
                 .withDistanceMeasure(new ManhattanDistance())
                 .withStrategy(NNStrategy.WEIGHTED);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
+            double rmse = Evaluator.evaluate(
+                dataCache,
+                knnMdl,
+                featureExtractor,
+                lbExtractor,
+                new RegressionMetrics()
+            );
 
-            int totalAmount = 0;
-            // Calculate mean squared error (MSE)
-            double mse = 0.0;
-            // Calculate mean absolute error (MAE)
-            double mae = 0.0;
-
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
-
-                    double prediction = knnMdl.apply(inputs);
-
-                    mse += Math.pow(prediction - groundTruth, 2.0);
-                    mae += Math.abs(prediction - groundTruth);
-
-                    totalAmount++;
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
-
-                System.out.println(">>> ---------------------------------");
-
-                mse = mse / totalAmount;
-                System.out.println("\n>>> Mean squared error (MSE) " + mse);
-
-                mae = mae / totalAmount;
-                System.out.println("\n>>> Mean absolute error (MAE) " + mae);
-
-                System.out.println(">>> kNN regression over cached dataset usage example completed.");
-            }
+            System.out.println("\n>>> Rmse = " + rmse);
         }
     }
 }

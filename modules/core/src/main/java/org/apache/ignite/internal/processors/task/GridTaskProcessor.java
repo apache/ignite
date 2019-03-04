@@ -548,7 +548,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param execName Name of the custom executor.
      * @return Task future.
      */
-    @SuppressWarnings("unchecked")
     private <T, R> ComputeTaskInternalFuture<R> startTask(
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
@@ -1134,7 +1133,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param nodeId Node ID.
      * @param msg Task session request.
      */
-    @SuppressWarnings({"unchecked"})
     private void processTaskSessionRequest(UUID nodeId, GridTaskSessionRequest msg) {
         assert nodeId != null;
         assert msg != null;
@@ -1244,7 +1242,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     /**
      * Listener for individual task events.
      */
-    @SuppressWarnings({"deprecation"})
     private class TaskEventListener implements GridTaskEventListener {
         /** */
         private final GridMessageListener msgLsnr = new JobMessageListener(false);

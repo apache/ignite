@@ -84,7 +84,7 @@ public class DecisionTreeClassificationTrainerExample {
             for (int i = 0; i < 1000; i++) {
                 LabeledPoint pnt = generatePoint(rnd);
 
-                double prediction = mdl.apply(VectorUtils.of(pnt.x, pnt.y));
+                double prediction = mdl.predict(VectorUtils.of(pnt.x, pnt.y));
                 double lbl = pnt.lb;
 
                 if (i %50 == 1)

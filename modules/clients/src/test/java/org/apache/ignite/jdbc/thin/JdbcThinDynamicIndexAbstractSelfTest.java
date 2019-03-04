@@ -34,13 +34,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test that checks indexes handling with JDBC.
  */
-@RunWith(JUnit4.class)
 public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** */
     private static final String CREATE_INDEX = "create index idx on Person (id desc)";

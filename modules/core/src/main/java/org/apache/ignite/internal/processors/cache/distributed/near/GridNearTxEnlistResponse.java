@@ -158,13 +158,13 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Throwable error() {
+    @Override public @Nullable Throwable error() {
         return err;
     }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
-        return false;
+        return addDepInfo;
     }
 
     /**

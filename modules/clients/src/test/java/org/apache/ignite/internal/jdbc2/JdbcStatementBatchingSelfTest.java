@@ -24,13 +24,10 @@ import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Statement batch test.
  */
-@RunWith(JUnit4.class)
 public class JdbcStatementBatchingSelfTest extends JdbcAbstractDmlStatementSelfTest {
 
     /** {@inheritDoc} */

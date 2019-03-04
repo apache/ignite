@@ -124,7 +124,6 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public R result() {
         Object state0 = state;
 
@@ -251,7 +250,6 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @return Result.
      * @throws IgniteCheckedException If resolved to exception.
      */
-    @SuppressWarnings("unchecked")
     private R resolve() throws IgniteCheckedException {
         if(state == CANCELLED)
             throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);

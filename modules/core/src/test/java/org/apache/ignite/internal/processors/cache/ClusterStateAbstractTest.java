@@ -43,13 +43,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /** Entry count. */
     public static final int ENTRY_CNT = 5000;
@@ -122,14 +119,14 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         forbidden.clear();
 
-        grid(0).active(true);
+        grid(0).cluster().active(true);
 
         IgniteCache<Object, Object> cache2 = grid(0).createCache(new CacheConfiguration<>("cache2"));
 
         for (int k = 0; k < ENTRY_CNT; k++)
             cache2.put(k, k);
 
-        grid(0).active(false);
+        grid(0).cluster().active(false);
 
         checkInactive(GRID_CNT);
 
@@ -152,7 +149,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         forbidden.clear();
 
-        grid(0).active(true);
+        grid(0).cluster().active(true);
 
         awaitPartitionMapExchange();
 
@@ -163,7 +160,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         for (int g = 0; g < GRID_CNT; g++) {
             // Tests that state changes are propagated to existing and new nodes.
-            assertTrue(grid(g).active());
+            assertTrue(grid(g).cluster().active());
 
             IgniteCache<Object, Object> cache0 = grid(g).cache(CACHE_NAME);
 
@@ -196,12 +193,12 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
                 assertEquals(k,  cache0.get(k));
         }
 
-        grid(0).active(false);
+        grid(0).cluster().active(false);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (int g = 0; g < GRID_CNT; g++) {
-                    if (grid(g).active())
+                    if (grid(g).cluster().active())
                         return false;
                 }
 
@@ -240,7 +237,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         forbidden.clear();
 
-        cl.active(true);
+        cl.cluster().active(true);
 
         awaitPartitionMapExchange();
 
@@ -251,7 +248,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         for (int g = 0; g < GRID_CNT + 1; g++) {
             // Tests that state changes are propagated to existing and new nodes.
-            assertTrue(grid(g).active());
+            assertTrue(grid(g).cluster().active());
 
             IgniteCache<Object, Object> cache0 = grid(g).cache(CACHE_NAME);
 
@@ -259,12 +256,12 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
                 assertEquals(k,  cache0.get(k));
         }
 
-        cl.active(false);
+        cl.cluster().active(false);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (int g = 0; g < GRID_CNT + 1; g++) {
-                    if (grid(g).active())
+                    if (grid(g).cluster().active())
                         return false;
                 }
 
@@ -288,16 +285,20 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         lock.lock();
 
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                grid(0).active(false);
+        try {
+            //noinspection ThrowableNotThrown
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                @Override public Object call() {
+                    grid(0).cluster().active(false);
 
-                return null;
-            }
-        }, IgniteException.class,
-            "Failed to deactivate cluster (must invoke the method outside of an active transaction or lock).");
-
-        lock.unlock();
+                    return null;
+                }
+            }, IgniteException.class,
+                "Failed to deactivate cluster (must invoke the method outside of an active transaction).");
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -316,25 +317,25 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception if failed.
      */
     private void deactivateWithPendingTransaction(TransactionConcurrency concurrency,
-        TransactionIsolation isolation) throws Exception {
+        TransactionIsolation isolation) {
         final Ignite ignite0 = grid(0);
 
         final IgniteCache<Object, Object> cache0 = ignite0.cache(CACHE_NAME);
 
-        try (Transaction tx = ignite0.transactions().txStart(concurrency, isolation)) {
+        try (Transaction ignore = ignite0.transactions().txStart(concurrency, isolation)) {
             cache0.put(1, "1");
 
+            //noinspection ThrowableNotThrown
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    grid(0).active(false);
+                @Override public Object call() {
+                    grid(0).cluster().active(false);
 
                     return null;
                 }
             }, IgniteException.class,
-                "Failed to deactivate cluster (must invoke the method outside of an active transaction or lock).");
+                "Failed to deactivate cluster (must invoke the method outside of an active transaction).");
         }
 
         assertNull(cache0.get(1));
@@ -346,7 +347,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      */
     private void checkInactive(int cnt) {
         for (int g = 0; g < cnt; g++)
-            assertFalse(grid(g).active());
+            assertFalse(grid(g).cluster().active());
     }
 
     /**

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {OperatorFunction} from 'rxjs/interfaces';
+import {OperatorFunction} from 'rxjs';
 import {filter} from 'rxjs/operators';
 
 type Action = {type: string};

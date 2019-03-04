@@ -26,13 +26,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Checks starts from Stream.
  */
-@RunWith(JUnit4.class)
 public class IgniteStartFromStreamConfigurationTest extends GridCommonAbstractTest {
     /**
      * Tests starts from stream.

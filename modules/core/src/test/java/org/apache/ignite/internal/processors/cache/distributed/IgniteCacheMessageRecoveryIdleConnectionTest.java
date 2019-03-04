@@ -30,13 +30,9 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -47,11 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODES = 3;
 
@@ -61,8 +53,6 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -128,7 +118,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
 
             int iter = 0;
 
-            long stopTime = System.currentTimeMillis() + 90_000;
+            long stopTime = System.currentTimeMillis() + GridTestUtils.SF.apply(90_000);
 
             while (System.currentTimeMillis() < stopTime) {
                 if (iter++ % 50 == 0)
@@ -157,7 +147,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
             }
         }
         finally {
-            ignite(0).destroyCache(ccfg.getName());
+            ignite(0).destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 }

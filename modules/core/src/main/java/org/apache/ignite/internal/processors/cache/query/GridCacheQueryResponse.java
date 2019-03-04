@@ -234,7 +234,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     /**
      * @param data Query data.
      */
-    @SuppressWarnings("unchecked")
     public void data(Collection<?> data) {
         this.data = (Collection<Object>)data;
     }

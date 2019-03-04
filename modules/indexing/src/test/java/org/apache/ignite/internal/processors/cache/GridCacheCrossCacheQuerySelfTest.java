@@ -40,14 +40,9 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -55,7 +50,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Tests cross cache queries.
  */
-@RunWith(JUnit4.class)
 public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PART_CACHE_NAME = "partitioned";
@@ -67,20 +61,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     private static final String REPL_STORE_CACHE_NAME = "replicated-store";
 
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         c.setCacheConfiguration(
             createCache(PART_CACHE_NAME, CacheMode.PARTITIONED, Integer.class, FactPurchase.class),

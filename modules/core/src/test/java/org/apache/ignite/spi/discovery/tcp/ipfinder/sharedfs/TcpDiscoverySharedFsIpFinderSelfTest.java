@@ -25,13 +25,10 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * GridTcpDiscoverySharedFsIpFinder test.
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoverySharedFsIpFinderSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoverySharedFsIpFinder> {
     /**

@@ -26,13 +26,10 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Cache store test.
  */
-@RunWith(JUnit4.class)
 public class CacheHibernateBlobStoreSelfTest extends
     GridAbstractCacheStoreSelfTest<CacheHibernateBlobStore<Object, Object>> {
     /**
@@ -115,8 +112,4 @@ public class CacheHibernateBlobStoreSelfTest extends
         store.load("key");
     }
 
-    @Test
-    @Override public void testSimpleMultithreading() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1757");
-    }
 }
