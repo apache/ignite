@@ -31,7 +31,7 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
     private TestSecurityData nodeSecData = new TestSecurityData();
 
     /** Thin clients security data. */
-    private Collection<TestSecurityData> thinClientsSecData = Collections.emptyList();
+    private Collection<TestSecurityData> predefinedAuthData = Collections.emptyList();
 
     /** Security processor class name. */
     private String secProcCls;
@@ -104,7 +104,7 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
      * @param data Array of thin client security data.
      */
     public TestSecurityPluginConfiguration thinClientSecData(TestSecurityData... data) {
-        thinClientsSecData = Collections.unmodifiableCollection(Arrays.asList(data));
+        predefinedAuthData = Collections.unmodifiableCollection(Arrays.asList(data));
 
         return this;
     }
@@ -113,7 +113,7 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
      * @return Collection of thin client security data.
      */
     public Collection<TestSecurityData> thinClientsSecData() {
-        return thinClientsSecData;
+        return predefinedAuthData;
     }
 
     /**
