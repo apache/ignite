@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -220,7 +222,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         GridQueryTypeDescriptor typeDesc = table.rowDescriptor().type();
 
-        treeName = treeName(idxName, typeDesc, cctx);
+        treeName = treeName(idxName, cctx.config(), typeDesc.typeId());
 
         IndexColumnsInfo unwrappedColsInfo = new IndexColumnsInfo(unwrappedColsList, inlineSize);
 
@@ -934,14 +936,20 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
 
-    public static void validatePdsIndexName(String idxName,
-        GridQueryTypeDescriptor desc,
-        GridCacheContext cctx) throws IgniteCheckedException {
+    /**
+     * Validates that index name after masking is not too long to store in persistence storage.
+     *
+     * @param idxName Index name.
+     * @param ccfg Cache configuration of the cache containing table.
+     * @param typeId Type id of the table, index created in.
+     */
+    public static void validatePdsIndexName(String idxName, CacheConfiguration ccfg, int typeId)
+        throws IgniteCheckedException {
+        int segCnt = ccfg.getQueryParallelism();
 
-        int segCnt = cctx.config().getQueryParallelism();
         int maxLenSeg = segCnt - 1;
 
-        String segName = segmentName(treeName(idxName, desc, cctx), maxLenSeg);
+        String segName = segmentName(treeName(idxName, ccfg, typeId), maxLenSeg);
 
         int encLen = segName.getBytes(StandardCharsets.UTF_8).length;
 
@@ -951,15 +959,18 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 ", indexName=" + segName + "].");
     }
 
-    public static String treeName(String idxName,
-        GridQueryTypeDescriptor desc,
-        GridCacheContext cctx) {
-        int typeId = cctx.binaryMarshaller() ? desc.typeId() : desc.valueClass().hashCode();
-
+    /**
+     * Create tree name 
+     *
+     * @param idxName Index name.
+     * @param ccfg Ccfg.
+     * @param typeId Type id.
+     */
+    public static String treeName(String idxName, CacheConfiguration ccfg, int typeId) {
         String masked = BPlusTree.treeName((typeId + "_") + idxName, "H2Tree");
 
-        if (cctx.group().sharedGroup())
-            masked = cctx.cacheId() + "_" + masked;
+        if (ccfg.getGroupName() != null)
+            masked = CU.cacheId(ccfg.getName()) + "_" + masked;
 
         return masked;
     }

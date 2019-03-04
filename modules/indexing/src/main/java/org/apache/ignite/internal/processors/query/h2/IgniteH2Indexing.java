@@ -44,6 +44,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -329,10 +330,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!ctx.clientNode()) {
             String cacheName = idxDesc.typeDescriptor().cacheName();
 
-            GridCacheContext<Object, Object> cctx = ctx.cache().context().cacheContext(CU.cacheId(cacheName));
+            CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
 
-            if (CU.isPersistentCache(cctx.config(), ctx.config().getDataStorageConfiguration()))
-                H2TreeIndex.validatePdsIndexName(idxDesc.name(), idxDesc.typeDescriptor(), cctx);
+            if (CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
+                H2TreeIndex.validatePdsIndexName(idxDesc.name(), ccfg, idxDesc.typeDescriptor().typeId());
         }
 
         schemaMgr.createIndex(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor);
@@ -1772,10 +1773,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (!ctx.clientNode() && persistenceEnabled) {
             for (String idxName : desc.indexes().keySet())
-                H2TreeIndex.validatePdsIndexName(idxName, desc, cacheInfo.cacheContext());
+                H2TreeIndex.validatePdsIndexName(idxName, cacheInfo.config(), desc.typeId());
 
-            H2TreeIndex.validatePdsIndexName(H2TableDescriptor.PK_IDX_NAME, desc, cacheInfo.cacheContext());
-            H2TreeIndex.validatePdsIndexName(H2TableDescriptor.AFFINITY_KEY_IDX_NAME, desc, cacheInfo.cacheContext());
+            H2TreeIndex.validatePdsIndexName(H2TableDescriptor.PK_IDX_NAME, cacheInfo.config(), desc.typeId());
+            H2TreeIndex.validatePdsIndexName(H2TableDescriptor.AFFINITY_KEY_IDX_NAME, cacheInfo.config(), desc.typeId());
         }
     }
 
