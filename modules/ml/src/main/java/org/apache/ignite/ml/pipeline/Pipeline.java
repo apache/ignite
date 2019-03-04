@@ -110,12 +110,7 @@ public class Pipeline<K, V, R> {
     public DatasetTrainer getTrainer() {
         return finalStage;
     }
-
-    public IgniteBiFunction<K, V, R> getFinalFeatureExtractor() {
-        return finalFeatureExtractor;
-    }
-
-
+    
     /**
      * Fits the pipeline to the input cache.
      *
