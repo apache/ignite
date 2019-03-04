@@ -126,6 +126,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 // * Primitives and strings: calculate right here
                 // * Complex types: write to a byte array to get hash from binary writer.
                 //   Copy that byte array to target stream afterwards.
+                // OR: Extract serialization logic from ClientSocket (WriteMessage logic)!
                 var partition = GetPartition(key);
                 var nodeId = partMap.PartitionMap.SingleOrDefault(x => x.Value.Contains(partition));
 
