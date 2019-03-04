@@ -187,7 +187,10 @@ public class GridPartitionUploadManager {
 
             backupMgr.backup(uploadFut.rebalanceId,
                 uploadFut.getAssigns(),
-                new SocketBackupProcessTask(new FileTransferManager<>(cctx.kernalContext(), ch.channel())),
+                new SocketBackupProcessTask(
+                    new FileTransferManager<>(cctx.kernalContext(), ch.channel()),
+                    log
+                ),
                 uploadFut);
 
             uploadFut.onDone(true);
@@ -214,11 +217,15 @@ public class GridPartitionUploadManager {
         /** */
         private final FileTransferManager<PartitionFileMetaInfo> ftMrg;
 
+        /** */
+        private final IgniteLogger log;
+
         /**
          * @param ftMrg An upload helper class.
          */
-        public SocketBackupProcessTask(FileTransferManager<PartitionFileMetaInfo> ftMrg) {
+        public SocketBackupProcessTask(FileTransferManager<PartitionFileMetaInfo> ftMrg, IgniteLogger log) {
             this.ftMrg = ftMrg;
+            this.log = log;
         }
 
         /** {@inheritDoc} */
@@ -227,11 +234,15 @@ public class GridPartitionUploadManager {
             File file,
             long size
         ) throws IgniteCheckedException {
+            U.log(log, "Start partition meta info uploading: " + grpPartId);
+
             ftMrg.writeMetaFrom(new PartitionFileMetaInfo(grpPartId.getGroupId(),
                 grpPartId.getPartitionId(),
                 file.getName(),
                 size,
                 0));
+
+            U.log(log, "Start partition uploading: " + file.getName());
 
             ftMrg.writeFrom(file, 0, size);
         }
@@ -243,11 +254,15 @@ public class GridPartitionUploadManager {
             long offset,
             long size
         ) throws IgniteCheckedException {
+            U.log(log, "Start delta meta info uploading: " + grpPartId);
+
             ftMrg.writeMetaFrom(new PartitionFileMetaInfo(grpPartId.getGroupId(),
                 grpPartId.getPartitionId(),
                 file.getName(),
                 size,
                 1));
+
+            U.log(log, "Start delta uploading: " + file.getName());
 
             ftMrg.writeFrom(file, offset, size);
         }

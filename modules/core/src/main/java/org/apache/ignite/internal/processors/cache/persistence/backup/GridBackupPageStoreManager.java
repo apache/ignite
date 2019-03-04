@@ -281,8 +281,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
             cpFut.finishFuture().get();
 
-            if (log.isDebugEnabled())
-                log.debug("Start backup operation [grps=" + grpsBackup + ']');
+            U.log(log, "Start backup operation [grps=" + grpsBackup + ']');
 
             // Use sync mode to execute provided task over partitons and corresponding deltas.
             for (GroupPartitionId grpPartId : grpPartIdSet) {
@@ -311,7 +310,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 ofNullable(trackMap.get(grpPartId))
                     .ifPresent(AtomicInteger::decrementAndGet);
 
-                U.log(log, "Partition file handled [pairId" + grpPartId + ']');
+                U.log(log, "Partition handled [pairId" + grpPartId + ']');
 
                 final Map<GroupPartitionId, Integer> offsets = backupCtx.deltaOffsetMap;
                 final int deltaOffset = offsets.get(grpPartId);
@@ -383,8 +382,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
         }
         catch (IgniteDataIntegrityViolationException e) {
             // The page can be readed with zero bytes only if it allocated but not changed yet.
-            U.warn(log, "Ignore integrity violation checks [pairId=" + pairId + ", pageId=" + pageId + "]. " +
-                "Error message: " + e.getMessage());
+            U.debug(log, "Ignore integrity violation checks [pairId=" + pairId + ", pageId=" + pageId + ']');
         }
         catch (Exception e) {
             U.error(log, "An error occured in the process of page backup " +
@@ -419,13 +417,15 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void initTemporaryStores(Set<GroupPartitionId> grpPartIdSet) throws IgniteCheckedException {
+        U.log(log, "Resolve temporary directories: " + grpPartIdSet);
+
         for (GroupPartitionId grpPartId : grpPartIdSet) {
             CacheConfiguration ccfg = cctx.cache().cacheGroup(grpPartId.getGroupId()).config();
 
             // Create cache temporary directory if not.
             File tempGroupDir = U.resolveWorkDirectory(backupWorkDir.getAbsolutePath(), cacheDirName(ccfg), false);
 
-            U.ensureDirectory(tempGroupDir, "temporary directory for grpId: " + grpPartId.getGroupId(), log);
+            U.ensureDirectory(tempGroupDir, "temporary directory for grpId: " + grpPartId.getGroupId(), null);
 
             backupStores.putIfAbsent(grpPartId,
                 new FileTemporaryStore(getPartionDeltaFile(tempGroupDir,

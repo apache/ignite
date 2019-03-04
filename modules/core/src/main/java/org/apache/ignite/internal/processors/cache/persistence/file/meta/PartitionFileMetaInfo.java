@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.file.meta;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -98,19 +97,14 @@ public class PartitionFileMetaInfo implements FileMetaInfo {
 
     /** {@inheritDoc} */
     @Override public void readMetaInfo(DataInputStream is) throws IOException {
-        try {
-            grpId = is.readInt();
-            partId = is.readInt();
-            name = is.readUTF();
-            size = is.readLong();
-            type = is.readInt();
+        grpId = is.readInt();
+        partId = is.readInt();
+        name = is.readUTF();
+        size = is.readLong();
+        type = is.readInt();
 
-            if (grpId == null || partId == null || name == null || size == null || type == null)
-                throw new IOException("File meta information incorrect: " + this);
-        }
-        catch (EOFException e) {
-            throw new IOException("Input connection closed unexpectedly", e);
-        }
+        if (grpId == null || partId == null || name == null || size == null || type == null)
+            throw new IOException("File meta information incorrect: " + this);
     }
 
     /** {@inheritDoc} */

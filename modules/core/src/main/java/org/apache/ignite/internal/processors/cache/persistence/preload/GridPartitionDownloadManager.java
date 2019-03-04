@@ -165,6 +165,8 @@ public class GridPartitionDownloadManager {
 
                 assert meta.getType() == 0 : meta;
 
+                U.log(log, "Partition meta received from source: " + meta);
+
                 grpId = meta.getGrpId();
                 partId = meta.getPartId();
 
@@ -189,18 +191,26 @@ public class GridPartitionDownloadManager {
 
                             File cfgFile = new File(store.getFileAbsolutePath());
 
-                            // Skip the file header and first pageId with meta.
-                            // Will restore meta pageId on merge delta file phase.
                             assert store.size() <= meta.getSize() : "Trim zero bytes from the end of partition";
 
-                            source.readInto(cfgFile, store.headerSize() + store.getPageSize(), meta.getSize());
+                            U.log(log, "Start receiving partition file: " + cfgFile.getName());
+
+                            // TODO: Skip the file header and first pageId with meta.
+                            // Will restore meta pageId on merge delta file phase.
+                            source.readInto(cfgFile, 0, meta.getSize());
+
+                            U.log(log, "Partition file uptated succusfully: " + cfgFile.getName());
 
                             // Start processing delta file.
                             source.readMetaInto(meta = new PartitionFileMetaInfo());
 
+                            U.log(log, "Received meta pages: " + meta);
+
                             assert meta.getType() == 1 : meta;
 
                             applyPartitionDeltaPages(source, store, meta.getSize());
+
+                            U.log(log, "Partition delta pages applied successfully");
 
                             rebFut.markProcessed(grpId, partId);
 
@@ -251,6 +261,10 @@ public class GridPartitionDownloadManager {
         PageStore store,
         long size
     ) throws IgniteCheckedException {
+        // There is no delta file to apply.
+        if (size <= 0)
+            return;
+
         ByteBuffer pageBuff = ByteBuffer.allocate(store.getPageSize());
 
         long readed;

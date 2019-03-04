@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -81,6 +82,9 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
         try {
             meta.readMetaInfo(dis);
         }
+        catch (EOFException e) {
+            throw new IgniteCheckedException("Input connection closed unexpectedly", e);
+        }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
         }
@@ -102,11 +106,21 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
     }
 
     /**
-     * @throws IOException If fails.
+     * @throws IgniteCheckedException If fails.
      */
-    public void readAck() throws IOException {
-        if (!ACK_MSG.equals(dis.readUTF()))
-            throw new IOException("Incorrect ack message");
+    public void readAck() throws IgniteCheckedException {
+        try {
+            String ack = dis.readUTF();
+
+            if (!ACK_MSG.equals(ack))
+                throw new IOException("Incorrect ack message");
+        }
+        catch (EOFException e) {
+            throw new IgniteCheckedException("Input connection closed unexpectedly", e);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
@@ -128,21 +142,27 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
     /**
      * @param file File to download into.
      * @param offset Offset to start writing to the file.
-     * @param count The number of bytes to expect.
+     * @param expected The number of bytes to expect.
      * @throws IgniteCheckedException If fails.
      */
-    public void readInto(File file, long offset, long count) throws IgniteCheckedException {
+    public void readInto(File file, long offset, long expected) throws IgniteCheckedException {
+        // Nothing to read.
+        if (expected <= 0)
+            return;
+
         try {
             try (FileIO fileIO = dfltIoFactory.create(file, CREATE, WRITE)) {
                 fileIO.position(offset);
 
-                while (count > 0) {
-                    long written = fileIO.transferFrom(channel, fileIO.position(), count);
+                long size = expected;
 
-                    if (written < 0)
+                while (size > 0) {
+                    long readed = fileIO.transferFrom(channel, fileIO.position(), size);
+
+                    if (readed < 0)
                         break;
 
-                    count -= written;
+                    size -= readed;
                 }
             }
 
@@ -173,6 +193,10 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
      */
     public void writeFrom(File file, long offset, long size) throws IgniteCheckedException {
         FileIO fileIO = null;
+
+        // Nothing to send.
+        if (size <= 0)
+            return;
 
         try {
             fileIO = dfltIoFactory.create(file, READ);
