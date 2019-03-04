@@ -21,8 +21,7 @@ package org.apache.ignite.internal.processors.affinity;
  */
 public interface HistoryAffinityAssignment extends AffinityAssignment {
     /**
-     * Should return true if instance is "heavy" and should be taken into account
-     * during history size management.
+     * Should return true if instance is "heavy" and should be taken into account during history size management.
      *
      * @return <code>true</code> if adding this instance to history should trigger size check and possible cleanup.
      */
