@@ -2626,8 +2626,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             ccfg.getCacheMode() == LOCAL,
             grpDesc.persistenceEnabled());
 
-        U.debug(log, "Created holder [aff=" + aff + ']');
-
         return new CacheGroupNoAffOrFiltredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
     }
 
@@ -2723,8 +2721,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param caches Registered caches.
          */
         void init(Map<Integer, CacheGroupDescriptor> grps, Map<String, DynamicCacheDescriptor> caches) {
-            U.debug(log, "Init CachesInfo [grps=" + grps + ", caches=" + caches + ']');
-
             for (CacheGroupDescriptor grpDesc : grps.values())
                 registerGroup(grpDesc);
 
@@ -2818,8 +2814,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          *
          */
         void clear() {
-            U.debug(log, "Cleared CachesInfo");
-
             registeredGrps.clear();
 
             registeredCaches.clear();
