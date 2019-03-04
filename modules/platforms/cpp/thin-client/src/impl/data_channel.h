@@ -24,9 +24,7 @@
 
 #include <ignite/thin/ignite_client_configuration.h>
 
-#include <ignite/guid.h>
 #include <ignite/common/concurrent.h>
-
 #include <ignite/network/socket_client.h>
 
 #include <ignite/impl/interop/interop_output_stream.h>
@@ -151,7 +149,7 @@ namespace ignite
                  * response and stores it in the same memory.
                  *
                  * @param mem Memory.
-                 * @param timeout Opration timeout.
+                 * @param timeout Operation timeout.
                  */
                 void InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout);
 
@@ -164,13 +162,23 @@ namespace ignite
                     return node;
                 }
 
+                /**
+                 * Check if the connection established.
+                 *
+                 * @return @true if connected.
+                 */
+                bool IsConnected() const
+                {
+                    return socket.get() != 0;
+                }
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataChannel);
 
                 /**
                  * Generate request ID.
                  *
-                 * Atomicaly generates and returns new Request ID.
+                 * Atomically generates and returns new Request ID.
                  *
                  * @return Unique Request ID.
                  */

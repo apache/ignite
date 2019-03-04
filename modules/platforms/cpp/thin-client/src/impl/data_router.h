@@ -53,12 +53,15 @@ namespace ignite
              */
             class DataRouter
             {
+                typedef std::map<Guid, SP_DataChannel> ChannelsGuidMap;
+                typedef std::vector<SP_DataChannel> ChannelsVector;
+
             public:
                 /** Connection establishment timeout in seconds. */
                 enum { DEFAULT_CONNECT_TIMEOUT = 5 };
 
                 /** Network IO operation timeout in seconds. */
-                enum { DEFALT_IO_TIMEOUT = 5 };
+                enum { DEFAULT_IO_TIMEOUT = 5 };
 
                 /** Default port. */
                 enum { DEFAULT_PORT = 10800 };
@@ -120,7 +123,7 @@ namespace ignite
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
-                void SyncMessage(const ReqT& req, RspT& rsp, const IgniteNodes& hint)
+                void SyncMessage(const ReqT& req, RspT& rsp, const Guid& hint)
                 {
                     SP_DataChannel channel = GetBestChannel(hint);
 
@@ -184,16 +187,6 @@ namespace ignite
                 typedef common::concurrent::SharedPointer<network::EndPoints> SP_EndPoints;
 
                 /**
-                 * Get endpoints for the key.
-                 * Always using Rendezvous Affinity Function algorithm for now.
-                 *
-                 * @param cacheId Cache ID.
-                 * @param key Key.
-                 * @return Endpoints for the key.
-                 */
-                int32_t GetPartitionForKey(int32_t cacheId, const WritableKey& key);
-
-                /**
                  * Get random data channel.
                  *
                  * @return Random data channel.
@@ -201,20 +194,12 @@ namespace ignite
                 SP_DataChannel GetRandomChannel();
 
                 /**
-                 * Check whether the provided address hint is the local host.
+                 * Get random data channel.
+                 * @warning Should be called when lock is held!
                  *
-                 * @param hint Hint.
-                 * @return @c true if the local host.
+                 * @return Random data channel.
                  */
-                bool IsLocalHost(const IgniteNodes& hint);
-
-                /**
-                 * Check whether the provided address is the local host.
-                 *
-                 * @param host Host.
-                 * @return @c true if the local host.
-                 */
-                static bool IsLocalAddress(const std::string& host);
+                SP_DataChannel GetRandomChannelLocked();
 
                 /**
                  * Check whether the provided end point is provided by user using configuration.
@@ -227,15 +212,10 @@ namespace ignite
                 /**
                  * Get the best data channel.
                  *
-                 * @param hint Preferred server node to use.
+                 * @param hint GUID of preferred server node to use.
                  * @return The best available data channel.
                  */
-                SP_DataChannel GetBestChannel(const IgniteNodes& hint);
-
-                /**
-                 * Update local addresses.
-                 */
-                void UpdateLocalAddresses();
+                SP_DataChannel GetBestChannel(const Guid& hint);
 
                 /**
                  * Collect all addresses from string.
@@ -257,9 +237,6 @@ namespace ignite
                 /** Address ranges. */
                 std::vector<network::TcpRange> ranges;
 
-                /** Local addresses. */
-                std::set<std::string> localAddresses;
-
                 /** Type updater. */
                 std::auto_ptr<binary::BinaryTypeUpdater> typeUpdater;
 
@@ -267,7 +244,10 @@ namespace ignite
                 binary::BinaryTypeManager typeMgr;
 
                 /** Data channels. */
-                std::map<IgniteNode, SP_DataChannel> channels;
+                ChannelsGuidMap channels;
+
+                /** Data channels. */
+                ChannelsVector legacyChannels;
 
                 /** Channels mutex. */
                 common::concurrent::CriticalSection channelsMutex;

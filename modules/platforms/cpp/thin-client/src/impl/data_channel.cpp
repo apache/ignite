@@ -57,7 +57,7 @@ namespace ignite
 
             DataChannel::~DataChannel()
             {
-                // No-op.
+                Close();
             }
 
             bool DataChannel::Connect(const std::string& host, uint16_t port, int32_t timeout)

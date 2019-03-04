@@ -38,7 +38,7 @@ namespace ignite
         namespace thin
         {
             DataRouter::DataRouter(const ignite::thin::IgniteClientConfiguration& cfg) :
-                ioTimeout(DEFALT_IO_TIMEOUT),
+                ioTimeout(DEFAULT_IO_TIMEOUT),
                 connectionTimeout(DEFAULT_CONNECT_TIMEOUT),
                 config(cfg)
             {
@@ -60,12 +60,11 @@ namespace ignite
             {
                 using ignite::thin::SslMode;
 
-                UpdateLocalAddresses();
-
-                channels.clear();
-
-                if (config.GetEndPoints().empty())
+                if (ranges.empty())
                     throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT, "No valid address to connect.");
+
+                ChannelsVector newLegacyChannels;
+                newLegacyChannels.reserve(ranges.size());
 
                 for (std::vector<network::TcpRange>::iterator it = ranges.begin(); it != ranges.end(); ++it)
                 {
@@ -88,14 +87,35 @@ namespace ignite
 
                         if (connected)
                         {
-                            common::concurrent::CsLockGuard lock(channelsMutex);
+                            const IgniteNode& newNode = channel.Get()->GetNode();
 
-                            channels[channel.Get()->GetNode()].Swap(channel);
+                            if (newNode.IsLegacy())
+                            {
+                                newLegacyChannels.push_back(channel);
+                            }
+                            else
+                            {
+                                common::concurrent::CsLockGuard lock(channelsMutex);
+
+                                // Insertion takes place if no channel with the GUID is already present.
+                                std::pair<ChannelsGuidMap::iterator, bool> res = 
+                                    channels.insert(std::make_pair(newNode.GetGuid(), channel));
+
+                                bool inserted = res.second;
+                                SP_DataChannel& oldChannel = res.first->second;
+
+                                if (!inserted && !oldChannel.Get()->IsConnected())
+                                    oldChannel.Swap(channel);
+                            }
 
                             break;
                         }
                     }
                 }
+
+                common::concurrent::CsLockGuard lock(channelsMutex);
+
+                legacyChannels.swap(newLegacyChannels);
 
                 if (channels.empty())
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with any host.");
@@ -103,17 +123,10 @@ namespace ignite
 
             void DataRouter::Close()
             {
-                typeMgr.SetUpdater(0);
-
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
-                for (std::map<IgniteNode, SP_DataChannel>::iterator it = channels.begin(); it != channels.end(); ++it)
-                {
-                    DataChannel* channel = it->second.Get();
-
-                    if (channel)
-                        channel->Close();
-                }
+                channels.clear();
+                legacyChannels.clear();
             }
 
             void DataRouter::RefreshAffinityMapping(int32_t cacheId, bool binary)
@@ -152,45 +165,30 @@ namespace ignite
 
             SP_DataChannel DataRouter::GetRandomChannel()
             {
-                int r = rand();
-
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
-                size_t idx = r % channels.size();
+                return GetRandomChannelLocked();
 
-                std::map<IgniteNode, SP_DataChannel>::iterator it = channels.begin();
+            }
+
+            SP_DataChannel DataRouter::GetRandomChannelLocked()
+            {
+                int r = rand();
+
+                size_t idx = r % (channels.size() + legacyChannels.size());
+
+                if (idx > channels.size())
+                {
+                    size_t legacyIdx = idx - channels.size();
+
+                    return legacyChannels[legacyIdx];
+                }
+
+                ChannelsGuidMap::iterator it = channels.begin();
 
                 std::advance(it, idx);
 
                 return it->second;
-            }
-
-            bool DataRouter::IsLocalHost(const IgniteNodes& hint)
-            {
-                for (IgniteNodes::const_iterator it = hint.begin(); it != hint.end(); ++it)
-                {
-                    const std::string& host = it->GetEndPoint().host;
-
-                    if (IsLocalAddress(host))
-                        continue;
-
-                    if (localAddresses.find(host) == localAddresses.end())
-                        return false;
-                }
-
-                return true;
-            }
-
-            bool DataRouter::IsLocalAddress(const std::string& host)
-            {
-                static const std::string s127("127");
-
-                bool ipv4 = std::count(host.begin(), host.end(), '.') == 3;
-
-                if (ipv4)
-                    return host.compare(0, 3, s127) == 0;
-
-                return host == "::1" || host == "0:0:0:0:0:0:0:1";
             }
 
             bool DataRouter::IsProvidedByUser(const network::EndPoint& endPoint)
@@ -206,34 +204,16 @@ namespace ignite
                 return false;
             }
 
-            SP_DataChannel DataRouter::GetBestChannel(const IgniteNodes& hint)
+            SP_DataChannel DataRouter::GetBestChannel(const Guid& hint)
             {
-                if (hint.empty())
-                    return GetRandomChannel();
+                common::concurrent::CsLockGuard lock(channelsMutex);
 
-                bool localHost = IsLocalHost(hint);
+                ChannelsGuidMap::iterator itChannel = channels.find(hint);
 
-                for (IgniteNodes::const_iterator itNode = hint.begin(); itNode != hint.end(); ++itNode)
-                {
-                    if (IsLocalAddress(itNode->GetEndPoint().host) && !localHost)
-                        continue;
+                if (itChannel != channels.end())
+                    return itChannel->second;
 
-                    common::concurrent::CsLockGuard lock(channelsMutex);
-
-                    std::map<IgniteNode, SP_DataChannel>::iterator itChannel = channels.find(*itNode);
-
-                    if (itChannel != channels.end())
-                        return itChannel->second;
-                }
-
-                return GetRandomChannel();
-            }
-
-            void DataRouter::UpdateLocalAddresses()
-            {
-                localAddresses.clear();
-
-                network::utils::GetLocalAddresses(localAddresses);
+                return GetRandomChannelLocked();
             }
 
             void DataRouter::CollectAddresses(const std::string& str, std::vector<network::TcpRange>& ranges)
