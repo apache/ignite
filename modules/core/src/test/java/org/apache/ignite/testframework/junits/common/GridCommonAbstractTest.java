@@ -33,6 +33,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.integration.CompletionListener;
@@ -1136,7 +1138,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         if (found.size() != cnt)
-            throw new IgniteException("Unable to find " + cnt + " requied keys.");
+            throw new IgniteException("Unable to find " + cnt + " required keys. [affPartsToNodes=" +
+                aff.mapPartitionsToNodes(IntStream.rangeClosed(0, aff.partitions())
+                .boxed().collect(Collectors.toList())) + ", cache=" + cache + "]");
 
         return found;
     }
