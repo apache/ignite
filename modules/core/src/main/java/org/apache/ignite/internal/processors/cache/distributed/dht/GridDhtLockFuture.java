@@ -92,13 +92,13 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    private static IgniteLogger log;
+    private IgniteLogger log;
 
     /** Logger. */
-    private static IgniteLogger msgLog;
+    private IgniteLogger msgLog;
 
     /** Cache registry. */
     @GridToStringExclude
