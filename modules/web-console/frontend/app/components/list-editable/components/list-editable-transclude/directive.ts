@@ -15,38 +15,29 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line
-import {default as ListEditable} from '../../controller';
+import {default as ListEditable, ItemScope} from '../../controller';
+
+type TranscludedScope<T> = {$form: ng.IFormController, $item?: T} & ng.IScope
 
 /**
  * Transcludes list-editable slots and proxies item and form scope values to the slot scope,
  * also provides a way to retrieve internal list-editable ng-repeat $index by controller getter.
  * User can provide an alias for $item by setting item-name attribute on transclusion slot element.
  */
-export class ListEditableTransclude {
+export class ListEditableTransclude<T> {
     /**
      * Transcluded slot name.
-     *
-     * @type {string}
      */
-    slot;
+    slot: string;
 
-    /**
-     * List-editable controller.
-     *
-     * @type {ListEditable}
-     */
-    list;
+    list: ListEditable<T>;
 
     static $inject = ['$scope', '$element'];
 
-    constructor($scope, $element) {
-        this.$scope = $scope;
-        this.$element = $element;
-    }
+    constructor(private $scope: ItemScope<T>, private $element: JQLite) {}
 
     $postLink() {
-        this.list.$transclude((clone, transcludedScope) => {
+        this.list.$transclude((clone, transcludedScope: TranscludedScope<T>) => {
             // Ilya Borisov: at first I tried to use a slave directive to get value from
             // attribute and set it to ListEditableTransclude controller, but it turns out
             // this directive would run after list-editable-transclude, so that approach
@@ -98,8 +89,6 @@ export class ListEditableTransclude {
 
     /**
      * Returns list-editable ng-repeat $index.
-     *
-     * @returns {number}
      */
     get $index() {
         if (!this.$scope)

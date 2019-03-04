@@ -77,6 +77,9 @@ public class RestListener extends AbstractListener {
         try {
             if (demo) {
                 if (AgentClusterDemo.getDemoUrl() == null) {
+                    if (cfg.disableDemo())
+                        return RestResult.fail(404, "Demo mode disabled by administrator.");
+
                     AgentClusterDemo.tryStart().await();
 
                     if (AgentClusterDemo.getDemoUrl() == null)
