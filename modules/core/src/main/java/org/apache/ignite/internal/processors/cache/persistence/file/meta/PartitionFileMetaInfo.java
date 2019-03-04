@@ -19,9 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence.file.meta;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-/** */
+/**
+ *
+ */
 public class PartitionFileMetaInfo implements FileMetaInfo {
     /** */
     private Integer grpId;
@@ -94,25 +98,35 @@ public class PartitionFileMetaInfo implements FileMetaInfo {
 
     /** {@inheritDoc} */
     @Override public void readMetaInfo(DataInputStream is) throws IOException {
-        grpId = is.readInt();
-        partId = is.readInt();
-        name = is.readUTF();
-        size = is.readLong();
-        type = is.readInt();
+        try {
+            grpId = is.readInt();
+            partId = is.readInt();
+            name = is.readUTF();
+            size = is.readLong();
+            type = is.readInt();
 
-        if (grpId == null || partId == null || name == null || size == null || type == null)
-            throw new IOException("Recieved meta information incorrect");
+            if (grpId == null || partId == null || name == null || size == null || type == null)
+                throw new IOException("File meta information incorrect: " + this);
+        }
+        catch (EOFException e) {
+            throw new IOException("Input connection closed unexpectedly", e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void writeMetaInfo(DataOutputStream os) throws IOException {
         if (grpId == null || partId == null || name == null || size == null || type == null)
-            throw new IOException("Partition meta information incorrect");
+            throw new IOException("File meta information incorrect: " + this);
 
         os.writeInt(grpId);
         os.writeInt(partId);
         os.writeUTF(name);
         os.writeLong(size);
         os.writeInt(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionFileMetaInfo.class, this);
     }
 }

@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoChannelListener;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -33,14 +34,21 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+
 /**
  *
  */
 public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
-    /** */
+    /**
+     *
+     */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
+    /**
+     *
+     */
     private static final int NODES_CNT = 2;
 
     /** {@inheritDoc} */
@@ -65,13 +73,15 @@ public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testChannelCreationOnDemand() throws Exception {
+    public void testChannelCreationOnDemandToTopic() throws Exception {
         startGrids(NODES_CNT);
 
         final IgniteSocketChannel[] nioCh = new IgniteSocketChannel[1];
         final CountDownLatch waitChLatch = new CountDownLatch(1);
 
-        grid(1).context().io().addChannelListener(new GridIoChannelListener() {
+        Object topic = TOPIC_CACHE.topic("channel", 0);
+
+        grid(1).context().io().addChannelListener(topic, new GridIoChannelListener() {
             @Override public void onChannelCreated(UUID nodeId, IgniteSocketChannel channel) {
                 // Created from ignite node with index = 0;
                 if (channel.id().nodeId().equals(grid(0).localNode().id())) {
@@ -82,9 +92,13 @@ public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        TcpCommunicationSpi commSpi = (TcpCommunicationSpi)grid(0).configuration().getCommunicationSpi();
+        GridIoManager ioMgr = grid(0).context().io();
 
-        WritableByteChannel writableCh = commSpi.channel(grid(1).localNode(), null).channel();
+        WritableByteChannel writableCh = ioMgr.channelToCustomTopic(grid(1).localNode().id(),
+            topic,
+            null,
+            PUBLIC_POOL)
+            .channel();
 
         // Wait for the channel connection established.
         assertTrue(waitChLatch.await(5_000L, TimeUnit.MILLISECONDS));

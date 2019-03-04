@@ -29,21 +29,31 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
+
 /**
  * Test cases for checking cancellation rebalancing process if some events occurs.
  */
-public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTest {
+public class GridCachePersistenceRebalanceSelfTest extends GridCacheRebalancingSyncSelfTest {
     /** */
     @Before
     public void setBefore() throws Exception {
         cleanPersistenceDir();
 
+        // Turn off for the debug
+        System.setProperty(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, "true");
+        System.setProperty(IGNITE_DUMP_THREADS_ON_FAILURE, "false");
+
+        // Tests
         System.setProperty(IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED, "true");
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
     }
 
     /** */
@@ -63,7 +73,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                     .setWalMode(WALMode.LOG_ONLY))
             .setCacheConfiguration(
                 new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
-                    .setCacheMode(CacheMode.REPLICATED)
+                    .setCacheMode(CacheMode.PARTITIONED)
                     .setRebalanceMode(CacheRebalanceMode.ASYNC)
                     .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                     .setBackups(1)
@@ -73,28 +83,25 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
     /** */
     @Test
-    public void testClientNodeJoinAtRebalancing() throws Exception {
+    public void testPersistenceRebalanceBase() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);
 
         IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        for (int i = 0; i < 2048; i++)
-            cache.put(i, new byte[2048]);
+        generateData(ignite0, DEFAULT_CACHE_NAME, 0, 0);
 
-        awaitPartitionMapExchange();
-
-        log.info("##### node 2");
+        assertTrue(!ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
 
         IgniteEx ignite1 = startGrid(1);
 
-        ignite0.cluster().active(false);
+        ignite1.cluster().setBaselineTopology(ignite1.cluster().nodes());
 
-        ignite0.cluster().active(true);
+        awaitPartitionMapExchange(true, true, null, true);
+
+        awaitPartitionMessagesAbsent();
 
         assert ignite0.cluster().active();
-
-        awaitPartitionMapExchange();
     }
 }

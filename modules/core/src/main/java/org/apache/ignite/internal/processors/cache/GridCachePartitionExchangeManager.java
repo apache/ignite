@@ -3083,7 +3083,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         Runnable r = null;
-                        Runnable loadPartsRun = null;
 
                         List<String> rebList = new LinkedList<>();
 
@@ -3095,8 +3094,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
                         if (preloadMgr != null)
-                            loadPartsRun = preloadMgr.download()
-                                .addNodeAssignments(assignsMap, resVer, forcePreload, cnt);
+                            r = preloadMgr.download().addNodeAssignments(assignsMap, resVer, forcePreload, cnt);
 
                         for (Integer order : orderMap.descendingKeySet()) {
                             for (Integer grpId : orderMap.get(order)) {
@@ -3145,7 +3143,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // Start rebalancing cache groups chain. Each group will be rebalanced
                             // sequentially one by one e.g.:
                             // ignite-sys-cache -> cacheGroupR1 -> cacheGroupP2 -> cacheGroupR3
-                            loadPartsRun.run();
                             r.run();
                         }
                         else

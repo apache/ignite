@@ -26,8 +26,17 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
-/** */
+import static org.apache.ignite.internal.GridTopic.TOPIC_REBALANCE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.failed;
+
+/**
+ *
+ */
 public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapter {
+    /** */
+    static final int REBALANCE_TOPIC_IDX = 0;
+
     /** */
     private final boolean presistenceRebalanceEnabled;
 
@@ -49,6 +58,13 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
 
         presistenceRebalanceEnabled = IgniteSystemProperties.getBoolean(
             IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED, false);
+    }
+
+    /**
+     * @return The Rebalance topic to communicate with.
+     */
+    static Object rebalanceThreadTopic() {
+        return TOPIC_REBALANCE.topic("Rebalance", REBALANCE_TOPIC_IDX);
     }
 
     /** {@inheritDoc} */
@@ -79,17 +95,26 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
         if (assigns == null || assigns.isEmpty())
             return false;
 
+        // Do not rebalance system cache with files as they are not exists.
+        if (grp.groupId() == CU.cacheId(UTILITY_CACHE_NAME))
+            return false;
+
         return presistenceRebalanceEnabled &&
             grp.persistenceEnabled() &&
             IgniteFeatures.allNodesSupports(assigns.keySet(), IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE);
     }
 
-    /** */
+    /**
+     * @return The instantiated download manager.
+     */
     public GridPartitionDownloadManager download() {
         return downloadMgr;
     }
 
-    /** */
+    /**
+     *
+     * @return The instantiated upload mamanger.
+     */
     public GridPartitionUploadManager upload() {
         return uploadMgr;
     }

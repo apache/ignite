@@ -57,7 +57,7 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionUploadManager.persistenceRebalanceApplicable;
-import static org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionUploadManager.rebalanceThreadTopic;
+import static org.apache.ignite.internal.processors.cache.persistence.preload.IgniteCachePreloadSharedManager.rebalanceThreadTopic;
 import static org.apache.ignite.internal.util.GridIntList.getAsIntList;
 
 /**
@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.util.GridIntList.getAsIntList;
  */
 public class GridPartitionDownloadManager {
     /** */
-    private static final int REBALANCE_TOPIC_IDX = 0;
+    private static final Runnable NO_OP = () -> {};
 
     /** */
     private GridCacheSharedContext<?, ?> cctx;
@@ -103,11 +103,10 @@ public class GridPartitionDownloadManager {
         filePageStore = (FilePageStoreManager)cctx.pageStore();
 
         if (persistenceRebalanceApplicable(cctx)) {
-            // Register channel listeners for each rebalance thread.
-            cctx.gridIO().addChannelListener(rebalanceThreadTopic(REBALANCE_TOPIC_IDX), new GridIoChannelListener() {
+            // Register channel listeners for the rebalance thread.
+            cctx.gridIO().addChannelListener(rebalanceThreadTopic(), new GridIoChannelListener() {
                 @Override public void onChannelCreated(UUID nodeId, IgniteSocketChannel channel) {
-                    if (lock.readLock().tryLock())
-                        return;
+                    lock.readLock().lock();
 
                     try {
                         RebalanceDownloadFuture fut0 = futMap.get(nodeId);
@@ -115,7 +114,7 @@ public class GridPartitionDownloadManager {
                         if (fut0 == null || fut0.isComplete())
                             return;
 
-                        onChannelCreated0(REBALANCE_TOPIC_IDX, nodeId, channel, fut0);
+                        onChannelCreated0(nodeId, channel, fut0);
                     }
                     finally {
                         lock.readLock().unlock();
@@ -127,24 +126,22 @@ public class GridPartitionDownloadManager {
 
     /** */
     public void stop0(boolean cancel) {
-        cctx.gridIO().removeChannelListener(rebalanceThreadTopic(REBALANCE_TOPIC_IDX), null);
+        cctx.gridIO().removeChannelListener(rebalanceThreadTopic(), null);
     }
 
     /**
-     * @param topicId The index of rebalance pool thread.
      * @param nodeId The remote node id.
      * @param channel A blocking socket channel to handle rebalance partitions.
      * @param rebFut The future of assignments handling.
      */
     private void onChannelCreated0(
-        int topicId,
         UUID nodeId,
         IgniteSocketChannel channel,
         RebalanceDownloadFuture rebFut
     ) {
         assert rebFut.nodeId.equals(nodeId);
 
-        U.log(log, "Handle channel created event [topicId=" + topicId + ", channel=" + channel + ']');
+        U.log(log, "Handle channel created event [channel=" + channel + ']');
 
         FileTransferManager<PartitionFileMetaInfo> source = null;
 
@@ -220,8 +217,7 @@ public class GridPartitionDownloadManager {
                     else {
                         if (log.isDebugEnabled()) {
                             log.debug("Skipping partition (state is not MOVING) " +
-                                "[grpId=" + grpId + ", partId=" + partId + ", topicId=" + topicId +
-                                ", nodeId=" + nodeId + ']');
+                                "[grpId=" + grpId + ", partId=" + partId + ", nodeId=" + nodeId + ']');
                         }
                     }
                 }
@@ -233,8 +229,7 @@ public class GridPartitionDownloadManager {
             U.error(log, "An error during receiving binary data from channel: " + channel, e);
 
             rebFut.onDone(new IgniteCheckedException("Error with downloading binary data from remote node " +
-                "[grpId=" + String.valueOf(grpId) + ", partId=" + String.valueOf(partId) + ", topicId=" + topicId +
-                ", nodeId=" + nodeId + ']', e));
+                "[grpId=" + String.valueOf(grpId) + ", partId=" + String.valueOf(partId) + ", nodeId=" + nodeId + ']', e));
         }
         finally {
             U.closeQuiet(source);
@@ -329,19 +324,24 @@ public class GridPartitionDownloadManager {
         boolean force,
         long rebalanceId
     ) {
+        NavigableMap<Integer, Map<ClusterNode, Map<Integer, GridIntList>>> nodeOrderAssignsMap =
+            sliceNodeCacheAssignments(assignsMap);
+
+        if (nodeOrderAssignsMap.isEmpty())
+            return NO_OP;
+
         // Start new rebalance session.
         final RebalanceDownloadFuture headFut0 = headFut;
 
         if (!headFut0.isDone())
             headFut0.cancel();
 
-        NavigableMap<Integer, Map<ClusterNode, Map<Integer, GridIntList>>> nodeOrderAssignsMap =
-            sliceNodeCacheAssignments(assignsMap);
-
         // TODO Start eviction.
 
         RebalanceDownloadFuture rqFut = null;
-        Runnable rq = null;
+        Runnable rq = NO_OP;
+
+        U.log(log, "Assignments to demand: " + nodeOrderAssignsMap);
 
         for (Map<ClusterNode, Map<Integer, GridIntList>> descNodeMap : nodeOrderAssignsMap.descendingMap().values()) {
             for (Map.Entry<ClusterNode, Map<Integer, GridIntList>> assignEntry : descNodeMap.entrySet()) {
@@ -349,41 +349,38 @@ public class GridPartitionDownloadManager {
                     assignEntry.getValue(), topVer);
 
                 final Runnable nextRq0 = rq;
+                final RebalanceDownloadFuture rqFut0 = rqFut;
 
-                if (rqFut != null) {
-                    rqFut.listen(f -> {
+                if (rqFut0 == null)
+                    headFut = rebFut; // The first seen rebalance fut.
+                else {
+                    rebFut.listen(f -> {
                         try {
                             if (f.get()) // Not cancelled.
                                 nextRq0.run();
                         }
                         catch (IgniteCheckedException e) {
-                            rebFut.onDone(e);
+                            rqFut0.onDone(e);
 
                             U.error(log, "Cache partitions rebalance failed", e);
                         }
                     });
                 }
-                else {
-                    // The first seen rebalance fut.
-                    headFut = rebFut;
-                }
 
-                rq = requestNodePartitions(assignEntry.getKey(), REBALANCE_TOPIC_IDX, rebFut);
+                rq = requestNodePartitions(assignEntry.getKey(), rebFut);
                 rqFut = rebFut;
             }
         }
 
-        return rq == null ? () -> {} : rq;
+        return rq;
     }
 
     /**
      * @param node Clustre node to send inital demand message to.
-     * @param topicId Rebalacne thread topic.
      * @param rebFut The future to handle demand request.
      */
     private Runnable requestNodePartitions(
         ClusterNode node,
-        int topicId,
         RebalanceDownloadFuture rebFut
     ) {
         return new Runnable() {
@@ -397,7 +394,7 @@ public class GridPartitionDownloadManager {
 
                     futMap.put(node.id(), rebFut);
 
-                    cctx.gridIO().sendOrderedMessage(node, rebalanceThreadTopic(topicId),
+                    cctx.gridIO().sendOrderedMessage(node, rebalanceThreadTopic(),
                         msg0, SYSTEM_POOL, DFLT_REBALANCE_TIMEOUT, false);
                 }
                 catch (IgniteCheckedException e) {

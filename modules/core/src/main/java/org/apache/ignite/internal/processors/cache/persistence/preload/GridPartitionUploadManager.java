@@ -45,12 +45,11 @@ import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.GridTopic.TOPIC_REBALANCE;
+import static org.apache.ignite.internal.processors.cache.persistence.preload.IgniteCachePreloadSharedManager.rebalanceThreadTopic;
 
 /**
  *
@@ -66,7 +65,7 @@ public class GridPartitionUploadManager {
     private static final FileIOFactory dfltIoFactory = new RandomAccessFileIOFactory();
 
     /** */
-    private final ConcurrentMap<T2<UUID, Integer>, CachePartitionUploadFuture> uploadFutMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, CachePartitionUploadFuture> uploadFutMap = new ConcurrentHashMap<>();
 
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -95,40 +94,29 @@ public class GridPartitionUploadManager {
     }
 
     /**
-     * @param idx The index of rebalace topic.
-     * @return The Rebalance topic to communicate with.
+     *
      */
-    static Object rebalanceThreadTopic(int idx) {
-        return TOPIC_REBALANCE.topic("Rebalance", idx);
-    }
-
-    /** */
     public void start0(GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
         this.cctx = cctx;
 
         backupMgr = cctx.storeBackup();
 
         if (persistenceRebalanceApplicable(cctx)) {
-            for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++) {
-                final int topicId = cnt;
+            cctx.gridIO().addMessageListener(rebalanceThreadTopic(), new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                    if (msg instanceof GridPartitionCopyDemandMessage) {
+                        // Start to checkpoint and upload process.
+                        lock.readLock().lock();
 
-                cctx.gridIO().addMessageListener(rebalanceThreadTopic(topicId), new GridMessageListener() {
-                    @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                        if (msg instanceof GridPartitionCopyDemandMessage) {
-                            // Start to checkpoint and upload process.
-                            if (lock.readLock().tryLock())
-                                return;
-
-                            try {
-                                onDemandMessage0(nodeId, topicId, (GridPartitionCopyDemandMessage)msg, plc);
-                            }
-                            finally {
-                                lock.readLock().unlock();
-                            }
+                        try {
+                            onDemandMessage0(nodeId, (GridPartitionCopyDemandMessage)msg, plc);
+                        }
+                        finally {
+                            lock.readLock().unlock();
                         }
                     }
-                });
-            }
+                }
+            });
         }
     }
 
@@ -137,8 +125,7 @@ public class GridPartitionUploadManager {
         lock.writeLock().lock();
 
         try {
-            for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++)
-                cctx.gridIO().removeMessageListener(rebalanceThreadTopic(cnt));
+            cctx.gridIO().removeMessageListener(rebalanceThreadTopic());
 
             for (CachePartitionUploadFuture fut : uploadFutMap.values())
                 fut.cancel();
@@ -154,36 +141,41 @@ public class GridPartitionUploadManager {
      * groups and upload them one by one.
      *
      * @param nodeId The nodeId request comes from.
-     * @param topicId The index of rebalance pool thread.
      * @param msg Message containing rebalance request params.
      */
-    private void onDemandMessage0(UUID nodeId, int topicId, GridPartitionCopyDemandMessage msg, byte plc) {
+    private void onDemandMessage0(UUID nodeId, GridPartitionCopyDemandMessage msg, byte plc) {
         if (msg.rebalanceId() < 0) // Demand node requested context cleanup.
             return;
 
         ClusterNode demanderNode = cctx.discovery().node(nodeId);
 
         if (demanderNode == null) {
-            U.log(log, "Initial demand message rejected (demander node left the cluster) ["
-                + "thread=" + topicId + ", nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']');
+            U.error(log, "The demand message rejected (demander node left the cluster) ["
+                + ", nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']');
+
+            return;
+        }
+
+        if (msg.assignments() == null || msg.assignments().isEmpty()) {
+            U.error(log, "The Demand message rejected. Node assignments cannot be empty ["
+                + "nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']');
 
             return;
         }
 
         IgniteSocketChannel ch = null;
         CachePartitionUploadFuture uploadFut = null;
-        T2<UUID, Integer> ctxId = new T2<>(nodeId, topicId);
 
         try {
             synchronized (uploadFutMap) {
-                uploadFut = uploadFutMap.getOrDefault(ctxId,
+                uploadFut = uploadFutMap.getOrDefault(nodeId,
                     new CachePartitionUploadFuture(msg.rebalanceId(), msg.topologyVersion(), msg.assignments()));
 
                 if (uploadFut.rebalanceId < msg.rebalanceId()) {
                     if (!uploadFut.isDone())
                         uploadFut.cancel();
 
-                    uploadFutMap.put(ctxId,
+                    uploadFutMap.put(nodeId,
                         uploadFut = new CachePartitionUploadFuture(msg.rebalanceId(),
                             msg.topologyVersion(),
                             msg.assignments()));
@@ -191,7 +183,7 @@ public class GridPartitionUploadManager {
             }
 
             // Need to start new partition upload routine.
-            ch = cctx.gridIO().channelToCustomTopic(nodeId, rebalanceThreadTopic(topicId), null, plc);
+            ch = cctx.gridIO().channelToCustomTopic(nodeId, rebalanceThreadTopic(), null, plc);
 
             backupMgr.backup(uploadFut.rebalanceId,
                 uploadFut.getAssigns(),
@@ -202,7 +194,7 @@ public class GridPartitionUploadManager {
         }
         catch (Exception e) {
             U.error(log, "An error occured while processing initial demand request ["
-                + "thread=" + topicId + ", nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']', e);
+                + ", nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']', e);
 
             if (uploadFut != null)
                 uploadFut.onDone(e);
@@ -292,10 +284,10 @@ public class GridPartitionUploadManager {
             for (Map.Entry<Integer, GridIntList> grpPartsEntry : assigns.entrySet()) {
                 GridIntIterator iterator = grpPartsEntry.getValue().iterator();
 
-                Set<Integer> parts = result.putIfAbsent(grpPartsEntry.getKey(), new HashSet<>());
+                result.putIfAbsent(grpPartsEntry.getKey(), new HashSet<>());
 
                 while (iterator.hasNext())
-                    parts.add(iterator.next());
+                    result.get(grpPartsEntry.getKey()).add(iterator.next());
             }
 
             return result;
