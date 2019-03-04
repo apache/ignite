@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -208,6 +209,9 @@ public class GridPartitionDownloadManager {
                             // TODO Rebuild indexes by partition
 
                             // TODO Own partition
+
+                            U.log(log, "Partition file have been processed [grpId=" + grpId + ", partId=" + partId +
+                                ", cfgFile=" + cfgFile.getName() + ']');
                         }
                         finally {
                             part.unlock();
@@ -388,6 +392,8 @@ public class GridPartitionDownloadManager {
                 if (rebFut.isComplete())
                     return;
 
+                U.log(log, "Start partition file preloading [from=" + node.id() + ", fut=" + rebFut + ']');
+
                 try {
                     GridPartitionCopyDemandMessage msg0 = new GridPartitionCopyDemandMessage(rebFut.rebalanceId,
                         rebFut.topVer, rebFut.nodeAssigns);
@@ -422,6 +428,7 @@ public class GridPartitionDownloadManager {
         private long rebalanceId;
 
         /** */
+        @GridToStringInclude
         private Map<Integer, GridIntList> nodeAssigns;
 
         /** */

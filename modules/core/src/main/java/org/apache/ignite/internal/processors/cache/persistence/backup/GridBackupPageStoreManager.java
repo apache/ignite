@@ -87,7 +87,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     private final Map<GroupPartitionId, TemporaryStore> backupStores = new ConcurrentHashMap<>();
 
     /** */
-    private final int pageSize;
+    private int pageSize;
 
     /** */
     private final ReadWriteLock rwlock = new ReentrantReadWriteLock();
@@ -105,7 +105,6 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     public GridBackupPageStoreManager(GridKernalContext ctx) throws IgniteCheckedException {
         assert CU.isPersistenceEnabled(ctx.config());
 
-        pageSize = ctx.config().getDataStorageConfiguration().getPageSize();
         ioFactory = new RandomAccessFileIOFactory();
     }
 
@@ -149,6 +148,10 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
             true);
 
         U.ensureDirectory(backupWorkDir, "backup store working directory", log);
+
+        pageSize = cctx.kernalContext().config().getDataStorageConfiguration().getPageSize();
+
+        assert pageSize > 0;
 
         setThreadPageBuff(ThreadLocal.withInitial(() ->
             ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder())));
@@ -355,6 +358,8 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
             return;
 
         final ByteBuffer tmpPageBuff = threadPageBuff.get();
+
+        assert tmpPageBuff.capacity() == store.getPageSize();
 
         tmpPageBuff.clear();
 
