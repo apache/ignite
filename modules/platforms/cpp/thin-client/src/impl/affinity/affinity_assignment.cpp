@@ -17,8 +17,8 @@
 
 #include <ignite/impl/thin/writable_key.h>
 
-#include "impl/node_partitions.h"
-#include "impl/cache/affinity_assignment.h"
+#include "impl/affinity/node_partitions.h"
+#include "impl/affinity/affinity_assignment.h"
 
 namespace ignite
 {

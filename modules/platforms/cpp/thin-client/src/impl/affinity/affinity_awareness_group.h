@@ -23,8 +23,8 @@
 
 #include <ignite/impl/binary/binary_reader_impl.h>
 
-#include "impl/cache_affinity_configs.h"
-#include "impl/node_partitions.h"
+#include "impl/affinity/cache_affinity_configs.h"
+#include "impl/affinity/node_partitions.h"
 
 namespace ignite
 {

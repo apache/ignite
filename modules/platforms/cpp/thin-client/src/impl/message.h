@@ -29,8 +29,8 @@
 #include <ignite/impl/thin/readable.h>
 
 #include "impl/protocol_version.h"
-#include "impl/affinity_topology_version.h"
-#include "impl/affinity_awareness_group.h"
+#include "impl/affinity/affinity_topology_version.h"
+#include "impl/affinity/affinity_awareness_group.h"
 
 namespace ignite
 {

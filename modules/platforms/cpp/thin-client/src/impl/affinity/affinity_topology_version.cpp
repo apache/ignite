@@ -17,7 +17,7 @@
 
 #include <ignite/impl/binary/binary_reader_impl.h>
 
-#include "impl/affinity_topology_version.h"
+#include "impl/affinity/affinity_topology_version.h"
 
 namespace ignite
 {
