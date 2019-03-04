@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -211,8 +212,8 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                     throw e;
                 }
             }
-            catch (TransactionSerializationException ex) {
-                assert MvccFeatureChecker.forcedMvcc();
+            catch (CacheException ex) {
+                MvccFeatureChecker.assertMvccWriteConflict(ex);
             }
             catch (Throwable e) {
                 log.error("Unexpected error: " + e, e);
