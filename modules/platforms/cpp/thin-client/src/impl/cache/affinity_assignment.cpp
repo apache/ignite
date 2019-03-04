@@ -18,7 +18,7 @@
 #include <ignite/impl/thin/writable_key.h>
 
 #include "impl/node_partitions.h"
-#include "impl/cache/cache_affinity_info.h"
+#include "impl/cache/affinity_assignment.h"
 
 namespace ignite
 {
@@ -28,14 +28,14 @@ namespace ignite
         {
             namespace cache
             {
-                CacheAffinityInfo::CacheAffinityInfo(const std::vector<NodePartitions>& info)
+                AffinityAssignment::AffinityAssignment(const std::vector<NodePartitions>& info)
                 {
                     typedef std::vector<NodePartitions>::const_iterator InfoIterator;
 
                     for (InfoIterator it = info.begin(); it != info.end(); ++it)
                     {
                         const std::vector<int32_t>& parts = it->GetPartitions();
-                        // const network::EndPoints& endPoints = it->GetEndPoints();
+                        const Guid& guid = it->GetGuid();
 
                         for (size_t i = 0; i < parts.size(); ++i)
                         {
@@ -43,45 +43,42 @@ namespace ignite
 
                             size_t uPart = static_cast<size_t>(parts[i]);
 
-                            if (uPart >= affinityMapping.size())
-                                affinityMapping.resize(uPart + 1);
+                            if (uPart >= assignment.size())
+                                assignment.resize(uPart + 1);
 
-                            IgniteNodes& dst = affinityMapping[uPart];
-
-                            // for (network::EndPoints::const_iterator ep = endPoints.begin(); ep != endPoints.end(); ++ep)
-                            //     dst.push_back(IgniteNode(*ep));
+                            assignment[uPart] = guid;
                         }
                     }
                 }
 
-                CacheAffinityInfo::~CacheAffinityInfo()
+                AffinityAssignment::~AffinityAssignment()
                 {
                     // No-op.
                 }
 
-                int32_t CacheAffinityInfo::GetPartitionsNum() const
+                int32_t AffinityAssignment::GetPartitionsNum() const
                 {
-                    return static_cast<int32_t>(affinityMapping.size());
+                    return static_cast<int32_t>(assignment.size());
                 }
 
-                const IgniteNodes& CacheAffinityInfo::GetMapping(int32_t part) const
+                const Guid& AffinityAssignment::GetNodeGuid(int32_t part) const
                 {
                     assert(part >= 0);
-                    assert(static_cast<size_t>(part) < affinityMapping.size());
+                    assert(static_cast<size_t>(part) < assignment.size());
 
-                    return affinityMapping[part];
+                    return assignment[part];
                 }
 
-                const IgniteNodes& CacheAffinityInfo::GetMapping(const WritableKey& key) const
+                const Guid& AffinityAssignment::GetNodeGuid(const WritableKey& key) const
                 {
                     size_t part = static_cast<size_t>(GetPartitionForKey(key));
 
-                    assert(part < affinityMapping.size());
+                    assert(part < assignment.size());
 
-                    return affinityMapping[part];
+                    return assignment[part];
                 }
 
-                int32_t CacheAffinityInfo::GetPartitionForKey(const WritableKey& key) const
+                int32_t AffinityAssignment::GetPartitionForKey(const WritableKey& key) const
                 {
                     int32_t hash = key.GetHashCode();
                     uint32_t uHash = static_cast<uint32_t>(hash);

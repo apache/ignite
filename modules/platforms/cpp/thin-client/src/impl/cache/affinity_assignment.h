@@ -23,9 +23,7 @@
 #include <vector>
 
 #include <ignite/common/concurrent.h>
-#include <ignite/network/end_point.h>
-
-#include "impl/ignite_node.h"
+#include <ignite/guid.h>
 
 namespace ignite
 {
@@ -44,7 +42,7 @@ namespace ignite
                 /**
                  * Cache Affinity Info.
                  */
-                class CacheAffinityInfo
+                class AffinityAssignment
                 {
                 public:
                     /**
@@ -52,12 +50,12 @@ namespace ignite
                      *
                      * @param info Node partitions info.
                      */
-                    CacheAffinityInfo(const std::vector<NodePartitions>& info);
+                    AffinityAssignment(const std::vector<NodePartitions>& info);
 
                     /**
                      * Destructor.
                      */
-                    ~CacheAffinityInfo();
+                    ~AffinityAssignment();
 
                     /**
                      * Get number of partitions.
@@ -72,7 +70,7 @@ namespace ignite
                      * @param part Partition.
                      * @return Mapping.
                      */
-                    const IgniteNodes& GetMapping(int32_t part) const;
+                    const Guid& GetNodeGuid(int32_t part) const;
 
                     /**
                      * Get mapping for the partition.
@@ -80,8 +78,9 @@ namespace ignite
                      * @param key Key.
                      * @return Mapping.
                      */
-                    const IgniteNodes& GetMapping(const WritableKey& key) const;
+                    const Guid& GetNodeGuid(const WritableKey& key) const;
 
+                private:
                     /**
                      * Calculate partition for the key assuming it uses Rendezvous Affinity Function.
                      *
@@ -90,13 +89,12 @@ namespace ignite
                      */
                     int32_t GetPartitionForKey(const WritableKey& key) const;
 
-                private:
-                    /** Affinity mapping. */
-                    std::vector<IgniteNodes> affinityMapping;
+                    /** Affinity assignment. */
+                    std::vector<Guid> assignment;
                 };
 
                 /** Shared pointer to Cache Affinity Info. */
-                typedef common::concurrent::SharedPointer<CacheAffinityInfo> SP_CacheAffinityInfo;
+                typedef common::concurrent::SharedPointer<AffinityAssignment> SP_AffinityAssignment;
             }
         }
     }
