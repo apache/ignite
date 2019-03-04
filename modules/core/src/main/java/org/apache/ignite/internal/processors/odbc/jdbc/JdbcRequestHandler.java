@@ -189,7 +189,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate);
+            skipReducerOnUpdate
+        );
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
