@@ -128,13 +128,13 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
     public void testGrpReservationFailureMessage() {
         final GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
-        final ConcurrentMap<MapReservationKey, GridReservable> reservations = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "reservations");
+        final ConcurrentMap<PartitionReservationKey, GridReservable> reservations = reservations(h2Idx);
 
         GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
             new MockGridMapQueryExecutor(null) {
                 @Override public void onMessage(UUID nodeId, Object msg) {
                     if (GridH2QueryRequest.class.isAssignableFrom(msg.getClass())) {
-                        final MapReservationKey grpKey = new MapReservationKey(ORG, null);
+                        final PartitionReservationKey grpKey = new PartitionReservationKey(ORG, null);
 
                         reservations.put(grpKey, new GridReservable() {
 
@@ -276,13 +276,13 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
     public void testNonCollocatedFailureMessage() {
         final GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
-        final ConcurrentMap<MapReservationKey, GridReservable> reservations = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "reservations");
+        final ConcurrentMap<PartitionReservationKey, GridReservable> reservations = reservations(h2Idx);
 
         GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
             new MockGridMapQueryExecutor(null) {
                 @Override public void onMessage(UUID nodeId, Object msg) {
                     if (GridH2QueryRequest.class.isAssignableFrom(msg.getClass())) {
-                        final MapReservationKey grpKey = new MapReservationKey(ORG, null);
+                        final PartitionReservationKey grpKey = new PartitionReservationKey(ORG, null);
 
                         reservations.put(grpKey, new GridReservable() {
 
@@ -294,6 +294,7 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
                             }
                         });
                     }
+
                     startedExecutor.onMessage(nodeId, msg);
 
                 }
@@ -363,20 +364,30 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
         stopAllGrids();
     }
 
+    /**
+     * @param h2Idx Indexing.
+     * @return Current reservations.
+     */
+    private static ConcurrentMap<PartitionReservationKey, GridReservable> reservations(IgniteH2Indexing h2Idx) {
+        PartitionReservationManager partReservationMgr = h2Idx.partitionReservationManager();
+
+        return GridTestUtils.getFieldValue(partReservationMgr, PartitionReservationManager.class, "reservations");
+    }
 
     /**
      * Wrapper around @{GridMapQueryExecutor}
      */
     private abstract static class MockGridMapQueryExecutor extends GridMapQueryExecutor {
-
-        /**
-         * Wrapped executor
-         */
+        /** Wrapped executor */
         GridMapQueryExecutor startedExecutor;
 
-        /** */
-        MockGridMapQueryExecutor insertRealExecutor(GridMapQueryExecutor realExecutor) {
-            this.startedExecutor = realExecutor;
+        /**
+         * @param startedExecutor Started executor.
+         * @return Mocked map query executor.
+         */
+        MockGridMapQueryExecutor insertRealExecutor(GridMapQueryExecutor startedExecutor) {
+            this.startedExecutor = startedExecutor;
+
             return this;
         }
 
@@ -391,36 +402,5 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
         @Override public void onMessage(UUID nodeId, Object msg) {
             startedExecutor.onMessage(nodeId, msg);
         }
-
-        /** {@inheritDoc} */
-        @Override public void cancelLazyWorkers() {
-            startedExecutor.cancelLazyWorkers();
-        }
-
-        /** {@inheritDoc} */
-        @Override GridSpinBusyLock busyLock() {
-            return startedExecutor.busyLock();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onCacheStop(String cacheName) {
-            startedExecutor.onCacheStop(cacheName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stopAndUnregisterCurrentLazyWorker() {
-            startedExecutor.stopAndUnregisterCurrentLazyWorker();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unregisterLazyWorker(MapQueryLazyWorker worker) {
-            startedExecutor.unregisterLazyWorker(worker);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int registeredLazyWorkers() {
-            return startedExecutor.registeredLazyWorkers();
-        }
     }
-
 }

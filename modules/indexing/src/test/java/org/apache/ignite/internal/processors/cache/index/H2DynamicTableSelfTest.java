@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
@@ -55,9 +57,9 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -91,6 +93,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Cache with backups. */
     private static final String CACHE_NAME_BACKUPS = CACHE_NAME + "_backups";
 
+    /** Name of the cache that has query parallelism = 7 in it configuration. */
+    private static final String CACHE_NAME_PARALLELISM_7 = CACHE_NAME + "_parallelism";
+
     /** Number of backups for backup test. */
     private static final int DFLT_BACKUPS = 2;
 
@@ -107,6 +112,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC));
 
         client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_BACKUPS).setBackups(DFLT_BACKUPS));
+
+        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_PARALLELISM_7).setQueryParallelism(7));
     }
 
     /** {@inheritDoc} */
@@ -124,6 +131,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("DROP TABLE IF EXISTS PUBLIC.\"City\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"NameTest\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"BackupTest\"");
+        
+        execute("DROP TABLE IF EXISTS PUBLIC.QP_CUSTOM");
+        execute("DROP TABLE IF EXISTS PUBLIC.QP_DEFAULT");
+        execute("DROP TABLE IF EXISTS PUBLIC.QP_DEFAULT_EXPLICIT");
+        execute("DROP TABLE IF EXISTS PUBLIC.QP_DEFAULT_FROM_TEMPLATE");
+        execute("DROP TABLE IF EXISTS PUBLIC.QP_OVERWRITE_TEMPLATE");
 
         super.afterTest();
     }
@@ -545,6 +558,55 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test parallelism WITH create table command parameter.
+     */
+    @Test
+    public void testQueryParallelism() {
+        execute("CREATE TABLE QP_DEFAULT (id INT PRIMARY KEY, val INT)");
+        assertQueryParallelism("QP_DEFAULT", 1);
+
+        execute("CREATE TABLE QP_DEFAULT_EXPLICIT (id INT PRIMARY KEY, val INT) WITH \"parallelism = 1 \"");
+        assertQueryParallelism("QP_DEFAULT_EXPLICIT", 1);
+
+        execute("CREATE TABLE QP_CUSTOM (id INT PRIMARY KEY, val INT) WITH \"parallelism = 42 \"");
+        assertQueryParallelism("QP_CUSTOM", 42);
+
+        execute("CREATE TABLE QP_DEFAULT_FROM_TEMPLATE (id INT PRIMARY KEY, val INT) " +
+            "WITH \"template = " + CACHE_NAME_PARALLELISM_7 + " \"");
+        assertQueryParallelism("QP_DEFAULT_FROM_TEMPLATE", 7);
+
+        execute("CREATE TABLE QP_OVERWRITE_TEMPLATE (id INT PRIMARY KEY, val INT) " +
+            "WITH \"parallelism = 42, template = " + CACHE_NAME_PARALLELISM_7 + " \"");
+        assertQueryParallelism("QP_OVERWRITE_TEMPLATE", 42);
+    }
+
+    /**
+     * @param tblName Table name.
+     * @param expParallelism Expected degree of parallelism.
+     */
+    @SuppressWarnings("unchecked")
+    private void assertQueryParallelism(String tblName, final int expParallelism  ) {
+        final String cacheName = "SQL_PUBLIC_" + tblName;
+
+        testAllNodes(node -> {
+            CacheConfiguration cfg = node.cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+            assertEquals("Node: " + node + "; Query parallelism is wrong.", expParallelism  , cfg.getQueryParallelism());
+        });
+    }
+
+    /**
+     * Perform closure that asserts the invariant on all the nodes.
+     */
+    private void testAllNodes(Consumer<? super Ignite> clos) {
+        for (int i = 0; i < 4; i++) {
+            IgniteEx node = grid(i);
+
+            clos.accept(node);
+        }
+    }
+
+    /**
      * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
      * H2 table and type descriptor on all nodes, optionally with cache type check.
      * @param tplCacheName Template cache name.
@@ -648,6 +710,27 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Test
     public void testNegativeBackups() {
         assertCreateTableWithParamsThrows("bAckUPs = -5  ", "\"BACKUPS\" cannot be negative: -5");
+    }
+
+    /**
+     * Negative test that is trying to set incorrect parallelism value: empty, negative, zero or non-integer.
+     */
+    @Test
+    public void testQueryParallelismNegative() {
+        assertCreateTableWithParamsThrows("parallelism = 0",
+            "\"PARALLELISM\" must be positive: 0");
+
+        assertCreateTableWithParamsThrows("parallelism = -5",
+            "\"PARALLELISM\" must be positive: -5");
+
+        assertCreateTableWithParamsThrows("parallelism = 3.14",
+            "Parameter value must be an integer [name=PARALLELISM, value=3.14]");
+
+        assertCreateTableWithParamsThrows("parallelism =",
+            "Parameter value cannot be empty: PARALLELISM");
+
+        assertCreateTableWithParamsThrows("parallelism = Five please",
+            "Parameter value must be an integer [name=PARALLELISM, value=Five please]");
     }
 
     /**
@@ -925,7 +1008,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 e.setValueType("City");
 
                 queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null, null, null,
-                    null, CacheAtomicityMode.ATOMIC, null, 10, false, false);
+                    null, CacheAtomicityMode.ATOMIC, null, 10, false, false, null);
 
                 return null;
             }
@@ -933,7 +1016,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Tests table name conflict check in {@link DdlStatementsProcessor}.
+     * Tests table name conflict check in {@link CommandProcessor}.
      * @throws Exception if failed.
      */
     @Test

@@ -32,14 +32,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for join partition pruning.
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public class JoinPartitionPruningSelfTest extends AbstractPartitionPruningBaseTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -66,7 +63,7 @@ public class JoinPartitionPruningSelfTest extends AbstractPartitionPruningBaseTe
         executeSql("INSERT INTO t2 VALUES ('1', '1', '1')");
 
         executeSql("INSERT INTO t1 VALUES ('2', '2')");
-        executeSingle("INSERT INTO t2 VALUES ('2', '2', '2')");
+        executeSql("INSERT INTO t2 VALUES ('2', '2', '2')");
 
         executeSql("INSERT INTO t1 VALUES ('3', '3')");
         executeSql("INSERT INTO t2 VALUES ('3', '3', '3')");

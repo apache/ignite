@@ -148,12 +148,5 @@ public class IgniteCacheMvccSqlTestSuite {
         @Override protected CacheAtomicityMode atomicityMode() {
             return TRANSACTIONAL_SNAPSHOT;
         }
-
-        /** {@inheritDoc} */
-        @Ignore("https://issues.apache.org/jira/browse/IGNITE-10765")
-        @Test
-        @Override public void testManyKeysRollback() throws Exception {
-            super.testManyKeysRollback();
-        }
     }
 }

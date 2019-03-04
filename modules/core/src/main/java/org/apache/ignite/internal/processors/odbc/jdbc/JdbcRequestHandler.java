@@ -64,8 +64,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionSerializationException;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
@@ -164,11 +166,23 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param actx Authentication context.
      * @param protocolVer Protocol version.
      */
-    public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock,
-        ClientListenerResponseSender sender, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate, NestedTxMode nestedTxMode,
-        AuthorizationContext actx, ClientListenerProtocolVersion protocolVer) {
+    public JdbcRequestHandler(
+        GridKernalContext ctx,
+        GridSpinBusyLock busyLock,
+        ClientListenerResponseSender sender,
+        int maxCursors,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean collocated,
+        boolean replicatedOnly,
+        boolean autoCloseCursors,
+        boolean lazy,
+        boolean skipReducerOnUpdate,
+        NestedTxMode nestedTxMode,
+        @Nullable Boolean dataPageScanEnabled,
+        AuthorizationContext actx,
+        ClientListenerProtocolVersion protocolVer
+    ) {
         this.ctx = ctx;
         this.sender = sender;
 
@@ -188,7 +202,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate
+            skipReducerOnUpdate,
+            dataPageScanEnabled
         );
 
         this.busyLock = busyLock;
@@ -548,6 +563,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setNestedTxMode(nestedTxMode);
             qry.setAutoCommit(req.autoCommit());
 
+            if (cliCtx.dataPageScanEnabled() != null)
+                qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
+
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
 
@@ -861,6 +879,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry.setNestedTxMode(nestedTxMode);
                     qry.setAutoCommit(req.autoCommit());
 
+                    if (cliCtx.dataPageScanEnabled() != null)
+                        qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
+
                     qry.setSchema(schemaName);
                 }
 
@@ -905,8 +926,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         IgniteBiTuple<Integer, String> firstErr, GridQueryCancel cancel) throws QueryCancelledException {
         try {
             if (cliCtx.isStream()) {
-                List<Long> cnt = ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(),
-                    qry.batchedArguments());
+                List<Long> cnt = ctx.query().streamBatchedUpdateQuery(
+                    qry.getSchema(),
+                    cliCtx,
+                    qry.getSql(),
+                    qry.batchedArguments()
+                );
 
                 for (int i = 0; i < cnt.size(); i++)
                     updCntsAcc.add(cnt.get(i).intValue());
@@ -1116,6 +1141,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
         if (e instanceof TransactionSerializationException)
             return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, e.getMessage());
+        if (e instanceof TransactionAlreadyCompletedException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, e.getMessage());
         if (e instanceof TransactionDuplicateKeyException)
             return new JdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, e.getMessage());
         if (e instanceof MvccUtils.NonMvccTransactionException)

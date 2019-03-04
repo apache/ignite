@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import java.util.Collection;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -54,6 +59,45 @@ public class PartitionResult {
      */
     public PartitionTableAffinityDescriptor affinity() {
         return aff;
+    }
+
+    /**
+     * Calculate partitions for the query.
+     *
+     * @param explicitParts Explicit partitions provided in SqlFieldsQuery.partitions property.
+     * @param derivedParts Derived partitions found during partition pruning.
+     * @param args Arguments.
+     * @return Calculated partitions or {@code null} if failed to calculate and there should be a broadcast.
+     */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
+    public static int[] calculatePartitions(int[] explicitParts, PartitionResult derivedParts, Object[] args) {
+        if (!F.isEmpty(explicitParts))
+            return explicitParts;
+        else if (derivedParts != null) {
+            try {
+                Collection<Integer> realParts = derivedParts.tree().apply(null, args);
+
+                if (realParts == null)
+                    return null;
+                else if (realParts.isEmpty())
+                    return IgniteUtils.EMPTY_INTS;
+                else {
+                    int[] realParts0 = new int[realParts.size()];
+
+                    int i = 0;
+
+                    for (Integer realPart : realParts)
+                        realParts0[i++] = realPart;
+
+                    return realParts0;
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException("Failed to calculate derived partitions for query.", e);
+            }
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */

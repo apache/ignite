@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.inference.spark.modelparser;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -26,10 +25,12 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.sparkmodelparser.SparkModelParser;
 import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
+
+import java.io.FileNotFoundException;
 
 /**
  * Run Gradient Boosted trees model loaded from snappy.parquet file.
@@ -39,12 +40,7 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  */
 public class GBTFromSparkExample {
     /** Path to Spark LogReg model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/gbt/data" +
-        "/part-00000-ea23dcda-6344-4b1f-9716-fbedf7caba2d-c000.snappy.parquet";
-
-    /** Spark model metadata path. */
-    private static final String SPARK_MDL_METADATA_PATH = "examples/src/main/resources/models/spark/serialized/gbt/treesMetadata" +
-        "/part-00000-9033203a-e1e6-4d24-9900-be8a4396710b-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/gbt";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
@@ -67,14 +63,14 @@ public class GBTFromSparkExample {
 
             IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
 
-            ModelsComposition mdl = (ModelsComposition)SparkModelParser.parseWithMetadata(
-                SPARK_MDL_PATH, SPARK_MDL_METADATA_PATH,
+            ModelsComposition mdl = (ModelsComposition)SparkModelParser.parse(
+                SPARK_MDL_PATH,
                 SupportedSparkModels.GRADIENT_BOOSTED_TREES
             );
 
             System.out.println(">>> GBT: " + mdl.toString(true));
 
-            double accuracy = BinaryClassificationEvaluator.evaluate(
+            double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,

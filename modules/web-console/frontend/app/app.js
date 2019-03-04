@@ -146,6 +146,8 @@ import formSignup from './components/form-signup';
 import sidebar from './components/web-console-sidebar';
 import permanentNotifications from './components/permanent-notifications';
 import signupConfirmation from './components/page-signup-confirmation';
+import noDataCmp from './components/no-data';
+import globalProgressBar from './components/global-progress-line';
 
 import igniteServices from './services';
 
@@ -174,7 +176,6 @@ export default angular
         'ui.grid.saveState',
         'ui.grid.selection',
         'ui.router',
-        'ui.router.state.events',
         'ui.carousel',
         // Base modules.
         'ignite-console.core',
@@ -247,7 +248,9 @@ export default angular
         sidebar.name,
         permanentNotifications.name,
         timedRedirection.name,
-        signupConfirmation.name
+        signupConfirmation.name,
+        noDataCmp.name,
+        globalProgressBar.name
     ])
     .service('$exceptionHandler', $exceptionHandler)
     // Directives.
@@ -306,11 +309,11 @@ export default angular
 
             // Set up the states.
             $stateProvider
-            .state('base', {
-                url: '',
-                abstract: true,
-                template: baseTemplate
-            });
+                .state('base', {
+                    url: '',
+                    abstract: true,
+                    template: baseTemplate
+                });
 
             $urlRouterProvider.otherwise('/404');
             $locationProvider.html5Mode(true);
@@ -361,7 +364,7 @@ export default angular
                         localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
                 }
                 catch (ignored) {
-                // No-op.
+                    // No-op.
                 }
             });
         }
