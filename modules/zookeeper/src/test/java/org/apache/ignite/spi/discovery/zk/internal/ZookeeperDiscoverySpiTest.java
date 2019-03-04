@@ -30,11 +30,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -99,7 +99,6 @@ import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -179,7 +178,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     private static ThreadLocal<Boolean> clientThreadLoc = new ThreadLocal<>();
 
     /** */
-    private static ConcurrentHashMap<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> evts = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<UUID, Map<Long, DiscoveryEvent>> evts = new ConcurrentHashMap<>();
 
     /** */
     private static volatile boolean err;
@@ -234,9 +233,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
     /** */
     private String zkRootPath;
-
-    /** The number of clusters started in one test (increments when the first node in the cluster starts). */
-    private final AtomicInteger clusterNum = new AtomicInteger(0);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
@@ -310,25 +306,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
 
-        if (cfg.isClientMode()) {
-            UUID currNodeId = cfg.getNodeId();
-
-            lsnrs.put(new IgnitePredicate<Event>() {
-                /** Last remembered uuid before node reconnected. */
-                private UUID nodeId = currNodeId;
-
-                @Override public boolean apply(Event evt) {
-                    if(evt.type() == EVT_CLIENT_NODE_RECONNECTED){
-                        evts.remove(nodeId);
-
-                        nodeId = evt.node().id();
-                    }
-
-                    return false;
-                }
-            }, new int[] {EVT_CLIENT_NODE_RECONNECTED});
-        }
-
         lsnrs.put(new IgnitePredicate<Event>() {
             /** */
             @IgniteInstanceResource
@@ -341,31 +318,22 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                     UUID locId = ((IgniteKernal)ignite).context().localNodeId();
 
-                    Map<T2<Integer, Long>, DiscoveryEvent> nodeEvts = evts.get(locId);
+                    Map<Long, DiscoveryEvent> nodeEvts = evts.get(locId);
 
                     if (nodeEvts == null) {
-                        Object old = evts.put(locId, nodeEvts = new LinkedHashMap<>());
+                        Object old = evts.put(locId, nodeEvts = new TreeMap<>());
 
                         assertNull(old);
 
-                        // If the current node has failed, the local join will never happened.
-                        if (evt.type() != EVT_NODE_FAILED ||
-                            discoveryEvt.eventNode().consistentId().equals(ignite.configuration().getConsistentId())) {
                         synchronized (nodeEvts) {
                             DiscoveryLocalJoinData locJoin = ((IgniteKernal)ignite).context().discovery().localJoin();
 
-                                if (locJoin.event().node().order() == 1)
-                                    clusterNum.incrementAndGet();
-
-                                nodeEvts.put(new T2<>(clusterNum.get(), locJoin.event().topologyVersion()),
-                                    locJoin.event());
-                            }
+                            nodeEvts.put(locJoin.event().topologyVersion(), locJoin.event());
                         }
                     }
 
                     synchronized (nodeEvts) {
-                        DiscoveryEvent old = nodeEvts.put(new T2<>(clusterNum.get(), discoveryEvt.topologyVersion()),
-                            discoveryEvt);
+                        DiscoveryEvent old = nodeEvts.put(discoveryEvt.topologyVersion(), discoveryEvt);
 
                         assertNull(old);
                     }
@@ -639,12 +607,12 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids()) {
             ClusterNode locNode0 = node.cluster().localNode();
 
-            assertTrue(!locNode0.addresses().isEmpty());
-            assertTrue(!locNode0.hostNames().isEmpty());
+            assertTrue(locNode0.addresses().size() > 0);
+            assertTrue(locNode0.hostNames().size() > 0);
 
             for (ClusterNode node0 : node.cluster().nodes()) {
-                assertTrue(!node0.addresses().isEmpty());
-                assertTrue(!node0.hostNames().isEmpty());
+                assertTrue(node0.addresses().size() > 0);
+                assertTrue(node0.hostNames().size() > 0);
             }
         }
     }
@@ -4458,7 +4426,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
             while (System.currentTimeMillis() < stopTime) {
-                if (!startedNodes.isEmpty() && rnd.nextInt(10) == 0) {
+                if (startedNodes.size() > 0 && rnd.nextInt(10) == 0) {
                     boolean startCache = startedCaches.size() < 2 ||
                         (startedCaches.size() < MAX_CACHES && rnd.nextInt(5) != 0);
 
@@ -4606,7 +4574,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                     List<Ignite> nodes = G.allGrids();
 
-                    if (!nodes.isEmpty()) {
+                    if (nodes.size() > 0) {
                         Ignite node = nodes.get(rnd.nextInt(nodes.size()));
 
                         ZkTestClientCnxnSocketNIO nio = ZkTestClientCnxnSocketNIO.forNode(node);
@@ -4655,13 +4623,13 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     private void checkEventsConsistency() {
-        for (Map.Entry<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> nodeEvtEntry : evts.entrySet()) {
+        for (Map.Entry<UUID, Map<Long, DiscoveryEvent>> nodeEvtEntry : evts.entrySet()) {
             UUID nodeId = nodeEvtEntry.getKey();
-            Map<T2<Integer, Long>, DiscoveryEvent> nodeEvts = nodeEvtEntry.getValue();
+            Map<Long, DiscoveryEvent> nodeEvts = nodeEvtEntry.getValue();
 
-            for (Map.Entry<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> nodeEvtEntry0 : evts.entrySet()) {
+            for (Map.Entry<UUID, Map<Long, DiscoveryEvent>> nodeEvtEntry0 : evts.entrySet()) {
                 if (!nodeId.equals(nodeEvtEntry0.getKey())) {
-                    Map<T2<Integer, Long>, DiscoveryEvent> nodeEvts0 = nodeEvtEntry0.getValue();
+                    Map<Long, DiscoveryEvent> nodeEvts0 = nodeEvtEntry0.getValue();
 
                     synchronized (nodeEvts) {
                         synchronized (nodeEvts0) {
@@ -4677,8 +4645,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @param evts1 Received events.
      * @param evts2 Received events.
      */
-    private void checkEventsConsistency(Map<T2<Integer, Long>, DiscoveryEvent> evts1, Map<T2<Integer, Long>, DiscoveryEvent> evts2) {
-        for (Map.Entry<T2<Integer, Long>, DiscoveryEvent> e1 : evts1.entrySet()) {
+    private void checkEventsConsistency(Map<Long, DiscoveryEvent> evts1, Map<Long, DiscoveryEvent> evts2) {
+        for (Map.Entry<Long, DiscoveryEvent> e1 : evts1.entrySet()) {
             DiscoveryEvent evt1 = e1.getValue();
             DiscoveryEvent evt2 = evts2.get(e1.getKey());
 
@@ -4762,7 +4730,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
             @Override public boolean apply() {
-                Map<T2<Integer, Long>, DiscoveryEvent> nodeEvts = evts.get(nodeId);
+                Map<Long, DiscoveryEvent> nodeEvts = evts.get(nodeId);
 
                 if (nodeEvts == null) {
                     info("No events for node: " + nodeId);
@@ -5329,7 +5297,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         @Override public void resolve(CommunicationFailureContext ctx) {
             List<ClusterNode> nodes = ctx.topologySnapshot();
 
-            assertTrue(!nodes.isEmpty());
+            assertTrue(nodes.size() > 0);
 
             for (ClusterNode node : nodes) {
                 if (killNodeOrders.contains(node.order()))
