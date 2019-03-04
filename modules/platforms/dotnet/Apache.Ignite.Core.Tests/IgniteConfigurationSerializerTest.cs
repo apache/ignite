@@ -324,7 +324,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("wal-store", ds.WalPath);
             Assert.AreEqual(TimeSpan.FromSeconds(18), ds.WalAutoArchiveAfterInactivity);
             Assert.IsTrue(ds.WriteThrottlingEnabled);
-            Assert.AreEqual(DiskPageCompression.Zstd, ds.walPageCompression)
+            Assert.AreEqual(DiskPageCompression.Zstd, ds.walPageCompression);
 
             var dr = ds.DataRegionConfigurations.Single();
             Assert.AreEqual(1, dr.EmptyPagesPoolSize);
