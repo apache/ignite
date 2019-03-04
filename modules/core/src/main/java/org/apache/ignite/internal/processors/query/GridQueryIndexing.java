@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -249,13 +250,12 @@ public interface GridQueryIndexing {
         boolean isSql) throws IgniteCheckedException;
 
     /**
-     * Checks if {@linkplain #registerType} could be performed.
+     * Checks if cache configuration is correct for indexing.
      *
-     * @param cacheInfo Cache context info.
-     * @param desc Type descriptor.
-     * @throws IgniteCheckedException if cache described by specified descriptors could not be created.
+     * @param ccfg Cache configuration to validate.
+     * @throws IgniteCheckedException cache configuration is incorrect in indexing point of view.
      */
-    public void validateTypeToRegister(GridCacheContextInfo cacheInfo, GridQueryTypeDescriptor desc)
+    public void validateCacheConfiguration(CacheConfiguration<?, ?> ccfg)
         throws IgniteCheckedException;
 
     /**

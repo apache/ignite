@@ -1645,12 +1645,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         boolean isSql
     ) throws IgniteCheckedException {
         synchronized (stateMux) {
-            if (idx != null) {
-                for (QueryTypeCandidate candidate : cands)
-                    idx.validateTypeToRegister(cacheInfo, candidate.descriptor());
-
+            if (idx != null)
                 idx.registerCache(cacheName, schemaName, cacheInfo);
-            }
 
             try {
                 for (QueryTypeCandidate cand : cands) {

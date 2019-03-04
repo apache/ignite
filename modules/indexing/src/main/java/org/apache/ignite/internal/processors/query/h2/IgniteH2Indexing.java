@@ -39,6 +39,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheServerNotFoundException;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -1766,17 +1768,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void validateTypeToRegister(GridCacheContextInfo cacheInfo,
-        GridQueryTypeDescriptor desc) throws IgniteCheckedException {
-
-        boolean persistenceEnabled = CU.isPersistentCache(cacheInfo.config(), ctx.config().getDataStorageConfiguration());
+    @Override public void validateCacheConfiguration(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+        boolean persistenceEnabled = CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration());
 
         if (!ctx.clientNode() && persistenceEnabled) {
-            for (String idxName : desc.indexes().keySet())
-                H2TreeIndex.validatePdsIndexName(idxName, cacheInfo.config(), desc.typeId());
+            for (QueryEntity entity : ccfg.getQueryEntities()) {
+                int typeId = ctx.cacheObjects().typeId(entity.findValueType());
 
-            H2TreeIndex.validatePdsIndexName(H2TableDescriptor.PK_IDX_NAME, cacheInfo.config(), desc.typeId());
-            H2TreeIndex.validatePdsIndexName(H2TableDescriptor.AFFINITY_KEY_IDX_NAME, cacheInfo.config(), desc.typeId());
+                for (QueryIndex index : entity.getIndexes())
+                    H2TreeIndex.validatePdsIndexName(index.getName(), ccfg, typeId);
+
+                H2TreeIndex.validatePdsIndexName(H2TableDescriptor.PK_IDX_NAME, ccfg, typeId);
+                H2TreeIndex.validatePdsIndexName(H2TableDescriptor.AFFINITY_KEY_IDX_NAME, ccfg, typeId);
+            }
         }
     }
 

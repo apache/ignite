@@ -164,10 +164,68 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Check: dynamic index creation, index is of max allowed length.
+     * Check: index is created dynamically, name is too long.
+     */
+    @Test
+    public void testNegativeDynamicIndexLongNameWithPersistence() throws Exception {
+        int maxAllowedIdxName = maxIdxNameLength(SEGMENTS_CNT);
+
+        IgniteConfiguration pdsCfgWithoutCache = createConfiguration(true);
+
+        CacheConfiguration cfgWithTooLongIdxName = cacheConfiguration(generateName(maxAllowedIdxName + 1));
+
+        Throwable th = GridTestUtils.assertThrows(log(), () -> {
+            try (IgniteEx ign = startGrid(pdsCfgWithoutCache)) {
+                ign.cluster().active(true);
+
+                ign.getOrCreateCache(cfgWithTooLongIdxName);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, "Failed to complete exchange process.");
+
+        String origMessage = th.getSuppressed()[0].getCause().getMessage();
+
+        assertTrue("Exception message is not as expected.",
+            origMessage.startsWith("Index name is too long in UTF-8 encoding [maxAllowed=255, encodedLength=256"));
+    }
+
+    /**
+     * Check: index is created dynamically index is of max allowed length.
      */
     @Test
     public void testDynamicIndexLongNameWithPersistence() throws Exception {
+        int maxAllowedIdxName = maxIdxNameLength(SEGMENTS_CNT);
+
+        Callable<IgniteConfiguration> withLongOKLen = () -> createConfiguration(true);
+
+        CacheConfiguration cfgWithOKIdxName = cacheConfiguration(generateName(maxAllowedIdxName));
+
+        // Insert data and check idx vs scan:
+        try (Ignite ignite = startGrid(withLongOKLen.call())) {
+            ignite.cluster().active(true);
+
+            ignite.getOrCreateCache(cfgWithOKIdxName);
+
+            insertSomeData(ignite);
+
+            compareIndexVsScan(ignite);
+        }
+
+        // Read from disk and verify again:
+        try (Ignite ignite = startGrid(withLongOKLen.call())) {
+            ignite.cluster().active(true);
+
+            compareIndexVsScan(ignite);
+        }
+    }
+
+
+    /**
+     * Check: dynamic index creation, index is of max allowed length.
+     */
+    @Test
+    public void testCreateIndexLongNameWithPersistence() throws Exception {
         int maxAllowedIdxName = maxIdxNameLength(SEGMENTS_CNT);
 
         Callable<IgniteConfiguration> withLongOKLen = () -> createConfiguration(true)
@@ -197,7 +255,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
      * Check: dynamic index creation, name is too long.
      */
     @Test
-    public void testNegativeDynamicIndexLongNameWithPersistence() throws Exception {
+    public void testNegativeCreateIndexLongNameWithPersistence() throws Exception {
         int maxAllowedIdxName = maxIdxNameLength(SEGMENTS_CNT);
 
         IgniteConfiguration withNoIdx = createConfiguration(true)
