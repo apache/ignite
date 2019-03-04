@@ -80,6 +80,7 @@
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheAffinityAwarenessGroup.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheKeyConfiguration.cs" />
+    <Compile Include="Impl\Client\Cache\ClientCachePartitionMap.cs" />
     <Compile Include="Impl\Client\Cache\ClientRendezvousAffinityFunction.cs" />
     <Compile Include="Impl\Client\ClientFlags.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
