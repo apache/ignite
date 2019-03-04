@@ -61,11 +61,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Current affinity topology version. */
         private AffinityTopologyVersion? _affinityTopologyVersion;
 
-        /** Affinity groups. TODO: More efficient representation with Dictionary. */
-        private List<ClientCacheAffinityAwarenessGroup> _affinityGroups;
-
         /** Map from node ID to connected socket. */
         private Dictionary<Guid, ClientSocket> _nodeSocketMap = new Dictionary<Guid, ClientSocket>(); // TODO: Populate
+
+        /** Map from cache ID to partition mapping. */
+        private Dictionary<int, ClientCachePartitionMap> _cachePartitionMap;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
@@ -117,18 +117,17 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             UpdatePartitionMapping(cacheId);
 
-            var partMap = _affinityGroups.SingleOrDefault(g => g.KeyConfigs.Any(c => c.CacheId == cacheId));
-
-            if (partMap != null)
+            ClientCachePartitionMap partMap;
+            if (_cachePartitionMap.TryGetValue(cacheId, out partMap))
             {
                 // TODO: Extract affinity key and hash code
                 // 1) Extract serialization logic from ClientSocket (WriteMessage) so we can serialize before selecting the Socket
                 // 2) Add optional callback to BinaryWriter so we can extract both AffinityKey (by field id) and hash code (in case it's a BinaryObject)
                 var partition = GetPartition(key);
-                var nodeId = partMap.PartitionMap.SingleOrDefault(x => x.Value.Contains(partition));
+                var nodeId = partMap.PartitionNodeIds[partition];
 
                 ClientSocket socket;
-                if (_nodeSocketMap.TryGetValue(nodeId.Key, out socket))
+                if (_nodeSocketMap.TryGetValue(nodeId, out socket))
                 {
                     return socket.DoOutInOp(opId, s =>
                     {
@@ -318,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Client
             // TODO: Check if we need to update?
             // TODO: Sync and async versions to call from sync and async methods.
 
-            DoOutInOp<object>(ClientOp.CachePartitions, s =>
+            var groups = DoOutInOp<List<ClientCacheAffinityAwarenessGroup>>(ClientOp.CachePartitions, s =>
             {
                 s.WriteInt(1);  // One cache.
                 s.WriteInt(cacheId);
@@ -333,10 +332,43 @@ namespace Apache.Ignite.Core.Impl.Client
                     res.Add(new ClientCacheAffinityAwarenessGroup(s));
                 }
 
-                _affinityGroups = res;
-
-                return null;
+                return res;
             });
+
+            // TODO: Move this loop inside reader method to reduce allocations
+            var mapping = new Dictionary<int, ClientCachePartitionMap>();
+            foreach (var g in groups)
+            {
+                // Count partitions to avoid reallocating array.
+                int maxPartNum = 0;
+                foreach (var partMap in g.PartitionMap)
+                {
+                    foreach (var part in partMap.Value)
+                    {
+                        if (part > maxPartNum)
+                        {
+                            maxPartNum = part;
+                        }
+                    }
+                }
+
+                // Populate partition array.
+                var partNodeIds = new Guid[maxPartNum + 1];
+                foreach (var partMap in g.PartitionMap)
+                {
+                    foreach (var part in partMap.Value)
+                    {
+                        partNodeIds[part] = partMap.Key;
+                    }
+                }
+
+                foreach (var keyConfig in g.KeyConfigs)
+                {
+                    mapping[keyConfig.CacheId] = new ClientCachePartitionMap(keyConfig, partNodeIds);
+                }
+            }
+
+            _cachePartitionMap = mapping;
         }
 
         private int GetPartition<TKey>(TKey key)

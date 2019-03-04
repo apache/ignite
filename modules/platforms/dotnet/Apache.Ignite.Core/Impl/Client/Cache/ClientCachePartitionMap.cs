@@ -38,5 +38,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             _keyConfiguration = keyConfiguration;
             _partitionNodeIds = partitionNodeIds;
         }
+
+        public ClientCacheKeyConfiguration KeyConfiguration
+        {
+            get { return _keyConfiguration; }
+        }
+
+        public Guid[] PartitionNodeIds
+        {
+            get { return _partitionNodeIds; }
+        }
     }
 }
