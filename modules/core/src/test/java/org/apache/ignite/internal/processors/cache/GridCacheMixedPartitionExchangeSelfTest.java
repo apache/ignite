@@ -34,7 +34,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -50,13 +49,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractTest {
     /** Flag indicating whether to include cache to the node configuration. */
     private boolean cache;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
-
-        super.beforeTestsStarted();
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -126,7 +118,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
                         }
                         catch (Exception e) {
                             if (!X.hasCause(e, ClusterTopologyCheckedException.class))
-                                throw e;
+                                MvccFeatureChecker.assertMvccWriteConflict(e);
                         }
                     }
 

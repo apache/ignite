@@ -16,9 +16,9 @@
 
 .le-body
     .le-row(
-        ng-repeat='item in $ctrl.ngModel.$viewValue track by $ctrl.$index(item, $index)'
+        ng-repeat='item in $ctrl.ngModel.$viewValue track by $ctrl.id(item, $index)'
         ng-class=`{
-            'le-row--editable': $ctrl.isEditView($index),
+            'le-row--editable': $ctrl.isEditView($ctrl.id(item, $index)),
             'le-row--has-item-view': $ctrl.hasItemView
         }`)
 
@@ -30,20 +30,20 @@
             span {{ $index+1 }}
 
         .le-row-item
-            .le-row-item-view(ng-if='$ctrl.hasItemView && !$ctrl.isEditView($index)' ng-click='$ctrl.startEditView($index);')
+            .le-row-item-view(ng-if='$ctrl.hasItemView && !$ctrl.isEditView($ctrl.id(item, $index))' ng-click='$ctrl.startEditView($ctrl.id(item, $index))')
                 div(list-editable-transclude='itemView')
             div(
-                ng-if='!$ctrl.hasItemView || $ctrl.isEditView($index)'
-                ignite-on-focus-out='$ctrl.stopEditView(item, $index, form);'
+                ng-if='!$ctrl.hasItemView || $ctrl.isEditView($ctrl.id(item, $index))'
+                ignite-on-focus-out='$ctrl.stopEditView(item, $ctrl.id(item, $index), form)'
                 ignite-on-focus-out-ignored-classes='bssm-click-overlay bssm-item-text bssm-item-button'
             )
-                .le-row-item-view(ng-show='$ctrl.hasItemView' ng-init='$ctrl.startEditView($index);item = $ctrl.getEditView($index);')
+                .le-row-item-view(ng-show='$ctrl.hasItemView' ng-init='$ctrl.startEditView($ctrl.id(item, $index));item = $ctrl.getEditView($ctrl.id(item, $index))')
                     div(list-editable-transclude='itemView')
                 .le-row-item-edit(ng-form name='form')
                     div(list-editable-transclude='itemEdit')
 
         .le-row-cross
-            button.btn-ignite.btn-ignite--link-dashed-secondary(type='button' ng-click='$ctrl.remove($index)')
+            button.btn-ignite.btn-ignite--link-dashed-secondary(type='button' ng-click='$ctrl.remove($ctrl.id(item, $index))')
                 svg(ignite-icon='cross')
 
     .le-row(ng-hide='$ctrl.ngModel.$viewValue.length')
