@@ -207,7 +207,7 @@ public class GridAffinityAssignmentCache {
 
         GridAffinityAssignmentV2 assignment = new GridAffinityAssignmentV2(topVer, affAssignment, idealAssignment);
 
-        HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignment, backups));
+        HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignmentImpl(assignment, backups));
 
         head.set(assignment);
 
@@ -493,9 +493,11 @@ public class GridAffinityAssignmentCache {
 
         Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> prevHistEntry = affCache.lastEntry();
 
-        HistoryAffinityAssignment hAff = (prevHistEntry == null) ?
-            affCache.put(topVer, new HistoryAffinityAssignment(assignmentCpy, backups)) :
-            affCache.put(topVer, prevHistEntry.getValue());
+        HistoryAffinityAssignment newHistEntry = (prevHistEntry == null) ?
+            new HistoryAffinityAssignmentImpl(assignmentCpy, backups) :
+            new HistoryAffinityAssignmentShallowCopy(prevHistEntry.getValue().origin(), topVer);
+
+        HistoryAffinityAssignment replaced = affCache.put(topVer, newHistEntry);
 
         head.set(assignmentCpy);
 
@@ -510,7 +512,7 @@ public class GridAffinityAssignmentCache {
         }
 
         // There is no sense to clean the history if value was replaced or we added shallow copy of previous value.
-        if (hAff == null && prevHistEntry == null)
+        if (replaced == null && newHistEntry.requiresHistoryCleanup())
             onHistoryAdded();
     }
 
@@ -839,12 +841,10 @@ public class GridAffinityAssignmentCache {
 
             AffinityTopologyVersion topVerRmv = null;
 
-            HistoryAffinityAssignment prevRmv = null;
-
             while (it.hasNext()) {
                 HistoryAffinityAssignment aff0 = it.next();
 
-                if (aff0 != prevRmv) { // Don't decrement counter in case of shallow copy remove.
+                if (aff0.requiresHistoryCleanup()) { // Don't decrement counter in case of shallow copy remove.
                     if (rmvCnt == 0)
                         break; // We have already removed enough entries along with their shallow copies.
 
@@ -856,8 +856,6 @@ public class GridAffinityAssignmentCache {
                 it.remove();
 
                 topVerRmv = aff0.topologyVersion();
-
-                prevRmv = aff0;
             }
 
             topVerRmv = it.hasNext() ? it.next().topologyVersion() : topVerRmv;
