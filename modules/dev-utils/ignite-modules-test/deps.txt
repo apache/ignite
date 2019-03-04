@@ -31,9 +31,35 @@ compile - Dependencies for source set 'main' (deprecated, use 'implementation' i
 |    +--- org.apache.logging.log4j:log4j-api:2.11.0
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
 |         \--- org.apache.logging.log4j:log4j-api:2.11.0
-\--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
++--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    \--- org.slf4j:slf4j-api:1.7.7
+\--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
      +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     \--- org.slf4j:slf4j-api:1.7.7
+     +--- commons-lang:commons-lang:2.6
+     +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+     |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+     |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+     +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+     |    +--- javax.servlet:javax.servlet-api:3.1.0
+     |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+     +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+     |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+     +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+     +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+     |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+     |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+     +--- org.slf4j:slf4j-api:1.7.7
+     +--- org.slf4j:slf4j-log4j12:1.7.7
+     |    +--- org.slf4j:slf4j-api:1.7.7
+     |    \--- log4j:log4j:1.2.17
+     \--- log4j:log4j:1.2.17
 
 compileClasspath - Compile classpath for source set 'main'.
 +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
@@ -52,9 +78,35 @@ compileClasspath - Compile classpath for source set 'main'.
 |    +--- org.apache.logging.log4j:log4j-api:2.11.0
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
 |         \--- org.apache.logging.log4j:log4j-api:2.11.0
-\--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
++--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    \--- org.slf4j:slf4j-api:1.7.7
+\--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
      +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     \--- org.slf4j:slf4j-api:1.7.7
+     +--- commons-lang:commons-lang:2.6
+     +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+     |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+     |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+     +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+     |    +--- javax.servlet:javax.servlet-api:3.1.0
+     |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+     +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+     |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+     +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+     +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+     |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+     |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+     +--- org.slf4j:slf4j-api:1.7.7
+     +--- org.slf4j:slf4j-log4j12:1.7.7
+     |    +--- org.slf4j:slf4j-api:1.7.7
+     |    \--- log4j:log4j:1.2.17
+     \--- log4j:log4j:1.2.17
 
 compileOnly - Compile only dependencies for source set 'main'.
 No dependencies
@@ -76,9 +128,35 @@ default - Configuration for default artifacts.
 |    +--- org.apache.logging.log4j:log4j-api:2.11.0
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
 |         \--- org.apache.logging.log4j:log4j-api:2.11.0
-\--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
++--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    \--- org.slf4j:slf4j-api:1.7.7
+\--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
      +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     \--- org.slf4j:slf4j-api:1.7.7
+     +--- commons-lang:commons-lang:2.6
+     +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+     |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+     |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+     +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+     |    +--- javax.servlet:javax.servlet-api:3.1.0
+     |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+     +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+     |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+     +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+     +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+     |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+     |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+     +--- org.slf4j:slf4j-api:1.7.7
+     +--- org.slf4j:slf4j-log4j12:1.7.7
+     |    +--- org.slf4j:slf4j-api:1.7.7
+     |    \--- log4j:log4j:1.2.17
+     \--- log4j:log4j:1.2.17
 
 implementation - Implementation only dependencies for source set 'main'. (n)
 No dependencies
@@ -100,9 +178,35 @@ runtime - Runtime dependencies for source set 'main' (deprecated, use 'runtimeOn
 |    +--- org.apache.logging.log4j:log4j-api:2.11.0
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
 |         \--- org.apache.logging.log4j:log4j-api:2.11.0
-\--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
++--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    \--- org.slf4j:slf4j-api:1.7.7
+\--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
      +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     \--- org.slf4j:slf4j-api:1.7.7
+     +--- commons-lang:commons-lang:2.6
+     +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+     |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+     |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+     +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+     |    +--- javax.servlet:javax.servlet-api:3.1.0
+     |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+     +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+     |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+     +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+     +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+     |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+     |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+     +--- org.slf4j:slf4j-api:1.7.7
+     +--- org.slf4j:slf4j-log4j12:1.7.7
+     |    +--- org.slf4j:slf4j-api:1.7.7
+     |    \--- log4j:log4j:1.2.17
+     \--- log4j:log4j:1.2.17
 
 runtimeClasspath - Runtime classpath of source set 'main'.
 +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
@@ -121,9 +225,35 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    +--- org.apache.logging.log4j:log4j-api:2.11.0
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
 |         \--- org.apache.logging.log4j:log4j-api:2.11.0
-\--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
++--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    \--- org.slf4j:slf4j-api:1.7.7
+\--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
      +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     \--- org.slf4j:slf4j-api:1.7.7
+     +--- commons-lang:commons-lang:2.6
+     +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+     |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+     |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+     +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+     |    +--- javax.servlet:javax.servlet-api:3.1.0
+     |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+     +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+     |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+     +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+     +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+     +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+     |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+     |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+     +--- org.slf4j:slf4j-api:1.7.7
+     +--- org.slf4j:slf4j-log4j12:1.7.7
+     |    +--- org.slf4j:slf4j-api:1.7.7
+     |    \--- log4j:log4j:1.2.17
+     \--- log4j:log4j:1.2.17
 
 runtimeElements - Elements of runtime for main. (n)
 No dependencies
@@ -154,6 +284,32 @@ testCompile - Dependencies for source set 'test' (deprecated, use 'testImplement
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- org.slf4j:slf4j-api:1.7.7
++--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-lang:commons-lang:2.6
+|    +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+|    |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+|    |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+|    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+|    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- org.slf4j:slf4j-api:1.7.7
+|    +--- org.slf4j:slf4j-log4j12:1.7.7
+|    |    +--- org.slf4j:slf4j-api:1.7.7
+|    |    \--- log4j:log4j:1.2.17
+|    \--- log4j:log4j:1.2.17
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -177,6 +333,32 @@ testCompileClasspath - Compile classpath for source set 'test'.
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- org.slf4j:slf4j-api:1.7.7
++--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-lang:commons-lang:2.6
+|    +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+|    |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+|    |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+|    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+|    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- org.slf4j:slf4j-api:1.7.7
+|    +--- org.slf4j:slf4j-log4j12:1.7.7
+|    |    +--- org.slf4j:slf4j-api:1.7.7
+|    |    \--- log4j:log4j:1.2.17
+|    \--- log4j:log4j:1.2.17
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -206,6 +388,32 @@ testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testR
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- org.slf4j:slf4j-api:1.7.7
++--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-lang:commons-lang:2.6
+|    +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+|    |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+|    |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+|    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+|    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- org.slf4j:slf4j-api:1.7.7
+|    +--- org.slf4j:slf4j-log4j12:1.7.7
+|    |    +--- org.slf4j:slf4j-api:1.7.7
+|    |    \--- log4j:log4j:1.2.17
+|    \--- log4j:log4j:1.2.17
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -229,6 +437,32 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- org.slf4j:slf4j-api:1.7.7
++--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-lang:commons-lang:2.6
+|    +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+|    |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+|    |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+|    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+|    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- org.slf4j:slf4j-api:1.7.7
+|    +--- org.slf4j:slf4j-log4j12:1.7.7
+|    |    +--- org.slf4j:slf4j-api:1.7.7
+|    |    \--- log4j:log4j:1.2.17
+|    \--- log4j:log4j:1.2.17
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -239,5 +473,5 @@ No dependencies
 
 A web-based, searchable dependency report is available by adding the --scan option.
 
-BUILD SUCCESSFUL in 0s
+BUILD SUCCESSFUL in 1s
 1 actionable task: 1 executed
