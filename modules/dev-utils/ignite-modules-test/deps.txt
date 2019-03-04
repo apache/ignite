@@ -15,40 +15,60 @@ archives - Configuration for archive artifacts.
 No dependencies
 
 compile - Dependencies for source set 'main' (deprecated, use 'implementation' instead).
-\--- org.apache.ignite:ignite-core:2.7.0
-     +--- javax.cache:cache-api:1.0.0
-     +--- org.jetbrains:annotations:13.0
-     \--- org.gridgain:ignite-shmem:1.0.0
++--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
+|    +--- javax.cache:cache-api:1.0.0
+|    +--- org.jetbrains:annotations:16.0.3
+|    \--- org.gridgain:ignite-shmem:1.0.0
+\--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT
+     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     +--- commons-codec:commons-codec:1.11
+     \--- com.h2database:h2:1.4.197
 
 compileClasspath - Compile classpath for source set 'main'.
-\--- org.apache.ignite:ignite-core:2.7.0
-     +--- javax.cache:cache-api:1.0.0
-     +--- org.jetbrains:annotations:13.0
-     \--- org.gridgain:ignite-shmem:1.0.0
++--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
+|    +--- javax.cache:cache-api:1.0.0
+|    +--- org.jetbrains:annotations:16.0.3
+|    \--- org.gridgain:ignite-shmem:1.0.0
+\--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT
+     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     +--- commons-codec:commons-codec:1.11
+     \--- com.h2database:h2:1.4.197
 
 compileOnly - Compile only dependencies for source set 'main'.
 No dependencies
 
 default - Configuration for default artifacts.
-\--- org.apache.ignite:ignite-core:2.7.0
-     +--- javax.cache:cache-api:1.0.0
-     +--- org.jetbrains:annotations:13.0
-     \--- org.gridgain:ignite-shmem:1.0.0
++--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
+|    +--- javax.cache:cache-api:1.0.0
+|    +--- org.jetbrains:annotations:16.0.3
+|    \--- org.gridgain:ignite-shmem:1.0.0
+\--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT
+     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     +--- commons-codec:commons-codec:1.11
+     \--- com.h2database:h2:1.4.197
 
 implementation - Implementation only dependencies for source set 'main'. (n)
 No dependencies
 
 runtime - Runtime dependencies for source set 'main' (deprecated, use 'runtimeOnly' instead).
-\--- org.apache.ignite:ignite-core:2.7.0
-     +--- javax.cache:cache-api:1.0.0
-     +--- org.jetbrains:annotations:13.0
-     \--- org.gridgain:ignite-shmem:1.0.0
++--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
+|    +--- javax.cache:cache-api:1.0.0
+|    +--- org.jetbrains:annotations:16.0.3
+|    \--- org.gridgain:ignite-shmem:1.0.0
+\--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT
+     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     +--- commons-codec:commons-codec:1.11
+     \--- com.h2database:h2:1.4.197
 
 runtimeClasspath - Runtime classpath of source set 'main'.
-\--- org.apache.ignite:ignite-core:2.7.0
-     +--- javax.cache:cache-api:1.0.0
-     +--- org.jetbrains:annotations:13.0
-     \--- org.gridgain:ignite-shmem:1.0.0
++--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
+|    +--- javax.cache:cache-api:1.0.0
+|    +--- org.jetbrains:annotations:16.0.3
+|    \--- org.gridgain:ignite-shmem:1.0.0
+\--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT
+     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     +--- commons-codec:commons-codec:1.11
+     \--- com.h2database:h2:1.4.197
 
 runtimeElements - Elements of runtime for main. (n)
 No dependencies
@@ -60,18 +80,26 @@ testAnnotationProcessor - Annotation processors and their dependencies for sourc
 No dependencies
 
 testCompile - Dependencies for source set 'test' (deprecated, use 'testImplementation' instead).
-+--- org.apache.ignite:ignite-core:2.7.0
++--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
 |    +--- javax.cache:cache-api:1.0.0
-|    +--- org.jetbrains:annotations:13.0
+|    +--- org.jetbrains:annotations:16.0.3
 |    \--- org.gridgain:ignite-shmem:1.0.0
++--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-codec:commons-codec:1.11
+|    \--- com.h2database:h2:1.4.197
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
 testCompileClasspath - Compile classpath for source set 'test'.
-+--- org.apache.ignite:ignite-core:2.7.0
++--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
 |    +--- javax.cache:cache-api:1.0.0
-|    +--- org.jetbrains:annotations:13.0
+|    +--- org.jetbrains:annotations:16.0.3
 |    \--- org.gridgain:ignite-shmem:1.0.0
++--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-codec:commons-codec:1.11
+|    \--- com.h2database:h2:1.4.197
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -82,23 +110,33 @@ testImplementation - Implementation only dependencies for source set 'test'. (n)
 No dependencies
 
 testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testRuntimeOnly' instead).
-+--- org.apache.ignite:ignite-core:2.7.0
++--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
 |    +--- javax.cache:cache-api:1.0.0
-|    +--- org.jetbrains:annotations:13.0
+|    +--- org.jetbrains:annotations:16.0.3
 |    \--- org.gridgain:ignite-shmem:1.0.0
++--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-codec:commons-codec:1.11
+|    \--- com.h2database:h2:1.4.197
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
 testRuntimeClasspath - Runtime classpath of source set 'test'.
-+--- org.apache.ignite:ignite-core:2.7.0
++--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
 |    +--- javax.cache:cache-api:1.0.0
-|    +--- org.jetbrains:annotations:13.0
+|    +--- org.jetbrains:annotations:16.0.3
 |    \--- org.gridgain:ignite-shmem:1.0.0
++--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-codec:commons-codec:1.11
+|    \--- com.h2database:h2:1.4.197
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
 testRuntimeOnly - Runtime only dependencies for source set 'test'. (n)
 No dependencies
+
+(*) - dependencies omitted (listed previously)
 
 A web-based, searchable dependency report is available by adding the --scan option.
 

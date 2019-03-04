@@ -16,7 +16,7 @@
  *
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+package org.apache.ignite.internal.processors.cache.query.indexing;
 
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;

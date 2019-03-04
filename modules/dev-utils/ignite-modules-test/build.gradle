@@ -26,8 +26,8 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 ext {
-    //ignVer = '2.8.0-SNAPSHOT'
-    ignVer = '2.7.0'
+    ignVer = '2.8.0-SNAPSHOT'
+    //ignVer = '2.7.0'
     moduleName = 'ignite_modules_test'
 }
 
@@ -64,9 +64,9 @@ dependencies {
 
     compile group: 'org.apache.ignite', name: 'ignite-core', version: ignVer
     //todo https://issues.apache.org/jira/browse/IGNITE-11464 - Fix indexing modularity:
-    /* compile(group: 'org.apache.ignite', name: 'ignite-indexing', version: ignVer) {
+    compile(group: 'org.apache.ignite', name: 'ignite-indexing', version: ignVer) {
         exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
-    }*/
+    }
 
     def luceneVer = '7.7.1'
     // compile 'org.apache.lucene:lucene-core:' + luceneVer

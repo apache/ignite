@@ -15,7 +15,7 @@
 * limitations under the License.
 */
 
-package org.apache.ignite.internal.visor.verify;
+package org.apache.ignite.internal.visor.verify.indexing;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,6 +33,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
+import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
+import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.jetbrains.annotations.Nullable;
 
 /**
