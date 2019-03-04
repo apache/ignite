@@ -337,6 +337,22 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
         return scores;
     }
 
+
+    /**
+     * Computes cross-validated metrics with a passed parameter grid.
+     *
+     * The real cross-validation training will be called each time for each parameter set.
+     *
+     * @param pipeline        Pipeline of stages.
+     * @param scoreCalculator Base score calculator.
+     * @param ignite          Ignite instance.
+     * @param upstreamCache   Ignite cache with {@code upstream} data.
+     * @param filter          Base {@code upstream} data filter.
+     * @param lbExtractor     Label extractor.
+     * @param amountOfFolds   Amount of folds.
+     * @param paramGrid       Parameter grid.
+     * @return Array of scores of the estimator for each run of the cross validation.
+     */
     public CrossValidationResult score(Pipeline<K, V, Vector> pipeline,
                                        Metric<L> scoreCalculator,
                                        Ignite ignite,
@@ -420,7 +436,17 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
 
     }
 
-
+    /**
+     * Computes cross-validated metrics.
+     *
+     * @param pipeline               Pipeline of stages.
+     * @param datasetBuilderSupplier Dataset builder supplier.
+     * @param testDataIterSupplier   Test data iterator supplier.
+     * @param scoreCalculator        Base score calculator.
+     * @param mapper                 Mapper used to map a key-value pair to a point on the segment (0, 1).
+     * @param cv                     Number of folds.
+     * @return Array of scores of the estimator for each run of the cross validation.
+     */
     private double[] scorePipeline(Pipeline<K, V, Vector> pipeline,
                                    Function<IgniteBiPredicate<K, V>, DatasetBuilder<K, V>> datasetBuilderSupplier,
                                    BiFunction<IgniteBiPredicate<K, V>, M, LabelPairCursor<L>> testDataIterSupplier,
