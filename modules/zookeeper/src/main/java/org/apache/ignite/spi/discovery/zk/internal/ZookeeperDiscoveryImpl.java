@@ -2644,6 +2644,9 @@ public class ZookeeperDiscoveryImpl {
 
         processNewEvents(newEvts);
 
+        if (rtState.joined)
+            rtState.evtsData = newEvts;
+
         return newEvts;
     }
 
@@ -2773,9 +2776,6 @@ public class ZookeeperDiscoveryImpl {
 
             throw e;
         }
-
-        if (rtState.joined)
-            rtState.evtsData = evtsData;
 
         if (rtState.crd)
             handleProcessedEvents("procEvt");
