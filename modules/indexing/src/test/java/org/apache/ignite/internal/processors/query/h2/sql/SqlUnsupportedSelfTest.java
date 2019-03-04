@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.h2.api.TimestampWithTimeZone;
 import org.junit.Test;
 
 /**
@@ -42,7 +44,8 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
         cleanPersistenceDir();
 
-        startGrid(getConfiguration());
+        startGrid();
+        startGrid(1);
     }
 
     /** {@inheritDoc} */
@@ -51,6 +54,23 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
         cleanPersistenceDir();
     }
+
+    /**
+     * Test for unsupported SQL statements in CREATE TABLE statement.
+     */
+    @Test
+    public void testUnsupportedTypes() {
+        assertSqlUnsupported("CREATE TABLE test (id integer PRIMARY KEY, val TIMESTAMP WITH TIME ZONE)");
+        assertSqlUnsupported("CREATE TABLE test (id integer PRIMARY KEY, val ENUM ('A', 'B', 'C'))");
+
+        execSql("CREATE TABLE test (id integer PRIMARY KEY, val TIMESTAMP)");
+
+        assertSqlUnsupported("SELECT CAST (val as TIMESTAMP WITH TIME ZONE) FROM test ");
+
+        // H2 bug. Fixed at H2 version 1.4.198
+        // assertSqlUnsupported("SELECT CAST (id AS ENUM('A', 'B')) FROM test ");
+    }
+
 
     /**
      * Test for unsupported SQL statements in CREATE TABLE statement.

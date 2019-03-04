@@ -102,6 +102,7 @@ import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
 import org.h2.value.DataType;
+import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -1412,6 +1413,8 @@ public class GridSqlQueryParser {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
+        checkTypeSupported(col.getType(), "[colName=" + col.getName() + ']');
+
         if (col.getDefaultExpression() != null) {
             if (!col.getDefaultExpression().isConstant()) {
                 throw new IgniteSQLException("Non-constant DEFAULT expressions are not supported [colName=" + col.getName() + ']',
@@ -2314,8 +2317,11 @@ public class GridSqlQueryParser {
                 }
             }
 
-            if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT)
+            if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT) {
+                checkTypeSupported(f.getType(), "[expSql=" + f.getSQL() + ']');
+
                 res.resultType(fromExpression(f));
+            }
 
             return res;
         }
@@ -2452,6 +2458,20 @@ public class GridSqlQueryParser {
             return false;
 
         return !EXPLAIN_COMMAND.get((Explain)statement).isQuery();
+    }
+
+    /**
+     */
+    public static void checkTypeSupported(int type, String errMsg) {
+        if (type == Value.TIMESTAMP_TZ) {
+            throw new IgniteSQLException("TIMESTAMP WITH TIMEZONE type is not supported " + errMsg,
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+
+        if (type == Value.ENUM) {
+            throw new IgniteSQLException("ENUM type is not supported " + errMsg,
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
     }
 
     /**
