@@ -81,7 +81,8 @@ public class QueryParser {
 
     /** A pattern for commands having internal implementation in Ignite. */
     private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
-        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user",
+        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user" +
+            "|show|help",
         Pattern.CASE_INSENSITIVE);
 
     /** Indexing. */
@@ -224,6 +225,9 @@ public class QueryParser {
         catch (SqlStrictParseException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
+        catch (IgniteSQLException e) {
+            throw e;
+        }
         catch (Exception e) {
             // Cannot parse, return.
             if (log.isDebugEnabled())
@@ -234,7 +238,8 @@ public class QueryParser {
 
             int code = IgniteQueryErrorCode.PARSING;
 
-            if (e instanceof SqlParseException)                code = ((SqlParseException)e).code();
+            if (e instanceof SqlParseException)
+                code = ((SqlParseException)e).code();
 
             throw new IgniteSQLException("Failed to parse DDL statement: " + sql + ": " + e.getMessage(),
                 code, e);

@@ -284,6 +284,12 @@ public class SqlKeyword {
     /** Keyword: PASSWORD. */
     public static final String PASSWORD = "PASSWORD";
 
+    /** Keyword: SHOW. */
+    public static final String SHOW = "SHOW";
+
+    /** Keyword: HELP. */
+    public static final String HELP = "HELP";
+
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;
 

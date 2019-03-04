@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Collections;
-import org.h2.command.Parser;
 import org.h2.expression.ValueExpression;
 
 /** Keyword (like DEFAULT). */

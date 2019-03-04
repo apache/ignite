@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
@@ -38,10 +40,12 @@ import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
 import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
+import static org.apache.ignite.internal.sql.SqlKeyword.HELP;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
 import static org.apache.ignite.internal.sql.SqlKeyword.SET;
+import static org.apache.ignite.internal.sql.SqlKeyword.SHOW;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
 import static org.apache.ignite.internal.sql.SqlKeyword.START;
 import static org.apache.ignite.internal.sql.SqlKeyword.STREAMING;
@@ -175,6 +179,18 @@ public class SqlParser {
 
                         case ALTER:
                             cmd = processAlter();
+
+                            break;
+
+                        case HELP:
+                            cmd = processHelp();
+
+                            break;
+
+                        case SHOW:
+                            cmd = processShow();
+
+                            break;
                     }
 
                     if (cmd != null) {
@@ -368,6 +384,26 @@ public class SqlParser {
         }
 
         throw errorUnexpectedToken(lex, TABLE, USER);
+    }
+
+    /**
+     * Process ALTER keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processHelp() {
+        throw new IgniteSQLException("HELP command are not supported.",
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Process ALTER keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processShow() {
+        throw new IgniteSQLException("SHOW command are not supported.",
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
