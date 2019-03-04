@@ -36,11 +36,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
 public abstract class IgniteMvccTxMultiThreadedAbstractTest extends IgniteTxAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        // No-op.
-    }
-
     /**
      * @return Thread count.
      */

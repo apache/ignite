@@ -189,8 +189,20 @@ public class TxLog implements DbCheckpointListener {
 
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        Executor executor = ctx.executor();
+        saveReuseListMetadata(ctx);
+    }
 
+    /** {@inheritDoc} */
+    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        saveReuseListMetadata(ctx);
+    }
+
+    /**
+     * @param ctx Checkpoint context.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void saveReuseListMetadata(Context ctx) throws IgniteCheckedException {
+        Executor executor = ctx.executor();
         if (executor == null)
             reuseList.saveMetadata();
         else {

@@ -304,13 +304,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
-            boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel,
-            Long qryId) throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String spaceName,
             String cacheName, String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException {
             return null;
@@ -355,7 +348,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
+        @Override public UpdateSourceIterator<?> executeUpdateOnDataNodeTransactional(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
             String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
             AffinityTopologyVersion topVer,
             MvccSnapshot mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
