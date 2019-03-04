@@ -56,7 +56,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDeploymentSpi(deploymentSpi());
+        cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
         return cfg;
     }
@@ -157,12 +157,5 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         assertTrue("Failed to remove source file.", srcFile.delete());
 
         return new URLClassLoader(new URL[] {srcTmpDir.toUri().toURL()});
-    }
-
-    /**
-     * @return Deployment spi implementation.
-     */
-    protected DeploymentSpi deploymentSpi() {
-        return new LocalDeploymentSpi();
     }
 }
