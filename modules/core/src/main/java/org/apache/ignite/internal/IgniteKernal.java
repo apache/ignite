@@ -309,6 +309,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Separator for formatted coordinator properties. */
     public static final String COORDINATOR_PROPERTIES_SEPARATOR = ",";
 
+    /** Default long operations dump timeout. */
+    public static final long DFLT_LONG_OPERATIONS_DUMP_TIMEOUT = 60_000L;
+
     /** Long jvm pause detector. */
     private LongJVMPauseDetector longJVMPauseDetector;
 
@@ -1258,8 +1261,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, metricsLogFreq, metricsLogFreq);
         }
 
-        final long longOpDumpTimeout =
-            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
+        final long longOpDumpTimeout = IgniteSystemProperties.getLong(
+                IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
+                DFLT_LONG_OPERATIONS_DUMP_TIMEOUT
+        );
 
         if (longOpDumpTimeout > 0) {
             longOpDumpTask = ctx.timeout().schedule(new Runnable() {

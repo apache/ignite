@@ -93,6 +93,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_UPDATE_NOTIFIER = "IGNITE_UPDATE_NOTIFIER";
 
     /**
+     * Url of updates service.
+     */
+    public static final String GRIDGAIN_UPDATE_URL = "GRIDGAIN_UPDATE_URL";
+
+    /**
      * This system property defines interval in milliseconds in which Ignite will check
      * thread pool state for starvation. Zero value will disable this checker.
      */
@@ -1084,6 +1089,11 @@ public final class IgniteSystemProperties {
      * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
      */
     public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
+
+    /**
+     * Maximum number of diagnostic warning messages per category, when waiting for PME.
+     */
+    public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
      * Enforces singleton.

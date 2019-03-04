@@ -339,6 +339,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
     /** {@inheritDoc} */
     @Override public boolean allNodesSupport(IgniteFeatures feature) {
+        if (impl == null)
+            return false;
+
         return impl.allNodesSupport(feature);
     }
 
@@ -611,6 +614,24 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         /** {@inheritDoc} */
         @Override public String getLocalNodeFormatted() {
             return String.valueOf(getLocalNode());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void excludeNode(String nodeId) {
+            UUID node;
+
+            try {
+                node = UUID.fromString(nodeId);
+            }
+            catch (IllegalArgumentException e) {
+                U.error(log, "Failed to parse node ID: " + nodeId, e);
+
+                return;
+            }
+
+            String msg = "Node excluded, node=" + nodeId + "using JMX interface, initiator=" + getLocalNodeId();
+
+            impl.failNode(node, msg);
         }
 
         /** {@inheritDoc} */

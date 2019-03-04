@@ -68,6 +68,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1222,7 +1223,6 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testQueryInsertUpdateMultithread() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
@@ -1240,26 +1240,33 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                 IgniteEx node = grid(0);
 
                 try {
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TX_TIMEOUT);
+                    while (true) {
+                        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            tx.timeout(TX_TIMEOUT);
 
-                        IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
+                            IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
-                        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+                            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
 
-                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                            cur.getAll();
+                            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                                cur.getAll();
+                            }
+
+                            awaitPhase(phaser, 2);
+
+                            qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
+
+                            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                                cur.getAll();
+                            }
+
+                            tx.commit();
+
+                            break;
                         }
-
-                        awaitPhase(phaser, 2);
-
-                        qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
-
-                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                            cur.getAll();
+                        catch (CacheException e) {
+                            MvccFeatureChecker.assertMvccWriteConflict(e);
                         }
-
-                        tx.commit();
                     }
                 }
                 catch (Exception e) {
@@ -1275,24 +1282,30 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                 try {
                     phaser.arriveAndAwaitAdvance();
 
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TX_TIMEOUT);
+                    while (true) {
+                        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            tx.timeout(TX_TIMEOUT);
 
-                        IgniteCache<Integer, Integer> cache0 = node.cache(DEFAULT_CACHE_NAME);
+                            IgniteCache<Integer, Integer> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
-                        cache0.invokeAllAsync(F.asSet(1, 2, 3, 4, 5, 6), new EntryProcessor<Integer, Integer, Void>() {
-                            @Override
-                            public Void process(MutableEntry<Integer, Integer> entry,
-                                Object... arguments) throws EntryProcessorException {
-                                entry.setValue(entry.getValue() * 10);
+                            cache0.invokeAllAsync(F.asSet(1, 2, 3, 4, 5, 6), new EntryProcessor<Integer, Integer, Void>() {
+                                @Override public Void process(MutableEntry<Integer, Integer> entry,
+                                    Object... arguments) throws EntryProcessorException {
+                                    entry.setValue(entry.getValue() * 10);
 
-                                return null;
-                            }
-                        });
+                                    return null;
+                                }
+                            });
 
-                        phaser.arrive();
+                            phaser.arrive();
 
-                        tx.commit();
+                            tx.commit();
+
+                            break;
+                        }
+                        catch (Exception e) {
+                            assertTrue(e instanceof TransactionSerializationException);
+                        }
                     }
                 }
                 catch (Exception e) {

@@ -575,8 +575,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
             cache.putAll(map);
         }
 
-        //TODO: uncomment TRANSACTIONAL_SNAPSHOT cache creation when IGNITE-9470 will be fixed.
-       /* for (int i = 0; i < 3; i++) {
+       for (int i = 0; i < 3; i++) {
             CacheConfiguration<Object, Object> ccfg = cacheConfiguration("mvcc-" + i, TRANSACTIONAL_SNAPSHOT, i);
 
             IgniteCache<Object, Object> cache = node.createCache(ccfg);
@@ -584,7 +583,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
             cacheNames.add(ccfg.getName());
 
             cache.putAll(map);
-        }*/
+        }
 
 
         return cacheNames;

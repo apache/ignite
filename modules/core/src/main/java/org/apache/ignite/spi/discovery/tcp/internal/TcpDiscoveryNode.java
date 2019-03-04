@@ -576,16 +576,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
         U.writeByteArray(out, mtr);
 
-        // Cache metrics
-        Map<Integer, CacheMetrics> cacheMetrics = this.cacheMetrics;
-
-        out.writeInt(cacheMetrics == null ? 0 : cacheMetrics.size());
-
-        if (!F.isEmpty(cacheMetrics))
-            for (Map.Entry<Integer, CacheMetrics> m : cacheMetrics.entrySet()) {
-                out.writeInt(m.getKey());
-                out.writeObject(m.getValue());
-            }
+        // Legacy: Number of cache metrics
+        out.writeInt(0);
 
         out.writeLong(order);
         out.writeLong(intOrder);
@@ -612,17 +604,12 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         if (mtr != null)
             metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
 
-        // Cache metrics
+        // Legacy: Cache metrics
         int size = in.readInt();
 
-        Map<Integer, CacheMetrics> cacheMetrics =
-            size > 0 ? U.<Integer, CacheMetrics>newHashMap(size) : Collections.<Integer, CacheMetrics>emptyMap();
-
         for (int i = 0; i < size; i++) {
-            int id = in.readInt();
-            CacheMetrics m = (CacheMetrics)in.readObject();
-
-            cacheMetrics.put(id, m);
+            in.readInt();
+            in.readObject();
         }
 
         order = in.readLong();

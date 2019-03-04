@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -946,7 +947,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             skipStore,
                             cctx.store().configured(),
                             keepBinary,
-                            cctx.deploymentEnabled());
+                            cctx.deploymentEnabled(),
+                            inTx() ? tx.label() : null);
 
                         try {
                             for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext(); ) {
@@ -1165,10 +1167,18 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         /** {@inheritDoc} */
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         @Override public void onTimeout() {
-            if (log.isDebugEnabled())
-                log.debug("Timed out waiting for lock response: " + this);
+            long longOpsDumpTimeout = cctx.tm().longOperationsDumpTimeout();
 
             synchronized (GridDhtLockFuture.this) {
+                if (log.isDebugEnabled() || timeout >= longOpsDumpTimeout) {
+                    String msg = dumpPendingLocks();
+
+                    if (log.isDebugEnabled())
+                        log.debug(msg);
+                    else
+                        log.warning(msg);
+                }
+
                 timedOut = true;
 
                 // Stop locks and responses processing.
@@ -1185,6 +1195,66 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(LockTimeoutObject.class, this);
+        }
+
+        /**
+         * NB! Should be called in synchronized block on {@link GridDhtLockFuture} instance.
+         *
+         * @return String representation of pending locks.
+         */
+        private String dumpPendingLocks() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("Transaction tx=").append(tx.getClass().getSimpleName());
+            sb.append(" [xid=").append(tx.xid());
+            sb.append(", xidVer=").append(tx.xidVersion());
+            sb.append(", nearXid=").append(tx.nearXidVersion().asGridUuid());
+            sb.append(", nearXidVer=").append(tx.nearXidVersion());
+            sb.append(", nearNodeId=").append(tx.nearNodeId());
+            sb.append(", label=").append(tx.label());
+            sb.append("] timed out, can't acquire lock for ");
+
+            Iterator<KeyCacheObject> locks = pendingLocks.iterator();
+
+            boolean found = false;
+
+            while (!found && locks.hasNext()) {
+                KeyCacheObject key = locks.next();
+
+                GridCacheEntryEx entry = cctx.cache().entryEx(key, topVer);
+
+                while (true) {
+                    try {
+                        Collection<GridCacheMvccCandidate> candidates = entry.localCandidates();
+
+                        for (GridCacheMvccCandidate candidate : candidates) {
+                            IgniteInternalTx itx = cctx.tm().tx(candidate.version());
+
+                            if (itx != null && candidate.owner() && !candidate.version().equals(tx.xidVersion())) {
+                                sb.append("key=").append(key).append(", owner=");
+                                sb.append("[xid=").append(itx.xid()).append(", ");
+                                sb.append("xidVer=").append(itx.xidVersion()).append(", ");
+                                sb.append("nearXid=").append(itx.nearXidVersion().asGridUuid()).append(", ");
+                                sb.append("nearXidVer=").append(itx.nearXidVersion()).append(", ");
+                                sb.append("label=").append(itx.label()).append(", ");
+                                sb.append("nearNodeId=").append(candidate.otherNodeId()).append("]");
+                                sb.append(", queueSize=").append(candidates.isEmpty() ? 0 : candidates.size() - 1);
+
+                                found = true;
+
+                                break;
+                            }
+                        }
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException e) {
+                        entry = cctx.cache().entryEx(key, topVer);
+                    }
+                }
+            }
+
+            return sb.toString();
         }
     }
 
@@ -1322,8 +1392,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     replicate ? DR_PRELOAD : DR_NONE,
                                     false)) {
                                     if (rec && !entry.isInternal())
-                                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                            (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
+                                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
+                                            null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                             false, null, null, null, false);
                                 }
                             }

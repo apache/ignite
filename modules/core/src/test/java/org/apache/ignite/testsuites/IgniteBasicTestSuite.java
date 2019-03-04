@@ -49,6 +49,8 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Te
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
+import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTestNoOptimization;
 import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
@@ -145,6 +147,8 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(GridProductVersionSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridAffinityAssignmentV2Test.class));
         suite.addTest(new JUnit4TestAdapter(GridAffinityAssignmentV2TestNoOptimizations.class));
+        suite.addTest(new JUnit4TestAdapter(GridHistoryAffinityAssignmentTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridHistoryAffinityAssignmentTestNoOptimization.class));
         suite.addTest(new JUnit4TestAdapter(GridAffinityProcessorRendezvousSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridAffinityProcessorMemoryLeakTest.class));
         suite.addTest(new JUnit4TestAdapter(GridClosureProcessorSelfTest.class));
