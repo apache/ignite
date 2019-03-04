@@ -1491,9 +1491,6 @@ class ClusterCachesInfo {
 
                 CacheConfiguration<?, ?> cfg = desc.cacheConfiguration();
 
-                if (reconnect && surviveReconnect(cfg.getName()) && cachesOnDisconnect.state.active() && active)
-                    continue;
-
                 CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
 
                 NearCacheConfiguration nearCfg = null;
@@ -1687,14 +1684,10 @@ class ClusterCachesInfo {
             for (CacheClientReconnectDiscoveryData.CacheInfo cacheInfo : clientData.clientCaches().values()) {
                 String cacheName = cacheInfo.config().getName();
 
-                if (surviveReconnect(cacheName))
-                    ctx.discovery().addClientNode(cacheName, clientNodeId, false);
-                else {
-                    DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
+                DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
-                    if (desc != null && desc.deploymentId().equals(cacheInfo.deploymentId()))
-                        ctx.discovery().addClientNode(cacheName, clientNodeId, cacheInfo.nearCache());
-                }
+                if (desc != null && desc.deploymentId().equals(cacheInfo.deploymentId()))
+                    ctx.discovery().addClientNode(cacheName, clientNodeId, cacheInfo.nearCache());
             }
         }
     }
@@ -2202,8 +2195,6 @@ class ClusterCachesInfo {
         Set<String> stoppedCaches = new HashSet<>();
         Set<Integer> stoppedCacheGrps = new HashSet<>();
 
-        Set<String> survivedCaches = new HashSet<>();
-
         if (!active) {
             joinOnTransition = transition;
 
@@ -2212,7 +2203,7 @@ class ClusterCachesInfo {
 
                 for (IgniteInternalCache cache : ctx.cache().caches()) {
                     locCfgsForActivation.put(cache.name(),
-                        new T2<>((CacheConfiguration)null, cache.configuration().getNearConfiguration()));
+                        new T2<>(null, cache.configuration().getNearConfiguration()));
                 }
             }
 
@@ -2226,53 +2217,16 @@ class ClusterCachesInfo {
             for (Map.Entry<Integer, CacheGroupDescriptor> e : cachesOnDisconnect.cacheGrps.entrySet()) {
                 CacheGroupDescriptor locDesc = e.getValue();
 
-                CacheGroupDescriptor desc;
-                boolean stopped = true;
-
-                if (locDesc.sharedGroup()) {
-                    desc = cacheGroupByName(locDesc.groupName());
-
-                    if (desc != null && desc.deploymentId().equals(locDesc.deploymentId()))
-                        stopped = false;
-                }
-                else {
-                    desc = nonSharedCacheGroupByCacheName(locDesc.config().getName());
-
-                    if (desc != null &&
-                        (surviveReconnect(locDesc.config().getName()) || desc.deploymentId().equals(locDesc.deploymentId())))
-                        stopped = false;
-                }
-
-                if (stopped)
-                    stoppedCacheGrps.add(locDesc.groupId());
-                else
-                    assert locDesc.groupId() == desc.groupId();
+                stoppedCacheGrps.add(locDesc.groupId());
             }
 
             for (Map.Entry<String, DynamicCacheDescriptor> e : cachesOnDisconnect.caches.entrySet()) {
-                DynamicCacheDescriptor desc = e.getValue();
-
                 String cacheName = e.getKey();
 
-                boolean stopped;
-
-                if (!surviveReconnect(cacheName)) {
-                    DynamicCacheDescriptor newDesc = registeredCaches.get(cacheName);
-
-                    stopped = newDesc == null || !desc.deploymentId().equals(newDesc.deploymentId());
-                }
-                else
-                    stopped = false;
-
-                if (stopped)
-                    stoppedCaches.add(cacheName);
-                else
-                    survivedCaches.add(cacheName);
+                stoppedCaches.add(cacheName);
             }
 
             if (locJoinCachesCtx != null) {
-                locJoinCachesCtx.removeSurvivedCaches(survivedCaches);
-
                 if (locJoinCachesCtx.isEmpty())
                     locJoinCachesCtx = null;
             }
@@ -2298,14 +2252,6 @@ class ClusterCachesInfo {
      */
     private boolean disconnectedState() {
         return cachesOnDisconnect != null;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return {@code True} if cache with given name if system cache which should always survive client node disconnect.
-     */
-    private boolean surviveReconnect(String cacheName) {
-        return CU.isUtilityCache(cacheName);
     }
 
     /**
