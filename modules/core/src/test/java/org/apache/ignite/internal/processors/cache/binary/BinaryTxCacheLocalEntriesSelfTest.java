@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.junit.Test;
 
 /**
  *
@@ -58,6 +59,7 @@ public class BinaryTxCacheLocalEntriesSelfTest extends GridCacheAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalEntries() throws Exception {
         IgniteCache<Integer, BinaryObject> cache = grid(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
 

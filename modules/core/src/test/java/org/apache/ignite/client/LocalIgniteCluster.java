@@ -87,7 +87,7 @@ public class LocalIgniteCluster implements AutoCloseable {
      * Remove one random node.
      */
     public void failNode() {
-        if (srvs.size() == 0)
+        if (srvs.isEmpty())
             throw new IllegalStateException("Cannot remove node from empty cluster");
 
         Ignite srv = srvs.get(rnd.nextInt(srvs.size()));
@@ -110,7 +110,7 @@ public class LocalIgniteCluster implements AutoCloseable {
      * Restore one of the failed nodes.
      */
     public void restoreNode() {
-        if (failedCfgs.size() == 0)
+        if (failedCfgs.isEmpty())
             throw new IllegalStateException("Cannot restore nodes in healthy cluster");
 
         NodeConfiguration nodeCfg = failedCfgs.get(rnd.nextInt(failedCfgs.size()));

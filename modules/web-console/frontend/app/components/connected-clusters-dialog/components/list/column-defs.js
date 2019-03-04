@@ -46,7 +46,7 @@ export default [
         cellTemplate: `
             <div class='ui-grid-cell-contents ui-grid-cell--status'>
                 <connected-clusters-cell-status
-                    status='COL_FIELD'
+                    value='COL_FIELD'
                 ></connected-clusters-cell-status>
                 <connected-clusters-cell-logout
                     ng-if='row.entity.secured && grid.appScope.$ctrl.agentMgr.hasCredentials(row.entity.id)'

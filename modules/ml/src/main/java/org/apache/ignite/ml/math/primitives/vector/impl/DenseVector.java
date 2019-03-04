@@ -18,13 +18,13 @@
 package org.apache.ignite.ml.math.primitives.vector.impl;
 
 import java.util.Map;
+import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
-import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorage;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.AbstractVector;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
-import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.ml.math.primitives.vector.AbstractVector;
+import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorage;
 
 /**
  * Basic implementation for vector.

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
@@ -30,24 +32,22 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static volatile boolean autoActivationEnabled = false;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -56,7 +56,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setAutoActivationEnabled(false);
+        cfg.setAutoActivationEnabled(autoActivationEnabled);
 
         return cfg;
     }
@@ -71,6 +71,8 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
         super.beforeTest();
 
         cleanPersistenceDir();
+
+        autoActivationEnabled = false;
     }
 
     /** {@inheritDoc} */
@@ -83,6 +85,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueue() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -108,6 +111,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -133,6 +137,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequence() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -162,9 +167,53 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
-    public void testSet() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5553");
+    @Test
+    public void testSequenceAfterAutoactivation() throws Exception {
+        final String seqName = "testSequence";
 
+        autoActivationEnabled = true;
+
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        ignite.atomicSequence(seqName, 0, true);
+
+        stopAllGrids(true);
+
+        final Ignite node = startGrids(2);
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            while (true) {
+                try {
+                    // Should not hang.
+                    node.atomicSequence(seqName, 0, false);
+
+                    break;
+                }
+                catch (IgniteException e) {
+                    // Can fail on not yet activated cluster. Retry until success.
+                    assertTrue(e.getMessage()
+                        .contains("Can not perform the operation because the cluster is inactive"));
+                }
+            }
+        });
+
+        try {
+            fut.get(10, TimeUnit.SECONDS);
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
+            fut.cancel();
+
+            fail("Ignite was stuck on getting the atomic sequence after autoactivation.");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSet() throws Exception {
         Ignite ignite = startGrids(4);
 
         ignite.active(true);
@@ -195,6 +244,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -218,6 +268,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -241,6 +292,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 

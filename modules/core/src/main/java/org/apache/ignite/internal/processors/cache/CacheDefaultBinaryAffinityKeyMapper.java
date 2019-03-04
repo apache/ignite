@@ -46,7 +46,7 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
     private Map<String, String> typeNameAffFields = new HashMap<>();
 
     /** Mapping from type ID to affinity field name. */
-    private volatile transient Map<Integer, BinaryField> typeIdAffFields;
+    private transient volatile Map<Integer, BinaryField> typeIdAffFields;
 
     /**
      * Constructor.

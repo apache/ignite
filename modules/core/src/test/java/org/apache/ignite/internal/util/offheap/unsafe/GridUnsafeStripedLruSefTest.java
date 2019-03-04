@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Striped LRU test.
@@ -65,6 +66,7 @@ public class GridUnsafeStripedLruSefTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testOffer1() {
         checkOffer(1000);
     }
@@ -72,6 +74,7 @@ public class GridUnsafeStripedLruSefTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testOffer2() {
         stripes = 11;
 
@@ -95,6 +98,7 @@ public class GridUnsafeStripedLruSefTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRemove1() {
         checkRemove(1000);
     }
@@ -102,6 +106,7 @@ public class GridUnsafeStripedLruSefTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRemove2() {
         stripes = 35;
 
@@ -130,6 +135,7 @@ public class GridUnsafeStripedLruSefTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testPoll1() {
         checkPoll(1000);
     }
@@ -137,6 +143,7 @@ public class GridUnsafeStripedLruSefTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testPoll2() {
         stripes = 20;
 
@@ -180,6 +187,7 @@ public class GridUnsafeStripedLruSefTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLruMultithreaded() throws Exception {
         checkLruMultithreaded(1000000);
     }

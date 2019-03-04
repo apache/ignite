@@ -111,7 +111,6 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.SINGLE_Q;
  * @param <K> the type of keys maintained by this map
  * @param <V> the type of mapped values
  */
-@SuppressWarnings("NullableProblems")
 public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> {
     /*
      * The basic strategy is to subdivide the table among Segments,
@@ -599,7 +598,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
          * @param newVal New value
          * @return {@code true} If value was replaced.
          */
-        @SuppressWarnings({"unchecked"})
         boolean replace(K key, int hash, V oldVal, V newVal) {
             writeLock().lock();
 
@@ -634,7 +632,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
          * @return {@code oldVal}, if value was replaced, non-null object if map
          *         contained some other value and {@code null} if there were no such key.
          */
-        @SuppressWarnings({"unchecked"})
         V replacex(K key, int hash, V oldVal, V newVal) {
             writeLock().lock();
 
@@ -663,7 +660,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
             return replaced;
         }
 
-        @SuppressWarnings({"unchecked"})
         V replace(K key, int hash, V newVal) {
             writeLock().lock();
 
@@ -688,7 +684,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
             return oldVal;
         }
 
-        @SuppressWarnings({"unchecked"})
         V put(K key, int hash, V val, boolean onlyIfAbsent) {
             writeLock().lock();
 
@@ -810,7 +805,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
         /**
          * This method is called under the segment lock.
          */
-        @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked"})
+        @SuppressWarnings({"ForLoopReplaceableByForEach"})
         void rehash() {
             HashEntry<K, V>[] oldTbl = tbl;
             int oldCap = oldTbl.length;
@@ -988,29 +983,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
             return oldVal;
         }
-
-        /**
-         *
-         */
-        void clear() {
-            if (cnt != 0) {
-                writeLock().lock();
-
-                try {
-                    HashEntry<K, V>[] tab = tbl;
-
-                    for (int i = 0; i < tab.length ; i++)
-                        tab[i] = null;
-
-                    ++modCnt;
-
-                    cnt = 0; // write-volatile
-                }
-                finally {
-                    writeLock().unlock();
-                }
-            }
-        }
     }
 
     /* ---------------- Public operations -------------- */
@@ -1116,7 +1088,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      *      negative or the load factor or concurLvl are
      *      non-positive.
      */
-    @SuppressWarnings({"unchecked"})
     public ConcurrentLinkedHashMap(int initCap, float loadFactor, int concurLvl) {
         this(initCap, loadFactor, concurLvl, 0);
     }
@@ -1500,7 +1471,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      *
      * @throws NullPointerException if the specified key is null
      */
-    @SuppressWarnings("NullableProblems")
     @Override public boolean remove(Object key, Object val) {
         int hash = hash(key.hashCode());
 
@@ -1512,7 +1482,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      *
      * @throws NullPointerException if any of the arguments are null
      */
-    @SuppressWarnings("NullableProblems")
     @Override public boolean replace(K key, V oldVal, V newVal) {
         if (oldVal == null || newVal == null)
             throw new NullPointerException();
@@ -1557,7 +1526,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      *         or <tt>null</tt> if there was no mapping for the key
      * @throws NullPointerException if the specified key or value is null
      */
-    @SuppressWarnings("NullableProblems")
     @Override public V replace(K key, V val) {
         if (val == null)
             throw new NullPointerException();
@@ -1571,8 +1539,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      * Removes all of the mappings from this map.
      */
     @Override public void clear() {
-        for (Segment<K, V> segment : segments)
-            segment.clear();
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -1965,7 +1932,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
          * @param e Current next.
          * @return {@code True} if advance succeeded.
          */
-        @SuppressWarnings( {"unchecked"})
         private boolean advanceInBucket(@Nullable HashEntry<K, V> e, boolean skipFirst) {
             if (e == null)
                 return false;

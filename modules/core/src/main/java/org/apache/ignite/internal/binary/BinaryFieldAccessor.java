@@ -26,6 +26,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -154,6 +156,9 @@ public abstract class BinaryFieldAccessor {
         try {
             write0(obj, writer);
         }
+        catch (UnregisteredClassException | UnregisteredBinaryTypeException ex) {
+            throw ex;
+        }
         catch (Exception ex) {
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(name))
                 throw new BinaryObjectException("Failed to write field [name=" + name + ']', ex);
@@ -202,7 +207,7 @@ public abstract class BinaryFieldAccessor {
     /**
      * Base primitive field accessor.
      */
-    private static abstract class AbstractPrimitiveAccessor extends BinaryFieldAccessor {
+    private abstract static class AbstractPrimitiveAccessor extends BinaryFieldAccessor {
         /** Offset. */
         protected final long offset;
 

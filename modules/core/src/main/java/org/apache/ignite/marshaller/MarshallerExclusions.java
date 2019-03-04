@@ -50,7 +50,7 @@ public final class MarshallerExclusions {
     };
 
     /** */
-    private static final Map<Class<?>, Boolean> cache = new GridBoundedConcurrentLinkedHashMap<>(
+    private static volatile Map<Class<?>, Boolean> cache = new GridBoundedConcurrentLinkedHashMap<>(
         512, 512, 0.75f, 16);
 
     /**
@@ -153,6 +153,6 @@ public final class MarshallerExclusions {
      * Intended for test purposes only.
      */
     public static void clearCache() {
-        cache.clear();
+        cache = new GridBoundedConcurrentLinkedHashMap<>(512, 512, 0.75f, 16);
     }
 }

@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.*;
@@ -68,6 +69,7 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         assertTrue(UPLOADER_PATH.toFile().createNewFile());
         assertTrue(!DOWNLOADER_PATH.toFile().exists());

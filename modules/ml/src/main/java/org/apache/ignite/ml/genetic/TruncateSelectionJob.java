@@ -22,10 +22,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.transactions.Transaction;
-
-import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
  * Responsible for performing truncate selection

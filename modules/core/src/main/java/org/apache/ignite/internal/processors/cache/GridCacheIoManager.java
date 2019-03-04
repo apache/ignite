@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -45,12 +44,15 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
@@ -73,10 +75,16 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
@@ -165,6 +173,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             final GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 
+            AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
+            AffinityTopologyVersion lastAffChangedVer = cacheMsg.lastAffinityChangedTopologyVersion();
+
+            cctx.exchange().lastAffinityChangedTopologyVersion(rmtAffVer, lastAffChangedVer);
+
             IgniteInternalFuture<?> fut = null;
 
             if (cacheMsg.partitionExchangeMessage()) {
@@ -222,9 +235,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
             else {
                 AffinityTopologyVersion locAffVer = cctx.exchange().readyAffinityVersion();
-                AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
 
-                if (locAffVer.compareTo(rmtAffVer) < 0) {
+                if (locAffVer.compareTo(lastAffChangedVer) < 0) {
                     IgniteLogger log = cacheMsg.messageLogger(cctx);
 
                     if (log.isDebugEnabled()) {
@@ -234,12 +246,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                         msg0.append(", locTopVer=").append(locAffVer).
                             append(", rmtTopVer=").append(rmtAffVer).
+                            append(", lastAffChangedVer=").append(lastAffChangedVer).
                             append(']');
 
                         log.debug(msg0.toString());
                     }
 
-                    fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
+                    fut = cctx.exchange().affinityReadyFuture(lastAffChangedVer);
                 }
             }
 
@@ -301,7 +314,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param cacheMsg Message.
      * @param plc Message policy.
      */
-    @SuppressWarnings("unchecked")
     private void handleMessage(UUID nodeId, GridCacheMessage cacheMsg, byte plc) {
         handleMessage(nodeId, cacheMsg, cacheMsg.cacheGroupMessage() ? grpHandlers : cacheHandlers, plc);
     }
@@ -532,7 +544,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridIO().removeMessageListener(TOPIC_CACHE);
 
@@ -558,7 +569,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler closure.
      * @param plc Message policy.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     private void onMessage0(final UUID nodeId, final GridCacheMessage cacheMsg,
         final IgniteBiInClosure<UUID, GridCacheMessage> c, byte plc) {
         try {
@@ -610,7 +620,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 ",res=" + res + ']', e);
         }
     }
-
 
     /**
      * @param cacheMsg Cache message.
@@ -914,7 +923,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 114: {
+            case 114:
+            case 120: {
                 processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
             }
 
@@ -1011,6 +1021,66 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             break;
+
+            case 151: {
+                GridNearTxQueryEnlistRequest req = (GridNearTxQueryEnlistRequest)msg;
+
+                GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(
+                    req.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+
+                break;
+            }
+
+            case 153: {
+                GridNearTxQueryResultsEnlistRequest req = (GridNearTxQueryResultsEnlistRequest)msg;
+
+                GridNearTxQueryEnlistResponse res = new GridNearTxQueryResultsEnlistResponse(
+                    req.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+
+                break;
+            }
+
+            case 155: /* GridDhtTxQueryEnlistRequest */
+            case 156: /* GridDhtTxQueryFirstEnlistRequest */ {
+                GridDhtTxQueryEnlistRequest req = (GridDhtTxQueryEnlistRequest)msg;
+
+                GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(
+                    req.cacheId(),
+                    req.dhtFutureId(),
+                    req.batchId(),
+                    req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+
+                break;
+            }
+
+            case 159: {
+                GridNearTxEnlistRequest req = (GridNearTxEnlistRequest)msg;
+
+                GridNearTxEnlistResponse res = new GridNearTxEnlistResponse(
+                    req.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+
+                break;
+            }
 
             case -36: {
                 GridDhtAtomicSingleUpdateRequest req = (GridDhtAtomicSingleUpdateRequest)msg;
@@ -1151,9 +1221,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If sending failed.
      * @throws ClusterTopologyCheckedException If receiver left.
      */
-    @SuppressWarnings("unchecked")
     public void send(ClusterNode node, GridCacheMessage msg, byte plc) throws IgniteCheckedException {
         assert !node.isLocal() : node;
+
+        msg.lastAffinityChangedTopologyVersion(cctx.exchange().lastAffinityChangedTopologyVersion(msg.topologyVersion()));
 
         if (!onSend(msg, node.id()))
             return;
@@ -1222,6 +1293,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (!onSend(msg, node.id()))
             return;
 
+        msg.lastAffinityChangedTopologyVersion(cctx.exchange().lastAffinityChangedTopologyVersion(msg.topologyVersion()));
+
         int cnt = 0;
 
         while (cnt <= retryCnt) {
@@ -1278,6 +1351,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (!onSend(msg, null))
             return;
 
+        msg.lastAffinityChangedTopologyVersion(cctx.exchange().lastAffinityChangedTopologyVersion(msg.topologyVersion()));
+
         try {
             cctx.gridIO().sendToGridTopic(node, TOPIC_CACHE, msg, plc);
 
@@ -1300,10 +1375,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param type Type of message.
      * @param c Handler.
      */
-    public void addCacheHandler(
+    public <Msg extends GridCacheMessage> void addCacheHandler(
         int hndId,
-        Class<? extends GridCacheMessage> type,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        Class<Msg> type,
+        IgniteBiInClosure<UUID, ? super Msg> c
+    ) {
         assert !type.isAssignableFrom(GridCacheGroupIdMessage.class) : type;
 
         addHandler(hndId, type, c, cacheHandlers);
@@ -1314,10 +1390,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param type Type of message.
      * @param c Handler.
      */
-    public void addCacheGroupHandler(
+    public <Msg extends GridCacheGroupIdMessage> void addCacheGroupHandler(
         int hndId,
-        Class<? extends GridCacheGroupIdMessage> type,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        Class<Msg> type,
+        IgniteBiInClosure<UUID, ? super Msg> c
+    ) {
         assert !type.isAssignableFrom(GridCacheIdMessage.class) : type;
 
         addHandler(hndId, type, c, grpHandlers);
@@ -1329,32 +1406,32 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler.
      * @param msgHandlers Message handlers.
      */
-    @SuppressWarnings({"unchecked"})
-    private void addHandler(
+    private <Msg extends GridCacheMessage> void addHandler(
         int hndId,
-        Class<? extends GridCacheMessage> type,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c,
-        MessageHandlers msgHandlers) {
+        Class<Msg> type,
+        IgniteBiInClosure<UUID, ? super Msg> c,
+        MessageHandlers msgHandlers
+    ) {
         int msgIdx = messageIndex(type);
 
         if (msgIdx != -1) {
             Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
-            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(hndId);
+            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.compute(hndId, (key, clsHandlers) -> {
+                if (clsHandlers == null)
+                    clsHandlers = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
 
-            if (cacheClsHandlers == null) {
-                cacheClsHandlers = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
+                if(clsHandlers[msgIdx] != null)
+                    return null;
 
-                idxClsHandlers0.put(hndId, cacheClsHandlers);
-            }
+                clsHandlers[msgIdx] = c;
 
-            if (cacheClsHandlers[msgIdx] != null)
+                return clsHandlers;
+            });
+
+            if (cacheClsHandlers == null)
                 throw new IgniteException("Duplicate cache message ID found [hndId=" + hndId +
                     ", type=" + type + ']');
-
-            cacheClsHandlers[msgIdx] = c;
-
-            msgHandlers.idxClsHandlers = idxClsHandlers0;
 
             return;
         }
@@ -1400,6 +1477,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         for (Iterator<ListenerKey> iter = msgHandlers.clsHandlers.keySet().iterator(); iter.hasNext(); ) {
             ListenerKey key = iter.next();
+
+            if (key.msgCls.equals(GridDhtAffinityAssignmentResponse.class))
+                continue;
 
             if (key.hndId == hndId)
                 iter.remove();
@@ -1461,7 +1541,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    @SuppressWarnings({"unchecked"})
     private void addOrderedHandler(GridCacheSharedContext cctx, boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
         MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
 
@@ -1503,7 +1582,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param nodeId Sender node ID.
      * @param cacheMsg Message.
      */
-    @SuppressWarnings({"ErrorNotRethrown", "unchecked"})
+    @SuppressWarnings({"ErrorNotRethrown"})
     private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) {
         if (cctx.localNodeId().equals(nodeId))
             return;
@@ -1572,7 +1651,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     static class MessageHandlers {
         /** Indexed class handlers. */
-        volatile Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new HashMap<>();
+        volatile Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new ConcurrentHashMap<>();
 
         /** Handler registry. */
         ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
@@ -1598,7 +1677,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"CatchGenericClass", "unchecked"})
         @Override public void onMessage(final UUID nodeId, Object msg, byte plc) {
             if (log.isDebugEnabled())
                 log.debug("Received cache ordered message [nodeId=" + nodeId + ", msg=" + msg + ']');

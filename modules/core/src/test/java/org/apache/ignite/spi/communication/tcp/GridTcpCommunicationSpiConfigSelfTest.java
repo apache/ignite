@@ -20,6 +20,9 @@ package org.apache.ignite.spi.communication.tcp;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.getFreeCommPort;
 
 /**
  * TCP communication SPI config test.
@@ -29,6 +32,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPort", 1023);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPort", 65636);
@@ -53,19 +57,18 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalPortRange() throws Exception {
-        try {
-            IgniteConfiguration cfg = getConfiguration();
+        IgniteConfiguration cfg = getConfiguration();
 
-            TcpCommunicationSpi spi = new TcpCommunicationSpi();
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
-            spi.setLocalPortRange(0);
-            cfg.setCommunicationSpi(spi);
+        commSpi.setLocalPortRange(0);
+        commSpi.setLocalPort(getFreeCommPort());
 
-            startGrid(cfg.getIgniteInstanceName(), cfg);
-        }
-        finally {
-            stopAllGrids();
-        }
+        cfg.setCommunicationSpi(commSpi);
+
+        startGrid(cfg);
     }
+
 }

@@ -234,7 +234,6 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public int compareTo(IgfsPath o) {
         return path.compareTo(o.path);
     }

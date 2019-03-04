@@ -20,7 +20,7 @@ package org.apache.ignite.ml.composition.predictionsaggregator;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Predictions aggregator returning weighted sum of predictions.
+ * Predictions aggregator returning weighted plus of predictions.
  * result(p1, ..., pn) = bias + p1*w1 + ... + pn*wn
  */
 public class WeightedPredictionsAggregator implements PredictionsAggregator {
@@ -61,5 +61,39 @@ public class WeightedPredictionsAggregator implements PredictionsAggregator {
             res += weights[i] * answers[i];
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        String clsName = getClass().getSimpleName();
+        if(!pretty)
+            return clsName;
+
+        StringBuilder builder = new StringBuilder(clsName).append(" [");
+        for(int i = 0; i < weights.length; i++) {
+            final String SIGN = weights[i] > 0 ? " + " : " - ";
+            builder
+                .append(i > 0 || weights[i] < 0 ? SIGN : "")
+                .append(String.format("%.4f", Math.abs(weights[i])))
+                .append("*x").append(i);
+        }
+
+        return builder.append(bias > 0 ? " + " : " - ").append(String.format("%.4f", bias))
+            .append("]").toString();
+    }
+
+    /** */
+    public double[] getWeights() {
+        return weights;
+    }
+
+    /** */
+    public double getBias() {
+        return bias;
     }
 }

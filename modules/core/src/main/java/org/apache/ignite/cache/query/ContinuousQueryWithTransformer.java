@@ -81,12 +81,12 @@ public final class ContinuousQueryWithTransformer<K, V, T> extends AbstractConti
     }
 
     /** {@inheritDoc} */
-    public ContinuousQueryWithTransformer<K, V, T> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
+    @Override public ContinuousQueryWithTransformer<K, V, T> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
         return (ContinuousQueryWithTransformer<K, V, T>)super.setInitialQuery(initQry);
     }
 
     /** {@inheritDoc} */
-    public ContinuousQueryWithTransformer<K, V, T> setRemoteFilterFactory(
+    @Override public ContinuousQueryWithTransformer<K, V, T> setRemoteFilterFactory(
         Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory) {
         return (ContinuousQueryWithTransformer<K, V, T>)super.setRemoteFilterFactory(rmtFilterFactory);
     }
@@ -153,12 +153,12 @@ public final class ContinuousQueryWithTransformer<K, V, T> extends AbstractConti
     }
 
     /** {@inheritDoc} */
-    public ContinuousQueryWithTransformer<K, V, T> setTimeInterval(long timeInterval) {
+    @Override public ContinuousQueryWithTransformer<K, V, T> setTimeInterval(long timeInterval) {
         return (ContinuousQueryWithTransformer<K, V, T>)super.setTimeInterval(timeInterval);
     }
 
     /** {@inheritDoc} */
-    public ContinuousQueryWithTransformer<K, V, T> setAutoUnsubscribe(boolean autoUnsubscribe) {
+    @Override public ContinuousQueryWithTransformer<K, V, T> setAutoUnsubscribe(boolean autoUnsubscribe) {
         return (ContinuousQueryWithTransformer<K, V, T>)super.setAutoUnsubscribe(autoUnsubscribe);
     }
 

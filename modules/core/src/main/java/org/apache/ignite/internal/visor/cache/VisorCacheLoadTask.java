@@ -26,6 +26,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task to loads caches.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorCacheLoadTask extends
     VisorOneNodeTask<VisorCacheLoadTaskArg, Map<String, Integer>> {
     /** */

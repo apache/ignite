@@ -22,6 +22,7 @@ import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.junit.Test;
 
 /**
  * Tests for {@link IgfsServer} that checks all IPC endpoint registration types
@@ -32,6 +33,7 @@ public class IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoopbackAndShmemEndpointsRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfigurationManyIgfsCaches(3);
 

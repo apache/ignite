@@ -25,6 +25,8 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  *
@@ -43,7 +45,24 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageEvictionMetric() throws Exception {
+        checkPageEvictionMetric(CacheAtomicityMode.ATOMIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
+    @Test
+    public void testPageEvictionMetricMvcc() throws Exception {
+        checkPageEvictionMetric(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkPageEvictionMetric(CacheAtomicityMode atomicityMode) throws Exception {
         IgniteEx ignite = startGrid(0);
 
         DataRegionMetricsImpl metrics =
@@ -52,7 +71,7 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
         metrics.enableMetrics();
 
         CacheConfiguration<Object, Object> cfg = cacheConfig("evict-metric", null,
-            CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+            CacheMode.PARTITIONED, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cfg);
 

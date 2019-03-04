@@ -14,9 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__checkbox({ label, model, name, disabled, required, tip })
-    .form-field.form-field__checkbox
-        +form-field__label({ label, name, required })
+mixin form-field__checkbox({ label, model, name, disabled, required, tip, tipOpts })
+    .form-field.ignite-form-field.form-field__checkbox(id=`{{ ${name} }}Field`)
+        +form-field__label({ label, name, required, disabled })
             +form-field__tooltip({ title: tip, options: tipOpts })
 
         .form-field__control
@@ -24,7 +24,8 @@ mixin form-field__checkbox({ label, model, name, disabled, required, tip })
             +form-field__input({ name, model, disabled, required, placeholder })(attributes=attributes)
 
         .form-field__errors(
-            ng-messages=`(${form}[${name}].$dirty || ${form}[${name}].$touched || ${form}[${name}].$submitted) && ${form}[${name}].$invalid ? ${form}[${name}].$error : {}`
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
             if block
                 block

@@ -24,11 +24,12 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.optimization.SmoothParametrized;
 import org.apache.ignite.ml.optimization.updatecalculators.NesterovParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
@@ -145,7 +146,7 @@ public class MLPTrainerTest {
                 (k, v) -> v[1]
             );
 
-            Matrix predict = mlp.apply(new DenseMatrix(new double[][]{
+            Matrix predict = mlp.predict(new DenseMatrix(new double[][]{
                 {0.0, 0.0},
                 {0.0, 1.0},
                 {1.0, 0.0},
@@ -153,6 +154,69 @@ public class MLPTrainerTest {
             }));
 
             TestUtils.checkIsInEpsilonNeighbourhood(new DenseVector(new double[]{0.0}), predict.getRow(0), 1E-1);
+        }
+
+        /** */
+        @Test
+        public void testUpdate() {
+            UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> updatesStgy = new UpdatesStrategy<>(
+                new SimpleGDUpdateCalculator(0.2),
+                SimpleGDParameterUpdate::sumLocal,
+                SimpleGDParameterUpdate::avg
+            );
+
+            Map<Integer, double[][]> xorData = new HashMap<>();
+            xorData.put(0, new double[][]{{0.0, 0.0}, {0.0}});
+            xorData.put(1, new double[][]{{0.0, 1.0}, {1.0}});
+            xorData.put(2, new double[][]{{1.0, 0.0}, {1.0}});
+            xorData.put(3, new double[][]{{1.0, 1.0}, {0.0}});
+
+            MLPArchitecture arch = new MLPArchitecture(2).
+                withAddedLayer(10, true, Activators.RELU).
+                withAddedLayer(1, false, Activators.SIGMOID);
+
+            MLPTrainer<SimpleGDParameterUpdate> trainer = new MLPTrainer<>(
+                arch,
+                LossFunctions.MSE,
+                updatesStgy,
+                3000,
+                batchSize,
+                50,
+                123L
+            );
+
+            MultilayerPerceptron originalMdl = trainer.fit(
+                xorData,
+                parts,
+                (k, v) -> VectorUtils.of(v[0]),
+                (k, v) -> v[1]
+            );
+
+            MultilayerPerceptron updatedOnSameDS = trainer.update(
+                originalMdl,
+                xorData,
+                parts,
+                (k, v) -> VectorUtils.of(v[0]),
+                (k, v) -> v[1]
+            );
+
+            MultilayerPerceptron updatedOnEmptyDS = trainer.update(
+                originalMdl,
+                new HashMap<Integer, double[][]>(),
+                parts,
+                (k, v) -> VectorUtils.of(v[0]),
+                (k, v) -> v[1]
+            );
+
+            DenseMatrix matrix = new DenseMatrix(new double[][] {
+                {0.0, 0.0},
+                {0.0, 1.0},
+                {1.0, 0.0},
+                {1.0, 1.0}
+            });
+
+            TestUtils.checkIsInEpsilonNeighbourhood(originalMdl.predict(matrix).getRow(0), updatedOnSameDS.predict(matrix).getRow(0), 1E-1);
+            TestUtils.checkIsInEpsilonNeighbourhood(originalMdl.predict(matrix).getRow(0), updatedOnEmptyDS.predict(matrix).getRow(0), 1E-1);
         }
     }
 

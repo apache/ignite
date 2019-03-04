@@ -31,17 +31,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  */
 public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -52,12 +47,6 @@ public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAb
         c.setDataStorageConfiguration(memCfg);
 
         c.setClientMode(igniteInstanceName.startsWith("client"));
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
         spi.setIdleConnectionTimeout(Integer.MAX_VALUE);
@@ -79,6 +68,7 @@ public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAb
     }
 
 
+    @Test
     public void test() throws Exception {
         IgniteEx svr = startGrid(0);
 

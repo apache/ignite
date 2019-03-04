@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -39,18 +40,15 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  *
  */
 public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Slow rebalance cache name. */
     private static final String SLOW_REBALANCE_CACHE = "b13813ce";
 
@@ -67,13 +65,14 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+        cfg.setConsistentId(name);
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalHistorySize(WAL_HISTORY_SIZE)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                         .setPersistenceEnabled(true)
                 )
                 .setWalSegmentSize(512 * 1024)
@@ -107,19 +106,36 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
 
         System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
 
+        stopAllGrids();
+
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /**
      * Checks that we reserve and release the same WAL index on exchange.
      */
+    @Test
     public void testReservation() throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.cluster().active(true);
 
-        ig.getOrCreateCache(new CacheConfiguration<>()
-            .setName(SLOW_REBALANCE_CACHE)
+        ig.getOrCreateCache(new CacheConfiguration<>(SLOW_REBALANCE_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, 1))
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
@@ -136,8 +152,8 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
 
         resetBaselineTopology();
 
-        IgniteCache<Object, Object> anotherCache = ig.getOrCreateCache(new CacheConfiguration<>()
-            .setName(REGULAR_CACHE)
+        IgniteCache<Object, Object> anotherCache = ig.getOrCreateCache(new CacheConfiguration<>(REGULAR_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, 1))
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
@@ -157,7 +173,8 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
 
         SUPPLY_MESSAGE_LATCH.get().countDown();
 
-        waitForRebalancing(); // Partition is OWNING on grid(0) and grid(1)
+        // Partition is OWNING on grid(0) and grid(1)
+        awaitPartitionMapExchange();
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; i < 500; i++)
@@ -178,7 +195,7 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
 
         startGrid(0);
 
-        waitForRebalancing();
+        awaitPartitionMapExchange();
 
         assertEquals(2, grid(1).context().discovery().aliveServerNodes().size());
     }
@@ -187,9 +204,6 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
      *
      */
     private static class RebalanceBlockingSPI extends TcpCommunicationSpi {
-        /** */
-        public static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
             if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {

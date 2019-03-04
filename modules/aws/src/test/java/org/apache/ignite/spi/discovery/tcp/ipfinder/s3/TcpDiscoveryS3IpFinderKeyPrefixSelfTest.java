@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyS3Client;
+import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
@@ -58,6 +59,7 @@ public class TcpDiscoveryS3IpFinderKeyPrefixSelfTest extends TcpDiscoveryS3IpFin
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testIpFinder() throws Exception {
         injectLogger(finder);
 

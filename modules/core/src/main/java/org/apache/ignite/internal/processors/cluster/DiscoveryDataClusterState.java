@@ -173,13 +173,6 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
-     * @return {@code True} if cluster active state change is in progress, {@code false} otherwise.
-     */
-    public boolean activeStateChanging() {
-        return transition() && (prevState == null || (prevState.active != active));
-    }
-
-    /**
      * @return State change exchange version.
      */
     public AffinityTopologyVersion transitionTopologyVersion() {
@@ -205,6 +198,23 @@ public class DiscoveryDataClusterState implements Serializable {
      */
     @Nullable public BaselineTopology previousBaselineTopology() {
         return prevState != null ? prevState.baselineTopology() : null;
+    }
+
+    /**
+     *
+     * @return {@code True} If baseLine changed, {@code False} if not.
+     */
+    public boolean baselineChanged() {
+        BaselineTopology prevBLT = previousBaselineTopology();
+        BaselineTopology curBLT = baselineTopology();
+
+        if (prevBLT == null && curBLT != null)
+            return true;
+
+        if (prevBLT!= null && curBLT != null)
+            return !prevBLT.equals(curBLT);
+
+        return false;
     }
 
     /**
@@ -252,7 +262,8 @@ public class DiscoveryDataClusterState implements Serializable {
                 null,
                 null
             ) :
-            prevState;
+            prevState != null ? prevState :
+                    DiscoveryDataClusterState.createState(false, null);
     }
 
     /** {@inheritDoc} */

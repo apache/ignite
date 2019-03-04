@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.local;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheTransactionalAbstractMetricsSelfTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -29,6 +30,14 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 public class GridCacheLocalMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
     /** */
     private static final int GRID_CNT = 1;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -41,6 +50,9 @@ public class GridCacheLocalMetricsSelfTest extends GridCacheTransactionalAbstrac
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheMode(LOCAL);

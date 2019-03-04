@@ -26,8 +26,7 @@ const Errors = require('../Errors');
 const IgniteClientConfiguration = require('../IgniteClientConfiguration');
 const MessageBuffer = require('./MessageBuffer');
 const BinaryUtils = require('./BinaryUtils');
-const BinaryReader = require('./BinaryReader');
-const BinaryWriter = require('./BinaryWriter');
+const BinaryCommunicator = require('./BinaryCommunicator');
 const ArgumentChecker = require('./ArgumentChecker');
 const Logger = require('./Logger');
 
@@ -78,11 +77,15 @@ class ProtocolVersion {
 
 const PROTOCOL_VERSION_1_0_0 = new ProtocolVersion(1, 0, 0);
 const PROTOCOL_VERSION_1_1_0 = new ProtocolVersion(1, 1, 0);
+const PROTOCOL_VERSION_1_2_0 = new ProtocolVersion(1, 2, 0);
 
 const SUPPORTED_VERSIONS = [
     // PROTOCOL_VERSION_1_0_0, // Support for QueryField precision/scale fields breaks 1.0.0 compatibility
-    PROTOCOL_VERSION_1_1_0
+    PROTOCOL_VERSION_1_1_0,
+    PROTOCOL_VERSION_1_2_0
 ];
+
+const CURRENT_VERSION = PROTOCOL_VERSION_1_2_0;
 
 const STATE = Object.freeze({
     INITIAL : 0,
@@ -107,12 +110,14 @@ class ClientSocket {
         this._onSocketDisconnect = onSocketDisconnect;
         this._error = null;
         this._wasConnected = false;
+        this._buffer = null;
+        this._offset = 0;
     }
 
     async connect() {
         return new Promise((resolve, reject) => {
             this._connectSocket(
-                this._getHandshake(PROTOCOL_VERSION_1_1_0, resolve, reject));
+                this._getHandshake(CURRENT_VERSION, resolve, reject));
         });
     }
 
@@ -195,28 +200,43 @@ class ClientSocket {
         if (this._state === STATE.DISCONNECTED) {
             return;
         }
-        let offset = 0;
-        while (offset < message.length) {
-            let buffer = MessageBuffer.from(message, offset);
+        if (this._buffer) {
+            this._buffer.concat(message);
+            this._buffer.position = this._offset;
+        }
+        else {
+            this._buffer = MessageBuffer.from(message, 0);
+        }
+        while (this._buffer && this._offset < this._buffer.length) {
             // Response length
-            const length = buffer.readInteger();
-            offset += length + BinaryUtils.getSize(BinaryUtils.TYPE_CODE.INTEGER);
+            const length = this._buffer.readInteger() + BinaryUtils.getSize(BinaryUtils.TYPE_CODE.INTEGER);
+            if (this._buffer.length < this._offset + length) {
+              break;
+            }
+            this._offset += length;
+
             let requestId, isSuccess;
             const isHandshake = this._state === STATE.HANDSHAKE;
 
             if (isHandshake) {
                 // Handshake status
-                isSuccess = (buffer.readByte() === HANDSHAKE_SUCCESS_STATUS_CODE)
+                isSuccess = (this._buffer.readByte() === HANDSHAKE_SUCCESS_STATUS_CODE);
                 requestId = this._handshakeRequestId.toString();
             }
             else {
                 // Request id
-                requestId = buffer.readLong().toString();
+                requestId = this._buffer.readLong().toString();
                 // Status code
-                isSuccess = (buffer.readInteger() === REQUEST_SUCCESS_STATUS_CODE);
+                isSuccess = (this._buffer.readInteger() === REQUEST_SUCCESS_STATUS_CODE);
             }
 
-            this._logMessage(requestId, false, buffer.data);
+            this._logMessage(requestId, false, this._buffer.data);
+
+            const buffer = this._buffer;
+            if (this._offset === this._buffer.length) {
+                this._buffer = null;
+                this._offset = 0;
+            }
 
             if (this._requests.has(requestId)) {
                 const request = this._requests.get(requestId);
@@ -240,7 +260,7 @@ class ClientSocket {
             const serverVersion = new ProtocolVersion();
             serverVersion.read(buffer);
             // Error message
-            const errMessage = await BinaryReader.readObject(buffer);
+            const errMessage = BinaryCommunicator.readString(buffer);
 
             if (!this._protocolVersion.equals(serverVersion)) {
                 if (!this._isSupportedVersion(serverVersion) ||
@@ -271,7 +291,7 @@ class ClientSocket {
     async _finalizeResponse(buffer, request, isSuccess) {
         if (!isSuccess) {
             // Error message
-            const errMessage = await BinaryReader.readObject(buffer);
+            const errMessage = BinaryCommunicator.readString(buffer);
             request.reject(new Errors.OperationError(errMessage));
         }
         else {
@@ -295,8 +315,8 @@ class ClientSocket {
         // Client code
         payload.writeByte(2);
         if (this._config._userName) {
-            await BinaryWriter.writeString(payload, this._config._userName);
-            await BinaryWriter.writeString(payload, this._config._password);
+            BinaryCommunicator.writeString(payload, this._config._userName);
+            BinaryCommunicator.writeString(payload, this._config._password);
         }
     }
 

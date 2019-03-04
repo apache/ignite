@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
  * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation}. <br>
  * This Data entry was not converted to key, value pair during record deserialization.
  */
-public class LazyDataEntry extends DataEntry {
+public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
     /** */
     private GridCacheSharedContext cctx;
 
@@ -96,6 +96,9 @@ public class LazyDataEntry extends DataEntry {
                 IgniteCacheObjectProcessor co = cctx.kernalContext().cacheObjects();
 
                 key = co.toKeyCacheObject(cacheCtx.cacheObjectContext(), keyType, keyBytes);
+
+                if (key.partition() == -1)
+                    key.partition(partId);
             }
 
             return key;
@@ -121,24 +124,23 @@ public class LazyDataEntry extends DataEntry {
         return val;
     }
 
-    /** @return Data Entry Key type code. See {@link CacheObject} for built-in value type codes */
-    public byte getKeyType() {
+    /** {@inheritDoc} */
+    @Override public byte getKeyType() {
         return keyType;
     }
 
-    /** @return Key value bytes. */
-    public byte[] getKeyBytes() {
+    /** {@inheritDoc} */
+    @Override public byte[] getKeyBytes() {
         return keyBytes;
     }
 
-    /** @return Data Entry Value type code. See {@link CacheObject} for built-in value type codes */
-    public byte getValType() {
+    /** {@inheritDoc} */
+    @Override public byte getValType() {
         return valType;
     }
 
-    /** @return Value value bytes. */
-    public byte[] getValBytes() {
+    /** {@inheritDoc} */
+    @Override public byte[] getValBytes() {
         return valBytes;
     }
-
 }

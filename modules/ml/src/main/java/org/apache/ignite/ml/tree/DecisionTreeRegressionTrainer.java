@@ -19,6 +19,7 @@ package org.apache.ignite.ml.tree;
 
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasure;
@@ -52,9 +53,26 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
         super(maxDeep, minImpurityDecrease, compressor, new MeanDecisionTreeLeafBuilder());
     }
 
+    /**
+     * Sets usingIdx parameter and returns trainer instance.
+     *
+     * @param usingIdx Use index.
+     * @return Decision tree trainer.
+     */
+    public DecisionTreeRegressionTrainer withUsingIdx(boolean usingIdx) {
+        this.usingIdx = usingIdx;
+        return this;
+    }
+
     /** {@inheritDoc} */
-    @Override ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(
+    @Override protected ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(
         Dataset<EmptyContext, DecisionTreeData> dataset) {
-        return new MSEImpurityMeasureCalculator();
+
+        return new MSEImpurityMeasureCalculator(usingIdx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DecisionTreeRegressionTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (DecisionTreeRegressionTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 }

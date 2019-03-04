@@ -24,7 +24,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -37,6 +40,10 @@ import static org.mockito.Mockito.when;
  *
  */
 public class IgniteThrottlingUnitTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /** Logger. */
     private IgniteLogger log = new NullLogger();
 
@@ -156,7 +163,7 @@ public class IgniteThrottlingUnitTest {
     public void beginOfCp() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
-        assertTrue(throttle.getParkTime(0.01, 100,400000,
+        assertTrue(throttle.getParkTime(0.01, 100, 400000,
             1,
             20103,
             23103) == 0);
@@ -206,10 +213,10 @@ public class IgniteThrottlingUnitTest {
     public void tooMuchPagesMarkedDirty() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
-       // 363308	350004	348976	10604
+        // 363308	350004	348976	10604
         long time = throttle.getParkTime(0.75,
             ((350004 + 348976) / 2),
-            350004-10604,
+            350004 - 10604,
             4,
             279,
             23933);
@@ -262,7 +269,7 @@ public class IgniteThrottlingUnitTest {
 
             throttle.onMarkDirty(false);
 
-            if(warnings.get()>0)
+            if (warnings.get() > 0)
                 break;
         }
 

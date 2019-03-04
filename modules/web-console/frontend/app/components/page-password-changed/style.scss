@@ -19,17 +19,10 @@ page-password-changed {
     display: flex;
     flex: 1 0 auto;
     flex-direction: column;
-
     min-height: 100%;
-
-    font-family: Roboto;
-
-    .body-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
+    justify-content: center;
+    align-items: center;
+    max-width: initial !important;
 
     h2 {
         margin-bottom: 30px;
@@ -39,4 +32,4 @@ page-password-changed {
         font-size: 16px;
         text-align: center;
     }
-}    
+}

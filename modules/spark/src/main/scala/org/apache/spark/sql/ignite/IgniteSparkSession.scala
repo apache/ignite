@@ -43,8 +43,15 @@ import org.apache.spark.util.Utils
 /**
   * Implementation of Spark Session for Ignite.
   */
-class IgniteSparkSession private(ic: IgniteContext, proxy: SparkSession) extends SparkSession(proxy.sparkContext) {
+class IgniteSparkSession private(
+    ic: IgniteContext,
+    proxy: SparkSession,
+    existingSharedState: Option[SharedState],
+    parentSessionState: Option[SessionState]) extends SparkSession(proxy.sparkContext) {
     self ⇒
+
+    private def this(ic: IgniteContext, proxy: SparkSession) =
+        this(ic, proxy, None, None)
 
     private def this(proxy: SparkSession) =
         this(new IgniteContext(proxy.sparkContext, IgnitionEx.DFLT_CFG), proxy)
@@ -63,16 +70,20 @@ class IgniteSparkSession private(ic: IgniteContext, proxy: SparkSession) extends
 
     /** @inheritdoc */
     @transient override lazy val sharedState: SharedState =
-        new IgniteSharedState(ic, sparkContext)
+        existingSharedState.getOrElse(new IgniteSharedState(ic, sparkContext))
 
     /** @inheritdoc */
     @transient override lazy val sessionState: SessionState = {
-        val sessionState = new SessionStateBuilder(self, None).build()
+        parentSessionState
+            .map(_.clone(this))
+            .getOrElse {
+                val sessionState = new SessionStateBuilder(self, None).build()
 
-        sessionState.experimentalMethods.extraOptimizations =
-            sessionState.experimentalMethods.extraOptimizations :+ IgniteOptimization
+                sessionState.experimentalMethods.extraOptimizations =
+                    sessionState.experimentalMethods.extraOptimizations :+ IgniteOptimization
 
-        sessionState
+                sessionState
+          }
     }
 
     /** @inheritdoc */
@@ -172,7 +183,13 @@ class IgniteSparkSession private(ic: IgniteContext, proxy: SparkSession) extends
     }
 
     /** @inheritdoc */
-    override private[sql] def cloneSession() = new IgniteSparkSession(ic, proxy.cloneSession())
+    override private[sql] def cloneSession(): IgniteSparkSession = {
+        val session = new IgniteSparkSession(ic, proxy.cloneSession(), Some(sharedState), Some(sessionState))
+
+        session.sessionState // Force copy of SessionState.
+
+        session
+    }
 
     /** @inheritdoc */
     @transient override private[sql] val extensions =

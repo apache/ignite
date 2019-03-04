@@ -482,7 +482,7 @@ public class GridStringBuilder implements Serializable {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return impl.toString();
     }
 }

@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core
 {
+    using System;
+
     /// <summary>
     /// Memory usage metrics.
     /// </summary>
@@ -81,20 +83,57 @@ namespace Apache.Ignite.Core
         /// Gets the size of pages loaded to RAM in bytes.
         /// </summary>
         long PhysicalMemorySize { get; }
-
+        
         /// <summary>
-        /// Gets checkpointing buffer size in pages.
+        /// Gets checkpoint buffer size in pages.
+        /// Deprecated, always returns 0. Use <see cref="UsedCheckpointBufferPages"/> instead.
         /// </summary>
+        [Obsolete("Deprecated, always returns 0. Use UsedCheckpointBufferPages instead.")]
         long CheckpointBufferPages { get; }
-
+        
         /// <summary>
-        /// Gets checkpointing buffer size in bytes.
+        /// Gets checkpoint buffer size in bytes.
         /// </summary>
         long CheckpointBufferSize { get; }
+
+        /// <summary>
+        /// Gets used checkpoint buffer size in pages.
+        /// </summary>
+        long UsedCheckpointBufferPages { get; }
+        
+        /// <summary>
+        /// Gets used checkpoint buffer size in bytes.
+        /// </summary>
+        long UsedCheckpointBufferSize { get; }
 
         /// <summary>
         /// Gets memory page size in bytes.
         /// </summary>
         int PageSize { get; }
+        
+        /// <summary>
+        /// Gets the number of read pages from last restart.
+        /// </summary>
+        long PagesRead { get; }
+        
+        /// <summary>
+        ///  Gets the number of written pages from last restart.
+        /// </summary>
+        long PagesWritten  { get; }
+        
+        /// <summary>
+        /// Gets the number of replaced pages from last restart.
+        /// </summary>
+        long PagesReplaced  { get; }
+        
+        /// <summary>
+        /// Gets total offheap size in bytes.
+        /// </summary>
+        long OffHeapSize { get; }
+        
+        /// <summary>
+        /// Gets total used offheap size in bytes.
+        /// </summary>
+        long OffheapUsedSize  { get; }
     }
 }

@@ -29,17 +29,7 @@ ignite-list-of-registered-users {
         }
     }
 
-    .ui-grid-settings--heading {
-        display: flex;
-    }
-
-    & > a {
-        display: inline-block;
-        margin: 10px;
-        margin-left: 0;
-
-        &.active {
-            font-weight: bold;
-        }
+    .form-field--inline:first-child {
+        margin-right: 20px;
     }
 }

@@ -39,7 +39,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -48,7 +48,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
-import org.junit.Assert;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  * Test to reproduce corrupted indexes problem after partition file eviction and truncation.
@@ -98,6 +100,20 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
@@ -124,6 +140,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCorruption() throws Exception {
         final String corruptedNodeName = "corrupted";
 
@@ -316,16 +333,6 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
          */
         private static boolean isPartitionFile(File file) {
             return file.getName().contains("part") && file.getName().endsWith("bin");
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            FileIO delegate = delegateFactory.create(file);
-
-            if (isPartitionFile(file))
-                return new HaltOnTruncateFileIO(delegate, file);
-
-            return delegate;
         }
 
         /** {@inheritDoc} */

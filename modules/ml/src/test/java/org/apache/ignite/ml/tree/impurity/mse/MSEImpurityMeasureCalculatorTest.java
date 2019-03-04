@@ -17,26 +17,43 @@
 
 package org.apache.ignite.ml.tree.impurity.mse;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Tests for {@link MSEImpurityMeasureCalculator}.
  */
+@RunWith(Parameterized.class)
 public class MSEImpurityMeasureCalculatorTest {
+    /** Parameters. */
+    @Parameterized.Parameters(name = "Use index {0}")
+    public static Iterable<Boolean[]> data() {
+        return Arrays.asList(
+            new Boolean[] {true},
+            new Boolean[] {false}
+        );
+    }
+
+    /** Use index. */
+    @Parameterized.Parameter
+    public boolean useIdx;
+
     /** */
     @Test
     public void testCalculate() {
         double[][] data = new double[][]{{0, 2}, {1, 1}, {2, 0}, {3, 3}};
         double[] labels = new double[]{1, 2, 2, 1};
 
-        MSEImpurityMeasureCalculator calculator = new MSEImpurityMeasureCalculator();
+        MSEImpurityMeasureCalculator calculator = new MSEImpurityMeasureCalculator(useIdx);
 
-        StepFunction<MSEImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels));
+        StepFunction<MSEImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIdx), fs -> true, 0);
 
         assertEquals(2, impurity.length);
 

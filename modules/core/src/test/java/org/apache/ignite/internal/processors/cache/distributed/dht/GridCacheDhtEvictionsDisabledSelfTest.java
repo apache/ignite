@@ -21,10 +21,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -34,9 +32,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Test cache closure execution.
  */
 public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTest {
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      *
      */
@@ -47,12 +42,6 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -73,6 +62,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOneNode() throws Exception {
         checkNodes(startGridsMultiThreaded(1));
 
@@ -81,18 +71,20 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTwoNodes() throws Exception {
         checkNodes(startGridsMultiThreaded(2));
 
-        assertTrue(colocated(0, "test").size() > 0);
+        assertTrue(!colocated(0, "test").isEmpty());
         assertTrue(jcache(0, "test").localSize() > 0);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testThreeNodes() throws Exception {
         checkNodes(startGridsMultiThreaded(3));
 
-        assertTrue(colocated(0, "test").size() > 0);
+        assertTrue(!colocated(0, "test").isEmpty());
         assertTrue(jcache(0, "test").localSize() > 0);
     }
 

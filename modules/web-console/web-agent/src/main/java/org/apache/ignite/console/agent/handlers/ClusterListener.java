@@ -66,10 +66,16 @@ public class ClusterListener implements AutoCloseable {
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(ClusterListener.class));
 
     /** */
+    private static final IgniteProductVersion IGNITE_2_0 = IgniteProductVersion.fromString("2.0.0");
+
+    /** */
     private static final IgniteProductVersion IGNITE_2_1 = IgniteProductVersion.fromString("2.1.0");
 
     /** */
     private static final IgniteProductVersion IGNITE_2_3 = IgniteProductVersion.fromString("2.3.0");
+
+    /** Optional Ignite cluster ID. */
+    public static final String IGNITE_CLUSTER_ID = "IGNITE_CLUSTER_ID";
 
     /** Unique Visor key to get events last order. */
     private static final String EVT_LAST_ORDER_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
@@ -86,8 +92,8 @@ public class ClusterListener implements AutoCloseable {
     /** */
     private static final String EVENT_CLUSTER_DISCONNECTED = "cluster:disconnected";
 
-    /** Default timeout. */
-    private static final long DFLT_TIMEOUT = 3000L;
+    /** Topology refresh frequency. */
+    private static final long REFRESH_FREQ = 3000L;
 
     /** JSON object mapper. */
     private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
@@ -110,13 +116,13 @@ public class ClusterListener implements AutoCloseable {
     };
 
     /** */
-    private AgentConfiguration cfg;
+    private final AgentConfiguration cfg;
 
     /** */
-    private Socket client;
+    private final Socket client;
 
     /** */
-    private RestExecutor restExecutor;
+    private final RestExecutor restExecutor;
 
     /** */
     private static final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
@@ -126,7 +132,7 @@ public class ClusterListener implements AutoCloseable {
 
     /**
      * @param client Client.
-     * @param restExecutor Client.
+     * @param restExecutor REST executor.
      */
     public ClusterListener(AgentConfiguration cfg, Socket client, RestExecutor restExecutor) {
         this.cfg = cfg;
@@ -173,7 +179,7 @@ public class ClusterListener implements AutoCloseable {
     public void watch() {
         safeStopRefresh();
 
-        refreshTask = pool.scheduleWithFixedDelay(watchTask, 0L, DFLT_TIMEOUT, TimeUnit.MILLISECONDS);
+        refreshTask = pool.scheduleWithFixedDelay(watchTask, 0L, REFRESH_FREQ, TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */
@@ -185,6 +191,9 @@ public class ClusterListener implements AutoCloseable {
 
     /** */
     private static class TopologySnapshot {
+        /** */
+        private String clusterId;
+
         /** */
         private String clusterName;
 
@@ -239,6 +248,9 @@ public class ClusterListener implements AutoCloseable {
 
                 Map<String, Object> attrs = node.getAttributes();
 
+                if (F.isEmpty(clusterId))
+                    clusterId = attribute(attrs, IGNITE_CLUSTER_ID);
+
                 if (F.isEmpty(clusterName))
                     clusterName = attribute(attrs, IGNITE_CLUSTER_NAME);
 
@@ -263,6 +275,13 @@ public class ClusterListener implements AutoCloseable {
                     clusterVerStr = nodeVerStr;
                 }
             }
+        }
+
+        /**
+         * @return Cluster id.
+         */
+        public String getClusterId() {
+            return clusterId;
         }
 
         /**
@@ -349,6 +368,14 @@ public class ClusterListener implements AutoCloseable {
         boolean differentCluster(TopologySnapshot prev) {
             return prev == null || F.isEmpty(prev.nids) || Collections.disjoint(nids, prev.nids);
         }
+
+        /**
+         * @param prev Previous topology.
+         * @return {@code true} in case if current topology is the same cluster, but topology changed.
+         */
+        boolean topologyChanged(TopologySnapshot prev) {
+            return prev != null && !prev.nids.equals(nids);
+        }
     }
 
     /** */
@@ -381,11 +408,11 @@ public class ClusterListener implements AutoCloseable {
                     sesTok = res.getSessionToken();
 
                     return res;
-                    
+
                 case STATUS_FAILED:
                     if (res.getError().startsWith(EXPIRED_SES_ERROR_MSG)) {
                         sesTok = null;
-                        
+
                         params.remove("sessionToken");
 
                         return restCommand(params);
@@ -399,14 +426,16 @@ public class ClusterListener implements AutoCloseable {
         /**
          * Collect topology.
          *
-         * @param full Full.
+         * @return REST result.
+         * @throws IOException If failed to collect topology.
          */
-        private RestResult topology(boolean full) throws IOException {
-            Map<String, Object> params = U.newHashMap(3);
+        private RestResult topology() throws IOException {
+            Map<String, Object> params = U.newHashMap(4);
 
             params.put("cmd", "top");
             params.put("attr", true);
-            params.put("mtr", full);
+            params.put("mtr", false);
+            params.put("caches", false);
 
             return restCommand(params);
         }
@@ -418,6 +447,10 @@ public class ClusterListener implements AutoCloseable {
          * @throws IOException If failed to collect cluster active state.
          */
         public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
+            // 1.x clusters are always active.
+            if (ver.compareTo(IGNITE_2_0) < 0)
+                return true;
+
             Map<String, Object> params = U.newHashMap(10);
 
             boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
@@ -444,55 +477,47 @@ public class ClusterListener implements AutoCloseable {
 
             RestResult res = restCommand(params);
 
-            switch (res.getStatus()) {
-                case STATUS_SUCCESS:
-                    if (v23)
-                        return Boolean.valueOf(res.getData());
+            if (res.getStatus() == STATUS_SUCCESS)
+                return v23 ? Boolean.valueOf(res.getData()) : res.getData().contains("\"active\":true");
 
-                    return res.getData().contains("\"active\":true");
-
-                default:
-                    throw new IOException(res.getError());
-            }
+            throw new IOException(res.getError());
         }
-
 
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                RestResult res = topology(false);
+                RestResult res = topology();
 
-                switch (res.getStatus()) {
-                    case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
-                            new TypeReference<List<GridClientNodeBean>>() {});
+                if (res.getStatus() == STATUS_SUCCESS) {
+                    List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
+                        new TypeReference<List<GridClientNodeBean>>() {});
 
-                        TopologySnapshot newTop = new TopologySnapshot(nodes);
+                    TopologySnapshot newTop = new TopologySnapshot(nodes);
 
-                        if (newTop.differentCluster(top))
-                            log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
+                    if (newTop.differentCluster(top))
+                        log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
+                    else if (newTop.topologyChanged(top))
+                        log.info("Cluster topology changed, new topology: " + newTop.nid8());
 
-                        boolean active = active(newTop.clusterVersion(), F.first(newTop.getNids()));
+                    boolean active = active(newTop.clusterVersion(), F.first(newTop.getNids()));
 
-                        newTop.setActive(active);
-                        newTop.setSecured(!F.isEmpty(res.getSessionToken()));
+                    newTop.setActive(active);
+                    newTop.setSecured(!F.isEmpty(res.getSessionToken()));
 
-                        top = newTop;
+                    top = newTop;
 
-                        client.emit(EVENT_CLUSTER_TOPOLOGY, toJSON(top));
+                    client.emit(EVENT_CLUSTER_TOPOLOGY, toJSON(top));
+                }
+                else {
+                    LT.warn(log, res.getError());
 
-                        break;
-
-                    default:
-                        LT.warn(log, res.getError());
-
-                        clusterDisconnect();
+                    clusterDisconnect();
                 }
             }
             catch (ConnectException ignored) {
                 clusterDisconnect();
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 log.error("WatchTask failed", e);
 
                 clusterDisconnect();

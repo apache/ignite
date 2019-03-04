@@ -31,28 +31,40 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  * Baseline nodes metrics self test.
  */
 @GridCommonTest(group = "Kernal Self")
 public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineNodes() throws Exception {
         // Start 2 server nodes.
         IgniteEx ignite0 = startGrid(0);
@@ -125,8 +137,6 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
 
         String storePath = getClass().getSimpleName().toLowerCase() + "/" + getName();
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
@@ -149,7 +159,6 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
     private void resetBlt() throws Exception {
         resetBaselineTopology();
 
-        waitForRebalancing();
         awaitPartitionMapExchange();
     }
 

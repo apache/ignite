@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 /**
  * Test REST with enabled authentication and token.
  */
-public class JettyRestProcessorAuthenticationWithTokenSelfTest extends JettyRestProcessorAuthenticationSelfTest {
+public class JettyRestProcessorAuthenticationWithTokenSelfTest extends JettyRestProcessorAuthenticationAbstractTest {
     /** */
     private String tok = "";
 
@@ -30,17 +31,33 @@ public class JettyRestProcessorAuthenticationWithTokenSelfTest extends JettyRest
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        // Authenticate and extract token.
-        if (F.isEmpty(tok)) {
-            String ret = content(null, GridRestCommand.AUTHENTICATE,
-                "user", DFLT_USER,
-                "password", DFLT_PWD);
+        if (F.isEmpty(tok))
+            refreshToken();
+    }
 
-            int p1 = ret.indexOf("sessionToken");
-            int p2 = ret.indexOf('"', p1 + 16);
+    /** {@inheritDoc} */
+    @Override protected void restartGrid() throws Exception {
+        tok = null;
 
-            tok = ret.substring(p1 + 15, p2);
-        }
+        super.restartGrid();
+
+        refreshToken();
+    }
+
+    /**
+     * Authenticate and extract token.
+     *
+     * @throws Exception If failed.
+     */
+    private void refreshToken() throws Exception {
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.AUTHENTICATE,
+            "user", DFLT_USER,
+            "password", DFLT_PWD);
+
+        int p1 = ret.indexOf("sessionToken");
+        int p2 = ret.indexOf('"', p1 + 16);
+
+        tok = ret.substring(p1 + 15, p2);
     }
 
     /** {@inheritDoc} */
@@ -56,6 +73,7 @@ public class JettyRestProcessorAuthenticationWithTokenSelfTest extends JettyRest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidSessionToken() throws Exception {
         tok = null;
 

@@ -19,7 +19,7 @@
 FROM openjdk:8-jre-alpine
 
 # Settings
-ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric
+ENV IGNITE_HOME /opt/ignite/apache-ignite
 WORKDIR /opt/ignite
 
 # Add missing software
@@ -27,10 +27,19 @@ RUN apk --no-cache \
     add bash
 
 # Copy main binary archive
-COPY apache-ignite-fabric* apache-ignite-fabric
+COPY apache-ignite* apache-ignite
 
 # Copy sh files and set permission
 COPY run.sh $IGNITE_HOME/
+
+# Grant permission to copy optional libs
+RUN chmod 777 ${IGNITE_HOME}/libs
+
+# Grant permission to create work directory
+RUN chmod 777 ${IGNITE_HOME}
+
+# Grant permission to execute entry point
+RUN chmod 555 $IGNITE_HOME/run.sh
 
 # Entry point
 CMD $IGNITE_HOME/run.sh

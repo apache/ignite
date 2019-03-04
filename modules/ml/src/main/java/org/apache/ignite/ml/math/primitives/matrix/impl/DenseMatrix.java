@@ -17,13 +17,13 @@
 
 package org.apache.ignite.ml.math.primitives.matrix.impl;
 
+import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.primitives.matrix.AbstractMatrix;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.OrderedMatrix;
-import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.matrix.storage.DenseMatrixStorage;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.matrix.AbstractMatrix;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Basic implementation for matrix.
@@ -92,7 +92,7 @@ public class DenseMatrix extends AbstractMatrix implements OrderedMatrix {
      * Build new matrix from flat raw array.
      */
     public DenseMatrix(double[] mtx, int rows) {
-        this(mtx, StorageConstants.ROW_STORAGE_MODE, rows);
+        this(mtx, rows, StorageConstants.ROW_STORAGE_MODE);
     }
 
     /** */

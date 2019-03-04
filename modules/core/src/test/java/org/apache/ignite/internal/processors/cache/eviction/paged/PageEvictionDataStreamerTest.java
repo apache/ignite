@@ -27,17 +27,17 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  *
  */
-public class PageEvictionDataStreamerTest extends PageEvictionMultinodeTest {
+public class PageEvictionDataStreamerTest extends PageEvictionMultinodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return setEvictionMode(DataPageEvictionMode.RANDOM_LRU, super.getConfiguration(gridName));
     }
 
     /** {@inheritDoc} */
-    @Override protected void createCacheAndTestEvcition(CacheConfiguration<Object, Object> cfg) throws Exception {
-        IgniteCache<Object, Object> cache = clientGrid.getOrCreateCache(cfg);
+    @Override protected void createCacheAndTestEviction(CacheConfiguration<Object, Object> cfg) throws Exception {
+        IgniteCache<Object, Object> cache = clientGrid().getOrCreateCache(cfg);
 
-        try (IgniteDataStreamer<Object, Object> ldr = clientGrid.dataStreamer(cfg.getName())) {
+        try (IgniteDataStreamer<Object, Object> ldr = clientGrid().dataStreamer(cfg.getName())) {
             ldr.allowOverwrite(true);
 
             for (int i = 1; i <= ENTRIES; i++) {
@@ -60,6 +60,6 @@ public class PageEvictionDataStreamerTest extends PageEvictionMultinodeTest {
         // Eviction started, no OutOfMemory occurred, success.
         assertTrue(resultingSize < ENTRIES);
 
-        clientGrid.destroyCache(cfg.getName());
+        clientGrid().destroyCache(cfg.getName());
     }
 }

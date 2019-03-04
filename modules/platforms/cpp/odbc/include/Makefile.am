@@ -21,10 +21,12 @@ noinst_HEADERS = \
     ignite/odbc.h \
     ignite/odbc/query/table_metadata_query.h \
     ignite/odbc/query/special_columns_query.h \
+    ignite/odbc/query/streaming_query.h \
     ignite/odbc/query/type_info_query.h \
     ignite/odbc/query/batch_query.h \
     ignite/odbc/query/data_query.h \
     ignite/odbc/query/foreign_keys_query.h \
+    ignite/odbc/query/internal_query.h \
     ignite/odbc/query/column_metadata_query.h \
     ignite/odbc/query/query.h \
     ignite/odbc/query/primary_keys_query.h \
@@ -42,7 +44,6 @@ noinst_HEADERS = \
     ignite/odbc/environment.h \
     ignite/odbc/dsn_config.h \
     ignite/odbc/system/odbc_constants.h \
-    ignite/odbc/system/tcp_socket_client.h \
     ignite/odbc/meta/primary_key_meta.h \
     ignite/odbc/meta/column_meta.h \
     ignite/odbc/meta/table_meta.h \
@@ -50,12 +51,17 @@ noinst_HEADERS = \
     ignite/odbc/diagnostic/diagnostic_record_storage.h \
     ignite/odbc/diagnostic/diagnosable.h \
     ignite/odbc/diagnostic/diagnosable_adapter.h \
-    ignite/odbc/ssl/ssl_mode.h \
-    ignite/odbc/ssl/ssl_bindings.h \
-    ignite/odbc/ssl/secure_socket_client.h \
-    ignite/odbc/ssl/ssl_gateway.h \
+    ignite/odbc/sql/sql_command.h \
+    ignite/odbc/sql/sql_lexer.h \
+    ignite/odbc/sql/sql_parser.h \
+    ignite/odbc/sql/sql_set_streaming_command.h \
+    ignite/odbc/sql/sql_token.h \
+    ignite/odbc/sql/sql_utils.h \
+    ignite/odbc/streaming/streaming_batch.h \
+    ignite/odbc/streaming/streaming_context.h \
     ignite/odbc/connection.h \
     ignite/odbc/odbc_error.h \
+    ignite/odbc/ssl_mode.h \
     ignite/odbc/message.h \
     ignite/odbc/cursor.h \
     ignite/odbc/common_types.h \

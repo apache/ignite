@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -103,6 +104,9 @@ public class CassandraHelper {
     public static String[] getTestKeyspaces() {
         return KEYSPACES.getString("keyspaces").split(",");
     }
+
+    /** */
+    private static AtomicInteger refCounter = new AtomicInteger(0);
 
     /** */
     public static String[] getContactPointsArray() {
@@ -197,7 +201,6 @@ public class CassandraHelper {
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithRegularCredentials(String statement, Object... args) {
         if (args == null || args.length == 0)
             return regularSession().execute(statement);
@@ -207,13 +210,11 @@ public class CassandraHelper {
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithAdminCredentials(Statement statement) {
         return adminSession().execute(statement);
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithRegularCredentials(Statement statement) {
         return regularSession().execute(statement);
     }
@@ -227,7 +228,6 @@ public class CassandraHelper {
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public static synchronized DataSource getRegularDataSrc() {
         if (regularDataSrc != null)
             return regularDataSrc;
@@ -330,8 +330,13 @@ public class CassandraHelper {
         }
     }
 
-    /** */
+    /**
+     * Note that setting of cassandra.storagedir property is expected.
+     */
     public static void startEmbeddedCassandra(Logger log) {
+        if (refCounter.getAndIncrement() > 0)
+            return;
+
         ClassLoader clsLdr = CassandraHelper.class.getClassLoader();
         URL url = clsLdr.getResource(EMBEDDED_CASSANDRA_YAML);
 
@@ -352,6 +357,9 @@ public class CassandraHelper {
 
     /** */
     public static void stopEmbeddedCassandra() {
+        if (refCounter.decrementAndGet() > 0)
+            return;
+
         if (embeddedCassandraBean != null)
             embeddedCassandraBean.onLifecycleEvent(LifecycleEventType.BEFORE_NODE_STOP);
     }

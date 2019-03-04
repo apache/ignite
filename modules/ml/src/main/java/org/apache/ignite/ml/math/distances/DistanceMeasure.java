@@ -17,8 +17,8 @@
 package org.apache.ignite.ml.math.distances;
 
 import java.io.Externalizable;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.

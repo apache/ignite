@@ -14,20 +14,15 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.wch-notification(ng-show='$ctrl.UserNotifications.isShown && $ctrl.UserNotifications.message' ng-bind-html='$ctrl.UserNotifications.message')
+button.web-console-header__togle-menu-button(
+    type='button'
+    title='Toggle menu'
+    ng-click='$ctrl.toggleSidebar()'
+    ng-class='::{"web-console-header__togle-menu-button-hidden": $ctrl.hideMenuButton}'
+)
+    svg(ignite-icon='menu')
 
-.wch-notification(ng-show='$root.user.becomeUsed')
-    | You are currently viewing user #[strong {{$root.user.firstName}} {{$root.user.lastName}}] as administrator. #[a(ng-click='$root.revertIdentity()') Revert to your identity?]
+a(ui-sref='{{$ctrl.isAuthorized() ? "default-state" : "landing"}}').wch-logo-anchor
+    img.wch-logo(src='/images/ignite-logo.svg')
 
-.wch-notification.wch-notification--demo(ng-if='$root.IgniteDemoMode')
-    .container(ng-controller='demoController')
-        | You are now in #[b Demo Mode]. #[a(ng-click='closeDemo();') Close Demo?]
-
-.wch-content.container
-    connected-clusters(ng-if='$ctrl.$rootScope.user && !$ctrl.$rootScope.IgniteDemoMode && $ctrl.isConnectedClustersVisible && !$root.user.becomeUsed')
-
-    a(ui-sref='landing')
-        img.wch-logo(ng-src='{{::$ctrl.branding.headerLogo}}')
-
-    .wch-slot.wch-slot-left(ng-transclude='slotLeft')
-    .wch-slot.wch-slot-right(ng-transclude='slotRight')
+ng-transclude

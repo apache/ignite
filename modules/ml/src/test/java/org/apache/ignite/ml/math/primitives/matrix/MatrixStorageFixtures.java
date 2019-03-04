@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.primitives.matrix.storage.SparseMatrixStorage;
 import org.jetbrains.annotations.NotNull;

@@ -22,11 +22,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.function.Consumer;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.AbstractVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.storage.SparseVectorStorage;
 
 /**

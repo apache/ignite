@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -26,9 +27,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Updated handshake message.
  */
+@IgniteCodeGeneratingFail
 public class HandshakeMessage2 extends HandshakeMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Message size in bytes including {@link HandshakeMessage} fields. */
+    public static final int HANDSHAKE2_MESSAGE_SIZE = MESSAGE_FULL_SIZE + 4;
 
     /** */
     private int connIdx;
@@ -60,6 +65,11 @@ public class HandshakeMessage2 extends HandshakeMessage {
     /** {@inheritDoc} */
     @Override public int connectionIndex() {
         return connIdx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMessageSize() {
+        return HANDSHAKE2_MESSAGE_SIZE;
     }
 
     /** {@inheritDoc} */

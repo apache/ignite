@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -47,7 +49,9 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskR
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.auth.AuthenticationCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
@@ -349,7 +353,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             .a(", params=").a(tskReq.params());
                     }
 
-                    sb.a(", err=").a(e.getMessage() != null ? e.getMessage() : e.getClass().getName()).a(']');
+                    sb.a(", err=")
+                        .a(e.getMessage() != null ? e.getMessage() : e.getClass().getName())
+                        .a(", trace=")
+                        .a(getErrorMessage(e))
+                        .a(']');
 
                     res = new GridRestResponse(STATUS_FAILED, sb.toString());
                 }
@@ -364,6 +372,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 return res;
             }
         });
+    }
+
+    /**
+     * @param th Th.
+     * @return Stack trace
+     */
+    private String getErrorMessage(Throwable th) {
+        if (th == null)
+            return "";
+
+        StringWriter writer = new StringWriter();
+
+        th.printStackTrace(new PrintWriter(writer));
+
+        return writer.toString();
     }
 
     /**
@@ -479,6 +502,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             if (ses.isTimedOut(sesTtl)) {
                                 clientId2SesId.remove(ses.clientId, ses.sesId);
                                 sesId2Ses.remove(ses.sesId, ses);
+
+                                if (ctx.security().enabled() && ses.secCtx != null && ses.secCtx.subject() != null)
+                                    ctx.security().onSessionExpired(ses.secCtx.subject().id());
                             }
                         }
                     }
@@ -507,6 +533,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridChangeStateCommandHandler(ctx));
             addHandler(new AuthenticationCommandHandler(ctx));
             addHandler(new UserActionCommandHandler(ctx));
+            addHandler(new GridBaselineCommandHandler(ctx));
+            addHandler(new MemoryMetricsCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -867,6 +895,19 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 break;
 
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
+            case CLUSTER_ACTIVATE:
+            case CLUSTER_DEACTIVATE:
+            case BASELINE_SET:
+            case BASELINE_ADD:
+            case BASELINE_REMOVE:
+                perm = SecurityPermission.ADMIN_OPS;
+
+                break;
+
+            case DATA_REGION_METRICS:
+            case DATA_STORAGE_METRICS:
             case CACHE_METRICS:
             case CACHE_SIZE:
             case CACHE_METADATA:
@@ -880,8 +921,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case NAME:
             case LOG:
             case CLUSTER_CURRENT_STATE:
-            case CLUSTER_ACTIVE:
-            case CLUSTER_INACTIVE:
+            case BASELINE_CURRENT_STATE:
             case AUTHENTICATE:
             case ADD_USER:
             case REMOVE_USER:

@@ -43,11 +43,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
  */
-@SuppressWarnings({"CatchGenericClass"})
 @GridCommonTest(group = "Task Session")
 public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractTest {
     /** */
@@ -79,6 +79,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
         for (int i = 0; i < EXEC_COUNT; i++)
             checkTask(i);
@@ -87,6 +88,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         final GridThreadSerialNumber sNum = new GridThreadSerialNumber();
 

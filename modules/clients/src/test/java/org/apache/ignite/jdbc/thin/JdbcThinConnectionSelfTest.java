@@ -17,6 +17,9 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -38,14 +41,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.jdbc.thin.ConnectionProperties;
+import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
+import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
@@ -58,15 +63,14 @@ import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
+import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
+import static org.apache.ignite.internal.processors.odbc.SqlStateCode.TRANSACTION_STATE_EXCEPTION;
 
 /**
  * Connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
@@ -85,13 +89,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setMarshaller(new BinaryMarshaller());
+
+        cfg.setGridLogger(new GridStringLogger());
 
         return cfg;
     }
@@ -120,6 +120,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"EmptyTryBlock", "unused"})
+    @Test
     public void testDefaults() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
             // No-op.
@@ -133,6 +134,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Test invalid endpoint.
      */
+    @Test
     public void testInvalidEndpoint() {
         assertInvalid("jdbc:ignite:thin://", "Host name is empty");
         assertInvalid("jdbc:ignite:thin://:10000", "Host name is empty");
@@ -149,6 +151,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSocketBuffers() throws Exception {
         final int dfltDufSize = 64 * 1024;
 
@@ -186,6 +189,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSocketBuffersSemicolon() throws Exception {
         final int dfltDufSize = 64 * 1024;
 
@@ -218,6 +222,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlHints() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
             assertHints(conn, false, false, false, false, false, false);
@@ -258,6 +263,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlHintsSemicolon() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;distributedJoins=true")) {
             assertHints(conn, true, false, false, false, false, false);
@@ -316,6 +322,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTcpNoDelay() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=0",
             "Invalid property value. [name=tcpNoDelay, val=0, choices=[true, false]]");
@@ -355,6 +362,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTcpNoDelaySemicolon() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1;tcpNoDelay=0",
             "Invalid property value. [name=tcpNoDelay, val=0, choices=[true, false]]");
@@ -390,6 +398,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAutoCloseServerCursorProperty() throws Exception {
         String url = "jdbc:ignite:thin://127.0.0.1?autoCloseServerCursor";
 
@@ -426,6 +435,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAutoCloseServerCursorPropertySemicolon() throws Exception {
         String url = "jdbc:ignite:thin://127.0.0.1;autoCloseServerCursor";
 
@@ -458,6 +468,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSchema() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1/qwe/qwe",
             "Invalid URL format (only schema name is allowed in URL path parameter 'host:port[/schemaName]')" );
@@ -480,6 +491,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemaSemicolon() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;schema=public")) {
             assertEquals("Invalid schema", "PUBLIC", conn.getSchema());
@@ -528,6 +540,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testClose() throws Exception {
         final Connection conn;
 
@@ -554,6 +567,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateStatement() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             try (Statement stmt = conn.createStatement()) {
@@ -576,6 +590,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateStatement2() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             int [] rsTypes = new int[]
@@ -629,6 +644,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateStatement3() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             int [] rsTypes = new int[]
@@ -688,6 +704,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareStatement() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // null query text
@@ -721,6 +738,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareStatement3() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "select * from test where param = ?";
@@ -781,6 +799,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareStatement4() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "select * from test where param = ?";
@@ -846,6 +865,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareStatementAutoGeneratedKeysUnsupported() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "insert into test (val) values (?)";
@@ -895,6 +915,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareCallUnsupported() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "exec test()";
@@ -935,6 +956,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNativeSql() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // null query text
@@ -966,24 +988,23 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetAutoCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assertTrue(conn.getAutoCommit());
+            boolean ac0 = conn.getAutoCommit();
 
-            conn.setAutoCommit(false);
+            conn.setAutoCommit(!ac0);
+            // assert no exception
 
-            assertFalse(conn.getAutoCommit());
-
-            conn.setAutoCommit(true);
-
-            assertTrue(conn.getAutoCommit());
+            conn.setAutoCommit(ac0);
+            // assert no exception
 
             conn.close();
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
                 @Override public void run() throws Exception {
-                    conn.setAutoCommit(true);
+                    conn.setAutoCommit(ac0);
                 }
             });
         }
@@ -992,10 +1013,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assert !conn.getMetaData().supportsTransactions();
-
             // Should not be called in auto-commit mode
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1009,9 +1029,20 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Transaction cannot be committed explicitly in auto-commit mode"
             );
 
-            conn.setAutoCommit(false);
+            assertTrue(conn.getAutoCommit());
 
-            conn.commit();
+            // Should not be called in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.commit();
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Transaction cannot be committed explicitly in auto-commit mode."
+            );
 
             conn.close();
 
@@ -1027,10 +1058,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollback() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assert !conn.getMetaData().supportsTransactions();
-
             // Should not be called in auto-commit mode
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1041,12 +1071,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 },
                 SQLException.class,
-                "Transaction cannot rollback in auto-commit mode"
+                "Transaction cannot be rolled back explicitly in auto-commit mode."
             );
-
-            conn.setAutoCommit(false);
-
-            conn.rollback();
 
             conn.close();
 
@@ -1060,8 +1086,53 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testBeginFailsWhenMvccIsDisabled() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.createStatement().execute("BEGIN");
+
+            fail("Exception is expected");
+        }
+        catch (SQLException e) {
+            assertEquals(TRANSACTION_STATE_EXCEPTION, e.getSQLState());
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testCommitIgnoredWhenMvccIsDisabled() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+            conn.createStatement().execute("COMMIT");
+
+            conn.commit();
+        }
+        // assert no exception
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testRollbackIgnoredWhenMvccIsDisabled() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+
+            conn.createStatement().execute("ROLLBACK");
+
+            conn.rollback();
+        }
+        // assert no exception
+    }
+
+    /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetMetaData() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -1082,6 +1153,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetReadOnly() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.close();
@@ -1105,6 +1177,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetCatalog() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assert !conn.getMetaData().supportsCatalogsInDataManipulation();
@@ -1136,10 +1209,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetTransactionIsolation() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assert !conn.getMetaData().supportsTransactions();
-
             // Invalid parameter value
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1188,6 +1260,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearGetWarnings() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             SQLWarning warn = conn.getWarnings();
@@ -1221,6 +1294,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetTypeMap() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             GridTestUtils.assertThrows(log,
@@ -1276,6 +1350,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetHoldability() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // default value
@@ -1329,6 +1404,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assert !conn.getMetaData().supportsSavepoints();
@@ -1346,15 +1422,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Savepoint cannot be set in auto-commit mode"
             );
 
-            conn.setAutoCommit(false);
-
-            // Unsupported
-            checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
-                    conn.setSavepoint();
-                }
-            });
-
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
@@ -1368,6 +1435,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetSavepointName() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assert !conn.getMetaData().supportsSavepoints();
@@ -1400,15 +1468,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Savepoint cannot be set in auto-commit mode"
             );
 
-            conn.setAutoCommit(false);
-
-            // Unsupported
-            checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
-                    conn.setSavepoint(name);
-                }
-            });
-
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
@@ -1422,6 +1481,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollbackSavePoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assert !conn.getMetaData().supportsSavepoints();
@@ -1454,15 +1514,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Auto-commit mode"
             );
 
-            conn.setAutoCommit(false);
-
-            // Unsupported
-            checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
-                    conn.rollback(savepoint);
-                }
-            });
-
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
@@ -1476,6 +1527,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleaseSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assert !conn.getMetaData().supportsSavepoints();
@@ -1514,6 +1566,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateClob() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Unsupported
@@ -1544,6 +1597,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateBlob() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Unsupported
@@ -1574,6 +1628,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateNClob() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Unsupported
@@ -1604,6 +1659,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateSQLXML() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Unsupported
@@ -1634,6 +1690,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetClientInfoPair() throws Exception {
 //        fail("https://issues.apache.org/jira/browse/IGNITE-5425");
 
@@ -1669,6 +1726,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetClientInfoProperties() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String name = "ApplicationName";
@@ -1707,6 +1765,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateArrayOf() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String typeName = "varchar";
@@ -1747,6 +1806,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateStruct() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Invalid typename
@@ -1783,6 +1843,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetSchema() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertEquals("PUBLIC", conn.getSchema());
@@ -1816,6 +1877,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAbort() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             //Invalid executor
@@ -1842,6 +1904,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetNetworkTimeout() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // default
@@ -1850,19 +1913,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final Executor executor = Executors.newFixedThreadPool(1);
 
             final int timeout = 1000;
-
-            //Invalid executor
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setNetworkTimeout(null, timeout);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Executor cannot be null"
-            );
 
             //Invalid timeout
             GridTestUtils.assertThrows(log,
@@ -1898,7 +1948,60 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Test that attempting to supply invalid nested TX mode to driver fails on the client.
      */
+    @Test
+    public void testInvalidNestedTxMode() {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                DriverManager.getConnection(URL + "/?nestedTransactionsMode=invalid");
+
+                return null;
+            }
+        }, SQLException.class, "Invalid nested transactions handling mode");
+    }
+
+    /**
+     * Test that attempting to send unexpected name of nested TX mode to server on handshake yields an error.
+     * We have to do this without explicit {@link Connection} as long as there's no other way to bypass validation and
+     * supply a malformed {@link ConnectionProperties} to {@link JdbcThinTcpIo}.
+     */
+    @Test
+    public void testInvalidNestedTxModeOnServerSide() throws SQLException, NoSuchMethodException,
+        IllegalAccessException, InvocationTargetException, InstantiationException, IOException {
+        ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
+
+        connProps.setAddresses(new HostAndPortRange[]{new HostAndPortRange("127.0.0.1", DFLT_PORT, DFLT_PORT)});
+
+        connProps.nestedTxMode("invalid");
+
+        Constructor ctor = JdbcThinTcpIo.class.getDeclaredConstructor(ConnectionProperties.class);
+
+        boolean acc = ctor.isAccessible();
+
+        ctor.setAccessible(true);
+
+        final JdbcThinTcpIo io = (JdbcThinTcpIo)ctor.newInstance(connProps);
+
+        try {
+            GridTestUtils.assertThrows(null, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    io.start();
+
+                    return null;
+                }
+            }, SQLException.class, "err=Invalid nested transactions handling mode: invalid");
+        }
+        finally {
+            io.close();
+
+            ctor.setAccessible(acc);
+        }
+    }
+
+    /**
+     */
+    @Test
     public void testSslClientAndPlainServer()  {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1916,6 +2019,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadingException() throws Exception {
         int threadCnt = 10;
 

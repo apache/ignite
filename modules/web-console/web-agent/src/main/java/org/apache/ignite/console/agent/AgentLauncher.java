@@ -17,12 +17,6 @@
 
 package org.apache.ignite.console.agent;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterException;
-import io.socket.client.Ack;
-import io.socket.client.IO;
-import io.socket.client.Socket;
-import io.socket.emitter.Emitter;
 import java.io.File;
 import java.io.IOException;
 import java.net.Authenticator;
@@ -40,9 +34,16 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import javax.net.ssl.SSLContext;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterException;
+import io.socket.client.Ack;
+import io.socket.client.IO;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.TrustManager;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
+import okhttp3.OkHttpClient;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
@@ -61,6 +62,8 @@ import static io.socket.client.Socket.EVENT_CONNECT_ERROR;
 import static io.socket.client.Socket.EVENT_DISCONNECT;
 import static io.socket.client.Socket.EVENT_ERROR;
 import static org.apache.ignite.console.agent.AgentUtils.fromJSON;
+import static org.apache.ignite.console.agent.AgentUtils.sslConnectionSpec;
+import static org.apache.ignite.console.agent.AgentUtils.sslSocketFactory;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 import static org.apache.ignite.console.agent.AgentUtils.trustManager;
 
@@ -108,36 +111,26 @@ public class AgentLauncher {
 
         ConnectException ce = X.cause(e, ConnectException.class);
 
-        if (ce != null)
-            log.error("Failed to establish connection to server (connection refused).");
+        if (ce != null) {
+            log.error("Failed to establish connection to server or missing proxy settings (connection refused).");
+            log.error("Documentation for proxy configuration can be found here: https://apacheignite-tools.readme.io/docs/getting-started#section-proxy-configuration");
+        }
         else {
-            Exception ignore = X.cause(e, SSLHandshakeException.class);
-
-            if (ignore != null) {
-                log.error("Failed to establish SSL connection to server, due to errors with SSL handshake.");
+            if (X.hasCause(e, SSLHandshakeException.class)) {
+                log.error("Failed to establish SSL connection to server, due to errors with SSL handshake:", e);
                 log.error("Add to environment variable JVM_OPTS parameter \"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.");
 
                 System.exit(1);
             }
 
-            ignore = X.cause(e, UnknownHostException.class);
-
-            if (ignore != null) {
-                log.error("Failed to establish connection to server, due to errors with DNS or missing proxy settings.");
-                log.error("Documentation for proxy configuration can be found here: http://apacheignite.readme.io/docs/web-agent#section-proxy-configuration");
+            if (X.hasCause(e, UnknownHostException.class)) {
+                log.error("Failed to establish connection to server, due to errors with DNS or missing proxy settings.", e);
+                log.error("Documentation for proxy configuration can be found here: https://apacheignite-tools.readme.io/docs/getting-started#section-proxy-configuration");
 
                 System.exit(1);
             }
 
-            ignore = X.cause(e, IOException.class);
-
-            if (ignore != null && "404".equals(ignore.getMessage())) {
-                log.error("Failed to receive response from server (connection refused).");
-
-                return;
-            }
-
-            if (ignore != null && "407".equals(ignore.getMessage())) {
+            if (X.hasCause(e, ProxyAuthException.class)) {
                 log.error("Failed to establish connection to server, due to proxy requires authentication.");
 
                 String userName = System.getProperty("https.proxyUsername", System.getProperty("http.proxyUsername"));
@@ -156,6 +149,14 @@ public class AgentLauncher {
                         return pwdAuth;
                     }
                 });
+
+                return;
+            }
+
+            IOException ignore = X.cause(e, IOException.class);
+
+            if (ignore != null && "404".equals(ignore.getMessage())) {
+                log.error("Failed to receive response from server (connection refused).");
 
                 return;
             }
@@ -315,26 +316,86 @@ public class AgentLauncher {
             return;
         }
 
+        boolean serverTrustAll = Boolean.getBoolean("trust.all");
+        boolean hasServerTrustStore = cfg.serverTrustStore() != null;
+
+        if (serverTrustAll && hasServerTrustStore) {
+            log.warn("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
+                "Option '-Dtrust.all=true' will be ignored on connect to Web server.");
+
+            serverTrustAll = false;
+        }
+
+        boolean nodeTrustAll = Boolean.getBoolean("trust.all");
+        boolean hasNodeTrustStore = cfg.nodeTrustStore() != null;
+
+        if (nodeTrustAll && hasNodeTrustStore) {
+            log.warn("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
+                "Option '-Dtrust.all=true' will be ignored on connect to cluster.");
+
+            nodeTrustAll = false;
+        }
+
         cfg.nodeURIs(nodeURIs);
 
         IO.Options opts = new IO.Options();
-
         opts.path = "/agents";
 
-        // Workaround for use self-signed certificate
-        if (Boolean.getBoolean("trust.all")) {
-            SSLContext ctx = SSLContext.getInstance("TLS");
+        List<String> cipherSuites = cfg.cipherSuites();
 
-            // Create an SSLContext that uses our TrustManager
-            ctx.init(null, new TrustManager[] {trustManager()}, null);
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+            .proxyAuthenticator(new ProxyAuthenticator());
 
-            opts.sslContext = ctx;
+        if (
+            serverTrustAll ||
+            hasServerTrustStore ||
+            cfg.serverKeyStore() != null
+        ) {
+            X509TrustManager serverTrustMgr = trustManager(
+                serverTrustAll,
+                cfg.serverTrustStore(),
+                cfg.serverTrustStorePassword()
+            );
+
+            if (serverTrustAll)
+                builder.hostnameVerifier((hostname, session) -> true);
+
+            SSLSocketFactory sslSocketFactory = sslSocketFactory(
+                cfg.serverKeyStore(),
+                cfg.serverKeyStorePassword(),
+                serverTrustMgr,
+                cipherSuites
+            );
+
+            if (sslSocketFactory != null) {
+                if (serverTrustMgr != null)
+                    builder.sslSocketFactory(sslSocketFactory, serverTrustMgr);
+                else
+                    builder.sslSocketFactory(sslSocketFactory);
+
+                if (!F.isEmpty(cipherSuites))
+                    builder.connectionSpecs(sslConnectionSpec(cipherSuites));
+            }
+
+            opts.secure = true;
         }
+
+        OkHttpClient okHttpClient = builder.build();
+        
+        opts.callFactory = okHttpClient;
+        opts.webSocketFactory = okHttpClient;
 
         final Socket client = IO.socket(uri, opts);
 
-        try (RestExecutor restExecutor = new RestExecutor();
-             ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)) {
+        try (
+            RestExecutor restExecutor = new RestExecutor(
+                nodeTrustAll,
+                cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
+                cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
+                cipherSuites);
+
+            ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)
+        ) {
             Emitter.Listener onConnect = connectRes -> {
                 log.info("Connection established.");
 
@@ -414,6 +475,7 @@ public class AgentLauncher {
             };
 
             DatabaseListener dbHnd = new DatabaseListener(cfg);
+
             RestListener restHnd = new RestListener(cfg, restExecutor);
 
             final CountDownLatch latch = new CountDownLatch(1);

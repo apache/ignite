@@ -37,11 +37,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -53,9 +52,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
  *
  */
 public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of grids to start. */
     private static final int GRID_CNT = 5;
 
@@ -64,6 +60,13 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
     /** Client flag. */
     private boolean client;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -88,13 +91,9 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         if (!client) {
             CacheConfiguration cc = defaultCacheConfiguration();
@@ -120,6 +119,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPut() throws Exception {
         IgniteInternalFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
@@ -158,6 +158,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPutAll() throws Exception {
         runMultiThreaded(new Callable<Object>() {
             private final Random rnd = new Random();
@@ -184,6 +185,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedExplicitTx() throws Exception {
         runMultiThreaded(new Callable<Object>() {
             private final Random rnd = new Random();

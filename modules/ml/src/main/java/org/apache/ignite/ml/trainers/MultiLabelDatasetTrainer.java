@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.trainers;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 
 /**
  * Interface for trainers that trains on dataset with multiple label per object.
  *
  * @param <M> Type of a produced model.
  */
-public interface MultiLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, double[]> {
+public abstract class MultiLabelDatasetTrainer<M extends IgniteModel> extends DatasetTrainer<M, double[]> {
 }

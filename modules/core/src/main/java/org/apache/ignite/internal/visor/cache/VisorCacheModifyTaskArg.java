@@ -41,7 +41,10 @@ public class VisorCacheModifyTaskArg extends VisorDataTransferObject {
     private Object key;
 
     /** Specified value. */
-    private Object value;
+    private Object val;
+
+    /** Created for toString method because Object can't be printed. */
+    private String modifiedValues;
 
     /**
      * Default constructor.
@@ -54,13 +57,14 @@ public class VisorCacheModifyTaskArg extends VisorDataTransferObject {
      * @param cacheName Cache name.
      * @param mode Modification mode.
      * @param key Specified key.
-     * @param value Specified value.
+     * @param val Specified value.
      */
-    public VisorCacheModifyTaskArg(String cacheName, VisorModifyCacheMode mode, Object key, Object value) {
+    public VisorCacheModifyTaskArg(String cacheName, VisorModifyCacheMode mode, Object key, Object val) {
         this.cacheName = cacheName;
         this.mode = mode;
         this.key = key;
-        this.value = value;
+        this.val = val;
+        this.modifiedValues = "[Key=" + key + ", Value=" + val + "]";
     }
 
     /**
@@ -88,7 +92,7 @@ public class VisorCacheModifyTaskArg extends VisorDataTransferObject {
      * @return Specified value.
      */
     public Object getValue() {
-        return value;
+        return val;
     }
 
     /** {@inheritDoc} */
@@ -96,7 +100,8 @@ public class VisorCacheModifyTaskArg extends VisorDataTransferObject {
         U.writeString(out, cacheName);
         U.writeEnum(out, mode);
         out.writeObject(key);
-        out.writeObject(value);
+        out.writeObject(val);
+        U.writeString(out, modifiedValues);
     }
 
     /** {@inheritDoc} */
@@ -104,7 +109,8 @@ public class VisorCacheModifyTaskArg extends VisorDataTransferObject {
         cacheName = U.readString(in);
         mode = VisorModifyCacheMode.fromOrdinal(in.readByte());
         key = in.readObject();
-        value = in.readObject();
+        val = in.readObject();
+        modifiedValues = U.readString(in);
     }
 
     /** {@inheritDoc} */

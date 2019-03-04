@@ -39,12 +39,22 @@ public class DecisionTreeLeafNode implements DecisionTreeNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector doubles) {
+    @Override public Double predict(Vector doubles) {
         return val;
     }
 
     /** */
     public double getVal() {
         return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return DecisionTree.printTree(this, pretty);
     }
 }

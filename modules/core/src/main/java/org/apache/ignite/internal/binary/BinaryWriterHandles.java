@@ -51,7 +51,6 @@ public class BinaryWriterHandles {
      * @param pos Position.
      * @return Old position.
      */
-    @SuppressWarnings("unchecked")
     public int put(Object obj, int pos) {
         assert obj != null;
         assert pos >= 0;

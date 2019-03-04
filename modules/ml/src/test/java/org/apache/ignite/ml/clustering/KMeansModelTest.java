@@ -18,9 +18,9 @@
 package org.apache.ignite.ml.clustering;
 
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Assert;
 import org.junit.Test;
@@ -46,13 +46,15 @@ public class KMeansModelTest {
 
         KMeansModel mdl = new KMeansModel(centers, distanceMeasure);
 
-        Assert.assertEquals(mdl.apply(new DenseVector(new double[]{1.1, 1.1})), 0.0, PRECISION);
-        Assert.assertEquals(mdl.apply(new DenseVector(new double[]{-1.1, 1.1})), 1.0, PRECISION);
-        Assert.assertEquals(mdl.apply(new DenseVector(new double[]{1.1, -1.1})), 2.0, PRECISION);
-        Assert.assertEquals(mdl.apply(new DenseVector(new double[]{-1.1, -1.1})), 3.0, PRECISION);
+        Assert.assertTrue(mdl.toString().contains("KMeansModel"));
+
+        Assert.assertEquals(mdl.predict(new DenseVector(new double[]{1.1, 1.1})), 0.0, PRECISION);
+        Assert.assertEquals(mdl.predict(new DenseVector(new double[]{-1.1, 1.1})), 1.0, PRECISION);
+        Assert.assertEquals(mdl.predict(new DenseVector(new double[]{1.1, -1.1})), 2.0, PRECISION);
+        Assert.assertEquals(mdl.predict(new DenseVector(new double[]{-1.1, -1.1})), 3.0, PRECISION);
 
         Assert.assertEquals(mdl.distanceMeasure(), distanceMeasure);
-        Assert.assertEquals(mdl.amountOfClusters(), 4);
-        Assert.assertArrayEquals(mdl.centers(), centers);
+        Assert.assertEquals(mdl.getAmountOfClusters(), 4);
+        Assert.assertArrayEquals(mdl.getCenters(), centers);
     }
 }

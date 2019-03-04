@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -58,8 +59,9 @@ public class JdbcQueryMetadataResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.writeBinary(writer, ver);
 
         if (F.isEmpty(meta))
             writer.writeInt(0);
@@ -67,13 +69,14 @@ public class JdbcQueryMetadataResult extends JdbcResult {
             writer.writeInt(meta.size());
 
             for (JdbcColumnMeta m : meta)
-                m.writeBinary(writer);
+                m.writeBinary(writer, ver);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.readBinary(reader, ver);
 
         int size = reader.readInt();
 
@@ -85,7 +88,7 @@ public class JdbcQueryMetadataResult extends JdbcResult {
             for (int i = 0; i < size; ++i) {
                 JdbcColumnMeta m = new JdbcColumnMeta();
 
-                m.readBinary(reader);
+                m.readBinary(reader, ver);
 
                 meta.add(m);
             }

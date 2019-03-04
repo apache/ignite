@@ -25,6 +25,7 @@ import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.util.typedef.internal.D;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Base scenario for memory leak:
@@ -46,6 +47,7 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageDoubleInitMemoryLeak() throws Exception {
         long initVMsize = D.getCommittedVirtualMemorySize();
 
@@ -71,7 +73,7 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
                 mem.start();
             }
             finally {
-                mem.stop();
+                mem.stop(true);
             }
 
             long committedVMSize = D.getCommittedVirtualMemorySize();

@@ -21,8 +21,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * K-means model representation.

@@ -42,4 +42,5 @@ RUN apk --no-cache \
 COPY ignite-web-agent*/* ./
 
 # Entrypoint
-CMD ignite-web-agent.sh -d ${DRIVER_FOLDER} -n ${NODE_URI} -s ${SERVER_URI} -t ${TOKENS}
+CMD ./ignite-web-agent.sh -d ${DRIVER_FOLDER} -n ${NODE_URI} -s ${SERVER_URI} -t ${TOKENS}
+

@@ -29,12 +29,12 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
-import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.VectorizedViewMatrix;
 import org.jetbrains.annotations.NotNull;
 
@@ -129,7 +129,7 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static abstract class VectorSizesFixture implements Iterable<Vector> {
+    private abstract static class VectorSizesFixture implements Iterable<Vector> {
         /** */
         private final Supplier<VectorSizesIterator> iter;
 

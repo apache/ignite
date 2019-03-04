@@ -27,6 +27,7 @@ import org.apache.ignite.spi.failover.GridFailoverTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 /**
  * Never failover SPI test.
@@ -36,6 +37,7 @@ public class GridNeverFailoverSpiSelfTest extends GridSpiAbstractTest<NeverFailo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAlwaysNull() throws Exception {
         List<ClusterNode> nodes = new ArrayList<>();
 

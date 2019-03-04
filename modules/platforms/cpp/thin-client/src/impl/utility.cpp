@@ -33,7 +33,7 @@ namespace ignite
         {
             namespace utility
             {
-                bool ParseSingleAddress(const std::string& value, net::TcpRange& tcpRange, uint16_t dfltPort)
+                bool ParseSingleAddress(const std::string& value, network::TcpRange& tcpRange, uint16_t dfltPort)
                 {
                     int64_t colonNum = std::count(value.begin(), value.end(), ':');
 
@@ -61,7 +61,10 @@ namespace ignite
                     return ParsePortRange(portRange, tcpRange.port, tcpRange.range);
                 }
 
-                void ParseAddress(const std::string& value, std::vector<net::TcpRange>& endPoints, uint16_t dfltPort)
+                void ParseAddress(
+                    const std::string& value,
+                    std::vector<network::TcpRange>& endPoints,
+                    uint16_t dfltPort)
                 {
                     size_t addrNum = std::count(value.begin(), value.end(), ',') + 1;
 
@@ -85,7 +88,7 @@ namespace ignite
 
                         if (!addr.empty())
                         {
-                            net::TcpRange tcpRange;
+                            network::TcpRange tcpRange;
 
                             bool success = ParseSingleAddress(addr, tcpRange, dfltPort);
 

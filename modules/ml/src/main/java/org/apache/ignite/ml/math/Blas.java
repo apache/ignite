@@ -26,9 +26,9 @@ import org.apache.ignite.ml.math.exceptions.NonSquareMatrixException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
@@ -37,12 +37,12 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  */
 public class Blas {
     /** F2J implementation of BLAS. */
-    transient static private BLAS f2jBlas = new F2jBLAS();
+    private static transient BLAS f2jBlas = new F2jBLAS();
 
     /**
      * Native implementation of BLAS. F2J implementation will be used as fallback if no native implementation is found.
      */
-    transient static private BLAS nativeBlas = BLAS.getInstance();
+    private static transient BLAS nativeBlas = BLAS.getInstance();
 
     /**
      * Performs y += a * x

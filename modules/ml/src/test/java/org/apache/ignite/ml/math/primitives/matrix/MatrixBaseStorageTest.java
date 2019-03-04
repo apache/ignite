@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.math.primitives.matrix;
 
 import org.apache.ignite.ml.math.ExternalizeTest;
-import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
 import org.apache.ignite.ml.math.primitives.MathTestConstants;
 import org.junit.After;
 import org.junit.Assert;

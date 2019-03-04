@@ -38,7 +38,7 @@ public class TitanicUtils {
      *
      * @param ignite The ignite.
      * @return The filled cache.
-     * @throws FileNotFoundException
+     * @throws FileNotFoundException If data file is not found.
      */
     public static IgniteCache<Integer, Object[]> readPassengers(Ignite ignite)
         throws FileNotFoundException {
@@ -58,8 +58,7 @@ public class TitanicUtils {
 
             for (int i = 0; i < cells.length; i++)
                 try{
-                    if(cells[i].equals("")) data[i] = Double.NaN;
-                    else data[i] = Double.valueOf(cells[i]);
+                    data[i] = "".equals(cells[i]) ? Double.NaN : Double.valueOf(cells[i]);
                 } catch (java.lang.NumberFormatException e) {
 
                     try {

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,24 +32,29 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.PersistentStorageIOException;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -66,6 +72,9 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
     /** Failure handler. */
     private DummyFailureHandler failureHnd;
+
+    /** Failing FileIO factory. */
+    private FailingFileIOFactory failingFileIOFactory;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -91,12 +100,15 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
+        failingFileIOFactory = new FailingFileIOFactory();
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setMaxSize(100 * 1024 * 1024)
                     .setPersistenceEnabled(true)
-            );
+            )
+            .setFileIOFactory(failingFileIOFactory);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -137,6 +149,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNodeInvalidatedWhenPersistenceIsCorrupted() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -167,6 +180,9 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
             startGrid(0);
         }
         catch (IgniteCheckedException ex) {
+            if (X.hasCause(ex, StorageException.class, IOException.class))
+                return; // Success;
+
             throw ex;
         }
 
@@ -178,6 +194,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testWrongPageCRC() throws Exception {
         System.setProperty(IGNITE_PDS_SKIP_CRC, "true");
 
@@ -211,6 +228,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation when meta storage is corrupted.
      */
+    @Test
     public void testMetaStorageCorruption() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -218,7 +236,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         MetaStorage metaStorage = ignite.context().cache().context().database().metaStorage();
 
-        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, 0);
+        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, PageIdAllocator.METASTORE_PARTITION);
 
         stopGrid(0);
 
@@ -237,6 +255,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation when cache meta is corrupted.
      */
+    @Test
     public void testCacheMetaCorruption() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -311,6 +330,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation when meta store is read only.
      */
+    @Test
     public void testReadOnlyMetaStore() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -351,6 +371,49 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         }
     }
 
+
+    /**
+     * Test node invalidation due to checkpoint error.
+     */
+    @Test
+    public void testCheckpointFailure() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        failingFileIOFactory.createClosure(new IgniteBiClosure<File, OpenOption[], FileIO>() {
+            @Override public FileIO apply(File file, OpenOption[] options) {
+                if (file.getName().indexOf("-END.bin") >= 0) {
+                    FileIO delegate;
+
+                    try {
+                        delegate = failingFileIOFactory.delegateFactory().create(file, options);
+                    }
+                    catch (IOException ignore) {
+                        return null;
+                    }
+
+                    return new FileIODecorator(delegate) {
+                        @Override public void close() throws IOException {
+                            throw new IOException("Checkpoint failed");
+                        }
+                    };
+                }
+
+                return null;
+            }
+        });
+
+        ignite.cluster().active(true);
+
+        try {
+            forceCheckpoint(ignite);
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
+
+        waitFailure(IOException.class);
+    }
+
     /**
      * @param expError Expected error.
      */
@@ -363,7 +426,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Dummy failure handler
      */
-    public static class DummyFailureHandler implements FailureHandler {
+    public static class DummyFailureHandler extends AbstractFailureHandler {
         /** Failure. */
         private volatile boolean failure = false;
 
@@ -385,11 +448,45 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
             failure = true;
             error = failureCtx.error();
 
             return true;
+        }
+    }
+
+    /**
+     * Create File I/O which can fail according to implemented closure.
+     */
+    private static class FailingFileIOFactory implements FileIOFactory {
+        /** Delegate factory. */
+        private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
+
+        /** Create FileIO closure. */
+        private volatile IgniteBiClosure<File, OpenOption[], FileIO> createClo;
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
+            FileIO fileIO = null;
+            if (createClo != null)
+                fileIO = createClo.apply(file, openOption);
+
+            return fileIO != null ? fileIO : delegateFactory.create(file, openOption);
+        }
+
+        /**
+         * @param createClo FileIO create closure.
+         */
+        public void createClosure(IgniteBiClosure<File, OpenOption[], FileIO> createClo) {
+            this.createClo = createClo;
+        }
+
+        /**
+         *
+         */
+        public FileIOFactory delegateFactory() {
+            return delegateFactory;
         }
     }
 }

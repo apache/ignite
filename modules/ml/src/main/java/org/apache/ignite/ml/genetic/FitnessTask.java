@@ -20,7 +20,6 @@ package org.apache.ignite.ml.genetic;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -29,10 +28,9 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.resources.IgniteInstanceResource;
-
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Responsible for fitness operation

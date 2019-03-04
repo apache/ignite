@@ -18,10 +18,8 @@
 package org.apache.ignite.internal;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -36,7 +34,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Assert;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
@@ -47,7 +45,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Checks basic node start/stop operations.
  */
-@SuppressWarnings({"CatchGenericClass", "InstanceofCatchParameter"})
+@SuppressWarnings({"InstanceofCatchParameter"})
 @GridCommonTest(group = "Kernal Self")
 public class GridStartStopSelfTest extends GridCommonAbstractTest {
     /** */
@@ -60,6 +58,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testStartStop() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -81,6 +80,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopWhileInUse() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -148,6 +148,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoppedState() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 

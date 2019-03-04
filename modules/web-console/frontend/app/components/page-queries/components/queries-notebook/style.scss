@@ -15,12 +15,27 @@
  * limitations under the License.
  */
 
+@import "../../../../../public/stylesheets/variables.scss";
+
 queries-notebook {
     // TODO: Delete this breadcrumbs styles after template refactoring to new design.
     .notebooks-top {
-        margin-bottom: 20px;
         display: flex;
         align-items: center;
+        margin: 40px 0 30px;
+        flex-direction: row;
+
+        h1 {
+            margin: 0 !important;
+            display: flex;
+            align-items: center;
+            align-content: center;
+
+            label {
+                font-size: 24px;
+                margin-right: 10px;
+            }
+        }
 
         breadcrumbs {
             padding-left: 0;
@@ -34,24 +49,6 @@ queries-notebook {
             margin-left: 30px;
             display: inline-flex;
         }
-    }
-
-    .docs-content > header {
-        margin: 0;
-        margin-bottom: 30px;
-
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-
-        h1 {
-            margin: 0;
-            margin-right: 8px;
-        }
-    }
-
-    .affix + .block-information {
-        margin-top: 90px;
     }
 
     .block-information {
@@ -109,7 +106,92 @@ queries-notebook {
         }
     }
 
+    .empty-caches {
+        display: flex;
+        padding: 10px;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .notebook-top-buttons {
+        display: flex;
+        align-items: center;
+        margin-left: auto;
+
+        button:first-of-type {
+            margin-right: 20px;
+        }
+
+        a {
+            color: rgb(57, 57, 57);
+        }
+    }
+
     .btn.btn-default.select-toggle.tipLabel {
         padding-right: 25px;
+    }
+
+    .form-field__sensitive {
+        input[type='checkbox'] {
+            display: none;
+        }
+
+        input:checked + span {
+            color: #0067b9;
+        }
+    }
+
+    .queries-notebook-displayed-caches {
+        max-height: 210px;
+        padding: 0 5px;
+        margin-top: 10px;
+        margin-left: -5px;
+        margin-right: -5px;
+
+        overflow-y: auto;
+    }
+
+    .notebook-failed--block {
+        text-align: center;
+        display: flex;
+        min-height: 200px;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 30px;
+        background: white;
+        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+    }
+}
+
+.popover.settings.refresh-rate {
+    width: 244px;
+
+    [ignite-icon] {
+        height: 12px;
+    }
+
+    .popover-title {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .actions {
+        width: 100%;
+        text-align: right;
+
+        button {
+            margin-top: 20px;
+            margin-right: 0;
+        }
+    }
+
+    .ignite-form-field {
+        display: flex;
+        padding: 5px;
+
+        input {
+            margin-right: 10px;
+        }
     }
 }

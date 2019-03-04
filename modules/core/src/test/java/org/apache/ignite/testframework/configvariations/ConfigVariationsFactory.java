@@ -20,6 +20,7 @@ package org.apache.ignite.testframework.configvariations;
 import java.util.Arrays;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -61,9 +62,10 @@ public class ConfigVariationsFactory implements ConfigFactory {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteConfiguration getConfiguration(String igniteInstanceName, IgniteConfiguration srcCfg) {
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setFailureHandler(new NoOpFailureHandler());
 
         if (srcCfg != null)
             copyDefaultsFromSource(cfg, srcCfg);

@@ -50,7 +50,6 @@ class ClientBinary implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T toBinary(Object obj) {
         if (obj == null)
             return null;
@@ -65,7 +64,7 @@ class ClientBinary implements IgniteBinary {
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String typeName) {
-        if (typeName == null || typeName.length() == 0)
+        if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
         return new BinaryObjectBuilderImpl(marsh.context(), typeName);
@@ -89,7 +88,7 @@ class ClientBinary implements IgniteBinary {
 
     /** {@inheritDoc} */
     @Override public BinaryType type(String typeName) {
-        if (typeName == null || typeName.length() == 0)
+        if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
         int typeId = marsh.context().typeId(typeName);
@@ -109,7 +108,7 @@ class ClientBinary implements IgniteBinary {
 
     /** {@inheritDoc} */
     @Override public BinaryObject buildEnum(String typeName, int ord) {
-        if (typeName == null || typeName.length() == 0)
+        if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
         BinaryContext ctx = marsh.context();
@@ -121,10 +120,10 @@ class ClientBinary implements IgniteBinary {
 
     /** {@inheritDoc} */
     @Override public BinaryObject buildEnum(String typeName, String name) {
-        if (typeName == null || typeName.length() == 0)
+        if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
-        if (name == null || name.length() == 0)
+        if (name == null || name.isEmpty())
             throw new IllegalArgumentException("name");
 
         BinaryContext ctx = marsh.context();
@@ -153,14 +152,14 @@ class ClientBinary implements IgniteBinary {
 
     /** {@inheritDoc} */
     @Override public BinaryType registerEnum(String typeName, Map<String, Integer> vals) {
-        if (typeName == null || typeName.length() == 0)
+        if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
         BinaryContext ctx = marsh.context();
 
         int typeId = ctx.typeId(typeName);
 
-        ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, null, null, null, true, vals));
+        ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, null, null, null, true, vals), false);
 
         return ctx.metadata(typeId);
     }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,7 +45,7 @@ public abstract class AbstractFileIO implements FileIO {
      *
      * @param num Number of bytes to operate.
      */
-    private int fully(IOOperation operation, int num, boolean write) throws IOException {
+    private int fully(IOOperation operation, long position, int num, boolean write) throws IOException {
         if (num > 0) {
             long time = 0;
 
@@ -57,15 +56,18 @@ public abstract class AbstractFileIO implements FileIO {
                     i += n;
                     time = 0;
                 }
-                else if (n == 0) {
+                else if (n == 0 || i > 0) {
+                    if (!write && available(num - i, position + i) == 0)
+                        return i;
+
                     if (time == 0)
                         time = U.currentTimeMillis();
                     else if ((U.currentTimeMillis() - time) >= MAX_IO_TIMEOUT_MS)
-                        throw new IOException(write && position() == size() ? "Failed to extend file." :
+                        throw new IOException(write && (position + i) == size() ? "Failed to extend file." :
                             "Probably disk is too busy, please check your device.");
                 }
                 else
-                    throw new EOFException("EOF at position [" + position() + "] expected to read [" + num + "] bytes.");
+                    return -1;
             }
         }
 
@@ -78,7 +80,7 @@ public abstract class AbstractFileIO implements FileIO {
             @Override public int run(int offs) throws IOException {
                 return read(destBuf);
             }
-        }, available(destBuf.remaining()), false);
+        }, position(), destBuf.remaining(), false);
     }
 
     /** {@inheritDoc} */
@@ -87,7 +89,7 @@ public abstract class AbstractFileIO implements FileIO {
             @Override public int run(int offs) throws IOException {
                 return read(destBuf, position + offs);
             }
-        }, available(destBuf.remaining(), position), false);
+        }, position, destBuf.remaining(), false);
     }
 
     /** {@inheritDoc} */
@@ -96,7 +98,7 @@ public abstract class AbstractFileIO implements FileIO {
             @Override public int run(int offs) throws IOException {
                 return read(buf, off + offs, len - offs);
             }
-        }, len, false);
+        }, position(), len, false);
     }
 
     /** {@inheritDoc} */
@@ -105,7 +107,7 @@ public abstract class AbstractFileIO implements FileIO {
             @Override public int run(int offs) throws IOException {
                 return write(srcBuf);
             }
-        }, srcBuf.remaining(), true);
+        }, position(), srcBuf.remaining(), true);
     }
 
     /** {@inheritDoc} */
@@ -114,7 +116,7 @@ public abstract class AbstractFileIO implements FileIO {
             @Override public int run(int offs) throws IOException {
                 return write(srcBuf, position + offs);
             }
-        }, srcBuf.remaining(), true);
+        }, position, srcBuf.remaining(), true);
     }
 
     /** {@inheritDoc} */
@@ -123,19 +125,14 @@ public abstract class AbstractFileIO implements FileIO {
             @Override public int run(int offs) throws IOException {
                 return write(buf, off + offs, len - offs);
             }
-        }, len, true);
-    }
-
-    /**
-     * @param requested Requested.
-     */
-    private int available(int requested) throws IOException {
-        return available(requested, position());
+        }, position(), len, true);
     }
 
     /**
      * @param requested Requested.
      * @param position Position.
+     *
+     * @return Bytes available.
      */
     private int available(int requested, long position) throws IOException {
         long avail = size() - position;

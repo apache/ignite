@@ -33,7 +33,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.InvalidIsolationLevelException;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -344,26 +343,26 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
 
     /** {@inheritDoc} */
     @Override public void onApplicationEvent(ContextRefreshedEvent event) {
-        assert ignite == null;
-
-        if (cfgPath != null && cfg != null) {
-            throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
+        if (ignite == null) {
+            if (cfgPath != null && cfg != null) {
+                throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
                     "provided. Set only one of these properties if you need to start a Ignite node inside of " +
                     "SpringCacheManager. If you already have a node running, omit both of them and set" +
                     "'igniteInstanceName' property.");
-        }
-
-        try {
-            if (cfgPath != null) {
-                ignite = IgniteSpring.start(cfgPath, springCtx);
             }
-            else if (cfg != null)
-                ignite = IgniteSpring.start(cfg, springCtx);
-            else
-                ignite = Ignition.ignite(igniteInstanceName);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+
+            try {
+                if (cfgPath != null) {
+                    ignite = IgniteSpring.start(cfgPath, springCtx);
+                }
+                else if (cfg != null)
+                    ignite = IgniteSpring.start(cfg, springCtx);
+                else
+                    ignite = Ignition.ignite(igniteInstanceName);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         if (transactionConcurrency == null)

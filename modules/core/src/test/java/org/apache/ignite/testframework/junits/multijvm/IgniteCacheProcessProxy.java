@@ -591,7 +591,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
         if (Ignite.class.equals(clazz))
             return (T)igniteProxy;
@@ -679,6 +678,26 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(boolean enabled) {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearStatistics() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int partId) {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> preloadPartitionAsync(int partId) {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int partition) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
@@ -1731,7 +1750,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /**
      *
      */
-    private static abstract class CacheTaskAdapter<K, V, R> implements IgniteCallable<R> {
+    private abstract static class CacheTaskAdapter<K, V, R> implements IgniteCallable<R> {
         /** Ignite. */
         @IgniteInstanceResource
         protected Ignite ignite;

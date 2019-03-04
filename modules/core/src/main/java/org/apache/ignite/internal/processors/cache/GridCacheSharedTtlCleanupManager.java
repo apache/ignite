@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
@@ -130,10 +131,23 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
             Throwable err = null;
 
             try {
+                blockingSectionBegin();
+
+                try {
+                    cctx.discovery().localJoin();
+                }
+                finally {
+                    blockingSectionEnd();
+                }
+
+                assert !cctx.kernalContext().recoveryMode();
+
                 while (!isCancelled()) {
                     boolean expiredRemains = false;
 
                     for (GridCacheTtlManager mgr : mgrs) {
+                        updateHeartbeat();
+
                         if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
                             expiredRemains = true;
 
@@ -141,12 +155,16 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                             return;
                     }
 
+                    updateHeartbeat();
+
                     if (!expiredRemains)
                         U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
+
+                    onIdle();
                 }
             }
             catch (Throwable t) {
-                if (!(t instanceof IgniteInterruptedCheckedException))
+                if (!(X.hasCause(t, IgniteInterruptedCheckedException.class, InterruptedException.class)))
                     err = t;
 
                 throw t;

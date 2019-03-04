@@ -50,8 +50,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalState;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
@@ -145,6 +144,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
+            MvccUtils.verifyMvccOperationSupport(delegate.context(), "withExpiryPolicy");
+
             return new GatewayProtectedCacheProxy<>(delegate, opCtx.withExpiryPolicy(plc), lock);
         }
         finally {
@@ -1479,6 +1480,54 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void clearStatistics() {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            delegate.clearStatistics();
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int part) {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            delegate.preloadPartition(part);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> preloadPartitionAsync(int part) {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return delegate.preloadPartitionAsync(part);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int part) {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return delegate.localPreloadPartition(part);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
     /**
      * Safely get CacheGateway.
      *
@@ -1514,12 +1563,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             try {
                 IgniteInternalCache<K, V> cache = context().kernalContext().cache().<K, V>publicJCache(context().name()).internalProxy();
 
-                GridFutureAdapter<Void> fut = proxyImpl.opportunisticRestart();
-
-                if (fut == null)
-                    proxyImpl.onRestarted(cache.context(), cache.context().cache());
-                else
-                    new IgniteFutureImpl<>(fut).get();
+                proxyImpl.opportunisticRestart(cache);
 
                 return gate();
             } catch (IgniteCheckedException ice) {
@@ -1536,8 +1580,18 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     private CacheOperationGate onEnter() {
         GridCacheGateway<K, V> gate = checkProxyIsValid(gate(), true);
 
-        return new CacheOperationGate(gate,
-            lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx));
+        try {
+            return new CacheOperationGate(gate,
+                lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx));
+        }
+        catch (IllegalStateException e) {
+            boolean isCacheProxy = delegate instanceof IgniteCacheProxyImpl;
+
+            if (isCacheProxy)
+                ((IgniteCacheProxyImpl) delegate).checkRestart(true);
+
+            throw e; // If we reached this line.
+        }
     }
 
     /**

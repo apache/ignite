@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.nio.file.Files.readAllBytes;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
@@ -71,6 +72,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClassName() throws Exception {
         MarshallerContextImpl marshCtx = new MarshallerContextImpl(null, null);
 
@@ -96,6 +98,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiplatformMappingsCollecting() throws Exception {
         String nonJavaClassName = "random.platform.Mapping";
 
@@ -132,6 +135,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiplatformMappingsDistributing() throws Exception {
         String nonJavaClassName = "random.platform.Mapping";
 
@@ -155,6 +159,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnUpdated() throws Exception {
         File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
         MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
@@ -187,6 +192,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      * Tests that there is a null value inserted in allCaches list
      * if platform ids passed to marshaller cache were not sequential (like 0, 2).
      */
+    @Test
     public void testCacheStructure0() throws Exception {
         MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
 
@@ -220,6 +226,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      * Tests that there are no null values in allCaches list
      * if platform ids passed to marshaller context were sequential.
      */
+    @Test
     public void testCacheStructure1() throws Exception {
         MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
 

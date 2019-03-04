@@ -28,7 +28,6 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Blas;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.ColumnIndexException;
 import org.apache.ignite.ml.math.exceptions.RowIndexException;
@@ -38,6 +37,7 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.VectorizedViewMatrix;
 import org.apache.ignite.ml.math.util.MatrixUtil;
@@ -917,5 +917,35 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "Matrix [rows=" + rowSize() + ", cols=" + columnSize() + "]";
+    }
+
+    /** {@inheritDoc} */
+    @Override public double determinant() {
+        //TODO: IGNITE-11192, use nd4j
+        try (LUDecomposition dec = new LUDecomposition(this)) {
+            return dec.determinant();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix inverse() {
+        if (rowSize() != columnSize())
+            throw new CardinalityException(rowSize(), columnSize());
+
+        //TODO: IGNITE-11192, use nd4j
+        try (LUDecomposition dec = new LUDecomposition(this)) {
+            return dec.solve(likeIdentity());
+        }
+    }
+
+    /** */
+    protected Matrix likeIdentity() {
+        int n = rowSize();
+        Matrix res = like(n, n);
+
+        for (int i = 0; i < n; i++)
+            res.setX(i, i, 1.0);
+
+        return res;
     }
 }

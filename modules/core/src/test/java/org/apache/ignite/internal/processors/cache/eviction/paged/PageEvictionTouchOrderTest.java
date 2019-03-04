@@ -23,6 +23,8 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  *
@@ -45,6 +47,7 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTouchOrderWithFairFifoEvictionAtomicReplicated() throws Exception {
         testTouchOrderWithFairFifoEviction(CacheAtomicityMode.ATOMIC, CacheMode.REPLICATED);
     }
@@ -52,6 +55,7 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTouchOrderWithFairFifoEvictionAtomicLocal() throws Exception {
         testTouchOrderWithFairFifoEviction(CacheAtomicityMode.ATOMIC, CacheMode.LOCAL);
     }
@@ -59,6 +63,7 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTouchOrderWithFairFifoEvictionTxReplicated() throws Exception {
         testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL, CacheMode.REPLICATED);
     }
@@ -66,8 +71,36 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTouchOrderWithFairFifoEvictionTxLocal() throws Exception {
         testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL, CacheMode.LOCAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738,https://issues.apache.org/jira/browse/IGNITE-7956")
+    @Test
+    public void testTouchOrderWithFairFifoEvictionMvccTxReplicated() throws Exception {
+        testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738,https://issues.apache.org/jira/browse/IGNITE-7956")
+    @Test
+    public void testTouchOrderWithFairFifoEvictionMvccTxPartitioned() throws Exception {
+        testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.PARTITIONED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7956,https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
+    public void testTouchOrderWithFairFifoEvictionMvccTxLocal() throws Exception {
+        testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.LOCAL);
     }
 
     /**

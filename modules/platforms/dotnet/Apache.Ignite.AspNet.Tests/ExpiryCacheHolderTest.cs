@@ -416,7 +416,32 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public void LocalPromote(IEnumerable<int> keys)
+            public long GetSizeLong(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetSizeLong(int partition, params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<long> GetSizeLongAsync(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetLocalSizeLong(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetLocalSizeLong(int partition, params CachePeekMode[] modes)
             {
                 throw new NotImplementedException();
             }
@@ -527,6 +552,21 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public void ResetQueryMetrics()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void PreloadPartition(int partition)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task PreloadPartitionAsync(int partition)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool LocalPreloadPartition(int partition)
             {
                 throw new NotImplementedException();
             }

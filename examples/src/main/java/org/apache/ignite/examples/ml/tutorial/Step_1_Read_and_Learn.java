@@ -17,66 +17,78 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.thread.IgniteThread;
+
+import java.io.FileNotFoundException;
 
 /**
- * Usage of DecisionTreeClassificationTrainer to predict death in the disaster.
- *
- * Extract 3 features "pclass", "sibsp", "parch" to use in prediction.
+ * Usage of {@link DecisionTreeClassificationTrainer} to predict death in the disaster.
+ * <p>
+ * Extract 3 features "pclass", "sibsp", "parch" to use in prediction.</p>
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * <p>
+ * After that it trains the model based on the specified data using decision tree classification.</p>
+ * <p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_1_Read_and_Learn {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
+        System.out.println();
+        System.out.println(">>> Tutorial step 1 (read and learn) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_1_Read_and_Learn.class.getSimpleName(), () -> {
-                try {
+            try {
+                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-                    IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+                IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
+                    double[] data = new double[]{(double) v[0], (double) v[5], (double) v[6]};
+                    data[0] = Double.isNaN(data[0]) ? 0 : data[0];
+                    data[1] = Double.isNaN(data[1]) ? 0 : data[1];
+                    data[2] = Double.isNaN(data[2]) ? 0 : data[2];
 
-                    IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> VectorUtils.of((double) v[0], (double) v[5], (double) v[6]);
+                    return VectorUtils.of(data);
+                };
 
-                    IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
-                    DecisionTreeNode mdl = trainer.fit(
-                        ignite,
-                        dataCache,
-                        featureExtractor, // "pclass", "sibsp", "parch"
-                        lbExtractor
-                    );
+                DecisionTreeNode mdl = trainer.fit(
+                    ignite,
+                    dataCache,
+                    featureExtractor, // "pclass", "sibsp", "parch"
+                    lbExtractor
+                );
 
-                    double accuracy = Evaluator.evaluate(
-                        dataCache,
-                        mdl,
-                        featureExtractor,
-                        lbExtractor,
-                        new Accuracy<>()
-                    );
+                System.out.println("\n>>> Trained model: " + mdl);
 
-                    System.out.println("\n>>> Accuracy " + accuracy);
-                    System.out.println("\n>>> Test Error " + (1 - accuracy));
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    featureExtractor,
+                    lbExtractor,
+                    new Accuracy<>()
+                );
 
-                }
-                catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-            });
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-            igniteThread.start();
-            igniteThread.join();
+                System.out.println(">>> Tutorial step 1 (read and learn) example completed.");
+            }
+            catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

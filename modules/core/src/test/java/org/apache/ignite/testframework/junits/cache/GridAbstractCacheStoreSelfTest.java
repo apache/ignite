@@ -45,6 +45,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Abstract cache store test.
@@ -72,6 +73,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStore() throws Exception {
         // Create dummy transaction
         Transaction tx = new DummyTx();
@@ -105,6 +107,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     /**
      * @throws IgniteCheckedException if failed.
      */
+    @Test
     public void testRollback() throws IgniteCheckedException {
         Transaction tx = new DummyTx();
 
@@ -190,6 +193,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     /**
      * @throws IgniteCheckedException if failed.
      */
+    @Test
     public void testAllOpsWithTXNoCommit() throws IgniteCheckedException {
         doTestAllOps(new DummyTx(), false);
     }
@@ -197,6 +201,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     /**
      * @throws IgniteCheckedException if failed.
      */
+    @Test
     public void testAllOpsWithTXCommit() throws IgniteCheckedException {
         doTestAllOps(new DummyTx(), true);
     }
@@ -204,6 +209,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     /**
      * @throws IgniteCheckedException if failed.
      */
+    @Test
     public void testAllOpsWithoutTX() throws IgniteCheckedException {
         doTestAllOps(null, false);
     }
@@ -306,6 +312,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleMultithreading() throws Exception {
         final Random rnd = new Random();
 

@@ -56,7 +56,6 @@ $btn-content-padding-with-border: 9px 11px;
     border-radius: $ignite-button-border-radius;
     text-align: center;
     outline: none;
-    font-family: Roboto, sans-serif;
     font-size: 14px;
     line-height: 16px;
     text-decoration: none;
@@ -89,6 +88,11 @@ $btn-content-padding-with-border: 9px 11px;
     &[disabled] {
         -webkit-pointer-events: none;
         pointer-events: none;
+    }
+
+    [ignite-icon='plus'] {
+        height: 12px;
+        width: 12px;
     }
 }
 
@@ -266,7 +270,7 @@ $btn-content-padding-with-border: 9px 11px;
 .btn-ignite--secondary {
     background-color: white;
     color: #424242;
-    border: 1px solid #dedede;
+    border: 1px solid #c5c5c5;
     padding: $btn-content-padding-with-border;
 
     &:hover, &.hover,
@@ -314,10 +318,22 @@ $btn-content-padding-with-border: 9px 11px;
         $line-color: $ignite-brand-success;
         border-right-color: change-color($line-color, $saturation: 63%, $lightness: 33%);
     }
+    .btn-ignite.btn-ignite--secondary + .btn-ignite.btn-ignite--secondary {
+        border-left: 0;
+    }
+
+    &[disabled] .btn-ignite.btn-ignite--primary {
+        border-right-color: change-color($ignite-brand-primary, $lightness: 83%);
+    }
+
+    &[disabled] .btn-ignite.btn-ignite--success {
+        border-right-color: change-color($ignite-brand-success, $lightness: 83%);
+    }
 }
 
 @mixin ignite-link($color, $color-hover) {
     color: $color;
+    text-decoration: none;
 
     &:hover, &.hover,
     &:focus, &.focus {

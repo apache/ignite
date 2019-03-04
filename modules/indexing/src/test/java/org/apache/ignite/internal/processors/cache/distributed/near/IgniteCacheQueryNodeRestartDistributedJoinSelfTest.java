@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.X;
@@ -31,6 +33,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Test for distributed queries with node restarts.
@@ -41,6 +45,8 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT, Long.toString(1000_000L));
+
         super.beforeTestsStarted();
 
         if (totalNodes > GRID_CNT) {
@@ -51,9 +57,16 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
             totalNodes = GRID_CNT;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT,
+            Long.toString(GridReduceQueryExecutor.DFLT_RETRY_TIMEOUT));
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestarts() throws Exception {
         restarts(false);
     }
@@ -61,6 +74,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartsBroadcast() throws Exception {
         restarts(true);
     }
@@ -91,11 +105,11 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
 
         assertEquals(broadcastQry, plan.contains("batched:broadcast"));
 
-        final List<List<?>> pRes = grid(0).cache("pu").query(qry0).getAll();
+        final List<List<?>> goldenRes = grid(0).cache("pu").query(qry0).getAll();
 
         Thread.sleep(3000);
 
-        assertEquals(pRes, grid(0).cache("pu").query(qry0).getAll());
+        assertEquals(goldenRes, grid(0).cache("pu").query(qry0).getAll());
 
         final SqlFieldsQuery qry1;
 
@@ -112,7 +126,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
 
         final List<List<?>> rRes = grid(0).cache("co").query(qry1).getAll();
 
-        assertFalse(pRes.isEmpty());
+        assertFalse(goldenRes.isEmpty());
         assertFalse(rRes.isEmpty());
 
         final AtomicInteger qryCnt = new AtomicInteger();
@@ -151,9 +165,12 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
                             qry.setPageSize(smallPageSize ? 30 : 1000);
 
                             try {
-                                assertEquals(pRes, cache.query(qry).getAll());
+                                assertEquals(goldenRes, cache.query(qry).getAll());
                             }
                             catch (CacheException e) {
+                                if (!smallPageSize)
+                                    log.error("Unexpected exception at the test", e);
+
                                 assertTrue("On large page size must retry.", smallPageSize);
 
                                 boolean failedOnRemoteFetch = false;
@@ -253,7 +270,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
             }
         }, restartThreadsNum, "restart-thread");
 
-        Thread.sleep(duration);
+        GridTestUtils.waitForCondition(() -> fail.get(), duration);
 
         info("Stopping...");
 

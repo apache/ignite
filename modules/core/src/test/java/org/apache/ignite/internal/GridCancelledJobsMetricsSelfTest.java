@@ -47,6 +47,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Cancelled jobs metrics self test.
@@ -80,6 +81,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelledJobs() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

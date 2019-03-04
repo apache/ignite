@@ -131,7 +131,8 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
             readyTopVers.isEmpty() &&
             pendingExchanges.isEmpty() &&
             persistenceMetrics.isEmpty() &&
-            persistenceMetricsEx.isEmpty();
+            persistenceMetricsEx.isEmpty() &&
+            rebalance.isEmpty();
     }
 
     /**

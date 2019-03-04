@@ -31,10 +31,8 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,9 +43,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
  *
  */
 public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of grids to start. */
     private static final int GRID_CNT = 3;
 
@@ -61,12 +56,6 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         if (!client) {
             CacheConfiguration cc = defaultCacheConfiguration();
@@ -112,6 +101,7 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPutAll() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 

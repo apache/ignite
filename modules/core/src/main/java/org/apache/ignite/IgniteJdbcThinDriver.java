@@ -125,7 +125,6 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
  * }
  * </pre>
  */
-@SuppressWarnings("JavadocReference")
 public class IgniteJdbcThinDriver implements Driver {
     /** Driver instance. */
     private static final Driver INSTANCE = new IgniteJdbcThinDriver();

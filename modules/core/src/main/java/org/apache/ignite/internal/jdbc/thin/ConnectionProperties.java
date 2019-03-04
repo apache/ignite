@@ -164,6 +164,16 @@ public interface ConnectionProperties {
     public void setSkipReducerOnUpdate(boolean skipReducerOnUpdate);
 
     /**
+     * @return Nested transactions handling strategy.
+     */
+    public String nestedTxMode();
+
+    /**
+     * @param nestedTxMode Nested transactions handling strategy.
+     */
+    public void nestedTxMode(String nestedTxMode);
+
+    /**
      * Gets SSL connection mode.
      *
      * @return Use SSL flag.

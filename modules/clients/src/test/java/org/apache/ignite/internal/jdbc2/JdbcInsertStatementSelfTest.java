@@ -26,9 +26,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Statement test.
@@ -136,6 +136,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecuteUpdate() throws SQLException {
         int res = stmt.executeUpdate(SQL);
 
@@ -145,6 +146,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecute() throws SQLException {
         boolean res = stmt.execute(SQL);
 
@@ -154,6 +156,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     /**
      *
      */
+    @Test
     public void testDuplicateKeys() {
         jcache(0).put("p2", new Person(2, "Joe", "Black", 35));
 
@@ -177,6 +180,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testBatch() throws SQLException {
         formBatch(1, 2);
         formBatch(3, 4);
@@ -189,6 +193,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testSingleItemBatch() throws SQLException {
         formBatch(1, 2);
 
@@ -200,6 +205,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testSingleItemBatchError() throws SQLException {
         formBatch(1, 2);
 
@@ -223,6 +229,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testErrorAmidstBatch() throws SQLException {
         formBatch(1, 2);
         formBatch(3, 1); // Duplicate key
@@ -248,6 +255,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearBatch() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws SQLException {

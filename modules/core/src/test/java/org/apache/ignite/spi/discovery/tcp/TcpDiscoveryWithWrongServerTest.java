@@ -36,16 +36,17 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Client-based discovery SPI test with non-Ignite servers.
  */
 public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
     /** Non-Ignite Server port #1. */
-    private final static int SERVER_PORT = 47500;
+    private static final int SERVER_PORT = 47500;
 
     /** Non-Ignite Server port #2. */
-    private final static int LAST_SERVER_PORT = SERVER_PORT + 5;
+    private static final int LAST_SERVER_PORT = SERVER_PORT + 5;
 
     /** Non-Ignite Server sockets. */
     private List<ServerSocket> srvSocks = new ArrayList<>();
@@ -123,6 +124,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testWrongHandshakeResponse() throws Exception {
         startTcpThread(new SomeResponseWorker(), SERVER_PORT);
         startTcpThread(new SomeResponseWorker(), LAST_SERVER_PORT);
@@ -135,6 +137,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testNoHandshakeResponse() throws Exception {
         startTcpThread(new NoResponseWorker(), SERVER_PORT);
         startTcpThread(new NoResponseWorker(), LAST_SERVER_PORT);
@@ -147,6 +150,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testDisconnectOnRequest() throws Exception {
         startTcpThread(new DisconnectOnRequestWorker(), SERVER_PORT);
         startTcpThread(new DisconnectOnRequestWorker(), LAST_SERVER_PORT);
@@ -159,6 +163,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testEarlyDisconnect() throws Exception {
         startTcpThread(new EarlyDisconnectWorker(), SERVER_PORT);
         startTcpThread(new EarlyDisconnectWorker(), LAST_SERVER_PORT);

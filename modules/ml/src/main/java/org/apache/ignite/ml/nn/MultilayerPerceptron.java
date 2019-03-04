@@ -23,13 +23,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.architecture.TransformationLayerArchitecture;
@@ -42,7 +43,7 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 /**
  * Class encapsulating logic of multilayer perceptron.
  */
-public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron>,
+public class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron>,
     Serializable {
     /**
      * This MLP architecture.
@@ -175,7 +176,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @param val Matrix containing objects.
      * @return Matrix with predicted vectors.
      */
-    @Override public Matrix apply(Matrix val) {
+    @Override public Matrix predict(Matrix val) {
         MLPState state = new MLPState(null);
         forwardPass(val.transpose(), state, false);
         return state.activatorsOutput.get(state.activatorsOutput.size() - 1).transpose();
@@ -348,7 +349,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      */
     public MLPArchitecture architecture() {
         if (below != null)
-            return below.architecture().add(architecture());
+            return below.architecture().add(architecture);
         return architecture;
     }
 
@@ -559,5 +560,29 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         diff.map(nonlinearity::differential);
 
         return diff;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        StringBuilder builder = new StringBuilder("MultilayerPerceptron [\n");
+        if(below != null)
+            builder.append("below = \n").append(below.toString(pretty)).append("\n\n");
+        builder.append("layers = [").append(pretty ? "\n" : "");
+        for(int i = 0; i < layers.size(); i++) {
+            MLPLayer layer = layers.get(i);
+            builder.append("\tlayer").append(i).append(" = [\n");
+            if(layer.biases != null)
+                builder.append("\t\tbias = ").append(Tracer.asAscii(layer.biases, "%.4f", false)).append("\n");
+            String matrix = Tracer.asAscii(layer.weights, "%.4f").replaceAll("\n", "\n\t\t\t");
+            builder.append("\t\tweights = [\n\t\t\t").append(matrix).append("\n\t\t]");
+            builder.append("\n\t]\n");
+        }
+        builder.append("]");
+        return builder.toString();
     }
 }

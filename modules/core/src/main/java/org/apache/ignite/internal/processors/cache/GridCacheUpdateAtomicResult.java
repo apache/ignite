@@ -57,6 +57,9 @@ public class GridCacheUpdateAtomicResult {
     /** */
     private final long updateCntr;
 
+    /** Flag indicating whether value is transformed. */
+    private boolean transformed;
+
     /** Value computed by entry processor. */
     private IgniteBiTuple<Object, Exception> res;
 
@@ -72,6 +75,7 @@ public class GridCacheUpdateAtomicResult {
      * @param rmvVer Version for deferred delete.
      * @param conflictRes DR resolution result.
      * @param updateCntr Partition update counter.
+     * @param transformed {@code True} if result was transformed.
      */
     GridCacheUpdateAtomicResult(UpdateOutcome outcome,
         @Nullable CacheObject oldVal,
@@ -81,7 +85,8 @@ public class GridCacheUpdateAtomicResult {
         long conflictExpireTime,
         @Nullable GridCacheVersion rmvVer,
         @Nullable GridCacheVersionConflictContext<?, ?> conflictRes,
-        long updateCntr) {
+        long updateCntr,
+        boolean transformed) {
         assert outcome != null;
 
         this.outcome = outcome;
@@ -93,6 +98,7 @@ public class GridCacheUpdateAtomicResult {
         this.rmvVer = rmvVer;
         this.conflictRes = conflictRes;
         this.updateCntr = updateCntr;
+        this.transformed = transformed;
     }
 
     /**
@@ -238,6 +244,13 @@ public class GridCacheUpdateAtomicResult {
         public boolean updateReadMetrics() {
             return updateReadMetrics;
         }
+    }
+
+    /**
+     * @return {@code True} if transformed.
+     */
+    public boolean transformed() {
+        return transformed;
     }
 
     /** {@inheritDoc} */

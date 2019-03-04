@@ -115,6 +115,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// Gets or sets a value indicating whether this query contains only replicated tables.
         /// This is a hint for potentially more effective execution.
         /// </summary>
+        [Obsolete("No longer used as of Apache Ignite 2.8.")]
         public bool ReplicatedOnly { get; set; }
 
         /// <summary>
@@ -161,7 +162,9 @@ namespace Apache.Ignite.Core.Cache.Query
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
                                  "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, ReplicatedOnly={7}" +
                                  ", Colocated={8}, Schema={9}, Lazy={10}]", Sql, args, Local,
+#pragma warning disable 618
                                  PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
+#pragma warning restore 618
                                  Colocated, Schema, Lazy);
         }
     }

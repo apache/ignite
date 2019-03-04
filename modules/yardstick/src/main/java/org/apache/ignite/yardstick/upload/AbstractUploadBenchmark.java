@@ -29,9 +29,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
 /**
- * Base class for upload benchmarks.
- * Designed to run test method one single time.
- * Introduces custom warmup operation.
+ * Base class for upload benchmarks. Designed to run test method one single time. Introduces custom warmup operation.
  */
 public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     /** Total inserts size. */
@@ -41,7 +39,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     long warmupRowsCnt;
 
     /** Factory that hides all the test data details. */
-    protected QueryFactory queries = new QueryFactory();
+    protected QueryFactory queries;
 
     /** {@inheritDoc} */
     @Override public final void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -84,22 +82,23 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     }
 
     /**
-     * Method to warm up Benchmark server. <br/>
-     * In upload benchmarks we need warmup action
-     * and real test action to be separated.
+     * Method to warm up Benchmark server. <br/> In upload benchmarks we need warmup action and real test action to be
+     * separated.
      */
     protected abstract void warmup(Connection warmupConn) throws Exception;
 
     /**
      * Creates empty table.
      */
-    @Override protected void setupData() throws Exception{
+    @Override protected void setupData() throws Exception {
+        queries = new QueryFactory(args.atomicMode());
+
         dropAndCreate();
     }
 
     /**
-     * Uploads data using this special connection, that may have additional
-     * url parameters, such as {@code streaming=true}.
+     * Uploads data using this special connection, that may have additional url parameters, such as {@code
+     * streaming=true}.
      */
     protected abstract void upload(Connection uploadConn) throws Exception;
 
@@ -107,7 +106,6 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     @Override public final boolean test(Map<Object, Object> ctx) throws Exception {
         if (args.upload.disableWal())
             executeUpdate(QueryFactory.TURN_OFF_WAL);
-
 
         try (Connection uploadConn = uploadConnection()) {
             if (args.upload.useStreaming())
@@ -118,7 +116,6 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
             if (args.upload.useStreaming())
                 executeUpdateOn(uploadConn, QueryFactory.TURN_OFF_STREAMING);
         }
-
 
         if (args.upload.disableWal())
             executeUpdate(QueryFactory.TURN_ON_WAL);
@@ -131,14 +128,24 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
      */
     private void dropAndCreate() throws SQLException {
         executeUpdate(QueryFactory.DROP_TABLE_IF_EXISTS);
+
+        BenchmarkUtils.println(cfg, "Creating table with schema: " + queries.createTable());
+
         executeUpdate(queries.createTable());
+
+        int idxCnt = args.upload.indexesCount();
+
+        BenchmarkUtils.println("Creating " + idxCnt + " indexes.");
+
+        for (int i = 1; i <= idxCnt; i++)
+            executeUpdate(queries.createIndex(i));
     }
 
     /**
      * Retrieves records count in the test table.
      */
     public long count() throws SQLException {
-        try(PreparedStatement cnt = conn.get().prepareStatement(QueryFactory.COUNT)){
+        try (PreparedStatement cnt = conn.get().prepareStatement(QueryFactory.COUNT)) {
             try (ResultSet rs = cnt.executeQuery()) {
                 rs.next();
 
@@ -182,14 +189,14 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
      * Facility method to perform updates on any connection.
      */
     private static int executeUpdateOn(Connection c, String updQry) throws SQLException {
-        try(PreparedStatement update = c.prepareStatement(updQry)){
+        try (PreparedStatement update = c.prepareStatement(updQry)) {
             return update.executeUpdate();
         }
     }
 
     /**
-     *  Creates new connection only for upload purpose.
-     *  This connection is special, since it may have additional jdbc url parameters.
+     * Creates new connection only for upload purpose. This connection is special, since it may have additional jdbc url
+     * parameters.
      */
     private Connection uploadConnection() throws SQLException {
         String urlParams = "";

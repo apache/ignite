@@ -36,6 +36,7 @@ import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests exceptions that are thrown by event storage and deployment spi.
@@ -66,6 +67,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSpiFail() throws Exception {
         Ignite ignite = startGrid();
 

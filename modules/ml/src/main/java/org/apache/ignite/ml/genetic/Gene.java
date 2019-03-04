@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.genetic;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**

@@ -45,7 +45,7 @@ span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
         aria-expanded='false'
     )
         span(ng-if='!$ctrl.cluster') No clusters available
-        
+
         span(ng-if='$ctrl.cluster')
             cluster-security-icon(secured='$ctrl.cluster.secured')
             | {{ $ctrl.cluster.name }}
@@ -63,15 +63,15 @@ svg(
     ignite-icon='info'
     bs-tooltip=''
     data-title='Multi-Cluster Support<br/>\
-            <a href="https://apacheignite-tools.readme.io/docs/multi-cluster-support" target="_blank">More info</a>'
+        <a href="https://apacheignite-tools.readme.io/docs/multi-cluster-support" target="_blank">More info</a>'
     data-placement='bottom'
 )
 
-.cluster-selector--state(ng-if='!$ctrl.isDemo && $ctrl.cluster')
+.cluster-selector--state(ng-if='$ctrl.isChangeStateAvailable()')
     | Cluster {{ $ctrl.cluster.active ? 'active' : 'inactive' }}
 
 +switcher()(
-    ng-if='!$ctrl.isDemo && $ctrl.cluster'
+    ng-if='$ctrl.isChangeStateAvailable()'
     ng-click='$ctrl.toggle($event)'
     ng-checked='$ctrl.cluster.active'
     ng-disabled='$ctrl.inProgress'
@@ -80,5 +80,5 @@ svg(
     is-in-progress='{{ $ctrl.inProgress }}'
 )
 
-div(ng-if='$ctrl.inProgress')
+div(ng-if='$ctrl.inProgress && $ctrl.isChangeStateAvailable()')
     | {{ !$ctrl.cluster.active ? 'Activating...' : 'Deactivating...' }}

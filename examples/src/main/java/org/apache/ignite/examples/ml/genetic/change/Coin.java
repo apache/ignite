@@ -20,62 +20,69 @@ package org.apache.ignite.examples.ml.genetic.change;
 import java.io.Serializable;
 
 /**
- * POJO to model a coin
+ * POJO to model a coin.
  */
 public class Coin implements Serializable {
-    /** Define Coin Type */
-    public static enum CoinType {
-        PENNY, QUARTER, NICKEL, DIME
+    /** Define Coin Type. */
+    public enum CoinType {
+        /** */
+        PENNY,
+        /** */
+        QUARTER,
+        /** */
+        NICKEL,
+        /** */
+        DIME
     }
 
-    ;
+    /** Number of coins. */
+    private int numOfCoins;
 
-    /** number of coins */
-    private int numberOfCoins = 0;
-
-    /** CoinType */
-    private CoinType coinType = null;
+    /** Coin type. */
+    private CoinType coinType;
 
     /**
-     * @param coinType Type of coin
-     * @param numberOfCoins Number of coins
+     * Create instance.
+     *
+     * @param coinType Type of coin.
+     * @param numOfCoins Number of coins.
      */
-    public Coin(CoinType coinType, int numberOfCoins) {
+    Coin(CoinType coinType, int numOfCoins) {
         this.coinType = coinType;
-        this.numberOfCoins = numberOfCoins;
+        this.numOfCoins = numOfCoins;
     }
 
     /**
-     * Retrieve the number of coins
+     * Retrieve the number of coins.
      *
-     * @return Number of coins
+     * @return Number of coins.
      */
-    public int getNumberOfCoins() {
-        return numberOfCoins;
+    public int getNumOfCoins() {
+        return numOfCoins;
     }
 
     /**
-     * Set the number of coins
+     * Set the number of coins.
      *
-     * @param numberOfCoins Number of coins
+     * @param numOfCoins Number of coins.
      */
-    public void setNumberOfCoins(int numberOfCoins) {
-        this.numberOfCoins = numberOfCoins;
+    public void setNumOfCoins(int numOfCoins) {
+        this.numOfCoins = numOfCoins;
     }
 
     /**
-     * Retrieve Coin type
+     * Retrieve Coin type.
      *
-     * @return Coin type
+     * @return Coin type.
      */
     public CoinType getCoinType() {
         return coinType;
     }
 
     /**
-     * Set Coin type
+     * Set Coin type.
      *
-     * @param coinType Coin Type
+     * @param coinType Coin type.
      */
     public void setCoinType(CoinType coinType) {
         this.coinType = coinType;
@@ -83,7 +90,6 @@ public class Coin implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Coin [numberOfCoins=" + numberOfCoins + ", coinType=" + coinType + "]";
+        return "Coin [numOfCoins=" + numOfCoins + ", coinType=" + coinType + "]";
     }
-
 }

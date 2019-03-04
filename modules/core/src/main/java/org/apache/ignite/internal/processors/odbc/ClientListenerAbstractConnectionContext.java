@@ -65,10 +65,8 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
         return ctx;
     }
 
-    /**
-     * @return Security context.
-     */
-    @Nullable public SecurityContext securityContext() {
+    /** {@inheritDoc} */
+    @Nullable @Override public SecurityContext securityContext() {
         return secCtx;
     }
 
@@ -127,5 +125,11 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
             );
 
         return authCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected() {
+        if (ctx.security().enabled())
+            ctx.security().onSessionExpired(secCtx.subject().id());
     }
 }

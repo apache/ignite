@@ -26,6 +26,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for injected service.
@@ -57,6 +58,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureField() throws Exception {
         grid(0).compute().call(new IgniteCallable<Object>() {
             @ServiceResource(serviceName = SERVICE_NAME1)
@@ -76,6 +78,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureFieldProxy() throws Exception {
         grid(0).compute(grid(0).cluster().forRemotes()).call(new IgniteCallable<Object>() {
             @ServiceResource(serviceName = SERVICE_NAME2, proxyInterface = DummyService.class)
@@ -97,6 +100,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureFieldLocalProxy() throws Exception {
         grid(0).compute(grid(0).cluster().forRemotes()).call(new IgniteCallable<Object>() {
             @ServiceResource(serviceName = SERVICE_NAME1, proxyInterface = DummyService.class)
@@ -118,6 +122,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureFieldWithIncorrectType() throws Exception {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() {
@@ -140,6 +145,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureMethod() throws Exception {
         grid(0).compute().call(new IgniteCallable<Object>() {
             private DummyService svc;
@@ -164,6 +170,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureMethodProxy() throws Exception {
         grid(0).compute(grid(0).cluster().forRemotes()).call(new IgniteCallable<Object>() {
             private DummyService svc;
@@ -189,6 +196,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureMethodLocalProxy() throws Exception {
         grid(0).compute(grid(0).cluster().forRemotes()).call(new IgniteCallable<Object>() {
             private DummyService svc;
@@ -214,6 +222,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureMethodWithIncorrectType() throws Exception {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() {
@@ -236,6 +245,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureFieldWithNonExistentService() throws Exception {
         grid(0).compute().call(new IgniteCallable<Object>() {
             @ServiceResource(serviceName = "nonExistentService")
@@ -252,6 +262,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureMethodWithNonExistentService() throws Exception {
         grid(0).compute().call(new IgniteCallable<Object>() {
             @ServiceResource(serviceName = "nonExistentService")

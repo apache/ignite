@@ -22,18 +22,14 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  *
  */
 public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String CACHE1 = "cache1";
 
@@ -67,8 +63,6 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         CacheConfiguration cfg1 = defaultCacheConfiguration()
             .setName(CACHE1)
             .setGroupName(GROUP1)
@@ -90,6 +84,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload1() throws Exception {
         cachePreloadTest();
     }
@@ -97,6 +92,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload2() throws Exception {
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
 
@@ -106,6 +102,18 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Test
+    public void testCachePreloadMvcc2() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
+        cachePreloadTest();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCachePreload3() throws Exception {
         cacheMode = CacheMode.REPLICATED;
 
@@ -115,6 +123,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload4() throws Exception {
         cacheMode = CacheMode.REPLICATED;
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
@@ -125,6 +134,18 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCachePreloadMvcc4() throws Exception {
+        cacheMode = CacheMode.REPLICATED;
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
+        cachePreloadTest();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCachePreload5() throws Exception {
         sameGrp = false;
 
@@ -134,6 +155,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload6() throws Exception {
         sameGrp = false;
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
@@ -144,6 +166,19 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Test
+    public void testCachePreloadMvcc6() throws Exception {
+        sameGrp = false;
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
+        cachePreloadTest();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCachePreload7() throws Exception {
         sameGrp = false;
         cacheMode = CacheMode.REPLICATED;
@@ -154,10 +189,23 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload8() throws Exception {
         sameGrp = false;
         cacheMode = CacheMode.REPLICATED;
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+
+        cachePreloadTest();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCachePreloadMvcc8() throws Exception {
+        sameGrp = false;
+        cacheMode = CacheMode.REPLICATED;
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
         cachePreloadTest();
     }

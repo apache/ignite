@@ -27,11 +27,10 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.junit.After;
-
-import static org.junit.Assert.*;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Calculate Fitness Test

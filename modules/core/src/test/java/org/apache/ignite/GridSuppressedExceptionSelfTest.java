@@ -19,16 +19,23 @@ package org.apache.ignite;
 
 import java.io.IOException;
 import java.util.List;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
-public class GridSuppressedExceptionSelfTest extends TestCase {
+public class GridSuppressedExceptionSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHasCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -40,6 +47,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -55,6 +63,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXHasCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -71,6 +80,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXGetSuppressedList() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -91,6 +101,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 

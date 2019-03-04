@@ -20,15 +20,13 @@ package org.apache.ignite.ml.genetic.functions;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
-import org.h2.tools.SimpleResultSet;
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
+import org.h2.tools.SimpleResultSet;
 
 /**
  * Responsible for providing custom SQL functions to retrieve optimization results.

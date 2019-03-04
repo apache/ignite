@@ -179,4 +179,16 @@ public interface CacheGroupMetricsMXBean {
      */
     @MXBeanDescription("Total size of memory allocated for group, in bytes.")
     public long getTotalAllocatedSize();
+
+    /**
+     * Storage space allocated for group, in bytes.
+     */
+    @MXBeanDescription("Storage space allocated for group, in bytes.")
+    public long getStorageSize();
+
+    /**
+     * Storage space allocated for group adjusted for possible sparsity, in bytes.
+     */
+    @MXBeanDescription("Storage space allocated for group adjusted for possible sparsity, in bytes.")
+    public long getSparseStorageSize();
 }

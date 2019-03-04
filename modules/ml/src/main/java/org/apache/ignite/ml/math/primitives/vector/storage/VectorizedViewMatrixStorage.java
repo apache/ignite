@@ -20,9 +20,9 @@ package org.apache.ignite.ml.math.primitives.vector.storage;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
-import org.apache.ignite.ml.math.exceptions.IndexException;
 
 /**
  * Row, column or diagonal vector-based view of the matrix

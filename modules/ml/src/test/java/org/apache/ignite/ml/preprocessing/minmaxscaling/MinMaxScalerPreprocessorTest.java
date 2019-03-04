@@ -53,4 +53,21 @@ public class MinMaxScalerPreprocessorTest {
        for (int i = 0; i < data.length; i++)
            assertArrayEquals(standardData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
     }
+
+    /** Test {@code apply()} method with division by zero. */
+    @Test
+    public void testApplyDivisionByZero() {
+        double[][] data = new double[][]{{1.}, {1.}, {1.}, {1.}};
+
+        MinMaxScalerPreprocessor<Integer, Vector> preprocessor = new MinMaxScalerPreprocessor<>(
+            new double[] {1.},
+            new double[] {1.},
+            (k, v) -> v
+        );
+
+        double[][] standardData = new double[][]{{0.}, {0.}, {0.}, {0.}};
+
+        for (int i = 0; i < data.length; i++)
+            assertArrayEquals(standardData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
+    }
 }

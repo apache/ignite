@@ -26,6 +26,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
@@ -421,6 +422,13 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void enableStatistics(Collection<String> caches, boolean enabled);
 
     /**
+     * Clear statistics for caches cluster wide.
+     *
+     * @param caches Collection of cache names.
+     */
+    public void clearStatistics(Collection<String> caches);
+
+    /**
      * Sets transaction timeout on partition map exchange.
      *
      * @param timeout Transaction timeout on partition map exchange in milliseconds.
@@ -523,4 +531,11 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @see #enableWal(String)
      */
     public boolean isWalEnabled(String cacheName);
+
+    /**
+     * All distributed properties of baseline.
+     *
+     * @return Distributed baseline configuration.
+     */
+    public DistributedBaselineConfiguration baselineConfiguration();
 }

@@ -29,8 +29,10 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -42,12 +44,14 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 
 /**
  * Query request.
  */
+@IgniteCodeGeneratingFail
 public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -64,9 +68,10 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     public static final int FLAG_ENFORCE_JOIN_ORDER = 1 << 1;
 
     /**
-     * Restrict distributed joins range-requests to local index segments. Range requests to other nodes will not be sent.
+     * Unused. Keep for backward compatibility.
      */
-    public static final int FLAG_IS_LOCAL = 1 << 2;
+    @SuppressWarnings("unused")
+    public static final int FLAG_UNUSED = 1 << 2;
 
     /**
      * If it is an EXPLAIN command.
@@ -82,6 +87,22 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * If lazy execution is enabled.
      */
     public static final int FLAG_LAZY = 1 << 5;
+
+    /** */
+    private static final int FLAG_DATA_PAGE_SCAN_SHIFT = 6;
+
+    /** */
+    private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11 << FLAG_DATA_PAGE_SCAN_SHIFT;
+
+    /** */
+    @SuppressWarnings("PointlessBitwiseExpression")
+    private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00 << FLAG_DATA_PAGE_SCAN_SHIFT;
+
+    /** */
+    private static final int FLAG_DATA_PAGE_SCAN_ENABLED = 0b01 << FLAG_DATA_PAGE_SCAN_SHIFT;
+
+    /** */
+    private static final int FLAG_DATA_PAGE_SCAN_DISABLED = 0b10 << FLAG_DATA_PAGE_SCAN_SHIFT;
 
     /** */
     private long reqId;
@@ -133,6 +154,12 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** Schema name. */
     private String schemaName;
 
+    /** */
+    private MvccSnapshot mvccSnapshot;
+
+    /** TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable. */
+    private GridH2SelectForUpdateTxDetails txReq;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -157,6 +184,25 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         params = req.params;
         paramsBytes = req.paramsBytes;
         schemaName = req.schemaName;
+        mvccSnapshot = req.mvccSnapshot;
+        txReq = req.txReq;
+    }
+
+    /**
+     * @return MVCC snapshot.
+     */
+    @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
+    }
+
+    /**
+     * @param mvccSnapshot MVCC snapshot version.
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        this.mvccSnapshot = mvccSnapshot;
+
+        return this;
     }
 
     /**
@@ -373,6 +419,62 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         return this;
     }
 
+    /**
+     * @return TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable.
+     */
+    public GridH2SelectForUpdateTxDetails txDetails() {
+        return txReq;
+    }
+
+    /**
+     * @param txReq TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable.
+     */
+    public void txDetails(GridH2SelectForUpdateTxDetails txReq) {
+        this.txReq = txReq;
+    }
+
+    /**
+     * @param flags Flags.
+     * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     * @return Updated flags.
+     */
+    public static int setDataPageScanEnabled(int flags, Boolean dataPageScanEnabled) {
+        int x = dataPageScanEnabled == null ? FLAG_DATA_PAGE_SCAN_DFLT :
+            dataPageScanEnabled ? FLAG_DATA_PAGE_SCAN_ENABLED : FLAG_DATA_PAGE_SCAN_DISABLED;
+
+        flags &= ~FLAG_DATA_PAGE_SCAN_MASK; // Clear old bits.
+        flags |= x; // Set new bits.
+
+        return flags;
+    }
+
+    /**
+     * Checks if data page scan enabled.
+     *
+     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return isDataPageScanEnabled(flags);
+    }
+
+    /**
+     * Checks if data page scan enabled.
+     *
+     * @param flags Flags.
+     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public static Boolean isDataPageScanEnabled(int flags) {
+        switch (flags & FLAG_DATA_PAGE_SCAN_MASK) {
+            case FLAG_DATA_PAGE_SCAN_ENABLED:
+                return true;
+
+            case FLAG_DATA_PAGE_SCAN_DISABLED:
+                return false;
+        }
+
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public void marshall(Marshaller m) {
         if (paramsBytes != null)
@@ -477,11 +579,10 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
-
 
             case 10:
                 if (!writer.writeIntArray("qryParts", qryParts))
@@ -494,6 +595,19 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 writer.incrementState();
+
+            case 12:
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeMessage("txReq", txReq))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -580,13 +694,12 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 9:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
-
 
             case 10:
                 qryParts = reader.readIntArray("qryParts");
@@ -603,6 +716,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 reader.incrementState();
+
+            case 12:
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
+                txReq = reader.readMessage("txReq");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridH2QueryRequest.class);
@@ -615,7 +745,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 14;
     }
 
     /** {@inheritDoc} */

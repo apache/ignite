@@ -48,6 +48,9 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
     /** Current server nodes. */
     private Map<String, VisorBaselineNode> servers;
 
+    /** Baseline autoadjustment settings. */
+    private VisorBaselineAutoAdjustSettings autoAdjustSettings;
+
     /**
      * Default constructor.
      */
@@ -86,11 +89,14 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         boolean active,
         long topVer,
         Collection<? extends BaselineNode> baseline,
-        Collection<? extends BaselineNode> servers) {
+        Collection<? extends BaselineNode> servers,
+        VisorBaselineAutoAdjustSettings autoAdjustSettings
+    ) {
         this.active = active;
         this.topVer = topVer;
         this.baseline = toMap(baseline);
         this.servers = toMap(servers);
+        this.autoAdjustSettings = autoAdjustSettings;
     }
 
     /**
@@ -122,11 +128,24 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
+    /**
+     * @return Baseline autoadjustment settings.
+     */
+    public VisorBaselineAutoAdjustSettings getAutoAdjustSettings() {
+        return autoAdjustSettings;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(active);
         out.writeLong(topVer);
         U.writeMap(out, baseline);
         U.writeMap(out, servers);
+        out.writeObject(autoAdjustSettings);
     }
 
     /** {@inheritDoc} */
@@ -135,6 +154,9 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         topVer = in.readLong();
         baseline = U.readTreeMap(in);
         servers = U.readTreeMap(in);
+
+        if (protoVer > V1)
+            autoAdjustSettings = (VisorBaselineAutoAdjustSettings)in.readObject();
     }
 
     /** {@inheritDoc} */

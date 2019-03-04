@@ -172,6 +172,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public void clearStatistics(Collection<String> caches) {
+        cluster.clearStatistics(caches);
+    }
+
+    /** {@inheritDoc} */
     @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
         cluster.setTxTimeoutOnPartitionMapExchange(timeout);
     }
@@ -353,6 +358,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     /** {@inheritDoc} */
     @Override public boolean isWalEnabled(String cacheName) {
         return cluster.isWalEnabled(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DistributedBaselineConfiguration baselineConfiguration() {
+        return cluster.baselineConfiguration();
     }
 
     /** {@inheritDoc} */

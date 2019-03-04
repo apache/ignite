@@ -35,26 +35,31 @@ public class DistanceTest {
     private Vector v2;
 
     /** */
+    private double[] data2;
+
+    /** */
     @Before
     public void setup() {
+        data2 = new double[] {2.0, 1.0, 0.0};
         v1 = new DenseVector(new double[] {0.0, 0.0, 0.0});
-        v2 = new DenseVector(new double[] {2.0, 1.0, 0.0});
+        v2 = new DenseVector(data2);
     }
 
     /** */
     @Test
-    public void euclideanDistance() throws Exception {
-
+    public void euclideanDistance() {
         double expRes = Math.pow(5, 0.5);
 
         DistanceMeasure distanceMeasure = new EuclideanDistance();
 
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+
+        Assert.assertEquals(expRes, new EuclideanDistance().compute(v1, data2), PRECISION);
     }
 
     /** */
     @Test
-    public void manhattanDistance() throws Exception {
+    public void manhattanDistance() {
         double expRes = 3;
 
         DistanceMeasure distanceMeasure = new ManhattanDistance();
@@ -64,7 +69,7 @@ public class DistanceTest {
 
     /** */
     @Test
-    public void hammingDistance() throws Exception {
+    public void hammingDistance() {
         double expRes = 2;
 
         DistanceMeasure distanceMeasure = new HammingDistance();
@@ -72,4 +77,15 @@ public class DistanceTest {
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
+    /** */
+    @Test(expected = UnsupportedOperationException.class)
+    public void manhattanDistance2() {
+        new ManhattanDistance().compute(v1, data2);
+    }
+
+    /** */
+    @Test(expected = UnsupportedOperationException.class)
+    public void hammingDistance2() {
+        new HammingDistance().compute(v1, data2);
+    }
 }

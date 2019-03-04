@@ -24,10 +24,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Grid utils tests.
@@ -35,6 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 @GridCommonTest(group = "Utils")
 public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /** */
+    @Test
     public void testPartitionStateMap() {
         GridPartitionStateMap map = initMap(new GridPartitionStateMap());
 
@@ -92,6 +94,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testEqualsAndHashCode() {
         GridPartitionStateMap map1 = initMap(new GridPartitionStateMap());
 
@@ -109,6 +112,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCopy() {
         GridPartitionStateMap map1 = initMap(new GridPartitionStateMap());
 
@@ -134,6 +138,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCopyNoActive() {
         GridPartitionStateMap map2 = new GridPartitionStateMap();
 
@@ -150,6 +155,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /**
      * Tests that entries from {@link Iterator#next()} remain unaltered.
      */
+    @Test
     public void testIteratorNext() {
         GridPartitionStateMap map = new GridPartitionStateMap();
 
@@ -182,6 +188,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /**
      * Tests {@link GridDhtPartitionState} compatibility with {@link TreeMap} on random operations.
      */
+    @Test
     public void testOnRandomOperations() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

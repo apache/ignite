@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.junit.Test;
 
 /**
  * Saves data using previous version of ignite and then load this data using actual version.
@@ -60,6 +61,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                 ));
 
         cfg.setBinaryConfiguration(
@@ -75,6 +77,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_2() throws Exception {
         doTestStartupWithOldVersion("2.2.0");
     }
@@ -84,6 +87,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_1() throws Exception {
         doTestStartupWithOldVersion("2.1.0");
     }
@@ -93,8 +97,39 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_3() throws Exception {
         doTestStartupWithOldVersion("2.3.0");
+    }
+
+    /**
+     * Tests opportunity to read data from previous Ignite DB version.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNodeStartByOldVersionPersistenceData_2_4() throws Exception {
+        doTestStartupWithOldVersion("2.4.0");
+    }
+
+    /**
+     * Tests opportunity to read data from previous Ignite DB version.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNodeStartByOldVersionPersistenceData_2_5() throws Exception {
+        doTestStartupWithOldVersion("2.5.0");
+    }
+
+    /**
+     * Tests opportunity to read data from previous Ignite DB version.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNodeStartByOldVersionPersistenceData_2_6() throws Exception {
+        doTestStartupWithOldVersion("2.6.0");
     }
 
     /**

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * PutAll request.
@@ -51,8 +50,6 @@ public class ClientCachePutAllRequest extends ClientCacheRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_PUT);
-
         cache(ctx).putAll(map);
 
         return super.process(ctx);

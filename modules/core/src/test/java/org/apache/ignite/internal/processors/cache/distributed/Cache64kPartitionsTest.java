@@ -23,8 +23,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -48,7 +48,10 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
         if (persistenceEnabled) {
             DataStorageConfiguration memCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setPersistenceEnabled(true))
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                )
                 .setWalMode(WALMode.LOG_ONLY);
 
             cfg.setDataStorageConfiguration(memCfg);
@@ -60,6 +63,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testManyPartitionsNoPersistence() throws Exception {
         checkManyPartitions();
     }
@@ -67,6 +71,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testManyPartitionsWithPersistence() throws Exception {
         persistenceEnabled = true;
 

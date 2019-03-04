@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -66,6 +67,7 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testAllTrueFlags() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -107,6 +109,7 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testAllFalseFlags() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 

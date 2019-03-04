@@ -139,7 +139,7 @@
         <exclude within="com.google..*"/>
 
         <!-- Jackson libs. -->
-        <exclude within="org.codehaus.jackson..*"/>
+        <exclude within="com.fasterxml.jackson.core..*"/>
 
         <!-- JLine libs. -->
         <exclude within="org.fusesource..*"/>
@@ -285,7 +285,7 @@
         <exclude within="com.google..*"/>
 
         <!-- Jackson libs. -->
-        <exclude within="org.codehaus.jackson..*"/>
+        <exclude within="com.fasterxml.jackson.core..*"/>
 
         <!-- JLine libs. -->
         <exclude within="org.fusesource..*"/>

@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 /**
  * Checkpoint futures.
  */
-public interface CheckpointFuture  {
+public interface CheckpointFuture {
     /**
      * @return Begin future.
      */
@@ -31,5 +31,10 @@ public interface CheckpointFuture  {
     /**
      * @return Finish future.
      */
-    public GridFutureAdapter finishFuture();
+    public GridFutureAdapter<Object> finishFuture();
+
+    /**
+     * @return Checkpoint was already started.
+     */
+    public boolean started();
 }

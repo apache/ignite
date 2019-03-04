@@ -22,7 +22,6 @@ import java.util.Spliterator;
 import java.util.function.IntToDoubleFunction;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Destroyable;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.MetaAttributes;
 import org.apache.ignite.ml.math.StorageOpsMetrics;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
@@ -31,6 +30,7 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 
 /**
  * A vector interface.
@@ -125,6 +125,15 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * Sorts this vector in ascending order.
      */
     public Vector sort();
+
+    /**
+     * Copies the specified range of the vector into a new vector.
+     * @param from the initial index of the range to be copied, inclusive
+     * @param to the final index of the range to be copied, exclusive.
+     *     (This index may lie outside the array.)
+     * @return A new vector containing the specified range from the original vector
+     */
+    public Vector copyOfRange(int from, int to);
 
     /**
      * Gets element at the given index.
@@ -513,6 +522,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Returns array of doubles corresponds to vector components.
+     *
      * @return Array of doubles.
      */
     public default double[] asArray() {

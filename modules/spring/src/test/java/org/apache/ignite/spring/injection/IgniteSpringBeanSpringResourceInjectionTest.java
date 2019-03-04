@@ -32,6 +32,7 @@ import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -184,6 +185,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     }
 
     /** */
+    @Test
     public void testSpringResourceInjectedInCacheStore() throws Exception {
         doTestSpringResourceInjected(
             new TestSpringResourceInjectedRunnable(SPRING_CFG_LOCATION, BEAN_TO_INJECT_NAME) {
@@ -199,6 +201,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     }
 
     /** */
+    @Test
     public void testSpringResourceInjectedInService() throws Exception {
         doTestSpringResourceInjected(
             new TestSpringResourceInjectedRunnable(SPRING_CFG_LOCATION, BEAN_TO_INJECT_NAME) {

@@ -26,8 +26,11 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.junit.Assert.assertEquals;
@@ -38,6 +41,9 @@ import static org.junit.Assert.assertTrue;
  * Unit tests of {@link RobinHoodBackwardShiftHashMap} implementation.
  */
 public class RobinHoodBackwardShiftHashMapTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /**
      * @param tester map test code
