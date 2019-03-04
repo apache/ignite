@@ -205,6 +205,14 @@ public class RunningQueryManager {
     }
 
     /**
+     * @param qryId
+     * @return {@code true} in case query with given id are running.
+     */
+    public boolean queryInProgress(Long qryId) {
+        return runs.containsKey(qryId);
+    }
+
+    /**
      * Reset query history metrics.
      */
     public void resetQueryHistoryMetrics() {

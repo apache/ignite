@@ -31,11 +31,14 @@ public class GridQueryKillRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Request id. */
+    private long reqId;
+
     /** Query id on a node. */
     private long nodeQryId;
 
-    /** Response required flag. */
-    private boolean resRequired;
+    /** Async response flag. */
+    private boolean asyncRes;
 
     /**
      * Default constructor.
@@ -45,12 +48,21 @@ public class GridQueryKillRequest implements Message {
     }
 
     /**
+     * @param reqId Request id.
      * @param nodeQryId Query ID on a node.
-     * @param resRequired {@code true} in case reposnse required.
+     * @param asyncRes {@code true} in case reposnse should be send asynchronous.
      */
-    public GridQueryKillRequest(long nodeQryId, boolean resRequired) {
+    public GridQueryKillRequest(long reqId, long nodeQryId, boolean asyncRes) {
+        this.reqId = reqId;
         this.nodeQryId = nodeQryId;
-        this.resRequired = resRequired;
+        this.asyncRes = asyncRes;
+    }
+
+    /**
+     * @return Request id.
+     */
+    public long requestId() {
+        return reqId;
     }
 
     /**
@@ -61,10 +73,10 @@ public class GridQueryKillRequest implements Message {
     }
 
     /**
-     * @return {@code true} in case response should be send back.
+     * @return {@code true} in case response should be send back asynchronous.
      */
-    public boolean resposeRequired() {
-        return resRequired;
+    public boolean asyncResponse() {
+        return asyncRes;
     }
 
     /** {@inheritDoc} */
@@ -85,13 +97,19 @@ public class GridQueryKillRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("nodeQryId", nodeQryId))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if(!writer.writeBoolean("resRequired", resRequired))
+                if (!writer.writeLong("nodeQryId", nodeQryId))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if(!writer.writeBoolean("asyncRes", asyncRes))
                     return false;
 
                 writer.incrementState();
@@ -109,7 +127,7 @@ public class GridQueryKillRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                nodeQryId = reader.readLong("nodeQryId");
+                reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -117,7 +135,15 @@ public class GridQueryKillRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                resRequired = reader.readBoolean("resRequired");
+                nodeQryId = reader.readLong("nodeQryId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                asyncRes = reader.readBoolean("asyncRes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -135,7 +161,7 @@ public class GridQueryKillRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */

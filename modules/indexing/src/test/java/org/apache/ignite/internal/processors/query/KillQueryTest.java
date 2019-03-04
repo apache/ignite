@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -206,8 +207,44 @@ public class KillQueryTest extends GridCommonAbstractTest {
      * @param async execute cancellation in ASYNC mode.
      */
     private void testKillUnknownQry(boolean async) {
-        igniteForKillRequest.cache(DEFAULT_CACHE_NAME)
-            .query(createKillQuery(UUID.randomUUID(), Long.MAX_VALUE, async));
+        UUID nodeId = ignite.localNode().id();
+
+        GridTestUtils.assertThrows(log, () -> {
+            igniteForKillRequest.cache(DEFAULT_CACHE_NAME)
+                .query(createKillQuery(nodeId, Long.MAX_VALUE, async));
+
+            return null;
+        }, CacheException.class, "Failed to cancel query due to query doesn't exist[nodeId=" + nodeId);
+    }
+
+    /**
+     * Trying to cancel query on unexist node.
+     */
+    @Test
+    public void testKillQryUnknownNode() {
+        testKillQryUnknownNode(false);
+    }
+
+    /**
+     * Trying to async cancel query on unexist node.
+     */
+    @Test
+    public void testAsyncKillQryUnknownNode() {
+        testKillQryUnknownNode(true);
+    }
+
+    /**
+     * Trying to cancel query on unexist node.
+     *
+     * @param async execute cancellation in ASYNC mode.
+     */
+    private void testKillQryUnknownNode(boolean async) {
+        GridTestUtils.assertThrows(log, () -> {
+            igniteForKillRequest.cache(DEFAULT_CACHE_NAME)
+                .query(createKillQuery(UUID.randomUUID(), Long.MAX_VALUE, async));
+
+            return null;
+        }, CacheException.class, "Failed to cancel query, node is not alive");
     }
 
     /**

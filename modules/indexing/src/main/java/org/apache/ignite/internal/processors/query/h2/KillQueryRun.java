@@ -19,30 +19,33 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.UUID;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Kill Query run context.
  */
 class KillQueryRun {
     /** Node id. */
-    // TODO: Final
-    private UUID nodeId;
+    private final UUID nodeId;
 
     /** Node query id. */
-    // TODO: Final
-    private long nodeQryId;
+    private final long nodeQryId;
+
+    /** Cancellation query future. */
+    private final GridFutureAdapter<String> cancelFut;
 
     /**
      * Constructor.
      *
      * @param nodeId Node id.
-     * @param nodeQryId Node query id.
+     * @param cancelFut Cancellation query future.
      */
-    public KillQueryRun(UUID nodeId, long nodeQryId) {
+    public KillQueryRun(UUID nodeId, long nodeQryId, GridFutureAdapter<String> cancelFut) {
         assert nodeId != null;
 
-        this.nodeQryId = nodeQryId;
         this.nodeId = nodeId;
+        this.nodeQryId = nodeQryId;
+        this.cancelFut = cancelFut;
     }
 
     /**
@@ -52,28 +55,17 @@ class KillQueryRun {
         return nodeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        KillQueryRun run = (KillQueryRun)o;
-
-        if (nodeQryId != run.nodeQryId)
-            return false;
-
-        return nodeId.equals(run.nodeId);
+    /**
+     * @return Node query id.
+     */
+    public long nodeQryId() {
+        return nodeQryId;
     }
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int result = nodeId.hashCode();
-
-        result = 31 * result + (int)(nodeQryId ^ (nodeQryId >>> 32));
-
-        return result;
+    /**
+     * @return    Cancellation query future.
+     */
+    public GridFutureAdapter<String> cancelFuture() {
+        return cancelFut;
     }
 }

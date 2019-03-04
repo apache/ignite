@@ -29,6 +29,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
@@ -146,8 +149,17 @@ public class CommandProcessor {
     private static final boolean handleUuidAsByte =
             IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_UUID_DDL_BYTE_FORMAT, false);
 
+    /** Query cancel request counter. */
+    private final AtomicLong qryCancelReqCntr = new AtomicLong();
+
     /** Cancellation runs. */
-    private ConcurrentMap<KillQueryRun, GridFutureAdapter<String>> cancellationRuns = new ConcurrentHashMap<>();
+    private ConcurrentMap<Long, KillQueryRun> cancellationRuns = new ConcurrentHashMap<>();
+
+    /** Flag indicate that node is stopped or not. */
+    private volatile boolean stopped;
+
+    /** */
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** Local node message handler */
     private final CIX2<ClusterNode, Message> locNodeMsgHnd = new CIX2<ClusterNode, Message>() {
@@ -174,26 +186,31 @@ public class CommandProcessor {
      * Start executor.
      */
     public void start() {
-        // TODO: Ticket for separate pool or MGMT pool + non-blocking processing through futures
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, (nodeId, msg, plc) -> onMessage(nodeId, msg));
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                // TODO: RW lock for cleanup. Otherwise we are risking future:
-                // TODO: write lock for cleanup, read lock for normal operations
-                Iterator<Map.Entry<KillQueryRun, GridFutureAdapter<String>>> it = cancellationRuns.entrySet().iterator();
+                lock.writeLock().lock();
 
-                while(it.hasNext()){
-                    Map.Entry<KillQueryRun, GridFutureAdapter<String>> entry = it.next();
+                try {
+                    Iterator<KillQueryRun> it = cancellationRuns.values().iterator();
 
-                    if(entry.getKey().nodeId().equals(nodeId)){
-                        // TODO: Is it ok that we do not inform user about query result?
-                        entry.getValue().onDone();
+                    while (it.hasNext()) {
+                        KillQueryRun qryRun = it.next();
 
-                        it.remove();
+                        if (qryRun.nodeId().equals(nodeId)) {
+                            qryRun.cancelFuture().onDone(
+                                "Cancellation query has unknown result due to node has left[nodeId=" + nodeId +
+                                    ",qryId=" + qryRun.nodeQryId()+"]");
+
+                            it.remove();
+                        }
                     }
+                }
+                finally {
+                    lock.writeLock().unlock();
                 }
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
@@ -203,16 +220,24 @@ public class CommandProcessor {
      * Close executor.
      */
     public void stop() {
-        // TODO: Most likely lock is needed as well.
-        // TODO: Moreover, we should add "stop" flag to avoid concurrent addition of new user operations
-        Iterator<Map.Entry<KillQueryRun, GridFutureAdapter<String>>> it = cancellationRuns.entrySet().iterator();
+        stopped = true;
 
-        while (it.hasNext()) {
-            Map.Entry<KillQueryRun, GridFutureAdapter<String>> entry = it.next();
+        lock.writeLock().lock();
 
-            entry.getValue().onDone();
+        try {
+            Iterator<KillQueryRun> it = cancellationRuns.values().iterator();
 
-            it.remove();
+            while (it.hasNext()) {
+                KillQueryRun qryRun = it.next();
+
+                qryRun.cancelFuture().onDone("Failed to cancel query due to node is stopped" +
+                    "[nodeId=" + qryRun.nodeId() + ",qryId=" + qryRun.nodeQryId() + "]");
+
+                it.remove();
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -234,7 +259,7 @@ public class CommandProcessor {
             if (msg instanceof GridQueryKillRequest)
                 onQueryKillRequest((GridQueryKillRequest)msg, node);
             if (msg instanceof GridQueryKillResponse)
-                onQueryKillResponse((GridQueryKillResponse)msg, node);
+                onQueryKillResponse((GridQueryKillResponse)msg);
             else
                 processed = false;
 
@@ -256,7 +281,25 @@ public class CommandProcessor {
         String err = null;
 
         try {
-            idx.cancelQueries(singletonList(msg.nodeQryId()));
+            boolean qryIsExist = idx.runningQueryManager().queryInProgress(msg.nodeQryId());
+
+            if (!qryIsExist)
+                err = "Failed to cancel query due to query doesn't exist" +
+                    "[nodeId=" + ctx.localNodeId() + ",qryId=" + msg.nodeQryId() + "]";
+
+            if (msg.asyncResponse()) {
+                idx.send(GridTopic.TOPIC_QUERY,
+                    GridTopic.TOPIC_QUERY.ordinal(),
+                    Collections.singleton(node),
+                    new GridQueryKillResponse(msg.requestId(), err),
+                    null,
+                    locNodeMsgHnd,
+                    GridIoPolicy.QUERY_POOL,
+                    false);
+            }
+
+            if (qryIsExist)
+                idx.cancelQueries(singletonList(msg.nodeQryId()));
         }
         catch (Exception e) {
             err = e.toString();
@@ -264,11 +307,11 @@ public class CommandProcessor {
             throw e;
         }
         finally {
-            if (msg.resposeRequired()) {
+            if (!msg.asyncResponse()) {
                 idx.send(GridTopic.TOPIC_QUERY,
                     GridTopic.TOPIC_QUERY.ordinal(),
                     Collections.singleton(node),
-                    new GridQueryKillResponse(msg.nodeQryId(), err),
+                    new GridQueryKillResponse(msg.requestId(), err),
                     null,
                     locNodeMsgHnd,
                     GridIoPolicy.QUERY_POOL,
@@ -281,13 +324,21 @@ public class CommandProcessor {
      * Process response to kill query request.
      *
      * @param msg Message.
-     * @param node Cluster node.
      */
-    private void onQueryKillResponse(GridQueryKillResponse msg, ClusterNode node) {
-        GridFutureAdapter<String> fut = cancellationRuns.remove(new KillQueryRun(node.id(), msg.nodeQryId()));
+    private void onQueryKillResponse(GridQueryKillResponse msg) {
+        KillQueryRun qryRun;
 
-        if (fut != null)
-            fut.onDone(msg.error());
+        lock.readLock().lock();
+
+        try {
+            qryRun = cancellationRuns.remove(msg.cancelRequestId());
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+
+        if (qryRun != null)
+            qryRun.cancelFuture().onDone(msg.error());
     }
 
     /**
@@ -347,71 +398,55 @@ public class CommandProcessor {
         return new CommandResult(res, unregister);
     }
 
-
     /**
      * Process kill query command
      *
      * @param cmd Command.
      */
     private void processKillQueryCommand(SqlKillQueryCommand cmd) {
-        // TODO: Proposed semantics:
-        // 1. SYNC vs ASYNC: both modes require response, but ASYNC will send IO msg back after locating running query
-        // but before actual cancel
-        // 2.1. No node (before send) - error
-        // 2.2. Node left the grid before response is received - another error
-        // 3. No query with the given ID is found on a node - another error
+        lock.readLock().lock();
 
-        // TODO: Need to check whether node is alive under *read lock*
-        ClusterNode node = ctx.discovery().node(cmd.nodeId());
+        try {
+            if (stopped)
+                throw new IgniteSQLException("Failed to cancel query due to node is stopped [nodeId=" + cmd.nodeId() +
+                    ",qryId=" + cmd.nodeQueryId() + "]");
 
-        if (node != null) {
-            boolean resRequired = !cmd.async();
-            boolean sndReqRequired = true;
+            ClusterNode node = ctx.discovery().node(cmd.nodeId()); //)getAlive
 
-            GridFutureAdapter<String> fut = null;
+            if (node != null) {
+                if (!node.version().greaterThanEqual(2, 8, 0))
+                    throw new IgniteSQLException("Failed to cancel query: KILL QUERY operation are supported in " +
+                        "versions 2.8.0 and newer");
 
-            KillQueryRun run = null;
+                GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
-            // TODO: Need to review carefully
-            if (resRequired) {
-                fut = new GridFutureAdapter<>();
+                KillQueryRun qryRun = new KillQueryRun(cmd.nodeId(), cmd.nodeQueryId(), fut);
 
-                run = new KillQueryRun(cmd.nodeId(), cmd.nodeQueryId());
+                long reqId = qryCancelReqCntr.incrementAndGet();
 
-                GridFutureAdapter<String> prevFut = cancellationRuns.putIfAbsent(run, fut);
+                cancellationRuns.put(reqId, qryRun);
 
-                if (prevFut != null) {
-                    fut = prevFut;
-
-                    //We shouldn't send new request for the same query.
-                    sndReqRequired = false;
-                }
-            }
-
-            if(sndReqRequired){
-                // TODO: Need to validate that target node is >= 2.8
                 boolean snd = idx.send(GridTopic.TOPIC_QUERY,
                     GridTopic.TOPIC_QUERY.ordinal(),
                     Collections.singleton(node),
-                    new GridQueryKillRequest(cmd.nodeQueryId(), resRequired),
+                    new GridQueryKillRequest(reqId, cmd.nodeQueryId(), cmd.async()),
                     null,
                     locNodeMsgHnd,
                     GridIoPolicy.QUERY_POOL,
                     false
                 );
 
-                if(!snd){
-                    cancellationRuns.remove(run, fut);
+                if (!snd) {
+                    cancellationRuns.remove(reqId);
 
-                    return;
+                    throw new IgniteSQLException("Failed to cancel query due comunication problem" +
+                        "[nodeId=" + cmd.nodeId() + ",qryId=" + cmd.nodeQueryId() + "]");
                 }
-            }
 
-            if (fut != null) {
                 try {
                     String err = fut.get();
 
-                    if(err != null)
+                    if (err != null)
                         throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
                             + cmd.nodeQueryId() + "err=" + err + "]");
                 }
@@ -420,9 +455,13 @@ public class CommandProcessor {
                         + cmd.nodeQueryId() + "err=" + e + "]", e);
                 }
             }
+            else {
+                throw new IgniteSQLException("Failed to cancel query, node is not alive [nodeId=" + cmd.nodeId() + ",qryId="
+                    + cmd.nodeQueryId() + "]");
+            }
         }
-        else {
-            // TODO:
+        finally {
+            lock.readLock().unlock();
         }
     }
 

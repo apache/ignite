@@ -1197,8 +1197,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Long qryId = registerRunningQuery(schemaName, null, qry.getSql(), qry.isLocal(), true);
 
-        boolean fail = false;
-
         CommandResult res = null;
 
         try {
@@ -1207,14 +1205,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return res.cursor();
         }
         catch (IgniteCheckedException e) {
-            fail = true;
-
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() +
                 ", err=" + e.getMessage() + ']', e);
         }
         finally {
-            if (fail || (res != null && res.unregisterRunningQuery()))
-                runningQryMgr.unregister(qryId, fail);
+            if (res == null || res.unregisterRunningQuery())
+                runningQryMgr.unregister(qryId, res == null);
         }
     }
 

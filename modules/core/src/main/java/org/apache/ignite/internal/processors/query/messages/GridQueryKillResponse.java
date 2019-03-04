@@ -31,8 +31,8 @@ public class GridQueryKillResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Query id on a node. */
-    private long nodeQryId;
+    /** Cancel request id.*/
+    private long cancelReqId;
 
     /** Error text. */
     private String errMsg;
@@ -46,19 +46,19 @@ public class GridQueryKillResponse implements Message {
     }
 
     /**
-     * @param nodeQryId Query ID on a node.
+     * @param cancelReqId Cancel request id.
      * @param errMsg Error message.
      */
-    public GridQueryKillResponse(long nodeQryId, String errMsg) {
-        this.nodeQryId = nodeQryId;
+    public GridQueryKillResponse(long cancelReqId, String errMsg) {
+        this.cancelReqId = cancelReqId;
         this.errMsg = errMsg;
     }
 
     /**
-     * @return Query id on a node.
+     * @return Cancel request id.
      */
-    public long nodeQryId() {
-        return nodeQryId;
+    public long cancelRequestId() {
+        return cancelReqId;
     }
 
     /**
@@ -87,7 +87,7 @@ public class GridQueryKillResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("nodeQryId", nodeQryId))
+                if (!writer.writeLong("cancelReqId", cancelReqId))
                     return false;
 
                 writer.incrementState();
@@ -110,7 +110,7 @@ public class GridQueryKillResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                nodeQryId = reader.readLong("nodeQryId");
+                cancelReqId = reader.readLong("cancelReqId");
 
                 if (!reader.isLastRead())
                     return false;
