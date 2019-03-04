@@ -182,7 +182,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         @Override public void evaluate() throws Throwable {
             assert getName() != null : "getName returned null";
 
-            runTestCase(base);
+            runTest(base);
         }
     };
 
@@ -542,14 +542,12 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * Do not annotate with Before in overriding methods.</p>
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @Before} annotation.
+     * Runs before each test.
+     *
+     * @throws Exception If failed.
      */
-    @Deprecated
-    @Override protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         stopGridErr = false;
 
         clsLdr = Thread.currentThread().getContextClassLoader();
@@ -562,21 +560,34 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         info(">>> Starting test: " + testDescription() + " <<<");
 
-        try {
-            beforeTest();
-        }
-        catch (Exception | Error t) {
-            try {
-                tearDown();
-            }
-            catch (Exception e) {
-                log.error("Failed to tear down test after exception was thrown in beforeTest (will ignore)", e);
-            }
-
-            throw t;
-        }
+        beforeTest();
 
         ts = System.currentTimeMillis();
+    }
+
+    /**
+     * Runs after each test.
+     *
+     * @throws Exception If failed.
+     */
+    @After
+    public void tearDown() throws Exception {
+        long dur = System.currentTimeMillis() - ts;
+
+        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+
+        try {
+            afterTest();
+        }
+        finally {
+            serializedObj.clear();
+
+            Thread.currentThread().setContextClassLoader(clsLdr);
+
+            clsLdr = null;
+
+            cleanReferences();
+        }
     }
 
     /** */
@@ -594,29 +605,14 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             G.start(cfg);
         }
 
-        try {
-            List<Integer> jvmIds = IgniteNodeRunner.killAll();
+        List<Integer> jvmIds = IgniteNodeRunner.killAll();
 
-            if (!jvmIds.isEmpty())
-                log.info("Next processes of IgniteNodeRunner were killed: " + jvmIds);
+        if (!jvmIds.isEmpty())
+            log.info("Next processes of IgniteNodeRunner were killed: " + jvmIds);
 
-            resolveWorkDirectory();
+        resolveWorkDirectory();
 
-            beforeTestsStarted();
-        }
-        catch (Exception | Error t) {
-            t.printStackTrace();
-
-            try {
-                tearDown();
-            }
-            catch (Exception e) {
-                log.error("Failed to tear down test after exception was thrown in beforeTestsStarted (will " +
-                    "ignore)", e);
-            }
-
-            throw t;
-        }
+        beforeTestsStarted();
     }
 
     /** */
@@ -1787,33 +1783,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Do not annotate with After in overriding methods.</p>
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @After} annotation.
-     */
-    @Deprecated
-    @Override protected void tearDown() throws Exception {
-        long dur = System.currentTimeMillis() - ts;
-
-        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
-
-        try {
-            afterTest();
-        }
-        finally {
-            serializedObj.clear();
-
-            Thread.currentThread().setContextClassLoader(clsLdr);
-
-            clsLdr = null;
-
-            cleanReferences();
-        }
-    }
-
     /** */
     private void afterLastTest() throws Exception {
         info(">>> Stopping test class: " + testClassDescription() + " <<<");
@@ -2092,8 +2061,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         return new IgniteTestResources(cfg);
     }
 
-    /** {@inheritDoc} */
-    @Override void runTest(Statement testRoutine) throws Throwable {
+    /** Runs test with the provided scenario. */
+    private void runTest(Statement testRoutine) throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
