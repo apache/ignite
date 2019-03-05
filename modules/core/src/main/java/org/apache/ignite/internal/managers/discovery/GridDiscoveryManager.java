@@ -116,6 +116,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -134,6 +135,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryTcpSpiDataExchange;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
@@ -934,6 +936,78 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
         });
+
+        if (spi instanceof TcpDiscoverySpi) {
+            ((TcpDiscoverySpi)spi).setTcpDataExchange(new DiscoveryTcpSpiDataExchange() {
+                @Override public Map<Integer, byte[]> collectHandshakeResponseData() {
+                    Map<Integer, byte[]> componentsData = new HashMap<>();
+
+                    JdkMarshaller marshaller = ctx.marshallerContext().jdkMarshaller();
+
+                    for (GridComponent c : ctx.components()) {
+                        DiscoveryDataExchangeType dataExchangeType = c.discoveryDataType();
+
+                        if (dataExchangeType == null)
+                            continue;
+
+                        Serializable componentData = c.getHandshakeResponseData();
+
+                        if (componentData != null) {
+                            try {
+                                byte[] componentDataBytes = marshaller.marshal(componentData);
+
+                                componentsData.put(dataExchangeType.ordinal(), componentDataBytes);
+                            }
+                            catch (IgniteCheckedException e) {
+                                log.error("Cannot marshal handshake response data", e);
+                            }
+                        }
+                    }
+
+                    switch (componentsData.size()) {
+                        case 0:
+                            return Collections.emptyMap();
+                        case 1: {
+                            Map.Entry<Integer, byte[]> entry = componentsData.entrySet().iterator().next();
+
+                            return Collections.singletonMap(entry.getKey(), entry.getValue());
+                        }
+                        default:
+                            return componentsData;
+                    }
+
+                }
+
+                @Override public void handshakeResponseDataReceived(Map<Integer, byte[]> componentsData) {
+                    if (componentsData == null)
+                        componentsData = Collections.emptyMap();
+
+                    JdkMarshaller marshaller = ctx.marshallerContext().jdkMarshaller();
+
+                    for (GridComponent c : ctx.components()) {
+                        DiscoveryDataExchangeType dataExchangeType = c.discoveryDataType();
+
+                        if (dataExchangeType == null)
+                            continue;
+
+                        byte[] componentDataBytes = componentsData.get(dataExchangeType.ordinal());
+
+                        Serializable componentData = null;
+
+                        try {
+                            componentData = componentDataBytes == null
+                                ? null
+                                : marshaller.unmarshal(componentDataBytes, U.gridClassLoader());
+                        }
+                        catch (IgniteCheckedException e) {
+                            log.warning("Cannot unmarshal handshake response data", e);
+                        }
+
+                        c.onHandshakeResponseDataReceived(componentData);
+                    }
+                }
+            });
+        }
 
         new DiscoveryMessageNotifierThread(discoNtfWrk).start();
 

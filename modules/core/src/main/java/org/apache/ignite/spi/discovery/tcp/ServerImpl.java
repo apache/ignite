@@ -1318,7 +1318,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(
                     ackTimeout0));
 
-                clusterDataReceived(res.clusterData());
+                if (!(msg instanceof TcpDiscoveryCheckFailedMessage))
+                    spi.handshakeResponseDataReceived(res.componentsData());
 
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
@@ -3215,8 +3216,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null,
                                     timeoutHelper.nextTimeoutChunk(ackTimeout0));
-
-                                clusterDataReceived(res.clusterData());
 
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
@@ -6345,6 +6344,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     srvSock = !req.client();
 
+                    //TODO
+                    boolean prefetchData = req.client() && req.supportsDataPrefetch();
+
                     UUID nodeId = req.creatorNodeId();
 
                     this.nodeId = nodeId;
@@ -6352,14 +6354,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                     U.enhanceThreadName(U.id8(nodeId) + ' ' + sock.getInetAddress().getHostAddress()
                         + ":" + sock.getPort() + (req.client() ? " client" : ""));
 
-                    Object[] clusterDataCp;
-
-                    synchronized (clusterData) {
-                        clusterDataCp = clusterData.clone();
-                    }
+                    Map<Integer, byte[]> componentsData = req.changeTopology()
+                        ? Collections.emptyMap()
+                        : spi.collectHandshakeResponseData();
 
                     TcpDiscoveryHandshakeResponse res =
-                        new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder(), clusterDataCp);
+                        new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder(), componentsData);
 
                     res.setDiscoveryDataPacketCompression(allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION));
 

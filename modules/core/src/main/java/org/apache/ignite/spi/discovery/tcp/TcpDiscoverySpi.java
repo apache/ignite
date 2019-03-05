@@ -95,6 +95,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryTcpSpiDataExchange;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -326,6 +327,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** Data exchange. */
     protected DiscoverySpiDataExchange exchange;
+
+    /** TCP data exchange. */
+    protected DiscoveryTcpSpiDataExchange tcpExchange;
 
     /** Metrics provider. */
     protected DiscoveryMetricsProvider metricsProvider;
@@ -1479,6 +1483,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         this.exchange = exchange;
     }
 
+    /** */
+    public void setTcpDataExchange(DiscoveryTcpSpiDataExchange tcpExchange) {
+        this.tcpExchange = tcpExchange;
+    }
+
     /** {@inheritDoc} */
     @Override public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider) {
         this.metricsProvider = metricsProvider;
@@ -2013,6 +2022,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return msg.error().contains("versions are not compatible");
     }
 
+    /** */
+    Map<Integer, byte[]> collectHandshakeResponseData() {
+        assert tcpExchange != null;
+
+        return tcpExchange.collectHandshakeResponseData();
+    }
+
+    /** */
+    void handshakeResponseDataReceived(Map<Integer, byte[]> componentsData) {
+        assert tcpExchange != null;
+
+        tcpExchange.handshakeResponseDataReceived(componentsData);
+    }
+
     /**
      * @param dataPacket Data packet.
      */
@@ -2288,21 +2311,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return false;
 
         return impl.allNodesSupport(feature);
-    }
-
-    /** */
-    public Object clusterData(TcpDiscoveryClusterDataComponent component) {
-        if (impl == null)
-            return null;
-
-        return impl.clusterData(component);
-    }
-
-    /** */
-    public void putClusterData(TcpDiscoveryClusterDataComponent component, Object data) {
-        assert (impl != null);
-
-        impl.putClusterData(component, data);
     }
 
     /** {@inheritDoc} */

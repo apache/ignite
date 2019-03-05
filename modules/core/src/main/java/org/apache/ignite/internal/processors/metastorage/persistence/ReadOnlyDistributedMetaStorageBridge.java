@@ -26,6 +26,7 @@ import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageKeyValuePair.EMPTY_ARRAY;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
@@ -46,17 +47,22 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     private DistributedMetaStorageKeyValuePair[] locFullData = EMPTY_ARRAY;
 
     /** */
+    private final JdkMarshaller marshaller;
+
+    /** */
     private DistributedMetaStorageVersion ver;
 
     /** */
-    public ReadOnlyDistributedMetaStorageBridge() {
+    public ReadOnlyDistributedMetaStorageBridge(JdkMarshaller marshaller) {
+        this.marshaller = marshaller;
     }
 
     /** */
     public ReadOnlyDistributedMetaStorageBridge(
-        DistributedMetaStorageKeyValuePair[] locFullData
+        JdkMarshaller marshaller, DistributedMetaStorageKeyValuePair[] locFullData
     ) {
         this.locFullData = locFullData;
+        this.marshaller = marshaller;
     }
 
     /** {@inheritDoc} */
@@ -68,7 +74,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         );
 
         if (idx >= 0)
-            return unmarshal ? unmarshal(locFullData[idx].valBytes) : locFullData[idx].valBytes;
+            return unmarshal ? unmarshal(marshaller, locFullData[idx].valBytes) : locFullData[idx].valBytes;
 
         return null;
     }
@@ -91,7 +97,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         for (; idx < locFullData.length && locFullData[idx].key.startsWith(globalKeyPrefix); ++idx) {
             DistributedMetaStorageKeyValuePair item = locFullData[idx];
 
-            cb.accept(item.key, unmarshal ? unmarshal(item.valBytes) : item.valBytes);
+            cb.accept(item.key, unmarshal ? unmarshal(marshaller, item.valBytes) : item.valBytes);
         }
     }
 

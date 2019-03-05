@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteFuture;
@@ -147,6 +148,15 @@ public interface GridComponent {
      * @param data {@link JoiningNodeDiscoveryData} interface to retrieve discovery data of joining node.
      */
     public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data);
+
+    /** */
+    default public Serializable getHandshakeResponseData() {
+        return null;
+    }
+
+    /** */
+    default public void onHandshakeResponseDataReceived(Serializable componentData) {
+    }
 
     /**
      * Prints memory statistics (sizes of internal structures, etc.).

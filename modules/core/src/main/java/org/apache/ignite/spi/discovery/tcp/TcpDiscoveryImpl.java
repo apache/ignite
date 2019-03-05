@@ -68,9 +68,6 @@ abstract class TcpDiscoveryImpl {
     /** */
     protected volatile TcpDiscoveryNode locNode;
 
-    /** */
-    protected final Object[] clusterData = new Object[TcpDiscoveryClusterDataComponent.VALUES.length];
-
     /** Debug mode. */
     protected boolean debugMode;
 
@@ -224,37 +221,6 @@ abstract class TcpDiscoveryImpl {
      * @return {@code true} if all nodes support the given feature, {@code false} otherwise.
      */
     public abstract boolean allNodesSupport(IgniteFeatures feature);
-
-
-    /** */
-    public Object clusterData(TcpDiscoveryClusterDataComponent component) {
-        assert component != null;
-
-        synchronized (clusterData) {
-            return clusterData[component.ordinal()];
-        }
-    }
-
-    /** */
-    public void putClusterData(TcpDiscoveryClusterDataComponent component, Object data) {
-        assert component != null;
-
-        synchronized (clusterData) {
-            clusterData[component.ordinal()] = data;
-        }
-    }
-
-    /** */
-    protected void clusterDataReceived(Object[] outerClusterData) {
-        if (outerClusterData == null)
-            return;
-
-        synchronized (clusterData) {
-            int len = Math.min(outerClusterData.length, clusterData.length);
-
-            System.arraycopy(outerClusterData, 0, clusterData, 0, len);
-        }
-    }
 
     /**
      * @param nodeId Node id.

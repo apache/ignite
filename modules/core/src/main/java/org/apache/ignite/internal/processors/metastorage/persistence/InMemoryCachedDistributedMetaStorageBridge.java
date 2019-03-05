@@ -43,7 +43,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     @Override public Serializable read(String globalKey, boolean unmarshal) throws IgniteCheckedException {
         byte[] valBytes = cache.get(globalKey);
 
-        return unmarshal ? unmarshal(valBytes) : valBytes;
+        return unmarshal ? unmarshal(dms.marshaller, valBytes) : valBytes;
     }
 
     /** {@inheritDoc} */
@@ -54,7 +54,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     ) throws IgniteCheckedException {
         for (Map.Entry<String, byte[]> entry : cache.entrySet()) {
             if (entry.getKey().startsWith(globalKeyPrefix))
-                cb.accept(entry.getKey(), unmarshal ? unmarshal(entry.getValue()) : entry.getValue());
+                cb.accept(entry.getKey(), unmarshal ? unmarshal(dms.marshaller, entry.getValue()) : entry.getValue());
         }
     }
 

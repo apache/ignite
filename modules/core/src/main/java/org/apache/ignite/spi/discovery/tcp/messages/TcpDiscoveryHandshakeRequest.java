@@ -74,4 +74,14 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
         return S.toString(TcpDiscoveryHandshakeRequest.class, this, "super", super.toString(),
             "isChangeTopology", changeTopology());
     }
+
+    /** */
+    public boolean supportsDataPrefetch() {
+        return getFlag(CLIENT_DATA_PREFETCH);
+    }
+
+    /** */
+    public void supportsDataPrefetch(boolean prefetchData) {
+        setFlag(CLIENT_DATA_PREFETCH, prefetchData);
+    }
 }

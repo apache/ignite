@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp;
+package org.apache.ignite.spi.discovery.tcp.internal;
+
+import java.util.Map;
 
 /** */
-public enum TcpDiscoveryClusterDataComponent {
+public interface DiscoveryTcpSpiDataExchange {
     /** */
-    DISTRIBUTED_METASTORAGE;
+    Map<Integer,byte[]> collectHandshakeResponseData();
 
     /** */
-    public static final TcpDiscoveryClusterDataComponent[] VALUES = values();
+    void handshakeResponseDataReceived(Map<Integer, byte[]> componentsData);
 }

@@ -720,7 +720,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
 
-                clusterDataReceived(res.clusterData());
+                spi.handshakeResponseDataReceived(res.componentsData());
 
                 UUID rmtNodeId = res.creatorNodeId();
 
