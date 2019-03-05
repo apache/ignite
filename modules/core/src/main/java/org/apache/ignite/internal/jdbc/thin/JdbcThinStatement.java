@@ -48,7 +48,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPinnedResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultWithIo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlParseException;
@@ -228,11 +228,11 @@ public class JdbcThinStatement implements Statement {
         JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
             maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]));
 
-        JdbcPinnedResult stickyRes = conn.sendRequest(req, this, null);
+        JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
 
-        JdbcResult res0 = stickyRes.response();
+        JdbcResult res0 = resWithIo.response();
 
-        JdbcThinTcpIo stickyIo = stickyRes.cliIo();
+        JdbcThinTcpIo stickyIo = resWithIo.cliIo();
 
         assert res0 != null;
 
@@ -635,7 +635,7 @@ public class JdbcThinStatement implements Statement {
         if (fetchSize <= 0)
             throw new SQLException("Fetch size must be greater than zero.");
 
-        this.pageSize = fetchSize;
+        pageSize = fetchSize;
     }
 
     /** {@inheritDoc} */

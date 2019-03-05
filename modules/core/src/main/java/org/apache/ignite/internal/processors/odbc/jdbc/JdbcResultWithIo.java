@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 
 /**
- * Jdbc sticky result.
+ * Jdbc result with IO.
  */
-public final class JdbcPinnedResult {
+public final class JdbcResultWithIo {
     /** JDBC response result. */
     private final JdbcResult res;
 
@@ -32,9 +32,9 @@ public final class JdbcPinnedResult {
      * Constructor.
      *
      * @param res JDBC response result.
-     * @param cliIo Sticky cliIo.
+     * @param cliIo Ignite endpoint.
      */
-    public JdbcPinnedResult(JdbcResult res, JdbcThinTcpIo cliIo) {
+    public JdbcResultWithIo(JdbcResult res, JdbcThinTcpIo cliIo) {
         this.res = res;
         this.cliIo = cliIo;
     }

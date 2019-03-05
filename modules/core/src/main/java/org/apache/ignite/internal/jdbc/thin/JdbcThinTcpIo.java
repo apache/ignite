@@ -77,7 +77,7 @@ public class JdbcThinTcpIo {
     private static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -202,11 +202,11 @@ public class JdbcThinTcpIo {
 
         HandshakeResult handshakeRes = handshake(CURRENT_VER);
 
-        igniteVer = handshakeRes.igniteVer;
+        igniteVer = handshakeRes.igniteVersion();
 
-        nodeId = handshakeRes.nodeId;
+        nodeId = handshakeRes.nodeId();
 
-        srvProtoVer = handshakeRes.srvProtoVer;
+        srvProtoVer = handshakeRes.serverProtocolVersion();
     }
 
     /**
@@ -267,16 +267,16 @@ public class JdbcThinTcpIo {
                 byte[] hash = reader.readByteArray();
 
                 if (ver.compareTo(VER_2_8_0) >= 0)
-                    handshakeRes.nodeId = reader.readUuid();
+                    handshakeRes.nodeId(reader.readUuid());
 
-                handshakeRes.igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
+                handshakeRes.igniteVersion(new IgniteProductVersion(maj, min, maintenance, stage, ts, hash));
             }
             else {
-                handshakeRes.igniteVer =
-                    new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
+                handshakeRes.igniteVersion(
+                    new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null));
             }
 
-            handshakeRes.srvProtoVer = ver;
+            handshakeRes.serverProtocolVersion(ver);
 
             return handshakeRes;
         }
@@ -345,10 +345,10 @@ public class JdbcThinTcpIo {
         if (accepted) {
             HandshakeResult handshakeRes = new HandshakeResult();
 
-            handshakeRes.igniteVer =
-                new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown", 0L, null);
+            handshakeRes.igniteVersion(
+                new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown", 0L, null));
 
-            handshakeRes.srvProtoVer = VER_2_1_0;
+            handshakeRes.serverProtocolVersion(VER_2_1_0);
 
             return handshakeRes;
         }
@@ -618,19 +618,5 @@ public class JdbcThinTcpIo {
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /**
-     *  Handshake result.
-     */
-    private static final class HandshakeResult {
-        /** Ignite server version. */
-        private IgniteProductVersion igniteVer;
-
-        /** Node Id. */
-        private UUID nodeId;
-
-        /** Current protocol version used to connection to Ignite. */
-        private ClientListenerProtocolVersion srvProtoVer;
     }
 }
