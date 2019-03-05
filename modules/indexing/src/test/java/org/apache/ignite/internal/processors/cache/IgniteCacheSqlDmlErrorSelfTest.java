@@ -47,9 +47,9 @@ public class IgniteCacheSqlDmlErrorSelfTest extends AbstractIndexingCommonTest {
         super.beforeTestsStarted();
 
         oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
-            "ALLOW_KEY_VAL_COLUMNS");
+            "ALLOW_KEY_VAL_UPDATES");
 
-        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
         startGrids(1);
 
@@ -58,7 +58,7 @@ public class IgniteCacheSqlDmlErrorSelfTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", oldAllowColumnsVal);
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
 
         super.afterTestsStopped();
     }

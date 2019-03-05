@@ -51,9 +51,9 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     @Test
     public void testInsertWithExplicitKey() {
         boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
-            "ALLOW_KEY_VAL_COLUMNS");
+            "ALLOW_KEY_VAL_UPDATES");
 
-        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
         try {
             IgniteCache<String, Person> p = ignite(0).cache("S2P").withKeepBinary();
@@ -66,7 +66,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
             assertEquals(createPerson(2, "Alex"), p.get("a"));
         }
         finally {
-            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", oldAllowColumnsVal);
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
         }
     }
 
@@ -217,9 +217,9 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     @Test
     public void testNestedFieldsHandling1() {
         boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
-            "ALLOW_KEY_VAL_COLUMNS");
+            "ALLOW_KEY_VAL_UPDATES");
 
-        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
         try {
             IgniteCache<Integer, AllTypes> p = ignite(0).cache("I2AT");
@@ -251,7 +251,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
             assertEquals(resInner, res.innerTypeCol);
         }
         finally {
-            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", oldAllowColumnsVal);
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
         }
     }
 
@@ -261,9 +261,9 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     @Test
     public void testCacheRestartHandling() {
         boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
-            "ALLOW_KEY_VAL_COLUMNS");
+            "ALLOW_KEY_VAL_UPDATES");
 
-        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
         try {
             for (int i = 0; i < 4; i++) {
@@ -280,7 +280,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
             }
         }
         finally {
-            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", oldAllowColumnsVal);
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
         }
     }
 }

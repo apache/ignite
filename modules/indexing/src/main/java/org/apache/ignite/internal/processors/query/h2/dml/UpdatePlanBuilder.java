@@ -79,8 +79,8 @@ public final class UpdatePlanBuilder {
         (IgniteClosure<GridSqlColumn, Column>)GridSqlColumn::column;
 
     /** Allow hidden key value columns at the INSERT/UPDATE/MERGE statements (not final for tests). */
-    private static boolean ALLOW_KEY_VAL_COLUMNS = IgniteSystemProperties.getBoolean(
-        IgniteSystemProperties.IGNITE_ALLOW_KEY_VAL_COLUMNS_AT_DML, false);
+    private static boolean ALLOW_KEY_VAL_UPDATES = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_SQL_ALLOW_KEY_VAL_UPDATES, false);
 
     /**
      * Constructor.
@@ -229,24 +229,12 @@ public final class UpdatePlanBuilder {
             int colId = col.column().getColumnId();
 
             if (desc.isKeyColumn(colId)) {
-                if (!ALLOW_KEY_VAL_COLUMNS && !QueryUtils.isSqlType(desc.type().keyClass())) {
-                    throw new IgniteSQLException(
-                        "Composite _KEY column is not supported at INSERT/UPDATE/MERGE statements",
-                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                }
-
                 keyColIdx = i;
 
                 continue;
             }
 
             if (desc.isValueColumn(colId)) {
-                if (!ALLOW_KEY_VAL_COLUMNS && !QueryUtils.isSqlType(desc.type().valueClass())) {
-                    throw new IgniteSQLException(
-                        "Composite _VAL column is not supported at INSERT/UPDATE/MERGE statements",
-                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                }
-
                 valColIdx = i;
 
                 continue;
@@ -403,13 +391,6 @@ public final class UpdatePlanBuilder {
                 IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
         if (fastUpdate != null) {
-            if (!ALLOW_KEY_VAL_COLUMNS && (!QueryUtils.isSqlType(desc.type().keyClass())
-                || (!QueryUtils.isSqlType(desc.type().valueClass()) && mode != UpdateMode.DELETE))) {
-                throw new IgniteSQLException(
-                    "Composite _KEY / _VAL columns are not supported at INSERT/UPDATE/MERGE statements",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-            }
-
             return new UpdatePlan(
                 mode,
                 h2Tbl,
@@ -437,15 +418,8 @@ public final class UpdatePlanBuilder {
 
                     Column col = updatedCols.get(i).column();
 
-                    if (desc.isValueColumn(col.getColumnId())) {
-                        if (!ALLOW_KEY_VAL_COLUMNS && !QueryUtils.isSqlType(desc.type().valueClass())) {
-                            throw new IgniteSQLException(
-                                "Composite _VAL column is not supported at INSERT/UPDATE/MERGE statements",
-                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                        }
-
+                    if (desc.isValueColumn(col.getColumnId()))
                         valColIdx = i;
-                    }
                 }
 
                 boolean hasNewVal = (valColIdx != -1);
@@ -885,6 +859,18 @@ public final class UpdatePlanBuilder {
                 throw new IgniteSQLException("Column " + valColName + " refers to entire value cache object. " +
                     "It must not be mixed with other columns that refer to parts of value.",
                     IgniteQueryErrorCode.PARSING);
+
+            if (!ALLOW_KEY_VAL_UPDATES && desc.isKeyColumn(colId) && !QueryUtils.isSqlType(desc.type().keyClass())) {
+                throw new IgniteSQLException(
+                    "Composite _KEY column is not supported at INSERT/UPDATE/MERGE statements",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
+
+            if (!ALLOW_KEY_VAL_UPDATES && desc.isValueColumn(colId) &&  !QueryUtils.isSqlType(desc.type().valueClass())) {
+                throw new IgniteSQLException(
+                    "Composite _VAL column is not supported at INSERT/UPDATE/MERGE statements",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
         }
     }
 

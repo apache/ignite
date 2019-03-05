@@ -94,9 +94,9 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         super.beforeTest();
 
         oldAllowKeyValCol = GridTestUtils.getFieldValue(UpdatePlanBuilder.class,
-            UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS");
+            UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES");
 
-        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
         startGrid(0);
         startGrid(NODE_CLIENT);
@@ -106,7 +106,7 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", oldAllowKeyValCol);
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowKeyValCol);
 
         super.afterTest();
     }

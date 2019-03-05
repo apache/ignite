@@ -53,14 +53,14 @@ public class SqlIncompatibleDataTypeExceptionTest extends AbstractIndexingCommon
         super.beforeTest();
 
         oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
-            "ALLOW_KEY_VAL_COLUMNS");
+            "ALLOW_KEY_VAL_UPDATES");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         grid().destroyCaches(grid().cacheNames());
 
-        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", oldAllowColumnsVal);
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
 
         super.afterTest();
     }
@@ -136,7 +136,7 @@ public class SqlIncompatibleDataTypeExceptionTest extends AbstractIndexingCommon
      */
     @Test
     public void testUseKeyField_Allow() {
-        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
         execSql("CREATE TABLE test (id0 integer, id1 integer, val varchar, primary key (id0, id1))");
 
@@ -158,7 +158,7 @@ public class SqlIncompatibleDataTypeExceptionTest extends AbstractIndexingCommon
      */
     @Test
     public void testUseValField_Allow() {
-        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_COLUMNS", true);
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
         execSql("CREATE TABLE test (id integer primary key, val varchar)");
 

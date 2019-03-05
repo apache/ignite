@@ -1143,9 +1143,9 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
-     * Maximum number of diagnostic warning messages per category, when waiting for PME.
+     * Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements.
      */
-    public static final String IGNITE_ALLOW_KEY_VAL_COLUMNS_AT_DML = "IGNITE_ALLOW_KEY_VAL_COLUMNS_AT_DML";
+    public static final String IGNITE_SQL_ALLOW_KEY_VAL_UPDATES = "IGNITE_SQL_ALLOW_KEY_VAL_UPDATES";
 
     /**
      * Enforces singleton.
