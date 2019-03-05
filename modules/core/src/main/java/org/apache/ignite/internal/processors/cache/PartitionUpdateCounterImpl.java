@@ -57,7 +57,8 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /** Counter of applied updates in partition. */
     private final AtomicLong cntr = new AtomicLong();
 
-    /** Counter of pending updates in partition. Updated on primary node and during exchange (set as max upd cntr). */
+    /** Counter of pending updates in partition. Updated on primary node and during exchange (set as max upd cntr).
+     * TODO FIXME consider moving reserve counter outside. */
     private final AtomicLong reserveCntr = new AtomicLong();
 
     /** Initial counter points to last sequential update after recovery. */
@@ -244,7 +245,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      * @param item Adds update task to priority queue.
      */
     private boolean offer(Item item) {
-        if (queue.size() == MAX_GAPS)
+        if (queue.size() == MAX_GAPS) // Should trigger failure handler.
             throw new IgniteException("Too much gaps [part=" + partId + ", cntr=" + this + ']');
 
         return queue.add(item);
@@ -292,6 +293,10 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         assert newCntr >= cntr : "Update counter behind reserve counter: cntr=" + cntr + ", reserveCntr=" + newCntr + ", partId=" + partId;
 
         return newCntr;
+    }
+
+    public long next(long delta) {
+        return cntr.getAndAdd(delta);
     }
 
 //    /**

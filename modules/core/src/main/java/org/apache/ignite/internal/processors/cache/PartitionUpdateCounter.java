@@ -27,65 +27,10 @@ import org.jetbrains.annotations.Nullable;
  * TODO FIXME consider rolling bit set implementation.
  * TODO describe ITEM structure
  * TODO add debugging info
- * TODO add update order tracking capabilities ?
  * TODO non-blocking version ? BitSets instead of TreeSet ?
+ * TODO cleanup and comment interface
  */
 public interface PartitionUpdateCounter {
-    /** */
-    public static final PartitionUpdateCounter EMPTY = new PartitionUpdateCounter() {
-        @Override public void init(long initUpdCntr, @Nullable byte[] rawData) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override public long initial() {
-            return 0;
-        }
-
-        @Override public long get() {
-            return 0;
-        }
-
-        @Override public long next() {
-            return 0;
-        }
-
-        @Override public long reserved() {
-            return 0;
-        }
-
-        @Override public void update(long val) throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override public boolean update(long start, long delta) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override public void resetCounters() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override public void updateInitial(long cntr) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override public GridLongList finalizeUpdateCounters() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override public long reserve(long delta) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Nullable @Override public byte[] getBytes() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override public boolean sequential() {
-            return false;
-        }
-    };
-
     public void init(long initUpdCntr, @Nullable byte[] rawData);
 
     public long initial();
@@ -93,6 +38,8 @@ public interface PartitionUpdateCounter {
     public long get();
 
     public long next();
+
+    public long next(long delta);
 
     public long reserved();
 

@@ -1338,8 +1338,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
-                if (!tx.txState().mvccEnabled() && !locCache)
-                    tx.calculatePartitionUpdateCounters();
+                if (!tx.txState().mvccEnabled() && !locCache) {
+                    /** For MVCC counters are assigned on enlisting.
+                     * See usage of {@link TxCounters#incrementUpdateCounter(int, int)} ) */
+                    tx.calculatePartitionUpdateCounters(false);
+                }
 
                 recheckOnePhaseCommit();
 
