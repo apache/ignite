@@ -20,7 +20,7 @@ import {assert} from 'chai';
 
 import {
     ADD_CLUSTER,
-    REMOVE_CLUSTER,
+    REMOVE_CLUSTERS,
     UPDATE_CLUSTER,
     UPSERT_CLUSTERS,
     ADD_CACHE,
@@ -30,7 +30,7 @@ import {
     reducer
 } from './reducer';
 
-suite.skip('page-configure component reducer', () => {
+suite('page-configure component reducer', () => {
     test('Default state', () => {
         assert.deepEqual(
             reducer(void 0, {}),
@@ -41,6 +41,7 @@ suite.skip('page-configure component reducer', () => {
             }
         );
     });
+
     test('ADD_CLUSTER action', () => {
         assert.deepEqual(
             reducer(
@@ -53,13 +54,15 @@ suite.skip('page-configure component reducer', () => {
             'adds a cluster'
         );
     });
-    test('REMOVE_CLUSTER action', () => {
+
+    test('REMOVE_CLUSTERS action', () => {
         assert.deepEqual(
-            reducer({}, {type: REMOVE_CLUSTER}),
+            reducer({}, {type: REMOVE_CLUSTERS}),
             {},
             'does nothing yet'
         );
     });
+
     test('UPDATE_CLUSTER action', () => {
         assert.deepEqual(
             reducer(
@@ -70,6 +73,7 @@ suite.skip('page-configure component reducer', () => {
             'updates a cluster'
         );
     });
+
     test('UPSERT_CLUSTERS', () => {
         assert.deepEqual(
             reducer(
@@ -85,6 +89,7 @@ suite.skip('page-configure component reducer', () => {
             ])},
             'updates one cluster'
         );
+
         assert.deepEqual(
             reducer(
                 {clusters: new Map([
@@ -105,6 +110,7 @@ suite.skip('page-configure component reducer', () => {
             ])},
             'updates two clusters'
         );
+
         assert.deepEqual(
             reducer(
                 {clusters: new Map()},
@@ -115,6 +121,7 @@ suite.skip('page-configure component reducer', () => {
             ])},
             'adds one cluster'
         );
+
         assert.deepEqual(
             reducer(
                 {clusters: new Map([[1, {_id: 1}]])},
@@ -127,6 +134,7 @@ suite.skip('page-configure component reducer', () => {
             ])},
             'adds two clusters'
         );
+
         assert.deepEqual(
             reducer(
                 {clusters: new Map([[1, {_id: 1}]])},
@@ -147,6 +155,7 @@ suite.skip('page-configure component reducer', () => {
             'adds and updates several clusters'
         );
     });
+
     test('ADD_CACHE action', () => {
         assert.deepEqual(
             reducer(
@@ -159,6 +168,7 @@ suite.skip('page-configure component reducer', () => {
             'adds a cache'
         );
     });
+
     test('REMOVE_CACHE action', () => {
         assert.deepEqual(
             reducer({}, {type: REMOVE_CACHE}),
@@ -166,6 +176,7 @@ suite.skip('page-configure component reducer', () => {
             'does nothing yet'
         );
     });
+
     test('UPDATE_CACHE action', () => {
         assert.deepEqual(
             reducer(
@@ -176,6 +187,7 @@ suite.skip('page-configure component reducer', () => {
             'updates a cache'
         );
     });
+
     test('UPSERT_CACHES', () => {
         assert.deepEqual(
             reducer(
@@ -191,6 +203,7 @@ suite.skip('page-configure component reducer', () => {
             ])},
             'updates one cache'
         );
+
         assert.deepEqual(
             reducer(
                 {caches: new Map([
@@ -211,6 +224,7 @@ suite.skip('page-configure component reducer', () => {
             ])},
             'updates two caches'
         );
+
         assert.deepEqual(
             reducer(
                 {caches: new Map()},
@@ -221,6 +235,7 @@ suite.skip('page-configure component reducer', () => {
             ])},
             'adds one cache'
         );
+
         assert.deepEqual(
             reducer(
                 {caches: new Map([[1, {_id: 1}]])},
@@ -233,6 +248,7 @@ suite.skip('page-configure component reducer', () => {
             ])},
             'adds two caches'
         );
+
         assert.deepEqual(
             reducer(
                 {caches: new Map([[1, {_id: 1}]])},
