@@ -36,9 +36,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileTransferManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.meta.PartitionFileMetaInfo;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.GridIntIterator;
@@ -60,9 +58,6 @@ public class GridPartitionUploadManager {
 
     /** */
     private IgniteLogger log;
-
-    /** The default factory to provide IO oprations over uploading files. */
-    private static final FileIOFactory dfltIoFactory = new RandomAccessFileIOFactory();
 
     /** */
     private final ConcurrentMap<UUID, CachePartitionUploadFuture> uploadFutMap = new ConcurrentHashMap<>();
@@ -188,7 +183,7 @@ public class GridPartitionUploadManager {
             backupMgr.backup(uploadFut.rebalanceId,
                 uploadFut.getAssigns(),
                 new SocketBackupProcessTask(
-                    new FileTransferManager<>(cctx.kernalContext(), ch.channel()),
+                    new FileTransferManager<>(cctx.kernalContext(), ch.channel(), uploadFut),
                     log
                 ),
                 uploadFut);

@@ -310,7 +310,8 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 ofNullable(trackMap.get(grpPartId))
                     .ifPresent(AtomicInteger::decrementAndGet);
 
-                U.log(log, "Partition handled [pairId" + grpPartId + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Partition handled successfully [pairId" + grpPartId + ']');
 
                 final Map<GroupPartitionId, Integer> offsets = backupCtx.deltaOffsetMap;
                 final int deltaOffset = offsets.get(grpPartId);
@@ -327,7 +328,8 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 // Finish partition backup task.
                 backupCtx.remainPartIds.remove(grpPartId);
 
-                U.log(log, "Partition delta handled [pairId" + grpPartId + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Partition delta handled successfully [pairId" + grpPartId + ']');
             }
         }
         catch (Exception e) {
@@ -382,7 +384,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
         }
         catch (IgniteDataIntegrityViolationException e) {
             // The page can be readed with zero bytes only if it allocated but not changed yet.
-            U.debug(log, "Ignore integrity violation checks [pairId=" + pairId + ", pageId=" + pageId + ']');
+            U.warn(log, "Ignore integrity violation checks [pairId=" + pairId + ", pageId=" + pageId + ']');
         }
         catch (Exception e) {
             U.error(log, "An error occured in the process of page backup " +

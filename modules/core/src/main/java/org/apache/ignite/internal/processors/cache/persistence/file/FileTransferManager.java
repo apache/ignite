@@ -27,6 +27,7 @@ import java.nio.channels.SocketChannel;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.meta.FileMetaInfo;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -44,6 +45,9 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
 
     /** The default factory to provide IO oprations over downloading files. */
     private static final FileIOFactory dfltIoFactory = new RandomAccessFileIOFactory();
+    
+    /** */
+    private final IgniteInternalFuture<Boolean> mark;
 
     /** */
     protected final SocketChannel channel;
@@ -64,7 +68,8 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
      */
     public FileTransferManager(
         GridKernalContext ktx,
-        SocketChannel channel
+        SocketChannel channel,
+        IgniteInternalFuture<Boolean> mark
     ) throws IOException {
         assert channel.isBlocking();
 
@@ -72,6 +77,7 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
         this.dis = new DataInputStream(channel.socket().getInputStream());
         this.dos = new DataOutputStream(channel.socket().getOutputStream());
         this.log = ktx.log(getClass());
+        this.mark = mark;
     }
 
     /**
@@ -156,7 +162,9 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
 
                 long size = expected;
 
-                while (size > 0) {
+                // TODO isInterrupted
+
+                while (size > 0 && !mark.isDone()) {
                     long readed = fileIO.transferFrom(channel, fileIO.position(), size);
 
                     if (readed < 0)
@@ -180,6 +188,9 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
      */
     public int readInto(ByteBuffer buff) throws IgniteCheckedException {
         try {
+            if (mark.isDone())
+                return -1;
+
             return channel.read(buff);
         }
         catch (IOException e) {
@@ -202,10 +213,10 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
             fileIO = dfltIoFactory.create(file, READ);
 
             // Send the whole file to channel.
-            // Todo limit thransfer speed
+            // Todo limit thransfer speed online
             long written = 0;
 
-            while (written < size)
+            while (written < size && !mark.isDone())
                 written += fileIO.transferTo(written, CHUNK_SIZE, channel);
 
             //Waiting for the writing response.
