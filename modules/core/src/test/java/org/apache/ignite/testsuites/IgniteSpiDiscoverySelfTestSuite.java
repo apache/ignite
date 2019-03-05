@@ -40,6 +40,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryFailedJoinTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryCoordinatorFailureTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNetworkIssuesTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnReconnectTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
@@ -130,6 +131,8 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgniteDiscoveryMassiveNodeFailTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryCoordinatorFailureTest.class));
+
+        suite.addTest(new TestSuite(TcpDiscoveryNetworkIssuesTest.class));
 
         // Client connect.
         suite.addTest(new TestSuite(IgniteClientConnectTest.class));
