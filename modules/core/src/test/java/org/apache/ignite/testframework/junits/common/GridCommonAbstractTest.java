@@ -1137,10 +1137,26 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             throw new IgniteException(e);
         }
 
-        if (found.size() != cnt)
+        if (found.size() != cnt) {
+
+
+            GridCacheSharedContext sharedCtx = cache.unwrap(IgniteEx.class).context().cache().context();
+            String cacheName = cache.getConfiguration(CacheConfiguration.class).getName();
+            GridCacheContext ctx = sharedCtx.cache().cache(cacheName).context();
+
+
+            int parts = aff.partitions();
+
+            log.error("Some troubles with affinity: cache=" + cache.getName() + ", parts=" + parts +
+                ", topVer=" + ctx.topology().readyTopologyVersion() +
+                ", client=" + ctx.localNode().isClient() +
+                ", GridDhtPartitionFullMap=" + ctx.topology().partitionMap(false) +
+                ", ctx=" + ctx);
+
             throw new IgniteException("Unable to find " + cnt + " required keys. [affPartsToNodes=" +
-                aff.mapPartitionsToNodes(IntStream.rangeClosed(0, aff.partitions())
+                aff.mapPartitionsToNodes(IntStream.rangeClosed(0, parts)
                 .boxed().collect(Collectors.toList())) + ", cache=" + cache + "]");
+        }
 
         return found;
     }
