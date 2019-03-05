@@ -337,7 +337,7 @@ public class CommandHandler {
     private static final Scanner IN = new Scanner(System.in);
 
     /** Validate indexes task name. */
-    private static final String VALIDATE_INDEXES_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
+    private static final String VALIDATE_INDEXES_TASK = "org.apache.ignite.internal.visor.verify.indexing.VisorValidateIndexesTask";
 
     /** */
     private static final String TX_LIMIT = "--limit";
