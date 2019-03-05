@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -49,7 +48,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -66,14 +64,14 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -170,13 +168,6 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-    }
-
-    /**
      * Create File I/O which fails after second attempt to write to File
      */
     private static class FailingFileIOFactory implements FileIOFactory {
@@ -215,8 +206,8 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
                 }
 
                 /** {@inheritDoc} */
-                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-                    return delegate.map(maxWalSegmentSize);
+                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    return delegate.map(sizeBytes);
                 }
             };
         }

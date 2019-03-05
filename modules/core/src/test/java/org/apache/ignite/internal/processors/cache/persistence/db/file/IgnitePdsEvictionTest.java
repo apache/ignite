@@ -38,11 +38,8 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test for page evictions.
@@ -102,7 +99,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -111,7 +108,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
@@ -320,12 +317,5 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
         final IgniteCacheDatabaseSharedManager db = sharedCtx.database();
 
         return db.dataRegion(null).pageMemory();
-    }
-
-    /**
-     * @throws IgniteCheckedException If fail.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

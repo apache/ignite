@@ -334,6 +334,29 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
 
                 return null;
             }
+        }, SQLException.class, "JDBC connection is not allowed, see ClientConnectorConfiguration.jdbcEnabled");
+    }
+
+    /**
+     *  Checks if JDBC connection disabled for daemon node.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testJdbcConnectionDisabledForDaemon() throws Exception {
+        final IgniteConfiguration cfg = baseConfiguration().setDaemon(true);
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+            .setJdbcEnabled(true)
+            .setThinClientEnabled(true));
+
+        Ignition.start(cfg);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+                return null;
+            }
         }, SQLException.class, "Failed to connect to Ignite cluster");
     }
 

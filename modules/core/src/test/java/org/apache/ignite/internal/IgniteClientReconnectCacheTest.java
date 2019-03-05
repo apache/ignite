@@ -884,12 +884,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
         });
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return clientCache.get(1);
-            }
-        }, IllegalStateException.class, null);
-
         checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, false, false);
 
         IgniteCache<Object, Object> clientCache0 = client.cache(DEFAULT_CACHE_NAME);

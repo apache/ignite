@@ -568,6 +568,13 @@ namespace ignite
                 /**
                  * Read string.
                  *
+                 * @param res String to store result.
+                 */
+                void ReadString(std::string& res);
+
+                /**
+                 * Read string.
+                 *
                  * @param fieldName Field name.                 
                  * @param res Array to store data to (should be able to acocmodate null-terminator).
                  * @param len Expected length of string.

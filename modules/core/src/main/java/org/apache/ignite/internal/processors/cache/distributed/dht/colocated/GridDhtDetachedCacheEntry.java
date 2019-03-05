@@ -65,10 +65,10 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void storeValue(CacheObject val,
+    @Override protected boolean storeValue(CacheObject val,
         long expireTime,
-        GridCacheVersion ver,
-        CacheDataRow oldRow) throws IgniteCheckedException {
+        GridCacheVersion ver) throws IgniteCheckedException {
+        return false;
         // No-op for detached entries, index is updated on primary nodes.
     }
 

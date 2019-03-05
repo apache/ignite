@@ -107,7 +107,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      */
     public void testDmlErrors() throws SQLException {
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, null)", "22004",
-            "Value for INSERT, MERGE, or UPDATE must not be null");
+            "Value for INSERT, COPY, MERGE, or UPDATE must not be null");
 
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "0700B",
             "Value conversion failed [from=java.lang.String, to=java.lang.Integer]");
@@ -267,10 +267,10 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                     rs.next();
 
-                    rs.getLong(1);
+                    rs.getInt(1);
                 }
             }
-        }, "0700B", "Cannot convert to long");
+        }, "0700B", "Cannot convert to int");
     }
 
     /**

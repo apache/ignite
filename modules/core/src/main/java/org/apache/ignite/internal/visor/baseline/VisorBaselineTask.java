@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -34,9 +35,10 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task that will collect baseline topology information.
+ * Task that will collect information about baseline topology and can change its state.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, VisorBaselineTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -71,10 +73,10 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
 
             Collection<? extends BaselineNode> baseline = cluster.currentBaselineTopology();
 
-            Collection<? extends BaselineNode> servers = cluster.forServers().nodes();
+            Collection<? extends BaselineNode> srvrs = cluster.forServers().nodes();
 
-            return new VisorBaselineTaskResult(ignite.active(), cluster.topologyVersion(),
-                F.isEmpty(baseline) ? null : baseline, servers);
+            return new VisorBaselineTaskResult(ignite.cluster().active(), cluster.topologyVersion(),
+                F.isEmpty(baseline) ? null : baseline, srvrs);
         }
 
         /**
@@ -93,12 +95,14 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @return Current baseline.
          */
         private Map<String, BaselineNode> currentBaseLine() {
-            Collection<BaselineNode> baseline = ignite.cluster().currentBaselineTopology();
-
             Map<String, BaselineNode> nodes = new HashMap<>();
 
-            for (BaselineNode node : baseline)
-                nodes.put(node.consistentId().toString(), node);
+            Collection<BaselineNode> baseline = ignite.cluster().currentBaselineTopology();
+
+            if (!F.isEmpty(baseline)) {
+                for (BaselineNode node : baseline)
+                    nodes.put(node.consistentId().toString(), node);
+            }
 
             return nodes;
         }
@@ -122,12 +126,12 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @return New baseline.
          */
         private VisorBaselineTaskResult set(List<String> consistentIds) {
-            Map<String, BaselineNode> servers = currentServers();
+            Map<String, BaselineNode> srvrs = currentServers();
 
             Collection<BaselineNode> baselineTop = new ArrayList<>();
 
             for (String consistentId : consistentIds) {
-                BaselineNode node = servers.get(consistentId);
+                BaselineNode node = srvrs.get(consistentId);
 
                 if (node == null)
                     throw new IllegalStateException("Node not found for consistent ID: " + consistentId);
@@ -146,10 +150,10 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          */
         private VisorBaselineTaskResult add(List<String> consistentIds) {
             Map<String, BaselineNode> baseline = currentBaseLine();
-            Map<String, BaselineNode> servers = currentServers();
+            Map<String, BaselineNode> srvrs = currentServers();
 
             for (String consistentId : consistentIds) {
-                BaselineNode node = servers.get(consistentId);
+                BaselineNode node = srvrs.get(consistentId);
 
                 if (node == null)
                     throw new IllegalStateException("Node not found for consistent ID: " + consistentId);

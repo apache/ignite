@@ -24,7 +24,7 @@ import {default as ListEditable} from '../../controller';
  * User can provide an alias for $item by setting item-name attribute on transclusion slot element.
  */
 export class ListEditableTransclude {
-    /** 
+    /**
      * Transcluded slot name.
      *
      * @type {string}
@@ -63,12 +63,17 @@ export class ListEditableTransclude {
                 [itemName]: {
                     get: () => {
                         // Scope might get destroyed
-                        if (!this.$scope) return;
+                        if (!this.$scope)
+                            return;
+
                         return this.$scope.item;
                     },
                     set: (value) => {
                         // There are two items: the original one from collection and an item from
                         // cache that will be saved, so the latter should be the one we set.
+                        if (!this.$scope)
+                            return;
+
                         this.$scope.item = value;
                     },
                     // Allows to delete property later
@@ -77,7 +82,9 @@ export class ListEditableTransclude {
                 $form: {
                     get: () => {
                         // Scope might get destroyed
-                        if (!this.$scope) return;
+                        if (!this.$scope)
+                            return;
+
                         return this.$scope.form;
                     },
                     // Allows to delete property later
@@ -95,7 +102,9 @@ export class ListEditableTransclude {
      * @returns {number}
      */
     get $index() {
-        if (!this.$scope) return;
+        if (!this.$scope)
+            return;
+
         return this.$scope.$index;
     }
 

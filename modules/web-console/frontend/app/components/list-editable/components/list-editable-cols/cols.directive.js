@@ -15,9 +15,6 @@
  * limitations under the License.
  */
 
-// @ts-check
-/// <reference types="angular" />
-
 import template from './cols.template.pug';
 import './cols.style.scss';
 
@@ -26,7 +23,7 @@ import './cols.style.scss';
  *
  * @typedef {Object} IListEditableColDef
  * @prop {string} [name] - optional name to display at column head
- * @prop {string} cellClass - CSS class to assign to column cells
+ * @prop {string} [cellClass] - CSS class to assign to column cells
  * @prop {string} [tip] - optional tip to display at column head
  */
 export class ListEditableColsController {
@@ -73,7 +70,8 @@ export default function listEditableCols() {
         },
         bindToController: {
             colDefs: '<listEditableCols',
-            rowClass: '@?listEditableColsRowClass'
+            rowClass: '@?listEditableColsRowClass',
+            ngDisabled: '<?'
         }
     };
 }

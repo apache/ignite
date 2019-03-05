@@ -106,9 +106,6 @@
     <ClCompile Include="..\..\src\diagnostic\diagnosable_adapter.cpp">
       <Filter>Code\diagnostic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\src\system\socket_client.cpp">
-      <Filter>Code\system</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\query\type_info_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
@@ -146,6 +143,15 @@
       <Filter>Code\query</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\message.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\config\connection_string_parser.cpp">
+      <Filter>Code\config</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\config\config_tools.cpp">
+      <Filter>Code\config</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ssl_mode.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
@@ -245,9 +251,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h">
       <Filter>Code\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h">
-      <Filter>Code\system</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h">
       <Filter>Code\query</Filter>
     </ClInclude>
@@ -282,6 +285,18 @@
       <Filter>Code\query</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\odbc_error.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser.h">
+      <Filter>Code\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\settable_value.h">
+      <Filter>Code\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\config_tools.h">
+      <Filter>Code\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\end_point.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

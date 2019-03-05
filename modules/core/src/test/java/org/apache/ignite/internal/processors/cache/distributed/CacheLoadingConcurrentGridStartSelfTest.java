@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -92,6 +93,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         ccfg.setBackups(1);
 
         ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestCacheStoreAdapter()));
+
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 64));
 
         if (getTestIgniteInstanceName(0).equals(igniteInstanceName)) {
             if (client)

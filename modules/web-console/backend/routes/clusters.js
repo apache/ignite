@@ -23,12 +23,54 @@ const express = require('express');
 
 module.exports = {
     implements: 'routes/clusters',
-    inject: ['mongo', 'services/clusters']
+    inject: ['mongo', 'services/clusters', 'services/caches', 'services/domains', 'services/igfss']
 };
 
-module.exports.factory = function(mongo, clustersService) {
+module.exports.factory = function(mongo, clustersService, cachesService, domainsService, igfssService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
+
+        router.get('/:_id/caches', (req, res) => {
+            cachesService.shortList(req.currentUserId(), req.demo(), req.params._id)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        router.get('/:_id/models', (req, res) => {
+            domainsService.shortList(req.currentUserId(), req.demo(), req.params._id)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        router.get('/:_id/igfss', (req, res) => {
+            igfssService.shortList(req.currentUserId(), req.demo(), req.params._id)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        router.get('/:_id', (req, res) => {
+            clustersService.get(req.currentUserId(), req.demo(), req.params._id)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        router.get('/', (req, res) => {
+            clustersService.shortList(req.currentUserId(), req.demo())
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        router.put('/basic', (req, res) => {
+            clustersService.upsertBasic(req.currentUserId(), req.demo(), req.body)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        router.put('/', (req, res) => {
+            clustersService.upsert(req.currentUserId(), req.demo(), req.body)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
 
         /**
          * Save cluster.

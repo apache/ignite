@@ -43,6 +43,26 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * Gets previous node alive flag.<br>
+     * {@code True} means node has connectivity to it's previous node in a ring.
+     *
+     * @return previous node alive flag.
+     */
+    public boolean previousNodeAlive() {
+        return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
+    }
+
+    /**
+     * Sets topology change flag.<br>
+     * {@code True} means node has connectivity to it's previous node in a ring.
+     *
+     * @param prevNodeAlive previous node alive flag.
+     */
+    public void previousNodeAlive(boolean prevNodeAlive) {
+        setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeAlive);
+    }
+
+    /**
      * Gets order of the node sent the response.
      *
      * @return Order of the node sent the response.
@@ -76,6 +96,7 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryHandshakeResponse.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryHandshakeResponse.class, this, "super", super.toString(),
+            "isPreviousNodeAlive", previousNodeAlive());
     }
 }

@@ -185,12 +185,21 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      * @param platformId Platform id.
      * @param marshallerMappings All marshaller mappings for given platformId.
+     * @throws IgniteCheckedException In case of failure to process incoming marshaller mappings.
      */
-    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings) {
+    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings)
+        throws IgniteCheckedException
+    {
         ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
 
-        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet())
-            platformCache.put(e.getKey(), new MappedName(e.getValue().className(), true));
+        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet()) {
+            int typeId = e.getKey();
+            String clsName = e.getValue().className();
+
+            platformCache.put(typeId, new MappedName(clsName, true));
+
+            fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
+        }
     }
 
     /**

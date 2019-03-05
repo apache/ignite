@@ -18,8 +18,8 @@
 import COUNTRIES from 'app/data/countries.json';
 
 export default ['IgniteCountries', function() {
-    const indexByName = _.keyBy(COUNTRIES, 'name');
-    const UNDEFINED_COUNTRY = {name: '', code: ''};
+    const indexByName = _.keyBy(COUNTRIES, 'label');
+    const UNDEFINED_COUNTRY = {label: '', value: '', code: ''};
 
     const getByName = (name) => (indexByName[name] || UNDEFINED_COUNTRY);
     const getAll = () => (COUNTRIES);

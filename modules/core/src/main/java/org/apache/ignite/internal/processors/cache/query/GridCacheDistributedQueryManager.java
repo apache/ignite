@@ -267,7 +267,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 log,
                 req.pageSize(),
                 0,
-                false,
                 req.includeBackups(),
                 false,
                 null,

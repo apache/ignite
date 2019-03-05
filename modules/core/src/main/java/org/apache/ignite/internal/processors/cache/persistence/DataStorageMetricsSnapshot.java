@@ -62,6 +62,12 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** */
     private long lastCpCowPages;
 
+    /** */
+    private long walTotalSize;
+
+    /** */
+    private long totalAllocatedSize;
+
     /**
      * @param metrics Metrics.
      */
@@ -79,6 +85,8 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
         lastCpTotalPages = metrics.getLastCheckpointTotalPagesNumber();
         lastCpDataPages = metrics.getLastCheckpointDataPagesNumber();
         lastCpCowPages = metrics.getLastCheckpointCopiedOnWritePagesNumber();
+        walTotalSize = metrics.getWalTotalSize();
+        totalAllocatedSize = metrics.getTotalAllocatedSize();
     }
 
     /** {@inheritDoc} */
@@ -144,6 +152,16 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** {@inheritDoc} */
     @Override public long getLastCheckpointCopiedOnWritePagesNumber() {
         return lastCpCowPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getWalTotalSize() {
+        return walTotalSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return totalAllocatedSize;
     }
 
     /** {@inheritDoc} */

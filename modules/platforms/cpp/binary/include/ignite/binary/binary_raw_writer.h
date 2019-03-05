@@ -266,7 +266,7 @@ namespace ignite
              */
             void WriteString(const std::string& val)
             {
-                WriteString(val.c_str());
+                WriteString(val.c_str(), static_cast<int32_t>(val.size()));
             }
             
             /**

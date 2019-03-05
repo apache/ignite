@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import java.io.IOException;
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.util.Locale;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
@@ -29,10 +33,10 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import com.fasterxml.jackson.databind.ser.SerializerFactory;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.text.DateFormat;
-import java.util.Locale;
+
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.util.typedef.F;
@@ -59,6 +63,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
         module.addSerializer(IgniteUuid.class, IGNITE_UUID_SERIALIZER);
         module.addSerializer(GridCacheSqlMetadata.class, IGNITE_SQL_METADATA_SERIALIZER);
         module.addSerializer(GridCacheSqlIndexMetadata.class, IGNITE_SQL_INDEX_METADATA_SERIALIZER);
+        module.addSerializer(BinaryObjectImpl.class, IGNITE_BINARY_OBJECT_SERIALIZER);
 
         configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
@@ -89,7 +94,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
          * Default constructor.
          */
         CustomSerializerProvider() {
-            super();
+            // No-op.
         }
 
         /**
@@ -109,13 +114,12 @@ public class GridJettyObjectMapper extends ObjectMapper {
         }
 
         /** {@inheritDoc} */
-        @Override public JsonSerializer<Object> findNullKeySerializer(JavaType serializationType,
-            BeanProperty prop) throws JsonMappingException {
+        @Override public JsonSerializer<Object> findNullKeySerializer(JavaType serializationType, BeanProperty prop) {
             return NULL_KEY_SERIALIZER;
         }
 
         /** {@inheritDoc} */
-        @Override public JsonSerializer<Object> findNullValueSerializer(BeanProperty prop) throws JsonMappingException {
+        @Override public JsonSerializer<Object> findNullValueSerializer(BeanProperty prop) {
             return NULL_VALUE_SERIALIZER;
         }
     }
@@ -219,6 +223,45 @@ public class GridJettyObjectMapper extends ObjectMapper {
             gen.writeBooleanField("unique", idx.unique());
 
             gen.writeEndObject();
+        }
+    };
+
+    /** Custom serializer for {@link GridCacheSqlIndexMetadata} */
+    private static final JsonSerializer<BinaryObjectImpl> IGNITE_BINARY_OBJECT_SERIALIZER = new JsonSerializer<BinaryObjectImpl>() {
+        /** {@inheritDoc} */
+        @Override public void serialize(BinaryObjectImpl bin, JsonGenerator gen, SerializerProvider ser) throws IOException {
+            try {
+                BinaryType meta = bin.rawType();
+
+                // Serialize to JSON if we have metadata.
+                if (meta != null && !F.isEmpty(meta.fieldNames())) {
+                    gen.writeStartObject();
+
+                    for (String name : meta.fieldNames()) {
+                        Object val = bin.field(name);
+
+                        if (val instanceof BinaryObjectImpl) {
+                            BinaryObjectImpl ref = (BinaryObjectImpl)val;
+
+                            if (ref.hasCircularReferences())
+                                throw ser.mappingException("Failed convert to JSON object for circular references");
+                        }
+
+                        gen.writeObjectField(name, val);
+                    }
+
+                    gen.writeEndObject();
+                }
+                else {
+                    // Otherwise serialize as Java object.
+                    Object obj = bin.deserialize();
+
+                    gen.writeObject(obj);
+                }
+            }
+            catch (BinaryObjectException ignore) {
+                gen.writeNull();
+            }
         }
     };
 }

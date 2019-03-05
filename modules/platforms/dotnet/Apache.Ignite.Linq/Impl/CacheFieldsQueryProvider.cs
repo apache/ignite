@@ -220,17 +220,20 @@ namespace Apache.Ignite.Linq.Impl
             // Try with full type name (this works when TableName is not set).
             var valueTypeName = cacheValueType.FullName;
 
-            if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
+            if (valueTypeName != null)
             {
-                return EscapeTableName(valueTypeName);
-            }
+                if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
+                {
+                    return EscapeTableName(valueTypeName);
+                }
 
-            // Remove namespace and nested class qualification and try again.
-            valueTypeName = EscapeTableName(valueTypeName);
+                // Remove namespace and nested class qualification and try again.
+                valueTypeName = EscapeTableName(valueTypeName);
 
-            if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
-            {
-                return valueTypeName;
+                if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
+                {
+                    return valueTypeName;
+                }
             }
 
             throw new CacheException(string.Format("Table name cannot be inferred for cache '{0}', " +

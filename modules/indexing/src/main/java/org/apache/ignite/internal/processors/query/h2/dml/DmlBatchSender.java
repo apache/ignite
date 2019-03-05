@@ -22,17 +22,20 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -46,6 +49,9 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
  * Batch sender class.
  */
 public class DmlBatchSender {
+    /** Comparator. */
+    private static final BatchEntryComparator COMP = new BatchEntryComparator();
+
     /** Cache context. */
     private final GridCacheContext cctx;
 
@@ -311,7 +317,7 @@ public class DmlBatchSender {
         private Map<Object, Integer> rowNums = new HashMap<>();
 
         /** Map from keys to entry processors. */
-        private Map<Object, EntryProcessor<Object, Object, Boolean>> rowProcs = new HashMap<>();
+        private Map<Object, EntryProcessor<Object, Object, Boolean>> rowProcs = new TreeMap<>(COMP);
 
         /**
          * Checks if batch contains key.
@@ -394,6 +400,18 @@ public class DmlBatchSender {
          */
         public Map<Object, EntryProcessor<Object, Object, Boolean>> rowProcessors() {
             return rowProcs;
+        }
+    }
+
+    /**
+     * Batch entries comparator.
+     */
+    private static final class BatchEntryComparator implements Comparator<Object> {
+        /** {@inheritDoc} */
+        @Override public int compare(Object first, Object second) {
+            // We assume that only simple types or BinaryObjectImpl are possible. The latter comes from the fact
+            // that we use BinaryObjectBuilder which produces only on-heap binary objects.
+            return BinaryObjectImpl.compareForDml(first, second);
         }
     }
 }

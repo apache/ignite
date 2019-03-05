@@ -203,7 +203,7 @@ public class TxRecoveryStoreEnabledTest extends GridCommonAbstractTest {
      */
     private static class TestDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void simulateNodeFailure() {
+        @Override public void simulateNodeFailure() {
             super.simulateNodeFailure();
         }
     }

@@ -52,6 +52,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -762,6 +763,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         Object keyVal = null;
 
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
+            IgniteThread.onEntryProcessorEntered(true);
+
             try {
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(key, keyVal, cacheVal, val,
                     ver, keepBinary(), cached());
@@ -776,6 +779,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             }
             catch (Exception ignore) {
                 // No-op.
+            }
+            finally {
+                IgniteThread.onEntryProcessorLeft();
             }
         }
 

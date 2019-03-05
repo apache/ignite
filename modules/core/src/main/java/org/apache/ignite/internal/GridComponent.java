@@ -61,7 +61,10 @@ public interface GridComponent {
         BINARY_PROC,
 
         /** Query processor. */
-        QUERY_PROC
+        QUERY_PROC,
+
+        /** Authentication processor. */
+        AUTH_PROC
     }
 
     /**

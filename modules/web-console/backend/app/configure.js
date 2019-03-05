@@ -25,6 +25,7 @@ const session = require('express-session');
 const connectMongo = require('connect-mongo');
 const passport = require('passport');
 const passportSocketIo = require('passport.socketio');
+const mongoSanitize = require('express-mongo-sanitize');
 
 // Fire me up!
 
@@ -51,6 +52,9 @@ module.exports.factory = function(settings, mongo, apis) {
 
             app.use(bodyParser.json({limit: '50mb'}));
             app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+
+
+            app.use(mongoSanitize({replaceWith: '_'}));
 
             app.use(session({
                 secret: settings.sessionSecret,

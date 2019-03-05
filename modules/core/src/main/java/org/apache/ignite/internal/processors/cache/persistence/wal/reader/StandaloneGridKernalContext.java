@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -125,9 +126,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * {@code null} means no specific folder is configured.
      * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
      */
-    StandaloneGridKernalContext(IgniteLogger log,
+    public StandaloneGridKernalContext(
+        IgniteLogger log,
         @Nullable File binaryMetadataFileStoreDir,
-        @Nullable File marshallerMappingFileStoreDir) throws IgniteCheckedException {
+        @Nullable File marshallerMappingFileStoreDir
+    ) throws IgniteCheckedException {
         this.log = log;
 
         try {
@@ -176,7 +179,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /**
      * @return Ignite configuration which allows to start requied processors for WAL reader
      */
-    private IgniteConfiguration prepareIgniteConfiguration() {
+    protected IgniteConfiguration prepareIgniteConfiguration() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
@@ -328,6 +331,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteAuthenticationProcessor authentication() {
         return null;
     }
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
@@ -28,9 +27,8 @@ import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.typedef.CIX3;
+import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 
@@ -75,10 +73,8 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             sizes,
             sharedCtx,
             PAGE_SIZE,
-            new CIX3<FullPageId, ByteBuffer, Integer>() {
-                @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuffer, Integer tag) {
-                    assert false : "No evictions should happen during the test";
-                }
+            (fullPageId, byteBuf, tag) -> {
+                assert false : "No page replacement (rotation with disk) should happen during the test";
             },
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
                 @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
@@ -90,7 +86,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
                 }
             },
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            false
+            PageMemoryImpl.ThrottlingPolicy.NONE, null
         );
     }
 

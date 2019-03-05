@@ -32,6 +32,7 @@ Ignite.NET:
 SQL:
 * Added DEFAULT support to CREATE TABLE command
 * Added ALTER TABLE DROP COLUMN support
+* Added COPY command for fast data load
 * Added INLINE_SIZE option to CREATE INDEX command
 * Added PARALLEL option to CREATE INDEX command
 * Added optional on-heap row cache
@@ -46,6 +47,7 @@ SQL:
 
 JDBC Driver:
 * Optimized batched operations processing
+* Added streaming mode to thin driver
 
 ODBC Driver:
 * Added support of multiple statements execution with one call

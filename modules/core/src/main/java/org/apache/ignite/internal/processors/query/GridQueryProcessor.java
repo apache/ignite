@@ -64,9 +64,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -93,8 +92,6 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexD
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -105,8 +102,6 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -265,7 +260,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     idx.cancelAllQueries();
 
                 return;
-            } catch (InterruptedException ignored) {
+            }
+            catch (InterruptedException ignored) {
                 U.warn(log, "Interrupted while waiting for active queries cancellation.");
 
                 Thread.currentThread().interrupt();
@@ -801,7 +797,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 // Warn about possible implicit deserialization.
                 if (!mustDeserializeClss.isEmpty()) {
-                    U.warn(log, "Some classes in query configuration cannot be written in binary format " +
+                    U.warnDevOnly(log, "Some classes in query configuration cannot be written in binary format " +
                         "because they either implement Externalizable interface or have writeObject/readObject " +
                         "methods. Instances of these classes will be deserialized in order to build indexes. Please " +
                         "ensure that all nodes have these classes in classpath. To enable binary serialization " +
@@ -1484,10 +1480,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheName,
         String cacheGroup, @Nullable String dataRegion, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
-        @Nullable CacheWriteSynchronizationMode writeSyncMode, int backups, boolean ifNotExists)
+        @Nullable CacheWriteSynchronizationMode writeSyncMode, @Nullable Integer backups, boolean ifNotExists)
         throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
-        assert backups >= 0;
+        assert backups == null || backups >= 0;
 
         CacheConfiguration<?, ?> ccfg = ctx.cache().getConfigFromTemplate(templateName);
 
@@ -1526,11 +1522,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (writeSyncMode != null)
             ccfg.setWriteSynchronizationMode(writeSyncMode);
 
-        ccfg.setBackups(backups);
+        if (backups != null)
+            ccfg.setBackups(backups);
 
         ccfg.setSqlSchema(schemaName);
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
+
+        if (!QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()))
+            ccfg.setAffinityMapper(null);
 
         if (affinityKey != null)
             ccfg.setKeyConfiguration(new CacheKeyConfiguration(entity.getKeyType(), affinityKey));
@@ -1735,73 +1735,45 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Rebuilds indexes for provided caches from corresponding hash indexes.
      *
-     * @param cacheIds Cache IDs.
+     * @param cctx Cache context.
      * @return Future that will be completed when rebuilding is finished.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(Collection<Integer> cacheIds) {
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+        // Indexing module is disabled, nothing to rebuild.
+        if (idx == null)
+            return null;
+
+        // No data on non-affinity nodes.
+        if (!cctx.affinityNode())
+            return null;
+
+        // No indexes to rebuild when there are no QueryEntities.
+        if (!cctx.isQueryEnabled())
+            return null;
+
+        // No need to rebuild if cache has no data.
+        boolean empty = true;
+
+        for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+            if (!store.isEmpty()) {
+                empty = false;
+
+                break;
+            }
+        }
+
+        if (empty)
+            return null;
+
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes from hash (grid is stopping).");
 
         try {
-            GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<Object, Object>();
-
-            for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
-                if (cacheIds.contains(CU.cacheId(e.getKey().cacheName())))
-                    fut.add(rebuildIndexesFromHash(e.getKey().cacheName(), e.getValue()));
-            }
-
-            fut.markInitialized();
-
-            return fut;
+            return idx.rebuildIndexesFromHash(cctx);
         }
         finally {
             busyLock.leaveBusy();
         }
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param desc Type descriptor.
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final String cacheName,
-        @Nullable final QueryTypeDescriptorImpl desc) {
-        if (idx == null)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
-
-        if (desc == null)
-            return new GridFinishedFuture<>();
-
-        final GridWorkerFuture<Object> fut = new GridWorkerFuture<>();
-
-        idx.markForRebuildFromHash(cacheName);
-
-        GridWorker w = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker", log) {
-            @Override protected void body() {
-                try {
-                    idx.rebuildIndexesFromHash(cacheName);
-
-                    fut.onDone();
-                }
-                catch (Exception e) {
-                    fut.onDone(e);
-                }
-                catch (Throwable e) {
-                    U.error(log, "Failed to rebuild indexes for type [cache=" + cacheName +
-                        ", name=" + desc.name() + ']', e);
-
-                    fut.onDone(e);
-
-                    throw e;
-                }
-            }
-        };
-
-        fut.setWorker(w);
-
-        ctx.getExecutorService().execute(w);
-
-        return fut;
     }
 
     /**
@@ -1976,13 +1948,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary,
         final boolean failOnMultipleStmts) {
-        return querySqlFields(null, qry, keepBinary, failOnMultipleStmts);
-    }
-
-    @SuppressWarnings("unchecked")
-    public FieldsQueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
-        final boolean keepBinary) {
-        return querySqlFields(cctx, qry, keepBinary, true).get(0);
+        return querySqlFields(null, qry, null, keepBinary, failOnMultipleStmts);
     }
 
     /**
@@ -1993,7 +1959,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary) {
-        return querySqlFields(null, qry, keepBinary, true).get(0);
+        return querySqlFields(null, qry, null, keepBinary, true).get(0);
     }
 
     /**
@@ -2001,14 +1967,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      * @param qry Query.
+     * @param cliCtx Client context.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(@Nullable final GridCacheContext<?,?> cctx,
-        final SqlFieldsQuery qry, final boolean keepBinary, final boolean failOnMultipleStmts) {
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(@Nullable final GridCacheContext<?, ?> cctx,
+        final SqlFieldsQuery qry, final SqlClientContext cliCtx, final boolean keepBinary,
+        final boolean failOnMultipleStmts) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
@@ -2036,7 +2004,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     List<FieldsQueryCursor<List<?>>> res =
-                        idx.querySqlFields(schemaName, qry, keepBinary, failOnMultipleStmts, cancel);
+                        idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, cancel);
 
                     if (cctx != null)
                         sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
@@ -2075,7 +2043,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schemaName Schema name.
      * @param streamer Data streamer.
      * @param qry Query.
-     * @return Iterator.
+     * @return Update counter.
      */
     public long streamUpdateQuery(@Nullable final String cacheName, final String schemaName,
         final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args) {
@@ -2090,6 +2058,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<Long>() {
                 @Override public Long applyx() throws IgniteCheckedException {
                     return idx.streamUpdateQuery(schemaName, qry, args, streamer);
+                }
+            }, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param cliCtx Client context.
+     * @param qry Query.
+     * @param args Query arguments.
+     * @return Update counters.
+     */
+    public List<Long> streamBatchedUpdateQuery(final String schemaName, final SqlClientContext cliCtx,
+        final String qry, final List<Object[]> args) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, null, new IgniteOutClosureX<List<Long>>() {
+                @Override public List<Long> applyx() throws IgniteCheckedException {
+                    return idx.streamBatchedUpdateQuery(schemaName, qry, args, cliCtx);
                 }
             }, true);
         }

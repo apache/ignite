@@ -44,8 +44,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-
 /**
  * Test to visualize and debug {@link PagesWriteThrottle}.
  * Prints puts/gets rate, number of dirty pages, pages written in current checkpoint and pages in checkpoint buffer.
@@ -253,8 +251,8 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
+    private void deleteWorkFiles() throws Exception {
+        cleanPersistenceDir();
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
     }
 }

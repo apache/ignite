@@ -227,29 +227,34 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
                 System.out.println("Wait until keys left will be less " + keysLine);
 
-                while (finishRebalanceLatch.getCount() != 0) {
-                    CacheMetrics m = ig2.cache(CACHE1).localMetrics();
+                try {
+                    while (finishRebalanceLatch.getCount() != 0) {
+                        CacheMetrics m = ig2.cache(CACHE1).localMetrics();
 
-                    long keyLeft = m.getKeysToRebalanceLeft();
+                        long keyLeft = m.getKeysToRebalanceLeft();
 
-                    if (keyLeft > 0 && keyLeft < keysLine)
-                        latch.countDown();
+                        if (keyLeft > 0 && keyLeft < keysLine)
+                            latch.countDown();
 
-                    System.out.println("Keys left: " + m.getKeysToRebalanceLeft());
+                        System.out.println("Keys left: " + m.getKeysToRebalanceLeft());
 
-                    try {
-                        Thread.sleep(1_000);
+                        try {
+                            Thread.sleep(1_000);
+                        }
+                        catch (InterruptedException e) {
+                            System.out.println("Interrupt thread: " + e.getMessage());
+
+                            Thread.currentThread().interrupt();
+                        }
                     }
-                    catch (InterruptedException e) {
-                        System.out.println("Interrupt thread: " + e.getMessage());
-
-                        Thread.currentThread().interrupt();
-                    }
+                }
+                finally {
+                    latch.countDown();
                 }
             }
         });
 
-        latch.await();
+        assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
         long finishTime = ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime();
 

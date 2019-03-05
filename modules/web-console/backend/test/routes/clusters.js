@@ -17,7 +17,6 @@
 
 const assert = require('chai').assert;
 const injector = require('../injector');
-const mongoose = require('mongoose');
 
 let agentFactory;
 let db;
@@ -36,16 +35,16 @@ suite('routes.clusters', () => {
     });
 
     test('Save cluster model', (done) => {
-        const newCluster = Object.assign({}, db.mocks.clusters[0], {name: 'newClusterName'});
+        const cluster = Object.assign({}, db.mocks.clusters[0], {name: 'newClusterName'});
 
         agentFactory.authAgent(db.mocks.accounts[0])
             .then((agent) => {
-                agent.post('/configuration/clusters/save')
-                    .send(newCluster)
+                agent.put('/api/v1/configuration/clusters')
+                    .send({cluster})
                     .expect(200)
                     .expect((res) => {
                         assert.isNotNull(res.body);
-                        assert.isTrue(mongoose.Types.ObjectId.isValid(res.body));
+                        assert.equal(res.body.rowsAffected, 1);
                     })
                     .end(done);
             })
@@ -55,7 +54,7 @@ suite('routes.clusters', () => {
     test('Remove cluster model', (done) => {
         agentFactory.authAgent(db.mocks.accounts[0])
             .then((agent) => {
-                agent.post('/configuration/clusters/remove')
+                agent.post('/api/v1/configuration/clusters/remove')
                     .send({_id: db.mocks.clusters[0]._id})
                     .expect(200)
                     .expect((res) => {
@@ -70,7 +69,7 @@ suite('routes.clusters', () => {
     test('Remove all clusters', (done) => {
         agentFactory.authAgent(db.mocks.accounts[0])
             .then((agent) => {
-                agent.post('/configuration/clusters/remove/all')
+                agent.post('/api/v1/configuration/clusters/remove/all')
                     .expect(200)
                     .expect((res) => {
                         assert.isNotNull(res.body);

@@ -486,6 +486,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
      * @throws Exception If failed.
      */
     public void testFailGetLock() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-14781");
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
         Ignite ig3P = primary(2);

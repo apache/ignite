@@ -1,0 +1,49 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+.panel--ignite
+    .panel-heading.ui-grid-settings.ui-grid-ignite__panel(ng-if='!$ctrl.hideHeader')
+        .panel-title
+            .pc-items-table__table-name.ng-animate-disabled(
+                ng-hide='$ctrl.gridAPI.selection.getSelectedCount()'
+            )
+                | {{ $ctrl.tableTitle }}
+                grid-column-selector(grid-api='$ctrl.gridAPI')
+            .pc-items-table__selection-count.ng-animate-disabled(
+                ng-show='$ctrl.gridAPI.selection.getSelectedCount()'
+            )
+                i {{ $ctrl.gridAPI.selection.getSelectedCount() }} of {{ $ctrl.items.length }} selected
+            .pco-clusters-table__actions-button
+                +ignite-form-field-bsdropdown({
+                    label: 'Actions',
+                    name: 'action',
+                    disabled: '!$ctrl.gridAPI.selection.getSelectedCount()',
+                    required: false,
+                    options: '$ctrl.actionsMenu'
+                })
+    .grid.ui-grid--ignite(
+        ui-grid='$ctrl.grid'
+        ui-grid-selection
+        pco-grid-column-categories
+        pc-ui-grid-filters
+        ui-grid-resize-columns
+        ui-grid-hovering
+    )
+
+    div(ng-transclude='footerSlot' ng-hide='$ctrl.showFilterNotification')
+    footer-slot(ng-if='$ctrl.showFilterNotification' style='font-style:italic') Nothing to display. Check your filters.

@@ -23,3 +23,20 @@
         background-color: #FFF;
     }
 }
+
+.tooltip--error {
+    &.top {
+        margin-top: 8px;
+        margin-left: -1px;
+    }
+
+    &.top .tooltip-arrow {
+        border-top-color: #f34718;
+    }
+
+    .tooltip-inner {
+        background: #f34718;
+        border-color: #f34718;
+        color: white;
+    }
+}

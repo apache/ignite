@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -54,6 +55,9 @@ abstract class TcpDiscoveryImpl {
     /** Response WAIT. */
     protected static final int RES_WAIT = 200;
 
+    /** Response join impossible. */
+    protected static final int RES_JOIN_IMPOSSIBLE = 255;
+
     /** */
     protected final TcpDiscoverySpi spi;
 
@@ -61,7 +65,7 @@ abstract class TcpDiscoveryImpl {
     protected final IgniteLogger log;
 
     /** */
-    protected TcpDiscoveryNode locNode;
+    protected volatile TcpDiscoveryNode locNode;
 
     /** Debug mode. */
     protected boolean debugMode;
@@ -98,6 +102,18 @@ abstract class TcpDiscoveryImpl {
             log.trace(msg);
         }
     };
+
+    /**
+     * Upcasts collection type.
+     *
+     * @param c Initial collection.
+     * @return Resulting collection.
+     */
+    protected static <T extends R, R> Collection<R> upcast(Collection<T> c) {
+        A.notNull(c, "c");
+
+        return (Collection<R>)c;
+    }
 
     /**
      * @param spi Adapter.
@@ -244,6 +260,13 @@ abstract class TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      */
     public int boundPort() throws IgniteSpiException {
+        return 0;
+    }
+
+    /**
+     * @return connection check interval.
+     */
+    public long connectionCheckInterval() {
         return 0;
     }
 

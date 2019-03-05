@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.rest.request;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid command request.
@@ -45,6 +47,9 @@ public class GridRestRequest {
 
     /** Command. */
     private GridRestCommand cmd;
+
+    /** */
+    private AuthorizationContext authCtx;
 
     /**
      * @return Destination ID.
@@ -140,6 +145,20 @@ public class GridRestRequest {
      */
     public void address(InetSocketAddress addr) {
         this.addr = addr;
+    }
+
+    /**
+     * @return Authorization context.
+     */
+    @Nullable public AuthorizationContext authorizationContext() {
+        return authCtx;
+    }
+
+    /**
+     * @param authCtx Authorization context.
+     */
+    public void authorizationContext(AuthorizationContext authCtx) {
+        this.authCtx = authCtx;
     }
 
     /** {@inheritDoc} */

@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
@@ -815,12 +817,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 45: {
-                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
-            }
-
-            break;
-
             case 49: {
                 GridNearGetRequest req = (GridNearGetRequest)msg;
 
@@ -1397,6 +1393,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         for (Iterator<ListenerKey> iter = msgHandlers.clsHandlers.keySet().iterator(); iter.hasNext(); ) {
             ListenerKey key = iter.next();
 
+            if (key.msgCls.equals(GridDhtAffinityAssignmentResponse.class))
+                continue;
+
             if (key.hndId == hndId)
                 iter.remove();
         }
@@ -1568,7 +1567,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     static class MessageHandlers {
         /** Indexed class handlers. */
-        volatile Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new HashMap<>();
+        volatile Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new ConcurrentHashMap<>();
 
         /** Handler registry. */
         ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>

@@ -61,6 +61,9 @@ public class OdbcResultSet {
      * @return Fields metadata of the current result set.
      */
     public Collection<OdbcColumnMeta> fieldsMeta() {
+        if (!cursor.isQuery())
+            return new ArrayList<>();
+
         return convertMetadata(cursor.fieldsMeta());
     }
 

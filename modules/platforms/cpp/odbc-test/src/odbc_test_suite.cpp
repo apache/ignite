@@ -22,10 +22,6 @@
 #include <sql.h>
 #include <sqlext.h>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignition.h"
@@ -40,7 +36,7 @@ namespace ignite
 {
     namespace odbc
     {
-        void OdbcTestSuite::Connect(const std::string& connectStr)
+        void OdbcTestSuite::Prepare()
         {
             // Allocate an environment handle
             SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
@@ -54,19 +50,21 @@ namespace ignite
             SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
             BOOST_REQUIRE(dbc != NULL);
+        }
+
+        void OdbcTestSuite::Connect(const std::string& connectStr)
+        {
+            Prepare();
 
             // Connect string
-            std::vector<SQLCHAR> connectStr0;
-
-            connectStr0.reserve(connectStr.size() + 1);
-            std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
+            std::vector<SQLCHAR> connectStr0(connectStr.begin(), connectStr.end());
 
             SQLCHAR outstr[ODBC_BUFFER_SIZE];
             SQLSMALLINT outstrlen;
 
             // Connecting to ODBC server.
             SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
-                                             outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+                outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
 
             if (!SQL_SUCCEEDED(ret))
             {
@@ -79,17 +77,55 @@ namespace ignite
             BOOST_REQUIRE(stmt != NULL);
         }
 
+        std::string OdbcTestSuite::ExpectConnectionReject(const std::string& connectStr)
+        {
+            Prepare();
+
+            // Connect string
+            std::vector<SQLCHAR> connectStr0(connectStr.begin(), connectStr.end());
+
+            SQLCHAR outstr[ODBC_BUFFER_SIZE];
+            SQLSMALLINT outstrlen;
+
+            // Connecting to ODBC server.
+            SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
+                outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+            BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+            return GetOdbcErrorState(SQL_HANDLE_DBC, dbc);
+        }
+
         void OdbcTestSuite::Disconnect()
         {
-            // Releasing statement handle.
-            SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+            if (stmt)
+            {
+                // Releasing statement handle.
+                SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+                stmt = NULL;
+            }
 
-            // Disconneting from the server.
-            SQLDisconnect(dbc);
+            if (dbc)
+            {
+                // Disconneting from the server.
+                SQLDisconnect(dbc);
 
-            // Releasing allocated handles.
-            SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-            SQLFreeHandle(SQL_HANDLE_ENV, env);
+                // Releasing allocated handles.
+                SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+                dbc = NULL;
+            }
+        }
+
+        void OdbcTestSuite::CleanUp()
+        {
+            Disconnect();
+
+            if (env)
+            {
+                // Releasing allocated handles.
+                SQLFreeHandle(SQL_HANDLE_ENV, env);
+                env = NULL;
+            }
         }
 
         Ignite OdbcTestSuite::StartTestNode(const char* cfg, const char* name)
@@ -115,7 +151,7 @@ namespace ignite
 
         OdbcTestSuite::~OdbcTestSuite()
         {
-            Disconnect();
+            CleanUp();
 
             Ignition::StopAll(true);
         }
@@ -129,14 +165,49 @@ namespace ignite
             return builder.str();
         }
 
+        void OdbcTestSuite::CheckSQLDiagnosticError(int16_t handleType, SQLHANDLE handle, const std::string& expectSqlState)
+        {
+            SQLCHAR state[ODBC_BUFFER_SIZE];
+            SQLINTEGER nativeError = 0;
+            SQLCHAR message[ODBC_BUFFER_SIZE];
+            SQLSMALLINT messageLen = 0;
+
+            SQLRETURN ret = SQLGetDiagRec(handleType, handle, 1, state, &nativeError, message, sizeof(message), &messageLen);
+
+            const std::string sqlState = reinterpret_cast<char*>(state);
+            BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
+            BOOST_REQUIRE_EQUAL(sqlState, expectSqlState);
+            BOOST_REQUIRE(messageLen > 0);
+        }
+
+        void OdbcTestSuite::CheckSQLStatementDiagnosticError(const std::string& expectSqlState)
+        {
+            CheckSQLDiagnosticError(SQL_HANDLE_STMT, stmt, expectSqlState);
+        }
+
+        void OdbcTestSuite::CheckSQLConnectionDiagnosticError(const std::string& expectSqlState)
+        {
+            CheckSQLDiagnosticError(SQL_HANDLE_DBC, dbc, expectSqlState);
+        }
+
+        std::vector<SQLCHAR> OdbcTestSuite::MakeQuery(const std::string& qry)
+        {
+            return std::vector<SQLCHAR>(qry.begin(), qry.end());
+        }
+
+        SQLRETURN OdbcTestSuite::ExecQuery(const std::string& qry)
+        {
+            std::vector<SQLCHAR> sql = MakeQuery(qry);
+
+            return SQLExecDirect(stmt, &sql[0], static_cast<SQLINTEGER>(sql.size()));
+        }
+
         void OdbcTestSuite::InsertTestStrings(int recordsNum, bool merge)
         {
             SQLCHAR insertReq[] = "INSERT INTO TestType(_key, strField) VALUES(?, ?)";
             SQLCHAR mergeReq[] = "MERGE INTO TestType(_key, strField) VALUES(?, ?)";
 
-            SQLRETURN ret;
-
-            ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
+            SQLRETURN ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -229,7 +300,7 @@ namespace ignite
             FixedSizeArray<SQLLEN> strFieldsLen(recordsNum);
             FixedSizeArray<SQLLEN> i8ArrayFieldsLen(recordsNum);
 
-            BOOST_CHECKPOINT("Filling param data");
+            BOOST_TEST_CHECKPOINT("Filling param data");
 
             for (int i = 0; i < recordsNum; ++i)
             {
@@ -271,91 +342,91 @@ namespace ignite
 
             SQLULEN setsProcessed = 0;
 
-            BOOST_CHECKPOINT("Setting processed pointer");
+            BOOST_TEST_CHECKPOINT("Setting processed pointer");
             ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMS_PROCESSED_PTR, &setsProcessed, SQL_IS_POINTER);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding keys");
+            BOOST_TEST_CHECKPOINT("Binding keys");
             ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, keys.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding i8Fields");
+            BOOST_TEST_CHECKPOINT("Binding i8Fields");
             ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_STINYINT, SQL_TINYINT, 0, 0, i8Fields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding i16Fields");
+            BOOST_TEST_CHECKPOINT("Binding i16Fields");
             ret = SQLBindParameter(stmt, 3, SQL_PARAM_INPUT, SQL_C_SSHORT, SQL_SMALLINT, 0, 0, i16Fields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding i32Fields");
+            BOOST_TEST_CHECKPOINT("Binding i32Fields");
             ret = SQLBindParameter(stmt, 4, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, i32Fields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding strFields");
+            BOOST_TEST_CHECKPOINT("Binding strFields");
             ret = SQLBindParameter(stmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 1024, 0, strFields.GetData(), 1024, strFieldsLen.GetData());
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding floatFields");
+            BOOST_TEST_CHECKPOINT("Binding floatFields");
             ret = SQLBindParameter(stmt, 6, SQL_PARAM_INPUT, SQL_C_FLOAT, SQL_FLOAT, 0, 0, floatFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding doubleFields");
+            BOOST_TEST_CHECKPOINT("Binding doubleFields");
             ret = SQLBindParameter(stmt, 7, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DOUBLE, 0, 0, doubleFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding boolFields");
+            BOOST_TEST_CHECKPOINT("Binding boolFields");
             ret = SQLBindParameter(stmt, 8, SQL_PARAM_INPUT, SQL_C_BIT, SQL_BIT, 0, 0, boolFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding dateFields");
+            BOOST_TEST_CHECKPOINT("Binding dateFields");
             ret = SQLBindParameter(stmt, 9, SQL_PARAM_INPUT, SQL_C_DATE, SQL_DATE, 0, 0, dateFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding timeFields");
+            BOOST_TEST_CHECKPOINT("Binding timeFields");
             ret = SQLBindParameter(stmt, 10, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIME, 0, 0, timeFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding timestampFields");
+            BOOST_TEST_CHECKPOINT("Binding timestampFields");
             ret = SQLBindParameter(stmt, 11, SQL_PARAM_INPUT, SQL_C_TIMESTAMP, SQL_TIMESTAMP, 0, 0, timestampFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Binding i8ArrayFields");
+            BOOST_TEST_CHECKPOINT("Binding i8ArrayFields");
             ret = SQLBindParameter(stmt, 12, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_BINARY, 42, 0, i8ArrayFields.GetData(), 42, i8ArrayFieldsLen.GetData());
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Setting paramset size");
+            BOOST_TEST_CHECKPOINT("Setting paramset size");
             ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE, reinterpret_cast<SQLPOINTER>(recordsNum), 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Executing query");
+            BOOST_TEST_CHECKPOINT("Executing query");
             ret = SQLExecute(stmt);
 
             if (!SQL_SUCCEEDED(ret))
@@ -373,7 +444,7 @@ namespace ignite
 
                 totallyAffected += affected;
 
-                BOOST_CHECKPOINT("Getting next result set");
+                BOOST_TEST_CHECKPOINT("Getting next result set");
 
                 ret = SQLMoreResults(stmt);
 
@@ -384,13 +455,13 @@ namespace ignite
 
             BOOST_CHECK_EQUAL(totallyAffected, expectedToAffect);
 
-            BOOST_CHECKPOINT("Resetting parameters.");
+            BOOST_TEST_CHECKPOINT("Resetting parameters.");
             ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-            BOOST_CHECKPOINT("Setting paramset size");
+            BOOST_TEST_CHECKPOINT("Setting paramset size");
             ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE, reinterpret_cast<SQLPOINTER>(1), 0);
 
             if (!SQL_SUCCEEDED(ret))

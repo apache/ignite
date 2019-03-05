@@ -46,6 +46,9 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
     /** */
+    protected static final int CHANGE_TOPOLOGY_FLAG_POS = 3;
+
+    /** */
     protected static final int CLIENT_ACK_FLAG_POS = 4;
 
     /** */

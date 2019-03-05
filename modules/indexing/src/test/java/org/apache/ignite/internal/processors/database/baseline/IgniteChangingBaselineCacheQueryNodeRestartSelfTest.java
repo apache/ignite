@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
@@ -53,13 +52,13 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(gridCount());
 
         initStoreStrategy();
 
-        grid(0).active(true);
+        grid(0).cluster().active(true);
 
         awaitPartitionMapExchange();
     }
@@ -68,14 +67,14 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture createRestartAction(final AtomicBoolean done, final AtomicInteger restartCnt) throws Exception {
         return multithreadedAsync(new Callable<Object>() {
             /** */
-            private final long baselineTopChangeInterval = 30 * 1000;
+            private final long baselineTopChangeInterval = 10 * 1000;
 
             /** */
             private final int logFreq = 50;

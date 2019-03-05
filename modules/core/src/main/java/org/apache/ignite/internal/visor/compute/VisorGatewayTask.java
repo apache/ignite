@@ -185,8 +185,9 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
                 Class<?> valCls = Class.forName(valClsName);
 
-                return new IgniteBiTuple<>(toObject(keyCls, (String)argument(startIdx + 2)),
-                    toObject(valCls, (String)argument(startIdx + 3)));
+                return new IgniteBiTuple<>(
+                    toObject(keyCls, argument(startIdx + 2)),
+                    toObject(valCls, argument(startIdx + 3)));
             }
 
             if (cls == Map.class) {
@@ -229,8 +230,10 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 Class<?> v2Cls = Class.forName(v2ClsName);
                 Class<?> v3Cls = Class.forName(v3ClsName);
 
-                return new GridTuple3<>(toObject(v1Cls, (String)argument(startIdx + 3)), toObject(v2Cls,
-                    (String)argument(startIdx + 4)), toObject(v3Cls, (String)argument(startIdx + 5)));
+                return new GridTuple3<>(
+                    toObject(v1Cls, argument(startIdx + 3)),
+                    toObject(v2Cls, argument(startIdx + 4)),
+                    toObject(v3Cls, argument(startIdx + 5)));
             }
 
             return toObject(cls, arg);
@@ -390,6 +393,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                                     }
                                 }
 
+                                ctor.setAccessible(true);
                                 jobArgs = ctor.newInstance(initArgs);
 
                                 break;

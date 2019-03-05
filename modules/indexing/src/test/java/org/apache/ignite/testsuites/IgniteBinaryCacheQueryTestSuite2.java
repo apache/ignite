@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueriesLoadTest1;
+import org.apache.ignite.internal.processors.query.IgniteSqlCreateTableTemplateTest;
 
 /**
  * Cache query suite with binary marshaller.
@@ -32,6 +33,7 @@ public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
         TestSuite suite = IgniteCacheQuerySelfTestSuite2.suite();
 
         suite.addTestSuite(IgniteCacheQueriesLoadTest1.class);
+        suite.addTestSuite(IgniteSqlCreateTableTemplateTest.class);
 
         return suite;
     }

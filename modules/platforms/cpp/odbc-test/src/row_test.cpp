@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/impl/binary/binary_writer_impl.h>
 
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/row.h"
 

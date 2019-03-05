@@ -41,7 +41,7 @@ suite('routes.public', () => {
 
         agentFactory.guestAgent()
             .then((agent) => {
-                agent.post('/signin')
+                agent.post('/api/v1/signin')
                     .send({email: user.email, password: user.password})
                     .expect(200)
                     .expect((res) => {
@@ -58,7 +58,7 @@ suite('routes.public', () => {
 
         agentFactory.guestAgent()
             .then((agent) => {
-                agent.post('/signin')
+                agent.post('/api/v1/signin')
                     .send({email: user.email, password: 'notvalidpassword'})
                     .expect(401)
                     .end(done);

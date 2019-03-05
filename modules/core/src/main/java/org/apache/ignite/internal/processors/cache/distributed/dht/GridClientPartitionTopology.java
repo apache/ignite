@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -51,13 +52,13 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
 
 /**
  * Partition topology for node which does not have any local partitions.
@@ -195,6 +196,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean holdsLock() {
+        return lock.isWriteLockedByCurrentThread() || lock.getReadHoldCount() > 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public void updateTopologyVersion(
         GridDhtTopologyFuture exchFut,
         DiscoCache discoCache,
@@ -206,9 +212,15 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         try {
             AffinityTopologyVersion exchTopVer = exchFut.initialVersion();
 
-            assert exchTopVer.compareTo(topVer) > 0 : "Invalid topology version [grp=" + grpId +
+            // Update is correct if topology version is newer or in case of newer discovery caches.
+            boolean isCorrectUpdate = exchTopVer.compareTo(topVer) > 0
+                    || (exchTopVer.compareTo(topVer) == 0 && this.discoCache != null && discoCache.version().compareTo(this.discoCache.version()) > 0);
+
+            assert isCorrectUpdate : "Invalid topology version [grp=" + grpId +
                 ", topVer=" + topVer +
-                ", exchVer=" + exchTopVer + ']';
+                ", exchVer=" + exchTopVer +
+                ", discoCacheVer=" + (this.discoCache != null ? this.discoCache.version() : "None") +
+                ", exchDiscoCacheVer=" + discoCache.version() + ']';
 
             this.stopping = stopping;
 
@@ -256,9 +268,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer,
+    @Override public boolean initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer,
         GridDhtPartitionsExchangeFuture exchFut) {
-        // No-op.
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -380,6 +392,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         if (log.isDebugEnabled())
             log.debug("Partition map after beforeExchange [exchId=" + exchId + ", fullMap=" +
                 fullMapString() + ']');
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterStateRestored(AffinityTopologyVersion topVer) {
+        // no-op
     }
 
     /** {@inheritDoc} */
@@ -1088,41 +1105,62 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq) {
-        Set<UUID> result = haveHistory ? Collections.<UUID>emptySet() : new HashSet<UUID>();
+    @Override public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory) {
+        Map<UUID, Set<Integer>> result = new HashMap<>();
 
         lock.writeLock().lock();
 
         try {
-            for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                GridDhtPartitionMap partMap = e.getValue();
+            // Process remote partitions.
+            for (Map.Entry<Integer, Set<UUID>> entry : ownersByUpdCounters.entrySet()) {
+                int part = entry.getKey();
+                Set<UUID> newOwners = entry.getValue();
 
-                if (!partMap.containsKey(p))
-                    continue;
+                for (Map.Entry<UUID, GridDhtPartitionMap> remotes : node2part.entrySet()) {
+                    UUID remoteNodeId = remotes.getKey();
+                    GridDhtPartitionMap partMap = remotes.getValue();
 
-                if (partMap.get(p) == OWNING && !owners.contains(e.getKey())) {
-                    if (haveHistory)
-                        partMap.put(p, MOVING);
-                    else {
-                        partMap.put(p, RENTING);
+                    GridDhtPartitionState state = partMap.get(part);
 
-                        result.add(e.getKey());
+                    if (state == null || state != OWNING)
+                        continue;
+
+                    if (!newOwners.contains(remoteNodeId)) {
+                        partMap.put(part, MOVING);
+
+                        partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
+
+                        result.computeIfAbsent(remoteNodeId, n -> new HashSet<>());
+                        result.get(remoteNodeId).add(part);
                     }
-
-                    partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
-
-                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                        "[nodeId=" + e.getKey() + ", groupId=" + grpId +
-                        ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
             }
 
-            part2node.put(p, owners);
+            for (Map.Entry<UUID, Set<Integer>> entry : result.entrySet()) {
+                UUID nodeId = entry.getKey();
+                Set<Integer> partsToRebalance = entry.getValue();
 
-            if (updateSeq)
-                this.updateSeq.incrementAndGet();
-        }
-        finally {
+                if (!partsToRebalance.isEmpty()) {
+                    Set<Integer> historical = partsToRebalance.stream()
+                        .filter(haveHistory::contains)
+                        .collect(Collectors.toSet());
+
+                    // Filter out partitions having WAL history.
+                    partsToRebalance.removeAll(historical);
+
+                    U.warn(log, "Partitions have been scheduled for rebalancing due to outdated update counter "
+                        + "[grpId=" + grpId
+                        + ", nodeId=" + nodeId
+                        + ", partsFull=" + S.compact(partsToRebalance)
+                        + ", partsHistorical=" + S.compact(historical) + "]");
+                }
+            }
+
+            for (Map.Entry<Integer, Set<UUID>> entry : ownersByUpdCounters.entrySet())
+                part2node.put(entry.getKey(), entry.getValue());
+
+            updateSeq.incrementAndGet();
+        } finally {
             lock.writeLock().unlock();
         }
 

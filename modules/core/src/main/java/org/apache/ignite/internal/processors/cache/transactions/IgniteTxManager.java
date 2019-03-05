@@ -416,7 +416,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         boolean completed = completedVersHashMap.containsKey(tx.xidVersion());
 
         // Need check that for tx with timeout rollback message was not received before lock.
-        if (!completed && tx.local() && tx.dht() && tx.timeout() > 0)
+        if (!completed && tx.local() && tx.dht())
             return completedVersHashMap.containsKey(tx.nearXidVersion());
 
         return completed;
@@ -1039,15 +1039,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void removeTxReturn(GridCacheVersion xidVer) {
         Object prev = completedVersHashMap.get(xidVer);
 
-        if (Boolean.FALSE.equals(prev)) // Tx can be rolled back.
-            return;
-
-        assert prev instanceof GridCacheReturnCompletableWrapper:
-            prev + " instead of GridCacheReturnCompletableWrapper";
-
-        boolean res = completedVersHashMap.replace(xidVer, prev, true);
-
-        assert res;
+        if (prev instanceof GridCacheReturnCompletableWrapper)
+            completedVersHashMap.replace(xidVer, prev, true);
     }
 
     /**

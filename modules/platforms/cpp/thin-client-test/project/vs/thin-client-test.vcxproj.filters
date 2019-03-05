@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="TeamCity">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Code">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Configs">
+      <UniqueIdentifier>{0ed957ce-09b9-495f-8f11-7ed2b6a98c9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Types">
+      <UniqueIdentifier>{1a71111d-792b-48d8-b1af-044ebf8cec0e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\ignite_client_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp">
+      <Filter>TeamCity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\teamcity\teamcity_messages.cpp">
+      <Filter>TeamCity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test_utils.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ssl_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\auth_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cache_client_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\teamcity\teamcity_messages.h">
+      <Filter>TeamCity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\test_utils.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\complex_type.h">
+      <Filter>Code\Types</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\config\cache.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\ssl.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\ssl-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\ssl-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\auth.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\auth-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\auth-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

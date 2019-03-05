@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
+#include <stdint.h>
 
 #include <sstream>
 #include <iterator>
@@ -34,6 +32,7 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 #include "ignite/test_utils.h"
+#include "teamcity_messages.h"
 
 using namespace boost::unit_test;
 
@@ -53,7 +52,7 @@ public:
     /**
      * Constructor.
      */
-    QueryPerson() : 
+    QueryPerson() :
         name(NULL),
         age(0),
         birthday(),
@@ -69,7 +68,7 @@ public:
      * @param age Age.
      */
     QueryPerson(const std::string& name, int age,
-        const Date& birthday, const Timestamp& recordCreated) : 
+        const Date& birthday, const Timestamp& recordCreated) :
         name(CopyChars(name.c_str())),
         age(age),
         birthday(birthday),
@@ -125,7 +124,7 @@ public:
 
     /**
      * Get name.
-     * 
+     *
      * @return Name.
      */
     std::string GetName() const
@@ -135,7 +134,7 @@ public:
 
     /**
      * Get age.
-     * 
+     *
      * @return Age.
      */
     int32_t GetAge() const
@@ -145,7 +144,7 @@ public:
 
     /**
      * Get birthday.
-     * 
+     *
      * @return Birthday date.
      */
     const Date& GetBirthday() const
@@ -155,7 +154,7 @@ public:
 
     /**
      * Get creation time.
-     * 
+     *
      * @return Creation time.
      */
     const Timestamp& GetCreationTime() const
@@ -231,7 +230,7 @@ public:
 
     /**
      * Get person ID.
-     * 
+     *
      * @return Person ID.
      */
     int32_t GetPersonId() const
@@ -241,7 +240,7 @@ public:
 
     /**
      * Get hobby ID.
-     * 
+     *
      * @return Some test value.
      */
     int32_t GetHobbyId() const
@@ -319,7 +318,7 @@ namespace ignite
                 int age = reader.ReadInt32("age");
                 Date birthday = reader.ReadDate("birthday");
                 Timestamp recordCreated = reader.ReadTimestamp("recordCreated");
-            
+
                 dst = QueryPerson(name, age, birthday, recordCreated);
             }
         IGNITE_BINARY_TYPE_END
@@ -760,7 +759,7 @@ struct CacheQueryTestSuiteFixture
         Cache<int, QueryPerson> cache = GetPersonCache();
 
         // Test query with two fields of different type.
-        SqlFieldsQuery qry("select name, age from QueryPerson");
+        SqlFieldsQuery qry("select name, age from QueryPerson order by age");
 
         QueryFieldsCursor cursor = cache.Query(qry);
         CheckEmpty(cursor);
@@ -804,12 +803,12 @@ struct CacheQueryTestSuiteFixture
             std::string name = row.GetNext<std::string>(error);
             BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-            BOOST_REQUIRE(name == expected_name);
+            BOOST_REQUIRE_EQUAL(name, expected_name);
 
             int age = row.GetNext<int>(error);
             BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-            BOOST_REQUIRE(age == expected_age);
+            BOOST_REQUIRE_EQUAL(age, expected_age);
 
             BOOST_REQUIRE(!row.HasNext());
         }
@@ -820,7 +819,7 @@ struct CacheQueryTestSuiteFixture
     /**
      * Constructor.
      */
-    CacheQueryTestSuiteFixture() : 
+    CacheQueryTestSuiteFixture() :
         grid(StartNode("Node1"))
     {
         // No-op.
@@ -856,7 +855,7 @@ BOOST_FIXTURE_TEST_SUITE(CacheQueryTestSuite, CacheQueryTestSuiteFixture)
  * Test SQL query.
  */
 BOOST_AUTO_TEST_CASE(TestSqlQuery)
-{    
+{
     Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with no results.
@@ -877,10 +876,10 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
 
     cache.Put(2, QueryPerson("A2", 20, MakeDateGmt(1989, 10, 26),
         MakeTimestampGmt(2016, 02, 10, 17, 39, 35, 678403201)));
-    
+
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
-    
+
     cursor = cache.Query(qry);
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
@@ -962,17 +961,20 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
  * Test SQL query distributed joins.
  */
 BOOST_AUTO_TEST_CASE(TestSqlQueryDistributedJoins)
-{    
+{
+    MUTE_TEST_FOR_TEAMCITY;
+
     Cache<int, QueryPerson> cache1 = GetPersonCache();
     Cache<int, QueryRelation> cache2 = GetRelationCache();
 
     // Starting second node.
     Ignite node2 = StartNode("Node2");
 
+    int firstKey = 0;
     int entryCnt = 1000;
 
     // Filling caches
-    for (int i = 0; i < entryCnt; i++)
+    for (int i = firstKey; i < firstKey + entryCnt; i++)
     {
         std::stringstream stream;
 
@@ -987,7 +989,8 @@ BOOST_AUTO_TEST_CASE(TestSqlQueryDistributedJoins)
     // Test query with no results.
     SqlQuery qry("QueryPerson",
         "from \"QueryPerson\".QueryPerson, \"QueryRelation\".QueryRelation "
-        "where \"QueryPerson\".QueryPerson.age = \"QueryRelation\".QueryRelation.someVal");
+        "where (\"QueryPerson\".QueryPerson.age = \"QueryRelation\".QueryRelation.someVal) "
+        "and (\"QueryPerson\".QueryPerson._key < 1000)");
 
     QueryCursor<int, QueryPerson> cursor = cache1.Query(qry);
 
@@ -1124,10 +1127,10 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 
     int32_t partCnt = 256;   // Defined in configuration explicitly.
     int32_t entryCnt = 1000; // Should be greater than partCnt.
-    
-    for (int i = 0; i < entryCnt; i++) 
+
+    for (int i = 0; i < entryCnt; i++)
     {
-        std::stringstream stream; 
+        std::stringstream stream;
 
         stream << "A" << i;
 
@@ -1203,7 +1206,7 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryBasic)
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
-    
+
     qry.SetDistributedJoins(false);
     qry.SetEnforceJoinOrder(false);
 
@@ -1239,23 +1242,26 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryBasic)
  */
 BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryDistributedJoins)
 {
+    MUTE_TEST_FOR_TEAMCITY;
+
     Cache<int, QueryPerson> cache1 = GetPersonCache();
     Cache<int, QueryRelation> cache2 = GetRelationCache();
 
     // Starting second node.
     Ignite node2 = StartNode("Node2");
 
+    int beginFrom = 2000;
     int entryCnt = 1000;
 
     // Filling caches
-    for (int i = 0; i < entryCnt; i++)
+    for (int i = beginFrom; i < entryCnt + beginFrom; ++i)
     {
         std::stringstream stream;
 
         stream << "A" << i;
 
-        cache1.Put(i, QueryPerson(stream.str(), i * 10, MakeDateGmt(1970 + i),
-            MakeTimestampGmt(2016, 1, 1, i / 60, i % 60)));
+        cache1.Put(i, QueryPerson(stream.str(), i * 10, MakeDateGmt(1970 + (i / 100)),
+            MakeTimestampGmt(2016, 1, 1, (i / 60) % 24, i % 60)));
 
         cache2.Put(i + 1, QueryRelation(i, i * 10));
     }
@@ -1263,9 +1269,10 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryDistributedJoins)
     // Test query with no results.
     SqlFieldsQuery qry(
         "select age, name "
-        "from \"QueryPerson\".QueryPerson "
-        "inner join \"QueryRelation\".QueryRelation "
-        "on \"QueryPerson\".QueryPerson.age = \"QueryRelation\".QueryRelation.someVal");
+        "from \"QueryPerson\".QueryPerson as QP "
+        "inner join \"QueryRelation\".QueryRelation as QR "
+        "on QP.age = QR.someVal "
+        "where QP._key >= 2000 and QP._key < 3000");
 
     QueryFieldsCursor cursor = cache1.Query(qry);
 
@@ -1298,7 +1305,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
 
     QueryFieldsCursor cursor = cache.Query(qry);
     CheckEmpty(cursor);
-    
+
     // Test simple query.
     cache.Put(1, QueryPerson("A1", 10, MakeDateGmt(1990, 03, 18),
         MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
@@ -1445,7 +1452,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
     Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
-    SqlFieldsQuery qry("select name, age from QueryPerson");
+    SqlFieldsQuery qry("select name, age from QueryPerson order by age");
 
     QueryFieldsCursor cursor = cache.Query(qry);
     CheckEmpty(cursor);
@@ -1489,12 +1496,12 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
         std::string name = row.GetNext<std::string>(error);
         BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-        BOOST_REQUIRE(name == expected_name);
+        BOOST_REQUIRE_EQUAL(name, expected_name);
 
         int age = row.GetNext<int>(error);
         BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-        BOOST_REQUIRE(age == expected_age);
+        BOOST_REQUIRE_EQUAL(age, expected_age);
 
         BOOST_REQUIRE(!row.HasNext());
     }

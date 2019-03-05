@@ -22,6 +22,7 @@ import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +35,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -96,6 +98,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Update on server flag. */
     private final boolean skipReducerOnUpdate;
 
+    /** Authentication context */
+    private final AuthorizationContext actx;
+
     /**
      * Constructor.
      * @param ctx Context.
@@ -107,10 +112,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param collocated Collocated flag.
      * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param actx Authentication context.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
-        boolean collocated, boolean lazy, boolean skipReducerOnUpdate) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly, boolean collocated, boolean lazy,
+        boolean skipReducerOnUpdate, AuthorizationContext actx) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -120,6 +126,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.collocated = collocated;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
+        this.actx = actx;
 
         log = ctx.log(getClass());
     }
@@ -132,7 +139,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         if (!busyLock.enterBusy())
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
-                    "Failed to handle ODBC request because node is stopping: " + req);
+                "Failed to handle ODBC request because node is stopping: " + req);
+
+        if (actx != null)
+            AuthorizationContext.context(actx);
 
         try {
             switch (req.command()) {
@@ -164,6 +174,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Unsupported ODBC request: " + req);
         }
         finally {
+            AuthorizationContext.clear();
+
             busyLock.leaveBusy();
         }
     }
@@ -250,14 +262,27 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(qry, true, false);
 
             OdbcQueryResults results = new OdbcQueryResults(cursors);
+            Collection<OdbcColumnMeta> fieldsMeta;
+
+            OdbcResultSet set = results.currentResultSet();
+
+            if (set == null)
+                fieldsMeta = new ArrayList<>();
+            else {
+                fieldsMeta = results.currentResultSet().fieldsMeta();
+
+                if (log.isDebugEnabled()) {
+                    for (OdbcColumnMeta meta : fieldsMeta)
+                        log.debug("Meta - " + meta.toString());
+                }
+            }
 
             if (!results.hasUnfetchedRows())
                 results.closeAll();
             else
                 qryResults.put(qryId, results);
 
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, results.currentResultSet().fieldsMeta(),
-                results.rowsAffected());
+            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());
 
             return new OdbcResponse(res);
         }
@@ -299,10 +324,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             List<FieldsQueryCursor<List<?>>> qryCurs =
                 ctx.query().querySqlFields(qry, true, true);
 
-            List<Long> rowsAffected = new ArrayList<>(req.arguments().length);
+            long[] rowsAffected = new long[req.arguments().length];
 
-            for (FieldsQueryCursor<List<?>> qryCur : qryCurs)
-                rowsAffected.add(OdbcUtils.rowsAffected(qryCur));
+            for (int i = 0; i < qryCurs.size(); ++i)
+                rowsAffected[i] = OdbcUtils.rowsAffected(qryCurs.get(i));
 
             OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected);
 
@@ -619,6 +644,34 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
+     * Checks whether string matches table type pattern.
+     *
+     * @param str String.
+     * @param ptrn Pattern.
+     * @return Whether string matches pattern.
+     */
+    private static boolean matchesTableType(String str, String ptrn) {
+        if (F.isEmpty(ptrn))
+            return true;
+
+        if (str == null)
+            return false;
+
+        String pattern = OdbcUtils.preprocessPattern(ptrn);
+
+        String[] types = pattern.split(",");
+
+        for (String type0 : types) {
+            String type = OdbcUtils.removeQuotationMarksIfNeeded(type0.trim());
+
+            if (str.toUpperCase().matches(type))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Checks whether string matches SQL pattern.
      *
      * @param str String.
@@ -626,8 +679,15 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Whether string matches pattern.
      */
     private static boolean matches(String str, String ptrn) {
-        return str != null && (F.isEmpty(ptrn) ||
-            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
+        if (F.isEmpty(ptrn))
+            return true;
+
+        if (str == null)
+            return false;
+
+        String pattern = OdbcUtils.preprocessPattern(ptrn);
+
+        return str.toUpperCase().matches(pattern);
     }
 
     /**
@@ -640,14 +700,13 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     private OdbcResponse exceptionToBatchResult(Exception e) {
         int code;
         String msg;
-        List<Long> rowsAffected = new ArrayList<>();
+        long[] rowsAffected = null;
 
         if (e instanceof IgniteSQLException) {
             BatchUpdateException batchCause = X.cause(e, BatchUpdateException.class);
 
             if (batchCause != null) {
-                for (long cnt : batchCause.getLargeUpdateCounts())
-                    rowsAffected.add(cnt);
+                rowsAffected = batchCause.getLargeUpdateCounts();
 
                 msg = batchCause.getMessage();
 
@@ -664,6 +723,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             code = IgniteQueryErrorCode.UNKNOWN;
         }
+
+        if (rowsAffected == null)
+            rowsAffected = new long[0];
 
         OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, -1, code, msg);
 

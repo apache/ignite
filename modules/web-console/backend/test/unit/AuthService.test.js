@@ -37,17 +37,6 @@ suite('AuthServiceTestsSuite', () => {
 
     setup(() => db.init());
 
-    test('Check token generator', () => {
-        const tokenLength = 16;
-        const token1 = authService.generateResetToken(tokenLength);
-        const token2 = authService.generateResetToken(tokenLength);
-
-        assert.equal(token1.length, tokenLength);
-        assert.equal(token2.length, tokenLength);
-        assert.notEqual(token1, token2);
-    });
-
-
     test('Reset password token for non existing user', (done) => {
         authService.resetPasswordToken('non-exisitng@email.ee')
             .catch((err) => {

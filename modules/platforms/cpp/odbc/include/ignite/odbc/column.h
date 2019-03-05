@@ -79,10 +79,11 @@ namespace ignite
             /**
              * Read column data and store it in application data buffer.
              *
+             * @param reader Reader to use.
              * @param dataBuf Application data buffer.
              * @return Operation result.
              */
-            SqlResult::Type ReadToBuffer(ignite::impl::binary::BinaryReaderImpl& reader,
+            app::ConversionResult::Type ReadToBuffer(ignite::impl::binary::BinaryReaderImpl& reader,
                 app::ApplicationDataBuffer& dataBuf);
 
             /**

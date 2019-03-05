@@ -24,7 +24,9 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.ProtectionDomain;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import javax.net.ssl.X509TrustManager;
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -181,5 +183,27 @@ public class AgentUtils {
      */
     public static <T> T fromJSON(Object obj, Class<T> toValType) throws IllegalArgumentException {
         return MAPPER.convertValue(obj, toValType);
+    }
+
+    /**
+     * Create a trust manager that trusts all certificates It is not using a particular keyStore
+     */
+    public static X509TrustManager trustManager() {
+        return new X509TrustManager() {
+            /** {@inheritDoc} */
+            @Override public X509Certificate[] getAcceptedIssuers() {
+                return new X509Certificate[0];
+            }
+
+            /** {@inheritDoc} */
+            @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                // No-op.
+            }
+
+            /** {@inheritDoc} */
+            @Override public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                // No-op.
+            }
+        };
     }
 }

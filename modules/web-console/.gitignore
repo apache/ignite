@@ -1,5 +1,4 @@
 .npmrc
-package-lock.json
 build/
 node_modules/
-data/
+package-lock.json

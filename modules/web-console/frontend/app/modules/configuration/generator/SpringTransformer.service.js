@@ -24,7 +24,7 @@ import VersionService from 'app/services/Version.service';
 const versionService = new VersionService();
 
 export default class IgniteSpringTransformer extends AbstractTransformer {
-    static escapeXml(str) {
+    static escapeXml(str = '') {
         return str.replace(/&/g, '&amp;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&apos;')

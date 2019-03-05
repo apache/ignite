@@ -15,34 +15,19 @@
  * limitations under the License.
  */
 
-const fs = require('fs');
 const path = require('path');
 const fireUp = require('fire-up');
 
-const igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
-
-let injector;
-
-try {
-    const igniteModulesInjector = path.resolve(path.join(igniteModules, 'backend', 'test', 'injector.js'));
-
-    fs.accessSync(igniteModulesInjector, fs.F_OK);
-
-    injector = require(igniteModulesInjector);
-} catch (ignore) {
-    injector = fireUp.newInjector({
-        basePath: path.join(__dirname, '../'),
-        modules: [
-            './app/**/*.js',
-            './config/**/*.js',
-            './errors/**/*.js',
-            './middlewares/**/*.js',
-            './routes/**/*.js',
-            './services/**/*.js',
-            './test/app/*.js'
-        ],
-        use: ['mongoose:mock']
-    });
-}
-
-module.exports = injector;
+module.exports = fireUp.newInjector({
+    basePath: path.join(__dirname, '../'),
+    modules: [
+        './app/**/*.js',
+        './config/**/*.js',
+        './errors/**/*.js',
+        './middlewares/**/*.js',
+        './routes/**/*.js',
+        './services/**/*.js',
+        './test/app/*.js'
+    ],
+    use: ['mongoose:mock']
+});

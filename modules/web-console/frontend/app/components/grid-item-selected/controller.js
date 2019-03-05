@@ -35,7 +35,7 @@ export default class {
     }
 
     applyValues() {
-        this.selected = this.gridApi.selection.getSelectedRows().length;
+        this.selected = this.gridApi.selection.legacyGetSelectedRows().length;
         this.count = this.gridApi.grid.rows.length;
     }
 }

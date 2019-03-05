@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -57,6 +59,10 @@ public interface GridDhtPartitionTopology {
      */
     public void readUnlock();
 
+    /**
+     * @return {@code True} if locked by current thread.
+     */
+    public boolean holdsLock();
     /**
      * Updates topology version.
      *
@@ -117,10 +123,18 @@ public interface GridDhtPartitionTopology {
     /**
      * @param affVer Affinity version.
      * @param exchFut Exchange future.
+     * @return {@code True} if partitions must be refreshed.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public void initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer, GridDhtPartitionsExchangeFuture exchFut)
+    public boolean initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer, GridDhtPartitionsExchangeFuture exchFut)
         throws IgniteInterruptedCheckedException;
+
+    /**
+     * Initializes local data structures after partitions are restored from persistence.
+     *
+     * @param topVer Topology version.
+     */
+    public void afterStateRestored(AffinityTopologyVersion topVer);
 
     /**
      * Post-initializes this topology.
@@ -303,10 +317,10 @@ public interface GridDhtPartitionTopology {
      * This method should be called on topology coordinator after all partition messages are received.
      *
      * @param resTopVer Exchange result version.
-     * @param discoEvt Discovery event for which we detect lost partitions.
+     * @param discoEvt Discovery event for which we detect lost partitions if {@link EventType#EVT_CACHE_REBALANCE_PART_DATA_LOST} event should be fired.
      * @return {@code True} if partitions state got updated.
      */
-    public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, DiscoveryEvent discoEvt);
+    public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, @Nullable DiscoveryEvent discoEvt);
 
     /**
      * Resets the state of all LOST partitions to OWNING.
@@ -362,15 +376,15 @@ public interface GridDhtPartitionTopology {
     public boolean rebalanceFinished(AffinityTopologyVersion topVer);
 
     /**
-     * Make nodes from provided set owners for a given partition.
-     * State of all current owners that aren't contained in the set will be reset to MOVING.
+     * Calculates nodes and partitions which have non-actual state and must be rebalanced.
+     * State of all current owners that aren't contained in the given {@code ownersByUpdCounters} will be reset to MOVING.
      *
-     * @param p Partition ID.
-     * @param updateSeq If should increment sequence when updated.
-     * @param owners Set of new owners.
-     * @return Set of node IDs that should reload partitions.
+     * @param ownersByUpdCounters Map (partition, set of node IDs that have most actual state about partition
+     *                            (update counter is maximal) and should hold OWNING state for such partition).
+     * @param haveHistory Set of partitions which have WAL history to rebalance.
+     * @return Map (nodeId, set of partitions that should be rebalanced <b>fully</b> by this node).
      */
-    public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq);
+    public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory);
 
     /**
      * Callback on exchange done.

@@ -99,11 +99,6 @@ public interface GridCacheEntryEx {
     public int partition();
 
     /**
-     * @return Start version.
-     */
-    public long startVersion();
-
-    /**
      * @return Key.
      */
     public KeyCacheObject key();
@@ -1044,4 +1039,11 @@ public interface GridCacheEntryEx {
      * @return {@code True} if the entry is locked.
      */
     public boolean lockedByCurrentThread();
+
+    /**
+     * Touch this entry in its context's eviction manager.
+     *
+     * @param topVer Topology version.
+     */
+    public void touch(AffinityTopologyVersion topVer);
 }

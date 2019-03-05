@@ -73,6 +73,8 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
+        c.setConsistentId(igniteInstanceName);
+
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);

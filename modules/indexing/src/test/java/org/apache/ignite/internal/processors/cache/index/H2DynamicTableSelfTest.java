@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -43,6 +44,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -88,7 +90,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Bad data region name. */
     public static final String DATA_REGION_NAME_BAD = "my_data_region_bad";
 
+    /** Cache with backups. */
+    private static final String CACHE_NAME_BACKUPS = CACHE_NAME + "_backups";
+
+    /** Number of backups for backup test. */
+    private static final int DFLT_BACKUPS = 2;
+
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -98,6 +107,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         client().addCacheConfiguration(cacheConfiguration());
         client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME + "_async")
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC));
+
+        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_BACKUPS).setBackups(DFLT_BACKUPS));
     }
 
     /** {@inheritDoc} */
@@ -108,6 +119,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -120,6 +132,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"City\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"NameTest\"");
+        execute("DROP TABLE IF EXISTS PUBLIC.\"BackupTest\"");
 
         super.afterTest();
     }
@@ -493,6 +506,32 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
         CacheWriteSynchronizationMode writeSyncMode, String... additionalParams) throws SQLException {
         doTestCreateTable(tplCacheName, cacheGrp, cacheMode, writeSyncMode, false, additionalParams);
+    }
+
+    /**
+     * Test backups propagation.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testBackups() throws Exception {
+        String cacheName = "BackupTestCache";
+
+        execute("CREATE TABLE \"BackupTest\" (id BIGINT PRIMARY KEY, name VARCHAR) WITH \"template=" +
+            CACHE_NAME_BACKUPS + ", cache_name=" + cacheName + "\"");
+
+        CacheConfiguration ccfg = grid(0).cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+        assertEquals(DFLT_BACKUPS, ccfg.getBackups());
+
+        execute("DROP TABLE PUBLIC.\"BackupTest\"");
+
+        execute("CREATE TABLE \"BackupTest\" (id BIGINT PRIMARY KEY, name VARCHAR) WITH \"template=" +
+            CACHE_NAME_BACKUPS + ", cache_name=" + cacheName + ", backups=1\"");
+
+        ccfg = grid(0).cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+        assertEquals(1, ccfg.getBackups());
     }
 
     /**
@@ -1211,7 +1250,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws SQLException if failed.
      */
     public void testNoWrap() throws SQLException {
-        doTestKeyValueWrap(false, false);
+        doTestKeyValueWrap(false, false, false);
     }
 
     /**
@@ -1219,7 +1258,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws SQLException if failed.
      */
     public void testKeyWrap() throws SQLException {
-        doTestKeyValueWrap(true, false);
+        doTestKeyValueWrap(true, false, false);
     }
 
     /**
@@ -1227,7 +1266,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws SQLException if failed.
      */
     public void testValueWrap() throws SQLException {
-        doTestKeyValueWrap(false, true);
+        doTestKeyValueWrap(false, true, false);
     }
 
     /**
@@ -1235,29 +1274,73 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws SQLException if failed.
      */
     public void testKeyAndValueWrap() throws SQLException {
-        doTestKeyValueWrap(true, true);
+        doTestKeyValueWrap(true, true, false);
+    }
+
+    /**
+     * Test behavior when neither key nor value should be wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    public void testUuidNoWrap() throws SQLException {
+        doTestKeyValueWrap(false, false, true);
+    }
+
+    /**
+     * Test behavior when only key is wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    public void testUuidKeyWrap() throws SQLException {
+        doTestKeyValueWrap(true, false, true);
+    }
+
+    /**
+     * Test behavior when only value is wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    public void testUuidValueWrap() throws SQLException {
+        doTestKeyValueWrap(false, true, true);
+    }
+
+    /**
+     * Test behavior when both key and value is wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    public void testUuidKeyAndValueWrap() throws SQLException {
+        doTestKeyValueWrap(true, true, true);
     }
 
     /**
      * Test behavior for given combination of wrap flags.
      * @param wrapKey Whether key wrap should be enforced.
      * @param wrapVal Whether value wrap should be enforced.
+     * @param testUuid Whether should test with UUID as key and value.
      * @throws SQLException if failed.
      */
-    private void doTestKeyValueWrap(boolean wrapKey, boolean wrapVal) throws SQLException {
+    private void doTestKeyValueWrap(boolean wrapKey, boolean wrapVal, boolean testUuid) throws SQLException {
         try {
-            String sql = String.format("CREATE TABLE T (\"id\" int primary key, \"x\" varchar) WITH " +
-                "\"wrap_key=%b,wrap_value=%b\"", wrapKey, wrapVal);
+            String sql = testUuid ? String.format("CREATE TABLE T (\"id\" UUID primary key, \"x\" UUID) WITH " +
+                            "\"wrap_key=%b,wrap_value=%b\"", wrapKey, wrapVal) :
+                    String.format("CREATE TABLE T (\"id\" int primary key, \"x\" varchar) WITH " +
+                            "\"wrap_key=%b,wrap_value=%b\"", wrapKey, wrapVal);
+
+            UUID guid = UUID.randomUUID();
 
             if (wrapKey)
-                sql += ",\"key_type=tkey\"";
+                sql += ",\"key_type=" + (testUuid ? "tkey_guid" : "tkey") + "\"";
 
             if (wrapVal)
-                sql += ",\"value_type=tval\"";
+                sql += ",\"value_type=" + (testUuid ? "tval_guid" : "tval") + "\"";
 
             execute(sql);
 
-            execute("INSERT INTO T(\"id\", \"x\") values(1, 'a')");
+            if(testUuid)
+                execute("INSERT INTO T(\"id\", \"x\") values('" + guid.toString() + "', '" + guid.toString() + "')");
+            else
+                execute("INSERT INTO T(\"id\", \"x\") values(1, 'a')");
 
             LinkedHashMap<String, String> resCols = new LinkedHashMap<>();
 
@@ -1283,20 +1366,27 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             LinkedHashMap<String, String> expCols = new LinkedHashMap<>();
 
-            expCols.put("id", Integer.class.getName());
-            expCols.put("x", String.class.getName());
+            if (testUuid) {
+                expCols.put("id", Object.class.getName());
+                expCols.put("x", Object.class.getName());
+            }
+            else {
+                expCols.put("id", Integer.class.getName());
+                expCols.put("x", String.class.getName());
+            }
 
             assertEquals(expCols, resCols);
 
-            assertEqualsCollections(Arrays.asList(1, "a"), resData);
+            assertEqualsCollections(testUuid ? Arrays.asList(guid, guid) : Arrays.asList(1, "a")
+                    , resData);
 
-            Object key = createKeyForWrapTest(1, wrapKey);
+            Object key = createKeyForWrapTest(testUuid ? guid : 1, wrapKey);
 
             Object val = client().cache(cacheName("T")).withKeepBinary().get(key);
 
             assertNotNull(val);
 
-            assertEquals(createValueForWrapTest("a", wrapVal), val);
+            assertEquals(createValueForWrapTest(testUuid ? guid : "a", wrapVal), val);
         }
         finally {
             execute("DROP TABLE IF EXISTS T");
@@ -1308,11 +1398,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param wrap Whether key should be wrapped.
      * @return (optionally wrapped) key.
      */
-    private Object createKeyForWrapTest(int key, boolean wrap) {
+    private Object createKeyForWrapTest(Object key, boolean wrap) {
         if (!wrap)
             return key;
 
-        return client().binary().builder("tkey").setField("id", key).build();
+        return client().binary().builder(key instanceof UUID ? "tkey_guid" : "tkey").setField("id", key).build();
     }
 
     /**
@@ -1320,11 +1410,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param wrap Whether value should be wrapped.
      * @return (optionally wrapped) value.
      */
-    private Object createValueForWrapTest(String val, boolean wrap) {
+    private Object createValueForWrapTest(Object val, boolean wrap) {
         if (!wrap)
             return val;
 
-        return client().binary().builder("tval").setField("x", val).build();
+        return client().binary().builder(val instanceof UUID ? "tval_guid" : "tval").setField("x", val).build();
     }
 
     /**
@@ -1375,24 +1465,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that {@code CREATE TABLE} in non-public schema causes an exception.
-     *
-     * @throws Exception if failed.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testCreateTableInNonPublicSchema() throws Exception {
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                execute("CREATE TABLE \"cache_idx\".\"Person\" (\"id\" int, \"city\" varchar," +
-                    " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-                    "\"template=cache\"");
-
-                return null;
-            }
-        }, IgniteSQLException.class, "CREATE TABLE can only be executed on PUBLIC schema.");
-    }
-
-    /**
      * Execute {@code CREATE TABLE} w/given params expecting a particular error.
      * @param params Engine parameters.
      * @param expErrMsg Expected error message.
@@ -1422,17 +1494,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, expErrMsg);
-    }
-
-    /**
-     * Test that {@code DROP TABLE} on non-public schema causes an exception.
-     *
-     * @throws Exception if failed.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testDropTableNotPublicSchema() throws Exception {
-       assertDdlCommandThrows("DROP TABLE \"cache_idx\".\"Person\"",
-           "DROP TABLE can only be executed on PUBLIC schema.");
     }
 
     /**

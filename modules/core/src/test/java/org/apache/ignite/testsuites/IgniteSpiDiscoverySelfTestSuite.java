@@ -18,21 +18,31 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
+import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryMarshallerCheckSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiCoordinatorChangeTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiFailureTimeoutSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiMulticastTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryUnresolvedHostTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryClientSuspensionSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryFailedJoinTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryCoordinatorFailureTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderCleanerTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnReconnectTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryReconnectUnstableTopologyTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryRestartTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySnapshotHistoryTest;
@@ -41,6 +51,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiFailureTimeoutSelfTest
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiReconnectDelayTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiStartStopSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslParametersTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSecuredUnsecuredTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedSelfTest;
@@ -73,6 +84,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpDiscoverySharedFsIpFinderSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryJdbcIpFinderSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryMulticastIpFinderSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoveryIpFinderCleanerTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoverySelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySpiSelfTest.class));
@@ -86,8 +98,10 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(TcpClientDiscoverySpiSelfTest.class));
         suite.addTest(new TestSuite(TcpClientDiscoveryMarshallerCheckSelfTest.class));
+        suite.addTest(new TestSuite(TcpClientDiscoverySpiCoordinatorChangeTest.class));
         suite.addTest(new TestSuite(TcpClientDiscoverySpiMulticastTest.class));
         suite.addTest(new TestSuite(TcpClientDiscoverySpiFailureTimeoutSelfTest.class));
+        suite.addTest(new TestSuite(TcpClientDiscoveryUnresolvedHostTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoveryNodeConsistentIdSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryNodeConfigConsistentIdSelfTest.class));
@@ -102,20 +116,33 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(TcpDiscoverySpiReconnectDelayTest.class));
 
+        suite.addTest(new TestSuite(IgniteDiscoveryMassiveNodeFailTest.class));
+        suite.addTest(new TestSuite(TcpDiscoveryCoordinatorFailureTest.class));
+
         // Client connect.
         suite.addTest(new TestSuite(IgniteClientConnectTest.class));
         suite.addTest(new TestSuite(IgniteClientReconnectMassiveShutdownTest.class));
+        suite.addTest(new TestSuite(TcpDiscoveryClientSuspensionSelfTest.class));
+
+        suite.addTest(new TestSuite(TcpDiscoveryFailedJoinTest.class));
 
         // SSL.
         suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySslTrustedSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySslSecuredUnsecuredTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySslTrustedUntrustedTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySslParametersTest.class));
 
         // Disco cache reuse.
         suite.addTest(new TestSuite(IgniteDiscoveryCacheReuseSelfTest.class));
 
         suite.addTest(new TestSuite(DiscoveryUnmarshalVulnerabilityTest.class));
+
+        suite.addTest(new TestSuite(FilterDataForClientNodeDiscoveryTest.class));
+
+        suite.addTest(new TestSuite(TcpDiscoveryPendingMessageDeliveryTest.class));
+
+        suite.addTest(new TestSuite(TcpDiscoveryReconnectUnstableTopologyTest.class));
 
         return suite;
     }

@@ -68,11 +68,11 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     private void cleanUpSwapDir() {
         Path relDir = Paths.get(U.getIgniteHome(), RELATIVE_SWAP_PATH);
 
-        deleteRecursively(relDir.toFile());
+        U.delete(relDir.toFile());
 
         Path absDir = Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH);
 
-        deleteRecursively(absDir.toFile());
+        U.delete(absDir.toFile());
     }
 
     /**

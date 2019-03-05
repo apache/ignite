@@ -76,8 +76,12 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxPreloadNoWriteTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxReplicatedPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientCacheInitializationFailTest;
+import org.apache.ignite.internal.processors.cache.IgniteDiscoveryDataHandlingInNewClusterTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheMultinodeTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartCoordinatorFailoverTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartNoExchangeTimeoutTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartStopConcurrentTest;
@@ -89,6 +93,7 @@ import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransaction
 import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteSystemCacheOnClientTest;
 import org.apache.ignite.internal.processors.cache.MarshallerCacheJobRunNodeRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheResultIsNotNullOnPartitionLossTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarlyTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDiscoveryDataConcurrentJoinTest;
@@ -104,6 +109,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheReadFr
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSingleGetMessageTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtTxPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheLockFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheMultiTxLockSelfTest;
@@ -225,6 +231,9 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
         suite.addTestSuite(IgniteDynamicCacheMultinodeTest.class);
+        suite.addTestSuite(IgniteDynamicCacheStartFailTest.class);
+        suite.addTestSuite(IgniteDynamicCacheStartFailWithPersistenceTest.class);
+        suite.addTestSuite(IgniteDynamicCacheStartCoordinatorFailoverTest.class);
         suite.addTestSuite(IgniteDynamicCacheWithConfigStartSelfTest.class);
         suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
         suite.addTestSuite(IgniteDynamicCacheStartStopConcurrentTest.class);
@@ -240,6 +249,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheDiscoveryDataConcurrentJoinTest.class);
         suite.addTestSuite(IgniteClientCacheInitializationFailTest.class);
         suite.addTestSuite(IgniteCacheFailedUpdateResponseTest.class);
+        suite.addTestSuite(IgniteDiscoveryDataHandlingInNewClusterTest.class);
 
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
@@ -346,6 +356,10 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheAtomicPrimarySyncBackPressureTest.class);
 
         suite.addTestSuite(IgniteCacheContainsKeyAtomicTest.class);
+
+        suite.addTestSuite(CacheResultIsNotNullOnPartitionLossTest.class);
+
+        suite.addTestSuite(IgniteTxConcurrentRemoveObjectsTest.class);
 
         return suite;
     }

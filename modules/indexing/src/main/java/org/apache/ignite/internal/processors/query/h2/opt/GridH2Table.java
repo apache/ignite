@@ -22,8 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -32,8 +33,10 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
@@ -86,7 +89,7 @@ public class GridH2Table extends TableBase {
     private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
 
     /** */
-    private final ReadWriteLock lock;
+    private final ReentrantReadWriteLock lock;
 
     /** */
     private boolean destroyed;
@@ -124,6 +127,7 @@ public class GridH2Table extends TableBase {
      * @param idxsFactory Indexes factory.
      * @param cctx Cache context.
      */
+    @SuppressWarnings("ConstantConditions")
     public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2RowFactory rowFactory,
         GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
         super(createTblData);
@@ -172,11 +176,14 @@ public class GridH2Table extends TableBase {
         assert idxs != null;
 
         List<Index> clones = new ArrayList<>(idxs.size());
+
         for (Index index : idxs) {
             Index clone = createDuplicateIndexIfNeeded(index);
+
             if (clone != null)
                 clones.add(clone);
         }
+
         idxs.addAll(clones);
 
         boolean hasHashIndex = idxs.size() >= 2 && index(0).getIndexType().isHash();
@@ -289,7 +296,16 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            l.lockInterruptibly();
+            if (!exclusive || !GridMapQueryExecutor.FORCE_LAZY)
+                l.lockInterruptibly();
+            else {
+                for (;;) {
+                    if (l.tryLock(200, TimeUnit.MILLISECONDS))
+                        break;
+                    else
+                        Thread.yield();
+                }
+            }
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -541,12 +557,39 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Collect indexes for rebuild.
      *
+     * @param clo Closure.
+     */
+    public void collectIndexesForPartialRebuild(IndexRebuildPartialClosure clo) {
+        for (int i = sysIdxsCnt; i < idxs.size(); i++) {
+            Index idx = idxs.get(i);
+
+            if (idx instanceof H2TreeIndex) {
+                H2TreeIndex idx0 = (H2TreeIndex)idx;
+
+                if (idx0.rebuildRequired())
+                    clo.addIndex(this, idx0);
+            }
+        }
+    }
+
+    /**
+     * Mark or unmark index rebuild state.
      */
     public void markRebuildFromHashInProgress(boolean value) {
         assert !value || (idxs.size() >= 2 && index(1).getIndexType().isHash()) : "Table has no hash index.";
 
         rebuildFromHashInProgress = value;
+
+        lock.writeLock().lock();
+
+        try {
+            incrementModificationCounter();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -627,7 +670,7 @@ public class GridH2Table extends TableBase {
             if (cloneIdx != null)
                 database.addSchemaObject(ses, cloneIdx);
 
-            setModified();
+            incrementModificationCounter();
 
             return idx;
         }
@@ -931,7 +974,7 @@ public class GridH2Table extends TableBase {
 
             desc.refreshMetadataFromTypeDescriptor();
 
-            setModified();
+            incrementModificationCounter();
         }
         finally {
             unlock(true);
@@ -939,9 +982,10 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Drop columns.
      *
-     * @param cols
-     * @param ifExists
+     * @param cols Columns.
+     * @param ifExists If EXISTS flag.
      */
     public void dropColumns(List<String> cols, boolean ifExists) {
         assert !ifExists || cols.size() == 1;
@@ -993,7 +1037,7 @@ public class GridH2Table extends TableBase {
                     ((GridH2IndexBase)idx).refreshColumnIds();
             }
 
-            setModified();
+            incrementModificationCounter();
         }
         finally {
             unlock(true);
@@ -1019,6 +1063,15 @@ public class GridH2Table extends TableBase {
         }
 
         return columns;
+    }
+
+    /**
+     * Increment modification counter to force recompilation of existing prepared statements.
+     */
+    private void incrementModificationCounter() {
+        assert lock.isWriteLockedByCurrentThread();
+
+        setModified();
     }
 
     /**

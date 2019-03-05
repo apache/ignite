@@ -1,94 +1,122 @@
 [
   {
-    "name": "United States",
+    "label": "United States",
+    "value": "United States",
     "code": "USA"
   },
   {
-    "name": "Canada",
+    "label": "Canada",
+    "value": "Canada",
     "code": "CAN"
   },
   {
-    "name": "United Kingdom",
+    "label": "United Kingdom",
+    "value": "United Kingdom",
     "code": "GBR"
   },
   {
-    "name": "Germany",
+    "label": "Germany",
+    "value": "Germany",
     "code": "DEU"
   },
   {
-    "name": "France",
+    "label": "France",
+    "value": "France",
     "code": "FRA"
   },
   {
-    "name": "Switzerland",
+    "label": "Belgium",
+    "value": "Belgium",
+    "code": "BEL"
+  },
+  {
+    "label": "Switzerland",
+    "value": "Switzerland",
     "code": "CHE"
   },
   {
-    "name": "Netherlands",
+    "label": "Netherlands",
+    "value": "Netherlands",
     "code": "NLD"
   },
   {
-    "name": "Israel",
+    "label": "Israel",
+    "value": "Israel",
     "code": "ISR"
   },
   {
-    "name": "Sweden",
+    "label": "Sweden",
+    "value": "Sweden",
     "code": "SWE"
   },
   {
-    "name": "Russia",
+    "label": "Russia",
+    "value": "Russia",
     "code": "RUS"
   },
   {
-    "name": "Other Europe",
+    "label": "Other Europe",
+    "value": "Other Europe",
     "code": "Other Europe"
   },
   {
-    "name": "China",
+    "label": "China",
+    "value": "China",
     "code": "CHN"
   },
   {
-    "name": "India",
+    "label": "India",
+    "value": "India",
     "code": "IND"
   },
   {
-    "name": "Japan",
+    "label": "Japan",
+    "value": "Japan",
     "code": "JPN"
   },
   {
-    "name": "Other Asia",
+    "label": "Other Asia",
+    "value": "Other Asia",
     "code": "Other Asia"
   },
   {
-    "name": "Australia",
+    "label": "Australia",
+    "value": "Australia",
     "code": "AUS"
   },
   {
-    "name": "Brazil",
+    "label": "Brazil",
+    "value": "Brazil",
     "code": "BRA"
   },
   {
-    "name": "Argentina",
+    "label": "Argentina",
+    "value": "Argentina",
     "code": "ARG"
   },
   {
-    "name": "Other South America",
+    "label": "Other South America",
+    "value": "Other South America",
     "code": "Other South America"
   },
   {
-    "name": "South Africa",
+    "label": "South Africa",
+    "value": "South Africa",
     "code": "ZAF"
   },
   {
-    "name": "Nigeria",
+    "label": "Nigeria",
+    "value": "Nigeria",
     "code": "NGA"
   },
   {
-    "name": "Other Africa",
+    "label": "Other Africa",
+    "value": "Other Africa",
     "code": "Other Africa"
   },
   {
-    "name": "Rest of the World",
+    "label": "Rest of the World",
+    "value": "Rest of the World",
     "code": "Rest of the World"
   }
 ]

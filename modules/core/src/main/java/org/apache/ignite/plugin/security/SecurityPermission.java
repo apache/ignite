@@ -64,7 +64,16 @@ public enum SecurityPermission {
     SERVICE_CANCEL,
 
     /** Service invoke permission. */
-    SERVICE_INVOKE;
+    SERVICE_INVOKE,
+
+    /** Cache create permission. */
+    CACHE_CREATE,
+
+    /** Cache create permission. */
+    CACHE_DESTROY,
+
+    /** Join as server node permission. */
+    JOIN_AS_SERVER;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -121,16 +122,23 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     private CacheManager cacheMgr;
 
     /** Future indicates that cache is under restarting. */
-    private final AtomicReference<GridFutureAdapter<Void>> restartFut;
+    private final AtomicReference<RestartFuture> restartFut;
 
     /** Flag indicates that proxy is closed. */
     private volatile boolean closed;
+
+    /** Proxy initialization latch used for await final completion after proxy created, as an example,
+     * a proxy may be created but the exchange is not completed and if we try to perform some cache
+     * the operation we get last finished exchange future (need for validation)
+     * for the previous version but not for current.
+     */
+    private final CountDownLatch initLatch = new CountDownLatch(1);
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
     public IgniteCacheProxyImpl() {
-        restartFut = new AtomicReference<GridFutureAdapter<Void>>(null);
+        restartFut = new AtomicReference<>(null);
     }
 
     /**
@@ -143,7 +151,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             @NotNull IgniteInternalCache<K, V> delegate,
             boolean async
     ) {
-        this(ctx, delegate, new AtomicReference<GridFutureAdapter<Void>>(null), async);
+        this(ctx, delegate, new AtomicReference<>(null), async);
     }
 
     /**
@@ -154,7 +162,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     private IgniteCacheProxyImpl(
         @NotNull GridCacheContext<K, V> ctx,
         @NotNull IgniteInternalCache<K, V> delegate,
-        @NotNull AtomicReference<GridFutureAdapter<Void>> restartFut,
+        @NotNull AtomicReference<RestartFuture> restartFut,
         boolean async
     ) {
         super(async);
@@ -166,6 +174,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         this.delegate = delegate;
 
         this.restartFut = restartFut;
+    }
+
+    /**
+     *
+     * @return Init latch.
+     */
+    public CountDownLatch getInitLatch(){
+        return initLatch;
     }
 
     /**
@@ -361,7 +377,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        final CacheQuery<R> qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
+        final CacheQuery<R> qry = ctx.queries().createScanQuery(
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal());
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -571,7 +588,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             boolean keepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
 
-            return ctx.kernalContext().query().querySqlFields(ctx, qry, keepBinary, false);
+            return ctx.kernalContext().query().querySqlFields(ctx, qry, null, keepBinary, false);
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -604,7 +621,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             if (qry instanceof SqlFieldsQuery)
                 return (FieldsQueryCursor<R>)ctx.kernalContext().query().querySqlFields(ctx, (SqlFieldsQuery)qry,
-                    keepBinary, true).get(0);
+                    null, keepBinary, true).get(0);
 
             if (qry instanceof ScanQuery)
                 return query((ScanQuery)qry, null, projection(qry.isLocal()));
@@ -1669,6 +1686,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                         ctx.name(), e);
         }
 
+        if (e instanceof IgniteException && X.hasCause(e, CacheException.class))
+            e = X.cause(e, CacheException.class);
+
         if (e instanceof IgniteCheckedException)
             return CU.convertToCacheException((IgniteCheckedException) e);
 
@@ -1697,6 +1717,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Internal proxy.
      */
     @Override public GridCacheProxyImpl<K, V> internalProxy() {
+        checkRestart();
+
         return new GridCacheProxyImpl<>(ctx, delegate, ctx.operationContextPerCall());
     }
 
@@ -1763,25 +1785,26 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * Throws {@code IgniteCacheRestartingException} if proxy is restarting.
      */
     public void checkRestart() {
-        if (isRestarting())
-            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut.get()), "Cache is restarting: " +
-                    context().name());
+        RestartFuture currentFut = restartFut.get();
+
+        if (currentFut != null)
+            currentFut.checkRestartOrAwait();
     }
 
     /**
      * @return True if proxy is restarting, false in other case.
      */
     public boolean isRestarting() {
-        return restartFut != null && restartFut.get() != null;
+        return restartFut.get() != null;
     }
 
     /**
      * Restarts this cache proxy.
      */
-    public void restart() {
-        GridFutureAdapter<Void> restartFut = new GridFutureAdapter<>();
+    public boolean restart() {
+        RestartFuture restartFut = new RestartFuture(ctx.name());
 
-        final GridFutureAdapter<Void> curFut = this.restartFut.get();
+         RestartFuture curFut = this.restartFut.get();
 
         boolean changed = this.restartFut.compareAndSet(curFut, restartFut);
 
@@ -1794,6 +1817,37 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                         curFut.onDone();
                 }
             });
+
+        return changed;
+    }
+
+    /**
+     * @param fut Finish restart future.
+     */
+    public void registrateFutureRestart(GridFutureAdapter<?> fut){
+        RestartFuture currentFut = restartFut.get();
+
+        if (currentFut != null)
+            currentFut.addRestartFinishedFuture(fut);
+    }
+
+    /**
+     * If proxy is already being restarted, returns future to wait on, else restarts this cache proxy.
+     *
+     * @return Future to wait on, or null.
+     */
+    public GridFutureAdapter<Void> opportunisticRestart() {
+        RestartFuture restartFut = new RestartFuture(ctx.name());
+
+        while (true) {
+            if (this.restartFut.compareAndSet(null, restartFut))
+                return null;
+
+            GridFutureAdapter<Void> curFut = this.restartFut.get();
+
+            if (curFut != null)
+                return curFut;
+        }
     }
 
     /**
@@ -1803,7 +1857,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @param delegate New delegate.
      */
     public void onRestarted(GridCacheContext ctx, IgniteInternalCache delegate) {
-        GridFutureAdapter<Void> restartFut = this.restartFut.get();
+        RestartFuture restartFut = this.restartFut.get();
 
         assert restartFut != null;
 
@@ -1813,6 +1867,52 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         this.restartFut.compareAndSet(restartFut, null);
 
         restartFut.onDone();
+    }
+
+    /**
+     *
+     */
+    private class RestartFuture extends GridFutureAdapter<Void> {
+        /** */
+        private final String name;
+
+        /** */
+        private volatile GridFutureAdapter<?> restartFinishFut;
+
+        /** */
+        private RestartFuture(String name) {
+            this.name = name;
+        }
+
+        /**
+         *
+         */
+        void checkRestartOrAwait() {
+            GridFutureAdapter<?> fut = restartFinishFut;
+
+            if (fut != null) {
+                try {
+                    fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
+                }
+
+                return;
+            }
+
+            throw new IgniteCacheRestartingException(
+                new IgniteFutureImpl<>(this),
+                "Cache is restarting: " + name
+            );
+        }
+
+        /**
+         *
+         */
+        void addRestartFinishedFuture(GridFutureAdapter<?> fut) {
+            restartFinishFut = fut;
+        }
     }
 
     /** {@inheritDoc} */

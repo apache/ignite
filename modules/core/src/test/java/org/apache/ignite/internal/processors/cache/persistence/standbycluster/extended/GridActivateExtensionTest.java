@@ -82,7 +82,7 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName, true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName, true));
 
         super.beforeTestsStarted();
 
@@ -156,7 +156,7 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
 
         condId = 0;
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName, true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName, true));
     }
 
     /** {@inheritDoc} */

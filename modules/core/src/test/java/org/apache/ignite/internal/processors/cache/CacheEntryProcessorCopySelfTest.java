@@ -158,7 +158,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
 
             CacheObject obj = entry.peekVisibleValue();
 
-            ca.context().evicts().touch(entry, AffinityTopologyVersion.NONE);
+            entry.touch(AffinityTopologyVersion.NONE);
 
             int actCnt = cnt.get();
 

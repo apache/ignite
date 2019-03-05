@@ -720,7 +720,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             m.explicitLock(),
             tx.storeEnabled(),
             tx.topologyVersion(),
-            completedVer, // Reuse 'baseVersion' to do not add new fields in message.
+            null,
             null,
             null,
             tx.size(),

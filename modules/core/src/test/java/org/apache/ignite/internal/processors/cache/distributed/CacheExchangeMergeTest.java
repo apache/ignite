@@ -1397,11 +1397,12 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         for (int i = futs.size() - 1; i >= 0; i--) {
             GridDhtPartitionsExchangeFuture fut = futs.get(i);
 
-            if (fut.exchangeDone() && fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT) {
+            if (!fut.isMerged() && fut.exchangeDone() && fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT) {
                 AffinityTopologyVersion resVer = fut.topologyVersion();
 
-                if (resVer != null)
-                    doneVers.add(resVer);
+                assertNotNull(resVer);
+
+                doneVers.add(resVer);
             }
         }
 

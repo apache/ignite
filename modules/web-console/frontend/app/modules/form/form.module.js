@@ -23,10 +23,7 @@ import './field/feedback.scss';
 import './field/input/text.scss';
 
 // Panel.
-import igniteFormPanel from './panel/panel.directive';
-import igniteFormPanelField from './panel/field.directive';
 import igniteFormPanelChevron from './panel/chevron.directive';
-import igniteFormRevert from './panel/revert.directive';
 
 // Field.
 import igniteFormFieldLabel from './field/label.directive';
@@ -62,10 +59,7 @@ angular
 
 ])
 // Panel.
-.directive(...igniteFormPanel)
-.directive(...igniteFormPanelField)
 .directive(...igniteFormPanelChevron)
-.directive(...igniteFormRevert)
 // Field.
 .directive(...igniteFormFieldLabel)
 .directive(...igniteFormFieldTooltip)

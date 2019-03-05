@@ -43,7 +43,7 @@ public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinode
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         super.beforeTestsStarted();
 
@@ -54,6 +54,6 @@ public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinode
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }

@@ -77,8 +77,14 @@ namespace ignite
                  */
                 S01S02_OPTION_VALUE_CHANGED,
 
+                /** The numeric or time data returned for a column was truncated. */
+                S01S07_FRACTIONAL_TRUNCATION,
+
                 /** Restricted data type attribute violation. */
                 S07006_RESTRICTION_VIOLATION,
+
+                /** Indicator needed but not suplied. */
+                S22002_INDICATOR_NEEDED,
 
                 /** String data, length mismatch. */
                 S22026_DATA_LENGTH_MISMATCH,

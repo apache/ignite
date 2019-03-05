@@ -657,6 +657,9 @@ namespace ignite
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;
 
+            /** Row bind type. */
+            SqlUlen rowBindType;
+
             /** Buffer to store number of rows fetched by the last fetch. */
             size_t* rowsFetched;
 

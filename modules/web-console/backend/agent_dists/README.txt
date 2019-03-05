@@ -1,7 +1,6 @@
 Ignite Web Console
 ======================================
 
-This is default folder for agent distributives.
+This is a default directory for agent distributions.
 
-Also, you could specify custom folder in `serve/config/settings.json`
-
+A custom directory can be set in `backend/config/settings.json`.

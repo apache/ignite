@@ -93,6 +93,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             this.clients = top.clients;
             this.clusterVersion = top.clusterVersion;
             this.active = top.active;
+            this.secured = top.secured;
         }
 
         isSameCluster(top) {
@@ -106,6 +107,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             this.clients = top.clients;
             this.clusterVersion = top.clusterVersion;
             this.active = top.active;
+            this.secured = top.secured;
         }
 
         same(top) {
@@ -242,6 +244,12 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             });
 
             sock.on('cluster:topology', (top) => {
+                if (_.isNil(top)) {
+                    console.log('Invalid format of message: "cluster:topology"');
+
+                    return;
+                }
+
                 const cluster = this.getOrCreateCluster(top);
 
                 _.forEach(this.topLsnrs, (lsnr) => lsnr(agentSocket, cluster, top));
@@ -281,19 +289,8 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             _.forEach(tokens, (token) => {
                 this._agentSockets.add(token, agentSocket);
 
-                // TODO start demo if needed.
-                // const browserSockets = _.filter(this._browserSockets[token], 'request._query.IgniteDemoMode');
-                //
-                // // First agent join after user start demo.
-                // if (_.size(browserSockets))
-                //     agentSocket.runDemoCluster(token, browserSockets);
-
                 this._browsersHnd.agentStats(token);
             });
-
-            // ioSocket.on('cluster:topology', (top) => {
-            //
-            // });
         }
 
         /**
@@ -313,7 +310,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
                     this.io = socketio(srv, {path: '/agents'});
 
                     this.io.on('connection', (sock) => {
-                        sock.on('agent:auth', ({ver, bt, tokens, disableDemo}, cb) => {
+                        sock.on('agent:auth', ({ver, bt, tokens, disableDemo} = {}, cb) => {
                             if (_.isEmpty(tokens))
                                 return cb('Tokens not set. Please reload agent archive or check settings');
 
@@ -428,7 +425,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
 
             const sockets = this._agentSockets[token];
 
-            _.forEach(sockets, (socket) => socket._emit('agent:reset:token', token));
+            _.forEach(sockets, (socket) => socket._sendToAgent('agent:reset:token', token));
         }
     }
 

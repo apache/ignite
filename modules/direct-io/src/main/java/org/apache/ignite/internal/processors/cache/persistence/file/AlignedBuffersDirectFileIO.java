@@ -42,7 +42,7 @@ import org.jsr166.ConcurrentHashMap8;
  *
  * Works only for Linux
  */
-public class AlignedBuffersDirectFileIO implements FileIO {
+public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     /** Negative value for file offset: read/write starting from current file position */
     private static final int FILE_POS_USE_CURRENT = -1;
 
@@ -455,17 +455,22 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buf, int off, int len) throws IOException {
-        write(ByteBuffer.wrap(buf, off, len));
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
+        return write(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */
-    @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
         throw new UnsupportedOperationException("AsynchronousFileChannel doesn't support mmap.");
     }
 
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
+        force(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force(boolean withMetadata) throws IOException {
         if (IgniteNativeIoLib.fsync(fdCheckOpened()) < 0)
             throw new IOException(String.format("Error fsync()'ing %s, got %s", file, getLastError()));
     }

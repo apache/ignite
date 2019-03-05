@@ -26,9 +26,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -280,6 +282,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             ", locNodeId=" + cctx.localNodeId() + ", gridName=" + cctx.igniteInstanceName() + ']';
 
         IgniteCheckedException ex = shutdown(old, /*clean files if destroy*/destroy, null);
+
+        if (destroy)
+            removeCacheGroupConfigurationData(grp);
 
         if (ex != null)
             throw ex;
@@ -610,6 +615,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         Map<String, StoredCacheData> ccfgs = new HashMap<>();
 
+        Arrays.sort(files);
+
         for (File file : files) {
             if (file.isDirectory()) {
                 if (file.getName().startsWith(CACHE_DIR_PREFIX)) {
@@ -618,7 +625,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     if (conf.exists() && conf.length() > 0) {
                         StoredCacheData cacheData = readCacheData(conf);
 
-                        ccfgs.put(cacheData.config().getName(), cacheData);
+                        String cacheName = cacheData.config().getName();
+
+                        if (!ccfgs.containsKey(cacheName))
+                            ccfgs.put(cacheName, cacheData);
+                        else {
+                            U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
+                                    + file.getName());
+                        }
                     }
                 }
                 else if (file.getName().startsWith(CACHE_GRP_DIR_PREFIX))
@@ -644,7 +658,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (!file.isDirectory() && file.getName().endsWith(CACHE_DATA_FILENAME) && file.length() > 0) {
                 StoredCacheData cacheData = readCacheData(file);
 
-                ccfgs.put(cacheData.config().getName(), cacheData);
+                String cacheName = cacheData.config().getName();
+
+                if (!ccfgs.containsKey(cacheName))
+                    ccfgs.put(cacheName, cacheData);
+                else {
+                    U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
+                            + file.getName() + " in group directory " + grpDir.getName());
+                }
             }
         }
     }
@@ -743,6 +764,49 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
 
         return aggr;
+    }
+
+    /**
+     * Delete caches' configuration data files of cache group.
+     *
+     * @param ctx Cache group context.
+     * @throws IgniteCheckedException If fails.
+     */
+    private void removeCacheGroupConfigurationData(CacheGroupContext ctx) throws IgniteCheckedException {
+        File cacheGrpDir = cacheWorkDir(ctx.sharedGroup(), ctx.cacheOrGroupName());
+
+        if (cacheGrpDir != null && cacheGrpDir.exists()) {
+            DirectoryStream.Filter<Path> cacheCfgFileFilter = new DirectoryStream.Filter<Path>() {
+                @Override public boolean accept(Path path) {
+                    return Files.isRegularFile(path) && path.getFileName().toString().endsWith(CACHE_DATA_FILENAME);
+                }
+            };
+
+            try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(cacheGrpDir.toPath(), cacheCfgFileFilter)) {
+                for(Path path: dirStream)
+                    Files.deleteIfExists(path);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx.toString(), e);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeCacheData(StoredCacheData cacheData) throws IgniteCheckedException {
+        CacheConfiguration cacheCfg = cacheData.config();
+        File cacheWorkDir = cacheWorkDir(cacheCfg);
+        File file;
+
+        if (cacheData.config().getGroupName() != null)
+            file = new File(cacheWorkDir, cacheCfg.getName() + CACHE_DATA_FILENAME);
+        else
+            file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
+
+        if (file.exists()) {
+            if (!file.delete())
+                throw new IgniteCheckedException("Failed to delete cache configuration:" + cacheCfg.getName());
+        }
     }
 
     /**

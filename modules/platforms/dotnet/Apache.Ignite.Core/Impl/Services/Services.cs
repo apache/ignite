@@ -367,7 +367,8 @@ namespace Apache.Ignite.Core.Impl.Services
         public T GetServiceProxy<T>(string name, bool sticky) where T : class
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-            IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", "Service proxy type should be an interface: " + typeof(T));
+            IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", 
+                "Service proxy type should be an interface: " + typeof(T));
 
             // In local scenario try to return service instance itself instead of a proxy
             // Get as object because proxy interface may be different from real interface
@@ -385,24 +386,56 @@ namespace Apache.Ignite.Core.Impl.Services
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).Platform;
 
             return ServiceProxyFactory<T>.CreateProxy((method, args) =>
-                InvokeProxyMethod(javaProxy, method, args, platform));
+                InvokeProxyMethod(javaProxy, method.Name, method, args, platform));
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name)
+        {
+            return GetDynamicServiceProxy(name, false);
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name, bool sticky)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            // In local scenario try to return service instance itself instead of a proxy
+            var locInst = GetService<object>(name);
+
+            if (locInst != null)
+            {
+                return locInst;
+            }
+
+            var javaProxy = DoOutOpObject(OpServiceProxy, w =>
+            {
+                w.WriteString(name);
+                w.WriteBoolean(sticky);
+            });
+
+            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).Platform;
+
+            return new DynamicServiceProxy((methodName, args) =>
+                InvokeProxyMethod(javaProxy, methodName, null, args, platform));
         }
 
         /// <summary>
         /// Invokes the service proxy method.
         /// </summary>
         /// <param name="proxy">Unmanaged proxy.</param>
+        /// <param name="methodName">Name of the method.</param>
         /// <param name="method">Method to invoke.</param>
         /// <param name="args">Arguments.</param>
         /// <param name="platform">The platform.</param>
         /// <returns>
         /// Invocation result.
         /// </returns>
-        private object InvokeProxyMethod(IPlatformTargetInternal proxy, MethodBase method, object[] args, 
-            Platform platform)
+        private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
+            MethodBase method, object[] args, Platform platform)
         {
             return DoOutInOp(OpInvokeMethod,
-                writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args, platform),
+                writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platform),
                 (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), 
                 proxy);
         }

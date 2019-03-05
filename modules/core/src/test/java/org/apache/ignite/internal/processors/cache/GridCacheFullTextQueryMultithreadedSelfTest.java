@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -105,12 +105,17 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
                     int cnt = 0;
 
                     while (!stop.get()) {
-                        Collection<Map.Entry<Integer, H2TextValue>> res = qry.execute().get();
+                        CacheQueryFuture<Map.Entry<Integer, H2TextValue>> qryFut = qry.execute();
+
+                        int size = 0;
+
+                        while(qryFut.next() != null)
+                            size++;
 
                         cnt++;
 
                         if (cnt % logFreq == 0) {
-                            X.println("Result set: " + res.size());
+                            X.println("Result set: " + size);
                             X.println("Executed queries: " + cnt);
                         }
                     }

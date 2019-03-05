@@ -63,6 +63,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
@@ -2601,6 +2602,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (log.isTraceEnabled())
             log.trace("Sending message with ack to node [node=" + node + ", msg=" + msg + ']');
 
+        if (isLocalNodeDisconnected()) {
+            throw new IgniteSpiException("Failed to send a message to remote node because local node has " +
+                "been disconnected [rmtNodeId=" + node.id() + ']');
+        }
+
         ClusterNode locNode = getLocalNode();
 
         if (locNode == null)
@@ -2643,14 +2649,34 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
                 while (retry);
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSpiException("Failed to send message to remote node: " + node, e);
+            catch (Throwable t) {
+                log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
+
+                if (t instanceof Error)
+                    throw (Error)t;
+
+                if (t instanceof RuntimeException)
+                    throw (RuntimeException)t;
+
+                throw new IgniteSpiException("Failed to send message to remote node: " + node, t);
             }
             finally {
                 if (client != null && removeNodeClient(node.id(), client))
                     client.forceClose();
             }
         }
+    }
+
+    /**
+     * @return {@code True} if local node in disconnected state.
+     */
+    private boolean isLocalNodeDisconnected() {
+        boolean disconnected = false;
+
+        if (ignite instanceof IgniteKernal)
+            disconnected = ((IgniteKernal)ignite).context().clientDisconnected();
+
+        return disconnected;
     }
 
     /**
@@ -2798,8 +2824,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 client = fut.get();
 
-                if (client == null)
-                    continue;
+                if (client == null) {
+                    if (isLocalNodeDisconnected())
+                        throw new IgniteCheckedException("Unable to create TCP client due to local node disconnecting.");
+                    else
+                        continue;
+                }
 
                 if (getSpiContext().node(nodeId) == null) {
                     if (removeNodeClient(nodeId, client))
@@ -3147,6 +3177,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (!recoveryDesc.reserve()) {
                         U.closeQuiet(ch);
+
+                        // Ensure the session is closed.
+                        GridNioSession ses = recoveryDesc.session();
+
+                        if (ses != null) {
+                            while(ses.closeTime() == 0)
+                                ses.close();
+                        }
 
                         return null;
                     }

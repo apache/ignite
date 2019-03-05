@@ -536,6 +536,11 @@ public interface CacheMetrics {
     public long getRebalancingStartTime();
 
     /**
+     * @return Number of partitions need to be cleared before actual rebalance start.
+     */
+    public long getRebalanceClearingPartitionsLeft();
+
+    /**
      * Checks whether statistics collection is enabled in this cache.
      * <p>
      * The default value is {@code false}.

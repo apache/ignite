@@ -36,8 +36,8 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.isSec
 import static org.apache.ignite.internal.processors.security.SecurityUtils.serializeVersion;
 
 /**
- * Simple implementation of {@link SecurityPermissionSet} interface. Provides
- * convenient way to specify permission set in the XML configuration.
+ * Simple implementation of {@link SecurityPermissionSet} interface.
+ * Provides convenient way to specify permission set in the XML configuration.
  */
 public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** Serial version uid. */

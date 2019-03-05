@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
@@ -187,7 +188,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      */
     public void onBeforeActivate() {
-        initLatch = new CountDownLatch(1);
+        CountDownLatch latch0 = initLatch;
+
+        if (latch0 == null || latch0.getCount() == 0)
+            initLatch = new CountDownLatch(1);
     }
 
     /**
@@ -1213,6 +1217,37 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     new HashMap<UUID, Integer>(), failoverSafe, ctx.discovery().gridStartTime()) : null);
 
                 GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
+
+                //check Cluster state against semaphore state
+                if (val != null && failoverSafe) {
+                    GridCacheSemaphoreState semState = (GridCacheSemaphoreState) val;
+
+                    boolean updated = false;
+
+                    Map<UUID,Integer> waiters = semState.getWaiters();
+
+                    Integer permit = ((GridCacheSemaphoreState) val).getCount();
+
+                    for (UUID nodeId : new HashSet<>(waiters.keySet())) {
+
+                        ClusterNode node = ctx.cluster().get().node(nodeId);
+
+                        if (node == null) {
+
+                            permit += waiters.get(nodeId);
+
+                            waiters.remove(nodeId);
+
+                            updated = true;
+                        }
+                    }
+                    if (updated) {
+                        semState.setWaiters(waiters);
+                        semState.setCount(permit);
+
+                        retVal = semState;
+                    }
+                }
 
                 return new T2<>(sem0, retVal);
             }

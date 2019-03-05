@@ -38,10 +38,10 @@ public class SimplePerson {
     /** Must be excluded on serialization. */
     public transient int age;
 
-    /** Must be excluded on serialization. */
+    /** Post. */
     protected String post;
 
-    /** Must be excluded on serialization. */
+    /** Bonus. */
     private int bonus;
 
     /**
