@@ -57,9 +57,12 @@ suite('page-configure component reducer', () => {
 
     test('REMOVE_CLUSTERS action', () => {
         assert.deepEqual(
-            reducer({}, {type: REMOVE_CLUSTERS}),
-            {},
-            'does nothing yet'
+            reducer(
+                {clusters: new Map([[1, {_id: 1, name: 'Cluster 1'}], [2, {_id: 2, name: 'Cluster 2'}]])},
+                {type: REMOVE_CLUSTERS, clusterIDs: [1]}
+            ),
+            {clusters: new Map([[2, {_id: 2, name: 'Cluster 2'}]])},
+            'deletes clusters by id'
         );
     });
 
