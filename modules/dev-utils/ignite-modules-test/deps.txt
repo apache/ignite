@@ -28,38 +28,62 @@ compile - Dependencies for source set 'main' (deprecated, use 'implementation' i
 |    \--- log4j:log4j:1.2.17
 +--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    +--- org.apache.logging.log4j:log4j-api:2.11.0
-|    \--- org.apache.logging.log4j:log4j-core:2.11.0
-|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0 -> 2.11.2
+|         \--- org.apache.logging.log4j:log4j-api:2.11.2
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    \--- org.slf4j:slf4j-api:1.7.7
-\--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
-     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     +--- commons-lang:commons-lang:2.6
-     +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
-     |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
-     |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
-     +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
-     |    +--- javax.servlet:javax.servlet-api:3.1.0
-     |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
-     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
-     +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
-     |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- com.fasterxml.jackson.core:jackson-core:2.9.6
-     +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
-     +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
-     |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
-     |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
-     +--- org.slf4j:slf4j-api:1.7.7
-     +--- org.slf4j:slf4j-log4j12:1.7.7
-     |    +--- org.slf4j:slf4j-api:1.7.7
-     |    \--- log4j:log4j:1.2.17
-     \--- log4j:log4j:1.2.17
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-lang:commons-lang:2.6
+|    +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+|    |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+|    |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+|    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+|    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-zookeeper:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.curator:curator-framework:2.9.1
+|    |    \--- org.apache.curator:curator-client:2.9.1
+|    |         +--- org.apache.zookeeper:zookeeper:3.4.6 -> 3.4.13
+|    |         |    +--- org.slf4j:slf4j-api:1.7.25
+|    |         |    +--- jline:jline:0.9.94
+|    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
+|    |         |    \--- io.netty:netty:3.10.6.Final
+|    |         +--- com.google.guava:guava:16.0.1
+|    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
+|    +--- org.apache.curator:curator-recipes:2.9.1
+|    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
+|    +--- org.apache.curator:curator-x-discovery:2.9.1
+|    |    +--- org.apache.curator:curator-recipes:2.9.1 (*)
+|    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.apache.curator:curator-client:2.9.1 (*)
+|    +--- com.google.guava:guava:16.0.1
+|    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
+|    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.slf4j:slf4j-api:1.7.25
+\--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+     +--- org.slf4j:slf4j-api:1.7.25
+     +--- org.apache.logging.log4j:log4j-api:2.11.2
+     \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
 
 compileClasspath - Compile classpath for source set 'main'.
 +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
@@ -75,38 +99,61 @@ compileClasspath - Compile classpath for source set 'main'.
 |    \--- log4j:log4j:1.2.17
 +--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    +--- org.apache.logging.log4j:log4j-api:2.11.0
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
-|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+|         \--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    \--- org.slf4j:slf4j-api:1.7.7
-\--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
-     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     +--- commons-lang:commons-lang:2.6
-     +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
-     |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
-     |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
-     +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
-     |    +--- javax.servlet:javax.servlet-api:3.1.0
-     |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
-     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
-     +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
-     |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- com.fasterxml.jackson.core:jackson-core:2.9.6
-     +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
-     +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
-     |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
-     |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
-     +--- org.slf4j:slf4j-api:1.7.7
-     +--- org.slf4j:slf4j-log4j12:1.7.7
-     |    +--- org.slf4j:slf4j-api:1.7.7
-     |    \--- log4j:log4j:1.2.17
-     \--- log4j:log4j:1.2.17
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-lang:commons-lang:2.6
+|    +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+|    |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+|    |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+|    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+|    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-zookeeper:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.curator:curator-framework:2.9.1
+|    |    \--- org.apache.curator:curator-client:2.9.1
+|    |         +--- org.apache.zookeeper:zookeeper:3.4.6 -> 3.4.13
+|    |         |    +--- org.slf4j:slf4j-api:1.7.25
+|    |         |    +--- jline:jline:0.9.94
+|    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
+|    |         |    \--- io.netty:netty:3.10.6.Final
+|    |         +--- com.google.guava:guava:16.0.1
+|    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
+|    +--- org.apache.curator:curator-recipes:2.9.1
+|    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
+|    +--- org.apache.curator:curator-x-discovery:2.9.1
+|    |    +--- org.apache.curator:curator-recipes:2.9.1 (*)
+|    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.apache.curator:curator-client:2.9.1 (*)
+|    +--- com.google.guava:guava:16.0.1
+|    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
+|    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.slf4j:slf4j-api:1.7.25
+\--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+     +--- org.slf4j:slf4j-api:1.7.25
+     \--- org.apache.logging.log4j:log4j-api:2.11.2
 
 compileOnly - Compile only dependencies for source set 'main'.
 No dependencies
@@ -125,38 +172,62 @@ default - Configuration for default artifacts.
 |    \--- log4j:log4j:1.2.17
 +--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    +--- org.apache.logging.log4j:log4j-api:2.11.0
-|    \--- org.apache.logging.log4j:log4j-core:2.11.0
-|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0 -> 2.11.2
+|         \--- org.apache.logging.log4j:log4j-api:2.11.2
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    \--- org.slf4j:slf4j-api:1.7.7
-\--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
-     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     +--- commons-lang:commons-lang:2.6
-     +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
-     |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
-     |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
-     +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
-     |    +--- javax.servlet:javax.servlet-api:3.1.0
-     |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
-     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
-     +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
-     |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- com.fasterxml.jackson.core:jackson-core:2.9.6
-     +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
-     +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
-     |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
-     |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
-     +--- org.slf4j:slf4j-api:1.7.7
-     +--- org.slf4j:slf4j-log4j12:1.7.7
-     |    +--- org.slf4j:slf4j-api:1.7.7
-     |    \--- log4j:log4j:1.2.17
-     \--- log4j:log4j:1.2.17
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-lang:commons-lang:2.6
+|    +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+|    |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+|    |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+|    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+|    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-zookeeper:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.curator:curator-framework:2.9.1
+|    |    \--- org.apache.curator:curator-client:2.9.1
+|    |         +--- org.apache.zookeeper:zookeeper:3.4.6 -> 3.4.13
+|    |         |    +--- org.slf4j:slf4j-api:1.7.25
+|    |         |    +--- jline:jline:0.9.94
+|    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
+|    |         |    \--- io.netty:netty:3.10.6.Final
+|    |         +--- com.google.guava:guava:16.0.1
+|    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
+|    +--- org.apache.curator:curator-recipes:2.9.1
+|    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
+|    +--- org.apache.curator:curator-x-discovery:2.9.1
+|    |    +--- org.apache.curator:curator-recipes:2.9.1 (*)
+|    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.apache.curator:curator-client:2.9.1 (*)
+|    +--- com.google.guava:guava:16.0.1
+|    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
+|    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.slf4j:slf4j-api:1.7.25
+\--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+     +--- org.slf4j:slf4j-api:1.7.25
+     +--- org.apache.logging.log4j:log4j-api:2.11.2
+     \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
 
 implementation - Implementation only dependencies for source set 'main'. (n)
 No dependencies
@@ -175,38 +246,62 @@ runtime - Runtime dependencies for source set 'main' (deprecated, use 'runtimeOn
 |    \--- log4j:log4j:1.2.17
 +--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    +--- org.apache.logging.log4j:log4j-api:2.11.0
-|    \--- org.apache.logging.log4j:log4j-core:2.11.0
-|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0 -> 2.11.2
+|         \--- org.apache.logging.log4j:log4j-api:2.11.2
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    \--- org.slf4j:slf4j-api:1.7.7
-\--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
-     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     +--- commons-lang:commons-lang:2.6
-     +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
-     |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
-     |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
-     +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
-     |    +--- javax.servlet:javax.servlet-api:3.1.0
-     |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
-     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
-     +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
-     |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- com.fasterxml.jackson.core:jackson-core:2.9.6
-     +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
-     +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
-     |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
-     |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
-     +--- org.slf4j:slf4j-api:1.7.7
-     +--- org.slf4j:slf4j-log4j12:1.7.7
-     |    +--- org.slf4j:slf4j-api:1.7.7
-     |    \--- log4j:log4j:1.2.17
-     \--- log4j:log4j:1.2.17
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-lang:commons-lang:2.6
+|    +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+|    |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+|    |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+|    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+|    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-zookeeper:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.curator:curator-framework:2.9.1
+|    |    \--- org.apache.curator:curator-client:2.9.1
+|    |         +--- org.apache.zookeeper:zookeeper:3.4.6 -> 3.4.13
+|    |         |    +--- org.slf4j:slf4j-api:1.7.25
+|    |         |    +--- jline:jline:0.9.94
+|    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
+|    |         |    \--- io.netty:netty:3.10.6.Final
+|    |         +--- com.google.guava:guava:16.0.1
+|    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
+|    +--- org.apache.curator:curator-recipes:2.9.1
+|    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
+|    +--- org.apache.curator:curator-x-discovery:2.9.1
+|    |    +--- org.apache.curator:curator-recipes:2.9.1 (*)
+|    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.apache.curator:curator-client:2.9.1 (*)
+|    +--- com.google.guava:guava:16.0.1
+|    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
+|    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.slf4j:slf4j-api:1.7.25
+\--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+     +--- org.slf4j:slf4j-api:1.7.25
+     +--- org.apache.logging.log4j:log4j-api:2.11.2
+     \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
 
 runtimeClasspath - Runtime classpath of source set 'main'.
 +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
@@ -222,38 +317,62 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    \--- log4j:log4j:1.2.17
 +--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    +--- org.apache.logging.log4j:log4j-api:2.11.0
-|    \--- org.apache.logging.log4j:log4j-core:2.11.0
-|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0 -> 2.11.2
+|         \--- org.apache.logging.log4j:log4j-api:2.11.2
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    \--- org.slf4j:slf4j-api:1.7.7
-\--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
-     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-     +--- commons-lang:commons-lang:2.6
-     +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
-     |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
-     |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
-     +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
-     |    +--- javax.servlet:javax.servlet-api:3.1.0
-     |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
-     |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
-     +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
-     |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
-     +--- com.fasterxml.jackson.core:jackson-core:2.9.6
-     +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
-     +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
-     |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
-     |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
-     +--- org.slf4j:slf4j-api:1.7.7
-     +--- org.slf4j:slf4j-log4j12:1.7.7
-     |    +--- org.slf4j:slf4j-api:1.7.7
-     |    \--- log4j:log4j:1.2.17
-     \--- log4j:log4j:1.2.17
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- commons-lang:commons-lang:2.6
+|    +--- org.eclipse.jetty:jetty-continuation:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605
+|    |    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605
+|    |         \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-server:9.4.11.v20180605
+|    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    +--- org.eclipse.jetty:jetty-http:9.4.11.v20180605 (*)
+|    |    \--- org.eclipse.jetty:jetty-io:9.4.11.v20180605 (*)
+|    +--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- org.eclipse.jetty:jetty-xml:9.4.11.v20180605
+|    |    \--- org.eclipse.jetty:jetty-util:9.4.11.v20180605
+|    +--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.6
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
+|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
+|    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-zookeeper:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.curator:curator-framework:2.9.1
+|    |    \--- org.apache.curator:curator-client:2.9.1
+|    |         +--- org.apache.zookeeper:zookeeper:3.4.6 -> 3.4.13
+|    |         |    +--- org.slf4j:slf4j-api:1.7.25
+|    |         |    +--- jline:jline:0.9.94
+|    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
+|    |         |    \--- io.netty:netty:3.10.6.Final
+|    |         +--- com.google.guava:guava:16.0.1
+|    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
+|    +--- org.apache.curator:curator-recipes:2.9.1
+|    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
+|    +--- org.apache.curator:curator-x-discovery:2.9.1
+|    |    +--- org.apache.curator:curator-recipes:2.9.1 (*)
+|    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.apache.curator:curator-client:2.9.1 (*)
+|    +--- com.google.guava:guava:16.0.1
+|    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
+|    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.slf4j:slf4j-api:1.7.25
+\--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+     +--- org.slf4j:slf4j-api:1.7.25
+     +--- org.apache.logging.log4j:log4j-api:2.11.2
+     \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
 
 runtimeElements - Elements of runtime for main. (n)
 No dependencies
@@ -278,12 +397,12 @@ testCompile - Dependencies for source set 'test' (deprecated, use 'testImplement
 |    \--- log4j:log4j:1.2.17
 +--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    +--- org.apache.logging.log4j:log4j-api:2.11.0
-|    \--- org.apache.logging.log4j:log4j-core:2.11.0
-|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0 -> 2.11.2
+|         \--- org.apache.logging.log4j:log4j-api:2.11.2
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    \--- org.slf4j:slf4j-api:1.7.7
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
 +--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-lang:commons-lang:2.6
@@ -305,11 +424,35 @@ testCompile - Dependencies for source set 'test' (deprecated, use 'testImplement
 |    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
 |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
 |    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
-|    +--- org.slf4j:slf4j-api:1.7.7
-|    +--- org.slf4j:slf4j-log4j12:1.7.7
-|    |    +--- org.slf4j:slf4j-api:1.7.7
-|    |    \--- log4j:log4j:1.2.17
-|    \--- log4j:log4j:1.2.17
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-zookeeper:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.curator:curator-framework:2.9.1
+|    |    \--- org.apache.curator:curator-client:2.9.1
+|    |         +--- org.apache.zookeeper:zookeeper:3.4.6 -> 3.4.13
+|    |         |    +--- org.slf4j:slf4j-api:1.7.25
+|    |         |    +--- jline:jline:0.9.94
+|    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
+|    |         |    \--- io.netty:netty:3.10.6.Final
+|    |         +--- com.google.guava:guava:16.0.1
+|    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
+|    +--- org.apache.curator:curator-recipes:2.9.1
+|    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
+|    +--- org.apache.curator:curator-x-discovery:2.9.1
+|    |    +--- org.apache.curator:curator-recipes:2.9.1 (*)
+|    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.apache.curator:curator-client:2.9.1 (*)
+|    +--- com.google.guava:guava:16.0.1
+|    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
+|    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.slf4j:slf4j-api:1.7.25
++--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+|    +--- org.slf4j:slf4j-api:1.7.25
+|    +--- org.apache.logging.log4j:log4j-api:2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -327,12 +470,12 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    \--- log4j:log4j:1.2.17
 +--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    +--- org.apache.logging.log4j:log4j-api:2.11.0
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
 |    \--- org.apache.logging.log4j:log4j-core:2.11.0
-|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+|         \--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    \--- org.slf4j:slf4j-api:1.7.7
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
 +--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-lang:commons-lang:2.6
@@ -354,11 +497,34 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
 |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
 |    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
-|    +--- org.slf4j:slf4j-api:1.7.7
-|    +--- org.slf4j:slf4j-log4j12:1.7.7
-|    |    +--- org.slf4j:slf4j-api:1.7.7
-|    |    \--- log4j:log4j:1.2.17
-|    \--- log4j:log4j:1.2.17
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-zookeeper:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.curator:curator-framework:2.9.1
+|    |    \--- org.apache.curator:curator-client:2.9.1
+|    |         +--- org.apache.zookeeper:zookeeper:3.4.6 -> 3.4.13
+|    |         |    +--- org.slf4j:slf4j-api:1.7.25
+|    |         |    +--- jline:jline:0.9.94
+|    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
+|    |         |    \--- io.netty:netty:3.10.6.Final
+|    |         +--- com.google.guava:guava:16.0.1
+|    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
+|    +--- org.apache.curator:curator-recipes:2.9.1
+|    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
+|    +--- org.apache.curator:curator-x-discovery:2.9.1
+|    |    +--- org.apache.curator:curator-recipes:2.9.1 (*)
+|    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.apache.curator:curator-client:2.9.1 (*)
+|    +--- com.google.guava:guava:16.0.1
+|    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
+|    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.slf4j:slf4j-api:1.7.25
++--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+|    +--- org.slf4j:slf4j-api:1.7.25
+|    \--- org.apache.logging.log4j:log4j-api:2.11.2
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -382,12 +548,12 @@ testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testR
 |    \--- log4j:log4j:1.2.17
 +--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    +--- org.apache.logging.log4j:log4j-api:2.11.0
-|    \--- org.apache.logging.log4j:log4j-core:2.11.0
-|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0 -> 2.11.2
+|         \--- org.apache.logging.log4j:log4j-api:2.11.2
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    \--- org.slf4j:slf4j-api:1.7.7
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
 +--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-lang:commons-lang:2.6
@@ -409,11 +575,35 @@ testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testR
 |    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
 |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
 |    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
-|    +--- org.slf4j:slf4j-api:1.7.7
-|    +--- org.slf4j:slf4j-log4j12:1.7.7
-|    |    +--- org.slf4j:slf4j-api:1.7.7
-|    |    \--- log4j:log4j:1.2.17
-|    \--- log4j:log4j:1.2.17
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-zookeeper:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.curator:curator-framework:2.9.1
+|    |    \--- org.apache.curator:curator-client:2.9.1
+|    |         +--- org.apache.zookeeper:zookeeper:3.4.6 -> 3.4.13
+|    |         |    +--- org.slf4j:slf4j-api:1.7.25
+|    |         |    +--- jline:jline:0.9.94
+|    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
+|    |         |    \--- io.netty:netty:3.10.6.Final
+|    |         +--- com.google.guava:guava:16.0.1
+|    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
+|    +--- org.apache.curator:curator-recipes:2.9.1
+|    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
+|    +--- org.apache.curator:curator-x-discovery:2.9.1
+|    |    +--- org.apache.curator:curator-recipes:2.9.1 (*)
+|    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.apache.curator:curator-client:2.9.1 (*)
+|    +--- com.google.guava:guava:16.0.1
+|    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
+|    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.slf4j:slf4j-api:1.7.25
++--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+|    +--- org.slf4j:slf4j-api:1.7.25
+|    +--- org.apache.logging.log4j:log4j-api:2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -431,12 +621,12 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    \--- log4j:log4j:1.2.17
 +--- org.apache.ignite:ignite-log4j2:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    +--- org.apache.logging.log4j:log4j-api:2.11.0
-|    \--- org.apache.logging.log4j:log4j-core:2.11.0
-|         \--- org.apache.logging.log4j:log4j-api:2.11.0
+|    +--- org.apache.logging.log4j:log4j-api:2.11.0 -> 2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.0 -> 2.11.2
+|         \--- org.apache.logging.log4j:log4j-api:2.11.2
 +--- org.apache.ignite:ignite-slf4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
-|    \--- org.slf4j:slf4j-api:1.7.7
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
 +--- org.apache.ignite:ignite-rest-http:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-lang:commons-lang:2.6
@@ -458,11 +648,35 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    +--- com.fasterxml.jackson.core:jackson-databind:2.9.6
 |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.9.0 -> 2.9.6
 |    |    \--- com.fasterxml.jackson.core:jackson-core:2.9.6
-|    +--- org.slf4j:slf4j-api:1.7.7
-|    +--- org.slf4j:slf4j-log4j12:1.7.7
-|    |    +--- org.slf4j:slf4j-api:1.7.7
-|    |    \--- log4j:log4j:1.2.17
-|    \--- log4j:log4j:1.2.17
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.apache.ignite:ignite-zookeeper:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.curator:curator-framework:2.9.1
+|    |    \--- org.apache.curator:curator-client:2.9.1
+|    |         +--- org.apache.zookeeper:zookeeper:3.4.6 -> 3.4.13
+|    |         |    +--- org.slf4j:slf4j-api:1.7.25
+|    |         |    +--- jline:jline:0.9.94
+|    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
+|    |         |    \--- io.netty:netty:3.10.6.Final
+|    |         +--- com.google.guava:guava:16.0.1
+|    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
+|    +--- org.apache.curator:curator-recipes:2.9.1
+|    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
+|    +--- org.apache.curator:curator-x-discovery:2.9.1
+|    |    +--- org.apache.curator:curator-recipes:2.9.1 (*)
+|    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
+|    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.apache.curator:curator-client:2.9.1 (*)
+|    +--- com.google.guava:guava:16.0.1
+|    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
+|    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
+|    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
+|    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
++--- org.slf4j:slf4j-api:1.7.25
++--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+|    +--- org.slf4j:slf4j-api:1.7.25
+|    +--- org.apache.logging.log4j:log4j-api:2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 

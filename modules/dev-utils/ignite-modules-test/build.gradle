@@ -97,10 +97,24 @@ dependencies {
         //todo https://issues.apache.org/jira/browse/IGNITE-11469
         exclude group: 'org.apache.tomcat'
         // to remove "javax.servlet.http, javax.servlet.descriptor, javax.servlet.annotation, javax.servlet" package conflicts.
+
+        exclude group: "log4j", module: "log4j"
+        exclude group: "org.slf4j", module: "slf4j-log4j12"
     }
 
+    // todo https://issues.apache.org/jira/browse/IGNITE-11485
     // compile group: 'org.apache.ignite', name: 'ignite-hibernate_5.3', version: ignVer
-    // compile group: 'org.apache.ignite', name: 'ignite-zookeeper', version: ignVer
+
+
+    // todo https://issues.apache.org/jira/browse/IGNITE-11486
+    compile (group: 'org.apache.ignite', name: 'ignite-zookeeper', version: ignVer) {
+        exclude group: "org.slf4j", module: "slf4j-log4j12"
+        exclude group: "log4j", module: "log4j"
+    }
+
+    compile group: "org.slf4j", name: "slf4j-api", version: "1.7.25"
+    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: "2.11.2"
+
 }
 
 test {
