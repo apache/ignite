@@ -103,13 +103,13 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-ml-xgboost-model-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-ml-spark-model-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -230,7 +230,7 @@
                 </dependency>
 
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>org.gridgain</groupId>
                     <artifactId>ignite-ml-mleap-model-parser</artifactId>
                     <version>${project.version}</version>
                 </dependency>
