@@ -221,9 +221,6 @@ public class GridAffinityAssignmentCache {
                 "[existing.requiresHistoryCleanup=" + existing.requiresHistoryCleanup() +
                 ", newHistEntry.requiresHistoryCleanup=" + newHistEntry.requiresHistoryCleanup() + ']';
 
-        assert topVer.equals(head.get().topologyVersion()) : "Unexpected head [topVer=" + topVer +
-            ", headTopVer=" + head.get().topologyVersion() + ']';
-
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
             if (entry.getKey().compareTo(topVer) <= 0) {
                 if (log.isDebugEnabled())
@@ -518,9 +515,6 @@ public class GridAffinityAssignmentCache {
             "We can replace client affinity assignment only by client one and vice versa " +
                 "[existing.requiresHistoryCleanup=" + existing.requiresHistoryCleanup() +
                 ", newHistEntry.requiresHistoryCleanup=" + newHistEntry.requiresHistoryCleanup() + ']';
-
-        assert topVer.equals(head.get().topologyVersion()) : "Unexpected head [topVer=" + topVer +
-            ", headTopVer=" + head.get().topologyVersion() + ']';
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
             if (entry.getKey().compareTo(topVer) <= 0) {
