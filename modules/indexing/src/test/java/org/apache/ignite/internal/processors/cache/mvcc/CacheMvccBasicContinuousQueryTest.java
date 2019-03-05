@@ -283,7 +283,9 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     private void checkUpdateCountersGapIsProcessedSimple(CacheMode cacheMode) throws Exception {
         testSpi = true;
 
-        int srvCnt = 4;
+        final int srvCnt = 4;
+
+        final int backups = srvCnt - 1;
 
         startGridsMultiThreaded(srvCnt);
 
@@ -292,7 +294,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         IgniteEx nearNode = startGrid(srvCnt);
 
         IgniteCache<Object, Object> cache = nearNode.createCache(
-            cacheConfiguration(cacheMode, FULL_SYNC, srvCnt - 1, srvCnt)
+            cacheConfiguration(cacheMode, FULL_SYNC, backups, srvCnt)
                 .setIndexedTypes(Integer.class, Integer.class));
 
         IgniteEx primary = grid(0);
@@ -320,17 +322,15 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         // Initial value.
         cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(keys.get(0))).getAll();
 
-        Transaction txA = nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
-
         // prevent first transaction prepare on backups
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(primary);
 
-        spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                private final AtomicInteger limiter = new AtomicInteger();
+        final AtomicInteger dhtPrepLimiter = new AtomicInteger();
 
+        spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
                     if (msg instanceof GridDhtTxPrepareRequest)
-                        return limiter.getAndIncrement() < srvCnt - 1;
+                        return dhtPrepLimiter.getAndIncrement() < backups;
 
                     if (msg instanceof GridContinuousMessage)
                         return true;
@@ -339,16 +339,32 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
                 }
             });
 
+        // First tx. Expect it will be prepared only on the primary node and GridDhtTxPrepareRequests to remotes
+        // will be swallowed.
+        Transaction txA = nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+
         cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(keys.get(1))).getAll();
 
         txA.commitAsync();
 
+        // Wait until first tx changes it's status to PREPARING.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return nearNode.context().cache().context().tm().activeTransactions().stream().allMatch(tx -> tx.state() == PREPARING);
+                boolean preparing = nearNode.context()
+                    .cache()
+                    .context()
+                    .tm()
+                    .activeTransactions()
+                    .stream()
+                    .allMatch(tx -> tx.state() == PREPARING);
+
+                boolean allPrepsSwallowed = dhtPrepLimiter.get() == backups;
+
+                return preparing && allPrepsSwallowed;
             }
         }, 3_000);
 
+        // Second tx.
         GridTestUtils.runAsync(() -> {
             try (Transaction txB = nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(keys.get(2)));
@@ -359,7 +375,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
 
         long primaryUpdCntr = getUpdateCounter(primary, keys.get(0));
 
-        assertEquals(3, primaryUpdCntr); // There were three updates.
+        assertEquals(3, primaryUpdCntr); // There were three updates: init, first and second.
 
         // drop primary
         stopGrid(primary.name());
