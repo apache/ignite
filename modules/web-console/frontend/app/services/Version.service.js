@@ -192,6 +192,6 @@ export default class IgniteVersion {
             return res;
 
         return numberComparator(a.stage, b.stage);
-    };
+    }
 
 }
