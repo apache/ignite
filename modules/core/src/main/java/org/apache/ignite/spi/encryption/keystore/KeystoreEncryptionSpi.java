@@ -132,7 +132,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     protected Ignite ignite;
 
     /** */
-    private ThreadLocal<Cipher> aesWithPadding = ThreadLocal.withInitial(() -> {
+    private static final ThreadLocal<Cipher> aesWithPadding = ThreadLocal.withInitial(() -> {
         try {
             return Cipher.getInstance(AES_WITH_PADDING);
         }
@@ -142,7 +142,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     });
 
     /** */
-    private ThreadLocal<Cipher> aesWithoutPadding = ThreadLocal.withInitial(() -> {
+    private static final ThreadLocal<Cipher> aesWithoutPadding = ThreadLocal.withInitial(() -> {
         try {
             return Cipher.getInstance(AES_WITHOUT_PADDING);
         }

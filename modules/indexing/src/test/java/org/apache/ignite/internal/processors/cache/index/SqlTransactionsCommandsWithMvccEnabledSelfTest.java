@@ -128,7 +128,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that attempting to perform various SQL operations within non SQL transaction yields an exception.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11357")
     @Test
     public void testSqlOperationsWithinNonSqlTransaction() {
         assertSqlOperationWithinNonSqlTransactionThrows("COMMIT");

@@ -251,10 +251,10 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @throws IgniteCheckedException If resolved to exception.
      */
     private R resolve() throws IgniteCheckedException {
-        if(state == CANCELLED)
+        if (state == CANCELLED)
             throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
-        if(state == null || state.getClass() != ErrorWrapper.class)
+        if (state == null || state.getClass() != ErrorWrapper.class)
             return (R)state;
 
         throw U.cast(((ErrorWrapper)state).error);
