@@ -170,6 +170,34 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Test schemas system view.
+     * @throws Exception in case of failure.
+     */
+    @Test
+    public void testSchemasView() throws Exception {
+        IgniteEx srv = startGrid(getConfiguration());
+
+        IgniteEx client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT"));
+
+        srv.createCache(cacheConfiguration("TST1"));
+
+        String schemasSql = "SELECT * FROM IGNITE.SCHEMAS";
+
+        List<List<?>> srvNodeSchemas = execSql(schemasSql);
+
+        List<List<?>> clientNodeSchemas = execSql(client, schemasSql);
+
+        Assert.assertEquals(srvNodeSchemas.toString(), clientNodeSchemas.toString());
+
+        String[] expSchemas = new String[] {"default", "IGNITE", "ignite-sys-cache", "PUBLIC", "TST1"};
+
+        String[] schemas = srvNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).toArray(String[]::new);
+
+        Assert.assertArrayEquals(expSchemas, schemas);
+    }
+
+
+    /**
      * Test indexes system view.
      * @throws Exception in case of failure.
      */
