@@ -1807,11 +1807,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 CheckHistoryExistsClosure clo = new CheckHistoryExistsClosure();
 
-                dataTree.find(
+                dataTree.iterate(
                     new MvccMaxSearchRow(cacheId, key),
                     new MvccMinSearchRow(cacheId, key),
-                    clo,
-                    CacheDataRowAdapter.RowData.LINK_ONLY
+                    clo
                 );
 
                 if (clo.found())

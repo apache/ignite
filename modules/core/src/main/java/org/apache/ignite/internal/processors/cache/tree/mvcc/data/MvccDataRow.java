@@ -39,6 +39,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KE
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.FULL_WITH_HINTS;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY_WITH_HINTS;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
 
 /**
@@ -171,7 +172,7 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override protected int readHeader(GridCacheSharedContext<?, ?> sharedCtx, long addr, int off, RowData rowData) {
-        boolean addHints = rowData == FULL_WITH_HINTS;
+        boolean addHints = rowData == FULL_WITH_HINTS || rowData == NO_KEY_WITH_HINTS;
 
         // xid_min.
         mvccCrd = PageUtils.getLong(addr, off);

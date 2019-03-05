@@ -480,7 +480,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int len = PageUtils.getInt(addr, off);
         off += 4;
 
-        if (rowData != RowData.NO_KEY) {
+        if (rowData != RowData.NO_KEY && rowData != RowData.NO_KEY_WITH_HINTS) {
             byte type = PageUtils.getByte(addr, off);
             off++;
 
@@ -862,6 +862,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         /** Force instant hints actualization. Used to avoid races in rebalance with concurrent vacuum. */
         FULL_WITH_HINTS,
+
+        /** */
+        NO_KEY_WITH_HINTS
     }
 
     /** {@inheritDoc} */

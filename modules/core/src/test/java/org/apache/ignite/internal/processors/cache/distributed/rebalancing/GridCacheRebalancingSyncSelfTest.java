@@ -111,7 +111,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         if (MvccFeatureChecker.forcedMvcc()) {
             iCfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setMaxSize(400L * 1024 * 1024 * 1024)
+                    new DataRegionConfiguration().setMaxSize(400L * 1024 * 1024)
                 ));
         }
 
