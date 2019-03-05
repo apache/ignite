@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -144,6 +145,8 @@ public class SchemaManager {
             synchronized (schemaMux) {
                 createSchema0(QueryUtils.SCHEMA_SYS);
             }
+
+            schemas.put(QueryUtils.SCHEMA_SYS, new H2Schema(QueryUtils.SCHEMA_SYS, true));
 
             try (Connection c = connMgr.connectionNoCache(QueryUtils.SCHEMA_SYS)) {
                 for (SqlSystemView view : systemViews(ctx))
@@ -413,6 +416,15 @@ public class SchemaManager {
             res = "";
 
         return res;
+    }
+
+    /**
+     * Get schemas names.
+     *
+     * @return Schemas names.
+     */
+    public Set<String> schemaNames(){
+        return new HashSet<>(schemas.keySet());
     }
 
     /**

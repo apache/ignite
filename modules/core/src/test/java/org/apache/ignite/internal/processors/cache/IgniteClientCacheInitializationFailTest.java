@@ -412,6 +412,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public Set<String> schemasNames() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
             // No-op.
         }
