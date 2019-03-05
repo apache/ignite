@@ -212,10 +212,14 @@ public class GridAffinityAssignmentCache {
 
         HistoryAffinityAssignmentImpl newHistEntry = new HistoryAffinityAssignmentImpl(assignment, backups);
 
-        HistoryAffinityAssignment existing = affCache.putIfAbsent(topVer, newHistEntry);
+        HistoryAffinityAssignment existing = affCache.put(topVer, newHistEntry);
 
-        if (existing == null)
-            head.set(assignment);
+        head.set(assignment);
+
+        assert existing == null || existing.requiresHistoryCleanup() == newHistEntry.requiresHistoryCleanup() :
+            "We can replace client affinity assignment only by client one and vice versa " +
+                "[existing.requiresHistoryCleanup=" + existing.requiresHistoryCleanup() +
+                ", newHistEntry.requiresHistoryCleanup=" + newHistEntry.requiresHistoryCleanup() + ']';
 
         assert topVer.equals(head.get().topologyVersion()) : "Unexpected head [topVer=" + topVer +
             ", headTopVer=" + head.get().topologyVersion() + ']';
@@ -506,10 +510,14 @@ public class GridAffinityAssignmentCache {
             new HistoryAffinityAssignmentImpl(assignmentCpy, backups) :
             new HistoryAffinityAssignmentShallowCopy(prevHistEntry.getValue().origin(), topVer);
 
-        HistoryAffinityAssignment existing = affCache.putIfAbsent(topVer, newHistEntry);
+        HistoryAffinityAssignment existing = affCache.put(topVer, newHistEntry);
 
-        if (existing == null)
-            head.set(assignmentCpy);
+        head.set(assignmentCpy);
+
+        assert existing == null || existing.requiresHistoryCleanup() == newHistEntry.requiresHistoryCleanup() :
+            "We can replace client affinity assignment only by client one and vice versa " +
+                "[existing.requiresHistoryCleanup=" + existing.requiresHistoryCleanup() +
+                ", newHistEntry.requiresHistoryCleanup=" + newHistEntry.requiresHistoryCleanup() + ']';
 
         assert topVer.equals(head.get().topologyVersion()) : "Unexpected head [topVer=" + topVer +
             ", headTopVer=" + head.get().topologyVersion() + ']';
