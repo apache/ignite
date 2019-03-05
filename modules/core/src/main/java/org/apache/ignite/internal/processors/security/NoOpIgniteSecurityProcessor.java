@@ -41,8 +41,8 @@ import static org.apache.ignite.internal.processors.security.IgniteSecurityProce
  */
 public class NoOpIgniteSecurityProcessor implements IgniteSecurityProcessor, GridProcessor {
     /** */
-    private static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
-        "is not equal to remote node's grid security processor class " +
+    private static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's ignite security processor class " +
+        "is not equal to remote node's ignite security processor class " +
         "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
 
     /** No operation Security session. */

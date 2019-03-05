@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processor.security;
 
+import java.util.Arrays;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,7 +36,8 @@ import static org.junit.Assert.assertThat;
  */
 public class AbstractSecurityTest extends GridCommonAbstractTest {
     /** Test security processor. */
-    public static final String TEST_SECURITY_PROCESSOR = "org.apache.ignite.internal.processor.security.TestSecurityProcessor";
+    public static final String TEST_SECURITY_PROCESSOR =
+        "org.apache.ignite.internal.processor.security.TestSecurityProcessor";
 
     /** Empty array of permissions. */
     protected static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
@@ -182,7 +184,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
         try {
             r.run();
 
-            fail("Should not happen.");
+            fail("Test should throw one of the following exceptions " + Arrays.toString(types));
         }
         catch (Throwable e) {
             assertThat(cause(e, types), notNullValue());

@@ -26,6 +26,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -47,6 +48,11 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  * Default Grid security Manager implementation.
  */
 public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, GridProcessor {
+    /** */
+    private static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
+        "is not equal to remote node's grid security processor class " +
+        "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
+
     /** Internal attribute name constant. */
     public static final String ATTR_GRID_SEC_PROC_CLASS = "grid.security.processor.class";
 
@@ -209,13 +215,17 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
     /** {@inheritDoc} */
     @Override public @Nullable IgniteNodeValidationResult validateNode(
         ClusterNode node) {
-        return secPrc.validateNode(node);
+        IgniteNodeValidationResult res = validateSecProcClass(node);
+
+        return res != null ? res : secPrc.validateNode(node);
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable IgniteNodeValidationResult validateNode(
         ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
-        return secPrc.validateNode(node, discoData);
+        IgniteNodeValidationResult res = validateSecProcClass(node);
+
+        return res != null ? res : secPrc.validateNode(node, discoData);
     }
 
     /** {@inheritDoc} */
@@ -241,5 +251,24 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
      */
     private SecurityContext localSecurityContext() {
         return nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().localNode());
+    }
+
+    /**
+     * Validates that remote node's grid security processor class is the same as local one.
+     *
+     * @param node Joining node.
+     * @return Validation result or {@code null} in case of success.
+     */
+    private IgniteNodeValidationResult validateSecProcClass(ClusterNode node){
+        String rmtCls = node.attribute(ATTR_GRID_SEC_PROC_CLASS);
+        String locCls = secPrc.getClass().getName();
+
+        if (!F.eq(locCls, rmtCls)) {
+            return new IgniteNodeValidationResult(node.id(),
+                String.format(MSG_SEC_PROC_CLS_IS_INVALID, ctx.localNodeId(), node.id(), locCls, rmtCls),
+                String.format(MSG_SEC_PROC_CLS_IS_INVALID, node.id(), ctx.localNodeId(), rmtCls, locCls));
+        }
+
+        return null;
     }
 }
