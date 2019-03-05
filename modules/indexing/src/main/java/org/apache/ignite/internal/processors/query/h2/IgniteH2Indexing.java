@@ -1769,17 +1769,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void validateCacheConfiguration(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
-        boolean persistenceEnabled = CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration());
+        if (!ctx.clientNode()) {
+            boolean persistenceEnabled = CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration());
 
-        if (!ctx.clientNode() && persistenceEnabled) {
-            for (QueryEntity entity : ccfg.getQueryEntities()) {
-                int typeId = ctx.cacheObjects().typeId(entity.findValueType());
+            if (persistenceEnabled) {
+                for (QueryEntity entity : ccfg.getQueryEntities()) {
+                    int typeId = ctx.cacheObjects().typeId(entity.findValueType());
 
-                for (QueryIndex index : entity.getIndexes())
-                    H2TreeIndex.validatePdsIndexName(index.getName(), ccfg, typeId);
+                    for (QueryIndex index : entity.getIndexes())
+                        H2TreeIndex.validatePdsIndexName(index.getName(), ccfg, typeId);
 
-                H2TreeIndex.validatePdsIndexName(H2TableDescriptor.PK_IDX_NAME, ccfg, typeId);
-                H2TreeIndex.validatePdsIndexName(H2TableDescriptor.AFFINITY_KEY_IDX_NAME, ccfg, typeId);
+                    H2TreeIndex.validatePdsIndexName(H2TableDescriptor.PK_IDX_NAME, ccfg, typeId);
+                    H2TreeIndex.validatePdsIndexName(H2TableDescriptor.AFFINITY_KEY_IDX_NAME, ccfg, typeId);
+                }
             }
         }
     }
