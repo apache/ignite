@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,17 +32,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
-
 /**
  * Tests for {@link GridAffinityProcessor}.
  */
 @GridCommonTest(group = "Affinity Processor")
 public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest {
-    /** Max value for affinity history size name. Should be the same as in GridAffinityAssignmentCache.MAX_HIST_SIZE */
-    private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
-
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -76,46 +71,57 @@ public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest 
      */
     @Test
     public void testAffinityProcessor() throws Exception {
-        Ignite ignite = startGrid(0);
+        int maxHistSize = 10;
 
-        IgniteKernal grid = (IgniteKernal)grid(0);
+        System.setProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, Integer.toString(maxHistSize));
 
-        IgniteCache<String, String> cache;
+        try {
+            Ignite ignite = startGrid(0);
 
-        IgniteCache<String, String> globalCache = getOrCreateGlobalCache(ignite);
+            IgniteKernal grid = (IgniteKernal)grid(0);
 
-        IgniteDataStreamer<String, String> globalStreamer;
+            IgniteCache<String, String> cache;
 
-        int count = MAX_HIST_SIZE * 4;
+            IgniteCache<String, String> globalCache = getOrCreateGlobalCache(ignite);
 
-        int size;
+            IgniteDataStreamer<String, String> globalStreamer;
 
-        do {
-            try {
-                cache = createLocalCache(ignite, count);
+            int cnt = maxHistSize * 30;
 
-                cache.put("Key" + count, "Value" + count);
+            int expLimit = cnt / 2;
 
-                cache.destroy();
+            int size;
 
-                globalStreamer = createGlobalStreamer(ignite, globalCache);
+            do {
+                try {
+                    cache = createLocalCache(ignite, cnt);
 
-                globalStreamer.addData("GlobalKey" + count, "GlobalValue" + count);
+                    cache.put("Key" + cnt, "Value" + cnt);
 
-                globalStreamer.flush();
+                    cache.destroy();
 
-                globalStreamer.close();
+                    globalStreamer = createGlobalStreamer(ignite, globalCache);
 
-                size = ((ConcurrentSkipListMap)GridTestUtils.getFieldValue(grid.context().affinity(), "affMap")).size();
+                    globalStreamer.addData("GlobalKey" + cnt, "GlobalValue" + cnt);
 
-                assertTrue("Cache has size that bigger then expected [size=" + size + "" +
-                    ", expLimit=" + MAX_HIST_SIZE * 3 + "]", size < MAX_HIST_SIZE * 3);
+                    globalStreamer.flush();
+
+                    globalStreamer.close();
+
+                    size = ((ConcurrentSkipListMap)GridTestUtils.getFieldValue(grid.context().affinity(), "affMap")).size();
+
+                    assertTrue("Cache has size that bigger then expected [size=" + size +
+                        ", expLimit=" + expLimit + "]", size < expLimit);
+                }
+                catch (Exception e) {
+                    fail("Error was handled [" + e.getMessage() + "]");
+                }
             }
-            catch (Exception e) {
-                fail("Error was handled [" + e.getMessage() + "]");
-            }
+            while (cnt-- > 0);
         }
-        while (count-- > 0);
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE);
+        }
     }
 
     /**

@@ -68,6 +68,9 @@ public class GridAffinityAssignmentCache {
     /** Cleanup history size. */
     private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 50);
 
+    /** Cleanup history links size (calculated by both real entries and shallow copies). */
+    private final int MAX_HIST_LINKS_SIZE = MAX_HIST_SIZE * 10;
+
     /** Partition distribution. */
     private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 50f);
 
@@ -207,9 +210,15 @@ public class GridAffinityAssignmentCache {
 
         GridAffinityAssignmentV2 assignment = new GridAffinityAssignmentV2(topVer, affAssignment, idealAssignment);
 
-        HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignmentImpl(assignment, backups));
+        HistoryAffinityAssignmentImpl newHistEntry = new HistoryAffinityAssignmentImpl(assignment, backups);
 
-        head.set(assignment);
+        HistoryAffinityAssignment existing = affCache.putIfAbsent(topVer, newHistEntry);
+
+        if (existing == null)
+            head.set(assignment);
+
+        assert topVer.equals(head.get().topologyVersion()) : "Unexpected head [topVer=" + topVer +
+            ", headTopVer=" + head.get().topologyVersion() + ']';
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
             if (entry.getKey().compareTo(topVer) <= 0) {
@@ -221,9 +230,9 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        // In case if value was replaced there is no sense to clean the history.
-        if (hAff == null)
-            onHistoryAdded();
+        // If value already exists there is no sense to clean the history.
+        if (existing == null)
+            onHistoryAdded(newHistEntry.requiresHistoryCleanup());
 
         if (log.isTraceEnabled()) {
             log.trace("New affinity assignment [grp=" + cacheOrGrpName
@@ -497,9 +506,13 @@ public class GridAffinityAssignmentCache {
             new HistoryAffinityAssignmentImpl(assignmentCpy, backups) :
             new HistoryAffinityAssignmentShallowCopy(prevHistEntry.getValue().origin(), topVer);
 
-        HistoryAffinityAssignment replaced = affCache.put(topVer, newHistEntry);
+        HistoryAffinityAssignment existing = affCache.putIfAbsent(topVer, newHistEntry);
 
-        head.set(assignmentCpy);
+        if (existing == null)
+            head.set(assignmentCpy);
+
+        assert topVer.equals(head.get().topologyVersion()) : "Unexpected head [topVer=" + topVer +
+            ", headTopVer=" + head.get().topologyVersion() + ']';
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
             if (entry.getKey().compareTo(topVer) <= 0) {
@@ -511,9 +524,9 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        // There is no sense to clean the history if value was replaced or we added shallow copy of previous value.
-        if (replaced == null && newHistEntry.requiresHistoryCleanup())
-            onHistoryAdded();
+        // If value already exists there is no sense to clean the history.
+        if (existing == null)
+            onHistoryAdded(newHistEntry.requiresHistoryCleanup());
     }
 
     /**
@@ -832,26 +845,33 @@ public class GridAffinityAssignmentCache {
 
     /**
      * Cleaning the affinity history.
+     *
+     * @param fullHistCleanupRequired <code>false</code> if we have added shallow copy of another history entry.
      */
-    private void onHistoryAdded() {
-        if (fullHistSize.incrementAndGet() > MAX_HIST_SIZE) {
-            Iterator<HistoryAffinityAssignment> it = affCache.values().iterator();
+    private void onHistoryAdded(boolean fullHistCleanupRequired) {
+        int fullSize = fullHistCleanupRequired ? fullHistSize.incrementAndGet() : fullHistSize.get();
 
-            int rmvCnt = MAX_HIST_SIZE / 2;
+        int linksSize = affCache.size();
+
+        int fullRmvCnt = fullSize > MAX_HIST_SIZE ? (MAX_HIST_SIZE / 2) : 0;
+
+        int linksRmvCnt = linksSize > MAX_HIST_LINKS_SIZE ? (MAX_HIST_LINKS_SIZE / 2) : 0;
+
+        if (fullRmvCnt > 0 || linksRmvCnt > 0) {
+            Iterator<HistoryAffinityAssignment> it = affCache.values().iterator();
 
             AffinityTopologyVersion topVerRmv = null;
 
-            while (it.hasNext()) {
+            while (it.hasNext() && (fullRmvCnt > 0 || linksRmvCnt > 0)) {
                 HistoryAffinityAssignment aff0 = it.next();
 
-                if (aff0.requiresHistoryCleanup()) { // Don't decrement counter in case of shallow copy remove.
-                    if (rmvCnt == 0)
-                        break; // We have already removed enough entries along with their shallow copies.
-
-                    rmvCnt--;
+                if (aff0.requiresHistoryCleanup()) { // Don't decrement counter in case of fullHistoryCleanupRequired copy remove.
+                    fullRmvCnt--;
 
                     fullHistSize.decrementAndGet();
                 }
+
+                linksRmvCnt--;
 
                 it.remove();
 

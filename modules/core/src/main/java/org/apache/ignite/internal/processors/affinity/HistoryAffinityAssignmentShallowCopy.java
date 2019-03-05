@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Shallow copy that contains reference to delegate {@link HistoryAffinityAssignment}.
@@ -97,5 +98,10 @@ public class HistoryAffinityAssignmentShallowCopy implements HistoryAffinityAssi
     /** {@inheritDoc} */
     @Override public HistoryAffinityAssignment origin() {
         return histAssignment;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(HistoryAffinityAssignmentShallowCopy.class, this);
     }
 }
