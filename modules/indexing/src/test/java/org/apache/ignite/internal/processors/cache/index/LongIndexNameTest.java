@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Callable;
@@ -33,17 +35,19 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Regression test for the long index name.
  */
+@RunWith(Parameterized.class)
 public class LongIndexNameTest extends AbstractIndexingCommonTest {
     /**
      * Query parallelism value that tuns to number of created segments. We need 2 digit maximum segment index to test
@@ -53,6 +57,37 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
+
+    @Parameterized.Parameter
+    public boolean isSecondClientNode;
+
+    @Parameterized.Parameters(name = "second node is client = {0}")
+    public static Collection<Object[]> parameterValues() {
+        return Arrays.asList(new Object[][] {
+            {true},
+            {false}
+        });
+    }
+
+    /**
+     * Start first node. This node is always affinity node.
+     *
+     * @param cfgFactory Provides ignite configuration.
+     * @return Started ignite instance.
+     */
+    private Ignite startFirst(Callable<IgniteConfiguration> cfgFactory) throws Exception {
+        return startGrid(cfgFactory.call().setIgniteInstanceName("first"));
+    }
+
+    /**
+     * Starts second node. It is server or client node, depending on {@linkplain #isSecondClientNode} parameter value.
+     *
+     * @param cfgFactory Provides ignite configuration.
+     * @return Started ignite instance.
+     */
+    private Ignite startSecond(Callable<IgniteConfiguration> cfgFactory) throws Exception {
+        return startGrid(cfgFactory.call().setIgniteInstanceName("second").setClientMode(isSecondClientNode));
+    }
 
     /**
      * Create configuration with persistence disabled.
@@ -133,7 +168,8 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
             .setCacheConfiguration(cacheConfiguration(generateName(maxAllowedIdxName)));
 
         // Insert data and check idx vs scan:
-        try (Ignite ignite = startGrid(withLongOKLen.call())) {
+        try (Ignite first = startFirst(withLongOKLen);
+             Ignite ignite = startSecond(withLongOKLen)) {
             ignite.cluster().active(true);
 
             insertSomeData(ignite);
@@ -142,7 +178,8 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
         }
 
         // Read from disk and verify again:
-        try (Ignite ignite = startGrid(withLongOKLen.call())) {
+        try (Ignite first = startFirst(withLongOKLen);
+             Ignite ignite = startSecond(withLongOKLen)) {
             ignite.cluster().active(true);
 
             compareIndexVsScan(ignite);
@@ -156,11 +193,12 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     public void testNegativeStartupIndexLongNameWithPersistence() throws Exception {
         int maxAllowedIdxName = maxIdxNameLength(SEGMENTS_CNT);
 
-        IgniteConfiguration withTooLongIdxName = createConfiguration(true)
+        Callable<IgniteConfiguration> withTooLongIdxName = () -> createConfiguration(true)
             .setCacheConfiguration(cacheConfiguration(generateName(maxAllowedIdxName + 1)));
 
         GridTestUtils.assertThrows(log(), () -> {
-            try (IgniteEx ign = startGrid(withTooLongIdxName)) {
+            try (Ignite first = startFirst(withTooLongIdxName);
+                 Ignite ign = startSecond(withTooLongIdxName)) {
                 // No-op. Just try to start the grid
                 return null;
             }
@@ -174,12 +212,13 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     public void testNegativeDynamicIndexLongNameWithPersistence() throws Exception {
         int maxAllowedIdxName = maxIdxNameLength(SEGMENTS_CNT);
 
-        IgniteConfiguration pdsCfgWithoutCache = createConfiguration(true);
+        Callable<IgniteConfiguration> pdsCfgWithoutCache = () -> createConfiguration(true);
 
         CacheConfiguration<?, ?> cfgWithTooLongIdxName = cacheConfiguration(generateName(maxAllowedIdxName + 1));
 
         Throwable th = GridTestUtils.assertThrows(log(), () -> {
-            try (IgniteEx ign = startGrid(pdsCfgWithoutCache)) {
+            try (Ignite first = startFirst(pdsCfgWithoutCache);
+                 Ignite ign = startSecond(pdsCfgWithoutCache)) {
                 ign.cluster().active(true);
 
                 ign.getOrCreateCache(cfgWithTooLongIdxName);
@@ -206,7 +245,8 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
         CacheConfiguration<?, ?> cfgWithOKIdxName = cacheConfiguration(generateName(maxAllowedIdxName));
 
         // Insert data and check idx vs scan:
-        try (Ignite ignite = startGrid(withLongOKLen.call())) {
+        try (Ignite first = startFirst(withLongOKLen);
+             Ignite ignite = startSecond(withLongOKLen)) {
             ignite.cluster().active(true);
 
             ignite.getOrCreateCache(cfgWithOKIdxName);
@@ -217,7 +257,8 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
         }
 
         // Read from disk and verify again:
-        try (Ignite ignite = startGrid(withLongOKLen.call())) {
+        try (Ignite first = startFirst(withLongOKLen);
+             Ignite ignite = startSecond(withLongOKLen)) {
             ignite.cluster().active(true);
 
             compareIndexVsScan(ignite);
@@ -235,7 +276,8 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
             .setCacheConfiguration(cacheConfiguration(null));
 
         // Insert data and check idx vs scan:
-        try (Ignite ignite = startGrid(withLongOKLen.call())) {
+        try (Ignite first = startFirst(withLongOKLen);
+             Ignite ignite = startSecond(withLongOKLen)) {
             ignite.cluster().active(true);
 
             ignite.cache(CACHE_NAME).query(new SqlFieldsQuery(
@@ -247,7 +289,8 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
         }
 
         // Read from disk and verify again:
-        try (Ignite ignite = startGrid(withLongOKLen.call())) {
+        try (Ignite first = startFirst(withLongOKLen);
+             Ignite ignite = startSecond(withLongOKLen)) {
             ignite.cluster().active(true);
 
             compareIndexVsScan(ignite);
@@ -261,11 +304,12 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     public void testNegativeCreateIndexLongNameWithPersistence() throws Exception {
         int maxAllowedIdxName = maxIdxNameLength(SEGMENTS_CNT);
 
-        IgniteConfiguration withNoIdx = createConfiguration(true)
+        Callable<IgniteConfiguration> withNoIdx = () -> createConfiguration(true)
             .setCacheConfiguration(cacheConfiguration(null));
 
         GridTestUtils.assertThrows(log(), () -> {
-            try (IgniteEx ignite = startGrid(withNoIdx)) {
+            try (Ignite first = startFirst(withNoIdx);
+                 Ignite ignite = startSecond(withNoIdx)) {
                 ignite.cluster().active(true);
 
                 ignite.cache(CACHE_NAME).query(new SqlFieldsQuery(
@@ -284,10 +328,11 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     public void testStartupIndexLongNameInmemory() throws Exception {
         int sureTooLongForPdsLen = IndexStorageImpl.MAX_IDX_NAME_LEN + 1;
 
-        IgniteConfiguration withIdxCfg = createConfiguration(false)
+        Callable<IgniteConfiguration> withIdxCfg = () -> createConfiguration(false)
             .setCacheConfiguration(cacheConfiguration(generateName(sureTooLongForPdsLen)));
 
-        try (Ignite ignite = startGrid(withIdxCfg)) {
+        try (Ignite first = startFirst(withIdxCfg);
+             Ignite ignite = startSecond(withIdxCfg)) {
             insertSomeData(ignite);
 
             compareIndexVsScan(ignite);
@@ -301,10 +346,11 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     public void testCreateIndexLongNameInMemory() throws Exception {
         int sureTooLongForPdsLen = IndexStorageImpl.MAX_IDX_NAME_LEN + 1;
 
-        IgniteConfiguration noidxCfg = createConfiguration(false)
+        Callable<IgniteConfiguration> noidxCfg = () -> createConfiguration(false)
             .setCacheConfiguration(cacheConfiguration(null));
 
-        try (Ignite ignite = startGrid(noidxCfg)) {
+        try (Ignite first = startFirst(noidxCfg);
+             Ignite ignite = startSecond(noidxCfg)) {
             insertSomeData(ignite);
 
             ignite.cache(CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX " + generateName(sureTooLongForPdsLen) + " ON Person(age)"));
@@ -320,11 +366,12 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     public void testDynamicIndexLongNameInMemory() throws Exception {
         int sureTooLongForPdsLen = IndexStorageImpl.MAX_IDX_NAME_LEN + 1;
 
-        IgniteConfiguration noidxCfg = createConfiguration(false);
+        Callable<IgniteConfiguration> noidxCfg = () -> createConfiguration(false);
 
         CacheConfiguration<?, ?> cacheCfgWithLongIndex = cacheConfiguration(generateName(sureTooLongForPdsLen));
 
-        try (Ignite ignite = startGrid(noidxCfg)) {
+        try (Ignite first = startFirst(noidxCfg);
+             Ignite ignite = startSecond(noidxCfg)) {
             ignite.createCache(cacheCfgWithLongIndex);
 
             insertSomeData(ignite);
