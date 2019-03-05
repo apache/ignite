@@ -103,6 +103,7 @@
         <lucene.version>7.4.0</lucene.version>
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
+        <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
         <mockito.version>1.10.19</mockito.version>
         <mysql.connector.version>8.0.13</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
@@ -626,7 +627,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>${maven.checkstyle.plugin.version}</version>
                     <executions>
                         <execution>
                             <id>check-style</id>
@@ -1313,8 +1314,6 @@
             <id>checkstyle</id>
 
             <activation>
-                <activeByDefault>true</activeByDefault>
-
                 <property>
                     <name>skipTests</name>
                 </property>
