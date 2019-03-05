@@ -58,6 +58,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryCoordinatorFailureTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderCleanerTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNetworkIssuesTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnReconnectTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
@@ -140,6 +141,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoveryWithWrongServerTest.class,
 
     TcpDiscoverySpiReconnectDelayTest.class,
+
+    TcpDiscoveryNetworkIssuesTest.class,
 
     IgniteDiscoveryMassiveNodeFailTest.class,
     TcpDiscoveryCoordinatorFailureTest.class,
