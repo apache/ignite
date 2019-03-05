@@ -75,7 +75,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected List<String> additionalRemoteJvmArgs() {
-        return Arrays.asList("-Xmx128m");
+        return Arrays.asList("-Xmx256m");
     }
 
     /** {@inheritDoc} */
@@ -140,6 +140,8 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
         local.cluster().active(false);
 
         stopAllGrids(false);
+
+        IgniteProcessProxy.killAll();
     }
 
     /** {@inheritDoc} */
@@ -151,11 +153,10 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /**
-     * beforeTest is not user to save the time fot muted tests.
-     * @throws Exception On error.
-     */
-    private void startTestGrid() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         log.info("Restart cluster");
 
         Ignite loc = startGrid(0);
@@ -182,8 +183,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      */
     @Test
     public void testHeavyScanLazy() throws Exception {
-        startTestGrid();
-
         checkQuery("SELECT * from test", KEY_CNT, true);
     }
 
@@ -193,8 +192,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavyScanNonLazy() throws Exception {
-        startTestGrid();
-
         checkQueryExpectOOM("SELECT * from test", false);
     }
 
@@ -205,8 +202,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9933")
     @Test
     public void testHeavySortByPkLazy() throws Exception {
-        startTestGrid();
-
         checkQueryExpectOOM("SELECT * from test ORDER BY id", true);
     }
 
@@ -216,8 +211,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavySortByPkNotLazy() throws Exception {
-        startTestGrid();
-
         checkQueryExpectOOM("SELECT * from test ORDER BY id", false);
     }
 
@@ -228,8 +221,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9933")
     @Test
     public void testHeavySortByIndexLazy() throws Exception {
-        startTestGrid();
-
         checkQueryExpectOOM("SELECT * from test ORDER BY indexed", true);
     }
 
@@ -239,8 +230,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavySortByIndexNotLazy() throws Exception {
-        startTestGrid();
-
         checkQueryExpectOOM("SELECT * from test ORDER BY indexed", false);
     }
 
@@ -250,8 +239,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavySortByNotIndexLazy() throws Exception {
-        startTestGrid();
-
         checkQueryExpectOOM("SELECT * from test ORDER BY STR", true);
     }
 
@@ -261,8 +248,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavySortByNotIndexNotLazy() throws Exception {
-        startTestGrid();
-
         checkQueryExpectOOM("SELECT * from test ORDER BY str", false);
     }
 
@@ -271,8 +256,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      */
     @Test
     public void testHeavyGroupByPkLazy() throws Exception {
-        startTestGrid();
-
         checkQuery("SELECT id, sum(val) from test GROUP BY id", KEY_CNT, true, true);
     }
 
@@ -282,9 +265,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavyGroupByPkNotLazy() throws Exception {
-
-        startTestGrid();
-
         checkQueryExpectOOM("SELECT id, sum(val) from test GROUP BY id", false, true);
     }
 
