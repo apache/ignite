@@ -379,6 +379,7 @@ public class ConnectionManager {
 
         threadConns.clear();
         detachedConns.clear();
+        threadConn.remove();
     }
 
     /**
