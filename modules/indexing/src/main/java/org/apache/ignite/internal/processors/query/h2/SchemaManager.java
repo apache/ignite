@@ -144,10 +144,8 @@ public class SchemaManager {
 
         try {
             synchronized (schemaMux) {
-                createSchema0(QueryUtils.SCHEMA_SYS);
+                createSchema(QueryUtils.SCHEMA_SYS, true);
             }
-
-            schemas.put(QueryUtils.SCHEMA_SYS, new H2Schema(QueryUtils.SCHEMA_SYS, true));
 
             try (Connection c = connMgr.connectionNoCache(QueryUtils.SCHEMA_SYS)) {
                 for (SqlSystemView view : systemViews(ctx))
